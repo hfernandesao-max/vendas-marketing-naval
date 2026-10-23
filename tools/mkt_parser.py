@@ -26,9 +26,25 @@ def rows_of(path):
     return [list(r) for r in wb.worksheets[0].iter_rows(values_only=True)]
 
 
+def pinguim_rows(path):
+    """Exportação de vendas RTM do Pinguim BO: folha com cabeçalho Rota / Vendedor / Data / ... / Documento."""
+    wb = openpyxl.load_workbook(path, data_only=True)
+    for ws in wb.worksheets:
+        rows = [list(r) for r in ws.iter_rows(values_only=True)]
+        for i, r in enumerate(rows[:5]):
+            cab = [norm(c) for c in r]
+            if "ROTA" in cab and "DOCUMENTO" in cab and any("CONTRIBUINTE" in c for c in cab):
+                return [dict(zip(cab, x)) for x in rows[i + 1:]]
+    return None
+
+
 def identify(paths):
     kinds = {}
     for p in paths:
+        pg = pinguim_rows(p)
+        if pg is not None:
+            kinds["pinguim"] = kinds.get("pinguim", []) + pg
+            continue
         r = rows_of(p)
         flat = " ".join(str(c) for row in r[:4] for c in row if c is not None)
         if "Avg. Unit Price" in flat:
@@ -50,7 +66,7 @@ def identify(paths):
         kinds[k] = r
     obrig = {"itens", "registo", "consolidado", "stock", "relatorio", "caixa"}
     falta = obrig - set(kinds)
-    if falta and not (falta == obrig and "transporte" in kinds):
+    if falta and not (falta == obrig and ("transporte" in kinds or "pinguim" in kinds)):
         raise SystemExit(f"Faltam relatórios: {sorted(falta)}")
     return kinds
 
@@ -296,6 +312,65 @@ def aplicar_vendas(blocos, dia, linhas, nomes):
     return rows
 
 
+# Correspondência rota Pinguim BO -> vendedor SAP (por validar com a área comercial)
+ROTAS_PADRAO = {
+    "1001": ("Andrea Santos", "Andréa Santos"), "1002": ("Cristina Sachuma", "Cristina Sachuma"),
+    "1003": ("Joceil Prata", "Jocel Prata"), "1004": ("Nelson Bumba", "Nelson Moisés"),
+    "1005": ("Olindo Baião", "Olindo Baião"), "1006": ("Rosa Vemba", "Rosa Vemba"),
+    "1007": ("Awet Weldemenkorios", "Awet Haile"), "1008": ("Daniel Mihreteab", "Daniel Tekeste"),
+    "1009": ("Efrem Bokre", "Efrem Eyob"), "1010": ("Nahom Areaya", "Nahom Teame"),
+    "1011": ("Robel Tesfamichael", "Robel Tewelde"),
+}
+
+
+def carregar_rotas(hist):
+    hp = os.path.join(hist, "rotas.json") if hist != "-" else None
+    if hp and os.path.exists(hp):
+        return json.load(open(hp))
+    return [dict(chave=k, rota=k, vendedor_pinguim=a, vendedor_sap=b, validado=False) for k, (a, b) in ROTAS_PADRAO.items()]
+
+
+def parse_pinguim(rows, rotas):
+    mapa = {r["rota"]: r for r in rotas}
+    out = []
+    for r in rows:
+        rota = str(r.get("ROTA") or "").strip()
+        data = r.get("DATA")
+        if not rota or not isinstance(data, dt.datetime) or not r.get("DOCUMENTO"):
+            continue
+        m = mapa.get(rota)
+        if m is None:
+            m = dict(chave=rota, rota=rota, vendedor_pinguim=str(r.get("VENDEDOR") or "").strip(), vendedor_sap="", validado=False)
+            rotas.append(m); mapa[rota] = m
+        doc = str(r["DOCUMENTO"]).strip()
+        liq = norm(r.get("LIQUIDADO"))
+        out.append(dict(chave=doc, documento=doc, data=data.date().isoformat(), hora=str(r.get("HORA") or "")[:5],
+                        rota=rota, vendedor_pinguim=str(r.get("VENDEDOR") or "").strip(), vendedor=m["vendedor_sap"],
+                        tipo=str(r.get("TIPO") or "").strip(), cliente=str(r.get("NOME FISCAL") or "").strip(),
+                        nif=str(r.get("N CONTRIBUINTE") or r.get("NO CONTRIBUINTE") or "").strip(),
+                        liquidado=liq in ("SIM", "S", "TRUE", "1"), total=num(r.get("TOTAL (KZ)") or r.get("TOTAL"))))
+    return out
+
+
+def casar_rtm(rtm, facturas, rotas):
+    """Casa cada documento Pinguim com uma factura SAP do mesmo vendedor, mesmo valor e no máximo 1 dia de diferença."""
+    vend = {r["rota"]: r["vendedor_sap"] for r in rotas}
+    livres = [f for f in facturas if "Foodtec" not in f.get("empresa", "")]
+    usadas = set()
+    for d in sorted(rtm, key=lambda x: (x["data"], x["hora"])):
+        d["vendedor"] = vend.get(d["rota"], d.get("vendedor", ""))
+        d0 = dt.date.fromisoformat(d["data"])
+        cand = [f for f in livres if f["chave"] not in usadas and f.get("vendedor") == d["vendedor"]
+                and abs(f["total"] - d["total"]) < 1 and abs((dt.date.fromisoformat(f["data"]) - d0).days) <= 1]
+        cand.sort(key=lambda f: abs((dt.date.fromisoformat(f["data"]) - d0).days))
+        if cand:
+            f = cand[0]; usadas.add(f["chave"])
+            d["factura_sap"] = f["factura"]; d["dias_desfasamento"] = (dt.date.fromisoformat(f["data"]) - d0).days
+        else:
+            d["factura_sap"] = None; d["dias_desfasamento"] = None
+    return rtm
+
+
 def main():
     src, hist, out = sys.argv[1], sys.argv[2], sys.argv[3]
     paths = [p for p in glob.glob(os.path.join(src, "**", "*.xlsx"), recursive=True)]
@@ -303,7 +378,10 @@ def main():
     hist_tr = []
     if hist != "-" and os.path.exists(os.path.join(hist, "transportes.json")):
         hist_tr = json.load(open(os.path.join(hist, "transportes.json")))
-    if "registo" not in K:
+    if "registo" not in K and "transporte" not in K:
+        dia, novos = None, {}
+        print("Modo só Pinguim BO (vendas RTM)")
+    elif "registo" not in K:
         dia, carga = parse_carga(K["transporte"])
         novos = dict(transportes=aplicar_vendas(carga, dia, None, None))
         print("Modo só plano de cargas: vendas pendentes para", dia)
@@ -330,6 +408,22 @@ def main():
                 r.setdefault(k, v)
         todos = sorted(antigos + rows, key=lambda r: (r["data"], r["chave"]))
         json.dump(todos, open(os.path.join(out, nome + ".json"), "w"), ensure_ascii=False)
+    # RTM Pinguim BO: substitui por documento e volta a casar tudo com as facturas SAP
+    hp = lambda n: os.path.join(hist, n + ".json") if hist != "-" else ""
+    rtm = json.load(open(hp("rtm"))) if hist != "-" and os.path.exists(hp("rtm")) else []
+    if rtm or "pinguim" in K:
+        rotas = carregar_rotas(hist)
+        if "pinguim" in K:
+            novos_rtm = parse_pinguim(K["pinguim"], rotas)
+            docs = {d["chave"] for d in novos_rtm}
+            rtm = [d for d in rtm if d["chave"] not in docs] + novos_rtm
+        fp = os.path.join(out, "facturas.json") if "facturas" in novos else hp("facturas")
+        facturas = json.load(open(fp)) if fp and os.path.exists(fp) else []
+        rtm = sorted(casar_rtm(rtm, facturas, rotas), key=lambda d: (d["data"], d["hora"], d["chave"]))
+        json.dump(rtm, open(os.path.join(out, "rtm.json"), "w"), ensure_ascii=False)
+        json.dump(rotas, open(os.path.join(out, "rotas.json"), "w"), ensure_ascii=False)
+        cas = [d for d in rtm if d["factura_sap"]]
+        print(f"RTM: {len(rtm)} documentos, {sum(d['total'] for d in rtm):,.0f} Kz; casados com SAP: {len(cas)}")
     print("Dia processado:", dia)
     if "resumo" in novos:
         print(json.dumps(novos["resumo"][0], ensure_ascii=False, indent=1))

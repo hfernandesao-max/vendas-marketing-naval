@@ -47,7 +47,7 @@ body{background:var(--color-bg);color:var(--color-fg);font:14px/1.45 var(--font-
 <script>
 /* Substitui o runtime do Claude: carrega data/*.json e expõe a mesma API "dash" usada pela página */
 (function () {
-  var FONTES = ['resumo', 'vendedores', 'produtos', 'facturas', 'stock', 'transportes'];
+  var FONTES = ['resumo', 'vendedores', 'produtos', 'facturas', 'stock', 'transportes', 'rtm', 'rotas'];
   var store = {}, calcs = {}, ordem = [], params = {}, subs = [];
   FONTES.forEach(function (id) { store[id] = { status: 'loading', data: [], meta: [] }; });
   function calcular() {
@@ -263,6 +263,12 @@ body{background:var(--color-bg);color:var(--color-fg);font:14px/1.45 var(--font-
 .nv-t tfoot td{font-weight:650;border-top:1px solid var(--nv-line);border-bottom:0;position:sticky;bottom:0;background:var(--color-panel)}
 .nv-t tbody tr.sel td{background:color-mix(in srgb,var(--nv-royal) 13%,transparent)}
 .nv-t tbody tr.click{cursor:pointer}
+.nv-chip{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;background:color-mix(in srgb,var(--nv-orange) 16%,transparent);color:var(--color-warn);vertical-align:1px}
+.nv-rotas summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--color-fg-muted);padding:4px 0}
+.nv-rotas summary:focus-visible{outline:2px solid var(--nv-blue);outline-offset:2px;border-radius:4px}
+.nv-adp{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.nv-adp .g{width:56px;height:6px;border-radius:6px;background:var(--nv-soft);overflow:hidden}
+.nv-adp .g i{display:block;height:100%;border-radius:6px}
 [data-dash-source-state=empty]{color:transparent}
 [data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
 
@@ -336,6 +342,16 @@ body{background:var(--color-bg);color:var(--color-fg);font:14px/1.45 var(--font-
     <header><div><h2>Logística · escoamento da carga</h2><p class="nv-note">Caixas carregadas em cada camião (plano de cargas) contra caixas facturadas pelo vendedor. Do pior para o melhor.</p></div></header>
     <div class="nv-stats" id="nv-log-stats"></div>
     <div class="nv-log" id="nv-log" data-source="transportes"></div>
+  </section>
+
+  <section class="nv-glass nv-card" id="rtm">
+    <header><div><h2>RTM · Pinguim BO vs SAP <span class="nv-chip">Por validar</span></h2><p class="nv-note">Vendas emitidas no telemóvel (Pinguim BO) contra o facturado no SAP. Os totais de vendas do dashboard vêm só do SAP; estes números não se somam.</p></div></header>
+    <div class="nv-stats" id="nv-rtm-stats"></div>
+    <div class="nv-grid nv-g2">
+      <div style="min-width:0"><p class="nv-h3">Por vendedor</p><div class="nv-tw"><table class="nv-t" id="nv-trv" data-source="rtm_dia" data-row-key="chave"></table></div></div>
+      <div style="min-width:0"><p class="nv-h3">Documentos Pinguim do dia</p><input class="nv-search" id="nv-rq" type="search" placeholder="Procurar cliente, vendedor ou documento" aria-label="Procurar documentos Pinguim"><div class="nv-tw" style="margin-top:6px"><table class="nv-t" id="nv-trd" data-source="rtm" data-row-key="chave"></table></div></div>
+    </div>
+    <details class="nv-rotas" id="rotas"><summary>Correspondência rota Pinguim ↔ vendedor SAP · a confirmar pela área comercial</summary><div class="nv-tw"><table class="nv-t" id="nv-tro" data-source="rotas" data-row-key="chave"></table></div></details>
   </section>
 
   <div class="nv-grid nv-g2">
@@ -430,6 +446,50 @@ dash.calc('consolidado_vend', {
       if (v.facturado > 0) a.dias += 1;
     });
     return Object.values(m);
+  },
+});
+dash.calc('rtm_dia', {
+  inputs: ['rtm', 'vendedores'],
+  title: 'RTM por vendedor e dia',
+  description: 'Por dia e vendedor: valor e documentos emitidos no Pinguim BO, valor facturado no SAP (sem crédito), adopção RTM = Pinguim ÷ SAP, documentos casados e por liquidar.',
+  fn: (rtm, vendedores) => {
+    const m = {}, diasSap = new Set(vendedores.map((v) => v.data));
+    const linha = (data, vendedor) => {
+      const k = data + '|' + vendedor;
+      return m[k] || (m[k] = { chave: k, data, vendedor, rota: '', rtm_total: 0, rtm_docs: 0, casados: 0, casado_valor: 0, por_liquidar: 0, sap_total: diasSap.has(data) ? 0 : null });
+    };
+    rtm.forEach((d) => {
+      const a = linha(d.data, d.vendedor || d.vendedor_pinguim);
+      a.rota = d.rota; a.rtm_total += d.total; a.rtm_docs += 1;
+      if (d.factura_sap) { a.casados += 1; a.casado_valor += d.total; }
+      if (!d.liquidado) a.por_liquidar += d.total;
+    });
+    vendedores.forEach((v) => {
+      if (v.facturado - (v.credito || 0) <= 0) return;
+      const a = linha(v.data, v.vendedor);
+      a.sap_total += v.facturado - (v.credito || 0);
+    });
+    return Object.values(m).map((a) => ({ ...a, adopcao: a.sap_total ? a.rtm_total / a.sap_total : null }));
+  },
+});
+dash.calc('rtm_totais', {
+  inputs: ['rtm', 'resumo'],
+  title: 'RTM por dia e mês',
+  description: 'Por dia (chave = data) e por mês (chave = mes:AAAA-MM): valor e documentos Pinguim, casados com SAP, por liquidar, vendas SAP pagas e adopção RTM. No mês, a adopção usa só os dias com os dois sistemas carregados.',
+  fn: (rtm, resumo) => {
+    const sap = {}; resumo.forEach((r) => { sap[r.data] = r.total - (r.credito || 0); });
+    const m = {};
+    const lin = (k, data, mes) => m[k] || (m[k] = { chave: k, data, mes, rtm_total: 0, rtm_docs: 0, casados: 0, por_liquidar: 0, rtm_comum: 0, sap_comum: 0 });
+    rtm.forEach((d) => {
+      [lin(d.data, d.data, d.data.slice(0, 7)), lin('mes:' + d.data.slice(0, 7), null, d.data.slice(0, 7))].forEach((a) => {
+        a.rtm_total += d.total; a.rtm_docs += 1; if (d.factura_sap) a.casados += 1; if (!d.liquidado) a.por_liquidar += d.total;
+        if (sap[d.data] != null) a.rtm_comum += d.total;
+      });
+    });
+    Object.values(m).forEach((a) => {
+      Object.keys(sap).forEach((d) => { if ((a.data && a.data === d) || (!a.data && d.slice(0, 7) === a.mes && rtm.some((x) => x.data === d))) a.sap_comum += sap[d]; });
+    });
+    return Object.values(m).map((a) => ({ ...a, sap_vendas: a.sap_comum || null, adopcao: a.sap_comum ? a.rtm_comum / a.sap_comum : null }));
   },
 });
 dash.calc('cobertura', {
@@ -783,6 +843,62 @@ dash.calc('cobertura', {
     ], cv, 'facturado');
   }
 
+  // ---------- RTM Pinguim BO ----------
+  const adpCls = (v) => (v == null ? 'nv-mut' : v < 0.25 ? 'nv-bad' : v < 0.6 ? 'nv-warn' : 'nv-ok');
+  const adpCol = (v) => (v < 0.25 ? 'var(--nv-red)' : v < 0.6 ? 'var(--nv-orange)' : 'var(--nv-green)');
+  function drawRtm(dia, RT, RD, RTT, RO) {
+    const st = $('#nv-rtm-stats');
+    st.replaceChildren();
+    ['#nv-trv', '#nv-trd', '#nv-tro'].forEach((x) => $(x).replaceChildren());
+    if (RT.status !== 'ok') { if (RT.status === 'error') st.appendChild(el('p', 'nv-note', 'Ainda não há vendas do Pinguim BO carregadas.')); return; }
+    const t = RTT.status === 'ok' ? (RTT.data || []).find((x) => x.chave === dia) : null;
+    const tm = RTT.status === 'ok' ? (RTT.data || []).find((x) => x.chave === 'mes:' + dia.slice(0, 7)) : null;
+    const stat = (lbl, node, cls) => { const d = el('div', 's'); const b = el('b'); if (cls) b.className = cls; b.append(node); d.append(el('span', 'nv-lbl', lbl), b); st.appendChild(d); };
+    if (!t) st.appendChild(el('p', 'nv-note', 'Sem documentos do Pinguim BO neste dia.'));
+    else {
+      const wd = 'chave=' + enc(dia);
+      stat('Emitido no Pinguim', span(mkz(t.rtm_total), 'rtm_totais', 'rtm_total', wd));
+      stat('Documentos', span(n0(t.rtm_docs), 'rtm_totais', 'rtm_docs', wd));
+      stat('Vendas SAP pagas', t.sap_vendas == null ? span('Pendente', null, null, null, 'nv-mut') : span(mkz(t.sap_vendas), 'rtm_totais', 'sap_vendas', wd));
+      stat('Adopção RTM', t.adopcao == null ? span('—', null) : span(pct(t.adopcao), 'rtm_totais', 'adopcao', wd), adpCls(t.adopcao));
+      stat('Casados com SAP', span(n0(t.casados), 'rtm_totais', 'casados', wd));
+      stat('Por liquidar', span(mkz(t.por_liquidar), 'rtm_totais', 'por_liquidar', wd), t.por_liquidar ? 'nv-warn' : null);
+    }
+    if (tm && tm.adopcao != null) stat('Adopção no mês', span(pct(tm.adopcao), 'rtm_totais', 'adopcao', 'chave=' + enc(tm.chave)), adpCls(tm.adopcao));
+    const vd = RD.status === 'ok' ? (RD.data || []).filter((x) => x.data === dia) : [];
+    table($('#nv-trv'), [
+      { key: 'vendedor', label: 'Vendedor' },
+      { key: 'rota', label: 'Rota', fmt: (v) => v || '—' },
+      { key: 'rtm_total', label: 'Pinguim', num: true, fmt: (v) => (v ? mkz(v) : '—') },
+      { key: 'sap_total', label: 'SAP', num: true, fmt: (v) => (v == null ? 'Pendente' : mkz(v)) },
+      { key: 'adopcao', label: 'Adopção', num: true, render: (v) => {
+        const w = el('span', 'nv-adp');
+        if (v == null) { w.append(el('span', 'nv-mut', '—')); return w; }
+        const g = el('span', 'g'); const i = el('i'); i.style.width = Math.min(100, v * 100) + '%'; i.style.background = adpCol(v); g.appendChild(i);
+        const tx = el('span', adpCls(v), pct(v)); tx.style.fontWeight = 600; w.append(tx, g); return w; } },
+      { key: 'casados', label: 'Casados', num: true, fmt: (v, x) => (x.rtm_docs ? `${n0(v)}/${n0(x.rtm_docs)}` : '—') },
+      { key: 'por_liquidar', label: 'Por liquidar', num: true, render: (v) => (v ? el('span', 'nv-warn', kz(v)) : el('span', 'nv-mut', '—')) },
+    ], vd, 'sap_total');
+    const term = $('#nv-rq').value.trim().toLowerCase();
+    const docs = RT.data.filter((d) => d.data === dia && (!term || [d.cliente, d.vendedor, d.vendedor_pinguim, d.documento].join(' ').toLowerCase().includes(term)));
+    table($('#nv-trd'), [
+      { key: 'hora', label: 'Hora' },
+      { key: 'documento', label: 'Documento' },
+      { key: 'cliente', label: 'Cliente', wrap: true },
+      { key: 'vendedor', label: 'Vendedor' },
+      { key: 'total', label: 'Total', num: true, fmt: kz },
+      { key: 'liquidado', label: 'Pago', render: (v) => el('span', 'nv-st ' + (v ? 'nv-ok' : 'nv-warn'), v ? 'Sim' : 'Não') },
+      { key: 'factura_sap', label: 'Factura SAP', render: (v, x) => (v ? el('span', null, v + (x.dias_desfasamento ? ` (${x.dias_desfasamento > 0 ? '+' : ''}${x.dias_desfasamento} d)` : '')) : el('span', 'nv-mut', 'Sem correspondência')) },
+    ], docs, 'hora');
+    if (RO.status === 'ok') table($('#nv-tro'), [
+      { key: 'rota', label: 'Rota' },
+      { key: 'vendedor_pinguim', label: 'Nome no Pinguim' },
+      { key: 'vendedor_sap', label: 'Vendedor SAP', fmt: (v) => v || '—' },
+      { key: 'validado', label: 'Estado', render: (v) => el('span', 'nv-st ' + (v ? 'nv-ok' : 'nv-warn'), v ? 'Confirmado' : 'Por validar') },
+    ], RO.data, 'rota');
+  }
+  $('#nv-rq').addEventListener('input', () => draw());
+
   // ---------- controlos ----------
   const sel = $('#nv-dia');
   sel.addEventListener('change', () => dash.setParams({ dia: sel.value || null }));
@@ -798,6 +914,7 @@ dash.calc('cobertura', {
     const F = dash.data('facturas'), S = dash.data('stock'), I = dash.data('indicadores'), K = dash.data('cobertura');
     const T = dash.data('transportes'), LG = dash.data('logistica');
     const CO = dash.data('consolidado'), CV = dash.data('consolidado_vend');
+    const RT = dash.data('rtm'), RD = dash.data('rtm_dia'), RTT = dash.data('rtm_totais'), RO = dash.data('rotas');
     const tiles = ['k-total', 'k-num', 'k-tpa', 'k-fac', 'k-cx', 'k-desc', 'k-saldo', 'k-cred'].map((id) => $('#' + id));
 
     if (R.status !== 'ok') {
@@ -806,11 +923,12 @@ dash.calc('cobertura', {
       return;
     }
     const diasVendas = new Set(R.data.map((r) => r.data));
-    diasAll = [...new Set([...diasVendas, ...(T.status === 'ok' ? T.data.map((x) => x.data) : [])])].sort();
+    const diasPlano = new Set(T.status === 'ok' ? T.data.map((x) => x.data) : []);
+    diasAll = [...new Set([...diasVendas, ...diasPlano, ...(RT.status === 'ok' ? RT.data.map((x) => x.data) : [])])].sort();
     const p = dash.params().dia;
     const dia = diasAll.includes(p) ? p : diasAll[diasAll.length - 1];
     diaAtual = dia;
-    sel.replaceChildren(...[...diasAll].reverse().map((d) => new Option(dlab(d) + (diasVendas.has(d) ? '' : ' · plano'), d)));
+    sel.replaceChildren(...[...diasAll].reverse().map((d) => new Option(dlab(d) + (diasVendas.has(d) ? '' : diasPlano.has(d) ? ' · plano' : ' · RTM'), d)));
     sel.value = dia;
     $('#nv-prev').disabled = diasAll.indexOf(dia) <= 0;
     $('#nv-next').disabled = diasAll.indexOf(dia) >= diasAll.length - 1;
@@ -820,12 +938,13 @@ dash.calc('cobertura', {
     $('#nv-titulo').textContent = `Vendas de ${dsem(dia)}, ${dlab(dia)}`;
 
     drawCons(dia, R, V, CO, CV, LG);
+    drawRtm(dia, RT, RD, RTT, RO);
 
     // dia só com plano de cargas: vendas ainda por carregar
     if (!r) {
       const lgp = LG.status === 'ok' ? (LG.data || []).find((x) => x.data === dia) : null;
       const unm = (e) => ['data-source', 'data-field', 'data-where'].forEach((a) => e.removeAttribute(a));
-      $('#nv-titulo').textContent = `Plano de cargas de ${dsem(dia)}, ${dlab(dia)}`;
+      $('#nv-titulo').textContent = `${diasPlano.has(dia) ? 'Plano de cargas' : 'Vendas RTM'} de ${dsem(dia)}, ${dlab(dia)}`;
       const big = $('#k-total'); big.classList.remove('dash-skeleton'); unm(big); big.replaceChildren('Em curso');
       $('#k-total-full').replaceChildren('Vendas do dia ainda por carregar');
       const lead = $('#nv-lead');
