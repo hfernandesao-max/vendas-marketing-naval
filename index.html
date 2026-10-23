@@ -295,7 +295,7 @@ body{background:var(--color-bg);color:var(--color-fg);font:14px/1.45 var(--font-
     <header><div><h2 id="nv-cons-tit">Consolidado do mês</h2><p class="nv-note" id="nv-cons-note">Soma de todos os dias carregados no mês.</p></div><div class="nv-legend" id="nv-cons-emp"></div></header>
     <div class="nv-cons-k" id="nv-cons-k"></div>
     <div class="nv-grid nv-g2">
-      <div style="min-width:0"><p class="nv-h3">Por dia · toque para abrir o dia</p><div class="nv-tw"><table class="nv-t" id="nv-tc" data-source="resumo" data-row-key="chave"></table></div></div>
+      <div style="min-width:0"><p class="nv-h3">Por dia · toque para abrir o dia</p><div class="nv-tw"><table class="nv-t" id="nv-tc" data-source="dias" data-row-key="chave"></table></div></div>
       <div style="min-width:0"><p class="nv-h3">Por vendedor</p><div class="nv-tw"><table class="nv-t" id="nv-tcv" data-source="consolidado_vend" data-row-key="chave"></table></div></div>
     </div>
   </section>
@@ -490,6 +490,19 @@ dash.calc('rtm_totais', {
       Object.keys(sap).forEach((d) => { if ((a.data && a.data === d) || (!a.data && d.slice(0, 7) === a.mes && rtm.some((x) => x.data === d))) a.sap_comum += sap[d]; });
     });
     return Object.values(m).map((a) => ({ ...a, sap_vendas: a.sap_comum || null, adopcao: a.sap_comum ? a.rtm_comum / a.sap_comum : null }));
+  },
+});
+dash.calc('dias', {
+  inputs: ['resumo', 'transportes', 'rtm'],
+  title: 'Dias carregados',
+  description: 'Um registo por dia com dados em qualquer fonte: vendas SAP (vazias se os relatórios SAP ainda não chegaram), valor emitido no Pinguim BO e se há plano de cargas.',
+  fn: (resumo, transportes, rtm) => {
+    const m = {};
+    const lin = (d) => m[d] || (m[d] = { chave: d, data: d, sap: false, plano: false, numerario: null, tpa: null, credito: null, total: null, caixas: null, pinguim: null });
+    resumo.forEach((r) => Object.assign(lin(r.data), { sap: true, numerario: r.numerario, tpa: r.tpa, credito: r.credito || 0, total: r.total, caixas: r.caixas }));
+    transportes.forEach((t) => { lin(t.data).plano = true; });
+    rtm.forEach((d) => { const a = lin(d.data); a.pinguim = (a.pinguim || 0) + d.total; });
+    return Object.values(m).map((a) => ({ ...a, estado: a.sap ? 'Completo' : 'SAP pendente' }));
   },
 });
 dash.calc('cobertura', {
@@ -780,16 +793,19 @@ dash.calc('cobertura', {
 
   // ---------- consolidado ----------
   const MESES_L = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-  function drawCons(dia, R, V, CO, CV, LG) {
+  function drawCons(dia, R, V, CO, CV, LG, DI, RTT) {
     const mes = dia.slice(0, 7);
     const [yy, mm] = mes.split('-');
     $('#nv-cons-tit').textContent = `Consolidado de ${MESES_L[+mm - 1]} ${yy}`;
     const k = $('#nv-cons-k'), note = $('#nv-cons-note'), emp = $('#nv-cons-emp');
     const c = CO.status === 'ok' ? (CO.data || []).find((x) => x.mes === mes) : null;
     k.replaceChildren(); emp.replaceChildren();
-    if (!c) { note.textContent = 'Sem vendas carregadas neste mês.'; $('#nv-tc').replaceChildren(); $('#nv-tcv').replaceChildren(); return; }
+    if (!c) { note.textContent = 'Sem vendas SAP carregadas neste mês.'; $('#nv-tc').replaceChildren(); $('#nv-tcv').replaceChildren(); return; }
     const wm = 'mes=' + enc(mes);
-    note.replaceChildren(span(n0(c.dias), 'consolidado', 'dias', wm), c.dias === 1 ? ' dia com vendas carregado.' : ' dias com vendas carregados.');
+    const diasMes = DI.status === 'ok' ? (DI.data || []).filter((x) => x.data.slice(0, 7) === mes) : [];
+    const pend = diasMes.filter((x) => !x.sap).map((x) => dshort(x.data));
+    note.replaceChildren(span(n0(c.dias), 'consolidado', 'dias', wm), c.dias === 1 ? ' dia com vendas SAP.' : ' dias com vendas SAP.',
+      pend.length ? ` À espera dos relatórios SAP: ${pend.join(', ')}. Os totais só incluem dias com SAP.` : '');
     const st = (lbl, node, sub, hl) => { const d = el('div', 's' + (hl ? ' hl' : '')); const b = el('b'); b.append(node); d.append(el('span', 'nv-lbl', lbl), b); if (sub) { const u = el('span', 'nv-sub'); u.append(...sub); d.append(u); } k.appendChild(d); };
     st('Total facturado', span(mkz(c.total), 'consolidado', 'total', wm), ['Média ', span(mkz(c.media_total), 'consolidado', 'media_total', wm), ' por dia'], true);
     st('Vendas pagas', span(mkz(c.pagas), 'consolidado', 'pagas', wm), ['Média ', span(mkz(c.media_pagas), 'consolidado', 'media_pagas', wm), ' por dia'], true);
@@ -803,15 +819,17 @@ dash.calc('cobertura', {
     });
     // por dia
     const esc = new Map(LG.status === 'ok' ? (LG.data || []).map((x) => [x.data, x.escoamento]) : []);
-    const dias = R.data.filter((x) => x.data.slice(0, 7) === mes);
+    const dias = diasMes;
     const tc = $('#nv-tc');
+    const sapF = (f) => (v, x) => (x.sap ? f(v) : '—');
     table(tc, [
-      { key: 'data', label: 'Dia', fmt: (v) => `${dsem(v).slice(0, 3)} ${dshort(v)}` },
-      { key: 'numerario', label: 'Numerário', num: true, fmt: mkz },
-      { key: 'tpa', label: 'TPA', num: true, fmt: mkz },
-      { key: 'credito', label: 'Crédito', num: true, fmt: (v) => (v ? mkz(v) : '—') },
-      { key: 'total', label: 'Total', num: true, fmt: mkz },
-      { key: 'caixas', label: 'Caixas', num: true, fmt: n0 },
+      { key: 'data', label: 'Dia', render: (v, x) => { const w = el('span'); w.append(`${dsem(v).slice(0, 3)} ${dshort(v)}`); if (!x.sap) { w.append(' '); w.append(el('span', 'nv-chip', 'SAP pendente')); } return w; } },
+      { key: 'numerario', label: 'Numerário', num: true, fmt: sapF(mkz) },
+      { key: 'tpa', label: 'TPA', num: true, fmt: sapF(mkz) },
+      { key: 'credito', label: 'Crédito', num: true, fmt: (v, x) => (x.sap && v ? mkz(v) : '—') },
+      { key: 'total', label: 'Total SAP', num: true, fmt: sapF(mkz) },
+      { key: 'pinguim', label: 'Pinguim', num: true, fmt: (v) => (v ? mkz(v) : '—') },
+      { key: 'caixas', label: 'Caixas', num: true, fmt: sapF(n0) },
       { key: 'escoamento', calc: 'logistica', field: 'escoamento', label: 'Escoam.', num: true, get: (x) => esc.get(x.data) ?? null,
         render: (v) => (v == null ? el('span', 'nv-mut', '—') : el('span', escCls(v), pct(v))) },
     ], dias, 'data');
@@ -822,6 +840,8 @@ dash.calc('cobertura', {
     fc(span(mkz(c.tpa), 'consolidado', 'tpa', wm), 'n');
     fc(span(c.credito ? mkz(c.credito) : '—', 'consolidado', 'credito', wm), 'n');
     fc(span(mkz(c.total), 'consolidado', 'total', wm), 'n');
+    const tmes = RTT && RTT.status === 'ok' ? (RTT.data || []).find((x) => x.chave === 'mes:' + mes) : null;
+    fc(tmes ? span(mkz(tmes.rtm_total), 'rtm_totais', 'rtm_total', 'chave=' + enc(tmes.chave)) : document.createTextNode('—'), 'n');
     fc(span(n0(c.caixas), 'consolidado', 'caixas', wm), 'n');
     fc(null, 'n');
     foot.appendChild(tr); tc.appendChild(foot);
@@ -937,7 +957,7 @@ dash.calc('cobertura', {
     const ind = I.status === 'ok' ? (I.data || []).find((x) => x.data === dia) : null;
     $('#nv-titulo').textContent = `Vendas de ${dsem(dia)}, ${dlab(dia)}`;
 
-    drawCons(dia, R, V, CO, CV, LG);
+    drawCons(dia, R, V, CO, CV, LG, dash.data('dias'), RTT);
     drawRtm(dia, RT, RD, RTT, RO);
 
     // dia só com plano de cargas: vendas ainda por carregar
