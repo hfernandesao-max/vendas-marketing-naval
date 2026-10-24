@@ -71,8 +71,9 @@ require_once $authFile;
 @ini_set('memory_limit', '512M');
 
 // ── Requisitos do PHP ──
-if (!function_exists('curl_init')) {
-    falhar(500, 'A extensão cURL do PHP não está activa no servidor.', 'Active "extension=curl" no php.ini e reinicie o Apache.');
+// Sem cURL usa-se o cliente HTTP nativo do PHP (precisa de allow_url_fopen; para https, da extensão openssl)
+if (!function_exists('curl_init') && !filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
+    falhar(500, 'O PHP do servidor não consegue fazer pedidos HTTP.', 'Active "extension=curl" ou "allow_url_fopen=On" no php.ini e reinicie o Apache.');
 }
 if (!function_exists('simplexml_load_string')) {
     falhar(500, 'A extensão SimpleXML do PHP não está activa no servidor.', 'Active "extension=simplexml" no php.ini e reinicie o Apache.');
@@ -102,6 +103,7 @@ $boUrls = array_values(array_filter(array_map(
 
 function chamarPinguim(string $url, string $user, string $pass, int $timeout = 150, int $connect = 15): array
 {
+    if (!function_exists('curl_init')) return chamarSemCurl($url, $user, $pass, $timeout, $connect);
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -126,6 +128,52 @@ function chamarPinguim(string $url, string $user, string $pass, int $timeout = 1
     return $res;
 }
 
+// Alternativa sem cURL: pedido HTTP com o cliente nativo do PHP (file_get_contents)
+function chamarSemCurl(string $url, string $user, string $pass, int $timeout, int $connect): array
+{
+    $t0 = microtime(true);
+    $res = ['body' => false, 'http' => 0, 'errno' => 0, 'erro' => '', 'seg' => 0, 'url' => $url];
+    if (stripos($url, 'https://') === 0 && !extension_loaded('openssl')) {
+        $res['errno'] = -1;
+        $res['erro'] = 'https sem a extensão openssl nem cURL';
+        return $res;
+    }
+    // Teste rápido da ligação, para não esperar o tempo total num endereço que não responde
+    $p = parse_url($url);
+    $host = $p['host'] ?? '';
+    $port = $p['port'] ?? ((($p['scheme'] ?? 'http') === 'https') ? 443 : 80);
+    $sock = @fsockopen($host, (int) $port, $errno, $errstr, $connect);
+    if (!$sock) {
+        $res['errno'] = $errno ?: -1;
+        $res['erro'] = 'Sem ligação a ' . $host . ':' . $port . ($errstr ? ' (' . trim($errstr) . ')' : '');
+        $res['seg'] = round(microtime(true) - $t0, 2);
+        return $res;
+    }
+    fclose($sock);
+    $ctx = stream_context_create([
+        'http' => [
+            'method'        => 'GET',
+            'header'        => 'Authorization: Basic ' . base64_encode("$user:$pass") . "\r\nConnection: close\r\n",
+            'timeout'       => $timeout,
+            'ignore_errors' => true,
+        ],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+    $body = @file_get_contents($url, false, $ctx);
+    $hdrs = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
+    foreach ($hdrs as $h) {
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $res['http'] = (int) $m[1];
+    }
+    if ($body === false && !$hdrs) {
+        $e = error_get_last();
+        $res['errno'] = -1;
+        $res['erro'] = $e ? $e['message'] : 'Pedido sem resposta';
+    }
+    $res['body'] = $body;
+    $res['seg'] = round(microtime(true) - $t0, 2);
+    return $res;
+}
+
 // Tenta cada endereço até um aceitar a ligação; devolve o resultado do primeiro que responde
 function chamarPrimeiro(array $bases, string $query, string $user, string $pass, int $timeout = 150): array
 {
@@ -146,6 +194,10 @@ if (($_GET['diag'] ?? '') === '1') {
     responder(200, [
         'php'                => PHP_VERSION,
         'curl'               => function_exists('curl_version') ? (curl_version()['version'] ?? true) : false,
+        'cliente_http'       => function_exists('curl_init') ? 'cURL' : 'nativo do PHP (sem cURL)',
+        'allow_url_fopen'    => ini_get('allow_url_fopen'),
+        'openssl'            => extension_loaded('openssl'),
+        'php_ini'            => php_ini_loaded_file(),
         'simplexml'          => function_exists('simplexml_load_string'),
         'env_encontrado'     => is_file($envFile),
         'credenciais'        => $username !== '' && $password !== '',
