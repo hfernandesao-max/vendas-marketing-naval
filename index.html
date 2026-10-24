@@ -437,6 +437,115 @@
       display: none !important
     }
 
+    /* Computador: a página cabe num só ecrã, sem barra de deslocamento.
+       Espaços, ícones e letras encolhem com a altura da janela (vh). */
+    @media (min-width: 900px) {
+      body {
+        height: 100vh;
+        min-height: 0;
+        overflow: hidden
+      }
+
+      .top {
+        padding-block: clamp(10px, 2.2vh, 22px) 0
+      }
+
+      main.wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center
+      }
+
+      .hero {
+        padding-block: clamp(4px, 2.2vh, 30px) clamp(8px, 2vh, 24px)
+      }
+
+      .eyebrow {
+        font-size: clamp(10.5px, 1.5vh, 12px)
+      }
+
+      .hero h1 {
+        margin-top: clamp(4px, 1vh, 12px);
+        font-size: clamp(24px, 4.6vh, 44px)
+      }
+
+      .hero p {
+        margin-top: clamp(4px, 1vh, 12px);
+        font-size: clamp(13px, 1.9vh, 15.5px);
+        line-height: 1.5
+      }
+
+      .mods {
+        gap: clamp(20px, 3vw, 38px);
+        padding-block: 0 clamp(10px, 2.4vh, 32px)
+      }
+
+      .mod {
+        padding: clamp(16px, 3.6vh, 42px) clamp(24px, 2.6vw, 38px) clamp(16px, 3.4vh, 40px)
+      }
+
+      .ico {
+        width: clamp(44px, 7.4vh, 76px);
+        height: clamp(44px, 7.4vh, 76px);
+        border-radius: clamp(12px, 1.8vh, 18px)
+      }
+
+      .ico svg {
+        width: clamp(22px, 3.5vh, 36px);
+        height: clamp(22px, 3.5vh, 36px)
+      }
+
+      .mod h2 {
+        margin-top: clamp(10px, 3.4vh, 42px);
+        font-size: clamp(24px, 3.6vh, 34px)
+      }
+
+      .sub {
+        margin-top: clamp(6px, 1.2vh, 14px);
+        font-size: clamp(11.5px, 1.5vh, 13.5px)
+      }
+
+      .mod p {
+        margin-top: clamp(8px, 1.8vh, 20px);
+        font-size: clamp(13px, 1.95vh, 15.5px);
+        line-height: 1.5
+      }
+
+      .feat {
+        margin-top: clamp(8px, 1.8vh, 22px);
+        gap: clamp(6px, .9vh, 9px)
+      }
+
+      .feat .chip {
+        padding: clamp(4px, .6vh, 6px) 11px;
+        font-size: clamp(11.5px, 1.5vh, 12.5px)
+      }
+
+      .cta {
+        padding-top: clamp(12px, 3vh, 34px)
+      }
+
+      .cta a {
+        height: clamp(42px, 6.4vh, 60px);
+        font-size: clamp(15px, 2vh, 17px)
+      }
+
+      footer .wrap {
+        padding-block: clamp(8px, 1.8vh, 26px)
+      }
+    }
+
+    /* Ecrãs muito baixos: a página volta a poder deslocar-se em vez de cortar conteúdo */
+    @media (min-width: 900px) and (max-height: 540px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto
+      }
+    }
+
     @media (max-width:520px) {
       .mod {
         padding: 30px 22px 26px
