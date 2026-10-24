@@ -327,6 +327,37 @@
       stroke-linejoin: round
     }
 
+    /* terminar sessão (mesma acção dos botões "Terminar sessão" do GEO) */
+    .sair {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 10px 0;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: #FCA5A5;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1px solid rgba(252, 165, 165, .25);
+      background: rgba(252, 165, 165, .06)
+    }
+
+    .sair:hover {
+      background: rgba(252, 165, 165, .14);
+      color: #FECACA
+    }
+
+    .sair svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
     .side-tools {
       display: flex;
       align-items: center;
@@ -944,6 +975,9 @@
         <div class="seg" id="lang" role="group" aria-label="Idioma / Language"><button type="button"
             data-l="pt">PT</button><button type="button" data-l="en">EN</button></div>
       </div>
+      <a class="sair" href="../geo/auth/logout.php" id="sair" title="Terminar sessão"><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg><span id="sair-t">Sair</span></a>
       <div class="side-foot" id="foot">…</div>
     </aside>
     <main class="main">
@@ -1020,7 +1054,7 @@
         'Fraldas': 'Diapers', 'Sabão': 'Soap', 'Sabonetes': 'Beauty soap', 'Massas': 'Pasta', 'Farinha': 'Flour', 'Arroz e açúcar': 'Rice and sugar', 'Óleo': 'Oil', 'Outros': 'Other',
         'Capa': 'Cover', 'Índice': 'Contents', 'Resumo': 'Summary', 'Período': 'Period', 'Gerado em': 'Generated on', 'Secção': 'Section', 'Página': 'Page', 'Folha': 'Sheet', 'Linhas': 'Rows',
         'Indicador': 'Indicator', 'Valor': 'Value', 'Nota': 'Note', 'Voltar ao índice': 'Back to contents',
-        'Página principal': 'Home page', 'A mostrar {a} de {b}': 'Showing {a} of {b}', 'Mostrar mais {n}': 'Show {n} more', 'Mostrar todas': 'Show all', 'Mostrar menos': 'Show less',
+        'Página principal': 'Home page', 'Sair': 'Sign out', 'Terminar sessão': 'Sign out', 'A mostrar {a} de {b}': 'Showing {a} of {b}', 'Mostrar mais {n}': 'Show {n} more', 'Mostrar todas': 'Show all', 'Mostrar menos': 'Show less',
         'Mostrar {n} colunas ocultas': 'Show {n} hidden columns', 'Mostrar 1 coluna oculta': 'Show 1 hidden column', 'Ajustar ao ecrã': 'Fit to screen',
         'Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.': 'Amounts in kwanzas (Kz). Totals use SUBTOTAL and follow the filters.',
         "A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).": "The Pinguim BO sales export we have only shows whether each document is paid. To split what was received in cash and by Multicaixa, the export must include the payment method of each document (or the Pinguim BO receipts report).",
@@ -1810,7 +1844,7 @@
       // ================= desenho =================
       function textos() {
         document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
-        $('#brand-sub').textContent = t('Portal RTM'); $('#voltar-t').textContent = t('Página principal'); $('#lang-lbl').textContent = t('Idioma'); $('#menu-t').textContent = t('Menu');
+        $('#brand-sub').textContent = t('Portal RTM'); $('#voltar-t').textContent = t('Página principal'); $('#sair-t').textContent = t('Sair'); $('#sair').title = t('Terminar sessão'); $('#lang-lbl').textContent = t('Idioma'); $('#menu-t').textContent = t('Menu');
         $('#l-de').textContent = t('De'); $('#l-ate').textContent = t('Até');
         $('#xl-page span').textContent = t('Excel desta página'); $('#xl-all span').textContent = t('Excel completo');
         document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
