@@ -1123,7 +1123,12 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Ranking": "Ranking", "Consumidor Final": "Walk-in customers", "Melhor promotor": "Top promoter", "Melhor cliente": "Top customer", "Peso dos 10 melhores clientes": "Share of top 10 customers",
+        "Por meio de pagamento": "By payment method", "Auditoria": "Audit", "Histórico de auditoria": "Audit history", "Possível duplicado ({n} documentos iguais)": "Possible duplicate ({n} identical documents)",
+        "Valor nulo ou negativo": "Zero or negative amount", "Pendente há mais de 3 dias": "Unpaid for more than 3 days", "Pago sem meio de pagamento indicado": "Paid with no payment method recorded",
+        "Documentos verificados": "Documents checked", "{n} com ocorrências": "{n} with issues", "Possíveis duplicados": "Possible duplicates", "Pendentes há mais de 3 dias": "Unpaid > 3 days",
+        "Pagos sem meio de pagamento": "Paid with no method", "A rever": "To review", "Sem ocorrências": "No issues", "Histórico por dia": "History by day",
+        "Verificações automáticas a todos os documentos do Pinguim BO no período.": "Automatic checks on every Pinguim BO document in the period.", "Ocorrências": "Issues", "Ocorrência": "Issue",
+        "Documentos a confirmar com a área comercial ou corrigir no Pinguim BO.": "Documents to confirm with Sales or correct in Pinguim BO.", "Ranking": "Ranking", "Consumidor Final": "Walk-in customers", "Melhor promotor": "Top promoter", "Melhor cliente": "Top customer", "Peso dos 10 melhores clientes": "Share of top 10 customers",
         "{n} clientes com NIF": "{n} customers with tax ID", "Ranking de promotores": "Promoter ranking", "Ranking de clientes": "Customer ranking", "% do total": "% of total", "% recebido": "% received",
         "Ordenado pelo valor vendido no período, com IVA.": "Sorted by sales value in the period, incl. VAT.", "Clientes identificados por NIF, sem Consumidor Final. Ordenado pelo valor comprado no período, com IVA.": "Customers identified by tax ID, excluding walk-in customers. Sorted by purchase value in the period, incl. VAT.", "Todas as rotas": "All routes", "documentos": "documents", "Ver todas as rotas": "Show all routes", "Vendas da rota": "Route sales",
         "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).": "Amounts received by payment type, as recorded in Pinguim BO (excluding change).",
@@ -1227,6 +1232,7 @@
       const sum = (a, f) => a.reduce((s, x) => s + (+(typeof f === 'function' ? f(x) : x[f]) || 0), 0);
       const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
       const ICON = {
+        shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4',
         trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3',
         home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
         truck: 'M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
@@ -1304,7 +1310,7 @@
         document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
       }
       const slug = (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const fname = (s, ext) => `${slug(t('Portal RTM'))}_${slug(s)}_${st.de}_${st.ate}.${ext}`;
+      const fname = (s, ext) => `${slug(t('Portal RTM'))}_${slug(s)}_${dl(st.de)}_${dl(st.ate)}.${ext}`;
 
       function cellNode(c, r, max) {
         const v = c.get ? c.get(r) : r[c.key];
@@ -1576,6 +1582,7 @@
         { id: 'ranking', grupo: 'Vendas RTM', icon: 'trophy', nome: 'Ranking' },
         { id: 'documentos', grupo: 'Vendas RTM', icon: 'file', nome: 'Documentos' },
         { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Métodos de pagamento' },
+        { id: 'auditoria', grupo: 'Auditoria', icon: 'shield', nome: 'Histórico de auditoria' },
         { id: 'stock-carrinha', grupo: 'Stock', icon: 'truck', nome: 'Stock por promotor / carrinha' },
         { id: 'stock-armazem', grupo: 'Stock', icon: 'ware', nome: 'Stock por armazém' },
         { id: 'vendas-artigo', grupo: 'Stock', icon: 'box', nome: 'Vendas por artigo' },
@@ -1729,6 +1736,48 @@
           id: 'rk-cli', titulo: t('Ranking de clientes'), nota: t('Clientes identificados por NIF, sem Consumidor Final. Ordenado pelo valor comprado no período, com IVA.'), rows: CL, sort: 'total', total: true,
           cols: [posCol, { key: 'cliente', label: t('Cliente'), wrap: true, p: 0 }, { key: 'nif', label: t('NIF') }, { key: 'promotor', label: t('Promotor') }, { key: 'total', label: t('Total'), type: 'bar', sum: true },
           { key: 'quota', label: t('% do total'), type: 'pct' }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }, { key: 'ultima', label: t('Última compra'), type: 'date' }]
+        }));
+      };
+
+      // Histórico de auditoria: verificações automáticas a cada documento do Pinguim BO, por dia
+      function ocorrencias(V) {
+        const hj = hoje(), lim = addD(hj, -3), out = [];
+        // Possível duplicado: mesma rota, mesmo cliente com NIF, mesmo dia e mesmo valor
+        const g = group(V.filter((x) => !isCF(x.nif)), (x) => [x.rota, x.nif, x.data, (+x.total).toFixed(2)].join('|'));
+        Object.values(g).filter((rs) => rs.length > 1).forEach((rs) => rs.forEach((x) => out.push({ x, tipo: 'dup', txt: t('Possível duplicado ({n} documentos iguais)', { n: rs.length }) })));
+        V.forEach((x) => {
+          if (!(+x.total > 0)) out.push({ x, tipo: 'valor', txt: t('Valor nulo ou negativo') });
+          if (pendenteDe(x) > 0.005 && x.data < lim) out.push({ x, tipo: 'pend', txt: t('Pendente há mais de 3 dias') });
+          if (recebidoDe(x) > 0 && !pagosDe(x).some((p) => p.codigo !== '?')) out.push({ x, tipo: 'meio', txt: t('Pago sem meio de pagamento indicado') });
+        });
+        return out;
+      }
+      R.auditoria = (pg) => {
+        const V = vendasR(), O = ocorrencias(V), docsCom = new Set(O.map((o) => o.x.chave || o.x.documento));
+        const cnt = (tp) => O.filter((o) => o.tipo === tp), dup = cnt('dup'), pend = cnt('pend'), meio = cnt('meio');
+        pg.append(tiles([
+          { l: t('Documentos verificados'), v: n0(V.length), s: t('{n} com ocorrências', { n: n0(docsCom.size) }), tone: docsCom.size ? 'warn' : null },
+          { l: t('Possíveis duplicados'), v: n0(dup.length), s: mkz(sum(dup, (o) => o.x.total)), tone: dup.length ? 'warn' : null },
+          { l: t('Pendentes há mais de 3 dias'), v: n0(pend.length), s: mkz(sum(pend, (o) => pendenteDe(o.x))), tone: pend.length ? 'warn' : null },
+          { l: t('Pagos sem meio de pagamento'), v: n0(meio.length), s: mkz(sum(meio, (o) => recebidoDe(o.x))), tone: meio.length ? 'warn' : null },
+        ]));
+        const porDia = Object.values(group(V, 'data')).map((rs) => {
+          const d = rs[0].data, od = O.filter((o) => o.x.data === d), n = (tp) => od.filter((o) => o.tipo === tp).length;
+          const com = new Set(od.map((o) => o.x.chave || o.x.documento)).size;
+          return { chave: d, data: d, docs: rs.length, total: sum(rs, 'total'), dup: n('dup'), pend: n('pend'), meio: n('meio'), com, estado: com ? t('A rever') : t('Sem ocorrências') };
+        });
+        pg.append(tabela({
+          id: 'au-dia', titulo: t('Histórico por dia'), nota: t('Verificações automáticas a todos os documentos do Pinguim BO no período.'), rows: porDia, sort: 'data', total: true, search: false,
+          cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true },
+          { key: 'dup', label: t('Possíveis duplicados'), type: 'n', sum: true }, { key: 'pend', label: t('Pendentes há mais de 3 dias'), type: 'n', sum: true }, { key: 'meio', label: t('Pagos sem meio de pagamento'), type: 'n', sum: true },
+          { key: 'estado', label: t('Estado'), render: (v, r) => pill(v, r.com ? 'p-warn' : 'p-ok'), xl: (r) => r.estado }]
+        }));
+        pg.append(tabela({
+          id: 'au-oc', titulo: t('Ocorrências'), nota: t('Documentos a confirmar com a área comercial ou corrigir no Pinguim BO.'),
+          rows: O.map((o, i) => ({ chave: (o.x.chave || o.x.documento) + '|' + o.tipo + '|' + i, data: o.x.data, documento: o.x.documento, promotor: promotorRota(o.x.rota), cliente: o.x.cliente, total: +o.x.total || 0, ocorrencia: o.txt })),
+          sort: 'data', total: true,
+          cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true },
+          { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'ocorrencia', label: t('Ocorrência'), wrap: true }]
         }));
       };
 
@@ -1946,7 +1995,12 @@
         requestAnimationFrame(() => FITS.forEach((f) => f()));
         document.title = (p.id === 'inicio' ? t('Portal RTM') : t(p.nome)) + ' · Grupo Naval';
       }
-      function route() { const h = location.hash.slice(1); atual = PAGES.some((x) => x.id === h) ? h : 'inicio'; draw(); window.scrollTo(0, 0); }
+      function route() {
+        const h = location.hash.slice(1);
+        // Atalho da página principal ("Exportações Excel"): abre o início e gera o Excel completo
+        if (h === 'exportar') { history.replaceState(null, '', '#inicio'); atual = 'inicio'; draw(); setTimeout(() => $('#xl-all').click(), 300); return; }
+        atual = PAGES.some((x) => x.id === h) ? h : 'inicio'; draw(); window.scrollTo(0, 0);
+      }
 
       $('#xl-page').addEventListener('click', () => {
         const p = paginaAtual();

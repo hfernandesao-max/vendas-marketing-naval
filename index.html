@@ -320,7 +320,7 @@
       margin-top: 22px
     }
 
-    .feat span {
+    .feat .chip {
       display: inline-flex;
       align-items: center;
       gap: 7px;
@@ -330,6 +330,17 @@
       border-radius: 9px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, .025)
+    }
+
+    .feat .chip {
+      text-decoration: none;
+      transition: border-color .2s, background .2s, color .2s
+    }
+
+    .feat .chip:hover {
+      border-color: var(--line2);
+      background: rgba(77, 141, 255, .12);
+      color: #fff
     }
 
     .feat svg {
@@ -493,15 +504,15 @@
           Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue
           dados consolidados em Excel.</p>
         <div class="feat">
-          <span><svg viewBox="0 0 24 24">
+          <a class="chip" href="reports/#exportar"><svg viewBox="0 0 24 24">
               <path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13l3 4m0-4-3 4" />
-            </svg><b style="font-weight:400" data-t="Exportações Excel">Exportações Excel</b></span>
-          <span><svg viewBox="0 0 24 24">
+            </svg><b style="font-weight:400" data-t="Exportações Excel">Exportações Excel</b></a>
+          <a class="chip" href="reports/#ranking"><svg viewBox="0 0 24 24">
               <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />
-            </svg><b style="font-weight:400" data-t="Métricas de desempenho">Métricas de desempenho</b></span>
-          <span><svg viewBox="0 0 24 24">
+            </svg><b style="font-weight:400" data-t="Métricas de desempenho">Métricas de desempenho</b></a>
+          <a class="chip" href="reports/#auditoria"><svg viewBox="0 0 24 24">
               <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" />
-            </svg><b style="font-weight:400" data-t="Histórico de auditoria">Histórico de auditoria</b></span>
+            </svg><b style="font-weight:400" data-t="Histórico de auditoria">Histórico de auditoria</b></a>
         </div>
         <div class="cta"><a href="reports/"><span data-t="Abrir relatórios">Abrir relatórios</span><svg
               viewBox="0 0 24 24" aria-hidden="true">
@@ -524,17 +535,17 @@
           Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão
           georreferenciada de distribuidores.</p>
         <div class="feat">
-          <span><svg viewBox="0 0 24 24">
+          <a class="chip" href="geo/geo.php"><svg viewBox="0 0 24 24">
               <path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" />
-            </svg><b style="font-weight:400" data-t="Optimização de rotas">Optimização de rotas</b></span>
-          <span><svg viewBox="0 0 24 24">
+            </svg><b style="font-weight:400" data-t="Optimização de rotas">Optimização de rotas</b></a>
+          <a class="chip" href="geo/view/"><svg viewBox="0 0 24 24">
               <path
                 d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
-            </svg><b style="font-weight:400" data-t="Delimitação de zonas">Delimitação de zonas</b></span>
-          <span><svg viewBox="0 0 24 24">
+            </svg><b style="font-weight:400" data-t="Delimitação de zonas">Delimitação de zonas</b></a>
+          <a class="chip" href="geo/view/viewDist/"><svg viewBox="0 0 24 24">
               <path
                 d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-            </svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></span>
+            </svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></a>
         </div>
         <div class="cta"><a href="geo/"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
               aria-hidden="true">
