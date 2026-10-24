@@ -27,7 +27,13 @@ function responder(int $codigo, array $dados): void
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
     }
-    echo json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    $flags = JSON_UNESCAPED_UNICODE | (defined('JSON_INVALID_UTF8_SUBSTITUTE') ? JSON_INVALID_UTF8_SUBSTITUTE : 0);
+    $json = json_encode($dados, $flags);
+    if ($json === false) {
+        if (!headers_sent()) http_response_code(500);
+        $json = json_encode(['erro' => 'Não foi possível converter os dados para JSON.', 'detalhe' => json_last_error_msg()]);
+    }
+    echo $json;
     exit;
 }
 
@@ -41,6 +47,7 @@ function falhar(int $codigo, string $erro, string $detalhe = ''): void
 register_shutdown_function(function () {
     $e = error_get_last();
     if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        @ini_set('memory_limit', '-1'); // folga para conseguir responder depois de falta de memória
         $msg = $e['message'];
         $erro = 'Erro interno no servidor.';
         if (stripos($msg, 'curl_init') !== false) $erro = 'A extensão cURL do PHP não está activa no servidor (php.ini: extension=curl).';
@@ -89,7 +96,7 @@ $password = $env['PASSWORD'] ?? (getenv('PINGUIM_PASSWORD') ?: '');
 // Endereços da API do Pinguim BO, por ordem de tentativa (separados por vírgula no .env).
 // No servidor a API responde localmente na porta 8089; fora do servidor usa-se o acesso externo 2053.
 $boUrls = array_values(array_filter(array_map(
-    fn($u) => rtrim(trim($u), '?'),
+    function ($u) { return rtrim(trim($u), '?'); },
     explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata')
 )));
 
