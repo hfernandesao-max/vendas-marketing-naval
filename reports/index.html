@@ -1086,9 +1086,9 @@
       let nf, nf1, nf2;
       const setFmt = () => { const loc = LANG === 'en' ? 'en-GB' : 'pt-PT'; nf = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 }); nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); nf2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
       setFmt();
-      const kz = (v) => (v == null || isNaN(v) ? '—' : nf.format(Math.round(v)) + ' Kz');
+      const kz = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
       const kz2 = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
-      const mkz = (v) => { if (v == null || isNaN(v)) return '—'; const a = Math.abs(v); return a >= 1e6 ? nf1.format(v / 1e6) + ' M Kz' : a >= 1e3 ? nf.format(v / 1e3) + (LANG === 'en' ? 'k Kz' : ' mil Kz') : nf.format(v) + ' Kz'; };
+      const mkz = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
       const n0 = (v) => (v == null || isNaN(v) ? '—' : nf.format(v));
       const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(v * 100) + '%');
       const MES = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
@@ -1131,11 +1131,12 @@
       // ================= API Pinguim BO =================
       function fetchVendas(de, ate) {
         const sd = de.replace(/-/g, ''), ed = ate.replace(/-/g, '');
-        return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed, { cache: 'no-store' })
+        return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed + '&include_items=1', { cache: 'no-store' })
           .then((r) => (r.ok ? r.json() : []))
           .catch(() => [])
           .then((d) => {
-            DB.vendas = Array.isArray(d) ? d : [];
+            DB.vendas = Array.isArray(d) ? d : (Array.isArray(d.vendas) ? d.vendas : []);
+            DB.artigos = Array.isArray(d.artigos) ? d.artigos : [];
             diasSap = [...new Set(DB.vendas.map((x) => x.data))].sort();
             diasTodos = [...new Set([...diasSap, ...DB.cargas.map((x) => x.data)])].sort();
           });
@@ -1422,11 +1423,15 @@
         });
       }
       function porPromotor(V) {
-        return Object.values(group(V, 'rota')).map((rs) => {
+        const vendasPorRota = group(V, 'rota');
+        const rotas = new Map((DB.rotas || []).map((x) => [x.rota, x.promotor]));
+        V.forEach((x) => { if (!rotas.has(x.rota)) rotas.set(x.rota, nomeRota(x.rota)); });
+        return [...rotas.entries()].map(([rota, promotor]) => {
+          const rs = vendasPorRota[rota] || [];
           const tot = sum(rs, 'total'), liq = sum(rs.filter((x) => x.liquidado), 'total');
           return {
-            rota: rs[0].rota, promotor: nomeRota(rs[0].rota), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
-            dias: new Set(rs.map((x) => x.data)).size, total: tot, recebido: liq, por_liquidar: tot - liq, medio: rs.length ? tot / rs.length : null
+            rota, promotor, docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+            dias: new Set(rs.map((x) => x.data)).size, total: tot, recebido: liq, por_liquidar: tot - liq, medio: rs.length ? tot / rs.length : 0
           };
         });
       }
@@ -1470,7 +1475,7 @@
         const V = vendasR(), P = porPromotor(V), tot = sum(V, 'total');
         pg.append(tiles([
           { l: t('Vendas RTM'), v: mkz(tot), s: t('{n} documentos', { n: n0(V.length) }) },
-          { l: t('Promotores com vendas'), v: n0(P.length) },
+          { l: t('Promotores com vendas'), v: n0(P.filter((x) => x.docs > 0).length) },
           { l: t('Venda média por documento'), v: mkz(V.length ? tot / V.length : null) },
           { l: t('Facturas Pendentes'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
         ]));
@@ -1578,7 +1583,27 @@
         pg.append(secs);
       };
       R['stock-armazem'] = (pg) => aguardar(pg, t('Para mostrar o stock por armazém e por carrinha, a exportação de stock do Pinguim BO deve trazer:'), ['Armazém ou carrinha', 'Artigo (código e descrição)', 'Stock inicial, entradas, saídas e stock final', 'Data']);
-      R['vendas-artigo'] = (pg) => aguardar(pg, t('Para mostrar vendas por artigo, com e sem IVA e com desconto, a exportação de linhas de venda do Pinguim BO deve trazer:'), ['Documento, data e rota', 'Artigo (código, descrição e marca)', 'Quantidade e preço unitário', 'Desconto', 'Valor sem IVA, IVA e valor com IVA']);
+      R['vendas-artigo'] = (pg) => {
+        const A = (DB.artigos || []).filter((x) => inR(x.data));
+        const rows = Object.values(group(A, (x) => x.codigo + '|' + x.artigo)).map((ls) => ({
+          codigo: ls[0].codigo, artigo: ls[0].artigo, unidade: [...new Set(ls.map((x) => x.unidade).filter(Boolean))].join(', '),
+          docs: new Set(ls.map((x) => x.documento)).size, quantidade: sum(ls, 'quantidade'), valor_sem_iva: sum(ls, 'valor_sem_iva'),
+          desconto: sum(ls, 'desconto'), iva: sum(ls, 'iva'), total: sum(ls, 'total')
+        }));
+        pg.append(tiles([
+          { l: t('Artigos vendidos'), v: n0(rows.length), s: t('{n} linhas de venda', { n: n0(A.length) }) },
+          { l: t('Qtd.'), v: n0(sum(rows, 'quantidade')) },
+          { l: t('Valor c/ IVA'), v: mkz(sum(rows, 'total')) },
+          { l: t('Desconto'), v: mkz(sum(rows, 'desconto')) },
+        ]));
+        pg.append(tabela({
+          id: 'va', titulo: t('Vendas por artigo'), nota: t('Linhas de venda do Pinguim BO no período.'), rows, sort: 'total', total: true,
+          cols: [{ key: 'codigo', label: t('Código') }, { key: 'artigo', label: t('Artigo'), wrap: true }, { key: 'unidade', label: t('Un.') },
+          { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'quantidade', label: t('Qtd.'), type: 'n', sum: true },
+          { key: 'valor_sem_iva', label: t('Valor s/ IVA'), type: 'kz', sum: true }, { key: 'desconto', label: t('Desconto'), type: 'kz', sum: true },
+          { key: 'iva', label: t('IVA'), type: 'kz', sum: true }, { key: 'total', label: t('Valor c/ IVA'), type: 'bar', sum: true }]
+        }));
+      };
       R['vendas-marca'] = (pg) => aguardar(pg, t('Para mostrar vendas por promotor e marca, a exportação de linhas de venda do Pinguim BO deve trazer:'), ['Documento, data e rota', 'Artigo e marca', 'Quantidade', 'Valor sem IVA e com IVA', 'Desconto']);
 
       R.clientes = (pg) => {

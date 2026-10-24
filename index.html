@@ -495,7 +495,7 @@
                 d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
             </svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></span>
         </div>
-        <div class="cta"><a href="#" id="geo"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
+        <div class="cta"><a href="geo/"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
               aria-hidden="true">
               <path d="M5 12h14m-6-6 6 6-6 6" />
             </svg></a></div>
@@ -512,9 +512,6 @@
 
   <script>
     (() => {
-      // Endereço do módulo GEO: preencher quando estiver publicado (ex.: 'geo/' ou 'https://…')
-      const GEO_URL = '';
-
       const EN = {
         'Grupo Naval Angola': 'Grupo Naval Angola', 'Sistema Integrado de Operações': 'Integrated Operations System', 'Onde pretende entrar?': 'Where would you like to go?',
         'Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.': 'Choose a module: reports and indicators for the RTM operation, or geomobility for routes, delivery zones and distributors.',
@@ -525,7 +522,6 @@
         'Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.': 'Smart route planning with Google Maps, polygon delivery-zone mapping and geo-referenced distributor management.',
         'Optimização de rotas': 'Route optimisation', 'Delimitação de zonas': 'Zone mapping', 'Gestão de distribuidores': 'Distributor management', 'Aceder ao GEO': 'Open GEO',
         '© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4': '© 2026 GeoMobilidade Naval · All rights reserved · Integrated Operations System v2.4',
-        'O módulo GEO ainda não tem endereço configurado.': 'The GEO module does not have an address configured yet.',
       };
       let LANG = 'pt';
       try { LANG = localStorage.getItem('vm-lang') === 'en' ? 'en' : 'pt'; } catch (e) { }
@@ -536,13 +532,6 @@
         document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
       }
       document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) { } aplicar(); }));
-      const geo = document.getElementById('geo');
-      if (GEO_URL) geo.href = GEO_URL;
-      else geo.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const x = document.getElementById('toast'); x.textContent = t('O módulo GEO ainda não tem endereço configurado.'); x.hidden = false;
-        clearTimeout(x._h); x._h = setTimeout(() => { x.hidden = true; }, 3200);
-      });
       aplicar();
     })();
   </script>

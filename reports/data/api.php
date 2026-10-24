@@ -1,9 +1,12 @@
 <?php
+require_once __DIR__ . '/../../geo/auth/auth_check.php';
+
 /**
  * API Proxy — Pinguim BO → JSON (formato vendas.json)
  *
- * Recebe:  ?start_date=YYYYMMDD&end_date=YYYYMMDD
- * Devolve: JSON array com o mesmo schema de vendas.json
+ * Recebe:  ?start_date=YYYYMMDD&end_date=YYYYMMDD&include_items=1
+ * Devolve: JSON array com o mesmo schema de vendas.json. Com include_items=1,
+ * devolve também as linhas de artigos da mesma consulta.
  */
 header('Content-Type: application/json; charset=utf-8');
 
@@ -27,6 +30,7 @@ $password = $env['PASSWORD'] ?? '';
 // ── Parâmetros ──
 $start = $_GET['start_date'] ?? '';
 $end   = $_GET['end_date']   ?? '';
+$includeItems = ($_GET['include_items'] ?? '') === '1';
 
 if (!preg_match('/^\d{8}$/', $start) || !preg_match('/^\d{8}$/', $end)) {
     echo json_encode([]);
@@ -103,6 +107,7 @@ if (file_exists($rotasFile)) {
 
 // ── Converter transacções FR/FT → vendas ──
 $vendas = [];
+$artigos = [];
 if (isset($xml->transactions)) {
     foreach ($xml->transactions->transaction as $tx) {
         $docType = (string) $tx->document_type;
@@ -154,7 +159,30 @@ if (isset($xml->transactions)) {
             'total'           => $total,
             'meio_pagamento'  => !empty($meios) ? implode(', ', $meios) : null,
         ];
+
+        if ($includeItems && isset($tx->detail)) {
+            $linhaN = 0;
+            foreach ($tx->detail->line as $line) {
+                $linhaN++;
+                $artigos[] = [
+                    'chave'       => $docNr . '|' . $linhaN,
+                    'data'        => $date,
+                    'rota'        => $storeCode,
+                    'promotor'    => $promotor,
+                    'documento'   => $docNr,
+                    'codigo'      => (string) $line->product_code,
+                    'artigo'      => (string) $line->product_description,
+                    'unidade'     => (string) $line->uom,
+                    'quantidade'  => floatval((string) $line->quantity),
+                    'preco_unitario' => floatval((string) $line->base_amount),
+                    'valor_sem_iva'  => floatval((string) $line->total),
+                    'desconto'    => floatval((string) $line->discount_amount),
+                    'iva'         => floatval((string) $line->tax_amount),
+                    'total'       => floatval((string) $line->total) + floatval((string) $line->tax_amount),
+                ];
+            }
+        }
     }
 }
 
-echo json_encode($vendas, JSON_UNESCAPED_UNICODE);
+echo json_encode($includeItems ? ['vendas' => $vendas, 'artigos' => $artigos] : $vendas, JSON_UNESCAPED_UNICODE);

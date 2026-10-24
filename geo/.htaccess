@@ -1,0 +1,16 @@
+# Configurações do Apache para GeoMobilidadeNaval
+# Servidor: geo.naval.co.ao:2051 (C:\Apache24\htdocs\geo)
+
+DirectoryIndex index.php index.html
+
+# Proteger ficheiros sensíveis contra acesso direto
+<FilesMatch "^(api\.txt|config_users\.php|\.htaccess|\.env)">
+    Require all denied
+</FilesMatch>
+
+# Configuração de cabeçalhos de segurança (se mod_headers estiver habilitado)
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

@@ -1,0 +1,11 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# A interface do hub é servida pelo controlador PHP autenticado.
+<Files "index.html">
+    Require all denied
+</Files>
+
+<Files ".env">
+    Require all denied
+</Files>

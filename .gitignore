@@ -1,3 +1,5 @@
 entrada/
 __pycache__/
 *.xlsx
+
+.env

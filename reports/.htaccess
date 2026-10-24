@@ -1,0 +1,8 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# O painel é servido pelo controlador PHP autenticado; o ficheiro HTML é um
+# recurso interno e não pode ser acedido diretamente.
+<Files "index.html">
+    Require all denied
+</Files>
