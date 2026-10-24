@@ -38,7 +38,8 @@ body{font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased;
 .card{width:100%;max-width:400px;padding:34px 30px 26px;border-radius:22px;
   background:linear-gradient(165deg,var(--card2),var(--card));border:1px solid var(--line);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 30px 60px -30px rgba(0,0,0,.85);backdrop-filter:blur(8px)}
-.logo{display:block;width:132px;height:auto;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.logo{display:block;width:170px;height:auto;margin:0 auto}
 h1{margin:20px 0 0;text-align:center;font-size:25px;letter-spacing:-.015em;line-height:1.2}
 h1 b{font-weight:800}h1 span{font-weight:300;color:#D5DEEF}
 .mod{margin:8px 0 0;text-align:center;font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
@@ -72,8 +73,7 @@ input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(77,1
 
 <main class="card">
   <img class="logo" src="assets/logo-naval.png" alt="Naval">
-  <h1><b>GeoMobilidade</b><span>Naval</span></h1>
-  <div class="mod" id="mod" hidden></div>
+  <h1 class="sr">GeoMobilidade Naval</h1>
 
   <form id="form" novalidate>
     <div>
@@ -131,7 +131,6 @@ input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(77,1
     document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
     document.querySelectorAll('[data-ph]').forEach((e) => { e.placeholder = t(e.dataset.ph); });
     document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
-    $('#mod').textContent = t('Módulo') + ' ' + destino.nome; $('#mod').hidden = false;
     $('#ver').setAttribute('aria-label', t($('#senha').type === 'password' ? 'Mostrar palavra-passe' : 'Esconder palavra-passe'));
   }
   document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) {} aplicar(); }));
