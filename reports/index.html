@@ -1119,14 +1119,35 @@
       const st = { de: null, ate: null, preset: 'mes' };
       let diasSap = [], diasTodos = [];
       const inR = (d) => d >= st.de && d <= st.ate;
+      // Data de hoje no fuso local (em Luanda, entre as 00:00 e a 01:00 o UTC ainda está no dia anterior)
+      const hoje = () => { const x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+      const INICIO_PINGUIM = '2026-10-20'; // arranque do Pinguim BO
       const addD = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
       function presets() {
-        const ult = diasSap[diasSap.length - 1] || diasTodos[diasTodos.length - 1], fim = diasTodos[diasTodos.length - 1];
-        return { ultimo: ['Último dia', ult, ult], sete: ['7 dias', addD(fim, -6), fim], mes: ['Mês', fim.slice(0, 8) + '01', fim], tudo: ['Tudo', diasTodos[0], fim] };
+        // Períodos calculados sempre a partir de hoje (data local), sem depender dos dias já carregados
+        const hj = hoje(), ult = st.preset === 'ultimo' && st.de === st.ate ? st.de : hj;
+        return { ultimo: ['Último dia', ult, ult], sete: ['7 dias', addD(hj, -6), hj], mes: ['Mês', hj.slice(0, 8) + '01', hj], tudo: ['Tudo', INICIO_PINGUIM, hj] };
       }
-      function setPreset(k) { const p = presets()[k]; st.preset = k; st.de = p[1]; st.ate = p[2]; guardar(); fetchVendas(st.de, st.ate).then(() => draw()); }
-      function guardar() { try { localStorage.setItem('vm-filtro', JSON.stringify(st)); } catch (e) { } }
-      function carregarFiltro() { try { const x = JSON.parse(localStorage.getItem('vm-filtro') || 'null'); if (x && x.de && x.ate) Object.assign(st, x); } catch (e) { } }
+      // Aplica um período: "Último dia" procura o dia mais recente com vendas nos últimos 7 dias
+      function aplicarPreset(k) {
+        st.preset = k;
+        if (k === 'ultimo') {
+          const hj = hoje();
+          return fetchVendas(addD(hj, -6), hj).then(() => { const d = diasSap[diasSap.length - 1] || hj; st.de = d; st.ate = d; });
+        }
+        const p = presets()[k]; st.de = p[1]; st.ate = p[2];
+        return fetchVendas(st.de, st.ate);
+      }
+      function setPreset(k) { aplicarPreset(k).then(() => { guardar(); draw(); }); }
+      // Guarda o tipo de período; as datas só ficam guardadas quando são escolhidas à mão
+      function guardar() { try { localStorage.setItem('vm-filtro', JSON.stringify(st.preset ? { preset: st.preset } : { de: st.de, ate: st.ate })); } catch (e) { } }
+      function carregarFiltro() {
+        try {
+          const x = JSON.parse(localStorage.getItem('vm-filtro') || 'null');
+          if (x && x.preset && ['ultimo', 'sete', 'mes', 'tudo'].includes(x.preset)) { st.preset = x.preset; st.de = st.ate = null; }
+          else if (x && !x.preset && x.de && x.ate) { st.preset = null; st.de = x.de; st.ate = x.ate; }
+        } catch (e) { }
+      }
 
       // ================= API Pinguim BO =================
       function fetchVendas(de, ate) {
@@ -1681,7 +1702,7 @@
         textos();
         $('#de').value = st.de; $('#ate').value = st.ate;
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
-        Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k && st.de === v[1] && st.ate === v[2] ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
+        Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
         $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`);
         $('#titulo').textContent = p.id === 'inicio' ? t('Onde pretende entrar?') : t(p.nome);
         $('#lead').textContent = p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
@@ -1716,8 +1737,7 @@
           DB.vendas = [];
           DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
           carregarFiltro();
-          const hoje = new Date().toISOString().slice(0, 10);
-          if (!st.de || !st.ate) { st.de = hoje.slice(0, 8) + '01'; st.ate = hoje; st.preset = 'mes'; }
+          if (st.preset || !st.de || !st.ate) return aplicarPreset(st.preset || 'mes');
           return fetchVendas(st.de, st.ate);
         })
         .then(() => {
