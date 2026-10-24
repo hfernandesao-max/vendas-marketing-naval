@@ -1,178 +1,551 @@
 <!doctype html>
 <html lang="pt-PT">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>GeoMobilidade Naval</title>
-<meta name="description" content="Sistema Integrado de Operações do Grupo Naval Angola: relatórios RTM e geomobilidade.">
-<link rel="icon" type="image/png" href="assets/globo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<style>
-/* Página principal: fundo azul-noite, dois cartões de módulo (Reports e GEO), rodapé discreto */
-:root{
-  color-scheme:dark;
-  --bg:#070D1C; --bg2:#0B1530; --card:rgba(24,34,62,.62); --card2:rgba(30,44,80,.55);
-  --line:rgba(160,185,235,.13); --line2:rgba(160,185,235,.24);
-  --fg:#F4F7FD; --muted:#A3AEC4; --dim:#6E7A93;
-  --cyan:#38B6F0; --blue:#4D8DFF;
-  --font:"Poppins","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
-}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased;
-  background:
-    radial-gradient(60% 50% at 18% 12%,rgba(30,90,170,.20),transparent 70%),
-    radial-gradient(50% 45% at 85% 70%,rgba(40,80,200,.16),transparent 70%),
-    linear-gradient(180deg,var(--bg2),var(--bg) 60%) fixed,var(--bg);
-  display:flex;flex-direction:column;min-height:100vh}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:10px}
-.wrap{width:100%;max-width:1060px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GeoMobilidade Naval</title>
+  <meta name="description"
+    content="Sistema Integrado de Operações do Grupo Naval Angola: relatórios RTM e geomobilidade.">
+  <link rel="icon" type="image/png" href="assets/globo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+  <style>
+    /* Página principal: fundo azul-noite, dois cartões de módulo (Reports e GEO), rodapé discreto */
+    :root {
+      color-scheme: dark;
+      --bg: #070D1C;
+      --bg2: #0B1530;
+      --card: rgba(24, 34, 62, .62);
+      --card2: rgba(30, 44, 80, .55);
+      --line: rgba(160, 185, 235, .13);
+      --line2: rgba(160, 185, 235, .24);
+      --fg: #F4F7FD;
+      --muted: #A3AEC4;
+      --dim: #6E7A93;
+      --cyan: #38B6F0;
+      --blue: #4D8DFF;
+      --font: "Poppins", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    }
 
-/* topo */
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:max(22px,env(safe-area-inset-top,0px)) 8px}
-.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
-.brand img{width:44px;height:36px;object-fit:contain}
-.brand b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
-.brand span{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:1px}
-.lang{display:inline-flex;padding:3px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
-.lang button{all:unset;cursor:pointer;padding:5px 11px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--muted)}
-.lang button.on{background:rgba(77,141,255,.22);color:#fff}
-.lang button:focus-visible{outline:2px solid var(--cyan)}
+    * {
+      box-sizing: border-box
+    }
 
-/* entrada */
-.hero{padding-block:46px 30px;text-align:center}
-.eyebrow{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
-.hero h1{margin:12px 0 0;font-size:clamp(28px,4.4vw,44px);font-weight:800;letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
-.hero p{margin:12px auto 0;max-width:58ch;color:var(--muted);font-size:15.5px;line-height:1.6}
+    html,
+    body {
+      margin: 0;
+      min-height: 100%
+    }
 
-/* cartões dos módulos */
-.mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:38px;padding-block:18px 64px}
-.mod{position:relative;display:flex;flex-direction:column;padding:42px 38px 40px;border-radius:24px;
-  background:linear-gradient(165deg,var(--card2),var(--card));border:1px solid var(--line);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 30px 60px -36px rgba(0,0,0,.8);transition:border-color .2s,transform .2s}
-.mod:hover{border-color:var(--line2);transform:translateY(-2px)}
-.mod-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.ico{width:76px;height:76px;border-radius:18px;display:grid;place-items:center;border:1px solid rgba(120,190,255,.28);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 24px -12px rgba(0,0,0,.7)}
-.ico svg{width:36px;height:36px;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.r .ico{background:linear-gradient(150deg,#0F5C8F,#0B3D66)}.r .ico svg{stroke:#5CC8FF}
-.g .ico{background:linear-gradient(150deg,#1D3FA6,#16307E)}.g .ico svg{stroke:#C9DBFF}
-.tag{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#D5DEEF;padding:7px 14px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.04);white-space:nowrap}
-.mod h2{margin:42px 0 0;font-size:34px;font-weight:800;letter-spacing:.01em;line-height:1}
-.sub{margin-top:14px;font-size:13.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
-.r .sub{color:var(--cyan)}.g .sub{color:#6FA3FF}
-.mod p{margin:20px 0 0;color:var(--muted);font-size:15.5px;line-height:1.62}
-.feat{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
-.feat span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#C7D0E0;padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.025)}
-.feat svg{width:14px;height:14px;fill:none;stroke:#9FB3D6;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.cta{margin-top:auto;padding-top:34px}
-.cta a{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px;padding:0 24px;border-radius:13px;text-decoration:none;
-  font-size:17px;font-weight:700;color:#fff;box-shadow:0 14px 30px -14px rgba(20,120,230,.9);transition:filter .2s,transform .2s}
-.cta a:hover{filter:brightness(1.08)}
-.cta a:active{transform:translateY(1px)}
-.cta svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
-.cta a:hover svg{transform:translateX(3px)}
-.r .cta a{background:linear-gradient(90deg,#0B77C2,#0A8FD6 55%,#0B6FB3)}
-.g .cta a{background:linear-gradient(90deg,#1F5BE8,#2E6BFF 55%,#2558E0)}
+    body {
+      font-family: var(--font);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      background:
+        radial-gradient(60% 50% at 18% 12%, rgba(30, 90, 170, .20), transparent 70%),
+        radial-gradient(50% 45% at 85% 70%, rgba(40, 80, 200, .16), transparent 70%),
+        linear-gradient(180deg, var(--bg2), var(--bg) 60%) fixed, var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh
+    }
 
-/* rodapé */
-footer{margin-top:auto;border-top:1px solid rgba(160,185,235,.08);background:rgba(4,8,18,.55)}
-footer .wrap{padding-block:26px max(26px,env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;color:var(--dim)}
-.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#14224A;border:1px solid var(--line2);border-radius:12px;padding:11px 16px;font-size:13.5px;box-shadow:0 16px 36px rgba(0,0,0,.5);z-index:10}
-[hidden]{display:none!important}
-@media (max-width:520px){.mod{padding:30px 22px 26px}.mod h2{margin-top:30px;font-size:30px}.tag{font-size:10.5px;padding:6px 11px}.mods{gap:22px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+    a {
+      color: inherit
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+      border-radius: 10px
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding-left: max(20px, env(safe-area-inset-left, 0px));
+      padding-right: max(20px, env(safe-area-inset-right, 0px))
+    }
+
+    /* topo */
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-block: max(22px, env(safe-area-inset-top, 0px)) 8px
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none
+    }
+
+    .brand img {
+      width: 44px;
+      height: 36px;
+      object-fit: contain
+    }
+
+    .brand b {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.01em
+    }
+
+    .brand span {
+      display: block;
+      font-size: 10.5px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-top: 1px
+    }
+
+    .lang {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .lang button {
+      all: unset;
+      cursor: pointer;
+      padding: 5px 11px;
+      border-radius: 9px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted)
+    }
+
+    .lang button.on {
+      background: rgba(77, 141, 255, .22);
+      color: #fff
+    }
+
+    .lang button:focus-visible {
+      outline: 2px solid var(--cyan)
+    }
+
+    /* entrada */
+    .hero {
+      padding-block: 46px 30px;
+      text-align: center
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--cyan)
+    }
+
+    .hero h1 {
+      margin: 12px 0 0;
+      font-size: clamp(28px, 4.4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.12;
+      text-wrap: balance
+    }
+
+    .hero p {
+      margin: 12px auto 0;
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.6
+    }
+
+    /* cartões dos módulos */
+    .mods {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+      gap: 38px;
+      padding-block: 18px 64px
+    }
+
+    .mod {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 42px 38px 40px;
+      border-radius: 24px;
+      background: linear-gradient(165deg, var(--card2), var(--card));
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 30px 60px -36px rgba(0, 0, 0, .8);
+      transition: border-color .2s, transform .2s
+    }
+
+    .mod:hover {
+      border-color: var(--line2);
+      transform: translateY(-2px)
+    }
+
+    .mod-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .ico {
+      width: 76px;
+      height: 76px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(120, 190, 255, .28);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 12px 24px -12px rgba(0, 0, 0, .7)
+    }
+
+    .ico svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .r .ico {
+      background: linear-gradient(150deg, #0F5C8F, #0B3D66)
+    }
+
+    .r .ico svg {
+      stroke: #5CC8FF
+    }
+
+    .g .ico {
+      background: linear-gradient(150deg, #1D3FA6, #16307E)
+    }
+
+    .g .ico svg {
+      stroke: #C9DBFF
+    }
+
+    .tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #D5DEEF;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line2);
+      background: rgba(255, 255, 255, .04);
+      white-space: nowrap
+    }
+
+    .mod h2 {
+      margin: 42px 0 0;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: .01em;
+      line-height: 1
+    }
+
+    .sub {
+      margin-top: 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase
+    }
+
+    .r .sub {
+      color: var(--cyan)
+    }
+
+    .g .sub {
+      color: #6FA3FF
+    }
+
+    .mod p {
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.62
+    }
+
+    .feat {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 22px
+    }
+
+    .feat span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      color: #C7D0E0;
+      padding: 6px 11px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .025)
+    }
+
+    .feat svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: #9FB3D6;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .cta {
+      margin-top: auto;
+      padding-top: 34px
+    }
+
+    .cta a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      height: 60px;
+      padding: 0 24px;
+      border-radius: 13px;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 14px 30px -14px rgba(20, 120, 230, .9);
+      transition: filter .2s, transform .2s
+    }
+
+    .cta a:hover {
+      filter: brightness(1.08)
+    }
+
+    .cta a:active {
+      transform: translateY(1px)
+    }
+
+    .cta svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform .2s
+    }
+
+    .cta a:hover svg {
+      transform: translateX(3px)
+    }
+
+    .r .cta a {
+      background: linear-gradient(90deg, #0B77C2, #0A8FD6 55%, #0B6FB3)
+    }
+
+    .g .cta a {
+      background: linear-gradient(90deg, #1F5BE8, #2E6BFF 55%, #2558E0)
+    }
+
+    /* rodapé */
+    footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(160, 185, 235, .08);
+      background: rgba(4, 8, 18, .55)
+    }
+
+    footer .wrap {
+      padding-block: 26px max(26px, env(safe-area-inset-bottom, 0px));
+      text-align: center;
+      font-size: 13px;
+      color: var(--dim)
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      background: #14224A;
+      border: 1px solid var(--line2);
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-size: 13.5px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, .5);
+      z-index: 10
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    @media (max-width:520px) {
+      .mod {
+        padding: 30px 22px 26px
+      }
+
+      .mod h2 {
+        margin-top: 30px;
+        font-size: 30px
+      }
+
+      .tag {
+        font-size: 10.5px;
+        padding: 6px 11px
+      }
+
+      .mods {
+        gap: 22px
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important
+      }
+    }
+  </style>
 </head>
+
 <body>
-<header class="wrap top">
-  <a class="brand" href="./"><img src="assets/globo.png" alt=""><div><b>GeoMobilidade Naval</b><span data-t="Grupo Naval Angola">Grupo Naval Angola</span></div></a>
-  <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-l="pt">PT</button><button type="button" data-l="en">EN</button></div>
-</header>
+  <header class="wrap top">
+    <a class="brand" href="./"><img src="assets/globo.png" alt="">
+      <div><b>Mobilidade Naval</b><span data-t="Grupo Naval Angola">Grupo Naval Angola</span></div>
+    </a>
+    <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-l="pt">PT</button><button
+        type="button" data-l="en">EN</button></div>
+  </header>
 
-<main class="wrap">
-  <section class="hero">
-    <div class="eyebrow" data-t="Sistema Integrado de Operações">Sistema Integrado de Operações</div>
-    <h1 data-t="Onde pretende entrar?">Onde pretende entrar?</h1>
-    <p data-t="Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.">Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.</p>
-  </section>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow" data-t="Sistema Integrado de Operações">Sistema Integrado de Operações</div>
+      <h1 data-t="Onde pretende entrar?">Onde pretende entrar?</h1>
+      <p
+        data-t="Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.">
+        Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e
+        distribuidores.</p>
+    </section>
 
-  <section class="mods" aria-label="Módulos">
-    <article class="mod r">
-      <div class="mod-top">
-        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 16v-5M12 16V7M16 16v-3"/></svg></div>
-        <span class="tag" data-t="Auditoria & indicadores">Auditoria &amp; indicadores</span>
-      </div>
-      <h2>REPORTS</h2>
-      <div class="sub" data-t="Inteligência operacional">Inteligência operacional</div>
-      <p data-t="Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.">Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.</p>
-      <div class="feat">
-        <span><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13l3 4m0-4-3 4"/></svg><b style="font-weight:400" data-t="Exportações Excel">Exportações Excel</b></span>
-        <span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><b style="font-weight:400" data-t="Métricas de desempenho">Métricas de desempenho</b></span>
-        <span><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg><b style="font-weight:400" data-t="Histórico de auditoria">Histórico de auditoria</b></span>
-      </div>
-      <div class="cta"><a href="reports/"><span data-t="Abrir relatórios">Abrir relatórios</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></div>
-    </article>
+    <section class="mods" aria-label="Módulos">
+      <article class="mod r">
+        <div class="mod-top">
+          <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4v16h16M8 16v-5M12 16V7M16 16v-3" />
+            </svg></div>
+          <span class="tag" data-t="Auditoria & indicadores">Auditoria &amp; indicadores</span>
+        </div>
+        <h2>REPORTS</h2>
+        <div class="sub" data-t="Inteligência operacional">Inteligência operacional</div>
+        <p
+          data-t="Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.">
+          Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue
+          dados consolidados em Excel.</p>
+        <div class="feat">
+          <span><svg viewBox="0 0 24 24">
+              <path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13l3 4m0-4-3 4" />
+            </svg><b style="font-weight:400" data-t="Exportações Excel">Exportações Excel</b></span>
+          <span><svg viewBox="0 0 24 24">
+              <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />
+            </svg><b style="font-weight:400" data-t="Métricas de desempenho">Métricas de desempenho</b></span>
+          <span><svg viewBox="0 0 24 24">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" />
+            </svg><b style="font-weight:400" data-t="Histórico de auditoria">Histórico de auditoria</b></span>
+        </div>
+        <div class="cta"><a href="reports/"><span data-t="Abrir relatórios">Abrir relatórios</span><svg
+              viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6" />
+            </svg></a></div>
+      </article>
 
-    <article class="mod g">
-      <div class="mod-top">
-        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/></svg></div>
-        <span class="tag" data-t="Optimização & frotas">Optimização &amp; frotas</span>
-      </div>
-      <h2>GEO</h2>
-      <div class="sub" data-t="Geomobilidade & mapas">Geomobilidade &amp; mapas</div>
-      <p data-t="Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.">Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.</p>
-      <div class="feat">
-        <span><svg viewBox="0 0 24 24"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg><b style="font-weight:400" data-t="Optimização de rotas">Optimização de rotas</b></span>
-        <span><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg><b style="font-weight:400" data-t="Delimitação de zonas">Delimitação de zonas</b></span>
-        <span><svg viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></span>
-      </div>
-      <div class="cta"><a href="#" id="geo"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></div>
-    </article>
-  </section>
-</main>
+      <article class="mod g">
+        <div class="mod-top">
+          <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7" />
+            </svg></div>
+          <span class="tag" data-t="Optimização & frotas">Optimização &amp; frotas</span>
+        </div>
+        <h2>GEO</h2>
+        <div class="sub" data-t="Geomobilidade & mapas">Geomobilidade &amp; mapas</div>
+        <p
+          data-t="Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.">
+          Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão
+          georreferenciada de distribuidores.</p>
+        <div class="feat">
+          <span><svg viewBox="0 0 24 24">
+              <path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" />
+            </svg><b style="font-weight:400" data-t="Optimização de rotas">Optimização de rotas</b></span>
+          <span><svg viewBox="0 0 24 24">
+              <path
+                d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+            </svg><b style="font-weight:400" data-t="Delimitação de zonas">Delimitação de zonas</b></span>
+          <span><svg viewBox="0 0 24 24">
+              <path
+                d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+            </svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></span>
+        </div>
+        <div class="cta"><a href="#" id="geo"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
+              aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6" />
+            </svg></a></div>
+      </article>
+    </section>
+  </main>
 
-<footer><div class="wrap"><span data-t="© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4">© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4</span></div></footer>
-<div class="toast" id="toast" role="status" hidden></div>
+  <footer>
+    <div class="wrap"><span
+        data-t="© 2026 Mobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4">© 2026
+        GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4</span></div>
+  </footer>
+  <div class="toast" id="toast" role="status" hidden></div>
 
-<script>
-(() => {
-  // Endereço do módulo GEO: preencher quando estiver publicado (ex.: 'geo/' ou 'https://…')
-  const GEO_URL = '';
+  <script>
+    (() => {
+      // Endereço do módulo GEO: preencher quando estiver publicado (ex.: 'geo/' ou 'https://…')
+      const GEO_URL = '';
 
-  const EN = {
-    'Grupo Naval Angola': 'Grupo Naval Angola', 'Sistema Integrado de Operações': 'Integrated Operations System', 'Onde pretende entrar?': 'Where would you like to go?',
-    'Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.': 'Choose a module: reports and indicators for the RTM operation, or geomobility for routes, delivery zones and distributors.',
-    'Auditoria & indicadores': 'Audit & indicators', 'Inteligência operacional': 'Operational intelligence',
-    'Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.': 'View performance indicators, daily reports on sales, receipts and vans, and download consolidated data in Excel.',
-    'Exportações Excel': 'Excel exports', 'Métricas de desempenho': 'Performance metrics', 'Histórico de auditoria': 'Audit history', 'Abrir relatórios': 'Open reports',
-    'Optimização & frotas': 'Optimisation & fleets', 'Geomobilidade & mapas': 'Geomobility & maps',
-    'Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.': 'Smart route planning with Google Maps, polygon delivery-zone mapping and geo-referenced distributor management.',
-    'Optimização de rotas': 'Route optimisation', 'Delimitação de zonas': 'Zone mapping', 'Gestão de distribuidores': 'Distributor management', 'Aceder ao GEO': 'Open GEO',
-    '© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4': '© 2026 GeoMobilidade Naval · All rights reserved · Integrated Operations System v2.4',
-    'O módulo GEO ainda não tem endereço configurado.': 'The GEO module does not have an address configured yet.',
-  };
-  let LANG = 'pt';
-  try { LANG = localStorage.getItem('vm-lang') === 'en' ? 'en' : 'pt'; } catch (e) {}
-  const t = (s) => (LANG === 'en' && EN[s] ? EN[s] : s);
-  function aplicar() {
-    document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
-    document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
-    document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
-  }
-  document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) {} aplicar(); }));
-  const geo = document.getElementById('geo');
-  if (GEO_URL) geo.href = GEO_URL;
-  else geo.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    const x = document.getElementById('toast'); x.textContent = t('O módulo GEO ainda não tem endereço configurado.'); x.hidden = false;
-    clearTimeout(x._h); x._h = setTimeout(() => { x.hidden = true; }, 3200);
-  });
-  aplicar();
-})();
-</script>
+      const EN = {
+        'Grupo Naval Angola': 'Grupo Naval Angola', 'Sistema Integrado de Operações': 'Integrated Operations System', 'Onde pretende entrar?': 'Where would you like to go?',
+        'Escolha o módulo: relatórios e indicadores da operação RTM, ou geomobilidade para rotas, zonas de entrega e distribuidores.': 'Choose a module: reports and indicators for the RTM operation, or geomobility for routes, delivery zones and distributors.',
+        'Auditoria & indicadores': 'Audit & indicators', 'Inteligência operacional': 'Operational intelligence',
+        'Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.': 'View performance indicators, daily reports on sales, receipts and vans, and download consolidated data in Excel.',
+        'Exportações Excel': 'Excel exports', 'Métricas de desempenho': 'Performance metrics', 'Histórico de auditoria': 'Audit history', 'Abrir relatórios': 'Open reports',
+        'Optimização & frotas': 'Optimisation & fleets', 'Geomobilidade & mapas': 'Geomobility & maps',
+        'Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.': 'Smart route planning with Google Maps, polygon delivery-zone mapping and geo-referenced distributor management.',
+        'Optimização de rotas': 'Route optimisation', 'Delimitação de zonas': 'Zone mapping', 'Gestão de distribuidores': 'Distributor management', 'Aceder ao GEO': 'Open GEO',
+        '© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4': '© 2026 GeoMobilidade Naval · All rights reserved · Integrated Operations System v2.4',
+        'O módulo GEO ainda não tem endereço configurado.': 'The GEO module does not have an address configured yet.',
+      };
+      let LANG = 'pt';
+      try { LANG = localStorage.getItem('vm-lang') === 'en' ? 'en' : 'pt'; } catch (e) { }
+      const t = (s) => (LANG === 'en' && EN[s] ? EN[s] : s);
+      function aplicar() {
+        document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
+        document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
+        document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
+      }
+      document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) { } aplicar(); }));
+      const geo = document.getElementById('geo');
+      if (GEO_URL) geo.href = GEO_URL;
+      else geo.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const x = document.getElementById('toast'); x.textContent = t('O módulo GEO ainda não tem endereço configurado.'); x.hidden = false;
+        clearTimeout(x._h); x._h = setTimeout(() => { x.hidden = true; }, 3200);
+      });
+      aplicar();
+    })();
+  </script>
 </body>
+
 </html>
