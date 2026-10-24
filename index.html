@@ -462,7 +462,7 @@
               <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" />
             </svg><b style="font-weight:400" data-t="Histórico de auditoria">Histórico de auditoria</b></span>
         </div>
-        <div class="cta"><a href="reports/"><span data-t="Abrir relatórios">Abrir relatórios</span><svg
+        <div class="cta"><a href="login.html#reports"><span data-t="Abrir relatórios">Abrir relatórios</span><svg
               viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 12h14m-6-6 6 6-6 6" />
             </svg></a></div>
@@ -505,15 +505,13 @@
 
   <footer>
     <div class="wrap"><span
-        data-t="© 2026 Mobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4">© 2026
+        data-t="© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4">© 2026
         GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4</span></div>
   </footer>
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script>
     (() => {
-      // Endereço do módulo GEO: preencher quando estiver publicado (ex.: 'geo/' ou 'https://…')
-      const GEO_URL = '';
 
       const EN = {
         'Grupo Naval Angola': 'Grupo Naval Angola', 'Sistema Integrado de Operações': 'Integrated Operations System', 'Onde pretende entrar?': 'Where would you like to go?',
@@ -536,13 +534,8 @@
         document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
       }
       document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) { } aplicar(); }));
-      const geo = document.getElementById('geo');
-      if (GEO_URL) geo.href = GEO_URL;
-      else geo.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const x = document.getElementById('toast'); x.textContent = t('O módulo GEO ainda não tem endereço configurado.'); x.hidden = false;
-        clearTimeout(x._h); x._h = setTimeout(() => { x.hidden = true; }, 3200);
-      });
+      // Os dois módulos passam pela página de entrada
+      document.getElementById('geo').href = 'login.html#geo';
       aplicar();
     })();
   </script>

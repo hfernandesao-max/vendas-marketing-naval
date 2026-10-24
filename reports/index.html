@@ -4,6 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    // Sem sessão iniciada na página de entrada, volta ao login
+    (() => { try { if (!sessionStorage.getItem('gm-sessao')) location.replace('../login.html#reports'); } catch (e) { } })();
+  </script>
   <title>Portal RTM · Grupo Naval</title>
   <meta name="description"
     content="Portal RTM do Grupo Naval Angola: vendas do Pinguim BO por promotor, dia e cliente, recebimentos, carga das carrinhas e carteira de clientes.">
