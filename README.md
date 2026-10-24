@@ -1,41 +1,31 @@
-# Vendas Marketing · Naval
+# Portal RTM · Grupo Naval
 
-Portal de vendas e stock da Marketing do Grupo Naval, no estilo do Portal do Grupo. Menu: **Stock** (stock por promotor/carrinha, stock por armazém, vendas por artigo, métodos de pagamento), **Relatório de vendas** (vendas globais e descontos com e sem IVA por promotor, vendas por promotor e marca) e **Controlo** (reconciliação de caixa, logística e escoamento, RTM Pinguim BO, facturas). Todas as páginas têm filtro de datas e exportação CSV (separador `;`, decimais com vírgula, para Excel).
+Portal da equipa RTM (Route to Market) do Grupo Naval Angola, no estilo do Portal do Grupo. Mostra **só dados do Pinguim BO e do plano de cargas**.
 
 Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 
-## Estrutura
+## Menu
 
-| Caminho | Conteúdo |
+| Secção | Páginas |
 |---|---|
-| `index.html` | O dashboard (HTML, CSS e JavaScript num só ficheiro) |
-| `data/*.json` | Histórico de todos os dias: `resumo`, `vendedores`, `produtos`, `facturas`, `stock`, `transportes`, `rtm` (Pinguim BO) |
-| `data/rotas.json` | Correspondência rota Pinguim BO ↔ vendedor SAP (por validar). Editar aqui e mudar `validado` para `true` quando confirmada |
-| `tools/mkt_parser.py` | Processador que lê os relatórios do dia e actualiza `data/` |
-| `data/linhas.json` | Vendas por dia, promotor e artigo, com e sem IVA e desconto |
-| `data/marcas.json`, `data/armazens.json` | Referência: marca e categoria de cada artigo; armazém MR de cada promotor (da exportação SAP) |
-| `assets/globo.png` | Símbolo Naval |
+| Vendas RTM | Vendas por promotor · Vendas por dia · Vendas por cliente · Documentos |
+| Recebimentos | Métodos de pagamento (dinheiro, Multicaixa, por liquidar) |
+| Stock | Stock por promotor / carrinha (carga do plano de cargas) · Stock por armazém · Vendas por artigo · Vendas por promotor e marca |
+| Carteira | Carteira de clientes · Plano de visitas |
 
-## Actualização diária
+Todas as páginas têm filtro de datas, idioma PT/EN, exportação CSV por tabela e exportação **Excel (.xlsx)**: capa com índice, resumo de indicadores e uma folha por tabela, com cabeçalho fixo, filtros e totais `SUBTOTAL`.
 
-Relatórios reconhecidos pelo conteúdo, não pelo nome:
+## Dados (`data/`)
 
-- **SAP do dia** (os seis juntos): Sales register, Consolidated sales report, Sales report Items wise, Stock report for marketing, Sales report, CASH CONTROLE.
-- **Plano de cargas** (normalmente de manhã): REPORT DRIVER MARKETING TRANSPORTES.
-- **Vendas RTM do Pinguim BO** (qualquer período): folha com Rota, Vendedor, Data, Hora, Tipo, Documento, Nome fiscal, Nº contribuinte, Liquidado, Total. Cada documento substitui o anterior com o mesmo número e é casado com a factura SAP do mesmo vendedor, mesmo valor e no máximo um dia de diferença. Estes valores nunca se somam aos do SAP.
+| Ficheiro | Origem | Conteúdo |
+|---|---|---|
+| `vendas.json` | Pinguim BO, vendas | Um documento por linha: data, hora, rota, promotor, tipo, documento, cliente, NIF, liquidado, total, meio de pagamento |
+| `clientes.json` | Pinguim BO, clientes | Rota, promotor, código, nome, NIF, tipo de estabelecimento, dia de visita, estado (sem contactos, telefones, GPS nem moradas) |
+| `cargas.json` | Plano de cargas (transportes) | Carrinha, motorista, zonas e caixas carregadas por categoria |
+| `rotas.json` | Pinguim BO | Rota → promotor |
 
-Pode enviar só o plano de cargas de manhã (as vendas ficam pendentes) e os seis SAP ao fim do dia: o processador reutiliza o plano já carregado. Reprocessar um dia substitui-o.
-
-```bash
-pip install openpyxl
-mkdir -p entrada && cp /caminho/dos/relatorios/*.xlsx entrada/
-python3 tools/mkt_parser.py entrada data data
-git add data && git commit -m "Dados de AAAA-MM-DD" && git push
-rm -rf entrada
-```
-
-O GitHub Pages republica o site em cerca de um minuto.
+Ainda por receber do Pinguim BO: meio de pagamento de cada documento, linhas de venda por artigo (com IVA e desconto) e stock por armazém/carrinha. As páginas correspondentes mostram os campos necessários.
 
 ## Aviso
 
-O site é público: qualquer pessoa com o link vê os números, os vendedores e os clientes.
+O site é público: qualquer pessoa com o link vê vendas, promotores e clientes.
