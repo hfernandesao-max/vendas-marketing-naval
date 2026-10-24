@@ -28,18 +28,18 @@ button,input,select{font:inherit;color:inherit}
 /* menu lateral */
 .side{position:sticky;top:0;height:100vh;overflow:auto;background:linear-gradient(180deg,var(--side2),var(--side));border-right:1px solid var(--line);
   padding:22px 14px max(22px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
-.brand{display:flex;align-items:center;gap:12px;padding:4px 10px 22px}
+.brand{display:flex;align-items:center;gap:12px;padding:2px 10px 14px}
 .brand img{width:44px;height:36px;object-fit:contain}
 .brand b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
 .brand span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:1px}
-.navg{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:16px 12px 6px}
-.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;color:#DCE4F5;text-decoration:none;font-size:14.5px;margin:2px 0}
+.navg{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:10px 12px 3px}
+.nav a{display:flex;align-items:center;gap:11px;padding:7px 12px;border-radius:11px;color:#DCE4F5;text-decoration:none;font-size:13.5px;line-height:1.3;margin:1px 0}
 .nav a svg{width:19px;height:19px;flex:none;stroke:#BFD0EE;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .nav a:hover{background:rgba(63,140,255,.08)}
 .nav a.on{background:linear-gradient(90deg,rgba(63,140,255,.26),rgba(63,140,255,.10));color:#fff;box-shadow:inset 0 0 0 1px rgba(110,195,255,.18)}
 .nav a.on svg{stroke:#fff}
 .nav a .n{margin-left:auto;font-size:11px;font-weight:700;color:var(--warn);background:rgba(245,181,71,.14);border-radius:999px;padding:1px 8px}
-.side-foot{margin-top:18px;padding:12px;font-size:11.5px;color:var(--dim);border-top:1px solid var(--line)}
+.side-foot{margin-top:10px;padding:10px 12px;font-size:11.5px;color:var(--dim);border-top:1px solid var(--line)}
 
 /* área principal */
 .main{min-width:0;padding-block:28px 40px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
@@ -58,7 +58,7 @@ h1{margin:6px 0 0;font-size:clamp(26px,3.2vw,38px);font-weight:800;letter-spacin
 .btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .btn.sm{padding:5px 10px;font-size:12px;border-radius:10px}
 .menu-btn{display:none}
-.side-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding:0 12px}
+.side-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:0 12px}
 .side-tools .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .btn.ghost{background:rgba(255,255,255,.04);border-color:var(--line)}
 .btn[disabled]{opacity:.6;cursor:progress}
@@ -95,15 +95,24 @@ h1{margin:6px 0 0;font-size:clamp(26px,3.2vw,38px);font-weight:800;letter-spacin
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px}
 
 /* tabelas */
-.tw{overflow:auto;max-height:520px;border-radius:12px}
+.tw{overflow-x:auto;border-radius:12px}
+[hidden]{display:none!important}
+*{scrollbar-width:thin;scrollbar-color:#2A3C6E transparent}
+table.compact th,table.compact td{padding:6px 7px;font-size:12px}
+table.compact td.t{white-space:normal;min-width:72px}
+table.compact td.w{min-width:120px}
+.more{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 4px 2px;font-size:12px;color:var(--muted)}
+.more div{display:flex;gap:8px;flex-wrap:wrap}
+.linkbtn{all:unset;cursor:pointer;color:var(--sky);font-weight:600;font-size:12px}
+.linkbtn:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:4px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 th,td{padding:8px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
-th{position:sticky;top:0;z-index:1;background:#12224C;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+th{background:#12224C;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 th button{all:unset;cursor:pointer}
 td.n,th.n{text-align:right}
 td.w{white-space:normal;min-width:180px}
 tbody tr:hover td{background:rgba(63,140,255,.07)}
-tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:1px solid var(--line2);border-bottom:0}
+tfoot td{background:#132654;font-weight:700;border-top:1px solid var(--line2);border-bottom:0}
 .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
 .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
 .p-ok{color:var(--ok);background:rgba(61,214,140,.12)}.p-warn{color:var(--warn);background:rgba(245,181,71,.13)}.p-bad{color:var(--bad);background:rgba(255,107,107,.13)}.p-mut{color:var(--muted);background:rgba(143,163,200,.12)}
@@ -124,6 +133,14 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
 .note{font-size:12px;color:var(--dim);margin:8px 2px 0}
 
+@media (max-height:820px) and (min-width:961px){
+  .side{padding-top:14px;padding-bottom:10px}
+  .brand{padding-bottom:8px}.brand img{width:36px;height:30px}
+  .navg{padding:6px 12px 1px}
+  .nav a{padding:5px 12px;font-size:13px}
+  .nav a svg{width:17px;height:17px}
+  .side-tools{margin-top:6px}.side-foot{margin-top:6px;padding:6px 12px;font-size:11px}
+}
 @media (max-width:960px){
   .app{grid-template-columns:1fr}
   .side{position:fixed;inset:0 auto 0 0;width:min(86vw,300px);z-index:30;transform:translateX(-105%);transition:transform .25s;height:100%}
@@ -211,6 +228,8 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     'Fraldas': 'Diapers', 'Sabão': 'Soap', 'Sabonetes': 'Beauty soap', 'Massas': 'Pasta', 'Farinha': 'Flour', 'Arroz e açúcar': 'Rice and sugar', 'Óleo': 'Oil', 'Outros': 'Other',
     'Capa': 'Cover', 'Índice': 'Contents', 'Resumo': 'Summary', 'Período': 'Period', 'Gerado em': 'Generated on', 'Secção': 'Section', 'Página': 'Page', 'Folha': 'Sheet', 'Linhas': 'Rows',
     'Indicador': 'Indicator', 'Valor': 'Value', 'Nota': 'Note', 'Voltar ao índice': 'Back to contents',
+    'A mostrar {a} de {b}': 'Showing {a} of {b}', 'Mostrar mais {n}': 'Show {n} more', 'Mostrar todas': 'Show all', 'Mostrar menos': 'Show less',
+    'Mostrar {n} colunas ocultas': 'Show {n} hidden columns', 'Mostrar 1 coluna oculta': 'Show 1 hidden column', 'Ajustar ao ecrã': 'Fit to screen',
     'Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.': 'Amounts in kwanzas (Kz). Totals use SUBTOTAL and follow the filters.',
     "A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).": "The Pinguim BO sales export we have only shows whether each document is paid. To split what was received in cash and by Multicaixa, the export must include the payment method of each document (or the Pinguim BO receipts report).",
     "Activos": "Active",
@@ -361,20 +380,11 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
   // ================= tabelas, indicadores e exportação =================
   // Durante o desenho de uma página, cada tabela e cada grupo de indicadores fica registado aqui para o Excel e o CSV.
   let REG = { tabelas: [], kpis: [] };
+  const LIM = {}, TODAS = {}; let FITS = [];
+  const PASSO = 20;
   const ORD = {};
   const numType = (c) => c.type && c.type !== 'text' && c.type !== 'date';
-  const rawVal = (c, r) => (c.xl ? c.xl(r) : c.csv ? c.csv(r) : c.get ? c.get(r) : r[c.key]);
-  function csvCell(v) {
-    if (v == null) return '';
-    if (typeof v === 'number') { const x = String(Math.round(v * 100) / 100); return LANG === 'en' ? x : x.replace('.', ','); }
-    const s = String(v); return /[;,"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-  const SEP = () => (LANG === 'en' ? ',' : ';');
-  function csvOf(cols, rows) {
-    const L = [cols.map((c) => csvCell(c.label + (c.type === 'kz' || c.type === 'mkz' || c.type === 'bar' ? ' (Kz)' : ''))).join(SEP())];
-    rows.forEach((r) => L.push(cols.map((c) => csvCell(rawVal(c, r))).join(SEP())));
-    return L.join('\r\n');
-  }
+  const rawVal = (c, r) => (c.xl ? c.xl(r) : c.get ? c.get(r) : r[c.key]);
   function download(name, blob) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
@@ -400,12 +410,40 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     const h = el('div', 'sec-h'); const hl = el('div'); hl.append(el('h2', null, o.titulo)); if (o.nota) hl.append(el('p', null, o.nota));
     const tools = el('div', 'sec-tools'); let q = '';
     if (o.search !== false) { const s = el('input', 'search'); s.type = 'search'; s.placeholder = t('Procurar…'); s.setAttribute('aria-label', t('Procurar…') + ' ' + o.titulo); s.id = 'q-' + o.id; s.addEventListener('input', () => { q = s.value.trim().toLowerCase(); body(); }); tools.append(s); }
-    const b = el('button', 'btn sm ghost'); b.type = 'button'; b.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>CSV';
-    b.addEventListener('click', () => download(fname(o.titulo, 'csv'), new Blob(['﻿' + csvOf(o.cols, filtradas())], { type: 'text/csv;charset=utf-8' })));
     const bx = el('button', 'btn sm'); bx.type = 'button'; bx.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>Excel';
     bx.addEventListener('click', () => exportarExcel([{ pagina: paginaAtual().nome, grupo: paginaAtual().grupo, kpis: [], tabelas: [{ ...reg, rows: filtradas() }] }], o.titulo));
-    tools.append(b, bx); h.append(hl, tools); sec.append(h);
+    tools.append(bx); h.append(hl, tools); sec.append(h);
     const tw = el('div', 'tw'); const tb = el('table'); tw.append(tb); sec.append(tw);
+    const more = el('div', 'more'); more.hidden = true; sec.append(more);
+    // prioridade de cada coluna quando falta largura: 0 nunca sai; números maiores saem primeiro
+    const prio = (c, i) => (i === 0 ? -1 : c.p != null ? c.p : c.wrap ? 2 : c.type === 'date' ? 1 : (c.type === 'kz' || c.type === 'bar') && c.sum ? 2 : c.type === 'n' || c.type === 'pct' ? 3 : c.type === 'kz' ? 4 : 5);
+    let ocultas = [];
+    function fit() {
+      if (!tw.isConnected) return;
+      tb.classList.remove('compact'); tb.querySelectorAll('[data-c]').forEach((e) => { e.hidden = false; }); ocultas = [];
+      const sobra = () => tw.scrollWidth > tw.clientWidth + 1;
+      if (sobra()) tb.classList.add('compact');
+      if (!TODAS[o.id]) {
+        const ordem = o.cols.map((c, i) => [prio(c, i), i]).filter((x) => x[0] >= 0).sort((a, b2) => b2[0] - a[0] || b2[1] - a[1]);
+        for (const [, i] of ordem) { if (!sobra()) break; tb.querySelectorAll(`[data-c="${i}"]`).forEach((e) => { e.hidden = true; }); ocultas.push(o.cols[i].label); }
+      }
+      rodape();
+    }
+    function rodape() {
+      const n = (reg.sorted || []).length, lim = LIM[o.id] || PASSO;
+      more.replaceChildren();
+      const esq = el('span'), dir = el('div');
+      if (n > lim) {
+        esq.textContent = t('A mostrar {a} de {b}', { a: n0(lim), b: n0(n) });
+        const m = el('button', 'linkbtn', t('Mostrar mais {n}', { n: Math.min(PASSO, n - lim) })); m.type = 'button'; m.addEventListener('click', () => { LIM[o.id] = lim + PASSO; body(); });
+        const tAll = el('button', 'linkbtn', t('Mostrar todas')); tAll.type = 'button'; tAll.addEventListener('click', () => { LIM[o.id] = n; body(); });
+        dir.append(m, tAll);
+      } else if (lim > PASSO && n > PASSO) { const c = el('button', 'linkbtn', t('Mostrar menos')); c.type = 'button'; c.addEventListener('click', () => { LIM[o.id] = PASSO; body(); }); dir.append(c); }
+      if (ocultas.length) { const c = el('button', 'linkbtn', ocultas.length === 1 ? t('Mostrar 1 coluna oculta') : t('Mostrar {n} colunas ocultas', { n: ocultas.length })); c.type = 'button'; c.title = ocultas.join(', '); c.addEventListener('click', () => { TODAS[o.id] = true; fit(); }); dir.append(c); }
+      else if (TODAS[o.id]) { const c = el('button', 'linkbtn', t('Ajustar ao ecrã')); c.type = 'button'; c.addEventListener('click', () => { TODAS[o.id] = false; fit(); }); dir.append(c); }
+      more.append(esq, dir); more.hidden = !esq.textContent && !dir.childNodes.length;
+    }
+    FITS.push(fit);
     const ord = ORD[o.id] || (ORD[o.id] = { key: o.sort || o.cols[0].key, dir: o.dir || -1 });
     const val = (r, c) => (c.get ? c.get(r) : r[c.key]);
     const filtradas = () => (q ? o.rows.filter((r) => o.cols.some((c) => String(val(r, c) ?? '').toLowerCase().includes(q))) : o.rows);
@@ -416,7 +454,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       reg.sorted = sorted;
       const th = el('thead'); const tr = el('tr');
       o.cols.forEach((c) => {
-        const tt = el('th', numType(c) ? 'n' : null);
+        const tt = el('th', numType(c) ? 'n' : null); tt.dataset.c = o.cols.indexOf(c);
         tt.setAttribute('aria-sort', c.key === ord.key ? (ord.dir > 0 ? 'ascending' : 'descending') : 'none');
         const bt = el('button', null, c.label + (c.key === ord.key ? (ord.dir > 0 ? ' ↑' : ' ↓') : '')); bt.type = 'button';
         bt.addEventListener('click', () => { if (ord.key === c.key) ord.dir *= -1; else { ord.key = c.key; ord.dir = numType(c) ? -1 : 1; } body(); });
@@ -425,9 +463,9 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       th.append(tr);
       const tbody = el('tbody');
       const maxs = {}; o.cols.filter((c) => c.type === 'bar').forEach((c) => { maxs[c.key] = Math.max(0, ...rows.map((r) => +val(r, c) || 0)); });
-      sorted.forEach((r) => {
+      sorted.slice(0, LIM[o.id] || PASSO).forEach((r) => {
         const tr2 = el('tr');
-        o.cols.forEach((c) => { const td = el('td', (numType(c) ? 'n' : '') + (c.wrap ? ' w' : '')); td.append(cellNode(c, r, maxs[c.key])); tr2.append(td); });
+        o.cols.forEach((c, i) => { const td = el('td', (numType(c) || c.nowrap ? 'n0' : 't') + (numType(c) ? ' n' : '') + (c.wrap ? ' w' : '')); td.dataset.c = i; td.append(cellNode(c, r, maxs[c.key])); tr2.append(td); });
         tbody.append(tr2);
       });
       tb.replaceChildren(th, tbody);
@@ -435,13 +473,14 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       else if (o.total) {
         const tf = el('tfoot'); const r2 = el('tr');
         o.cols.forEach((c, i) => {
-          const td = el('td', numType(c) ? 'n' : null);
+          const td = el('td', numType(c) ? 'n' : null); td.dataset.c = i;
           if (i === 0) td.textContent = t('Total');
           else if (c.sum) { const tot = c.sum === true ? sum(rows, (r) => val(r, c)) : c.sum(rows); td.textContent = c.type === 'n' ? n0(tot) : c.type === 'pct' ? pct(tot) : kz(tot); }
           r2.append(td);
         });
         tf.append(r2); tb.append(tf);
       }
+      fit(); rodape();
     }
     body();
     return sec;
@@ -559,11 +598,11 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
   }
   // Desenha uma página fora do ecrã só para recolher as suas tabelas e indicadores
   function recolher(id) {
-    const guarda = REG; REG = { tabelas: [], kpis: [] };
+    const guarda = REG, gf = FITS; REG = { tabelas: [], kpis: [] }; FITS = [];
     const tmp = document.createElement('div');
     try { R[id](tmp); } catch (e) { console.error(id, e); }
     tmp.querySelectorAll('section[id^="s-"]').forEach(() => {});
-    const out = REG; REG = guarda; return out;
+    const out = REG; REG = guarda; FITS = gf; return out;
   }
 
   // ================= cálculos comuns (só RTM / Pinguim BO) =================
@@ -670,7 +709,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       { l: t('Por liquidar'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
     ]));
     pg.append(tabela({ id: 'vp', titulo: t('Vendas por promotor'), nota: t('Documentos emitidos no Pinguim BO no período.'), rows: P, sort: 'total', total: true,
-      cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
         { key: 'dias', label: t('Dias com vendas'), type: 'n' }, { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
         { key: 'por_liquidar', label: t('Por liquidar'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }] }));
   };
@@ -685,7 +724,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     const ds2 = [...new Set(V.map((x) => x.data))].sort();
     const mat = Object.values(group(V, 'rota')).map((rs) => { const o = { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), total: sum(rs, 'total') }; ds2.forEach((d) => { o[d] = sum(rs.filter((x) => x.data === d), 'total'); }); return o; });
     secs.append(tabela({ id: 'vd-mat', titulo: t('Promotor × dia'), rows: mat, sort: 'total', total: true,
-      cols: [{ key: 'promotor', label: t('Promotor') }, ...ds2.map((d) => ({ key: d, label: dl(d).slice(0, 5), type: 'kz', sum: true, render: (v) => document.createTextNode(v ? mkz(v) : '—') })), { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
+      cols: [{ key: 'promotor', label: t('Promotor'), p: 0 }, ...ds2.map((d) => ({ key: d, label: dl(d).slice(0, 5), type: 'kz', sum: true, render: (v) => document.createTextNode(v ? mkz(v) : '—') })), { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
     pg.append(secs);
   };
 
@@ -696,13 +735,13 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     pg.append(tiles([{ l: t('Clientes com compras'), v: n0(rows.length) }, { l: t('Venda média por cliente'), v: mkz(rows.length ? sum(rows, 'total') / rows.length : null) },
       { l: t('Clientes com mais de uma compra'), v: n0(rows.filter((x) => x.docs > 1).length) }]));
     pg.append(tabela({ id: 'vc', titulo: t('Vendas por cliente'), rows, sort: 'total', total: true,
-      cols: [{ key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') },
+      cols: [{ key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'ultima', label: t('Última compra'), type: 'date' }] }));
   };
 
   R.documentos = (pg) => {
     pg.append(tabela({ id: 'dc', titulo: t('Documentos Pinguim'), rows: vendasR().map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'data', total: true,
-      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento') }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') },
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'meio_pagamento', label: t('Meio de pagamento') },
         { key: 'liquidado', label: t('Pago'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'), xl: (r) => t(r.liquidado ? 'Sim' : 'Não') },
         { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
@@ -735,7 +774,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       dinheiro: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'dinheiro'), 'total') : null, multicaixa: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'multicaixa'), 'total') : null, por_liquidar: sum(rs, 'total') - sum(lq, 'total') }; });
     secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
     secs.append(tabela({ id: 'pg-pend', titulo: t('Documentos por liquidar'), rows: V.filter((x) => !x.liquidado).map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'total', total: true, search: false,
-      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento') }, { key: 'promotor', label: t('Promotor') }, { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
     pg.append(secs);
   };
 
@@ -745,7 +784,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       { l: t('Fraldas'), v: n0(sum(C, 'carga_fraldas')) }, { l: t('Sabão'), v: n0(sum(C, 'carga_sabao')) }, { l: t('Sabonetes'), v: n0(sum(C, 'carga_sabonete')) }]));
     const secs = el('div', 'secs');
     secs.append(tabela({ id: 'sc', titulo: t('Carga por promotor e carrinha'), nota: t('Caixas carregadas em cada carrinha segundo o plano de cargas diário. O stock por artigo de cada carrinha fica disponível com a exportação de stock do Pinguim BO.'), rows: C, sort: 'data', total: true,
-      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') }, { key: 'matricula', label: t('Carrinha') }, { key: 'viatura', label: t('Viatura') }, { key: 'motorista', label: t('Motorista') },
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'matricula', label: t('Carrinha') }, { key: 'viatura', label: t('Viatura') }, { key: 'motorista', label: t('Motorista') },
         { key: 'n_zonas', label: t('Zonas'), type: 'n' }, { key: 'carga_fraldas', label: t('Fraldas'), type: 'n', sum: true }, { key: 'carga_sabao', label: t('Sabão'), type: 'n', sum: true }, { key: 'carga_sabonete', label: t('Sabonetes'), type: 'n', sum: true },
         { key: 'carga', label: t('Total'), type: 'n', sum: true }, { key: 'zonas', label: t('Zonas de descarga'), wrap: true }] }));
     pg.append(secs);
@@ -767,11 +806,11 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
       pendentes: rs.filter((x) => x.estado !== 'Ativo').length, sem_gps: r2.filter((x) => !x.gps).length, compraram: r2.filter((x) => x.comprou).length, cobertura: r2.length ? r2.filter((x) => x.comprou).length / r2.length : null }; });
     const secs = el('div', 'secs');
     secs.append(tabela({ id: 'cl-r', titulo: t('Carteira por rota'), nota: t('Cobertura = clientes da carteira que compraram no período.'), rows: pr, sort: 'rota', dir: 1, total: true,
-      cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') }, { key: 'clientes', label: t('Clientes'), type: 'n', sum: true }, { key: 'activos', label: t('Activos'), type: 'n', sum: true },
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'clientes', label: t('Clientes'), type: 'n', sum: true }, { key: 'activos', label: t('Activos'), type: 'n', sum: true },
         { key: 'pendentes', label: t('Pendentes / erro'), type: 'n', sum: true }, { key: 'sem_gps', label: t('Sem GPS'), type: 'n', sum: true }, { key: 'compraram', label: t('Compraram'), type: 'n', sum: true },
         { key: 'cobertura', label: t('Cobertura'), type: 'pct', sum: (rs) => { const a = sum(rs, 'clientes'); return a ? sum(rs, 'compraram') / a : null; } }] }));
     secs.append(tabela({ id: 'cl-d', titulo: t('Clientes'), rows, sort: 'nome', dir: 1,
-      cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') }, { key: 'codigo', label: t('Código') }, { key: 'nome', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') },
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'codigo', label: t('Código') }, { key: 'nome', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') },
         { key: 'tipo', label: t('Tipo') }, { key: 'dias', label: t('Dias de visita') }, { key: 'estado', label: t('Estado'), render: (v) => pill(t(v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'), xl: (r) => t(r.estado) },
         { key: 'comprou', label: t('Comprou no período'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-mut'), xl: (r) => t(r.comprou ? 'Sim' : 'Não') }] }));
     pg.append(secs);
@@ -794,7 +833,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     pg.append(tiles([{ l: t('Clientes planeados'), v: n0(sum(rows, 'planeados')) }, { l: t('Planeados que compraram'), v: n0(sum(rows, 'compraram')) },
       { l: t('Cumprimento'), v: pct(sum(rows, 'planeados') ? sum(rows, 'compraram') / sum(rows, 'planeados') : null), tone: 'warn' }, { l: t('Vendas fora do plano'), v: n0(sum(rows, 'fora')), s: t('clientes de outro dia ou rota') }]));
     pg.append(tabela({ id: 'pv', titulo: t('Plano de visitas por dia e rota'), nota: t('Planeados = clientes activos da carteira com visita nesse dia da semana. Cumprimento = planeados que compraram.'), rows, sort: 'data', total: true,
-      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'dia', label: t('Dia da semana') }, { key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor') },
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'dia', label: t('Dia da semana') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'planeados', label: t('Planeados'), type: 'n', sum: true }, { key: 'compraram', label: t('Compraram'), type: 'n', sum: true }, { key: 'fora', label: t('Fora do plano'), type: 'n', sum: true },
         { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true },
         { key: 'cumprimento', label: t('Cumprimento'), type: 'pct', sum: (rs) => { const a = sum(rs, 'planeados'); return a ? sum(rs, 'compraram') / a : null; }, render: (v) => (v == null ? pill('—', 'p-mut') : pill(pct(v), v < 0.2 ? 'p-bad' : v < 0.5 ? 'p-warn' : 'p-ok')) }] }));
@@ -811,7 +850,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
   }
   function draw() {
     const p = paginaAtual();
-    REG = { tabelas: [], kpis: [] };
+    REG = { tabelas: [], kpis: [] }; FITS = [];
     textos();
     $('#de').value = st.de; $('#ate').value = st.ate;
     const ps = presets(), seg = $('#presets'); seg.replaceChildren();
@@ -822,6 +861,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
     const pg = $('#page'); pg.replaceChildren();
     try { R[p.id](pg); } catch (e) { console.error(e); pg.append(el('div', 'glass empty', t('Não foi possível desenhar esta página.'))); }
     nav();
+    requestAnimationFrame(() => FITS.forEach((f) => f()));
     document.title = (p.id === 'inicio' ? t('Portal RTM') : t(p.nome)) + ' · Grupo Naval';
   }
   function route() { const h = location.hash.slice(1); atual = PAGES.some((x) => x.id === h) ? h : 'inicio'; draw(); window.scrollTo(0, 0); }
@@ -841,6 +881,7 @@ tfoot td{position:sticky;bottom:0;background:#132654;font-weight:700;border-top:
   $('#de').addEventListener('change', onDate); $('#ate').addEventListener('change', onDate);
   $('#menu').addEventListener('click', () => $('#app').classList.toggle('open'));
   addEventListener('hashchange', route);
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FITS.forEach((f) => f()), 150); });
 
   Promise.all(FONTES.map((id) => fetch('data/' + id + '.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((d) => { DB[id] = d; })))
     .then(() => {

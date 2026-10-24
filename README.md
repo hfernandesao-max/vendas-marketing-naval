@@ -13,7 +13,9 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 | Stock | Stock por promotor / carrinha (carga do plano de cargas) · Stock por armazém · Vendas por artigo · Vendas por promotor e marca |
 | Carteira | Carteira de clientes · Plano de visitas |
 
-Todas as páginas têm filtro de datas, idioma PT/EN, exportação CSV por tabela e exportação **Excel (.xlsx)**: capa com índice, resumo de indicadores e uma folha por tabela, com cabeçalho fixo, filtros e totais `SUBTOTAL`.
+Todas as páginas têm filtro de datas, idioma PT/EN e exportação **Excel (.xlsx)** (por tabela, por página ou completa): capa com índice, resumo de indicadores e uma folha por tabela, com cabeçalho fixo, filtros e totais `SUBTOTAL`.
+
+O ecrã ajusta-se sozinho para evitar barras de deslocamento: as tabelas mostram 20 linhas de cada vez e, quando falta largura, ficam compactas e escondem primeiro as colunas menos importantes (há sempre a opção de as mostrar).
 
 ## Dados (`data/`)
 
