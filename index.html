@@ -108,6 +108,42 @@
       margin-top: 1px
     }
 
+    .acoes {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    /* terminar sessão: mesmo estilo do botão Sair do portal RTM */
+    .sair {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border-radius: 12px;
+      color: #FCA5A5;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(252, 165, 165, .25);
+      background: rgba(252, 165, 165, .06)
+    }
+
+    .sair:hover {
+      background: rgba(252, 165, 165, .14);
+      color: #FECACA
+    }
+
+    .sair svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
     .lang {
       display: inline-flex;
       padding: 3px;
@@ -423,8 +459,13 @@
     <a class="brand" href="./"><img src="assets/globo.png" alt="">
       <div><b>Mobilidade Naval</b><span data-t="Grupo Naval Angola">Grupo Naval Angola</span></div>
     </a>
-    <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-l="pt">PT</button><button
-        type="button" data-l="en">EN</button></div>
+    <div class="acoes">
+      <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-l="pt">PT</button><button
+          type="button" data-l="en">EN</button></div>
+      <a class="sair" href="geo/auth/logout.php" id="sair" title="Terminar sessão"><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg><span data-t="Sair">Sair</span></a>
+    </div>
   </header>
 
   <main class="wrap">
@@ -520,7 +561,7 @@
         'Exportações Excel': 'Excel exports', 'Métricas de desempenho': 'Performance metrics', 'Histórico de auditoria': 'Audit history', 'Abrir relatórios': 'Open reports',
         'Optimização & frotas': 'Optimisation & fleets', 'Geomobilidade & mapas': 'Geomobility & maps',
         'Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão georreferenciada de distribuidores.': 'Smart route planning with Google Maps, polygon delivery-zone mapping and geo-referenced distributor management.',
-        'Optimização de rotas': 'Route optimisation', 'Delimitação de zonas': 'Zone mapping', 'Gestão de distribuidores': 'Distributor management', 'Aceder ao GEO': 'Open GEO',
+        'Optimização de rotas': 'Route optimisation', 'Delimitação de zonas': 'Zone mapping', 'Gestão de distribuidores': 'Distributor management', 'Aceder ao GEO': 'Open GEO', 'Sair': 'Sign out', 'Terminar sessão': 'Sign out',
         '© 2026 GeoMobilidade Naval · Todos os direitos reservados · Sistema Integrado de Operações v2.4': '© 2026 GeoMobilidade Naval · All rights reserved · Integrated Operations System v2.4',
       };
       let LANG = 'pt';
@@ -530,6 +571,7 @@
         document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
         document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
         document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
+        document.getElementById('sair').title = t('Terminar sessão');
       }
       document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) { } aplicar(); }));
       aplicar();
