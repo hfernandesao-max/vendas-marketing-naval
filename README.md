@@ -40,3 +40,17 @@ Ainda por receber do Pinguim BO: meio de pagamento de cada documento, linhas de 
 ## Aviso
 
 O site é público: qualquer pessoa com o link vê vendas, promotores e clientes.
+
+## API do Pinguim BO (`reports/data/api.php`)
+
+As credenciais e o endereço ficam no `.env` na raiz do projecto (não vai para o GitHub):
+
+```
+USERNAME=...
+PASSWORD=...
+PINGUIM_URL=http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata
+```
+
+`PINGUIM_URL` aceita vários endereços separados por vírgula, tentados por ordem. No servidor responde o local (porta 8089); num computador fora do servidor usa-se o externo (2053). Sem `PINGUIM_URL`, são estes os valores usados.
+
+Diagnóstico, com sessão iniciada: `reports/data/api.php?diag=1`.

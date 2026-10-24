@@ -86,9 +86,14 @@ if (is_file($envFile)) {
 }
 $username = $env['USERNAME'] ?? (getenv('PINGUIM_USERNAME') ?: '');
 $password = $env['PASSWORD'] ?? (getenv('PINGUIM_PASSWORD') ?: '');
-$boBase   = rtrim($env['PINGUIM_URL'] ?? 'https://bo.naval.co.ao:2083/rest/exportdata', '?');
+// Endereços da API do Pinguim BO, por ordem de tentativa (separados por vírgula no .env).
+// No servidor a API responde localmente na porta 8089; fora do servidor usa-se o acesso externo 2053.
+$boUrls = array_values(array_filter(array_map(
+    fn($u) => rtrim(trim($u), '?'),
+    explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata')
+)));
 
-function chamarPinguim(string $url, string $user, string $pass, int $timeout = 150): array
+function chamarPinguim(string $url, string $user, string $pass, int $timeout = 150, int $connect = 15): array
 {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -96,7 +101,7 @@ function chamarPinguim(string $url, string $user, string $pass, int $timeout = 1
         CURLOPT_USERPWD        => "$user:$pass",
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => $connect,
         CURLOPT_TIMEOUT        => $timeout,
         CURLOPT_ENCODING       => '',
     ]);
@@ -108,15 +113,29 @@ function chamarPinguim(string $url, string $user, string $pass, int $timeout = 1
         'errno' => curl_errno($ch),
         'erro'  => curl_error($ch),
         'seg'   => round(microtime(true) - $t0, 2),
+        'url'   => $url,
     ];
     if (PHP_VERSION_ID < 80000) curl_close($ch);
+    return $res;
+}
+
+// Tenta cada endereço até um aceitar a ligação; devolve o resultado do primeiro que responde
+function chamarPrimeiro(array $bases, string $query, string $user, string $pass, int $timeout = 150): array
+{
+    $tentativas = [];
+    foreach ($bases as $i => $base) {
+        $res = chamarPinguim($base . '?' . $query, $user, $pass, $timeout, $i < count($bases) - 1 ? 5 : 15);
+        if ($res['errno'] === 0) { $res['tentativas'] = $tentativas; return $res; }
+        $tentativas[] = $base . ': ' . $res['erro'];
+    }
+    $res['tentativas'] = $tentativas;
     return $res;
 }
 
 // ── Diagnóstico ──
 if (($_GET['diag'] ?? '') === '1') {
     $hoje = date('Ymd');
-    $teste = chamarPinguim("$boBase?start_date=$hoje&end_date=$hoje", $username, $password, 60);
+    $teste = chamarPrimeiro($boUrls, "start_date=$hoje&end_date=$hoje", $username, $password, 60);
     responder(200, [
         'php'                => PHP_VERSION,
         'curl'               => function_exists('curl_version') ? (curl_version()['version'] ?? true) : false,
@@ -125,7 +144,9 @@ if (($_GET['diag'] ?? '') === '1') {
         'credenciais'        => $username !== '' && $password !== '',
         'max_execution_time' => ini_get('max_execution_time'),
         'memory_limit'       => ini_get('memory_limit'),
-        'pinguim_url'        => $boBase,
+        'pinguim_urls'       => $boUrls,
+        'pinguim_usado'      => $teste['errno'] === 0 ? $teste['url'] : null,
+        'pinguim_falhas'     => $teste['tentativas'],
         'pinguim_http'       => $teste['http'],
         'pinguim_erro'       => $teste['erro'],
         'pinguim_segundos'   => $teste['seg'],
@@ -147,9 +168,9 @@ if (!preg_match('/^\d{8}$/', $start) || !preg_match('/^\d{8}$/', $end)) {
 }
 
 // ── Chamada à API do Pinguim BO ──
-$r = chamarPinguim("$boBase?start_date=$start&end_date=$end", $username, $password);
+$r = chamarPrimeiro($boUrls, "start_date=$start&end_date=$end", $username, $password);
 if ($r['errno'] !== 0) {
-    falhar(502, 'Não foi possível contactar o Pinguim BO.', $r['erro'] . ' (' . $r['seg'] . ' s)');
+    falhar(502, 'Não foi possível contactar o Pinguim BO.', implode(' | ', $r['tentativas']));
 }
 if ($r['http'] === 401 || $r['http'] === 403) {
     falhar(502, 'O Pinguim BO recusou as credenciais do .env.', 'HTTP ' . $r['http']);
