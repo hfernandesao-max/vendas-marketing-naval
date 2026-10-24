@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="assets/globo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <style>
     /* Página principal: fundo azul-noite, dois cartões de módulo (Reports e GEO), rodapé discreto */
     :root {
@@ -570,6 +570,138 @@
       * {
         transition: none !important
       }
+    }
+
+    /* ===================== Estilo Apple =====================
+       Mesma página; acabamento com as cores do sistema da Apple (modo escuro), vidro com desfoque,
+       tipografia SF / Inter, botões em pílula e selector de idioma segmentado. */
+    :root {
+      --bg: #06080F;
+      --bg2: #0C1120;
+      --card: rgba(28, 31, 44, .62);
+      --card2: rgba(34, 38, 54, .62);
+      --line: rgba(255, 255, 255, .08);
+      --line2: rgba(255, 255, 255, .14);
+      --fg: #F5F5F7;
+      --muted: #A1A1AA;
+      --dim: #7C7C88;
+      --cyan: #64D2FF;
+      --blue: #0A84FF;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+    }
+
+    body {
+      background:
+        radial-gradient(80% 60% at 85% -10%, rgba(10, 132, 255, .16), transparent 60%),
+        radial-gradient(60% 50% at -10% 110%, rgba(94, 92, 230, .12), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg)) fixed, var(--bg);
+      letter-spacing: -.01em
+    }
+
+    .hero h1 {
+      font-weight: 700;
+      letter-spacing: -.035em
+    }
+
+    .mod {
+      background: var(--card);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 20px 50px -24px rgba(0, 0, 0, .7)
+    }
+
+    .mod h2 {
+      font-weight: 700;
+      letter-spacing: -.02em
+    }
+
+    .tag {
+      background: rgba(118, 118, 128, .24);
+      border: 0;
+      color: #E5E5EA
+    }
+
+    .feat .chip {
+      background: rgba(118, 118, 128, .2);
+      border: 0;
+      border-radius: 999px;
+      color: #E5E5EA
+    }
+
+    .feat .chip:hover {
+      background: rgba(118, 118, 128, .34)
+    }
+
+    .r .ico {
+      background: linear-gradient(150deg, #0A84FF, #0060DF)
+    }
+
+    .r .ico svg {
+      stroke: #fff
+    }
+
+    .g .ico {
+      background: linear-gradient(150deg, #5E5CE6, #3634A3)
+    }
+
+    .g .ico svg {
+      stroke: #fff
+    }
+
+    .ico {
+      border: 0;
+      border-radius: 18px
+    }
+
+    .r .sub {
+      color: #64D2FF
+    }
+
+    .g .sub {
+      color: #A5A4FF
+    }
+
+    .cta a,
+    .r .cta a {
+      background: #0A84FF;
+      border-radius: 999px;
+      box-shadow: 0 10px 24px -12px rgba(10, 132, 255, .9)
+    }
+
+    .g .cta a {
+      background: #5E5CE6;
+      box-shadow: 0 10px 24px -12px rgba(94, 92, 230, .9)
+    }
+
+    .lang {
+      background: rgba(118, 118, 128, .24);
+      border: 0;
+      border-radius: 10px;
+      padding: 2px
+    }
+
+    .lang button {
+      border-radius: 8px;
+      color: #E5E5EA
+    }
+
+    .lang button.on {
+      background: #636366;
+      color: #fff
+    }
+
+    .sair {
+      border: 0;
+      background: rgba(255, 69, 58, .14);
+      color: #FF6961;
+      border-radius: 999px
+    }
+
+    footer {
+      background: rgba(0, 0, 0, .25);
+      border-top: 1px solid var(--line)
     }
   </style>
 </head>
