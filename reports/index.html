@@ -265,6 +265,34 @@
       color-scheme: dark
     }
 
+    /* A data é sempre mostrada como dia-mês-ano, seja qual for o idioma do navegador:
+       o texto do campo nativo fica invisível e por cima aparece a data formatada */
+    .date .campo {
+      position: relative;
+      display: inline-flex;
+      align-items: center
+    }
+
+    .date .campo input {
+      color: transparent;
+      cursor: pointer
+    }
+
+    .date .campo input::-webkit-datetime-edit {
+      color: transparent
+    }
+
+    .date .dv {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--fg);
+      font-size: 12.5px;
+      pointer-events: none;
+      font-variant-numeric: tabular-nums
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -992,8 +1020,8 @@
         </div>
         <div class="filters">
           <div class="seg" id="presets"></div>
-          <label class="date" for="de"><span id="l-de">De</span> <input type="date" id="de"></label>
-          <label class="date" for="ate"><span id="l-ate">Até</span> <input type="date" id="ate"></label>
+          <label class="date" for="de"><span id="l-de">De</span> <span class="campo"><input type="date" id="de"><span class="dv" id="de-v" aria-hidden="true"></span></span></label>
+          <label class="date" for="ate"><span id="l-ate">Até</span> <span class="campo"><input type="date" id="ate"><span class="dv" id="ate-v" aria-hidden="true"></span></span></label>
           <button class="btn ghost" id="xl-page" type="button"><svg viewBox="0 0 24 24">
               <path d="M4 4h16v16H4zM4 9h16M9 9v11M8 13l3 4m0-4-3 4" />
             </svg><span></span></button>
@@ -1173,7 +1201,8 @@
       const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(v * 100) + '%');
       const MES = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
       const SEM = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
-      const dl = (s) => { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
+      // Datas sempre no formato dia-mês-ano (dd-mm-aaaa)
+      const dl = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return `${d}-${m}-${y}`; };
       const ds = (s) => { const [, m, d] = s.split('-'); return `${SEM[LANG][new Date(s + 'T12:00:00Z').getUTCDay()]} ${+d} ${MES[LANG][m - 1]}`; };
 
       // ================= utilitários =================
@@ -1372,7 +1401,7 @@
         return excelPronto;
       }
       const NAVY = 'FF1E3A8A', NAVY2 = 'FF283E81', SKY = 'FFDCE8FB', GREY = 'FF5F6573';
-      const FMT = { kz: '#,##0;-#,##0;"-"', mkz: '#,##0;-#,##0;"-"', bar: '#,##0;-#,##0;"-"', n: '#,##0;-#,##0;"-"', pct: '0.0%;-0.0%;"-"', date: 'dd/mm/yyyy' };
+      const FMT = { kz: '#,##0;-#,##0;"-"', mkz: '#,##0;-#,##0;"-"', bar: '#,##0;-#,##0;"-"', n: '#,##0;-#,##0;"-"', pct: '0.0%;-0.0%;"-"', date: 'dd-mm-yyyy' };
       const toDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
       const nomeFolha = (s, usados) => { let b = s.replace(/[\[\]:*?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Folha'; let n = b, i = 2; while (usados.has(n.toLowerCase())) n = b.slice(0, 26) + ' ' + i++; usados.add(n.toLowerCase()); return n; };
       const colLetter = (n) => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
@@ -1392,7 +1421,7 @@
           capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 34 }, { width: 10 }];
           capa.getCell('B2').value = 'Grupo Naval Angola'; capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
           capa.getCell('B3').value = t('Portal RTM') + (paginas.length === 1 ? ' · ' + t(paginas[0].pagina) : ''); capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
-          [['Período', periodo], ['Gerado em', new Date().toLocaleString(LANG === 'en' ? 'en-GB' : 'pt-PT')], ['Nota', t('Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.')], ['', t('Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.')]]
+          [['Período', periodo], ['Gerado em', dl(hoje()) + ' ' + new Date().toTimeString().slice(0, 5)], ['Nota', t('Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.')], ['', t('Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.')]]
             .forEach(([k, v], i) => { const r = 5 + i; capa.getCell('B' + r).value = k ? t(k) : ''; capa.getCell('B' + r).font = F({ bold: true, color: { argb: GREY } }); capa.getCell('C' + r).value = v; capa.getCell('C' + r).font = F(); capa.mergeCells(`C${r}:D${r}`); });
           let r0 = 10;
           capa.getCell('B' + r0).value = t('Índice'); capa.getCell('B' + r0).font = F({ size: 13, bold: true, color: { argb: NAVY2 } });
@@ -1856,7 +1885,7 @@
         const p = paginaAtual();
         REG = { tabelas: [], kpis: [] }; FITS = [];
         textos();
-        $('#de').value = st.de; $('#ate').value = st.ate;
+        $('#de').value = st.de; $('#ate').value = st.ate; $('#de-v').textContent = dl(st.de); $('#ate-v').textContent = dl(st.ate);
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
         Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
         $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`);
@@ -1883,6 +1912,12 @@
       document.querySelectorAll('#lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) { } setFmt(); draw(); }));
       const onDate = () => { const a = $('#de').value, b = $('#ate').value; if (a && b && a <= b) { st.de = a; st.ate = b; st.preset = null; guardar(); fetchVendas(a, b).then(() => draw()); } };
       $('#de').addEventListener('change', onDate); $('#ate').addEventListener('change', onDate);
+      // Abre o calendário ao clicar e mantém a data visível em dia-mês-ano enquanto se escolhe
+      ['de', 'ate'].forEach((id) => {
+        const i = $('#' + id);
+        i.addEventListener('click', () => { try { i.showPicker(); } catch (e) { } });
+        i.addEventListener('input', () => { $('#' + id + '-v').textContent = dl(i.value); });
+      });
       $('#menu').addEventListener('click', () => $('#app').classList.toggle('open'));
       addEventListener('hashchange', route);
       let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FITS.forEach((f) => f()), 150); });
