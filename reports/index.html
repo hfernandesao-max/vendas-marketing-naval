@@ -1478,6 +1478,8 @@
       // ================= cálculos comuns (só RTM / Pinguim BO) =================
       const vendasR = () => DB.vendas.filter((x) => inR(x.data));
       const nomeRota = (r) => (DB.mapRota[r] || {}).promotor || r;
+      // Nome do promotor sempre acompanhado do código da rota: "1001 · Andrea Santos"
+      const promotorRota = (r, nome) => { const n = nome || nomeRota(r); return r && n && String(n) !== String(r) ? r + ' · ' + n : String(n || r || '—'); };
       const isCF = (nif) => !nif || /^9{9,}$/.test(String(nif));
       const DIAS = ['DOMINGO', '2ª FEIRA', '3ª FEIRA', '4ª FEIRA', '5ª FEIRA', '6ª FEIRA', 'SÁBADO'];
       const diaSemana = (d) => DIAS[new Date(d + 'T12:00:00Z').getUTCDay()];
@@ -1556,8 +1558,8 @@
       }
       function porPromotor(V) {
         const vendasPorRota = group(V, 'rota');
-        const rotas = new Map((DB.rotas || []).map((x) => [x.rota, x.promotor]));
-        V.forEach((x) => { if (!rotas.has(x.rota)) rotas.set(x.rota, nomeRota(x.rota)); });
+        const rotas = new Map((DB.rotas || []).map((x) => [x.rota, promotorRota(x.rota, x.promotor)]));
+        V.forEach((x) => { if (!rotas.has(x.rota)) rotas.set(x.rota, promotorRota(x.rota)); });
         return [...rotas.entries()].map(([rota, promotor]) => {
           const rs = vendasPorRota[rota] || [];
           const tot = sum(rs, 'total'), liq = sum(rs, recebidoDe);
@@ -1629,7 +1631,7 @@
           { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }]
         }));
         const ds2 = [...new Set(V.map((x) => x.data))].sort();
-        const mat = Object.values(group(V, 'rota')).map((rs) => { const o = { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), total: sum(rs, 'total') }; ds2.forEach((d) => { o[d] = sum(rs.filter((x) => x.data === d), 'total'); }); return o; });
+        const mat = Object.values(group(V, 'rota')).map((rs) => { const o = { rota: rs[0].rota, promotor: promotorRota(rs[0].rota), total: sum(rs, 'total') }; ds2.forEach((d) => { o[d] = sum(rs.filter((x) => x.data === d), 'total'); }); return o; });
         secs.append(tabela({
           id: 'vd-mat', titulo: t('Promotor × dia'), rows: mat, sort: 'total', total: true,
           cols: [{ key: 'promotor', label: t('Promotor'), p: 0 }, ...ds2.map((d) => ({ key: d, label: dl(d).slice(0, 5), type: 'kz', sum: true, render: (v) => document.createTextNode(v ? mkz(v) : '—') })), { key: 'total', label: t('Total'), type: 'kz', sum: true }]
@@ -1641,7 +1643,7 @@
         const V = vendasR();
         const rows = Object.values(group(V, (x) => (isCF(x.nif) ? 'CF|' + x.cliente : x.nif))).map((rs) => ({
           cliente: rs[0].cliente, nif: rs[0].nif, rota: [...new Set(rs.map((x) => x.rota))].join(', '),
-          promotor: [...new Set(rs.map((x) => nomeRota(x.rota)))].join(', '), docs: rs.length, total: sum(rs, 'total'), ultima: rs.map((x) => x.data).sort().pop()
+          promotor: [...new Set(rs.map((x) => promotorRota(x.rota)))].join(', '), docs: rs.length, total: sum(rs, 'total'), ultima: rs.map((x) => x.data).sort().pop()
         }));
         pg.append(tiles([{ l: t('Clientes com compras'), v: n0(rows.length) }, { l: t('Venda média por cliente'), v: mkz(rows.length ? sum(rows, 'total') / rows.length : null) },
         { l: t('Clientes com mais de uma compra'), v: n0(rows.filter((x) => x.docs > 1).length) }]));
@@ -1664,7 +1666,7 @@
         const lb = el('label', null, t('Rota')); lb.htmlFor = 'f-rota';
         const sel = el('select'); sel.id = 'f-rota';
         const o0 = el('option', null, t('Todas as rotas') + ' (' + n0(todos.length) + ' ' + t('documentos') + ')'); o0.value = ''; sel.append(o0);
-        const rotulo = (r) => (nomeRota(r) && nomeRota(r) !== r ? r + ' · ' + nomeRota(r) : r);
+        const rotulo = (r) => promotorRota(r);
         rotas.forEach((r) => { const o = el('option', null, rotulo(r) + ' (' + n0((porRota[r] || []).length) + ')'); o.value = r; sel.append(o); });
         sel.value = rotaDoc;
         sel.addEventListener('change', () => { rotaDoc = sel.value; try { localStorage.setItem('vm-rota-doc', rotaDoc); } catch (e) { } draw(); });
@@ -1675,7 +1677,7 @@
         const V = rotaDoc ? (porRota[rotaDoc] || []) : todos;
         const tot = sum(V, 'total'), liq = sum(V, recebidoDe), cli = new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size;
         pg.append(tiles([
-          { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: rotaDoc ? nomeRota(rotaDoc) : t('{n} rotas', { n: rotas.length }) },
+          { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: rotaDoc ? promotorRota(rotaDoc) : t('{n} rotas', { n: rotas.length }) },
           { l: t('Documentos'), v: n0(V.length), s: t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size }) },
           { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
           { l: t('Facturas Pendentes'), v: mkz(tot - liq), tone: tot - liq > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
@@ -1687,14 +1689,14 @@
         if (!rotaDoc) {
           pg.append(tabela({
             id: 'dc-rota', titulo: t('Vendas por rota'), nota: t('Escolha uma rota no filtro acima para ver os documentos dessa rota.'), sort: 'total', total: true,
-            rows: rotas.map((r) => { const rs = porRota[r] || [], tt = sum(rs, 'total'), rc = sum(rs, recebidoDe); return { chave: r, rota: r, promotor: nomeRota(r), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, total: tt, recebido: rc, pendente: tt - rc, medio: rs.length ? tt / rs.length : 0 }; }),
+            rows: rotas.map((r) => { const rs = porRota[r] || [], tt = sum(rs, 'total'), rc = sum(rs, recebidoDe); return { chave: r, rota: r, promotor: promotorRota(r), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, total: tt, recebido: rc, pendente: tt - rc, medio: rs.length ? tt / rs.length : 0 }; }),
             cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
             { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }, { key: 'pendente', label: t('Facturas Pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
           }));
         }
 
         pg.append(tabela({
-          id: 'dc', titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Documentos Pinguim'), rows: V.map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'data', total: true,
+          id: 'dc', titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Documentos Pinguim'), rows: V.map((x) => ({ ...x, promotor: promotorRota(x.rota) })), sort: 'data', total: true,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
           { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'meio_pagamento', label: t('Meio de pagamento') },
           { key: 'liquidado', label: t('Pago'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'), xl: (r) => t(r.liquidado ? 'Sim' : 'Não') },
@@ -1736,12 +1738,12 @@
         };
         const cols = (k) => [{ key: k, label: t(k === 'data' ? 'Dia' : 'Promotor'), type: k === 'data' ? 'date' : undefined }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
         ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })), { key: 'por_liquidar', label: t('Facturas Pendentes'), type: 'kz', sum: true }];
-        const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: nomeRota(rs[0].rota) }));
+        const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: promotorRota(rs[0].rota) }));
         secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
         const pd = Object.values(group(V, 'data')).map((rs) => linha(rs, { chave: rs[0].data, data: rs[0].data }));
         secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
         secs.append(tabela({
-          id: 'pg-pend', titulo: t('Documentos Facturas Pendentes'), rows: V.filter((x) => pendenteDe(x) > 0).map((x) => ({ ...x, promotor: nomeRota(x.rota), recebido: recebidoDe(x), em_falta: pendenteDe(x) })), sort: 'em_falta', total: true, search: false,
+          id: 'pg-pend', titulo: t('Documentos Facturas Pendentes'), rows: V.filter((x) => pendenteDe(x) > 0).map((x) => ({ ...x, promotor: promotorRota(x.rota), recebido: recebidoDe(x), em_falta: pendenteDe(x) })), sort: 'em_falta', total: true, search: false,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true },
           { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true, p: 1 }, { key: 'em_falta', label: t('Em falta'), type: 'kz', sum: true }]
         }));
@@ -1749,7 +1751,7 @@
       };
 
       R['stock-carrinha'] = (pg) => {
-        const C = DB.cargas.filter((x) => inR(x.data));
+        const C = DB.cargas.filter((x) => inR(x.data)).map((x) => ({ ...x, promotor: promotorRota(x.rota, x.promotor) }));
         pg.append(tiles([{ l: t('Carrinhas'), v: n0(new Set(C.map((x) => x.matricula)).size) }, { l: t('Caixas carregadas'), v: n0(sum(C, 'carga')) },
         { l: t('Fraldas'), v: n0(sum(C, 'carga_fraldas')) }, { l: t('Sabão'), v: n0(sum(C, 'carga_sabao')) }, { l: t('Sabonetes'), v: n0(sum(C, 'carga_sabonete')) }]));
         const secs = el('div', 'secs');
@@ -1789,14 +1791,14 @@
         const C = DB.clientes;
         const uni = Object.values(group(C, (x) => x.rota + '|' + (isCF(x.nif) ? 'CF|' + (x.codigo || x.nome) : x.nif))).map((rs) => ({ ...rs[0], dias: [...new Set(rs.map((x) => nomeDia(x.dia)))].join(', ') }));
         const comprou = new Set(DB.vendas.filter((x) => inR(x.data)).map((x) => x.rota + '|' + x.nif));
-        const rows = uni.map((x) => ({ rota: x.rota, promotor: nomeRota(x.rota), codigo: x.codigo, nome: x.nome, nif: x.nif, tipo: x.tipo, dias: x.dias, estado: x.estado, gps: x.tem_gps, comprou: !isCF(x.nif) && comprou.has(x.rota + '|' + x.nif) }));
+        const rows = uni.map((x) => ({ rota: x.rota, promotor: promotorRota(x.rota), codigo: x.codigo, nome: x.nome, nif: x.nif, tipo: x.tipo, dias: x.dias, estado: x.estado, gps: x.tem_gps, comprou: !isCF(x.nif) && comprou.has(x.rota + '|' + x.nif) }));
         const reais = rows.filter((x) => !isCF(x.nif));
         pg.append(tiles([{ l: t('Clientes na carteira'), v: n0(reais.length), s: t('sem Consumidor Final') }, { l: t('Activos'), v: n0(reais.filter((x) => x.estado === 'Ativo').length) },
         { l: t('Pendentes ou com erro'), v: n0(rows.filter((x) => x.estado !== 'Ativo').length), tone: 'warn' }, { l: t('Sem GPS'), v: n0(reais.filter((x) => !x.gps).length) },
         { l: t('Compraram no período'), v: n0(reais.filter((x) => x.comprou).length), s: t('{p} da carteira', { p: pct(reais.length ? reais.filter((x) => x.comprou).length / reais.length : null) }) }]));
         const pr = Object.values(group(rows, 'rota')).map((rs) => {
           const r2 = rs.filter((x) => !isCF(x.nif)); return {
-            rota: rs[0].rota, promotor: nomeRota(rs[0].rota), clientes: r2.length, activos: r2.filter((x) => x.estado === 'Ativo').length,
+            rota: rs[0].rota, promotor: promotorRota(rs[0].rota), clientes: r2.length, activos: r2.filter((x) => x.estado === 'Ativo').length,
             pendentes: rs.filter((x) => x.estado !== 'Ativo').length, sem_gps: r2.filter((x) => !x.gps).length, compraram: r2.filter((x) => x.comprou).length, cobertura: r2.length ? r2.filter((x) => x.comprou).length / r2.length : null
           };
         });
@@ -1827,7 +1829,7 @@
             const vr = V.filter((x) => x.rota === r), comp = new Set(vr.filter((x) => !isCF(x.nif)).map((x) => x.nif));
             const ok = [...comp].filter((n) => plan.has(n)).length;
             if (!plan.size && !vr.length) return;
-            rows.push({ chave: d + '|' + r, data: d, dia: nomeDia(ds3), rota: r, promotor: nomeRota(r), planeados: plan.size, compraram: ok, fora: comp.size - ok, docs: vr.length, total: sum(vr, 'total'), cumprimento: plan.size ? ok / plan.size : null });
+            rows.push({ chave: d + '|' + r, data: d, dia: nomeDia(ds3), rota: r, promotor: promotorRota(r), planeados: plan.size, compraram: ok, fora: comp.size - ok, docs: vr.length, total: sum(vr, 'total'), cumprimento: plan.size ? ok / plan.size : null });
           });
         });
         pg.append(tiles([{ l: t('Clientes planeados'), v: n0(sum(rows, 'planeados')) }, { l: t('Planeados que compraram'), v: n0(sum(rows, 'compraram')) },
