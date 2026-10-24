@@ -1084,7 +1084,7 @@
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
         "Por meio de pagamento": "By payment method", "Todas as rotas": "All routes", "documentos": "documents", "Ver todas as rotas": "Show all routes", "Vendas da rota": "Route sales",
-        "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por meio, como registados no Pinguim BO (sem troco).": "Amounts received by method, as recorded in Pinguim BO (excluding change).",
+        "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).": "Amounts received by payment type, as recorded in Pinguim BO (excluding change).",
         "% do recebido": "% of received", "Em falta": "Outstanding", "Transferência": "Transfer", "Outro": "Other", "Sem meio indicado": "No method recorded",
         "Transferência Bancária": "Bank transfer", "Multicaixa": "Multicaixa",
         "Dinheiro, Multicaixa e Facturas Pendentes": "Cash, Multicaixa and unpaid",
@@ -1721,7 +1721,7 @@
         const PM = porMeio(V);
         const NOMES_CAT = { dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', transferencia: 'Transferência', outro: 'Outro' };
         secs.append(tabela({
-          id: 'pg-meio', titulo: t('Por meio de pagamento'), nota: t('Valores recebidos por meio, como registados no Pinguim BO (sem troco).'),
+          id: 'pg-meio', titulo: t('Por meio de pagamento'), nota: t('Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).'),
           rows: PM.map((o) => ({ chave: o.meio, meio: o.meio, codigo: o.codigo, categoria: t(NOMES_CAT[o.categoria]), docs: o.docs, valor: o.valor, quota: liq ? o.valor / liq : null })),
           sort: 'valor', total: true, search: false,
           cols: [{ key: 'meio', label: t('Meio de pagamento') }, { key: 'codigo', label: t('Código'), p: 0 }, { key: 'categoria', label: t('Tipo'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true },
