@@ -1123,7 +1123,9 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Auditoria": "Audit", "Histórico de auditoria": "Audit history", "Possível duplicado ({n} documentos iguais)": "Possible duplicate ({n} identical documents)",
+        "Por meio de pagamento": "By payment method", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
+        "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
+        "Visita realizada = documento do Pinguim BO para o cliente no dia marcado, na mesma rota. Só contam dias já terminados.": "Visit made = Pinguim BO document for the customer on the scheduled day, on the same route. Only completed days count.", "Realizadas": "Made", "Auditoria": "Audit", "Histórico de auditoria": "Audit history", "Possível duplicado ({n} documentos iguais)": "Possible duplicate ({n} identical documents)",
         "Valor nulo ou negativo": "Zero or negative amount", "Pendente há mais de 3 dias": "Unpaid for more than 3 days", "Pago sem meio de pagamento indicado": "Paid with no payment method recorded",
         "Documentos verificados": "Documents checked", "{n} com ocorrências": "{n} with issues", "Possíveis duplicados": "Possible duplicates", "Pendentes há mais de 3 dias": "Unpaid > 3 days",
         "Pagos sem meio de pagamento": "Paid with no method", "A rever": "To review", "Sem ocorrências": "No issues", "Histórico por dia": "History by day",
@@ -1741,6 +1743,27 @@
         }));
       };
 
+      // Visitas marcadas: cada cliente activo da carteira tem um dia da semana de visita na sua rota.
+      // Conta como visitado quando há um documento do Pinguim BO nesse dia, na mesma rota, para esse
+      // cliente (pelo código do cliente; sem código, pelo NIF). Só contam dias já terminados desde o
+      // arranque do Pinguim BO.
+      function visitasPlaneadas() {
+        const fim = [st.ate, addD(hoje(), -1)].sort()[0], ini = [st.de, INICIO_PINGUIM].sort()[1], out = [];
+        if (ini > fim) return out;
+        const act = DB.clientes.filter((x) => x.estado === 'Ativo' && !isCF(x.nif));
+        const porDiaRota = group(DB.vendas.filter((x) => x.data >= ini && x.data <= fim), (x) => x.data + '|' + x.rota);
+        for (let d = ini; d <= fim; d = addD(d, 1)) {
+          const ds3 = diaSemana(d), vistos = new Set();
+          act.filter((c) => c.dia === ds3).forEach((c) => {
+            const k = c.rota + '|' + c.codigo;
+            if (vistos.has(k)) return; vistos.add(k);
+            const docs = (porDiaRota[d + '|' + c.rota] || []).filter((x) => (x.cliente_codigo ? String(x.cliente_codigo) === String(c.codigo) : String(x.nif) === String(c.nif)));
+            out.push({ data: d, rota: c.rota, codigo: c.codigo, cliente: c.nome, nif: c.nif, visitado: docs.length > 0, total: sum(docs, 'total') });
+          });
+        }
+        return out;
+      }
+
       // Histórico de auditoria: verificações automáticas a cada documento do Pinguim BO, por dia
       function ocorrencias(V) {
         const hj = hoje(), lim = addD(hj, -3), out = [];
@@ -1757,26 +1780,42 @@
       R.auditoria = (pg) => {
         const V = vendasR(), O = ocorrencias(V), docsCom = new Set(O.map((o) => o.x.chave || o.x.documento));
         const cnt = (tp) => O.filter((o) => o.tipo === tp), dup = cnt('dup'), pend = cnt('pend'), meio = cnt('meio');
+        const VP = visitasPlaneadas(), falt = VP.filter((v) => !v.visitado);
         pg.append(tiles([
           { l: t('Documentos verificados'), v: n0(V.length), s: t('{n} com ocorrências', { n: n0(docsCom.size) }), tone: docsCom.size ? 'warn' : null },
           { l: t('Possíveis duplicados'), v: n0(dup.length), s: mkz(sum(dup, (o) => o.x.total)), tone: dup.length ? 'warn' : null },
           { l: t('Pendentes há mais de 3 dias'), v: n0(pend.length), s: mkz(sum(pend, (o) => pendenteDe(o.x))), tone: pend.length ? 'warn' : null },
           { l: t('Pagos sem meio de pagamento'), v: n0(meio.length), s: mkz(sum(meio, (o) => recebidoDe(o.x))), tone: meio.length ? 'warn' : null },
+          { l: t('Visitas marcadas não realizadas'), v: n0(falt.length), s: t('{p} das visitas marcadas', { p: pct(VP.length ? falt.length / VP.length : null) }), tone: falt.length ? 'warn' : null },
         ]));
-        const porDia = Object.values(group(V, 'data')).map((rs) => {
-          const d = rs[0].data, od = O.filter((o) => o.x.data === d), n = (tp) => od.filter((o) => o.tipo === tp).length;
-          const com = new Set(od.map((o) => o.x.chave || o.x.documento)).size;
-          return { chave: d, data: d, docs: rs.length, total: sum(rs, 'total'), dup: n('dup'), pend: n('pend'), meio: n('meio'), com, estado: com ? t('A rever') : t('Sem ocorrências') };
+        const gV = group(V, 'data'), gVP = group(VP, 'data');
+        const porDia = [...new Set([...Object.keys(gV), ...Object.keys(gVP)])].map((d) => {
+          const rs = gV[d] || [], od = O.filter((o) => o.x.data === d), n = (tp) => od.filter((o) => o.tipo === tp).length;
+          const vp = gVP[d] || [], nv = vp.filter((v) => !v.visitado).length;
+          const com = new Set(od.map((o) => o.x.chave || o.x.documento)).size + nv;
+          return { chave: d, data: d, docs: rs.length, total: sum(rs, 'total'), dup: n('dup'), pend: n('pend'), meio: n('meio'), marcadas: vp.length, nao_visitadas: nv, com, estado: com ? t('A rever') : t('Sem ocorrências') };
         });
         pg.append(tabela({
           id: 'au-dia', titulo: t('Histórico por dia'), nota: t('Verificações automáticas a todos os documentos do Pinguim BO no período.'), rows: porDia, sort: 'data', total: true, search: false,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true },
           { key: 'dup', label: t('Possíveis duplicados'), type: 'n', sum: true }, { key: 'pend', label: t('Pendentes há mais de 3 dias'), type: 'n', sum: true }, { key: 'meio', label: t('Pagos sem meio de pagamento'), type: 'n', sum: true },
+          { key: 'marcadas', label: t('Visitas marcadas'), type: 'n', sum: true }, { key: 'nao_visitadas', label: t('Visitas não realizadas'), type: 'n', sum: true },
           { key: 'estado', label: t('Estado'), render: (v, r) => pill(v, r.com ? 'p-warn' : 'p-ok'), xl: (r) => r.estado }]
+        }));
+        const porProm = Object.values(group(VP, 'rota')).map((vs) => {
+          const nv = vs.filter((v) => !v.visitado).length;
+          return { chave: vs[0].rota, promotor: promotorRota(vs[0].rota), marcadas: vs.length, visitadas: vs.length - nv, nao_visitadas: nv, cumprimento: vs.length ? (vs.length - nv) / vs.length : null };
+        });
+        pg.append(tabela({
+          id: 'au-vis', titulo: t('Visitas marcadas por promotor'), nota: t('Visita realizada = documento do Pinguim BO para o cliente no dia marcado, na mesma rota. Só contam dias já terminados.'), rows: porProm, sort: 'nao_visitadas', total: true, search: false,
+          cols: [{ key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'marcadas', label: t('Visitas marcadas'), type: 'n', sum: true }, { key: 'visitadas', label: t('Realizadas'), type: 'n', sum: true },
+          { key: 'nao_visitadas', label: t('Visitas não realizadas'), type: 'n', sum: true },
+          { key: 'cumprimento', label: t('Cumprimento'), type: 'pct', sum: (rs) => { const a = sum(rs, 'marcadas'); return a ? sum(rs, 'visitadas') / a : null; }, render: (v) => (v == null ? pill('—', 'p-mut') : pill(pct(v), v < 0.5 ? 'p-bad' : v < 0.8 ? 'p-warn' : 'p-ok')) }]
         }));
         pg.append(tabela({
           id: 'au-oc', titulo: t('Ocorrências'), nota: t('Documentos a confirmar com a área comercial ou corrigir no Pinguim BO.'),
-          rows: O.map((o, i) => ({ chave: (o.x.chave || o.x.documento) + '|' + o.tipo + '|' + i, data: o.x.data, documento: o.x.documento, promotor: promotorRota(o.x.rota), cliente: o.x.cliente, total: +o.x.total || 0, ocorrencia: o.txt })),
+          rows: [...O.map((o, i) => ({ chave: (o.x.chave || o.x.documento) + '|' + o.tipo + '|' + i, data: o.x.data, documento: o.x.documento, promotor: promotorRota(o.x.rota), cliente: o.x.cliente, total: +o.x.total || 0, ocorrencia: o.txt })),
+            ...falt.map((v) => ({ chave: v.data + '|' + v.rota + '|' + v.codigo + '|visita', data: v.data, documento: '—', promotor: promotorRota(v.rota), cliente: v.cliente + ' (' + v.codigo + ')', total: 0, ocorrencia: t('Visita marcada não realizada (sem venda registada)') }))],
           sort: 'data', total: true,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true },
           { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'ocorrencia', label: t('Ocorrência'), wrap: true }]

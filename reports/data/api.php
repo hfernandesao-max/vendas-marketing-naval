@@ -347,6 +347,7 @@ if (isset($xml->transactions)) {
             'tipo'            => $docType === 'FR' ? 'Factura-recibo' : 'Factura',
             'documento'       => $docNr,
             'cliente'         => $clientName,
+            'cliente_codigo'  => $entityCode,
             'nif'             => $taxNr ?: ($entities[$entityCode]['tax'] ?? ''),
             'liquidado'       => $valorPago >= round($total, 2),
             'total'           => $total,
