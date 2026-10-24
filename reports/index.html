@@ -993,6 +993,204 @@
       }
     }
 
+    /* gráficos de barras (cadastros) */
+    .gwrap {
+      overflow-x: auto;
+      margin-top: 6px
+    }
+
+    .gsvg {
+      display: block;
+      width: 100%;
+      min-width: 300px;
+      height: auto
+    }
+
+    .gsvg .g-grid {
+      stroke: var(--line);
+      stroke-width: 1
+    }
+
+    .gsvg .g-ax {
+      fill: var(--dim);
+      font-size: 10.5px
+    }
+
+    .gsvg .g-val {
+      fill: var(--fg);
+      font-size: 10.5px;
+      font-weight: 650
+    }
+
+    .gsvg .g-meta {
+      stroke: var(--muted);
+      stroke-width: 1.4;
+      stroke-dasharray: 4 4
+    }
+
+    .g-prev {
+      fill: #4A5878;
+      background: #4A5878
+    }
+
+    .g-cur {
+      fill: var(--accent);
+      background: var(--accent)
+    }
+
+    .g-ok {
+      fill: var(--ok);
+      background: var(--ok)
+    }
+
+    .glegenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .glegenda span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .glegenda i {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block
+    }
+
+    .glegenda i.g-meta-l {
+      width: 14px;
+      height: 0;
+      border-top: 2px dashed var(--muted);
+      border-radius: 0
+    }
+
+    .glegenda i.hm-ok,
+    .glegenda i.hm-bx,
+    .glegenda i.hm-0 {
+      width: 12px;
+      height: 12px
+    }
+
+    /* matriz rota × dia */
+    .hm-wrap {
+      overflow-x: auto
+    }
+
+    table.hm {
+      border-collapse: separate;
+      border-spacing: 4px;
+      font-size: 12px;
+      min-width: 100%
+    }
+
+    table.hm td,
+    table.hm th {
+      padding: 0;
+      border: 0;
+      height: auto
+    }
+
+    table.hm tbody tr:hover {
+      background: none
+    }
+
+        table.hm th {
+      color: var(--dim);
+      font-weight: 500;
+      font-size: 11px;
+      white-space: nowrap;
+      text-align: center
+    }
+
+    table.hm .hm-r {
+      text-align: left;
+      white-space: nowrap;
+      padding-right: 8px;
+      position: sticky;
+      left: 0;
+      background: #0E1D44;
+      z-index: 1
+    }
+
+    table.hm td.n,
+    table.hm th.n {
+      text-align: right;
+      white-space: nowrap;
+      padding-left: 8px;
+      font-variant-numeric: tabular-nums
+    }
+
+    .hm-c {
+      display: grid;
+      place-items: center;
+      min-width: 28px;
+      height: 23px;
+      border-radius: 6px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums
+    }
+
+    .hm-ok {
+      background: rgba(61, 214, 140, .32);
+      color: #CFF7E3
+    }
+
+    .hm-bx {
+      background: rgba(255, 107, 107, .30);
+      color: #FFD9D9
+    }
+
+    .hm-0 {
+      background: rgba(140, 170, 230, .08)
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+    .mbar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end
+    }
+
+    .mbar .trk {
+      display: block;
+      width: 64px;
+      height: 6px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: rgba(140, 170, 230, .14)
+    }
+
+    .mbar .trk i {
+      display: block;
+      height: 100%;
+      background: var(--accent)
+    }
+
+    .mbar .trk i.ok {
+      background: var(--ok)
+    }
+
+    .up {
+      color: var(--ok)
+    }
+
+    .down {
+      color: var(--bad)
+    }
+
     /* Telemóvel: filtros compactos, quadros em duas colunas */
     @media (max-width:600px) {
       .main {
@@ -1299,7 +1497,7 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
+        "Por meio de pagamento": "By payment method", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
         "Visita realizada = documento do Pinguim BO para o cliente no dia marcado, na mesma rota. Só contam dias já terminados.": "Visit made = Pinguim BO document for the customer on the scheduled day, on the same route. Only completed days count.", "Realizadas": "Made", "Auditoria": "Audit", "Histórico de auditoria": "Audit history", "Possível duplicado ({n} documentos iguais)": "Possible duplicate ({n} identical documents)",
         "Valor nulo ou negativo": "Zero or negative amount", "Pendente há mais de 3 dias": "Unpaid for more than 3 days", "Pago sem meio de pagamento indicado": "Paid with no payment method recorded",
@@ -1395,6 +1593,7 @@
       const kz2 = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
       const mkz = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
       const n0 = (v) => (v == null || isNaN(v) ? '—' : nf.format(v));
+      const n1 = (v) => (v == null || isNaN(v) ? '—' : nf1.format(v));
       const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(v * 100) + '%');
       const MES = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
       const SEM = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
@@ -1410,6 +1609,8 @@
       const sum = (a, f) => a.reduce((s, x) => s + (+(typeof f === 'function' ? f(x) : x[f]) || 0), 0);
       const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
       const ICON = {
+        users: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM22 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8',
+        grow: 'M3 17l6-6 4 4 8-8M15 7h6v6',
         shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4',
         trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3',
         home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -1771,6 +1972,9 @@
         { id: 'stock-armazem', grupo: 'Stock', icon: 'ware', nome: 'Stock por armazém' },
         { id: 'vendas-artigo', grupo: 'Stock', icon: 'box', nome: 'Vendas por artigo' },
         { id: 'vendas-marca', grupo: 'Stock', icon: 'tag', nome: 'Vendas por promotor e marca' },
+        { id: 'cadastros', grupo: 'Cadastros', icon: 'users', nome: 'Cadastros · visão geral' },
+        { id: 'cadastros-analise', grupo: 'Cadastros', icon: 'grow', nome: 'Análise de cadastros' },
+        { id: 'cadastros-clientes', grupo: 'Cadastros', icon: 'file', nome: 'Clientes registados' },
         { id: 'clientes', grupo: 'Carteira', icon: 'phone', nome: 'Carteira de clientes' },
         { id: 'plano-visitas', grupo: 'Carteira', icon: 'scale', nome: 'Plano de visitas' },
       ];
@@ -2166,6 +2370,181 @@
         pg.append(secs);
       };
 
+      // ================= Cadastros de clientes (dados do repositório rtm-clientes) =================
+      const FERIADOS = ['2026-11-02', '2026-11-11', '2026-12-25'];
+      const diaUtil = (d) => new Date(d + 'T12:00:00Z').getUTCDay() !== 0 && !FERIADOS.includes(d);
+      const temCad = () => !!(DB.cad && Array.isArray(DB.cad.cadastros));
+      const cadReais = () => (temCad() ? DB.cad.cadastros.filter((x) => x.foodtec !== 'Sim') : []);
+      const META_ROTA = () => (DB.cad && DB.cad.meta && DB.cad.meta.diaria_rota) || 14;
+      const META_TOTAL = () => (DB.cad && DB.cad.meta && DB.cad.meta.total) || 10000;
+      const DATA_META = () => (DB.cad && DB.cad.meta && DB.cad.meta.data) || '2026-12-31';
+      function cadSemDados(pg) {
+        const box = el('div');
+        box.append(el('p', null, t('Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.')));
+        pg.append(secBox(t('Sem dados de cadastros'), '', box));
+      }
+      // Matriz rota × dia com os novos clientes (dias úteis até à data escolhida)
+      function cadDiario() {
+        const D = (DB.cad.cadastros_diarios || []).filter((x) => x.dia <= st.ate);
+        const rotas = [...new Set(D.map((x) => x.rota))].sort((a, b) => a.localeCompare(b, 'pt', { numeric: true }));
+        const dias = [...new Set(D.map((x) => x.dia))].filter(diaUtil).sort();
+        const m = {}; D.forEach((x) => { m[x.rota + '|' + x.dia] = (m[x.rota + '|' + x.dia] || 0) + (+x.novos || 0); });
+        const v = (r, d) => m[r + '|' + d] || 0;
+        return { rotas, dias, v, rede: (d) => rotas.reduce((s, r) => s + v(r, d), 0) };
+      }
+      // Gráfico de barras agrupadas em SVG: categorias × séries, linha de meta opcional, valor por cima da última série
+      function barras({ cats, series, meta, metaTxt, altura = 220, rot = 0 }) {
+        const W = Math.max(320, cats.length * (series.length * 14 + 22)), H = altura, L = 34, B = rot ? 46 : 26, T = 18, R = 8;
+        const max = Math.max(meta || 0, ...series.flatMap((s) => s.vals)) * 1.12 || 1;
+        const passo = (W - L - R) / cats.length, bw = Math.min(18, (passo - 8) / series.length);
+        const y = (v) => T + (H - T - B) * (1 - v / max), ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('class', 'gsvg'); svg.setAttribute('role', 'img');
+        const mk = (tag, at, txt) => { const e = document.createElementNS(ns, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); if (txt != null) e.textContent = txt; svg.append(e); return e; };
+        const nice = max > 120 ? 50 : max > 40 ? 10 : 5;
+        for (let g = 0; g <= max; g += nice) { mk('line', { x1: L, x2: W - R, y1: y(g), y2: y(g), class: 'g-grid' }); mk('text', { x: L - 6, y: y(g) + 4, class: 'g-ax', 'text-anchor': 'end' }, n0(g)); }
+        cats.forEach((c, i) => {
+          const x0 = L + passo * i + (passo - bw * series.length) / 2;
+          series.forEach((s, j) => {
+            const v = s.vals[i] || 0, h = Math.max(v ? 2 : 0, H - B - y(v)), cls = typeof s.cls === 'function' ? s.cls(v, i) : s.cls;
+            const r = mk('rect', { x: x0 + j * bw + 1, y: H - B - h, width: Math.max(2, bw - 2), height: h, rx: 3, class: cls });
+            const tt = document.createElementNS(ns, 'title'); tt.textContent = `${c.titulo || c.txt} · ${s.nome}: ${n0(v)}`; r.append(tt);
+            if (j === series.length - 1 && cats.length <= 31) mk('text', { x: x0 + j * bw + bw / 2, y: H - B - h - 4, class: 'g-val', 'text-anchor': 'middle' }, n0(v));
+          });
+          const tx = L + passo * i + passo / 2;
+          if (!rot || i % Math.ceil(cats.length / 12) === 0 || i === cats.length - 1) mk('text', rot ? { x: tx, y: H - B + 14, class: 'g-ax', 'text-anchor': 'end', transform: `rotate(-35 ${tx} ${H - B + 14})` } : { x: tx, y: H - 8, class: 'g-ax', 'text-anchor': 'middle' }, c.txt);
+        });
+        if (meta) { mk('line', { x1: L, x2: W - R, y1: y(meta), y2: y(meta), class: 'g-meta' }); mk('text', { x: W - R, y: y(meta) - 5, class: 'g-ax', 'text-anchor': 'end' }, metaTxt || t('Meta {m}', { m: n0(meta) })); }
+        const w = el('div', 'gwrap'); w.append(svg); return w;
+      }
+      const legenda = (itens) => { const l = el('div', 'glegenda'); itens.forEach(([cls, txt]) => { const s = el('span'); s.append(el('i', cls), document.createTextNode(txt)); l.append(s); }); return l; };
+      const diaCurto = (d) => d.slice(8, 10) + '/' + d.slice(5, 7);
+
+      R.cadastros = (pg) => {
+        if (!temCad()) { cadSemDados(pg); return; }
+        const C = cadReais().filter((x) => x.dia_registo <= st.ate), M = META_ROTA(), { rotas, dias, v, rede } = cadDiario();
+        const ult = dias[dias.length - 1], ant = dias[dias.length - 2], metaRede = M * rotas.length;
+        const naMeta = rotas.filter((r) => v(r, ult) >= M).length;
+        // dias úteis que faltam até à data da meta (a partir do dia seguinte ao último com dados)
+        let rest = 0; for (let d = addD(ult || hoje(), 1); d <= DATA_META(); d = addD(d, 1)) if (diaUtil(d)) rest++;
+        const falta = Math.max(0, META_TOTAL() - C.length), ritmo = rest && rotas.length ? Math.ceil(falta / (rest * rotas.length)) : null;
+        const act = C.filter((x) => x.estado === 'Activo').length, pend = C.filter((x) => x.estado === 'Pendente').length, corr = C.filter((x) => /^Corrigir/.test(x.situacao)).length;
+        pg.append(tiles([
+          { l: t('Clientes registados'), v: t('{a} de {b}', { a: n0(C.length), b: n0(META_TOTAL()) }), s: t('{p} concluído · meta {d}', { p: pct(C.length / META_TOTAL()), d: dl(DATA_META()) }), cls: 'full-value' },
+          { l: t('Activos'), v: n0(act), s: t('{p} validados', { p: pct(C.length ? act / C.length : null) }) },
+          { l: t('Por validar'), v: n0(pend), s: t('{n} com NIF a corrigir', { n: n0(corr) }), tone: pend ? 'warn' : null },
+          { l: ult ? t('Novos em {d}', { d: ds(ult) }) : t('Novos'), v: n0(ult ? rede(ult) : 0), s: t('meta {m}', { m: n0(metaRede) }), tone: ult && rede(ult) >= metaRede ? 'ok' : 'warn' },
+          { l: t('Rotas na meta'), v: `${naMeta}/${rotas.length}`, s: t('no último dia (≥{m})', { m: M }) },
+          { l: t('Para chegar aos {n}', { n: n0(META_TOTAL()) }), v: ritmo == null ? '—' : n0(ritmo), s: t('por rota/dia · {n} dias úteis', { n: rest }) },
+        ]));
+        // Destaques: rotas na meta em pelo menos metade dos dias e rotas que nunca chegaram à meta
+        // Média e dias na meta contam só os dias em que a rota registou clientes
+        const stat = rotas.map((r) => { const vs = dias.map((d) => v(r, d)).filter((x) => x > 0); return { r, media: vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : 0, meta: vs.filter((x) => x >= M).length, ativos: vs.length }; });
+        const chips = (lista, cls) => { const w = el('div', 'chips'); if (!lista.length) w.append(el('span', 'note', '—')); lista.forEach((s) => w.append(pill(promotorRota(s.r), cls))); return w; };
+        const dest = el('div', 'grid2');
+        dest.append(secBox(t('Na meta em pelo menos metade dos dias'), t('Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.', { m: M }), chips(stat.filter((s) => s.ativos && s.meta / s.ativos >= 0.5), 'p-ok')));
+        dest.append(secBox(t('Nunca chegaram à meta'), t('Rotas que ainda não registaram {m} clientes num só dia.', { m: M }), chips(stat.filter((s) => s.meta === 0), 'p-bad')));
+        pg.append(dest);
+        // Matriz rota × dia
+        const ver = dias.slice(-14), mat = el('div', 'hm-wrap'), tb = el('table', 'hm');
+        const hr = el('tr'); hr.append(el('th', 'hm-r', t('Rota'))); ver.forEach((d) => hr.append(el('th', null, diaCurto(d)))); hr.append(el('th', 'n', t('Média')), el('th', 'n', t('Dias na meta')));
+        const th = el('thead'); th.append(hr); tb.append(th); const tbd = el('tbody');
+        [...stat].sort((a, b) => b.media - a.media).forEach((s) => {
+          const tr = el('tr'); tr.append(el('td', 'hm-r', promotorRota(s.r)));
+          ver.forEach((d) => { const x = v(s.r, d), td = el('td'); const c = el('span', 'hm-c ' + (x >= M ? 'hm-ok' : x > 0 ? 'hm-bx' : 'hm-0'), x ? String(x) : ''); c.title = `${promotorRota(s.r)} · ${dl(d)}: ${n0(x)}`; td.append(c); tr.append(td); });
+          tr.append(el('td', 'n', n1(s.media)), el('td', 'n', `${s.meta}/${s.ativos}`)); tbd.append(tr);
+        });
+        tb.append(tbd); mat.append(tb);
+        requestAnimationFrame(() => { mat.scrollLeft = mat.scrollWidth; }); // em ecrã estreito mostra primeiro os dias mais recentes
+        const secM = secBox(t('Cadastros por rota e por dia'), t('Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.', { n: ver.length, m: M }), mat);
+        secM.querySelector('.sec-h').append(legenda([['hm-ok', '≥' + M], ['hm-bx', '1–' + (M - 1)], ['hm-0', '0']]));
+        pg.append(secM);
+        REG.tabelas.push({ id: 'cad-matriz', titulo: t('Cadastros por rota e por dia'), cols: [{ key: 'rota', label: t('Rota') }, ...ver.map((d) => ({ key: d, label: dl(d), type: 'n', sum: true })), { key: 'media', label: t('Média'), type: 'n' }],
+          rows: stat.map((s) => { const o = { chave: s.r, rota: promotorRota(s.r), media: +s.media.toFixed(1) }; ver.forEach((d) => { o[d] = v(s.r, d); }); return o; }), total: true });
+        // Último dia vs dia anterior, por rota; e a rede por dia
+        const g2 = el('div', 'grid2');
+        if (ult) {
+          const cats = [...rotas].sort((a, b) => v(b, ult) - v(a, ult)).map((r) => ({ txt: r, titulo: promotorRota(r) }));
+          const sec = secBox(t('{a} vs {b}', { a: ds(ult), b: ant ? ds(ant) : '—' }), t('Novos clientes por rota no último dia e no dia anterior.'), barras({ cats, meta: M, series: [
+            { nome: ant ? ds(ant) : '', vals: cats.map((c) => (ant ? v(c.txt, ant) : 0)), cls: 'g-prev' },
+            { nome: ds(ult), vals: cats.map((c) => v(c.txt, ult)), cls: (x) => (x >= M ? 'g-ok' : 'g-cur') }] }));
+          sec.querySelector('.sec-h').append(legenda([['g-prev', t('Dia anterior')], ['g-cur', t('Último dia')], ['g-ok', t('Meta cumprida')], ['g-meta-l', t('Meta {m}', { m: M })]]));
+          g2.append(sec);
+        }
+        const ultimos = dias.slice(-20);
+        const secR = secBox(t('Rede por dia'), t('Novos clientes de todas as rotas por dia útil.'), barras({ cats: ultimos.map((d) => ({ txt: diaCurto(d), titulo: ds(d) })), meta: metaRede, rot: ultimos.length > 10,
+          series: [{ nome: t('Novos clientes'), vals: ultimos.map(rede), cls: (x) => (x >= metaRede ? 'g-ok' : 'g-cur') }] }));
+        secR.querySelector('.sec-h').append(legenda([['g-cur', t('Novos clientes')], ['g-ok', t('Meta cumprida')], ['g-meta-l', t('Meta {m}/dia', { m: metaRede })]]));
+        g2.append(secR); pg.append(g2);
+        REG.tabelas.push({ id: 'cad-rede', titulo: t('Rede por dia'), cols: [{ key: 'dia', label: t('Dia'), type: 'date' }, { key: 'novos', label: t('Novos clientes'), type: 'n', sum: true }, { key: 'meta', label: t('Meta'), type: 'n' }],
+          rows: dias.map((d) => ({ chave: d, dia: d, novos: rede(d), meta: metaRede })), total: true });
+        pg.append(el('p', 'note', t('Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.', { d: dl(DB.cad.dados_ate) + ' ' + String(DB.cad.dados_ate || '').slice(11, 16) })));
+      };
+
+      R['cadastros-analise'] = (pg) => {
+        if (!temCad()) { cadSemDados(pg); return; }
+        const M = META_ROTA(), { rotas, v } = cadDiario();
+        const todos = [...new Set((DB.cad.cadastros_diarios || []).map((x) => x.dia))].filter(diaUtil).sort();
+        // Período escolhido e período anterior com o mesmo número de dias de calendário
+        const nDias = Math.round((new Date(st.ate) - new Date(st.de)) / 864e5) + 1, pAte = addD(st.de, -1), pDe = addD(st.de, -nDias);
+        const dP = todos.filter((d) => d >= st.de && d <= st.ate), dA = todos.filter((d) => d >= pDe && d <= pAte);
+        const soma = (ds2, r) => ds2.reduce((s, d) => s + (r ? v(r, d) : rotas.reduce((a, rr) => a + v(rr, d), 0)), 0);
+        const tp = soma(dP), ta = soma(dA), med = dP.length && rotas.length ? tp / (dP.length * rotas.length) : 0;
+        pg.append(tiles([
+          { l: t('Cadastros no período'), v: n0(tp), s: `${dl(st.de)} – ${dl(st.ate)}` },
+          { l: t('Período anterior'), v: n0(ta), s: dA.length ? `${dl(pDe)} – ${dl(pAte)}` : t('sem dados') },
+          { l: t('Variação'), v: (tp - ta > 0 ? '+' : '') + n0(tp - ta), s: ta ? pct((tp - ta) / ta) : '—', tone: tp - ta < 0 ? 'bad' : tp - ta > 0 ? 'ok' : null },
+          { l: t('Média por rota/dia útil'), v: n1(med), s: t('meta {m} · {p} · {n} dias úteis', { m: M, p: pct(med / M), n: dP.length }), tone: med >= M ? 'ok' : 'warn' },
+        ]));
+        const n = Math.max(dP.length, dA.length), cats = [], vp = [], va = [];
+        for (let i = 0; i < n; i++) { const d = dP[i], a = dA[i]; cats.push({ txt: d ? diaCurto(d) : '', titulo: (d ? ds(d) : '—') + (a ? ' / ' + ds(a) : '') }); vp.push(d ? soma([d]) : 0); va.push(a ? soma([a]) : 0); }
+        const sec = secBox(t('Cadastros por dia'), t('Cada barra do período ao lado do dia correspondente do período anterior.'), barras({ cats, meta: M * rotas.length, rot: n > 10,
+          series: [{ nome: t('Período anterior'), vals: va, cls: 'g-prev' }, { nome: t('Período'), vals: vp, cls: (x) => (x >= M * rotas.length ? 'g-ok' : 'g-cur') }] }));
+        sec.querySelector('.sec-h').append(legenda([['g-prev', t('Período anterior')], ['g-cur', t('Período')], ['g-ok', t('Meta cumprida')], ['g-meta-l', t('Meta')]]));
+        pg.append(sec);
+        const metaBar = (p) => { const w = el('span', 'mbar'), tr = el('span', 'trk'), b = el('i'); b.style.width = Math.min(100, Math.round((p || 0) * 100)) + '%'; if ((p || 0) >= 1) b.className = 'ok'; tr.append(b); w.append(tr, document.createTextNode(pct(p))); return w; };
+        pg.append(tabela({
+          id: 'cad-rota', titulo: t('Por rota no período'), nota: t('% da meta = média diária da rota ÷ {m}.', { m: M }), sort: 'periodo', total: true, search: false,
+          rows: rotas.map((r) => { const a = soma(dP, r), b = soma(dA, r), m = dP.length ? a / dP.length : 0; return { chave: r, promotor: promotorRota(r), periodo: a, anterior: b, var: a - b, media: m, meta: m / M }; }),
+          cols: [{ key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'periodo', label: t('Período'), type: 'n', sum: true }, { key: 'anterior', label: t('Anterior'), type: 'n', sum: true },
+          { key: 'var', label: t('Variação'), type: 'n', sum: true, render: (x) => { const s = el('span', x > 0 ? 'up' : x < 0 ? 'down' : null, (x > 0 ? '+' : '') + n0(x)); return s; } },
+          { key: 'media', label: t('Média por dia'), type: 'n', render: (x) => document.createTextNode(n1(x)), xlfmt: '0.0' }, { key: 'meta', label: t('% da meta'), type: 'pct', render: (x) => metaBar(x) }]
+        }));
+      };
+
+      let cadRota = '', cadSit = '';
+      R['cadastros-clientes'] = (pg) => {
+        if (!temCad()) { cadSemDados(pg); return; }
+        const todos = DB.cad.cadastros.filter((x) => x.dia_registo >= st.de && x.dia_registo <= st.ate);
+        const rotas = [...new Set(todos.map((x) => x.rota))].sort((a, b) => a.localeCompare(b, 'pt', { numeric: true }));
+        const sits = [...new Set(todos.map((x) => x.situacao))].sort();
+        const bar = el('div', 'glass filtro');
+        const mkSel = (id, lab, opts, val, set) => {
+          const l = el('label', null, lab); l.htmlFor = id; const s = el('select'); s.id = id;
+          [['', t('Todas')], ...opts].forEach(([v2, tx]) => { const o = el('option', null, tx); o.value = v2; s.append(o); }); s.value = val;
+          s.addEventListener('change', () => { set(s.value); draw(); }); bar.append(l, s);
+        };
+        mkSel('f-cad-rota', t('Rota'), rotas.map((r) => [r, promotorRota(r)]), cadRota, (x) => { cadRota = x; });
+        mkSel('f-cad-sit', t('Situação'), sits.map((x) => [x, t(x)]), cadSit, (x) => { cadSit = x; });
+        pg.append(bar);
+        const V = todos.filter((x) => (!cadRota || x.rota === cadRota) && (!cadSit || x.situacao === cadSit));
+        const cnt = (re) => V.filter((x) => re.test(x.situacao)).length;
+        pg.append(tiles([
+          { l: t('Registados no período'), v: n0(V.length), s: `${dl(st.de)} – ${dl(st.ate)}` },
+          { l: t('Clientes válidos'), v: n0(cnt(/^Cliente válido/)), tone: 'ok' },
+          { l: t('NIF a corrigir'), v: n0(cnt(/^Corrigir/)), tone: cnt(/^Corrigir/) ? 'warn' : null },
+          { l: t('A excluir (Foodtec)'), v: n0(cnt(/^Excluir/)), tone: cnt(/^Excluir/) ? 'bad' : null },
+        ]));
+        const sitCls = (s) => (/^Cliente válido/.test(s) ? 'p-ok' : /^Excluir/.test(s) ? 'p-bad' : 'p-warn');
+        pg.append(tabela({
+          id: 'cad-cli', titulo: t('Clientes registados'), nota: t('Data de registo = primeira exportação do RTM em que o cliente aparece.'), sort: 'dia_registo', total: false,
+          rows: V.map((x) => ({ ...x, chave: x.id + '|' + x.rota, promotor: promotorRota(x.rota), hora: String(x.data_registo || '').slice(11, 16) })),
+          cols: [{ key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'tipo', label: t('Tipo') }, { key: 'nif', label: t('NIF') }, { key: 'municipio', label: t('Município') },
+          { key: 'estado', label: t('Estado'), render: (x) => pill(t(x), x === 'Activo' ? 'p-ok' : 'p-warn'), xl: (r) => t(r.estado) },
+          { key: 'dia_registo', label: t('Data de registo'), type: 'date' }, { key: 'hora', label: t('Hora'), p: 5 },
+          { key: 'situacao', label: t('Situação'), render: (x) => pill(t(x), sitCls(x)), xl: (r) => t(r.situacao) }]
+        }));
+      };
+
       R['plano-visitas'] = (pg) => {
         const dias = [...new Set(DB.vendas.map((x) => x.data))].filter(inR).sort();
         const act = DB.clientes.filter((x) => x.estado === 'Ativo' && !isCF(x.nif));
@@ -2253,6 +2632,15 @@
           ['rotas', 'clientes', 'cargas'].forEach((k) => { if (!Array.isArray(DB[k])) DB[k] = []; });
           DB.vendas = [];
           DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
+          // Cadastros (rtm-clientes): no servidor via PHP; em alternativa, o ficheiro JSON copiado para data/
+          const ler = (u) => fetch(u, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+          return ler('data/cadastros.php').then((d) => (d && d.cadastros ? d : ler('data/cadastros.json'))).then((d) => {
+            DB.cad = d && Array.isArray(d.cadastros) ? d : null;
+            // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
+            if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
+          });
+        })
+        .then(() => {
           carregarFiltro();
           if (st.preset || !st.de || !st.ate) return aplicarPreset(st.preset || 'mes');
           return fetchVendas(st.de, st.ate);

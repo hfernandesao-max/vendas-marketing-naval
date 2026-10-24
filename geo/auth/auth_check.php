@@ -16,8 +16,8 @@ $configuredBasePath = defined('NAVAL_AUTH_BASE_PATH') ? NAVAL_AUTH_BASE_PATH : n
 $configuredRedirect = defined('NAVAL_AUTH_REDIRECT') ? NAVAL_AUTH_REDIRECT : null;
 
 if (!isset($_SESSION['usuario_autenticado']) || $_SESSION['usuario_autenticado'] !== true) {
-    // A API dos relatórios deve responder JSON, não uma página de login.
-    if (preg_match('#/reports/data/api\.php$#i', $scriptName)) {
+    // Os serviços de dados dos relatórios (reports/data/*.php) respondem JSON, não uma página de login.
+    if (preg_match('#/reports/data/[^/]+\.php$#i', $scriptName)) {
         http_response_code(401);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Autenticação necessária.']);

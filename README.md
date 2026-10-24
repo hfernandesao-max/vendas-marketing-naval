@@ -54,3 +54,25 @@ PINGUIM_URL=http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/re
 `PINGUIM_URL` aceita vários endereços separados por vírgula, tentados por ordem. No servidor responde o local (porta 8089); num computador fora do servidor usa-se o externo (2053). Sem `PINGUIM_URL`, são estes os valores usados.
 
 Diagnóstico, com sessão iniciada: `reports/data/api.php?diag=1`.
+
+## Cadastros de clientes (`reports/data/cadastros.php`)
+
+As páginas **Cadastros** (visão geral, análise e clientes registados), a **Carteira de clientes** e o **plano de visitas** da auditoria usam o ficheiro `saida/portal_rtm.json` do repositório privado **rtm-clientes**, actualizado pelo GitHub Actions sempre que se carrega a exportação «Clientes» do RTM.
+
+No servidor:
+
+1. Clonar o repositório ao lado da pasta do site (fica fora da pasta pública):
+   ```
+   cd C:\Apache24\htdocs
+   git clone https://github.com/hfernandesao-max/rtm-clientes.git
+   ```
+2. Agendar no Windows (Agendador de Tarefas), por exemplo de hora a hora:
+   ```
+   git -C C:\Apache24\htdocs\rtm-clientes pull --ff-only
+   ```
+3. Se o repositório ficar noutra pasta, indicar o ficheiro no `.env`:
+   ```
+   RTM_CLIENTES_JSON=D:\caminho\rtm-clientes\saida\portal_rtm.json
+   ```
+
+Sem estes dados, as páginas de cadastros mostram como configurar e a carteira usa `reports/data/clientes.json`.

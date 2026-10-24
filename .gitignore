@@ -3,3 +3,5 @@ __pycache__/
 *.xlsx
 
 .env
+
+reports/data/cadastros.json
