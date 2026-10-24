@@ -463,7 +463,19 @@
       letter-spacing: -.03em
     }
 
-    .tile .s {
+    /* quadro com um nome em vez de um número (ranking) */
+    .tile.nome {
+      min-width: 0
+    }
+
+    .tile.nome .v {
+      font-size: 18px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.25
+    }
+
+        .tile .s {
       font-size: 12px;
       color: var(--dim)
     }
@@ -1111,7 +1123,9 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Todas as rotas": "All routes", "documentos": "documents", "Ver todas as rotas": "Show all routes", "Vendas da rota": "Route sales",
+        "Por meio de pagamento": "By payment method", "Ranking": "Ranking", "Consumidor Final": "Walk-in customers", "Melhor promotor": "Top promoter", "Melhor cliente": "Top customer", "Peso dos 10 melhores clientes": "Share of top 10 customers",
+        "{n} clientes com NIF": "{n} customers with tax ID", "Ranking de promotores": "Promoter ranking", "Ranking de clientes": "Customer ranking", "% do total": "% of total", "% recebido": "% received",
+        "Ordenado pelo valor vendido no período, com IVA.": "Sorted by sales value in the period, incl. VAT.", "Clientes identificados por NIF, sem Consumidor Final. Ordenado pelo valor comprado no período, com IVA.": "Customers identified by tax ID, excluding walk-in customers. Sorted by purchase value in the period, incl. VAT.", "Todas as rotas": "All routes", "documentos": "documents", "Ver todas as rotas": "Show all routes", "Vendas da rota": "Route sales",
         "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).": "Amounts received by payment type, as recorded in Pinguim BO (excluding change).",
         "% do recebido": "% of received", "Em falta": "Outstanding", "Transferência": "Transfer", "Outro": "Other", "Sem meio indicado": "No method recorded",
         "Transferência Bancária": "Bank transfer", "Multicaixa": "Multicaixa",
@@ -1213,6 +1227,7 @@
       const sum = (a, f) => a.reduce((s, x) => s + (+(typeof f === 'function' ? f(x) : x[f]) || 0), 0);
       const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
       const ICON = {
+        trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3',
         home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
         truck: 'M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
         ware: 'M3 9l9-5 9 5v11H3zM7 20v-7h10v7M7 16h10', box: 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8',
@@ -1558,6 +1573,7 @@
         { id: 'vendas-promotor', grupo: 'Vendas RTM', icon: 'chart', nome: 'Vendas por promotor' },
         { id: 'vendas-dia', grupo: 'Vendas RTM', icon: 'route', nome: 'Vendas por dia' },
         { id: 'vendas-cliente', grupo: 'Vendas RTM', icon: 'tag', nome: 'Vendas por cliente' },
+        { id: 'ranking', grupo: 'Vendas RTM', icon: 'trophy', nome: 'Ranking' },
         { id: 'documentos', grupo: 'Vendas RTM', icon: 'file', nome: 'Documentos' },
         { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Métodos de pagamento' },
         { id: 'stock-carrinha', grupo: 'Stock', icon: 'truck', nome: 'Stock por promotor / carrinha' },
@@ -1680,6 +1696,39 @@
           id: 'vc', titulo: t('Vendas por cliente'), rows, sort: 'total', total: true,
           cols: [{ key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
           { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'ultima', label: t('Última compra'), type: 'date' }]
+        }));
+      };
+
+      // Ranking dos melhores clientes e promotores, por valor vendido no período
+      R.ranking = (pg) => {
+        const V = vendasR(), tot = sum(V, 'total');
+        const pos = (rows) => rows.sort((a, b) => b.total - a.total || b.docs - a.docs).map((r, i) => ({ ...r, pos: i + 1, quota: tot ? r.total / tot : null }));
+        // Clientes identificados por NIF; o Consumidor Final fica de fora do ranking
+        const CL = pos(Object.values(group(V.filter((x) => !isCF(x.nif)), 'nif')).map((rs) => ({
+          chave: rs[0].nif, cliente: rs[0].cliente, nif: rs[0].nif, promotor: [...new Set(rs.map((x) => promotorRota(x.rota)))].join(', '),
+          docs: rs.length, total: sum(rs, 'total'), medio: sum(rs, 'total') / rs.length, ultima: rs.map((x) => x.data).sort().pop()
+        })));
+        const PR = pos(Object.values(group(V, 'rota')).map((rs) => ({
+          chave: rs[0].rota, promotor: promotorRota(rs[0].rota), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+          total: sum(rs, 'total'), medio: sum(rs, 'total') / rs.length, recebido: sum(rs, 'total') ? sum(rs, recebidoDe) / sum(rs, 'total') : null
+        })));
+        const top10 = CL.slice(0, 10), q10 = sum(top10, 'total'), cf = sum(V.filter((x) => isCF(x.nif)), 'total');
+        pg.append(tiles([
+          { l: t('Melhor promotor'), v: PR[0] ? PR[0].promotor : '—', s: PR[0] ? mkz(PR[0].total) : '', cls: 'nome' },
+          { l: t('Melhor cliente'), v: CL[0] ? CL[0].cliente : '—', s: CL[0] ? mkz(CL[0].total) : '', cls: 'nome' },
+          { l: t('Peso dos 10 melhores clientes'), v: pct(tot ? q10 / tot : null), s: t('{n} clientes com NIF', { n: n0(CL.length) }) },
+          { l: t('Consumidor Final'), v: mkz(cf), s: t('{p} do total', { p: pct(tot ? cf / tot : null) }) },
+        ]));
+        const posCol = { key: 'pos', label: '#', type: 'n', p: 0, render: (v) => el('b', null, String(v)) };
+        pg.append(tabela({
+          id: 'rk-prom', titulo: t('Ranking de promotores'), nota: t('Ordenado pelo valor vendido no período, com IVA.'), rows: PR, sort: 'total', total: true, search: false,
+          cols: [posCol, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'quota', label: t('% do total'), type: 'pct' },
+          { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' }, { key: 'medio', label: t('Média por documento'), type: 'kz' }, { key: 'recebido', label: t('% recebido'), type: 'pct' }]
+        }));
+        pg.append(tabela({
+          id: 'rk-cli', titulo: t('Ranking de clientes'), nota: t('Clientes identificados por NIF, sem Consumidor Final. Ordenado pelo valor comprado no período, com IVA.'), rows: CL, sort: 'total', total: true,
+          cols: [posCol, { key: 'cliente', label: t('Cliente'), wrap: true, p: 0 }, { key: 'nif', label: t('NIF') }, { key: 'promotor', label: t('Promotor') }, { key: 'total', label: t('Total'), type: 'bar', sum: true },
+          { key: 'quota', label: t('% do total'), type: 'pct' }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }, { key: 'ultima', label: t('Última compra'), type: 'date' }]
         }));
       };
 
