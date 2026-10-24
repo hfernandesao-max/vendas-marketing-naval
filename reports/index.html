@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portal RTM · Grupo Naval</title>
+<meta name="description" content="Portal RTM do Grupo Naval Angola: vendas do Pinguim BO por promotor, dia e cliente, recebimentos, carga das carrinhas e carteira de clientes.">
+<link rel="icon" type="image/png" href="../assets/globo.png">
+<style>
+/* Estilo do Portal do Grupo: azul-marinho escuro, menu lateral, cartões de vidro com ícone em azul */
+:root{
+  color-scheme:dark;
+  --bg:#08122B; --bg2:#0C1A3D; --side:#0B1735; --side2:#0E1E45;
+  --card:rgba(20,36,80,.55); --card2:rgba(26,46,100,.55); --line:rgba(140,170,230,.14); --line2:rgba(140,170,230,.24);
+  --fg:#F2F5FC; --muted:#8FA3C8; --dim:#6B7FA6;
+  --accent:#3F8CFF; --accent2:#2A6FE0; --sky:#6EC3FF; --navy:#1E4FB0;
+  --ok:#3DD68C; --warn:#F5B547; --bad:#FF6B6B;
+  --r:18px; --font:"Segoe UI",-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(120% 80% at 70% -10%,#13285C 0%,var(--bg) 55%) fixed,var(--bg);color:var(--fg);font:14px/1.45 var(--font);
+  font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:6px}
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100%}
+
+/* menu lateral */
+.side{position:sticky;top:0;height:100vh;overflow:auto;background:linear-gradient(180deg,var(--side2),var(--side));border-right:1px solid var(--line);
+  padding:22px 14px max(22px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:12px;padding:2px 10px 14px}
+.brand img{width:44px;height:36px;object-fit:contain}
+.brand b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.brand span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+.navg{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:10px 12px 3px}
+.nav a{display:flex;align-items:center;gap:11px;padding:7px 12px;border-radius:11px;color:#DCE4F5;text-decoration:none;font-size:13.5px;line-height:1.3;margin:1px 0}
+.nav a svg{width:19px;height:19px;flex:none;stroke:#BFD0EE;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nav a:hover{background:rgba(63,140,255,.08)}
+.nav a.on{background:linear-gradient(90deg,rgba(63,140,255,.26),rgba(63,140,255,.10));color:#fff;box-shadow:inset 0 0 0 1px rgba(110,195,255,.18)}
+.nav a.on svg{stroke:#fff}
+.nav a .n{margin-left:auto;font-size:11px;font-weight:700;color:var(--warn);background:rgba(245,181,71,.14);border-radius:999px;padding:1px 8px}
+.side-foot{margin-top:10px;padding:10px 12px;font-size:11.5px;color:var(--dim);border-top:1px solid var(--line)}
+
+/* área principal */
+.main{min-width:0;padding-block:28px 40px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);font-weight:600}
+h1{margin:6px 0 0;font-size:clamp(26px,3.2vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.lead{color:var(--muted);margin:8px 0 0;max-width:70ch}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{all:unset;cursor:pointer;padding:6px 11px;border-radius:9px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:rgba(63,140,255,.22);color:#fff}
+.date{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:4px 10px;font-size:12.5px;color:var(--muted)}
+.date input{background:transparent;border:0;color:var(--fg);font-size:12.5px;padding:3px 0;color-scheme:dark}
+.btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgba(110,195,255,.35);background:linear-gradient(145deg,rgba(63,140,255,.32),rgba(42,111,224,.22));
+  color:#fff;border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:600}
+.btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:10px}
+.menu-btn{display:none}
+.back{display:flex;align-items:center;gap:8px;margin:0 10px 8px;padding:6px 10px;border-radius:10px;color:var(--muted);text-decoration:none;font-size:12.5px;border:1px solid var(--line)}
+.back:hover{color:#fff;background:rgba(63,140,255,.08)}
+.back svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.side-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:0 12px}
+.side-tools .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.btn.ghost{background:rgba(255,255,255,.04);border-color:var(--line)}
+.btn[disabled]{opacity:.6;cursor:progress}
+.toast{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));z-index:40;background:#132654;border:1px solid var(--line2);border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+
+/* cartões */
+.glass{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -26px rgba(0,0,0,.6)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:14px;margin-bottom:18px}
+.tile{padding:16px 18px;display:grid;gap:4px}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile .v{font-size:24px;font-weight:750;letter-spacing:-.02em;white-space:nowrap}
+.tile .s{font-size:12px;color:var(--dim)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:16px}
+.card-link{position:relative;display:flex;flex-direction:column;gap:6px;padding:22px;min-height:206px;text-decoration:none;color:inherit;transition:transform .18s,border-color .18s}
+.card-link:hover{transform:translateY(-2px);border-color:var(--line2)}
+.ico{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#3C8BF0,#1E4FB0);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 18px -8px rgba(30,79,176,.9);margin-bottom:auto}
+.ico svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ico.alt{background:linear-gradient(145deg,#5B6BD8,#33409E)}
+.card-link .k{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);font-weight:600;margin-top:20px}
+.card-link .t{font-size:20px;font-weight:750;letter-spacing:-.01em}
+.card-link .d{font-size:13px;color:var(--muted)}
+.badge{position:absolute;top:18px;right:18px;font-size:12px;font-weight:700;color:var(--warn);background:rgba(245,181,71,.13);border:1px solid rgba(245,181,71,.25);border-radius:999px;padding:4px 11px}
+.badge.ok{color:var(--ok);background:rgba(61,214,140,.12);border-color:rgba(61,214,140,.25)}
+.badge.bad{color:var(--bad);background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.28)}
+.secs{display:grid;gap:18px}
+.sec{padding:18px 18px 12px;min-width:0}
+.sec-h{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.sec-h h2{margin:0;font-size:16.5px;font-weight:700}
+.sec-h p{margin:3px 0 0;font-size:12.5px;color:var(--muted);max-width:80ch}
+.sec-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12.5px;width:min(100%,220px)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px}
+
+/* tabelas */
+.tw{overflow-x:auto;border-radius:12px}
+[hidden]{display:none!important}
+*{scrollbar-width:thin;scrollbar-color:#2A3C6E transparent}
+table.compact th,table.compact td{padding:6px 7px;font-size:12px}
+table.compact td.t{white-space:normal;min-width:72px}
+table.compact td.w{min-width:120px}
+.more{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 4px 2px;font-size:12px;color:var(--muted)}
+.more div{display:flex;gap:8px;flex-wrap:wrap}
+.linkbtn{all:unset;cursor:pointer;color:var(--sky);font-weight:600;font-size:12px}
+.linkbtn:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+th,td{padding:8px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{background:#12224C;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+th button{all:unset;cursor:pointer}
+td.n,th.n{text-align:right}
+td.w{white-space:normal;min-width:180px}
+tbody tr:hover td{background:rgba(63,140,255,.07)}
+tfoot td{background:#132654;font-weight:700;border-top:1px solid var(--line2);border-bottom:0}
+.empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
+.p-ok{color:var(--ok);background:rgba(61,214,140,.12)}.p-warn{color:var(--warn);background:rgba(245,181,71,.13)}.p-bad{color:var(--bad);background:rgba(255,107,107,.13)}.p-mut{color:var(--muted);background:rgba(143,163,200,.12)}
+.cbar{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;width:100%}
+.cbar i{display:block;height:6px;border-radius:6px;background:linear-gradient(90deg,#2A6FE0,#6EC3FF);min-width:2px}
+.heat td.h{text-align:right;min-width:74px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;color:var(--warn);background:rgba(245,181,71,.13);vertical-align:3px}
+
+/* gráficos simples */
+.bars{display:grid;gap:8px}
+.bars .r{display:grid;grid-template-columns:minmax(120px,32%) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.bars .r span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#DCE4F5}
+.bars .tr{height:10px;border-radius:10px;background:rgba(255,255,255,.05);overflow:hidden}
+.bars .tr i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#1E4FB0,#3F8CFF 60%,#6EC3FF)}
+.mix{display:flex;height:14px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.05);margin:6px 0 10px}
+.mix i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.note{font-size:12px;color:var(--dim);margin:8px 2px 0}
+
+@media (max-height:820px) and (min-width:961px){
+  .side{padding-top:14px;padding-bottom:10px}
+  .brand{padding-bottom:8px}.brand img{width:36px;height:30px}
+  .navg{padding:6px 12px 1px}
+  .nav a{padding:5px 12px;font-size:13px}
+  .nav a svg{width:17px;height:17px}
+  .side-tools{margin-top:6px}.side-foot{margin-top:6px;padding:6px 12px;font-size:11px}
+}
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:min(86vw,300px);z-index:30;transform:translateX(-105%);transition:transform .25s;height:100%}
+  .app.open .side{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.5)}
+  .menu-btn{display:inline-flex;margin-bottom:12px}
+  .tile .v{font-size:20px}
+  .main{padding-top:max(18px,env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Menu">
+    <div class="brand"><img src="../assets/globo.png" alt=""><div><b>Grupo Naval Angola</b><span id="brand-sub">Portal RTM</span></div></div>
+    <a class="back" href="../" id="voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><span id="voltar-t">Página principal</span></a>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-tools"><span class="lbl" id="lang-lbl">Idioma</span><div class="seg" id="lang" role="group" aria-label="Idioma / Language"><button type="button" data-l="pt">PT</button><button type="button" data-l="en">EN</button></div></div>
+    <div class="side-foot" id="foot">…</div>
+  </aside>
+  <main class="main">
+    <div class="top">
+      <div>
+        <button class="btn sm menu-btn" id="menu" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="menu-t">Menu</span></button>
+        <div class="eyebrow" id="eyebrow"></div>
+        <h1 id="titulo">…</h1>
+        <p class="lead" id="lead"></p>
+      </div>
+      <div class="filters">
+        <div class="seg" id="presets"></div>
+        <label class="date" for="de"><span id="l-de">De</span> <input type="date" id="de"></label>
+        <label class="date" for="ate"><span id="l-ate">Até</span> <input type="date" id="ate"></label>
+        <button class="btn ghost" id="xl-page" type="button"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11M8 13l3 4m0-4-3 4"/></svg><span></span></button>
+        <button class="btn" id="xl-all" type="button"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg><span></span></button>
+      </div>
+    </div>
+    <div id="page"></div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  // ================= idioma =================
+  const EN = {
+    'Início': 'Home', 'Stock': 'Stock', 'Relatório de vendas': 'Sales report', 'Controlo': 'Control', 'Vendas Marketing': 'Marketing Sales',
+    'Stock por promotor / carrinha': 'Stock by promoter / van', 'Stock por armazém': 'Stock by warehouse', 'Vendas por artigo': 'Sales by item',
+    'Métodos de pagamento': 'Payment methods', 'Vendas globais e descontos': 'Total sales and discounts', 'Vendas por promotor e marca': 'Sales by promoter and brand',
+    'Reconciliação de caixa': 'Cash reconciliation', 'Logística e escoamento': 'Logistics and sell-through', 'RTM Pinguim BO': 'RTM Pinguim BO', 'Facturas': 'Invoices',
+    'Idioma': 'Language', 'De': 'From', 'Até': 'To', 'Último dia': 'Last day', '7 dias': '7 days', 'Mês': 'Month', 'Tudo': 'All', 'Menu': 'Menu',
+    'Excel desta página': 'Excel for this page', 'Excel completo': 'Full Excel', 'A preparar o Excel…': 'Preparing the Excel file…', 'Excel transferido.': 'Excel downloaded.',
+    'Não foi possível gerar o Excel.': 'The Excel file could not be created.', 'Procurar…': 'Search…', 'Sem dados no período escolhido.': 'No data for the selected period.',
+    'Total': 'Total', 'Onde pretende entrar?': 'Where would you like to go?', 'Sem dados': 'No data', 'Não foi possível desenhar esta página.': 'This page could not be drawn.',
+    'Vendas com IVA': 'Sales incl. VAT', 'Vendas sem IVA': 'Sales excl. VAT', 'IVA': 'VAT', 'Caixas vendidas': 'Cases sold', 'Sacos {n}': 'Bags {n}',
+    'Desconto vs preço padrão': 'Discount vs list price', '{p} do valor': '{p} of value', 'Emitido no Pinguim': 'Issued in Pinguim', 'RTM por validar': 'RTM to be validated', 'IVA {v}': 'VAT {v}',
+    'Stock por promotor': 'Stock by promoter', '{a} carrinhas · {b} caixas': '{a} vans · {b} cases', '{a} centros · {b} armazéns MR': '{a} plants · {b} MR warehouses',
+    '{n} artigos vendidos': '{n} items sold', '{n} em ruptura': '{n} running out', 'Numerário, TPA, depósito e crédito': 'Cash, card, deposit and credit',
+    'Por promotor, com e sem IVA': 'By promoter, incl. and excl. VAT', '{n} marcas': '{n} brands',
+    '{n} diferença(s)': '{n} difference(s)', 'Confere': 'Matches', 'Carga dos camiões contra vendas': 'Truck loads vs sales', 'Por validar': 'To be validated', '{n} facturas no período': '{n} invoices in the period',
+    'Sem relatório de stock até à data escolhida.': 'No stock report up to the selected date.',
+    'Stock final nas carrinhas': 'Closing stock in vans', 'em {d}': 'on {d}', 'Entradas no período': 'Receipts in period', 'Saídas no período': 'Issues in period', 'Promotores com stock': 'Promoters with stock',
+    'Stock por promotor e carrinha': 'Stock by promoter and van', 'Stock inicial em {a}, final em {b}. Carrinha e motorista do plano de cargas mais recente.': 'Opening stock on {a}, closing on {b}. Van and driver from the latest loading plan.',
+    'Promotor': 'Promoter', 'Armazém MR': 'MR warehouse', 'Carrinha': 'Van', 'Viatura': 'Vehicle', 'Motorista': 'Driver', 'Artigos': 'Items', 'Stock inicial': 'Opening stock', 'Entradas': 'Receipts', 'Saídas': 'Issues', 'Stock final': 'Closing stock',
+    'Detalhe por promotor e artigo': 'Detail by promoter and item', 'Código': 'Code', 'Artigo': 'Item', 'Marca': 'Brand', 'Inicial': 'Opening', 'Final': 'Closing',
+    'Stock por centro e armazém': 'Stock by plant and warehouse', 'Período de stock: {a} a {b}.': 'Stock period: {a} to {b}.', 'Centro': 'Plant', 'Armazém': 'Warehouse',
+    '{n} armazéns MR · em {d}': '{n} MR warehouses · on {d}', 'Stock final por artigo e armazém': 'Closing stock by item and warehouse', 'Caixas no fim do período em cada armazém MR (todos os centros).': 'Cases at the end of the period in each MR warehouse (all plants).',
+    'Top 10 artigos por valor': 'Top 10 items by value', 'Período {a} a {b}, com IVA.': 'Period {a} to {b}, incl. VAT.', 'Por categoria': 'By category', 'Valor com IVA por família de produto.': 'Value incl. VAT by product family.',
+    'Categoria': 'Category', 'Un.': 'Unit', 'Qtd.': 'Qty', 'Valor c/ IVA': 'Value incl. VAT', 'Valor s/ IVA': 'Value excl. VAT', 'Preço médio': 'Average price', 'Desconto': 'Discount', 'Promotores': 'Promoters', 'Cobertura': 'Cover', '{n} dias': '{n} days',
+    'Numerário': 'Cash', 'TPA (Multicaixa)': 'Card (Multicaixa)', 'TPA': 'Card', 'Depósito': 'Deposit', 'Crédito': 'Credit', '{p} do total': '{p} of total',
+    'Peso de cada método': 'Share of each method', 'Total facturado {v} no período.': 'Total invoiced {v} in the period.', 'Por dia': 'By day', 'Dia': 'Day',
+    'Numerário entregue': 'Cash handed in', 'Talões TPA': 'Card slips', 'Por promotor': 'By promoter', 'Facturado': 'Invoiced', 'Diferença': 'Difference',
+    'Desconto com IVA': 'Discount incl. VAT', 'Desconto sem IVA': 'Discount excl. VAT', 'Desconto / valor a preço padrão': 'Discount / value at list price',
+    'Vendas e descontos por promotor': 'Sales and discounts by promoter', 'Desconto = valor ao preço padrão − valor facturado. Sem IVA pelo rácio líquido/total de cada factura.': 'Discount = value at list price − invoiced value. Excl. VAT using each invoice’s net/total ratio.',
+    'Vendas c/ IVA': 'Sales incl. VAT', 'Vendas s/ IVA': 'Sales excl. VAT', 'Desconto c/ IVA': 'Discount incl. VAT', 'Desconto s/ IVA': 'Discount excl. VAT', '% desconto': '% discount', 'Caixas': 'Cases',
+    'Por empresa': 'By company', 'Empresa': 'Company', 'C/ IVA': 'Incl. VAT', 'S/ IVA': 'Excl. VAT', 'Desc. c/ IVA': 'Disc. incl. VAT', 'Desc. s/ IVA': 'Disc. excl. VAT',
+    'Promotor × marca (valor com IVA)': 'Promoter × brand (value incl. VAT)', 'Detalhe por promotor e marca': 'Detail by promoter and brand', 'Total por marca': 'Total by brand',
+    'Diferença numerário': 'Cash difference', 'Diferença TPA': 'Card difference', 'Vendedores com diferença': 'Sellers with differences', 'Saldo de caixa': 'Cash balance', 'Entregue': 'Handed in', 'Dif.': 'Diff.', 'Talões': 'Slips', 'Por vendedor e dia': 'By seller and day',
+    'Diferença = numerário entregue + TPA + depósito + crédito − facturado.': 'Difference = cash handed in + card + deposit + credit − invoiced.', 'Vendedor': 'Seller',
+    'Camiões': 'Trucks', 'Caixas carregadas': 'Cases loaded', 'Escoamento': 'Sell-through', 'Camiões sem vendas': 'Trucks with no sales',
+    'Plano de cargas e escoamento': 'Loading plan and sell-through', 'Escoamento = caixas facturadas pelo vendedor ÷ caixas carregadas no camião.': 'Sell-through = cases invoiced by the seller ÷ cases loaded on the truck.',
+    'Matrícula': 'Plate', 'Zonas': 'Zones', 'Zonas de descarga': 'Delivery zones', 'Carga': 'Load', 'Vendido': 'Sold',
+    '{n} documentos': '{n} documents', 'Por liquidar': 'Unpaid', 'Rotas validadas': 'Routes validated',
+    'Rota': 'Route', 'Documentos': 'Documents', 'Documentos Pinguim': 'Pinguim documents', 'Hora': 'Time', 'Documento': 'Document', 'Cliente': 'Customer', 'NIF': 'Tax ID',
+    'Pago': 'Paid', 'Sim': 'Yes', 'Não': 'No', 'Sem correspondência': 'No match', 'Correspondência rota ↔ vendedor': 'Route ↔ seller mapping',
+    'A confirmar pela área comercial.': 'To be confirmed by Sales.', 'Nome no Pinguim': 'Name in Pinguim', 'Estado': 'Status', 'Confirmado': 'Confirmed', 'Factura': 'Invoice',
+    'Fraldas': 'Diapers', 'Sabão': 'Soap', 'Sabonetes': 'Beauty soap', 'Massas': 'Pasta', 'Farinha': 'Flour', 'Arroz e açúcar': 'Rice and sugar', 'Óleo': 'Oil', 'Outros': 'Other',
+    'Capa': 'Cover', 'Índice': 'Contents', 'Resumo': 'Summary', 'Período': 'Period', 'Gerado em': 'Generated on', 'Secção': 'Section', 'Página': 'Page', 'Folha': 'Sheet', 'Linhas': 'Rows',
+    'Indicador': 'Indicator', 'Valor': 'Value', 'Nota': 'Note', 'Voltar ao índice': 'Back to contents',
+    'Página principal': 'Home page', 'A mostrar {a} de {b}': 'Showing {a} of {b}', 'Mostrar mais {n}': 'Show {n} more', 'Mostrar todas': 'Show all', 'Mostrar menos': 'Show less',
+    'Mostrar {n} colunas ocultas': 'Show {n} hidden columns', 'Mostrar 1 coluna oculta': 'Show 1 hidden column', 'Ajustar ao ecrã': 'Fit to screen',
+    'Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.': 'Amounts in kwanzas (Kz). Totals use SUBTOTAL and follow the filters.',
+    "A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).": "The Pinguim BO sales export we have only shows whether each document is paid. To split what was received in cash and by Multicaixa, the export must include the payment method of each document (or the Pinguim BO receipts report).",
+    "Activos": "Active",
+    "Aguarda exportação": "Awaiting export",
+    "Aguarda exportação do Pinguim BO": "Awaiting a Pinguim BO export",
+    "Armazém ou carrinha": "Warehouse or van",
+    "Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.": "As soon as the export includes this column, the amounts appear here with no further changes.",
+    "Caixas carregadas em cada carrinha segundo o plano de cargas diário. O stock por artigo de cada carrinha fica disponível com a exportação de stock do Pinguim BO.": "Cases loaded on each van according to the daily loading plan. Stock by item for each van becomes available with the Pinguim BO stock export.",
+    "Carga das carrinhas pelo plano de cargas": "Van loads from the loading plan",
+    "Carga por promotor e carrinha": "Load by promoter and van",
+    "Carrinhas": "Vans",
+    "Carteira por rota": "Portfolio by route",
+    "Clientes": "Customers",
+    "Clientes com compras": "Customers who bought",
+    "Clientes com mais de uma compra": "Customers with more than one purchase",
+    "Clientes na carteira": "Customers in portfolio",
+    "Clientes planeados": "Planned customers",
+    "Clientes planeados que compraram": "Planned customers who bought",
+    "Cobertura = clientes da carteira que compraram no período.": "Coverage = portfolio customers who bought in the period.",
+    "Compraram": "Bought",
+    "Compraram no período": "Bought in the period",
+    "Comprou no período": "Bought in the period",
+    "Cumprimento": "Compliance",
+    "Dia da semana": "Weekday",
+    "Dias com vendas": "Days with sales",
+    "Dias de visita": "Visit days",
+    "Dinheiro": "Cash",
+    "Dinheiro, Multicaixa e por liquidar": "Cash, Multicaixa and unpaid",
+    "Documento, data e rota": "Document, date and route",
+    "Documentos emitidos no Pinguim BO no período.": "Documents issued in Pinguim BO in the period.",
+    "Documentos por liquidar": "Unpaid documents",
+    "Em Multicaixa": "By Multicaixa",
+    "Em dinheiro": "In cash",
+    "Falta o meio de pagamento": "Payment method missing",
+    "Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.": "Sources: Pinguim BO (sales and customer portfolio) and loading plan.",
+    "Fora do plano": "Off plan",
+    "Linhas de venda do Pinguim BO": "Pinguim BO sales lines",
+    "Meio de pagamento": "Payment method",
+    "Multicaixa": "Multicaixa",
+    "Média por documento": "Average per document",
+    "Para mostrar o stock por armazém e por carrinha, a exportação de stock do Pinguim BO deve trazer:": "To show stock by warehouse and van, the Pinguim BO stock export must include:",
+    "Para mostrar vendas por artigo, com e sem IVA e com desconto, a exportação de linhas de venda do Pinguim BO deve trazer:": "To show sales by item, incl. and excl. VAT and with discounts, the Pinguim BO sales-lines export must include:",
+    "Para mostrar vendas por promotor e marca, a exportação de linhas de venda do Pinguim BO deve trazer:": "To show sales by promoter and brand, the Pinguim BO sales-lines export must include:",
+    "Pendentes / erro": "Pending / error",
+    "Pendentes ou com erro": "Pending or with errors",
+    "Planeados": "Planned",
+    "Planeados = clientes activos da carteira com visita nesse dia da semana. Cumprimento = planeados que compraram.": "Planned = active portfolio customers with a visit on that weekday. Compliance = planned customers who bought.",
+    "Planeados que compraram": "Planned who bought",
+    "Plano de visitas por dia e rota": "Visit plan by day and route",
+    "Portal RTM": "RTM Portal",
+    "Promotor × dia": "Promoter × day",
+    "Promotores com vendas": "Promoters with sales",
+    "Quando enviar esta exportação, a página passa a mostrar os dados automaticamente, com filtro de datas e exportação para Excel.": "Once this export is sent, the page shows the data automatically, with date filter and Excel export.",
+    "Recebido": "Received",
+    "Relatório completo": "Full report",
+    "Sem GPS": "No GPS",
+    "Stock no Pinguim BO": "Stock in Pinguim BO",
+    "Tipo": "Type",
+    "Venda média por cliente": "Average sale per customer",
+    "Venda média por documento": "Average sale per document",
+    "Vendas Pinguim BO até {a}": "Pinguim BO sales up to {a}",
+    "Vendas RTM": "RTM sales",
+    "Vendas fora do plano": "Off-plan sales",
+    "Vendas por cliente": "Sales by customer",
+    "Vendas por dia": "Sales by day",
+    "Vendas por promotor": "Sales by promoter",
+    "Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.": "Sales, receipts, stock and customer portfolio of the RTM team, from Pinguim BO and the loading plan.",
+    "clientes de outro dia ou rota": "customers from another day or route",
+    "sem Consumidor Final": "excluding walk-in customers",
+    "{n} clientes": "{n} customers",
+    "{n} clientes activos": "{n} active customers",
+    "{n} dias com vendas": "{n} days with sales",
+    "{n} por liquidar": "{n} unpaid",
+    "{n} por rever": "{n} to review",
+    "{n} promotores com vendas": "{n} promoters with sales",
+    "{p} da carteira": "{p} of portfolio",
+    "{p} do recebido": "{p} of received",
+    "Última compra": "Last purchase",
+    "Recebimentos": "Receipts",
+    "Carteira": "Portfolio",
+    "Carteira de clientes": "Customer portfolio",
+    "Plano de visitas": "Visit plan",
+    "Artigo (código e descrição)": "Item (code and description)",
+    "Stock inicial, entradas, saídas e stock final": "Opening stock, receipts, issues and closing stock",
+    "Data": "Date",
+    "Artigo (código, descrição e marca)": "Item (code, description and brand)",
+    "Quantidade e preço unitário": "Quantity and unit price",
+    "Valor sem IVA, IVA e valor com IVA": "Value excl. VAT, VAT and value incl. VAT",
+    "Artigo e marca": "Item and brand",
+    "Quantidade": "Quantity",
+    "Valor sem IVA e com IVA": "Value excl. and incl. VAT",
+    "Meio de pagamento (dinheiro, Multicaixa, transferência)": "Payment method (cash, Multicaixa, transfer)",
+    "Valor recebido": "Amount received",
+    "Ativo": "Active",
+    "Pendente": "Pending",
+    "Erro": "Error",
+    "Documentos Pinguim": "Pinguim documents",
+  };
+  let LANG = 'pt';
+  try { LANG = localStorage.getItem('vm-lang') === 'en' ? 'en' : 'pt'; } catch (e) {}
+  const t = (s, p) => { let r = LANG === 'en' && EN[s] != null ? EN[s] : s; if (p) Object.keys(p).forEach((k) => { r = r.split('{' + k + '}').join(p[k]); }); return r; };
+
+  // ================= formatos =================
+  let nf, nf1;
+  const setFmt = () => { const loc = LANG === 'en' ? 'en-GB' : 'pt-PT'; nf = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 }); nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+  setFmt();
+  const kz = (v) => (v == null || isNaN(v) ? '—' : nf.format(Math.round(v)) + ' Kz');
+  const mkz = (v) => { if (v == null || isNaN(v)) return '—'; const a = Math.abs(v); return a >= 1e6 ? nf1.format(v / 1e6) + ' M Kz' : a >= 1e3 ? nf.format(v / 1e3) + (LANG === 'en' ? 'k Kz' : ' mil Kz') : nf.format(v) + ' Kz'; };
+  const n0 = (v) => (v == null || isNaN(v) ? '—' : nf.format(v));
+  const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(v * 100) + '%');
+  const MES = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
+  const SEM = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+  const dl = (s) => { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
+  const ds = (s) => { const [, m, d] = s.split('-'); return `${SEM[LANG][new Date(s + 'T12:00:00Z').getUTCDay()]} ${+d} ${MES[LANG][m - 1]}`; };
+
+  // ================= utilitários =================
+  const FONTES = ['vendas', 'rotas', 'clientes', 'cargas'];
+  const DB = {};
+  const $ = (s) => document.querySelector(s);
+  const el = (tg, c, txt) => { const e = document.createElement(tg); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+  const sum = (a, f) => a.reduce((s, x) => s + (+(typeof f === 'function' ? f(x) : x[f]) || 0), 0);
+  const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
+  const ICON = {
+    home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+    truck: 'M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+    ware: 'M3 9l9-5 9 5v11H3zM7 20v-7h10v7M7 16h10', box: 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8',
+    card: 'M3 6h18v12H3zM3 10h18M7 15h4', chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2', tag: 'M3 12V4h8l10 10-8 8zM7.5 8.5h.01',
+    scale: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8',
+    route: 'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
+    phone: 'M7 2h10v20H7zM11 18h2', file: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7',
+  };
+  const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
+  const toast = (m, ms) => { const x = $('#toast'); x.textContent = m; x.hidden = false; clearTimeout(toast.h); if (ms) toast.h = setTimeout(() => { x.hidden = true; }, ms); };
+
+  // ================= estado =================
+  const st = { de: null, ate: null, preset: 'mes' };
+  let diasSap = [], diasTodos = [];
+  const inR = (d) => d >= st.de && d <= st.ate;
+  const addD = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+  function presets() {
+    const ult = diasSap[diasSap.length - 1] || diasTodos[diasTodos.length - 1], fim = diasTodos[diasTodos.length - 1];
+    return { ultimo: ['Último dia', ult, ult], sete: ['7 dias', addD(fim, -6), fim], mes: ['Mês', fim.slice(0, 8) + '01', fim], tudo: ['Tudo', diasTodos[0], fim] };
+  }
+  function setPreset(k) { const p = presets()[k]; st.preset = k; st.de = p[1]; st.ate = p[2]; guardar(); draw(); }
+  function guardar() { try { localStorage.setItem('vm-filtro', JSON.stringify(st)); } catch (e) {} }
+  function carregarFiltro() { try { const x = JSON.parse(localStorage.getItem('vm-filtro') || 'null'); if (x && x.de && x.ate) Object.assign(st, x); } catch (e) {} }
+
+  // ================= tabelas, indicadores e exportação =================
+  // Durante o desenho de uma página, cada tabela e cada grupo de indicadores fica registado aqui para o Excel e o CSV.
+  let REG = { tabelas: [], kpis: [] };
+  const LIM = {}, TODAS = {}; let FITS = [];
+  const PASSO = 20;
+  const ORD = {};
+  const numType = (c) => c.type && c.type !== 'text' && c.type !== 'date';
+  const rawVal = (c, r) => (c.xl ? c.xl(r) : c.get ? c.get(r) : r[c.key]);
+  function download(name, blob) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  const slug = (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const fname = (s, ext) => `${slug(t('Portal RTM'))}_${slug(s)}_${st.de}_${st.ate}.${ext}`;
+
+  function cellNode(c, r, max) {
+    const v = c.get ? c.get(r) : r[c.key];
+    if (c.render) return c.render(v, r);
+    if (c.type === 'kz') return document.createTextNode(kz(v));
+    if (c.type === 'mkz') return document.createTextNode(mkz(v));
+    if (c.type === 'n') return document.createTextNode(n0(v));
+    if (c.type === 'pct') return document.createTextNode(pct(v));
+    if (c.type === 'date') return document.createTextNode(dl(v));
+    if (c.type === 'bar') { const w = el('span', 'cbar'); const i = el('i'); i.style.width = (max ? Math.max(2, (v / max) * 90) : 0) + 'px'; w.append(document.createTextNode(mkz(v)), i); return w; }
+    return document.createTextNode(v == null || v === '' ? '—' : String(v));
+  }
+  function tabela(o) {
+    const reg = { id: o.id, titulo: o.titulo, nota: o.nota, cols: o.cols, rows: o.rows, total: o.total };
+    REG.tabelas.push(reg);
+    const sec = el('section', 'glass sec'); sec.id = 's-' + o.id;
+    const h = el('div', 'sec-h'); const hl = el('div'); hl.append(el('h2', null, o.titulo)); if (o.nota) hl.append(el('p', null, o.nota));
+    const tools = el('div', 'sec-tools'); let q = '';
+    if (o.search !== false) { const s = el('input', 'search'); s.type = 'search'; s.placeholder = t('Procurar…'); s.setAttribute('aria-label', t('Procurar…') + ' ' + o.titulo); s.id = 'q-' + o.id; s.addEventListener('input', () => { q = s.value.trim().toLowerCase(); body(); }); tools.append(s); }
+    const bx = el('button', 'btn sm'); bx.type = 'button'; bx.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>Excel';
+    bx.addEventListener('click', () => exportarExcel([{ pagina: paginaAtual().nome, grupo: paginaAtual().grupo, kpis: [], tabelas: [{ ...reg, rows: filtradas() }] }], o.titulo));
+    tools.append(bx); h.append(hl, tools); sec.append(h);
+    const tw = el('div', 'tw'); const tb = el('table'); tw.append(tb); sec.append(tw);
+    const more = el('div', 'more'); more.hidden = true; sec.append(more);
+    // prioridade de cada coluna quando falta largura: 0 nunca sai; números maiores saem primeiro
+    const prio = (c, i) => (i === 0 ? -1 : c.p != null ? c.p : c.wrap ? 2 : c.type === 'date' ? 1 : (c.type === 'kz' || c.type === 'bar') && c.sum ? 2 : c.type === 'n' || c.type === 'pct' ? 3 : c.type === 'kz' ? 4 : 5);
+    let ocultas = [];
+    function fit() {
+      if (!tw.isConnected) return;
+      tb.classList.remove('compact'); tb.querySelectorAll('[data-c]').forEach((e) => { e.hidden = false; }); ocultas = [];
+      const sobra = () => tw.scrollWidth > tw.clientWidth + 1;
+      if (sobra()) tb.classList.add('compact');
+      if (!TODAS[o.id]) {
+        const ordem = o.cols.map((c, i) => [prio(c, i), i]).filter((x) => x[0] >= 0).sort((a, b2) => b2[0] - a[0] || b2[1] - a[1]);
+        for (const [, i] of ordem) { if (!sobra()) break; tb.querySelectorAll(`[data-c="${i}"]`).forEach((e) => { e.hidden = true; }); ocultas.push(o.cols[i].label); }
+      }
+      rodape();
+    }
+    function rodape() {
+      const n = (reg.sorted || []).length, lim = LIM[o.id] || PASSO;
+      more.replaceChildren();
+      const esq = el('span'), dir = el('div');
+      if (n > lim) {
+        esq.textContent = t('A mostrar {a} de {b}', { a: n0(lim), b: n0(n) });
+        const m = el('button', 'linkbtn', t('Mostrar mais {n}', { n: Math.min(PASSO, n - lim) })); m.type = 'button'; m.addEventListener('click', () => { LIM[o.id] = lim + PASSO; body(); });
+        const tAll = el('button', 'linkbtn', t('Mostrar todas')); tAll.type = 'button'; tAll.addEventListener('click', () => { LIM[o.id] = n; body(); });
+        dir.append(m, tAll);
+      } else if (lim > PASSO && n > PASSO) { const c = el('button', 'linkbtn', t('Mostrar menos')); c.type = 'button'; c.addEventListener('click', () => { LIM[o.id] = PASSO; body(); }); dir.append(c); }
+      if (ocultas.length) { const c = el('button', 'linkbtn', ocultas.length === 1 ? t('Mostrar 1 coluna oculta') : t('Mostrar {n} colunas ocultas', { n: ocultas.length })); c.type = 'button'; c.title = ocultas.join(', '); c.addEventListener('click', () => { TODAS[o.id] = true; fit(); }); dir.append(c); }
+      else if (TODAS[o.id]) { const c = el('button', 'linkbtn', t('Ajustar ao ecrã')); c.type = 'button'; c.addEventListener('click', () => { TODAS[o.id] = false; fit(); }); dir.append(c); }
+      more.append(esq, dir); more.hidden = !esq.textContent && !dir.childNodes.length;
+    }
+    FITS.push(fit);
+    const ord = ORD[o.id] || (ORD[o.id] = { key: o.sort || o.cols[0].key, dir: o.dir || -1 });
+    const val = (r, c) => (c.get ? c.get(r) : r[c.key]);
+    const filtradas = () => (q ? o.rows.filter((r) => o.cols.some((c) => String(val(r, c) ?? '').toLowerCase().includes(q))) : o.rows);
+    function body() {
+      const rows = filtradas();
+      const col = o.cols.find((c) => c.key === ord.key) || o.cols[0];
+      const sorted = [...rows].sort((a, b2) => { const x = val(a, col), y = val(b2, col); if (x == null) return 1; if (y == null) return -1; return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), LANG)) * ord.dir; });
+      reg.sorted = sorted;
+      const th = el('thead'); const tr = el('tr');
+      o.cols.forEach((c) => {
+        const tt = el('th', numType(c) ? 'n' : null); tt.dataset.c = o.cols.indexOf(c);
+        tt.setAttribute('aria-sort', c.key === ord.key ? (ord.dir > 0 ? 'ascending' : 'descending') : 'none');
+        const bt = el('button', null, c.label + (c.key === ord.key ? (ord.dir > 0 ? ' ↑' : ' ↓') : '')); bt.type = 'button';
+        bt.addEventListener('click', () => { if (ord.key === c.key) ord.dir *= -1; else { ord.key = c.key; ord.dir = numType(c) ? -1 : 1; } body(); });
+        tt.append(bt); tr.append(tt);
+      });
+      th.append(tr);
+      const tbody = el('tbody');
+      const maxs = {}; o.cols.filter((c) => c.type === 'bar').forEach((c) => { maxs[c.key] = Math.max(0, ...rows.map((r) => +val(r, c) || 0)); });
+      sorted.slice(0, LIM[o.id] || PASSO).forEach((r) => {
+        const tr2 = el('tr');
+        o.cols.forEach((c, i) => { const td = el('td', (numType(c) || c.nowrap ? 'n0' : 't') + (numType(c) ? ' n' : '') + (c.wrap ? ' w' : '')); td.dataset.c = i; td.append(cellNode(c, r, maxs[c.key])); tr2.append(td); });
+        tbody.append(tr2);
+      });
+      tb.replaceChildren(th, tbody);
+      if (!rows.length) { const e = el('tr'); const td = el('td', 'empty', t('Sem dados no período escolhido.')); td.colSpan = o.cols.length; e.append(td); tbody.append(e); }
+      else if (o.total) {
+        const tf = el('tfoot'); const r2 = el('tr');
+        o.cols.forEach((c, i) => {
+          const td = el('td', numType(c) ? 'n' : null); td.dataset.c = i;
+          if (i === 0) td.textContent = t('Total');
+          else if (c.sum) { const tot = c.sum === true ? sum(rows, (r) => val(r, c)) : c.sum(rows); td.textContent = c.type === 'n' ? n0(tot) : c.type === 'pct' ? pct(tot) : kz(tot); }
+          r2.append(td);
+        });
+        tf.append(r2); tb.append(tf);
+      }
+      fit(); rodape();
+    }
+    body();
+    return sec;
+  }
+  function tiles(list) {
+    REG.kpis.push(...list);
+    const w = el('div', 'tiles');
+    list.forEach((x) => { const d = el('div', 'glass tile'); d.append(el('span', 'l', x.l)); const v = el('span', 'v', x.v); if (x.tone) v.style.color = `var(--${x.tone})`; d.append(v); if (x.s) d.append(el('span', 's', x.s)); w.append(d); });
+    return w;
+  }
+  const pill = (txt, cls) => el('span', 'pill ' + cls, txt);
+  const secBox = (titulo, nota, conteudo) => { const s = el('section', 'glass sec'); const h = el('div', 'sec-h'); const d = el('div'); d.append(el('h2', null, titulo)); if (nota) d.append(el('p', null, nota)); h.append(d); s.append(h, conteudo); return s; };
+
+  // ================= Excel =================
+  let excelPronto = null;
+  function carregarExcelJS() {
+    if (window.ExcelJS) return Promise.resolve();
+    if (!excelPronto) excelPronto = new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'vendor/exceljs.min.js'; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+    return excelPronto;
+  }
+  const NAVY = 'FF1E3A8A', NAVY2 = 'FF283E81', SKY = 'FFDCE8FB', GREY = 'FF5F6573';
+  const FMT = { kz: '#,##0;-#,##0;"-"', mkz: '#,##0;-#,##0;"-"', bar: '#,##0;-#,##0;"-"', n: '#,##0;-#,##0;"-"', pct: '0.0%;-0.0%;"-"', date: 'dd/mm/yyyy' };
+  const toDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+  const nomeFolha = (s, usados) => { let b = s.replace(/[\[\]:*?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Folha'; let n = b, i = 2; while (usados.has(n.toLowerCase())) n = b.slice(0, 26) + ' ' + i++; usados.add(n.toLowerCase()); return n; };
+  const colLetter = (n) => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+
+  async function exportarExcel(paginas, nomeFicheiro) {
+    const bt = [$('#xl-page'), $('#xl-all')]; bt.forEach((b) => { b.disabled = true; });
+    toast(t('A preparar o Excel…'));
+    try {
+      await carregarExcelJS();
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Portal RTM · Grupo Naval'; wb.created = new Date();
+      const F = (o) => Object.assign({ name: 'Arial', size: 10 }, o || {});
+      const periodo = `${dl(st.de)} – ${dl(st.ate)}`;
+      const usados = new Set();
+      // Capa e índice
+      const capa = wb.addWorksheet(nomeFolha(t('Capa'), usados), { views: [{ showGridLines: false }] });
+      capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 34 }, { width: 10 }];
+      capa.getCell('B2').value = 'Grupo Naval Angola'; capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
+      capa.getCell('B3').value = t('Portal RTM') + (paginas.length === 1 ? ' · ' + t(paginas[0].pagina) : ''); capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
+      [['Período', periodo], ['Gerado em', new Date().toLocaleString(LANG === 'en' ? 'en-GB' : 'pt-PT')], ['Nota', t('Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.')], ['', t('Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.')]]
+        .forEach(([k, v], i) => { const r = 5 + i; capa.getCell('B' + r).value = k ? t(k) : ''; capa.getCell('B' + r).font = F({ bold: true, color: { argb: GREY } }); capa.getCell('C' + r).value = v; capa.getCell('C' + r).font = F(); capa.mergeCells(`C${r}:D${r}`); });
+      let r0 = 10;
+      capa.getCell('B' + r0).value = t('Índice'); capa.getCell('B' + r0).font = F({ size: 13, bold: true, color: { argb: NAVY2 } });
+      const hdr = capa.getRow(r0 + 1); ['', t('Secção'), t('Página'), t('Folha'), t('Linhas')].forEach((v, i) => { if (i) { const c = hdr.getCell(i + 1); c.value = v; c.font = F({ bold: true, color: { argb: 'FFFFFFFF' } }); c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; } });
+      let ri = r0 + 2;
+      // Resumo de indicadores
+      const res = wb.addWorksheet(nomeFolha(t('Resumo'), usados), { views: [{ showGridLines: false, state: 'frozen', ySplit: 4 }] });
+      res.columns = [{ width: 3 }, { width: 34 }, { width: 34 }, { width: 22 }, { width: 40 }];
+      res.getCell('B2').value = t('Resumo') + ' · ' + periodo; res.getCell('B2').font = F({ size: 14, bold: true, color: { argb: NAVY2 } });
+      const rh = res.getRow(4); [t('Página'), t('Indicador'), t('Valor'), t('Nota')].forEach((v, i) => { const c = rh.getCell(i + 2); c.value = v; c.font = F({ bold: true, color: { argb: 'FFFFFFFF' } }); c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; });
+      let rr = 5;
+      paginas.forEach((pg) => pg.kpis.forEach((k) => { const row = res.getRow(rr++); row.getCell(2).value = t(pg.pagina); row.getCell(3).value = k.l; row.getCell(4).value = k.v; row.getCell(4).alignment = { horizontal: 'right' }; row.getCell(5).value = k.s || ''; row.eachCell((c) => { c.font = F(); c.border = { bottom: { style: 'thin', color: { argb: 'FFE3E6ED' } } }; }); }));
+      const linhaIndice = (sec, pag, folha, n) => {
+        const row = capa.getRow(ri++);
+        row.getCell(2).value = sec; row.getCell(3).value = pag;
+        row.getCell(4).value = { text: folha, hyperlink: `#'${folha}'!A1` }; row.getCell(4).font = F({ color: { argb: 'FF2A6FE0' }, underline: true });
+        row.getCell(5).value = n; row.getCell(5).numFmt = '#,##0';
+        [2, 3, 5].forEach((i) => { row.getCell(i).font = F(); }); row.eachCell((c) => { c.border = { bottom: { style: 'thin', color: { argb: 'FFE3E6ED' } } }; });
+      };
+      linhaIndice('', t('Resumo'), res.name, rr - 5);
+      // Uma folha por tabela
+      paginas.forEach((pg) => pg.tabelas.forEach((tb) => {
+        const rows = tb.sorted || tb.rows;
+        const ws = wb.addWorksheet(nomeFolha(tb.titulo, usados), { views: [{ showGridLines: false, state: 'frozen', ySplit: 4 }] });
+        const cols = tb.cols; const nC = cols.length;
+        ws.getCell('A1').value = tb.titulo; ws.getCell('A1').font = F({ size: 14, bold: true, color: { argb: NAVY2 } });
+        ws.getCell('A2').value = `${pg.grupo ? t(pg.grupo) + ' · ' : ''}${t(pg.pagina)} · ${t('Período')}: ${periodo}${tb.nota ? ' · ' + tb.nota : ''}`;
+        ws.getCell('A2').font = F({ size: 9, italic: true, color: { argb: GREY } });
+        const back = ws.getCell(colLetter(Math.max(nC, 2)) + '1'); back.value = { text: '← ' + t('Voltar ao índice'), hyperlink: `#'${capa.name}'!A1` }; back.font = F({ size: 9, color: { argb: 'FF2A6FE0' }, underline: true }); back.alignment = { horizontal: 'right' };
+        const head = ws.getRow(4); head.height = 22;
+        cols.forEach((c, i) => {
+          const cell = head.getCell(i + 1);
+          cell.value = c.label + (['kz', 'mkz', 'bar'].includes(c.type) ? ' (Kz)' : '');
+          cell.font = F({ bold: true, color: { argb: 'FFFFFFFF' } }); cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } };
+          cell.alignment = { vertical: 'middle', horizontal: numType(c) ? 'right' : 'left', wrapText: true };
+        });
+        rows.forEach((r, j) => {
+          const row = ws.getRow(5 + j);
+          cols.forEach((c, i) => {
+            let v = rawVal(c, r); const cell = row.getCell(i + 1);
+            if (c.type === 'date' && v) { cell.value = toDate(v); cell.numFmt = FMT.date; }
+            else if (numType(c) && v != null && v !== '' && !isNaN(+v)) { cell.value = +v; cell.numFmt = c.xlfmt || FMT[c.type] || FMT.n; }
+            else cell.value = v == null ? '' : (typeof v === 'boolean' ? t(v ? 'Sim' : 'Não') : v);
+            cell.font = F(); if (c.wrap) cell.alignment = { wrapText: true, vertical: 'top' };
+            if (j % 2) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F7FD' } };
+          });
+        });
+        const last = 4 + rows.length;
+        if (rows.length) ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: last, column: nC } };
+        if (tb.total && rows.length) {
+          const tr = ws.getRow(last + 1);
+          cols.forEach((c, i) => {
+            const cell = tr.getCell(i + 1); const L = colLetter(i + 1);
+            if (i === 0) cell.value = t('Total');
+            else if (c.sum === true && numType(c)) { cell.value = { formula: `SUBTOTAL(109,${L}5:${L}${last})`, result: sum(rows, (r) => +rawVal(c, r) || 0) }; cell.numFmt = c.xlfmt || FMT[c.type] || FMT.n; }
+            else if (typeof c.sum === 'function') { cell.value = c.sum(rows); cell.numFmt = c.xlfmt || FMT[c.type] || FMT.n; }
+            cell.font = F({ bold: true }); cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SKY } };
+            cell.border = { top: { style: 'thin', color: { argb: NAVY } } };
+          });
+        }
+        cols.forEach((c, i) => {
+          const lens = [String(c.label).length + 4, ...rows.slice(0, 300).map((r) => { const v = rawVal(c, r); return typeof v === 'number' ? 14 : String(v ?? '').length; })];
+          ws.getColumn(i + 1).width = Math.min(c.wrap ? 48 : 34, Math.max(9, Math.max(...lens) + 2));
+        });
+        ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '4:4' };
+        linhaIndice(t(pg.grupo || 'Início'), t(pg.pagina), ws.name, rows.length);
+      }));
+      const buf = await wb.xlsx.writeBuffer();
+      download(fname(nomeFicheiro, 'xlsx'), new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      toast(t('Excel transferido.'), 2500);
+    } catch (e) { console.error(e); toast(t('Não foi possível gerar o Excel.'), 4000); }
+    bt.forEach((b) => { b.disabled = false; });
+  }
+  // Desenha uma página fora do ecrã só para recolher as suas tabelas e indicadores
+  function recolher(id) {
+    const guarda = REG, gf = FITS; REG = { tabelas: [], kpis: [] }; FITS = [];
+    const tmp = document.createElement('div');
+    try { R[id](tmp); } catch (e) { console.error(id, e); }
+    tmp.querySelectorAll('section[id^="s-"]').forEach(() => {});
+    const out = REG; REG = guarda; FITS = gf; return out;
+  }
+
+  // ================= cálculos comuns (só RTM / Pinguim BO) =================
+  const vendasR = () => DB.vendas.filter((x) => inR(x.data));
+  const nomeRota = (r) => (DB.mapRota[r] || {}).promotor || r;
+  const isCF = (nif) => !nif || /^9{9,}$/.test(String(nif));
+  const DIAS = ['DOMINGO', '2ª FEIRA', '3ª FEIRA', '4ª FEIRA', '5ª FEIRA', '6ª FEIRA', 'SÁBADO'];
+  const diaSemana = (d) => DIAS[new Date(d + 'T12:00:00Z').getUTCDay()];
+  const DIA_EN = { 'DOMINGO': 'Sunday', '2ª FEIRA': 'Monday', '3ª FEIRA': 'Tuesday', '4ª FEIRA': 'Wednesday', '5ª FEIRA': 'Thursday', '6ª FEIRA': 'Friday', 'SÁBADO': 'Saturday' };
+  const nomeDia = (d) => (LANG === 'en' ? DIA_EN[d] || d : d);
+  const temMeio = () => DB.vendas.some((x) => x.meio_pagamento);
+  function meioDe(x) { const m = String(x.meio_pagamento || '').toUpperCase(); if (!m) return null; if (/MULTI|TPA|CART|CARD/.test(m)) return 'multicaixa'; if (/NUMER|DINHEIRO|CASH/.test(m)) return 'dinheiro'; if (/TRANSF/.test(m)) return 'transferencia'; return 'outro'; }
+  function aguardar(pg, titulo, campos) {
+    const s = el('section', 'glass sec');
+    const h = el('div', 'sec-h'); const d = el('div'); d.append(el('h2', null, t('Aguarda exportação do Pinguim BO'))); d.append(el('p', null, titulo)); h.append(d); s.append(h);
+    const ul = el('ul'); ul.style.margin = '4px 0 6px'; ul.style.color = 'var(--muted)'; ul.style.lineHeight = '1.8';
+    campos.forEach((c) => ul.append(el('li', null, t(c)))); s.append(ul);
+    s.append(el('p', 'note', t('Quando enviar esta exportação, a página passa a mostrar os dados automaticamente, com filtro de datas e exportação para Excel.')));
+    pg.append(s);
+  }
+
+  // ================= páginas =================
+  const PAGES = [
+    { id: 'inicio', grupo: null, icon: 'home', nome: 'Início' },
+    { id: 'vendas-promotor', grupo: 'Vendas RTM', icon: 'chart', nome: 'Vendas por promotor' },
+    { id: 'vendas-dia', grupo: 'Vendas RTM', icon: 'route', nome: 'Vendas por dia' },
+    { id: 'vendas-cliente', grupo: 'Vendas RTM', icon: 'tag', nome: 'Vendas por cliente' },
+    { id: 'documentos', grupo: 'Vendas RTM', icon: 'file', nome: 'Documentos' },
+    { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Métodos de pagamento' },
+    { id: 'stock-carrinha', grupo: 'Stock', icon: 'truck', nome: 'Stock por promotor / carrinha' },
+    { id: 'stock-armazem', grupo: 'Stock', icon: 'ware', nome: 'Stock por armazém' },
+    { id: 'vendas-artigo', grupo: 'Stock', icon: 'box', nome: 'Vendas por artigo' },
+    { id: 'vendas-marca', grupo: 'Stock', icon: 'tag', nome: 'Vendas por promotor e marca' },
+    { id: 'clientes', grupo: 'Carteira', icon: 'phone', nome: 'Carteira de clientes' },
+    { id: 'plano-visitas', grupo: 'Carteira', icon: 'scale', nome: 'Plano de visitas' },
+  ];
+  let atual = 'inicio';
+  const paginaAtual = () => PAGES.find((x) => x.id === atual) || PAGES[0];
+  function contarAlertas() {
+    const V = vendasR();
+    return { pagamentos: V.filter((x) => !x.liquidado).length, clientes: DB.clientes.filter((x) => x.estado !== 'Ativo').length };
+  }
+  function nav() {
+    const n = $('#nav'); n.replaceChildren(); let g;
+    const al = contarAlertas();
+    PAGES.forEach((p) => {
+      if (p.grupo !== g) { g = p.grupo; if (g) n.append(el('div', 'navg', t(g))); }
+      const a = el('a'); a.href = '#' + p.id; a.innerHTML = svg(p.icon); a.append(el('span', null, t(p.nome)));
+      if (al[p.id]) a.append(el('span', 'n', String(al[p.id])));
+      if (p.id === atual) { a.className = 'on'; a.setAttribute('aria-current', 'page'); }
+      a.addEventListener('click', () => $('#app').classList.remove('open'));
+      n.append(a);
+    });
+  }
+  function porPromotor(V) {
+    return Object.values(group(V, 'rota')).map((rs) => {
+      const tot = sum(rs, 'total'), liq = sum(rs.filter((x) => x.liquidado), 'total');
+      return { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+        dias: new Set(rs.map((x) => x.data)).size, total: tot, recebido: liq, por_liquidar: tot - liq, medio: rs.length ? tot / rs.length : null };
+    });
+  }
+
+  const R = {};
+  R.inicio = (pg) => {
+    const V = vendasR(), tot = sum(V, 'total'), liq = sum(V.filter((x) => x.liquidado), 'total');
+    const din = sum(V.filter((x) => meioDe(x) === 'dinheiro'), 'total'), mc = sum(V.filter((x) => meioDe(x) === 'multicaixa'), 'total');
+    pg.append(tiles([
+      { l: t('Vendas RTM'), v: mkz(tot), s: t('{n} documentos', { n: n0(V.length) }) },
+      { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
+      { l: t('Em dinheiro'), v: temMeio() ? mkz(din) : '—', s: temMeio() ? '' : t('Falta o meio de pagamento') },
+      { l: t('Em Multicaixa'), v: temMeio() ? mkz(mc) : '—', s: temMeio() ? '' : t('Falta o meio de pagamento') },
+      { l: t('Por liquidar'), v: mkz(tot - liq), tone: tot - liq > 0 ? 'warn' : null },
+      { l: t('Clientes com compras'), v: n0(new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size) },
+    ]));
+    const al = contarAlertas(), cards = el('div', 'cards');
+    const pend = [t('Aguarda exportação'), ''];
+    [
+      ['vendas-promotor', 'chart', 'Vendas RTM', 'Vendas por promotor', t('{n} promotores com vendas', { n: new Set(V.map((x) => x.rota)).size })],
+      ['vendas-dia', 'route', 'Vendas RTM', 'Vendas por dia', t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size })],
+      ['vendas-cliente', 'tag', 'Vendas RTM', 'Vendas por cliente', t('{n} clientes', { n: new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size })],
+      ['documentos', 'file', 'Vendas RTM', 'Documentos', t('{n} documentos', { n: n0(V.length) })],
+      ['pagamentos', 'card', 'Recebimentos', 'Métodos de pagamento', t('Dinheiro, Multicaixa e por liquidar'), temMeio() ? (al.pagamentos ? [t('{n} por liquidar', { n: al.pagamentos }), ''] : null) : [t('Falta o meio de pagamento'), 'bad']],
+      ['stock-carrinha', 'truck', 'Stock', 'Stock por promotor / carrinha', t('Carga das carrinhas pelo plano de cargas')],
+      ['stock-armazem', 'ware', 'Stock', 'Stock por armazém', t('Stock no Pinguim BO'), pend],
+      ['vendas-artigo', 'box', 'Stock', 'Vendas por artigo', t('Linhas de venda do Pinguim BO'), pend],
+      ['vendas-marca', 'tag', 'Stock', 'Vendas por promotor e marca', t('Linhas de venda do Pinguim BO'), pend],
+      ['clientes', 'phone', 'Carteira', 'Carteira de clientes', t('{n} clientes activos', { n: n0(new Set(DB.clientes.filter((x) => x.estado === 'Ativo').map((x) => x.rota + '|' + x.codigo)).size) }), al.clientes ? [t('{n} por rever', { n: al.clientes }), ''] : null],
+      ['plano-visitas', 'scale', 'Carteira', 'Plano de visitas', t('Clientes planeados que compraram')],
+    ].forEach(([id, ic, k, tt, d, b], i) => {
+      const a = el('a', 'glass card-link'); a.href = '#' + id;
+      const ico = el('div', 'ico' + (i >= 9 ? ' alt' : '')); ico.innerHTML = svg(ic); a.append(ico);
+      if (b) a.append(el('span', 'badge ' + (b[1] || ''), b[0]));
+      a.append(el('span', 'k', t(k)), el('span', 't', t(tt)), el('span', 'd', d)); cards.append(a);
+    });
+    pg.append(cards);
+  };
+
+  R['vendas-promotor'] = (pg) => {
+    const V = vendasR(), P = porPromotor(V), tot = sum(V, 'total');
+    pg.append(tiles([
+      { l: t('Vendas RTM'), v: mkz(tot), s: t('{n} documentos', { n: n0(V.length) }) },
+      { l: t('Promotores com vendas'), v: n0(P.length) },
+      { l: t('Venda média por documento'), v: mkz(V.length ? tot / V.length : null) },
+      { l: t('Por liquidar'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
+    ]));
+    pg.append(tabela({ id: 'vp', titulo: t('Vendas por promotor'), nota: t('Documentos emitidos no Pinguim BO no período.'), rows: P, sort: 'total', total: true,
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
+        { key: 'dias', label: t('Dias com vendas'), type: 'n' }, { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
+        { key: 'por_liquidar', label: t('Por liquidar'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }] }));
+  };
+
+  R['vendas-dia'] = (pg) => {
+    const V = vendasR();
+    const dias = Object.values(group(V, 'data')).map((rs) => ({ data: rs[0].data, docs: rs.length, promotores: new Set(rs.map((x) => x.rota)).size, total: sum(rs, 'total'), recebido: sum(rs.filter((x) => x.liquidado), 'total') }));
+    const secs = el('div', 'secs');
+    secs.append(tabela({ id: 'vd', titulo: t('Vendas por dia'), rows: dias, sort: 'data', total: true, search: false,
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'promotores', label: t('Promotores'), type: 'n' },
+        { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }] }));
+    const ds2 = [...new Set(V.map((x) => x.data))].sort();
+    const mat = Object.values(group(V, 'rota')).map((rs) => { const o = { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), total: sum(rs, 'total') }; ds2.forEach((d) => { o[d] = sum(rs.filter((x) => x.data === d), 'total'); }); return o; });
+    secs.append(tabela({ id: 'vd-mat', titulo: t('Promotor × dia'), rows: mat, sort: 'total', total: true,
+      cols: [{ key: 'promotor', label: t('Promotor'), p: 0 }, ...ds2.map((d) => ({ key: d, label: dl(d).slice(0, 5), type: 'kz', sum: true, render: (v) => document.createTextNode(v ? mkz(v) : '—') })), { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
+    pg.append(secs);
+  };
+
+  R['vendas-cliente'] = (pg) => {
+    const V = vendasR();
+    const rows = Object.values(group(V, (x) => (isCF(x.nif) ? 'CF|' + x.cliente : x.nif))).map((rs) => ({ cliente: rs[0].cliente, nif: rs[0].nif, rota: [...new Set(rs.map((x) => x.rota))].join(', '),
+      promotor: [...new Set(rs.map((x) => nomeRota(x.rota)))].join(', '), docs: rs.length, total: sum(rs, 'total'), ultima: rs.map((x) => x.data).sort().pop() }));
+    pg.append(tiles([{ l: t('Clientes com compras'), v: n0(rows.length) }, { l: t('Venda média por cliente'), v: mkz(rows.length ? sum(rows, 'total') / rows.length : null) },
+      { l: t('Clientes com mais de uma compra'), v: n0(rows.filter((x) => x.docs > 1).length) }]));
+    pg.append(tabela({ id: 'vc', titulo: t('Vendas por cliente'), rows, sort: 'total', total: true,
+      cols: [{ key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'ultima', label: t('Última compra'), type: 'date' }] }));
+  };
+
+  R.documentos = (pg) => {
+    pg.append(tabela({ id: 'dc', titulo: t('Documentos Pinguim'), rows: vendasR().map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'data', total: true,
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'meio_pagamento', label: t('Meio de pagamento') },
+        { key: 'liquidado', label: t('Pago'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'), xl: (r) => t(r.liquidado ? 'Sim' : 'Não') },
+        { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
+  };
+
+  R.pagamentos = (pg) => {
+    const V = vendasR(), tot = sum(V, 'total'), liq = sum(V.filter((x) => x.liquidado), 'total');
+    const M = { dinheiro: 0, multicaixa: 0, transferencia: 0, outro: 0 }; V.filter((x) => x.liquidado).forEach((x) => { const m = meioDe(x); if (m) M[m] += x.total; });
+    pg.append(tiles([
+      { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
+      { l: t('Em dinheiro'), v: temMeio() ? mkz(M.dinheiro) : '—', s: temMeio() ? t('{p} do recebido', { p: pct(liq ? M.dinheiro / liq : null) }) : t('Falta o meio de pagamento') },
+      { l: t('Em Multicaixa'), v: temMeio() ? mkz(M.multicaixa) : '—', s: temMeio() ? t('{p} do recebido', { p: pct(liq ? M.multicaixa / liq : null) }) : t('Falta o meio de pagamento') },
+      { l: t('Por liquidar'), v: mkz(tot - liq), tone: tot - liq > 0 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => !x.liquidado).length }) },
+    ]));
+    const secs = el('div', 'secs');
+    if (!temMeio()) {
+      const box = el('div');
+      box.append(el('p', null, t('A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).')));
+      const ul = el('ul'); ul.style.color = 'var(--muted)'; ul.style.lineHeight = '1.8';
+      ['Documento', 'Data', 'Rota', 'Meio de pagamento (dinheiro, Multicaixa, transferência)', 'Valor recebido'].forEach((c) => ul.append(el('li', null, t(c))));
+      box.append(ul);
+      secs.append(secBox(t('Falta o meio de pagamento'), t('Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.'), box));
+    }
+    const pp = Object.values(group(V, 'rota')).map((rs) => { const o = { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), total: sum(rs, 'total') }; const lq = rs.filter((x) => x.liquidado);
+      o.recebido = sum(lq, 'total'); o.dinheiro = temMeio() ? sum(lq.filter((x) => meioDe(x) === 'dinheiro'), 'total') : null; o.multicaixa = temMeio() ? sum(lq.filter((x) => meioDe(x) === 'multicaixa'), 'total') : null; o.por_liquidar = o.total - o.recebido; return o; });
+    const cols = (k) => [{ key: k, label: t(k === 'data' ? 'Dia' : 'Promotor'), type: k === 'data' ? 'date' : undefined }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
+      { key: 'dinheiro', label: t('Dinheiro'), type: 'kz', sum: temMeio() }, { key: 'multicaixa', label: t('Multicaixa'), type: 'kz', sum: temMeio() }, { key: 'por_liquidar', label: t('Por liquidar'), type: 'kz', sum: true }];
+    secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
+    const pd = Object.values(group(V, 'data')).map((rs) => { const lq = rs.filter((x) => x.liquidado); return { data: rs[0].data, total: sum(rs, 'total'), recebido: sum(lq, 'total'),
+      dinheiro: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'dinheiro'), 'total') : null, multicaixa: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'multicaixa'), 'total') : null, por_liquidar: sum(rs, 'total') - sum(lq, 'total') }; });
+    secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
+    secs.append(tabela({ id: 'pg-pend', titulo: t('Documentos por liquidar'), rows: V.filter((x) => !x.liquidado).map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'total', total: true, search: false,
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }] }));
+    pg.append(secs);
+  };
+
+  R['stock-carrinha'] = (pg) => {
+    const C = DB.cargas.filter((x) => inR(x.data));
+    pg.append(tiles([{ l: t('Carrinhas'), v: n0(new Set(C.map((x) => x.matricula)).size) }, { l: t('Caixas carregadas'), v: n0(sum(C, 'carga')) },
+      { l: t('Fraldas'), v: n0(sum(C, 'carga_fraldas')) }, { l: t('Sabão'), v: n0(sum(C, 'carga_sabao')) }, { l: t('Sabonetes'), v: n0(sum(C, 'carga_sabonete')) }]));
+    const secs = el('div', 'secs');
+    secs.append(tabela({ id: 'sc', titulo: t('Carga por promotor e carrinha'), nota: t('Caixas carregadas em cada carrinha segundo o plano de cargas diário. O stock por artigo de cada carrinha fica disponível com a exportação de stock do Pinguim BO.'), rows: C, sort: 'data', total: true,
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'matricula', label: t('Carrinha') }, { key: 'viatura', label: t('Viatura') }, { key: 'motorista', label: t('Motorista') },
+        { key: 'n_zonas', label: t('Zonas'), type: 'n' }, { key: 'carga_fraldas', label: t('Fraldas'), type: 'n', sum: true }, { key: 'carga_sabao', label: t('Sabão'), type: 'n', sum: true }, { key: 'carga_sabonete', label: t('Sabonetes'), type: 'n', sum: true },
+        { key: 'carga', label: t('Total'), type: 'n', sum: true }, { key: 'zonas', label: t('Zonas de descarga'), wrap: true }] }));
+    pg.append(secs);
+  };
+  R['stock-armazem'] = (pg) => aguardar(pg, t('Para mostrar o stock por armazém e por carrinha, a exportação de stock do Pinguim BO deve trazer:'), ['Armazém ou carrinha', 'Artigo (código e descrição)', 'Stock inicial, entradas, saídas e stock final', 'Data']);
+  R['vendas-artigo'] = (pg) => aguardar(pg, t('Para mostrar vendas por artigo, com e sem IVA e com desconto, a exportação de linhas de venda do Pinguim BO deve trazer:'), ['Documento, data e rota', 'Artigo (código, descrição e marca)', 'Quantidade e preço unitário', 'Desconto', 'Valor sem IVA, IVA e valor com IVA']);
+  R['vendas-marca'] = (pg) => aguardar(pg, t('Para mostrar vendas por promotor e marca, a exportação de linhas de venda do Pinguim BO deve trazer:'), ['Documento, data e rota', 'Artigo e marca', 'Quantidade', 'Valor sem IVA e com IVA', 'Desconto']);
+
+  R.clientes = (pg) => {
+    const C = DB.clientes;
+    const uni = Object.values(group(C, (x) => x.rota + '|' + (isCF(x.nif) ? 'CF|' + (x.codigo || x.nome) : x.nif))).map((rs) => ({ ...rs[0], dias: [...new Set(rs.map((x) => nomeDia(x.dia)))].join(', ') }));
+    const comprou = new Set(DB.vendas.filter((x) => inR(x.data)).map((x) => x.rota + '|' + x.nif));
+    const rows = uni.map((x) => ({ rota: x.rota, promotor: nomeRota(x.rota), codigo: x.codigo, nome: x.nome, nif: x.nif, tipo: x.tipo, dias: x.dias, estado: x.estado, gps: x.tem_gps, comprou: !isCF(x.nif) && comprou.has(x.rota + '|' + x.nif) }));
+    const reais = rows.filter((x) => !isCF(x.nif));
+    pg.append(tiles([{ l: t('Clientes na carteira'), v: n0(reais.length), s: t('sem Consumidor Final') }, { l: t('Activos'), v: n0(reais.filter((x) => x.estado === 'Ativo').length) },
+      { l: t('Pendentes ou com erro'), v: n0(rows.filter((x) => x.estado !== 'Ativo').length), tone: 'warn' }, { l: t('Sem GPS'), v: n0(reais.filter((x) => !x.gps).length) },
+      { l: t('Compraram no período'), v: n0(reais.filter((x) => x.comprou).length), s: t('{p} da carteira', { p: pct(reais.length ? reais.filter((x) => x.comprou).length / reais.length : null) }) }]));
+    const pr = Object.values(group(rows, 'rota')).map((rs) => { const r2 = rs.filter((x) => !isCF(x.nif)); return { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), clientes: r2.length, activos: r2.filter((x) => x.estado === 'Ativo').length,
+      pendentes: rs.filter((x) => x.estado !== 'Ativo').length, sem_gps: r2.filter((x) => !x.gps).length, compraram: r2.filter((x) => x.comprou).length, cobertura: r2.length ? r2.filter((x) => x.comprou).length / r2.length : null }; });
+    const secs = el('div', 'secs');
+    secs.append(tabela({ id: 'cl-r', titulo: t('Carteira por rota'), nota: t('Cobertura = clientes da carteira que compraram no período.'), rows: pr, sort: 'rota', dir: 1, total: true,
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'clientes', label: t('Clientes'), type: 'n', sum: true }, { key: 'activos', label: t('Activos'), type: 'n', sum: true },
+        { key: 'pendentes', label: t('Pendentes / erro'), type: 'n', sum: true }, { key: 'sem_gps', label: t('Sem GPS'), type: 'n', sum: true }, { key: 'compraram', label: t('Compraram'), type: 'n', sum: true },
+        { key: 'cobertura', label: t('Cobertura'), type: 'pct', sum: (rs) => { const a = sum(rs, 'clientes'); return a ? sum(rs, 'compraram') / a : null; } }] }));
+    secs.append(tabela({ id: 'cl-d', titulo: t('Clientes'), rows, sort: 'nome', dir: 1,
+      cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'codigo', label: t('Código') }, { key: 'nome', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') },
+        { key: 'tipo', label: t('Tipo') }, { key: 'dias', label: t('Dias de visita') }, { key: 'estado', label: t('Estado'), render: (v) => pill(t(v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'), xl: (r) => t(r.estado) },
+        { key: 'comprou', label: t('Comprou no período'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-mut'), xl: (r) => t(r.comprou ? 'Sim' : 'Não') }] }));
+    pg.append(secs);
+  };
+
+  R['plano-visitas'] = (pg) => {
+    const dias = [...new Set(DB.vendas.map((x) => x.data))].filter(inR).sort();
+    const act = DB.clientes.filter((x) => x.estado === 'Ativo' && !isCF(x.nif));
+    const rows = [];
+    dias.forEach((d) => {
+      const ds3 = diaSemana(d), V = DB.vendas.filter((x) => x.data === d);
+      Object.keys(DB.mapRota).forEach((r) => {
+        const plan = new Set(act.filter((x) => x.rota === r && x.dia === ds3).map((x) => x.nif));
+        const vr = V.filter((x) => x.rota === r), comp = new Set(vr.filter((x) => !isCF(x.nif)).map((x) => x.nif));
+        const ok = [...comp].filter((n) => plan.has(n)).length;
+        if (!plan.size && !vr.length) return;
+        rows.push({ chave: d + '|' + r, data: d, dia: nomeDia(ds3), rota: r, promotor: nomeRota(r), planeados: plan.size, compraram: ok, fora: comp.size - ok, docs: vr.length, total: sum(vr, 'total'), cumprimento: plan.size ? ok / plan.size : null });
+      });
+    });
+    pg.append(tiles([{ l: t('Clientes planeados'), v: n0(sum(rows, 'planeados')) }, { l: t('Planeados que compraram'), v: n0(sum(rows, 'compraram')) },
+      { l: t('Cumprimento'), v: pct(sum(rows, 'planeados') ? sum(rows, 'compraram') / sum(rows, 'planeados') : null), tone: 'warn' }, { l: t('Vendas fora do plano'), v: n0(sum(rows, 'fora')), s: t('clientes de outro dia ou rota') }]));
+    pg.append(tabela({ id: 'pv', titulo: t('Plano de visitas por dia e rota'), nota: t('Planeados = clientes activos da carteira com visita nesse dia da semana. Cumprimento = planeados que compraram.'), rows, sort: 'data', total: true,
+      cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'dia', label: t('Dia da semana') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'planeados', label: t('Planeados'), type: 'n', sum: true }, { key: 'compraram', label: t('Compraram'), type: 'n', sum: true }, { key: 'fora', label: t('Fora do plano'), type: 'n', sum: true },
+        { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true },
+        { key: 'cumprimento', label: t('Cumprimento'), type: 'pct', sum: (rs) => { const a = sum(rs, 'planeados'); return a ? sum(rs, 'compraram') / a : null; }, render: (v) => (v == null ? pill('—', 'p-mut') : pill(pct(v), v < 0.2 ? 'p-bad' : v < 0.5 ? 'p-warn' : 'p-ok')) }] }));
+  };
+
+  // ================= desenho =================
+  function textos() {
+    document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
+    $('#brand-sub').textContent = t('Portal RTM'); $('#voltar-t').textContent = t('Página principal'); $('#lang-lbl').textContent = t('Idioma'); $('#menu-t').textContent = t('Menu');
+    $('#l-de').textContent = t('De'); $('#l-ate').textContent = t('Até');
+    $('#xl-page span').textContent = t('Excel desta página'); $('#xl-all span').textContent = t('Excel completo');
+    document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
+    if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
+  }
+  function draw() {
+    const p = paginaAtual();
+    REG = { tabelas: [], kpis: [] }; FITS = [];
+    textos();
+    $('#de').value = st.de; $('#ate').value = st.ate;
+    const ps = presets(), seg = $('#presets'); seg.replaceChildren();
+    Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k && st.de === v[1] && st.ate === v[2] ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
+    $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`);
+    $('#titulo').textContent = p.id === 'inicio' ? t('Onde pretende entrar?') : t(p.nome);
+    $('#lead').textContent = p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
+    const pg = $('#page'); pg.replaceChildren();
+    try { R[p.id](pg); } catch (e) { console.error(e); pg.append(el('div', 'glass empty', t('Não foi possível desenhar esta página.'))); }
+    nav();
+    requestAnimationFrame(() => FITS.forEach((f) => f()));
+    document.title = (p.id === 'inicio' ? t('Portal RTM') : t(p.nome)) + ' · Grupo Naval';
+  }
+  function route() { const h = location.hash.slice(1); atual = PAGES.some((x) => x.id === h) ? h : 'inicio'; draw(); window.scrollTo(0, 0); }
+
+  $('#xl-page').addEventListener('click', () => {
+    const p = paginaAtual();
+    if (p.id === 'inicio') { $('#xl-all').click(); return; }
+    exportarExcel([{ pagina: p.nome, grupo: p.grupo, kpis: REG.kpis, tabelas: REG.tabelas }], t(p.nome));
+  });
+  $('#xl-all').addEventListener('click', () => {
+    const pags = PAGES.filter((p) => p.id !== 'inicio').map((p) => { const r = recolher(p.id); return { pagina: p.nome, grupo: p.grupo, kpis: r.kpis, tabelas: r.tabelas }; });
+    const ini = recolher('inicio'); pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
+    exportarExcel(pags, t('Relatório completo'));
+  });
+  document.querySelectorAll('#lang button').forEach((b) => b.addEventListener('click', () => { LANG = b.dataset.l; try { localStorage.setItem('vm-lang', LANG); } catch (e) {} setFmt(); draw(); }));
+  const onDate = () => { const a = $('#de').value, b = $('#ate').value; if (a && b && a <= b) { st.de = a; st.ate = b; st.preset = null; guardar(); draw(); } };
+  $('#de').addEventListener('change', onDate); $('#ate').addEventListener('change', onDate);
+  $('#menu').addEventListener('click', () => $('#app').classList.toggle('open'));
+  addEventListener('hashchange', route);
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FITS.forEach((f) => f()), 150); });
+
+  Promise.all(FONTES.map((id) => fetch('data/' + id + '.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((d) => { DB[id] = d; })))
+    .then(() => {
+      FONTES.forEach((k) => { if (!Array.isArray(DB[k])) DB[k] = []; });
+      DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
+      diasSap = [...new Set(DB.vendas.map((x) => x.data))].sort();
+      diasTodos = [...new Set([...diasSap, ...DB.cargas.map((x) => x.data)])].sort();
+      if (!diasTodos.length) { $('#titulo').textContent = t('Sem dados'); return; }
+      carregarFiltro();
+      if (!st.de || !st.ate || st.de > diasTodos[diasTodos.length - 1]) { const p = presets().mes; st.de = p[1]; st.ate = p[2]; st.preset = 'mes'; }
+      else if (st.preset) { const p = presets()[st.preset]; if (p) { st.de = p[1]; st.ate = p[2]; } }
+      route();
+    });
+})();
+</script>
+</body>
+</html>

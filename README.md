@@ -1,4 +1,13 @@
-# Portal RTM · Grupo Naval
+# GeoMobilidade Naval · Grupo Naval
+
+Sistema Integrado de Operações. A página principal (`index.html`) dá acesso a dois módulos:
+
+| Módulo | Endereço | Estado |
+|---|---|---|
+| **REPORTS** | `reports/` | Portal RTM (abaixo) |
+| **GEO** | por configurar (`GEO_URL` em `index.html`) | Rotas, zonas de entrega e distribuidores |
+
+## REPORTS · Portal RTM
 
 Portal da equipa RTM (Route to Market) do Grupo Naval Angola, no estilo do Portal do Grupo. Mostra **só dados do Pinguim BO e do plano de cargas**.
 
@@ -17,7 +26,7 @@ Todas as páginas têm filtro de datas, idioma PT/EN e exportação **Excel (.xl
 
 O ecrã ajusta-se sozinho para evitar barras de deslocamento: as tabelas mostram 20 linhas de cada vez e, quando falta largura, ficam compactas e escondem primeiro as colunas menos importantes (há sempre a opção de as mostrar).
 
-## Dados (`data/`)
+## Dados (`reports/data/`)
 
 | Ficheiro | Origem | Conteúdo |
 |---|---|---|
