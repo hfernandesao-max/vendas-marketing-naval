@@ -1,6 +1,6 @@
 # Vendas Marketing · Naval
 
-Dashboard de gestão diária das vendas Marketing do Grupo Naval: consolidado do mês, vendas do dia, reconciliação de caixa (numerário e TPA), vendedores, logística e escoamento da carga, produtos, cobertura de stock e facturas.
+Portal de vendas e stock da Marketing do Grupo Naval, no estilo do Portal do Grupo. Menu: **Stock** (stock por promotor/carrinha, stock por armazém, vendas por artigo, métodos de pagamento), **Relatório de vendas** (vendas globais e descontos com e sem IVA por promotor, vendas por promotor e marca) e **Controlo** (reconciliação de caixa, logística e escoamento, RTM Pinguim BO, facturas). Todas as páginas têm filtro de datas e exportação CSV (separador `;`, decimais com vírgula, para Excel).
 
 Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 
@@ -12,7 +12,9 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 | `data/*.json` | Histórico de todos os dias: `resumo`, `vendedores`, `produtos`, `facturas`, `stock`, `transportes`, `rtm` (Pinguim BO) |
 | `data/rotas.json` | Correspondência rota Pinguim BO ↔ vendedor SAP (por validar). Editar aqui e mudar `validado` para `true` quando confirmada |
 | `tools/mkt_parser.py` | Processador que lê os relatórios do dia e actualiza `data/` |
-| `vendor/d3.min.js` | Biblioteca de gráficos d3 v7.9.0 |
+| `data/linhas.json` | Vendas por dia, promotor e artigo, com e sem IVA e desconto |
+| `data/marcas.json`, `data/armazens.json` | Referência: marca e categoria de cada artigo; armazém MR de cada promotor (da exportação SAP) |
+| `assets/globo.png` | Símbolo Naval |
 
 ## Actualização diária
 

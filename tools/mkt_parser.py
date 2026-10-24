@@ -146,6 +146,9 @@ def parse_day(K):
     tot = lambda k: round(sum(f[k] for f in facturas if not f["anulada"]), 2)
     unid = lambda prod: padrao.get(prod, {}).get("unidade", "CAR")
     credito_f = {f["fatura"]: round(f["total"] - f["tpa"] - f["numerario"] - f["deposito"], 2) for f in facturas if not f["anulada"]}
+    liq_f = {f["fatura"]: f["liquido"] for f in facturas if not f["anulada"]}
+    racio_f = {f["fatura"]: (f["liquido"] / f["total"] if f["total"] else 1) for f in facturas if not f["anulada"]}
+    emp_f = {f["fatura"]: f["empresa"] for f in facturas}
     dep_f = {f["fatura"]: f["deposito"] for f in facturas if not f["anulada"]}
     total = tot("total")
     desconto = 0.0
@@ -189,10 +192,11 @@ def parse_day(K):
         v = vend.get(n, dict(facturado=0, caixas=0, docs=set(), desconto=0))
         nu, tp = caixa_v.get(n, 0), tpa_v.get(n, 0)
         dep = round(sum(dep_f.get(d, 0) for d in v["docs"]), 2)
+        liq = round(sum(liq_f.get(d, 0) for d in v["docs"]), 2)
         cred = round(sum(credito_f.get(d, 0) for d in v["docs"]), 2)
         vendedores.append(dict(chave=f"{dia}|{nomes.get(n, n.title())}", data=dia, vendedor=nomes.get(n, n.title()),
                                facturado=round(v["facturado"], 2), numerario=round(nu, 2), tpa=round(tp, 2),
-                               deposito=dep, credito=cred,
+                               deposito=dep, credito=cred, liquido=liq, iva=round(v["facturado"] - liq, 2),
                                diferenca=round(nu + tp + dep + cred - v["facturado"], 2), facturas=len(v["docs"]),
                                caixas=v["caixas"], desconto=round(v["desconto"], 2)))
 
@@ -234,9 +238,27 @@ def parse_day(K):
                          empresa=f["empresa"].replace(" LDA", "").replace(" GENERAL TRAD.", "").title(),
                          cliente=f["cliente"], vendedor=nomes.get(doc_vend.get(f["fatura"], ""), ""),
                          tpa=f["tpa"], numerario=f["numerario"], deposito=f["deposito"], total=f["total"],
+                         liquido=f["liquido"], iva=f["iva"],
                          estado="Anulada" if f["anulada"] else "Válida"))
     nomes_ = nomes
-    out = dict(resumo=[resumo], vendedores=vendedores, produtos=produtos, facturas=fact, stock=stock)
+    # Linhas de venda por dia, vendedor e artigo, com e sem IVA (rácio líquido/total da factura)
+    agg = {}
+    for l in linhas:
+        if l["doc"] not in racio_f:
+            continue
+        k = (nomes.get(l["vendedor"], l["vendedor"].title()), l["produto"])
+        a = agg.setdefault(k, dict(qtd=0.0, valor=0.0, sem_iva=0.0, desconto=0.0, desconto_sem_iva=0.0, docs=set(), desc=l["desc"], empresa=emp_f.get(l["doc"], "")))
+        rac = racio_f[l["doc"]]
+        p = padrao.get(l["produto"])
+        dsc = (p["std"] * l["qtd"] - l["valor"]) if p else 0.0
+        a["qtd"] += l["qtd"]; a["valor"] += l["valor"]; a["sem_iva"] += l["valor"] * rac
+        a["desconto"] += dsc; a["desconto_sem_iva"] += dsc * rac; a["docs"].add(l["doc"])
+    linhas_out = [dict(chave=f"{dia}|{v}|{c}", data=dia, vendedor=v, codigo=c, produto=a["desc"], unidade=unid(c),
+                       empresa=a["empresa"].replace(" LDA", "").replace(" GENERAL TRAD.", "").title(),
+                       qtd=a["qtd"], valor=round(a["valor"], 2), valor_sem_iva=round(a["sem_iva"], 2),
+                       desconto=round(a["desconto"], 2), desconto_sem_iva=round(a["desconto_sem_iva"], 2), facturas=len(a["docs"]))
+                  for (v, c), a in sorted(agg.items())]
+    out = dict(resumo=[resumo], vendedores=vendedores, produtos=produtos, facturas=fact, stock=stock, linhas=linhas_out)
     if "transporte" in K:
         _, carga = parse_carga(K["transporte"])
         out["transportes"] = aplicar_vendas(carga, dia, linhas, nomes)
@@ -401,7 +423,7 @@ def main():
         hp = os.path.join(hist, nome + ".json") if hist != "-" else None
         if hp and os.path.exists(hp):
             antigos = [r for r in json.load(open(hp)) if r["data"] != dia]  # reprocessar o dia substitui-o
-        novos_campos = dict(resumo=dict(foodtec=0, credito=0, sacos=0), vendedores=dict(deposito=0, credito=0),
+        novos_campos = dict(resumo=dict(foodtec=0, credito=0, sacos=0), vendedores=dict(deposito=0, credito=0, liquido=0, iva=0),
                             produtos=dict(unidade="CAR")).get(nome, {})
         for r in antigos:
             for k, v in novos_campos.items():
