@@ -1072,7 +1072,7 @@
         'Detalhe por promotor e artigo': 'Detail by promoter and item', 'Código': 'Code', 'Artigo': 'Item', 'Marca': 'Brand', 'Inicial': 'Opening', 'Final': 'Closing',
         'Stock por centro e armazém': 'Stock by plant and warehouse', 'Período de stock: {a} a {b}.': 'Stock period: {a} to {b}.', 'Centro': 'Plant', 'Armazém': 'Warehouse',
         '{n} armazéns MR · em {d}': '{n} MR warehouses · on {d}', 'Stock final por artigo e armazém': 'Closing stock by item and warehouse', 'Caixas no fim do período em cada armazém MR (todos os centros).': 'Cases at the end of the period in each MR warehouse (all plants).',
-        'Top 10 artigos por valor': 'Top 10 items by value', 'Período {a} a {b}, com IVA.': 'Period {a} to {b}, incl. VAT.', 'Por categoria': 'By category', 'Valor com IVA por família de produto.': 'Value incl. VAT by product family.',
+        'Os 10 artigos com maior valor': 'Top 10 items by value', 'Período {a} a {b}, com IVA.': 'Period {a} to {b}, incl. VAT.', 'Por categoria': 'By category', 'Valor com IVA por família de produto.': 'Value incl. VAT by product family.',
         'Categoria': 'Category', 'Un.': 'Unit', 'Qtd.': 'Qty', 'Valor c/ IVA': 'Value incl. VAT', 'Valor s/ IVA': 'Value excl. VAT', 'Preço médio': 'Average price', 'Desconto': 'Discount', 'Promotores': 'Promoters', 'Cobertura': 'Cover', '{n} dias': '{n} days',
         'Numerário': 'Cash', 'TPA (Multicaixa)': 'Card (Multicaixa)', 'TPA': 'Card', 'Depósito': 'Deposit', 'Crédito': 'Credit', '{p} do total': '{p} of total',
         'Peso de cada método': 'Share of each method', 'Total facturado {v} no período.': 'Total invoiced {v} in the period.', 'Por dia': 'By day', 'Dia': 'Day',
@@ -1087,7 +1087,7 @@
         'Camiões': 'Trucks', 'Caixas carregadas': 'Cases loaded', 'Escoamento': 'Sell-through', 'Camiões sem vendas': 'Trucks with no sales',
         'Plano de cargas e escoamento': 'Loading plan and sell-through', 'Escoamento = caixas facturadas pelo vendedor ÷ caixas carregadas no camião.': 'Sell-through = cases invoiced by the seller ÷ cases loaded on the truck.',
         'Matrícula': 'Plate', 'Zonas': 'Zones', 'Zonas de descarga': 'Delivery zones', 'Carga': 'Load', 'Vendido': 'Sold',
-        '{n} documentos': '{n} documents', 'Facturas Pendentes': 'Unpaid', 'Rotas validadas': 'Routes validated',
+        '{n} documentos': '{n} documents', 'Facturas pendentes': 'Unpaid', 'Rotas validadas': 'Routes validated',
         'Rota': 'Route', 'Documentos': 'Documents', 'Documentos Pinguim': 'Pinguim documents', 'Hora': 'Time', 'Documento': 'Document', 'Cliente': 'Customer', 'NIF': 'Tax ID',
         'Pago': 'Paid', 'Sim': 'Yes', 'Não': 'No', 'Sem correspondência': 'No match', 'Correspondência rota ↔ vendedor': 'Route ↔ seller mapping',
         'A confirmar pela área comercial.': 'To be confirmed by Sales.', 'Nome no Pinguim': 'Name in Pinguim', 'Estado': 'Status', 'Confirmado': 'Confirmed', 'Factura': 'Invoice',
@@ -1134,10 +1134,10 @@
         "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).": "Amounts received by payment type, as recorded in Pinguim BO (excluding change).",
         "% do recebido": "% of received", "Em falta": "Outstanding", "Transferência": "Transfer", "Outro": "Other", "Sem meio indicado": "No method recorded",
         "Transferência Bancária": "Bank transfer", "Multicaixa": "Multicaixa",
-        "Dinheiro, Multicaixa e Facturas Pendentes": "Cash, Multicaixa and unpaid",
+        "Dinheiro, Multicaixa e facturas pendentes": "Cash, Multicaixa and unpaid",
         "Documento, data e rota": "Document, date and route",
         "Documentos emitidos no Pinguim BO no período.": "Documents issued in Pinguim BO in the period.",
-        "Documentos Facturas Pendentes": "Unpaid documents",
+        "Documentos com facturas pendentes": "Unpaid documents",
         "Em Multicaixa": "By Multicaixa",
         "Em dinheiro": "In cash",
         "Falta o meio de pagamento": "Payment method missing",
@@ -1179,7 +1179,7 @@
         "{n} clientes": "{n} customers",
         "{n} clientes activos": "{n} active customers",
         "{n} dias com vendas": "{n} days with sales",
-        "{n} Facturas Pendentes": "{n} unpaid",
+        "{n} facturas pendentes": "{n} unpaid",
         "{n} por rever": "{n} to review",
         "{n} promotores com vendas": "{n} promoters with sales",
         "{p} da carteira": "{p} of portfolio",
@@ -1200,7 +1200,7 @@
         "Valor sem IVA e com IVA": "Value excl. and incl. VAT",
         "Meio de pagamento (dinheiro, Multicaixa, transferência)": "Payment method (cash, Multicaixa, transfer)",
         "Valor recebido": "Amount received",
-        "Ativo": "Active",
+        "Ativo": "Active", "Activo": "Active", "Inactivo": "Inactive",
         "Pendente": "Pending",
         "Erro": "Error",
         "Documentos Pinguim": "Pinguim documents",
@@ -1527,6 +1527,8 @@
 
       // ================= cálculos comuns (só RTM / Pinguim BO) =================
       const vendasR = () => DB.vendas.filter((x) => inR(x.data));
+      // Estados da carteira vêm do Pinguim BO com a grafia nova; no ecrã mostram-se com a grafia antiga
+      const ESTADO_PT = { Ativo: 'Activo', Inativo: 'Inactivo' };
       const nomeRota = (r) => (DB.mapRota[r] || {}).promotor || r;
       // Nome do promotor sempre acompanhado do código da rota: "1001 · Andrea Santos"
       const promotorRota = (r, nome) => { const n = nome || nomeRota(r); return r && n && String(n) !== String(r) ? r + ' · ' + n : String(n || r || '—'); };
@@ -1631,7 +1633,7 @@
           { l: t('Recebido'), v: kz2(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }), cls: 'full-value' },
           { l: t('Em dinheiro'), v: temMeio() ? kz2(din) : '—', s: temMeio() ? '' : t('Falta o meio de pagamento'), cls: 'full-value' },
           { l: t('Em Multicaixa'), v: temMeio() ? kz2(mc) : '—', s: temMeio() ? '' : t('Falta o meio de pagamento'), cls: 'full-value' },
-          { l: t('Facturas Pendentes'), v: kz2(tot - liq), tone: tot - liq > 0 ? 'warn' : null, cls: 'full-value' },
+          { l: t('Facturas pendentes'), v: kz2(tot - liq), tone: tot - liq > 0 ? 'warn' : null, cls: 'full-value' },
           { l: t('Clientes com compras'), v: n0(new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size) },
         ]));
         const al = contarAlertas(), cards = el('div', 'cards');
@@ -1641,7 +1643,7 @@
           ['vendas-dia', 'route', 'Vendas RTM', 'Vendas por dia', t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size })],
           ['vendas-cliente', 'tag', 'Vendas RTM', 'Vendas por cliente', t('{n} clientes', { n: new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size })],
           ['documentos', 'file', 'Vendas RTM', 'Documentos', t('{n} documentos', { n: n0(V.length) })],
-          ['pagamentos', 'card', 'Recebimentos', 'Métodos de pagamento', t('Dinheiro, Multicaixa e Facturas Pendentes'), temMeio() ? (al.pagamentos ? [t('{n} Facturas Pendentes', { n: al.pagamentos }), ''] : null) : [t('Falta o meio de pagamento'), 'bad']],
+          ['pagamentos', 'card', 'Recebimentos', 'Métodos de pagamento', t('Dinheiro, Multicaixa e facturas pendentes'), temMeio() ? (al.pagamentos ? [t('{n} facturas pendentes', { n: al.pagamentos }), ''] : null) : [t('Falta o meio de pagamento'), 'bad']],
           ['stock-carrinha', 'truck', 'Stock', 'Stock por promotor / carrinha', t('Carga das carrinhas pelo plano de cargas')],
           ['stock-armazem', 'ware', 'Stock', 'Stock por armazém', t('Stock no Pinguim BO'), pend],
           ['vendas-artigo', 'box', 'Stock', 'Vendas por artigo', t('Linhas de venda do Pinguim BO'), pend],
@@ -1663,13 +1665,13 @@
           { l: t('Vendas RTM'), v: mkz(tot), s: t('{n} documentos', { n: n0(V.length) }) },
           { l: t('Promotores com vendas'), v: n0(P.filter((x) => x.docs > 0).length) },
           { l: t('Venda média por documento'), v: mkz(V.length ? tot / V.length : null) },
-          { l: t('Facturas Pendentes'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
+          { l: t('Facturas pendentes'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
         ]));
         pg.append(tabela({
           id: 'vp', titulo: t('Vendas por promotor'), nota: t('Documentos emitidos no Pinguim BO no período.'), rows: P, sort: 'total', total: true,
           cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
           { key: 'dias', label: t('Dias com vendas'), type: 'n' }, { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
-          { key: 'por_liquidar', label: t('Facturas Pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
+          { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
         }));
       };
 
@@ -1807,7 +1809,7 @@
           { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: rotaDoc ? promotorRota(rotaDoc) : t('{n} rotas', { n: rotas.length }) },
           { l: t('Documentos'), v: n0(V.length), s: t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size }) },
           { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
-          { l: t('Facturas Pendentes'), v: mkz(tot - liq), tone: tot - liq > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
+          { l: t('Facturas pendentes'), v: mkz(tot - liq), tone: tot - liq > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
           { l: t('Clientes com compras'), v: n0(cli) },
           { l: t('Média por documento'), v: mkz(V.length ? tot / V.length : 0) },
         ]));
@@ -1818,7 +1820,7 @@
             id: 'dc-rota', titulo: t('Vendas por rota'), nota: t('Escolha uma rota no filtro acima para ver os documentos dessa rota.'), sort: 'total', total: true,
             rows: rotas.map((r) => { const rs = porRota[r] || [], tt = sum(rs, 'total'), rc = sum(rs, recebidoDe); return { chave: r, rota: r, promotor: promotorRota(r), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, total: tt, recebido: rc, pendente: tt - rc, medio: rs.length ? tt / rs.length : 0 }; }),
             cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
-            { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }, { key: 'pendente', label: t('Facturas Pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
+            { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }, { key: 'pendente', label: t('Facturas pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
           }));
         }
 
@@ -1838,7 +1840,7 @@
           { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
           { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de pagamento') },
           { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de pagamento') },
-          { l: t('Facturas Pendentes'), v: mkz(pend), tone: pend > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
+          { l: t('Facturas pendentes'), v: mkz(pend), tone: pend > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
         ]));
         const secs = el('div', 'secs');
         if (!meio) {
@@ -1864,13 +1866,13 @@
           o.por_liquidar = sum(rs, pendenteDe); return o;
         };
         const cols = (k) => [{ key: k, label: t(k === 'data' ? 'Dia' : 'Promotor'), type: k === 'data' ? 'date' : undefined }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
-        ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })), { key: 'por_liquidar', label: t('Facturas Pendentes'), type: 'kz', sum: true }];
+        ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })), { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true }];
         const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: promotorRota(rs[0].rota) }));
         secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
         const pd = Object.values(group(V, 'data')).map((rs) => linha(rs, { chave: rs[0].data, data: rs[0].data }));
         secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
         secs.append(tabela({
-          id: 'pg-pend', titulo: t('Documentos Facturas Pendentes'), rows: V.filter((x) => pendenteDe(x) > 0).map((x) => ({ ...x, promotor: promotorRota(x.rota), recebido: recebidoDe(x), em_falta: pendenteDe(x) })), sort: 'em_falta', total: true, search: false,
+          id: 'pg-pend', titulo: t('Documentos com facturas pendentes'), rows: V.filter((x) => pendenteDe(x) > 0).map((x) => ({ ...x, promotor: promotorRota(x.rota), recebido: recebidoDe(x), em_falta: pendenteDe(x) })), sort: 'em_falta', total: true, search: false,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true },
           { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true, p: 1 }, { key: 'em_falta', label: t('Em falta'), type: 'kz', sum: true }]
         }));
@@ -1939,7 +1941,7 @@
         secs.append(tabela({
           id: 'cl-d', titulo: t('Clientes'), rows, sort: 'nome', dir: 1,
           cols: [{ key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'codigo', label: t('Código') }, { key: 'nome', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') },
-          { key: 'tipo', label: t('Tipo') }, { key: 'dias', label: t('Dias de visita') }, { key: 'estado', label: t('Estado'), render: (v) => pill(t(v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'), xl: (r) => t(r.estado) },
+          { key: 'tipo', label: t('Tipo') }, { key: 'dias', label: t('Dias de visita') }, { key: 'estado', label: t('Estado'), xl: (r) => t(ESTADO_PT[r.estado] || r.estado), render: (v) => pill(t(ESTADO_PT[v] || v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'), xl: (r) => t(r.estado) },
           { key: 'comprou', label: t('Comprou no período'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-mut'), xl: (r) => t(r.comprou ? 'Sim' : 'Não') }]
         }));
         pg.append(secs);

@@ -577,7 +577,7 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
       <?php else: ?>
         <a href="login.php" class="btn-login-header" id="btnHeaderLogin" title="Aceder à conta">
           <i data-lucide="lock" style="width: 15px; height: 15px;"></i>
-          <span>Iniciar Sessão</span>
+          <span>Iniciar sessão</span>
         </a>
       <?php endif; ?>
     </div>
@@ -592,9 +592,9 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
         <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
         <span>Plataforma Integrada Naval</span>
       </div>
-      <h1 class="hero-title">Selecione o seu <span>Módulo Operacional</span></h1>
+      <h1 class="hero-title">Seleccione o seu <span>Módulo Operacional</span></h1>
       <p class="hero-description">
-        Escolha entre a central analítica de relatórios ou a ferramenta de otimização geográfica e roteirização da frota.
+        Escolha entre a central de relatórios ou a ferramenta de optimização geográfica e planeamento de rotas da frota.
       </p>
     </div>
 
@@ -602,50 +602,50 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
     <div class="portal-grid">
 
       <!-- 1. BOTAO GRANDE: REPORTS -->
-      <a href="reports.php" class="module-card card-reports" id="btnModuleReports" title="Abrir Módulo de Relatórios">
+      <a href="reports.php" class="module-card card-reports" id="btnModuleReports" title="Abrir o módulo de relatórios">
         <div class="card-top">
           <div class="card-header-flex">
             <div class="card-icon-box">
               <i data-lucide="bar-chart-3" style="width: 36px; height: 36px;"></i>
             </div>
-            <span class="card-badge-status">Auditoria & Indicadores</span>
+            <span class="card-badge-status">Auditoria &amp; indicadores</span>
           </div>
 
           <div class="card-title-group">
             <h2>REPORTS</h2>
-            <div class="card-subtitle">Inteligência Operacional</div>
+            <div class="card-subtitle">Inteligência operacional</div>
           </div>
 
           <p class="card-description">
-            Consulte indicadores de desempenho, relatórios diários de frotas e distribuições, e realize o download de dados consolidados em formato CSV.
+            Consulte indicadores de desempenho, relatórios diários de vendas, recebimentos e carrinhas, e descarregue dados consolidados em Excel.
           </p>
 
           <div class="feature-tags">
-            <span class="feature-tag"><i data-lucide="file-spreadsheet" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Exportações CSV</span>
-            <span class="feature-tag"><i data-lucide="trending-up" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Métricas de Desempenho</span>
-            <span class="feature-tag"><i data-lucide="history" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Histórico de Auditoria</span>
+            <span class="feature-tag"><i data-lucide="file-spreadsheet" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Exportações Excel</span>
+            <span class="feature-tag"><i data-lucide="trending-up" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Métricas de desempenho</span>
+            <span class="feature-tag"><i data-lucide="history" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Histórico de auditoria</span>
           </div>
         </div>
 
         <div class="card-action-btn">
-          <span>Abrir Relatórios</span>
+          <span>Abrir relatórios</span>
           <i data-lucide="arrow-right" style="width: 20px; height: 20px;"></i>
         </div>
       </a>
 
       <!-- 2. BOTAO GRANDE: GEO -->
-      <a href="geo.php" class="module-card card-geo" id="btnModuleGeo" title="Abrir GeoMobilidade e Rotas">
+      <a href="geo.php" class="module-card card-geo" id="btnModuleGeo" title="Abrir GeoMobilidade e rotas">
         <div class="card-top">
           <div class="card-header-flex">
             <div class="card-icon-box">
               <i data-lucide="route" style="width: 36px; height: 36px;"></i>
             </div>
-            <span class="card-badge-status">Otimização & Frotas</span>
+            <span class="card-badge-status">Optimização &amp; frotas</span>
           </div>
 
           <div class="card-title-group">
             <h2>GEO</h2>
-            <div class="card-subtitle">GeoMobilidade & Mapas</div>
+            <div class="card-subtitle">Geomobilidade &amp; mapas</div>
           </div>
 
           <p class="card-description">
@@ -653,9 +653,9 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
           </p>
 
           <div class="feature-tags">
-            <span class="feature-tag"><i data-lucide="navigation" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Otimização de Rota</span>
-            <span class="feature-tag"><i data-lucide="map-pinned" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Delimitação de Zonas</span>
-            <span class="feature-tag"><i data-lucide="truck" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Gestão Distribuidores</span>
+            <span class="feature-tag"><i data-lucide="navigation" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Optimização de rotas</span>
+            <span class="feature-tag"><i data-lucide="map-pinned" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Delimitação de zonas</span>
+            <span class="feature-tag"><i data-lucide="truck" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Gestão de distribuidores</span>
           </div>
         </div>
 

@@ -293,7 +293,7 @@ $artigos = [];
 if (isset($xml->transactions)) {
     foreach ($xml->transactions->transaction as $tx) {
         $docType = (string) $tx->document_type;
-        // Apenas documentos de venda (Factura-recibo / Fatura)
+        // Apenas documentos de venda (Factura-recibo / Factura)
         if ($docType !== 'FR' && $docType !== 'FT') continue;
         if ((string) $tx->deleted === '1') continue;
 
@@ -344,7 +344,7 @@ if (isset($xml->transactions)) {
             'hora'            => $time,
             'rota'            => $storeCode,
             'promotor'        => $promotor,
-            'tipo'            => $docType === 'FR' ? 'Factura-recibo' : 'Fatura',
+            'tipo'            => $docType === 'FR' ? 'Factura-recibo' : 'Factura',
             'documento'       => $docNr,
             'cliente'         => $clientName,
             'nif'             => $taxNr ?: ($entities[$entityCode]['tax'] ?? ''),

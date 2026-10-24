@@ -10,7 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="../../style.css" />
   <link rel="stylesheet" href="../../theme.css" />
-  <title>GeoMobilidadeNaval</title>
+  <title>GeoMobilidade Naval</title>
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
@@ -34,16 +34,16 @@
         <h1>GeoMobilidade<span>Naval</span></h1>
       </div>
       <div class="header-nav">
-        <a href="../../index.php" title="Página Inicial / Hub" class="nav-btn">
+        <a href="../../index.php" title="Página inicial" class="nav-btn">
           <i data-lucide="layout-grid"></i> Início
         </a>
         <a href="../../geo.php" title="Voltar para a optimização de rotas" class="nav-btn">
           <i data-lucide="route"></i> Rotas
         </a>
-        <a href="../index.php" title="Ir para Delimitação de Zonas" class="nav-btn">
+        <a href="../index.php" title="Ir para a delimitação de zonas" class="nav-btn">
           <i data-lucide="map-pinned"></i> Zonas
         </a>
-        <a href="../../reports.php" title="Ir para Relatórios" class="nav-btn">
+        <a href="../../reports.php" title="Ir para os relatórios" class="nav-btn">
           <i data-lucide="bar-chart-3"></i> Reports
         </a>
         <a href="../../auth/logout.php" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
@@ -59,14 +59,14 @@
 
         <!-- Seção de Ações / Ferramentas -->
         <div class="sidebar-panel">
-          <h2>Ferramentas de Distribuidor</h2>
+          <h2>Ferramentas de distribuidor</h2>
 
           <div class="tool-group">
-            <label>Estado do Cliente</label>
+            <label>Estado do cliente</label>
             <div class="category-select-wrapper">
               <select id="selectStatus" class="premium-select">
-                <option value="Ativo" selected>Ativo</option>
-                <option value="Inativo">Inativo</option>
+                <option value="Ativo" selected>Activo</option>
+                <option value="Inativo">Inactivo</option>
                 <option value="Pendente">Pendente</option>
                 <option value="Todos">Todos</option>
               </select>
@@ -75,25 +75,25 @@
 
           <div class="actions-grid">
             <button id="load" onclick="loadButtonClicked()" class="action-btn"
-              title="Carregar ficheiro csv contendo os clientes">
+              title="Carregar ficheiro CSV com os clientes">
               <i data-lucide="upload"></i> <span>Importar CSV</span>
             </button>
             <input type="file" id="csvFile" accept=".csv" style="display:none;" />
 
             <button onclick="ativarModoDesenho()" class="action-btn primary" title="Delimitar zonas">
-              <i data-lucide="waypoints"></i> <span>Desenhar Zona</span>
+              <i data-lucide="waypoints"></i> <span>Desenhar zona</span>
             </button>
 
             <button onclick="desativarModoDesenho()" class="action-btn" title="Editar pontos na zona">
-              <i data-lucide="hand"></i> <span>Editar Zona</span>
+              <i data-lucide="hand"></i> <span>Editar zona</span>
             </button>
 
-            <button onclick="importarPolygons()" class="action-btn" title="Importar Zonas">
-              <i data-lucide="cloud-download"></i> <span>Importar Zonas</span>
+            <button onclick="importarPolygons()" class="action-btn" title="Importar zonas">
+              <i data-lucide="cloud-download"></i> <span>Importar zonas</span>
             </button>
 
-            <button onclick="exportarPolygons()" class="action-btn" title="Exportar Zonas">
-              <i data-lucide="file-down"></i> <span>Exportar Zonas</span>
+            <button onclick="exportarPolygons()" class="action-btn" title="Exportar zonas">
+              <i data-lucide="file-down"></i> <span>Exportar zonas</span>
             </button>
           </div>
         </div>
@@ -115,7 +115,7 @@
           <h2>Detalhes</h2>
           <div id="markerDetailsCard" class="marker-card empty">
             <i data-lucide="mouse-pointer-click"></i>
-            <p>Selecione um marcador ou zona no mapa.</p>
+            <p>Seleccione um marcador ou zona no mapa.</p>
           </div>
         </div>
 

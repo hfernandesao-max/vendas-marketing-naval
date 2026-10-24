@@ -264,7 +264,7 @@ function initMap(Lats, Lngs, coords, coordsToOptimize) {
     console.log("Segments:", segments);
 
     if (segments.length === 0) {
-      console.warn("Nenhum segmento criado — rota pequena demais?");
+      console.warn("Nenhum segmento criado — rota demasiado pequena?");
       return;
     }
 
@@ -507,7 +507,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Atualizar selectedCategory sempre que o utilizador muda a opção
     selectCategory.addEventListener("change", () => {
       selectedCategory = selectCategory.value;
-      console.log("Nova categoria selecionada:", selectedCategory);
+      console.log("Nova categoria seleccionada:", selectedCategory);
       
       // Opcionalmente atualizar painéis da interface se necessário
       const textCategory = document.getElementById("textCategory");
@@ -524,7 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     selectStatus.addEventListener("change", () => {
       selectedStatus = selectStatus.value;
-      console.log("Novo estado selecionado:", selectedStatus);
+      console.log("Novo estado seleccionado:", selectedStatus);
     });
   }
 });
@@ -532,7 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function loadButtonClicked() {
   if (!selectedCategory || selectedCategory === "") {
     window.alert(
-      "Por favor selecione uma categoria antes de carregar o ficheiro.",
+      "Seleccione uma categoria antes de carregar o ficheiro.",
     );
     return;
   }
@@ -546,7 +546,7 @@ function handleLoadClick() {
 
   if (!selectedCategory || selectedCategory === "") {
     window.alert(
-      "Por favor selecione uma categoria antes de carregar o ficheiro.",
+      "Seleccione uma categoria antes de carregar o ficheiro.",
     );
     return;
   }
@@ -761,7 +761,7 @@ document.getElementById("downloadCSV").addEventListener("click", () => {
     document.body.removeChild(a);
   } else {
     alert(
-      "Sem rotas por otimizar:\n1- Selecione um ficheiro\n2 - Click no ícone optimizar\n3 - Optimizar Rota",
+      "Sem rotas por optimizar:\n1 - Seleccione um ficheiro\n2 - Clique no ícone Optimizar\n3 - Optimizar rota",
     );
   }
 });

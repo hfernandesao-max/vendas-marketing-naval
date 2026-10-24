@@ -54,7 +54,7 @@ function salvarPolygonsNoCache() {
   });
 
   localStorage.setItem('zonasCache', JSON.stringify(polygonData));
-  console.log(`Salvos ${polygonData.length} zonas no cache`);
+  console.log(`Guardadas ${polygonData.length} zonas na cache`);
 }
 
 // Função para criar um marcador de etiqueta para o polígono
@@ -141,7 +141,7 @@ function editarNomePolygon(polygon) {
     // Obter a projeção
     /*const projection = overlay.getProjection();
     if (!projection) {
-      console.error('Projeção não disponível');
+      console.error('Projecção não disponível');
       overlay.setMap(null);
       return;
     }*/
@@ -240,9 +240,9 @@ function carregarPolygonsDoCache() {
       criarPolygonDoCache(data);
     });
 
-    console.log(`Carregados ${polygonData.length} zonas do cache`);
+    console.log(`Carregadas ${polygonData.length} zonas da cache`);
   } catch (error) {
-    console.error('Erro ao carregar zonas do cache:', error);
+    console.error('Erro ao carregar zonas da cache:', error);
   }
 }
 
@@ -356,7 +356,7 @@ function importarPolygonsDoArquivo(file) {
       });
 
       salvarPolygonsNoCache();
-      alert(`Importados ${polygonData.length} zonas com sucesso!`);
+      alert(`Importadas ${polygonData.length} zonas com sucesso!`);
 
       // Atualizar legenda com botão de análise
       if (map) {
@@ -365,12 +365,12 @@ function importarPolygonsDoArquivo(file) {
 
     } catch (error) {
       console.error('Erro ao importar zonas:', error);
-      alert('Erro ao importar arquivo. Verifique o formato do JSON.');
+      alert('Erro ao importar o ficheiro. Verifique o formato do JSON.');
     }
   };
 
   reader.onerror = function () {
-    alert('Erro ao ler o arquivo.');
+    alert('Erro ao ler o ficheiro.');
   };
 
   reader.readAsText(file);
@@ -384,7 +384,7 @@ function analisarClientesNosPolygons() {
   }
 
   if (allPolygons.length === 0) {
-    alert('Nenhum zona desenhado no mapa.');
+    alert('Nenhuma zona desenhada no mapa.');
     return;
   }
 
@@ -429,8 +429,8 @@ function analisarClientesNosPolygons() {
     }
   });
 
-  console.log('Clientes dentro dos zonas:', marcadoresDentro.length);
-  console.log('Clientes fora dos zonas:', marcadoresFora.length);
+  console.log('Clientes dentro das zonas:', marcadoresDentro.length);
+  console.log('Clientes fora das zonas:', marcadoresFora.length);
 
   // Mostrar resumo por zona
   console.log('Resumo por zona:');
@@ -504,7 +504,7 @@ function exportarClientesDentroPolygonCSV() {
   const resultado = analisarClientesNosPolygons();
 
   if (!resultado || resultado.dentro.length === 0) {
-    alert('Nenhum marcador dentro dos zonas para exportar.');
+    alert('Nenhum marcador dentro das zonas para exportar.');
     return;
   }
 
@@ -537,7 +537,7 @@ function exportarClientesDentroPolygonCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  alert(`Exportados ${resultado.dentro.length} marcadores dentro dos zonas.`);
+  alert(`Exportados ${resultado.dentro.length} marcadores dentro das zonas.`);
 }
 
 // Função para exportar apenas marcadores fora dos zonas
@@ -545,7 +545,7 @@ function exportarClientesForaPolygonCSV() {
   const resultado = analisarClientesNosPolygons();
 
   if (!resultado || resultado.fora.length === 0) {
-    alert('Nenhum marcador fora dos zonas para exportar.');
+    alert('Nenhum marcador fora das zonas para exportar.');
     return;
   }
 
@@ -590,7 +590,7 @@ function exportarResumoZonasCSV() {
   }
 
   // Criar CSV com resumo por zona
-  const headers = ['Zona', 'Total Clientes', 'Vendedores'];
+  const headers = ['Zona', 'Total de clientes', 'Vendedores'];
 
   const linhasCSV = [];
   resultado.zonaDetalhes.forEach((clientes, zonaNome) => {
@@ -808,7 +808,7 @@ function criarPromptNomeZona(polygon, nomePadrao) {
   `;
 
   overlay.innerHTML = `
-    <h3 style="margin: 0 0 15px 0; color: #ccc;">Nome da Zona</h3>
+    <h3 style="margin: 0 0 15px 0; color: #ccc;">Nome da zona</h3>
     <input type="text" id="zona-nome-input" 
            value="${nomePadrao}" 
            style="width: 100%; padding: 10px; margin-bottom: 15px; 
@@ -999,9 +999,9 @@ function criarLegenda(map, vendedorCores) {
   // Adicionar seção de zonas
   legendHTML += `
     <hr style="margin: 10px 0;">
-    <h4 style="margin: 10px 0; font-size: 14px;color:#000000;">Zonas Criadas</h4>
+    <h4 style="margin: 10px 0; font-size: 14px;color:#000000;">Zonas criadas</h4>
     <div style="font-size: 11px; color: #000000; margin-bottom: 5px;">
-      Dica: Com o Ctrl pressionado click sobre o nome na zona para editar
+      Dica: com a tecla Ctrl premida, clique no nome da zona para o editar
     </div>
     <div id="zonas-list" style="margin-bottom: 10px; max-height: 150px; overflow-y: auto;">
   `;
@@ -1044,36 +1044,36 @@ function criarLegenda(map, vendedorCores) {
   // Adicionar botões para análise de zonas
   legendHTML += `
     <hr style="margin: 10px 0;">
-    <div style="font-weight: bold; margin-bottom: 5px;">Análise de Zonas</div>
+    <div style="font-weight: bold; margin-bottom: 5px;">Análise de zonas</div>
     <button onclick="exportarClientesPolygonCSV()" 
             style="width: 100%; padding: 6px; margin: 3px 0; 
                    background: #4285F4; color: white; border: none; 
                    border-radius: 3px; cursor: pointer; font-size: 11px;">
-      Exportar Todos Clientes
+      Exportar todos os clientes
     </button>
     <button onclick="exportarClientesDentroPolygonCSV()" 
             style="width: 100%; padding: 6px; margin: 3px 0; 
                    background: #34A853; color: white; border: none; 
                    border-radius: 3px; cursor: pointer; font-size: 11px;">
-      Exportar Clientes Dentro
+      Exportar clientes dentro das zonas
     </button>
     <button onclick="exportarClientesForaPolygonCSV()" 
             style="width: 100%; padding: 6px; margin: 3px 0; 
                    background: #EA4335; color: white; border: none; 
                    border-radius: 3px; cursor: pointer; font-size: 11px;">
-      Exportar Clientes Fora
+      Exportar clientes fora das zonas
     </button>
     <button onclick="exportarResumoZonasCSV()" 
             style="width: 100%; padding: 6px; margin: 3px 0; 
                    background: #9C27B0; color: white; border: none; 
                    border-radius: 3px; cursor: pointer; font-size: 11px;">
-      Exportar Resumo Zonas
+      Exportar resumo das zonas
     </button>
     <button onclick="limparPolygonsCache()" 
             style="width: 100%; padding: 6px; margin: 3px 0; 
                    background: #ff4444; color: white; border: none; 
                    border-radius: 3px; cursor: pointer; font-size: 11px;">
-      Limpar Zonas
+      Limpar zonas
     </button>
   `;
 
@@ -1136,7 +1136,7 @@ function removerZona(polygonId) {
 
 // Função para limpar zonas
 function limparPolygonsCache() {
-  if (confirm('Tem certeza que deseja remover todas as zonas?')) {
+  if (confirm('Tem a certeza de que pretende remover todas as zonas?')) {
     localStorage.removeItem('zonasCache');
     allPolygons.forEach(polygon => polygon.setMap(null));
     allPolygons = [];
@@ -1211,7 +1211,7 @@ function loadCSV(file) {
         Estado: c.Estado || c.Status,
       }));
 
-      console.log("Coordenadas para otimização:", coords);
+      console.log("Coordenadas para optimização:", coords);
 
       // Usar initMap que agora verifica se o mapa já existe
       initMap(lats, lngs, coords);
@@ -1247,9 +1247,9 @@ function exportarPolygons() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert('Zonas exportados com sucesso!');
+    alert('Zonas exportadas com sucesso!');
   } else {
-    alert('Nenhum zona para exportar.');
+    alert('Nenhuma zona para exportar.');
   }
 };
 
@@ -1336,7 +1336,7 @@ if (btnDownloadCSV) {
       document.body.removeChild(a);
     } else {
       alert(
-        "Sem rotas por otimizar:\n1- Selecione um ficheiro\n2 - Click no ícone optimizar\n3 - Optimizar Rota"
+        "Sem rotas por optimizar:\n1 - Seleccione um ficheiro\n2 - Clique no ícone Optimizar\n3 - Optimizar rota"
       );
     }
   });

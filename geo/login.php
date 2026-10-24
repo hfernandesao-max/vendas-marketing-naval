@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . $redirect);
         exit;
     } else {
-        $erro = 'Utilizador ou palavra-passe incorretos.';
+        $erro = 'Utilizador ou palavra-passe incorrectos.';
     }
 }
 ?>
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - MobilidadeNaval</title>
+  <title>Iniciar sessão · GeoMobilidade Naval</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
@@ -406,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div style="text-align: center;">
         <a href="../" class="return-link">
           <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
-          <span>Voltar à Página Inicial</span>
+          <span>Voltar à página inicial</span>
         </a>
       </div>
     </form>
