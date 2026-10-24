@@ -266,13 +266,12 @@ $pmMap = [
     'TB' => 'Transferência Bancária',
     'CS' => 'Advance',
 ];
-// Enriquecer com os que vierem no XML
+// Os nomes que vêm no XML do Pinguim BO prevalecem; a lista acima só cobre códigos sem descrição
 if (isset($xml->payment_methods)) {
     foreach ($xml->payment_methods->payment_method as $pm) {
         $code = (string) $pm->code;
-        if (!isset($pmMap[$code])) {
-            $pmMap[$code] = (string) $pm->description;
-        }
+        $desc = trim((string) $pm->description);
+        if ($code !== '' && $desc !== '') $pmMap[$code] = $desc;
     }
 }
 
@@ -312,19 +311,30 @@ if (isset($xml->transactions)) {
             $clientName = ($taxNr === '999999999') ? 'Consumidor Final' : '';
         }
 
-        // Meios de pagamento (footer)
-        $meios     = [];
-        $valorPago = 0.0;
+        // Pagamentos do documento (footer): valor por meio de pagamento, como vem do Pinguim BO
+        $porMeio = [];
         if (isset($tx->footer)) {
             foreach ($tx->footer->line as $fl) {
-                $pCode = (string) $fl->payment_code;
+                $pCode = trim((string) $fl->payment_code);
                 $pAmt  = (float) (string) $fl->amount;
-                $valorPago += $pAmt;
-                if ($pCode !== '') {
-                    $meios[] = $pmMap[$pCode] ?? $pCode;
-                }
+                if ($pAmt == 0.0) continue;
+                $k = $pCode !== '' ? $pCode : '?';
+                $porMeio[$k] = ($porMeio[$k] ?? 0.0) + $pAmt;
             }
         }
+        // Troco: se o valor entregue passar o total do documento, o excesso sai do numerário
+        // (ou, sem numerário, do meio com maior valor), para o recebido nunca exceder a venda
+        $excesso = round(array_sum($porMeio) - $total, 2);
+        if ($excesso > 0 && $total > 0) {
+            $k = isset($porMeio['NU']) ? 'NU' : array_search(max($porMeio), $porMeio, true);
+            $porMeio[$k] = max(0.0, $porMeio[$k] - $excesso);
+        }
+        $pagamentos = [];
+        foreach ($porMeio as $k => $v) {
+            if (round($v, 2) == 0.0) continue;
+            $pagamentos[] = ['codigo' => $k, 'meio' => $pmMap[$k] ?? ($k === '?' ? 'Sem meio indicado' : $k), 'valor' => round($v, 2)];
+        }
+        $valorPago = round(array_sum(array_column($pagamentos, 'valor')), 2);
 
         $promotor = $rotas[$storeCode] ?? $storeCode;
 
@@ -338,9 +348,11 @@ if (isset($xml->transactions)) {
             'documento'       => $docNr,
             'cliente'         => $clientName,
             'nif'             => $taxNr ?: ($entities[$entityCode]['tax'] ?? ''),
-            'liquidado'       => $valorPago >= $total,
+            'liquidado'       => $valorPago >= round($total, 2),
             'total'           => $total,
-            'meio_pagamento'  => !empty($meios) ? implode(', ', array_unique($meios)) : null,
+            'valor_pago'      => $valorPago,
+            'pagamentos'      => $pagamentos,
+            'meio_pagamento'  => $pagamentos ? implode(', ', array_column($pagamentos, 'meio')) : null,
         ];
 
         if ($includeItems && isset($tx->detail)) {

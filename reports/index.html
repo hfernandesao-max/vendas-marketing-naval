@@ -1007,6 +1007,9 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
+        "Por meio de pagamento": "By payment method", "Valores recebidos por meio, como registados no Pinguim BO (sem troco).": "Amounts received by method, as recorded in Pinguim BO (excluding change).",
+        "% do recebido": "% of received", "Em falta": "Outstanding", "Transferência": "Transfer", "Outro": "Other", "Sem meio indicado": "No method recorded",
+        "Transferência Bancária": "Bank transfer", "Multicaixa": "Multicaixa",
         "Dinheiro, Multicaixa e Facturas Pendentes": "Cash, Multicaixa and unpaid",
         "Documento, data e rota": "Document, date and route",
         "Documentos emitidos no Pinguim BO no período.": "Documents issued in Pinguim BO in the period.",
@@ -1403,8 +1406,35 @@
       const diaSemana = (d) => DIAS[new Date(d + 'T12:00:00Z').getUTCDay()];
       const DIA_EN = { 'DOMINGO': 'Sunday', '2ª FEIRA': 'Monday', '3ª FEIRA': 'Tuesday', '4ª FEIRA': 'Wednesday', '5ª FEIRA': 'Thursday', '6ª FEIRA': 'Friday', 'SÁBADO': 'Saturday' };
       const nomeDia = (d) => (LANG === 'en' ? DIA_EN[d] || d : d);
-      const temMeio = () => DB.vendas.some((x) => x.meio_pagamento);
-      function meioDe(x) { const m = String(x.meio_pagamento || '').toUpperCase(); if (!m) return null; if (/MULTI|TPA|CART|CARD/.test(m)) return 'multicaixa'; if (/NUMER|DINHEIRO|CASH/.test(m)) return 'dinheiro'; if (/TRANSF/.test(m)) return 'transferencia'; return 'outro'; }
+      // Pagamentos reais de cada documento, como vêm da API do Pinguim BO: [{codigo, meio, valor}].
+      // Um documento pode ser pago com vários meios; o recebido é a soma dos valores (já sem troco).
+      function pagosDe(x) {
+        if (Array.isArray(x.pagamentos)) return x.pagamentos;
+        if (!x.liquidado) return [];
+        return [{ codigo: x.meio_pagamento ? '' : '?', meio: x.meio_pagamento || 'Sem meio indicado', valor: +x.total || 0 }];
+      }
+      const recebidoDe = (x) => (x.valor_pago != null ? +x.valor_pago || 0 : (x.liquidado ? +x.total || 0 : 0));
+      const pendenteDe = (x) => Math.max(0, (+x.total || 0) - recebidoDe(x));
+      const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
+      // Agrupa cada meio em dinheiro, Multicaixa, transferência ou outro, pelo código e depois pelo nome
+      function catMeio(p) {
+        const c = String(p.codigo || '').toUpperCase(), m = String(p.meio || '').toUpperCase();
+        if (c === 'NU' || /NUMER|DINHEIRO|CASH/.test(m)) return 'dinheiro';
+        if (c === 'MC' || /MULTI|TPA|CART|CARD/.test(m)) return 'multicaixa';
+        if (c === 'TB' || /TRANSF/.test(m)) return 'transferencia';
+        return 'outro';
+      }
+      const valorCat = (V, cat) => V.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + (catMeio(p) === cat ? +p.valor || 0 : 0), 0), 0);
+      // Soma por meio de pagamento real (nome do Pinguim BO), ordenado do maior para o menor
+      function porMeio(V) {
+        const m = new Map();
+        V.forEach((x) => pagosDe(x).forEach((p) => {
+          const k = p.meio || p.codigo || '?';
+          const o = m.get(k) || { meio: k, codigo: p.codigo || '', categoria: catMeio(p), docs: new Set(), valor: 0 };
+          o.valor += +p.valor || 0; o.docs.add(x.chave || x.documento); m.set(k, o);
+        }));
+        return [...m.values()].map((o) => ({ ...o, docs: o.docs.size })).sort((a, b) => b.valor - a.valor);
+      }
       function aguardar(pg, titulo, campos) {
         const s = el('section', 'glass sec');
         const h = el('div', 'sec-h'); const d = el('div'); d.append(el('h2', null, t('Aguarda exportação do Pinguim BO'))); d.append(el('p', null, titulo)); h.append(d); s.append(h);
@@ -1433,7 +1463,7 @@
       const paginaAtual = () => PAGES.find((x) => x.id === atual) || PAGES[0];
       function contarAlertas() {
         const V = vendasR();
-        return { pagamentos: V.filter((x) => !x.liquidado).length, clientes: DB.clientes.filter((x) => x.estado !== 'Ativo').length };
+        return { pagamentos: V.filter((x) => pendenteDe(x) > 0).length, clientes: DB.clientes.filter((x) => x.estado !== 'Ativo').length };
       }
       function nav() {
         const n = $('#nav'); n.replaceChildren(); let g;
@@ -1453,7 +1483,7 @@
         V.forEach((x) => { if (!rotas.has(x.rota)) rotas.set(x.rota, nomeRota(x.rota)); });
         return [...rotas.entries()].map(([rota, promotor]) => {
           const rs = vendasPorRota[rota] || [];
-          const tot = sum(rs, 'total'), liq = sum(rs.filter((x) => x.liquidado), 'total');
+          const tot = sum(rs, 'total'), liq = sum(rs, recebidoDe);
           return {
             rota, promotor, docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
             dias: new Set(rs.map((x) => x.data)).size, total: tot, recebido: liq, por_liquidar: tot - liq, medio: rs.length ? tot / rs.length : 0
@@ -1463,8 +1493,8 @@
 
       const R = {};
       R.inicio = (pg) => {
-        const V = vendasR(), tot = sum(V, 'total'), liq = sum(V.filter((x) => x.liquidado), 'total');
-        const din = sum(V.filter((x) => meioDe(x) === 'dinheiro'), 'total'), mc = sum(V.filter((x) => meioDe(x) === 'multicaixa'), 'total');
+        const V = vendasR(), tot = sum(V, 'total'), liq = sum(V, recebidoDe);
+        const din = valorCat(V, 'dinheiro'), mc = valorCat(V, 'multicaixa');
         pg.append(tiles([
           { l: t('Vendas RTM'), v: kz2(tot), s: t('{n} documentos', { n: n0(V.length) }), cls: 'full-value' },
           { l: t('Recebido'), v: kz2(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }), cls: 'full-value' },
@@ -1514,7 +1544,7 @@
 
       R['vendas-dia'] = (pg) => {
         const V = vendasR();
-        const dias = Object.values(group(V, 'data')).map((rs) => ({ data: rs[0].data, docs: rs.length, promotores: new Set(rs.map((x) => x.rota)).size, total: sum(rs, 'total'), recebido: sum(rs.filter((x) => x.liquidado), 'total') }));
+        const dias = Object.values(group(V, 'data')).map((rs) => ({ data: rs[0].data, docs: rs.length, promotores: new Set(rs.map((x) => x.rota)).size, total: sum(rs, 'total'), recebido: sum(rs, recebidoDe) }));
         const secs = el('div', 'secs');
         secs.append(tabela({
           id: 'vd', titulo: t('Vendas por dia'), rows: dias, sort: 'data', total: true, search: false,
@@ -1556,40 +1586,47 @@
       };
 
       R.pagamentos = (pg) => {
-        const V = vendasR(), tot = sum(V, 'total'), liq = sum(V.filter((x) => x.liquidado), 'total');
-        const M = { dinheiro: 0, multicaixa: 0, transferencia: 0, outro: 0 }; V.filter((x) => x.liquidado).forEach((x) => { const m = meioDe(x); if (m) M[m] += x.total; });
+        const V = vendasR(), tot = sum(V, 'total'), liq = sum(V, recebidoDe), pend = tot - liq, meio = temMeio();
+        const din = valorCat(V, 'dinheiro'), mc = valorCat(V, 'multicaixa'), pp0 = (v) => t('{p} do recebido', { p: pct(liq ? v / liq : null) });
         pg.append(tiles([
           { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
-          { l: t('Em dinheiro'), v: temMeio() ? mkz(M.dinheiro) : '—', s: temMeio() ? t('{p} do recebido', { p: pct(liq ? M.dinheiro / liq : null) }) : t('Falta o meio de pagamento') },
-          { l: t('Em Multicaixa'), v: temMeio() ? mkz(M.multicaixa) : '—', s: temMeio() ? t('{p} do recebido', { p: pct(liq ? M.multicaixa / liq : null) }) : t('Falta o meio de pagamento') },
-          { l: t('Facturas Pendentes'), v: mkz(tot - liq), tone: tot - liq > 0 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => !x.liquidado).length }) },
+          { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de pagamento') },
+          { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de pagamento') },
+          { l: t('Facturas Pendentes'), v: mkz(pend), tone: pend > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
         ]));
         const secs = el('div', 'secs');
-        if (!temMeio()) {
+        if (!meio) {
           const box = el('div');
           box.append(el('p', null, t('A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).')));
-          const ul = el('ul'); ul.style.color = 'var(--muted)'; ul.style.lineHeight = '1.8';
-          ['Documento', 'Data', 'Rota', 'Meio de pagamento (dinheiro, Multicaixa, transferência)', 'Valor recebido'].forEach((c) => ul.append(el('li', null, t(c))));
-          box.append(ul);
           secs.append(secBox(t('Falta o meio de pagamento'), t('Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.'), box));
         }
-        const pp = Object.values(group(V, 'rota')).map((rs) => {
-          const o = { rota: rs[0].rota, promotor: nomeRota(rs[0].rota), total: sum(rs, 'total') }; const lq = rs.filter((x) => x.liquidado);
-          o.recebido = sum(lq, 'total'); o.dinheiro = temMeio() ? sum(lq.filter((x) => meioDe(x) === 'dinheiro'), 'total') : null; o.multicaixa = temMeio() ? sum(lq.filter((x) => meioDe(x) === 'multicaixa'), 'total') : null; o.por_liquidar = o.total - o.recebido; return o;
-        });
+        // Meios de pagamento tal como vêm do Pinguim BO
+        const PM = porMeio(V);
+        const NOMES_CAT = { dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', transferencia: 'Transferência', outro: 'Outro' };
+        secs.append(tabela({
+          id: 'pg-meio', titulo: t('Por meio de pagamento'), nota: t('Valores recebidos por meio, como registados no Pinguim BO (sem troco).'),
+          rows: PM.map((o) => ({ chave: o.meio, meio: o.meio, codigo: o.codigo, categoria: t(NOMES_CAT[o.categoria]), docs: o.docs, valor: o.valor, quota: liq ? o.valor / liq : null })),
+          sort: 'valor', total: true, search: false,
+          cols: [{ key: 'meio', label: t('Meio de pagamento') }, { key: 'codigo', label: t('Código'), p: 0 }, { key: 'categoria', label: t('Tipo'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true },
+          { key: 'valor', label: t('Valor recebido'), type: 'kz', sum: true }, { key: 'quota', label: t('% do recebido'), type: 'pct' }]
+        }));
+        // Colunas por meio real presente no período
+        const meios = PM.map((o) => o.meio);
+        const linha = (rs, base) => {
+          const o = { ...base, total: sum(rs, 'total'), recebido: sum(rs, recebidoDe) };
+          meios.forEach((m, i) => { o['m' + i] = rs.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0), 0); });
+          o.por_liquidar = sum(rs, pendenteDe); return o;
+        };
         const cols = (k) => [{ key: k, label: t(k === 'data' ? 'Dia' : 'Promotor'), type: k === 'data' ? 'date' : undefined }, { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
-        { key: 'dinheiro', label: t('Dinheiro'), type: 'kz', sum: temMeio() }, { key: 'multicaixa', label: t('Multicaixa'), type: 'kz', sum: temMeio() }, { key: 'por_liquidar', label: t('Facturas Pendentes'), type: 'kz', sum: true }];
+        ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })), { key: 'por_liquidar', label: t('Facturas Pendentes'), type: 'kz', sum: true }];
+        const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: nomeRota(rs[0].rota) }));
         secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
-        const pd = Object.values(group(V, 'data')).map((rs) => {
-          const lq = rs.filter((x) => x.liquidado); return {
-            data: rs[0].data, total: sum(rs, 'total'), recebido: sum(lq, 'total'),
-            dinheiro: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'dinheiro'), 'total') : null, multicaixa: temMeio() ? sum(lq.filter((x) => meioDe(x) === 'multicaixa'), 'total') : null, por_liquidar: sum(rs, 'total') - sum(lq, 'total')
-          };
-        });
+        const pd = Object.values(group(V, 'data')).map((rs) => linha(rs, { chave: rs[0].data, data: rs[0].data }));
         secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
         secs.append(tabela({
-          id: 'pg-pend', titulo: t('Documentos Facturas Pendentes'), rows: V.filter((x) => !x.liquidado).map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'total', total: true, search: false,
-          cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'total', label: t('Total'), type: 'kz', sum: true }]
+          id: 'pg-pend', titulo: t('Documentos Facturas Pendentes'), rows: V.filter((x) => pendenteDe(x) > 0).map((x) => ({ ...x, promotor: nomeRota(x.rota), recebido: recebidoDe(x), em_falta: pendenteDe(x) })), sort: 'em_falta', total: true, search: false,
+          cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'cliente', label: t('Cliente'), wrap: true },
+          { key: 'total', label: t('Total'), type: 'kz', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true, p: 1 }, { key: 'em_falta', label: t('Em falta'), type: 'kz', sum: true }]
         }));
         pg.append(secs);
       };
