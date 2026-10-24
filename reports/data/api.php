@@ -187,6 +187,23 @@ function chamarPrimeiro(array $bases, string $query, string $user, string $pass,
     return $res;
 }
 
+// ── Estado da ligação (indicador do portal): pedido curto ao Pinguim BO, sem devolver dados ──
+if (($_GET['ping'] ?? '') === '1') {
+    if ($username === '' || $password === '') {
+        responder(200, ['ok' => false, 'erro' => 'Faltam as credenciais do Pinguim BO no .env.']);
+    }
+    $hoje = date('Ymd');
+    $teste = chamarPrimeiro($boUrls, "start_date=$hoje&end_date=$hoje", $username, $password, 20);
+    $ok = $teste['errno'] === 0 && $teste['http'] === 200;
+    responder(200, [
+        'ok'       => $ok,
+        'segundos' => $teste['seg'],
+        'origem'   => $ok ? (parse_url($teste['url'], PHP_URL_HOST) . ':' . parse_url($teste['url'], PHP_URL_PORT)) : null,
+        'erro'     => $ok ? null : ($teste['errno'] !== 0 ? 'Sem ligação ao Pinguim BO' : 'Pinguim BO respondeu HTTP ' . $teste['http']),
+        'hora'     => date('Y-m-d H:i:s'),
+    ]);
+}
+
 // ── Diagnóstico ──
 if (($_GET['diag'] ?? '') === '1') {
     $hoje = date('Ymd');

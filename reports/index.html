@@ -175,6 +175,110 @@
       border-top: 1px solid var(--line)
     }
 
+    /* estado das fontes de dados */
+    .fontes {
+      all: unset;
+      box-sizing: border-box;
+      display: grid;
+      gap: 3px;
+      margin: 0 10px 10px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .025);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--fg)
+    }
+
+    .fontes:hover {
+      border-color: var(--line2)
+    }
+
+    .fontes:focus-visible {
+      outline: 2px solid var(--sky)
+    }
+
+    .fontes .l1 {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.35
+    }
+
+    .fontes .l2 {
+      color: var(--dim);
+      padding-left: 16px
+    }
+
+    .dot {
+      flex: none;
+      width: 8px;
+      height: 8px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: var(--dim)
+    }
+
+    .dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(61, 214, 140, .18)
+    }
+
+    .dot.aviso {
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(245, 181, 71, .18)
+    }
+
+    .dot.erro {
+      background: var(--bad);
+      box-shadow: 0 0 0 3px rgba(255, 107, 107, .18)
+    }
+
+    .fontes-det {
+      display: grid;
+      gap: 8px;
+      margin: -4px 10px 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, .18);
+      font-size: 11.5px
+    }
+
+    .fontes-det div {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 8px
+    }
+
+    .fontes-det b {
+      font-weight: 600
+    }
+
+    .fontes-det span {
+      grid-column: 2;
+      color: var(--dim)
+    }
+
+    .fontes-mini {
+      all: unset;
+      display: none;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 12px 8px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      vertical-align: top
+    }
+
+    .fontes-mini .dot {
+      margin-top: 0
+    }
+
     /* área principal */
     .main {
       min-width: 0;
@@ -960,6 +1064,10 @@
     }
 
     @media (max-width:960px) {
+      .fontes-mini {
+        display: inline-flex
+      }
+
       .app {
         grid-template-columns: 1fr
       }
@@ -1384,6 +1492,11 @@
       <a class="back" href="../" id="voltar"><svg viewBox="0 0 24 24">
           <path d="M15 18l-6-6 6-6" />
         </svg><span id="voltar-t">Página principal</span></a>
+      <button class="fontes" id="fontes" type="button" aria-expanded="false" aria-controls="fontes-det">
+        <span class="l1"><i class="dot" id="fontes-dot"></i><span id="fontes-l1">A verificar as fontes de dados…</span></span>
+        <span class="l2" id="fontes-l2"></span>
+      </button>
+      <div class="fontes-det" id="fontes-det" hidden></div>
       <nav class="nav" id="nav"></nav>
       <div class="side-tools"><span class="lbl" id="lang-lbl">Idioma</span>
         <div class="seg" id="lang" role="group" aria-label="Idioma / Language"><button type="button"
@@ -1400,6 +1513,7 @@
           <button class="btn sm menu-btn" id="menu" type="button"><svg viewBox="0 0 24 24">
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg><span id="menu-t">Menu</span></button>
+          <button class="fontes-mini" id="fontes-mini" type="button"><i class="dot" id="fontes-mini-dot"></i><span id="fontes-mini-t"></span></button>
           <div class="eyebrow" id="eyebrow"></div>
           <h1 id="titulo">…</h1>
           <p class="lead" id="lead"></p>
@@ -1497,7 +1611,9 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
+        "Por meio de pagamento": "By payment method", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
+        "plano até {d}": "plan up to {d}", "{a} de {b} fontes ligadas": "{a} of {b} sources connected", "Pinguim BO sem ligação": "Pinguim BO not connected", "Sem ligação": "Not connected", "Ligação parcial": "Partly connected", "Ligado": "Connected",
+        "Pinguim BO (vendas)": "Pinguim BO (sales)", "Cadastros RTM (clientes)": "RTM registrations (customers)", "Plano de cargas": "Loading plan", "sem ligação ao servidor": "no connection to the server", "A verificar as fontes de dados…": "Checking data sources…", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
         "Visita realizada = documento do Pinguim BO para o cliente no dia marcado, na mesma rota. Só contam dias já terminados.": "Visit made = Pinguim BO document for the customer on the scheduled day, on the same route. Only completed days count.", "Realizadas": "Made", "Auditoria": "Audit", "Histórico de auditoria": "Audit history", "Possível duplicado ({n} documentos iguais)": "Possible duplicate ({n} identical documents)",
         "Valor nulo ou negativo": "Zero or negative amount", "Pendente há mais de 3 dias": "Unpaid for more than 3 days", "Pago sem meio de pagamento indicado": "Paid with no payment method recorded",
@@ -1659,15 +1775,51 @@
       }
 
       // ================= API Pinguim BO =================
+      // ================= estado das fontes de dados =================
+      // Pinguim BO: resultado da última consulta de vendas e verificação curta (ping) a cada 5 minutos.
+      // Cadastros (rtm-clientes) e plano de cargas: idade dos dados carregados.
+      const LIGACOES = { pinguim: { estado: '?', txt: 'A verificar…' }, cad: { estado: '?', txt: '' }, cargas: { estado: '?', txt: '' } };
+      const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)', cad: 'Cadastros RTM (clientes)', cargas: 'Plano de cargas' };
+      const desde = (ms) => { const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? t('agora') : m < 60 ? t('há {n} min', { n: m }) : t('há {n} h', { n: Math.round(m / 60) }); };
+      const diasAtras = (d) => Math.round((new Date(hoje() + 'T12:00:00Z') - new Date(String(d).slice(0, 10) + 'T12:00:00Z')) / 864e5);
+      function marcarPinguim(ok, erro) { LIGACOES.pinguim = ok ? { estado: 'ok', txt: t('consulta directa'), hora: Date.now() } : { estado: 'erro', txt: erro || t('sem ligação'), hora: Date.now() }; mostrarFontes(); }
+      function avaliarFontes() {
+        if (DB.cad && DB.cad.dados_ate) { const n = diasAtras(DB.cad.dados_ate); LIGACOES.cad = { estado: n <= 1 ? 'ok' : 'aviso', txt: t('dados até {d}', { d: dl(DB.cad.dados_ate) + ' ' + String(DB.cad.dados_ate).slice(11, 16) }) }; }
+        else LIGACOES.cad = { estado: 'erro', txt: t('sem ligação ao rtm-clientes') };
+        const uc = (DB.cargas || []).map((x) => x.data).sort().pop();
+        LIGACOES.cargas = uc ? { estado: diasAtras(uc) <= 2 ? 'ok' : 'aviso', txt: t('plano até {d}', { d: dl(uc) }) } : { estado: 'erro', txt: t('sem dados') };
+        mostrarFontes();
+      }
+      function mostrarFontes() {
+        const ks = Object.keys(LIGACOES), est = ks.map((k) => LIGACOES[k].estado);
+        const geral = est.includes('erro') && LIGACOES.pinguim.estado === 'erro' ? 'erro' : est.some((e) => e === 'erro' || e === 'aviso') ? 'aviso' : est.includes('?') ? '' : 'ok';
+        const lig = est.filter((e) => e === 'ok' || e === 'aviso').length;
+        ['#fontes-dot', '#fontes-mini-dot'].forEach((q) => { $(q).className = 'dot ' + geral; });
+        $('#fontes-l1').textContent = t('{a} de {b} fontes ligadas', { a: lig, b: ks.length });
+        $('#fontes-l2').textContent = LIGACOES.pinguim.hora ? (LIGACOES.pinguim.estado === 'ok' ? t('consulta directa') : t('Pinguim BO sem ligação')) + ' · ' + desde(LIGACOES.pinguim.hora) : t('A verificar…');
+        $('#fontes-mini-t').textContent = geral === 'erro' ? t('Sem ligação') : geral === 'aviso' ? t('Ligação parcial') : geral === 'ok' ? t('Ligado') : '…';
+        const det = $('#fontes-det'); det.replaceChildren();
+        ks.forEach((k) => { const d = el('div'); d.append(el('i', 'dot ' + (LIGACOES[k].estado === '?' ? '' : LIGACOES[k].estado)), el('b', null, t(NOMES_FONTE[k])), el('span', null, LIGACOES[k].txt + (k === 'pinguim' && LIGACOES[k].hora ? ' · ' + desde(LIGACOES[k].hora) : ''))); det.append(d); });
+        $('#fontes').title = ks.map((k) => t(NOMES_FONTE[k]) + ': ' + LIGACOES[k].txt).join('\n');
+      }
+      function pingPinguim() {
+        return fetch('data/api.php?ping=1', { cache: 'no-store' }).then((r) => (r.status === 401 ? null : r.json())).then((d) => { if (d) marcarPinguim(!!d.ok, d.erro); })
+          .catch(() => marcarPinguim(false, t('sem ligação ao servidor')));
+      }
+      $('#fontes').addEventListener('click', () => { const d = $('#fontes-det'); d.hidden = !d.hidden; $('#fontes').setAttribute('aria-expanded', String(!d.hidden)); });
+      $('#fontes-mini').addEventListener('click', (ev) => { ev.stopPropagation(); $('#app').classList.add('open'); $('#fontes-det').hidden = false; $('#fontes').setAttribute('aria-expanded', 'true'); });
+      setInterval(pingPinguim, 5 * 60000);
+      setInterval(mostrarFontes, 30000);
+
       function fetchVendas(de, ate) {
         const sd = de.replace(/-/g, ''), ed = ate.replace(/-/g, '');
         return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed + '&include_items=1', { cache: 'no-store' })
           .then((r) => r.json().catch(() => ({ erro: 'Resposta inválida do servidor (HTTP ' + r.status + ').' })).then((d) => {
             if (r.status === 401) { location.href = '../geo/login.php?redirect=' + encodeURIComponent('../reports/'); return []; }
-            if (!r.ok || (d && d.erro)) { toast((d && d.erro ? d.erro : 'Erro do servidor (HTTP ' + r.status + ').') + (d && d.detalhe ? ' ' + d.detalhe : ''), 12000); return []; }
-            return d;
+            if (!r.ok || (d && d.erro)) { marcarPinguim(false, d && d.erro); toast((d && d.erro ? d.erro : 'Erro do servidor (HTTP ' + r.status + ').') + (d && d.detalhe ? ' ' + d.detalhe : ''), 12000); return []; }
+            marcarPinguim(true); return d;
           }))
-          .catch(() => { toast('Sem ligação ao servidor dos relatórios.', 8000); return []; })
+          .catch(() => { marcarPinguim(false, t('sem ligação ao servidor')); toast('Sem ligação ao servidor dos relatórios.', 8000); return []; })
           .then((d) => {
             DB.vendas = Array.isArray(d) ? d : (Array.isArray(d.vendas) ? d.vendas : []);
             DB.artigos = Array.isArray(d.artigos) ? d.artigos : [];
@@ -2582,7 +2734,7 @@
       function draw() {
         const p = paginaAtual();
         REG = { tabelas: [], kpis: [] }; FITS = [];
-        textos();
+        textos(); mostrarFontes();
         $('#de').value = st.de; $('#ate').value = st.ate; $('#de-v').textContent = dl(st.de); $('#ate-v').textContent = dl(st.ate);
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
         Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
@@ -2638,6 +2790,7 @@
             DB.cad = d && Array.isArray(d.cadastros) ? d : null;
             // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
             if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
+            avaliarFontes();
           });
         })
         .then(() => {
