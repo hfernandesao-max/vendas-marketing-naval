@@ -550,6 +550,48 @@
       width: min(100%, 220px)
     }
 
+    /* filtro de rota nos documentos */
+    .filtro {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      margin-bottom: 14px
+    }
+
+    .filtro label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted)
+    }
+
+    .filtro select {
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 13px;
+      min-width: 0;
+      width: min(100%, 340px)
+    }
+
+    .filtro select option {
+      background: var(--side, #0B1735);
+      color: var(--fg)
+    }
+
+    .filtro .limpar {
+      all: unset;
+      cursor: pointer;
+      font-size: 12.5px;
+      color: var(--sky);
+      padding: 4px 6px;
+      border-radius: 6px
+    }
+
     .grid2 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
@@ -1007,7 +1049,8 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Valores recebidos por meio, como registados no Pinguim BO (sem troco).": "Amounts received by method, as recorded in Pinguim BO (excluding change).",
+        "Por meio de pagamento": "By payment method", "Todas as rotas": "All routes", "documentos": "documents", "Ver todas as rotas": "Show all routes", "Vendas da rota": "Route sales",
+        "{n} rotas": "{n} routes", "Vendas por rota": "Sales by route", "Escolha uma rota no filtro acima para ver os documentos dessa rota.": "Choose a route in the filter above to see its documents.", "Documentos da rota {r}": "Documents for route {r}", "Valores recebidos por meio, como registados no Pinguim BO (sem troco).": "Amounts received by method, as recorded in Pinguim BO (excluding change).",
         "% do recebido": "% of received", "Em falta": "Outstanding", "Transferência": "Transfer", "Outro": "Other", "Sem meio indicado": "No method recorded",
         "Transferência Bancária": "Bank transfer", "Multicaixa": "Multicaixa",
         "Dinheiro, Multicaixa e Facturas Pendentes": "Cash, Multicaixa and unpaid",
@@ -1575,9 +1618,49 @@
         }));
       };
 
+      // Filtro de rota nos documentos (fica lembrado neste navegador)
+      let rotaDoc = '';
+      try { rotaDoc = localStorage.getItem('vm-rota-doc') || ''; } catch (e) { }
       R.documentos = (pg) => {
+        const todos = vendasR();
+        // Rotas com vendas no período, ordenadas pelo código; a escolhida fica na lista mesmo sem vendas
+        const rotas = [...new Set([...todos.map((x) => x.rota), ...(rotaDoc ? [rotaDoc] : [])])].filter(Boolean).sort((a, b) => String(a).localeCompare(String(b), 'pt', { numeric: true }));
+        const porRota = group(todos, 'rota');
+        const bar = el('div', 'glass filtro');
+        const lb = el('label', null, t('Rota')); lb.htmlFor = 'f-rota';
+        const sel = el('select'); sel.id = 'f-rota';
+        const o0 = el('option', null, t('Todas as rotas') + ' (' + n0(todos.length) + ' ' + t('documentos') + ')'); o0.value = ''; sel.append(o0);
+        const rotulo = (r) => (nomeRota(r) && nomeRota(r) !== r ? r + ' · ' + nomeRota(r) : r);
+        rotas.forEach((r) => { const o = el('option', null, rotulo(r) + ' (' + n0((porRota[r] || []).length) + ')'); o.value = r; sel.append(o); });
+        sel.value = rotaDoc;
+        sel.addEventListener('change', () => { rotaDoc = sel.value; try { localStorage.setItem('vm-rota-doc', rotaDoc); } catch (e) { } draw(); });
+        bar.append(lb, sel);
+        if (rotaDoc) { const lp = el('button', 'limpar', t('Ver todas as rotas')); lp.type = 'button'; lp.addEventListener('click', () => { sel.value = ''; sel.dispatchEvent(new Event('change')); }); bar.append(lp); }
+        pg.append(bar);
+
+        const V = rotaDoc ? (porRota[rotaDoc] || []) : todos;
+        const tot = sum(V, 'total'), liq = sum(V, recebidoDe), cli = new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size;
+        pg.append(tiles([
+          { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: rotaDoc ? nomeRota(rotaDoc) : t('{n} rotas', { n: rotas.length }) },
+          { l: t('Documentos'), v: n0(V.length), s: t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size }) },
+          { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
+          { l: t('Facturas Pendentes'), v: mkz(tot - liq), tone: tot - liq > 0.005 ? 'warn' : null, s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }) },
+          { l: t('Clientes com compras'), v: n0(cli) },
+          { l: t('Média por documento'), v: mkz(V.length ? tot / V.length : 0) },
+        ]));
+
+        // Resumo por rota (só com todas as rotas)
+        if (!rotaDoc) {
+          pg.append(tabela({
+            id: 'dc-rota', titulo: t('Vendas por rota'), nota: t('Escolha uma rota no filtro acima para ver os documentos dessa rota.'), sort: 'total', total: true,
+            rows: rotas.map((r) => { const rs = porRota[r] || [], tt = sum(rs, 'total'), rc = sum(rs, recebidoDe); return { chave: r, rota: r, promotor: nomeRota(r), docs: rs.length, clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, total: tt, recebido: rc, pendente: tt - rc, medio: rs.length ? tt / rs.length : 0 }; }),
+            cols: [{ key: 'rota', label: t('Rota') }, { key: 'promotor', label: t('Promotor'), p: 0 }, { key: 'docs', label: t('Documentos'), type: 'n', sum: true }, { key: 'clientes', label: t('Clientes'), type: 'n' },
+            { key: 'total', label: t('Total'), type: 'bar', sum: true }, { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true }, { key: 'pendente', label: t('Facturas Pendentes'), type: 'kz', sum: true }, { key: 'medio', label: t('Média por documento'), type: 'kz' }]
+          }));
+        }
+
         pg.append(tabela({
-          id: 'dc', titulo: t('Documentos Pinguim'), rows: vendasR().map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'data', total: true,
+          id: 'dc', titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Documentos Pinguim'), rows: V.map((x) => ({ ...x, promotor: nomeRota(x.rota) })), sort: 'data', total: true,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
           { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'meio_pagamento', label: t('Meio de pagamento') },
           { key: 'liquidado', label: t('Pago'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'), xl: (r) => t(r.liquidado ? 'Sim' : 'Não') },
