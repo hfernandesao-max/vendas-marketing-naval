@@ -1132,8 +1132,12 @@
       function fetchVendas(de, ate) {
         const sd = de.replace(/-/g, ''), ed = ate.replace(/-/g, '');
         return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed + '&include_items=1', { cache: 'no-store' })
-          .then((r) => (r.ok ? r.json() : []))
-          .catch(() => [])
+          .then((r) => r.json().catch(() => ({ erro: 'Resposta inválida do servidor (HTTP ' + r.status + ').' })).then((d) => {
+            if (r.status === 401) { location.href = '../geo/login.php?redirect=' + encodeURIComponent('../reports/'); return []; }
+            if (!r.ok || (d && d.erro)) { toast((d && d.erro ? d.erro : 'Erro do servidor (HTTP ' + r.status + ').') + (d && d.detalhe ? ' ' + d.detalhe : ''), 12000); return []; }
+            return d;
+          }))
+          .catch(() => { toast('Sem ligação ao servidor dos relatórios.', 8000); return []; })
           .then((d) => {
             DB.vendas = Array.isArray(d) ? d : (Array.isArray(d.vendas) ? d.vendas : []);
             DB.artigos = Array.isArray(d.artigos) ? d.artigos : [];
