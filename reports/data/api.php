@@ -98,7 +98,8 @@ $password = $env['PASSWORD'] ?? (getenv('PINGUIM_PASSWORD') ?: '');
 // No servidor a API responde localmente na porta 8089; fora do servidor usa-se o acesso externo 2053.
 $boUrls = array_values(array_filter(array_map(
     function ($u) { return rtrim(trim($u), '?'); },
-    explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata')
+   // explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata')
+    explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2083/rest/exportdata')
 )));
 
 function chamarPinguim(string $url, string $user, string $pass, int $timeout = 150, int $connect = 15): array

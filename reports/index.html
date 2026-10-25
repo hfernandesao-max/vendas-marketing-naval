@@ -2641,7 +2641,7 @@
           id: 'dc', titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Documentos Pinguim'), rows: V.map((x) => ({ ...x, promotor: promotorRota(x.rota) })), sort: 'data', total: true,
           cols: [{ key: 'data', label: t('Dia'), type: 'date' }, { key: 'hora', label: t('Hora') }, { key: 'documento', label: t('Documento'), nowrap: true }, { key: 'tipo', label: t('Tipo') }, { key: 'rota', label: t('Rota'), p: 4 }, { key: 'promotor', label: t('Promotor'), p: 0 },
           { key: 'cliente', label: t('Cliente'), wrap: true }, { key: 'nif', label: t('NIF') }, { key: 'meio_pagamento', label: t('Meio de pagamento') },
-          { key: 'liquidado', label: t('Pago'), render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'), xl: (r) => t(r.liquidado ? 'Sim' : 'Não') },
+          { key: 'liquidado', label: t('Pago'), p: 2, get: (r) => t(r.liquidado && pendenteDe(r) <= 0.005 ? 'Pago' : 'Pendente'), render: (v, r) => { const pago = r ? (r.liquidado && pendenteDe(r) <= 0.005) : !!v; return pill(t(pago ? 'Pago' : 'Pendente'), pago ? 'p-ok' : 'p-warn'); }, xl: (r) => t(r.liquidado && pendenteDe(r) <= 0.005 ? 'Pago' : 'Pendente') },
           { key: 'total', label: t('Total'), type: 'kz', sum: true }]
         }));
       };
