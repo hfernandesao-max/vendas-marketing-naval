@@ -1,19 +1,18 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
 import { nomeRota } from '../calculos.js';
-import { secBox, tabela, tiles } from '../componentes/blocos.js';
+import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { dl, kz, kz2, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
-import { atual } from '../perfil.js';
+import { SESSAO, atual } from '../perfil.js';
 import { inR, st } from '../periodo.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { DB, b64, el, sum, toast } from '../util.js';
 
 let SAPD = null;
-const SAPX = { novos: true };
 function carregarSap() {
   return fetch('data/sap.php', { cache: 'no-store' })
     .then((r) => r.json())
@@ -50,7 +49,8 @@ function linhasSap() {
   V.slice()
     .sort((a, b) => (a.data + a.hora + a.documento < b.data + b.hora + b.documento ? -1 : 1))
     .forEach((v) => {
-      if (SAPD.exportados[v.documento] && SAPX.novos) {
+      // Documentos já emitidos num lote válido nunca entram noutro ficheiro (o servidor também o garante)
+      if (SAPD.exportados[v.documento]) {
         repetidos++;
         return;
       }
@@ -255,23 +255,19 @@ function gerarFicheiroSap() {
   const total = r2(sum(L.docs, 'total'));
   janela(
     t('Gerar ficheiro para o SAP'),
-    t('{n} documentos, {l} linhas, {v} facturados, de {a} a {b}. Os documentos ficam marcados como incluídos neste ficheiro.', {
-      n: n0(L.docs.length),
-      l: n0(L.linhas.length),
-      v: kz(total),
-      a: dl(st.de),
-      b: dl(st.ate),
-    }),
+    t(
+      '{n} documentos, {l} linhas, {v} facturados, de {a} a {b}. O ficheiro é emitido uma única vez: guarde-o e carregue-o no SAP; estes documentos não poderão entrar noutro ficheiro.',
+      {
+        n: n0(L.docs.length),
+        l: n0(L.linhas.length),
+        v: kz(total),
+        a: dl(st.de),
+        b: dl(st.ate),
+      },
+    ),
     (b, ft, fechar) => {
       if (L.avisos.length) {
         b.append(el('p', 'aviso', t('{n} avisos (ver a lista na página). Pode gerar na mesma.', { n: L.avisos.length })));
-      }
-      if (!SAPX.novos && L.repetidos === 0) {
-        const rep = L.docs.filter((v) => SAPD.exportados[v.documento]).length;
-        if (rep)
-          b.append(
-            el('p', 'aviso', t('Atenção: {n} destes documentos já estavam num ficheiro anterior. Confirme no SAP que não ficam em duplicado.', { n: rep })),
-          );
       }
       const erro = msgErro();
       b.append(erro);
@@ -288,7 +284,6 @@ function gerarFicheiroSap() {
               documentos: L.docs.map((v) => v.documento),
               linhas: L.linhas.length,
               total,
-              repetidos: L.docs.filter((v) => SAPD.exportados[v.documento]).length,
               xlsx: b64(buf),
             }).then((r) => {
               go.disabled = false;
@@ -296,6 +291,8 @@ function gerarFicheiroSap() {
               if (!r.ok) {
                 erro.textContent = t(r.erro || 'Não foi possível gerar.');
                 erro.hidden = false;
+                // documentos emitidos entretanto por outra pessoa: actualiza a lista
+                if (r.duplicados) carregarSap();
                 return;
               }
               const a = document.createElement('a');
@@ -342,31 +339,10 @@ R['sap-exportar'] = (pg) => {
     rotas = rotasPortal();
   // filtros próprios: rotas, tipos de documento e documentos já enviados
   const barra = el('section', 'glass sec sap-barra fixo');
-  const tog = (txt, on, fn, title) => {
-    const b = el('button', 'sap-chip' + (on ? ' on' : ''), txt);
-    b.type = 'button';
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    if (title) b.title = title;
-    b.addEventListener('click', fn);
-    return b;
-  };
-  const op = el('div', 'sap-op');
-  op.append(
-    tog(
-      t('Só documentos ainda não enviados'),
-      SAPX.novos,
-      () => {
-        SAPX.novos = !SAPX.novos;
-        draw();
-      },
-      t('Exclui os documentos já incluídos num ficheiro anterior'),
-    ),
-  );
   const acc = el('div', 'pc-acc');
   if (gera) acc.append(botao(t('Gerar ficheiro para o SAP'), 'sm', gerarFicheiroSap));
   barra.append(
     el('p', 'sap-per', t('Período, rotas e tipo de documento escolhem-se na barra de filtros, em cima: {a} a {b}.', { a: dl(st.de), b: dl(st.ate) })),
-    op,
     acc,
   );
   pg.append(barra);
@@ -391,8 +367,7 @@ R['sap-exportar'] = (pg) => {
       {
         l: t('Já enviados ao SAP'),
         v: n0(L.repetidos),
-        s: SAPX.novos ? t('excluídos deste ficheiro') : t('incluídos outra vez'),
-        tone: !SAPX.novos && L.repetidos ? 'warn' : null,
+        s: t('excluídos: só podem ser emitidos uma vez'),
       },
       {
         l: t('Por corrigir'),
@@ -510,42 +485,122 @@ R['sap-exportar'] = (pg) => {
     sec.append(erro, ft);
   }
   pg.append(sec);
-  // lotes gerados
-  if (SAPD.lotes.length)
-    pg.append(
-      tabela({
-        id: 'sap-h',
-        titulo: t('Ficheiros gerados'),
-        nota: t('Cada ficheiro fica guardado e pode ser descarregado outra vez.'),
-        sort: 'numero',
-        total: false,
-        rows: SAPD.lotes.map((x) => ({
-          ...x,
-          chave: x.numero,
-          periodo: dl(x.de) + (x.ate !== x.de ? ' – ' + dl(x.ate) : ''),
-          rotas_t: x.rotas.length ? x.rotas.join(', ') : t('Todas'),
-        })),
-        cols: [
-          { key: 'numero', label: t('Lote'), type: 'n', p: 0 },
-          { key: 'em', label: t('Gerado em'), render: (v) => document.createTextNode(dl(v) + ' ' + v.slice(11, 16)) },
-          { key: 'por_nome', label: t('Por') },
-          { key: 'periodo', label: t('Período') },
-          { key: 'rotas_t', label: t('Rotas') },
-          { key: 'n_documentos', label: t('Documentos'), type: 'n' },
-          { key: 'linhas', label: t('Linhas'), type: 'n' },
-          { key: 'total', label: t('Total'), type: 'kz' },
-          {
-            key: 'ficheiro',
-            label: t('Ficheiro'),
-            render: (v, r) => {
-              const a = el('a', 'linkbtn', t('Descarregar'));
-              a.href = 'data/sap.php?xlsx=' + r.numero;
-              a.title = v;
-              return a;
-            },
-            xl: (r) => r.ficheiro,
-          },
-        ],
-      }),
-    );
+  // Registo dos ficheiros emitidos (controlo de interface): estado, impressão digital e acções
+  if (SAPD.lotes.length) pg.append(registoLotes(gera));
 };
+
+const ESTADOS = { emitido: ['Emitido', 'p-warn'], carregado: ['Carregado no SAP', 'p-ok'], anulado: ['Anulado', 'p-bad'] };
+function registoLotes(gera) {
+  const eu = SESSAO && SESSAO.login;
+  return tabela({
+    id: 'sap-h',
+    titulo: t('Registo de ficheiros emitidos'),
+    nota: t(
+      'Cada ficheiro é emitido uma única vez, com número sequencial e impressão digital SHA-256. Depois de carregar no SAP, confirme o carregamento. Um lote ainda não carregado só pode ser anulado, com motivo, por outra pessoa que não quem o emitiu; a anulação liberta os documentos para um novo ficheiro.',
+    ),
+    sort: 'numero',
+    total: false,
+    rows: SAPD.lotes.map((x) => ({
+      ...x,
+      chave: x.numero,
+      periodo: dl(x.de) + (x.ate !== x.de ? ' – ' + dl(x.ate) : ''),
+      rotas_t: x.rotas.length ? x.rotas.join(', ') : t('Todas'),
+      estado_t: t(ESTADOS[x.estado || 'emitido'][0]),
+      detalhe:
+        x.estado === 'carregado'
+          ? t('por {p} em {d}', { p: x.carregado.por_nome, d: dl(x.carregado.em) }) + (x.carregado.referencia ? ' · ' + x.carregado.referencia : '')
+          : x.estado === 'anulado'
+            ? t('por {p} em {d}', { p: x.anulado.por_nome, d: dl(x.anulado.em) }) + ' · ' + x.anulado.motivo
+            : '',
+      hash: x.sha256 ? x.sha256.slice(0, 12) + '…' : '—',
+    })),
+    cols: [
+      { key: 'numero', label: t('Lote'), type: 'n', p: 0 },
+      { key: 'em', label: t('Emitido em'), render: (v) => document.createTextNode(dl(v) + ' ' + v.slice(11, 16)) },
+      { key: 'por_nome', label: t('Por') },
+      { key: 'periodo', label: t('Período') },
+      { key: 'rotas_t', label: t('Rotas') },
+      { key: 'n_documentos', label: t('Documentos'), type: 'n' },
+      { key: 'total', label: t('Total'), type: 'kz' },
+      { key: 'estado_t', label: t('Estado'), render: (v, r) => pill(v, ESTADOS[r.estado || 'emitido'][1]), xl: (r) => r.estado_t },
+      { key: 'detalhe', label: t('Detalhe'), wrap: true },
+      { key: 'hash', label: 'SHA-256', p: 0, xl: (r) => r.sha256 || '' },
+      {
+        key: 'ficheiro',
+        label: t('Acções'),
+        render: (v, r) => {
+          const box = el('span', 'sap-acoes');
+          if (gera && r.estado === 'emitido') {
+            box.append(botao(t('Confirmar carregamento'), 'sm', () => confirmarCarregamento(r)));
+            if (r.por !== eu || (SESSAO && SESSAO.perfil === 'SADM')) box.append(botao(t('Anular'), 'sm ghost', () => anularLote(r)));
+          }
+          if (SAPD.segunda_via) {
+            const a = el('a', 'linkbtn', t('Segunda via'));
+            a.href = 'data/sap.php?xlsx=' + r.numero;
+            a.title = t('Cópia do ficheiro emitido, para auditoria (fica registada)');
+            box.append(a);
+          }
+          return box;
+        },
+        xl: (r) => r.ficheiro,
+      },
+    ],
+  });
+}
+function accaoLote(corpo, msg) {
+  return postSap(corpo).then((r) => {
+    if (r.ok) {
+      toast(msg, 6000);
+      carregarSap().then(() => {
+        if (atual === 'sap-exportar') draw();
+      });
+    }
+    return r;
+  });
+}
+function confirmarCarregamento(r) {
+  janela(t('Confirmar carregamento no SAP'), t('Lote {n} · {f}', { n: r.numero, f: r.ficheiro }), (b, ft, fechar) => {
+    const ref = entrada('text', '', { maxLength: 60, placeholder: t('opcional') });
+    const erro = msgErro();
+    b.append(campo(t('Referência no SAP (n.º do lote ou documento de carregamento)'), ref), erro);
+    const go = botao(t('Confirmar'), '', () => {
+      go.disabled = true;
+      accaoLote({ accao: 'confirmar', lote: r.numero, referencia: ref.value }, t('Lote {n} confirmado como carregado no SAP.', { n: r.numero })).then((d) => {
+        go.disabled = false;
+        if (!d.ok) {
+          erro.textContent = t(d.erro || 'Não foi possível concluir.');
+          erro.hidden = false;
+          return;
+        }
+        fechar();
+      });
+    });
+    ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+  });
+}
+function anularLote(r) {
+  janela(
+    t('Anular lote {n}', { n: r.numero }),
+    t('Só se o ficheiro ainda não foi carregado no SAP. Os {n} documentos voltam a poder ser incluídos num novo ficheiro, com outro número.', {
+      n: r.n_documentos,
+    }),
+    (b, ft, fechar) => {
+      const mot = entrada('text', '', { maxLength: 300, placeholder: t('ex.: ficheiro perdido antes do carregamento') });
+      const erro = msgErro();
+      b.append(campo(t('Motivo da anulação'), mot), erro);
+      const go = botao(t('Anular lote'), '', () => {
+        go.disabled = true;
+        accaoLote({ accao: 'anular', lote: r.numero, motivo: mot.value }, t('Lote {n} anulado.', { n: r.numero })).then((d) => {
+          go.disabled = false;
+          if (!d.ok) {
+            erro.textContent = t(d.erro || 'Não foi possível concluir.');
+            erro.hidden = false;
+            return;
+          }
+          fechar();
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+    },
+  );
+}

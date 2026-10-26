@@ -359,3 +359,11 @@ dialog.dlg.largo {
     display: none;
   }
 }
+
+/* Registo de ficheiros emitidos para o SAP: acções de cada lote */
+.sap-acoes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}

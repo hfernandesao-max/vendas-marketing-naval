@@ -174,7 +174,7 @@ O ficheiro é gerado **a partir do próprio modelo** (`reports/modelos/RTM_Sales
 - **Filtros:** o período do topo da página, as rotas e os tipos de documento (Factura-recibo e Factura). Por omissão ficam de fora os documentos já incluídos num ficheiro anterior, para não serem carregados duas vezes no SAP.
 - **Verificação antes de gerar.** Bloqueiam: rota sem SAP location, documento sem linhas e linha sem código de artigo. São só avisos: linhas que não somam o total do documento e pagamentos por outros meios (transferência, adiantamento), que o modelo não tem.
 - **Correspondência com o SAP**, na mesma página: Loja, SAP location e empregado de vendas de cada rota. Por omissão, `<rota> - FHR PIV` e `FHR PIV - ROTA <rota> - <promotor>`, como no exemplo do modelo. A SAP location tem de ser indicada para cada rota (o exemplo só traz a 1011 = RTM2).
-- **Lotes:** cada ficheiro gerado fica numerado, guardado e pode ser descarregado outra vez. Fica registado quem o gerou, quando, o período e os documentos.
+- **Controlo de ficheiros emitidos:** cada lote tem número sequencial e impressão digital SHA-256 e é emitido uma única vez; o servidor recusa documentos que já estejam num lote válido. Estados: emitido → carregado no SAP (com a referência do SAP) ou anulado (motivo obrigatório, por outra pessoa que não quem emitiu; um lote já carregado corrige-se no SAP, por estorno). Quem emite não volta a descarregar; a segunda via é só para a auditoria (TI e AUD), com «SEGUNDA_VIA_» no nome. Tudo fica nos registos.
 - **Acessos:** Financeiro (FIN) e Back-office (BO) geram; TI e Auditoria vêem e descarregam os lotes. Ficheiros em `dados-privados/sap/`.
 
 ## Desenvolvimento: testes e normas de código

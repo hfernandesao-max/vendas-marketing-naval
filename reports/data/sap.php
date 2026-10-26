@@ -4,8 +4,8 @@
  *
  * GET               configuração, lotes e documentos já exportados
  * GET ?modelo=1     modelo original do SAP (o portal escreve os dados por cima, mantendo formatação, tema e larguras)
- * GET ?xlsx=N       Excel do lote N
- * POST {accao: config | lote, csrf, ...}   nível E (Financeiro e Back-office)
+ * GET ?xlsx=N       segunda via do Excel do lote N (só auditoria: TI, AUD)
+ * POST {accao: config | lote | confirmar | anular, csrf, ...}   nível E (Financeiro e Back-office)
  */
 require_once __DIR__ . '/../../nucleo/api.php';
 naval_servico('sap');
@@ -16,8 +16,7 @@ if (!naval_e_post()) {
     if (isset($_GET['modelo'])) naval_enviar_ficheiro(naval_raiz() . NAVAL_SAP_MODELO, '', NAVAL_TIPO_XLSX);
     if (isset($_GET['xlsx'])) {
         $n = (int) $_GET['xlsx'];
-        $lote = naval_sap_lote($n);
-        naval_registar('exportacao', ['pagina' => 'sap-exportar', 'lote' => $n]);
+        $lote = naval_sap_segunda_via($n);
         naval_enviar_ficheiro($lote['ficheiro'], $lote['nome'], NAVAL_TIPO_XLSX);
     }
     naval_json(naval_sap_resumo() + ['pode_gerar' => $podeGerar]);
@@ -35,5 +34,9 @@ switch ($q['accao'] ?? '') {
     case 'lote':
         $xlsx = base64_decode((string) ($q['xlsx'] ?? ''), true);
         naval_json(['ok' => true, 'lote' => naval_sap_novo_lote($q, $xlsx === false ? '' : $xlsx, (array) naval_utilizador())]);
+    case 'confirmar':
+        naval_json(['ok' => true, 'lote' => naval_sap_confirmar((int) ($q['lote'] ?? 0), (string) ($q['referencia'] ?? ''), (array) naval_utilizador())]);
+    case 'anular':
+        naval_json(['ok' => true, 'lote' => naval_sap_anular((int) ($q['lote'] ?? 0), (string) ($q['motivo'] ?? ''), (array) naval_utilizador())]);
 }
 throw new NavalErro('Acção desconhecida.');

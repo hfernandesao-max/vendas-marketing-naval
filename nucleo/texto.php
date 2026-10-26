@@ -35,3 +35,9 @@ function naval_email_valido($email): bool
 {
     return is_string($email) && filter_var(trim($email), FILTER_VALIDATE_EMAIL) !== false;
 }
+
+/** Número de caracteres de um texto UTF-8 (sem depender da extensão mbstring). */
+function naval_comprimento(string $s): int
+{
+    return (int) preg_match_all('/./us', $s);
+}

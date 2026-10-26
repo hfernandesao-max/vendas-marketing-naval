@@ -97,7 +97,7 @@ teste('plano de cargas: conflito de versão devolve 409', function () {
     lanca(400, function () use ($eu) { naval_plano_actualizar('01-10-2026', 1, [], $eu, NAVAL_ARTIGOS_PADRAO); });
 });
 
-teste('SAP: configuração limpa e lote exige documentos e um Excel', function () {
+teste('SAP: configuração limpa; lote único por documento, anulação com quatro olhos, carregamento', function () {
     $c = naval_sap_gravar_config(['moeda' => 'aoa', 'rotas' => ['1001' => ['local' => 'rtm1', 'loja' => ''], '' => ['local' => 'X'], '1002' => ['local' => '']]]);
     igual(['1001' => ['local' => 'RTM1']], $c['rotas']);
     igual('AOA', $c['moeda']);
@@ -109,5 +109,16 @@ teste('SAP: configuração limpa e lote exige documentos e um Excel', function (
     igual(1, $l['n_documentos']);
     igual('RTM_Sales_SAP_Upload_2026-10-24_lote1.xlsx', $l['ficheiro']);
     igual(['lote' => 1], array_intersect_key(naval_sap_resumo()['exportados']['FR 1/1'], ['lote' => 0]));
-    lanca(404, function () { naval_sap_lote(99); });
+    igual(hash('sha256', 'PK..'), $l['sha256']);
+    $e = lanca(409, function () { naval_sap_novo_lote(['documentos' => ['FR 1/2', 'FR 1/1']], 'PK..', ['login' => 'u']); });
+    igual(['FR 1/1'], $e->extra()['duplicados']);
+    lanca(403, function () { naval_sap_anular(1, 'motivo suficiente', ['login' => 'u', 'perfil' => 'FIN']); });
+    lanca(400, function () { naval_sap_anular(1, 'curto', ['login' => 'v', 'perfil' => 'FIN']); });
+    igual('anulado', naval_sap_anular(1, 'motivo suficiente', ['login' => 'v', 'perfil' => 'FIN'])['estado']);
+    igual([], naval_sap_exportados(naval_sap_lotes()));
+    igual(2, naval_sap_novo_lote(['documentos' => ['FR 1/1']], 'PK..', ['login' => 'u'])['numero']);
+    igual('carregado', naval_sap_confirmar(2, 'SAP-1', ['login' => 'v'])['estado']);
+    lanca(409, function () { naval_sap_anular(2, 'motivo suficiente', ['login' => 'v', 'perfil' => 'FIN']); });
+    lanca(403, function () { naval_sap_segunda_via(2); });   // sem sessão de auditoria
+    lanca(404, function () { naval_sap_confirmar(99, '', ['login' => 'v']); });
 });
