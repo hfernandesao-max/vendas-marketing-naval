@@ -6,6 +6,7 @@
  * Devolve: JSON array com o mesmo schema de vendas.json. Com include_items=1,
  * devolve também as linhas de artigos da mesma consulta.
  *
+ * Estrutura (super administrador): ?estrutura=1&start_date=AAAAMMDD mostra as secções, tipos de documento e campos do XML.
  * Diagnóstico (com sessão iniciada): ?diag=1 mostra a versão do PHP, as extensões,
  * o .env, os limites de tempo e memória e o tempo de resposta do Pinguim BO.
  *
@@ -207,7 +208,53 @@ if (($_GET['ping'] ?? '') === '1') {
 
 // ── Permissões (matriz de acessos): só perfis com páginas de vendas; diagnóstico só para TI ──
 naval_exigir(['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-artigo', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes']);
-if (($_GET['diag'] ?? '') === '1') naval_exigir(['admin-config']);
+if (($_GET['diag'] ?? '') === '1' || ($_GET['estrutura'] ?? '') === '1') naval_exigir(['admin-config']);
+
+// ── Estrutura da exportação (só super administrador): que secções, tipos de documento e campos traz o Pinguim BO.
+//    Serve para encontrar dados ainda não usados pelo portal (por exemplo, o fecho de dia do RTM). ──
+if (($_GET['estrutura'] ?? '') === '1') {
+    $sd = preg_replace('/\D/', '', (string) ($_GET['start_date'] ?? date('Ymd')));
+    $ed = preg_replace('/\D/', '', (string) ($_GET['end_date'] ?? $sd));
+    $r = chamarPrimeiro($boUrls, "start_date=$sd&end_date=$ed", $username, $password, 120);
+    if ($r['errno'] !== 0 || !is_string($r['body'])) responder(502, ['erro' => 'Sem resposta do Pinguim BO.', 'detalhe' => $r['erro']]);
+    libxml_use_internal_errors(true);
+    $x = simplexml_load_string($r['body']);
+    if ($x === false) responder(502, ['erro' => 'O Pinguim BO não devolveu XML válido.', 'inicio' => substr($r['body'], 0, 300)]);
+    // Descreve um elemento: nomes dos campos, até 3 níveis, com um exemplo curto de cada valor
+    $descrever = function (SimpleXMLElement $e, int $nivel) use (&$descrever) {
+        $out = [];
+        foreach ($e->children() as $nome => $f) {
+            if (isset($out[$nome])) { if (is_array($out[$nome]) && isset($out[$nome]['_repete'])) $out[$nome]['_repete']++; continue; }
+            if ($f->count() && $nivel < 3) $out[$nome] = $descrever($f, $nivel + 1) + ['_repete' => 1];
+            else $out[$nome] = preg_replace('/^(.{0,40}).*$/us', '$1', trim((string) $f));
+        }
+        return $out;
+    };
+    $seccoes = [];
+    foreach ($x->children() as $nome => $sec) {
+        $n = $sec->count();
+        $info = ['elementos' => $n];
+        if ($n && !in_array($nome, ['entities', 'transactions'], true)) {   // clientes: sem dados; documentos: ver tipos_de_documento
+            $exemplo = null;
+            foreach ($sec->children() as $c) { $exemplo = $c; break; }
+            $info['exemplo'] = $exemplo ? $descrever($exemplo, 1) : null;
+        }
+        $seccoes[$nome] = $info;
+    }
+    $tipos = [];
+    if (isset($x->transactions)) {
+        foreach ($x->transactions->transaction as $tx) {
+            $tp = (string) $tx->document_type;
+            if (!isset($tipos[$tp])) $tipos[$tp] = ['documentos' => 0, 'exemplo' => $descrever($tx, 1)];
+            $tipos[$tp]['documentos']++;
+        }
+    }
+    foreach ($tipos as &$tp) {   // sem dados pessoais nos exemplos
+        foreach (['tax_number', 'entity_code'] as $k) if (isset($tp['exemplo'][$k])) $tp['exemplo'][$k] = '…';
+    }
+    unset($tp);
+    responder(200, ['periodo' => "$sd a $ed", 'bytes' => strlen($r['body']), 'seccoes' => $seccoes, 'tipos_de_documento' => $tipos]);
+}
 
 // ── Diagnóstico ──
 if (($_GET['diag'] ?? '') === '1') {
