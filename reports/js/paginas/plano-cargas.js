@@ -1,4 +1,4 @@
-// Plano de cargas: preenchimento, importação, publicação e envio por email.
+// Plano de cargas: produzido na plataforma (preenchimento, publicação e envio por email).
 import { draw } from '../app.js';
 import { pill, secBox, tabela } from '../componentes/blocos.js';
 import { botao, campo, confirmarAccao, entrada, janela, msgErro } from '../componentes/janelas.js';
@@ -9,7 +9,7 @@ import { R } from './registo.js';
 import { atual } from '../perfil.js';
 import { hoje } from '../periodo.js';
 import { postJson } from '../servidor.js';
-import { DB, b64, chaveTxt, el, somaDias, toast } from '../util.js';
+import { b64, chaveTxt, el, somaDias, toast } from '../util.js';
 
 const PC = { data: null, resp: null, rotas: null, sujo: false, mud: 0, gravando: false, erro: null, guardadoEm: null, hist: null };
 const somaQ = (r) => Object.values(r.quantidades || {}).reduce((s, v) => s + (+v || 0), 0);
@@ -232,154 +232,6 @@ function gerarExcelPlano(rotas, data, versao, artigos) {
       });
     return wb.xlsx.writeBuffer();
   });
-}
-
-// ---- Importar o Excel feito à mão (transição) ----
-function lerExcelPlano(file) {
-  return carregarExcelJS()
-    .then(() => file.arrayBuffer())
-    .then((buf) => {
-      const wb = new ExcelJS.Workbook();
-      return wb.xlsx.load(buf).then(() => wb);
-    })
-    .then((wb) => {
-      const ws = wb.worksheets[0];
-      let hdr = 0;
-      ws.eachRow((row, i) => {
-        if (!hdr && row.values.some((v) => typeof v === 'string' && /SALES\s*PERSON/i.test(v))) hdr = i;
-      });
-      if (!hdr) throw new Error(t('Não encontrei o cabeçalho do plano (SALES PERSON) no ficheiro.'));
-      const val = (row, c) => {
-        const cel = row.getCell(c);
-        if (cel.isMerged && cel.master && cel.master.address !== cel.address) return null;
-        let v = cel.value;
-        if (v && typeof v === 'object' && !(v instanceof Date))
-          v = v.result != null ? v.result : v.text != null ? v.text : v.richText ? v.richText.map((x) => x.text).join('') : null;
-        return v;
-      };
-      const txt = (v) => (v == null || v instanceof Date ? '' : String(v).replace(/\s+/g, ' ').trim());
-      const blocos = [];
-      let b = null,
-        dataF = null;
-      for (let i = hdr + 1; i <= ws.rowCount; i++) {
-        const row = ws.getRow(i),
-          vend = txt(val(row, 2));
-        if (vend) {
-          b = {
-            vendedor: vend,
-            armazem: txt(val(row, 3)),
-            viagens: +val(row, 5) || 1,
-            zonas: [],
-            itens: [],
-            motorista: txt(val(row, 8)),
-            telefone: txt(val(row, 9)),
-            matricula: txt(val(row, 10)),
-            viatura: txt(val(row, 11)),
-            transportadora: txt(val(row, 12)),
-            factura: txt(val(row, 13)),
-          };
-          blocos.push(b);
-          const a = val(row, 1);
-          if (a instanceof Date && !dataF) dataF = a.toISOString().slice(0, 10);
-        }
-        if (!b) continue;
-        const z = txt(val(row, 4));
-        if (z) b.zonas.push(z);
-        const it = txt(val(row, 6));
-        if (it) b.itens.push([it, +val(row, 7) || 0]);
-      }
-      return { blocos, dataF };
-    });
-}
-const titulo = (s) =>
-  String(s || '')
-    .toLowerCase()
-    .replace(/(^|[\s(-])(\p{L})/gu, (m, a, l) => a + l.toUpperCase())
-    .replace(/ (E|De|Do|Da|Dos|Das) /g, (m) => m.toLowerCase());
-// Associa cada bloco do Excel a uma rota: nome do vendedor e, quando não chega, viatura e motorista do histórico
-function rotaDoBloco(b, d, usadas) {
-  const kv = chaveTxt(b.vendedor).split(' '),
-    hist = (DB.cargas || []).slice().sort((x, y) => (x.data < y.data ? 1 : -1));
-  let melhor = null,
-    pts = 0;
-  d.rotas.forEach((rt) => {
-    if (usadas.has(rt.rota)) return;
-    const kp = chaveTxt(rt.promotor).split(' ');
-    let s = 0;
-    if (kp.join(' ') === kv.join(' ')) s += 5;
-    if (kp[0] && kp[0] === kv[0]) s += 1;
-    if (kp.length > 1 && kp[kp.length - 1] === kv[kv.length - 1]) s += 1;
-    const hp = hist.find((h) => chaveTxt(h.matricula) === chaveTxt(b.matricula));
-    if (hp && hp.rota === rt.rota) s += 2;
-    const hm = hist.find((h) => chaveTxt(h.motorista) === chaveTxt(b.motorista));
-    if (hm && hm.rota === rt.rota) s += 2;
-    if (s > pts) {
-      pts = s;
-      melhor = rt;
-    }
-  });
-  return pts >= 2 ? melhor : null;
-}
-function importarExcelPlano(file) {
-  lerExcelPlano(file)
-    .then(({ blocos, dataF }) => {
-      if (!blocos.length) {
-        toast(t('O ficheiro não tem rotas.'), 6000);
-        return;
-      }
-      const alvo = dataF || PC.data;
-      const passo = alvo !== PC.data ? guardarPlano().then(() => carregarPlano(alvo)) : Promise.resolve();
-      return passo.then(() => {
-        const d = PC.resp,
-          arts = d.listas.artigos,
-          usadas = new Set(),
-          falhas = [];
-        const L = d.listas,
-          achar = (lista, v) => lista.find((x) => chaveTxt(x) === chaveTxt(v)) || titulo(v);
-        PC.rotas.forEach((r) => {
-          r.sai = false;
-        });
-        blocos.forEach((b) => {
-          const rt = rotaDoBloco(b, d, usadas);
-          if (!rt) {
-            falhas.push(b.vendedor);
-            return;
-          }
-          usadas.add(rt.rota);
-          const r = PC.rotas.find((x) => x.rota === rt.rota);
-          const q = {};
-          arts.forEach((a) => {
-            q[a.id] = 0;
-          });
-          b.itens.forEach(([nome, v]) => {
-            const a = arts.find((x) => chaveTxt(x.nome) === chaveTxt(nome));
-            if (a) q[a.id] += v;
-          });
-          const mot = L.motoristas.find((x) => chaveTxt(x.nome) === chaveTxt(b.motorista));
-          Object.assign(r, {
-            sai: true,
-            vendedor: rt.promotor || titulo(b.vendedor),
-            armazem: b.armazem ? achar(L.armazens, b.armazem) : r.armazem,
-            viagens: b.viagens,
-            zonas: [...new Map(b.zonas.map((z) => [chaveTxt(z), achar(L.zonas, z)])).values()],
-            quantidades: q,
-            motorista: mot ? mot.nome : titulo(b.motorista),
-            telefone: b.telefone || (mot ? mot.telefone : ''),
-            matricula: b.matricula.toUpperCase(),
-            viatura: b.viatura ? achar(L.viaturas, b.viatura) : '',
-            transportadora: b.transportadora ? achar(L.transportadoras, b.transportadora) : '',
-            factura: b.factura,
-          });
-        });
-        marcarSujo();
-        draw();
-        const msg =
-          t('Importadas {n} rotas do Excel de {d}.', { n: usadas.size, d: dl(alvo) }) +
-          (falhas.length ? ' ' + t('Sem rota identificada: {v}. Preencha essas rotas à mão.', { v: falhas.join(', ') }) : '');
-        toast(msg, falhas.length ? 12000 : 6000);
-      });
-    })
-    .catch((e) => toast(t('Não foi possível ler o Excel.') + ' ' + (e && e.message ? e.message : ''), 8000));
 }
 
 // ---- Publicar ----
@@ -895,19 +747,7 @@ R['plano-cargas'] = (pg) => {
           else go();
         }),
       );
-    const fi = el('input');
-    fi.type = 'file';
-    fi.accept = '.xlsx';
-    fi.hidden = true;
-    fi.addEventListener('change', () => {
-      if (fi.files[0]) importarExcelPlano(fi.files[0]);
-      fi.value = '';
-    });
-    acc.append(
-      fi,
-      botao(t('Importar Excel'), 'ghost sm', () => fi.click()),
-      botao(t('Listas'), 'ghost sm', janelaListas),
-    );
+    acc.append(botao(t('Listas'), 'ghost sm', janelaListas));
   }
   if (p && p.publicado && d.exportar) {
     const a = el('a', 'btn ghost sm', t('Excel enviado'));

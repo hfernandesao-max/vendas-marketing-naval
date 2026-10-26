@@ -1,32 +1,21 @@
-// Ligação às fontes de dados (Pinguim BO, cadastros, plano de cargas) e indicador de estado.
-import { dl } from './formatos.js';
+// Ligação às fontes de dados externas (Pinguim BO) e indicador de estado.
 import { t } from './i18n/i18n.js';
-import { definirDiasSap, definirDiasTodos, diasSap, hoje } from './periodo.js';
+import { definirDiasSap, definirDiasTodos, diasSap } from './periodo.js';
 import { $, DB, el, toast } from './util.js';
 
 // Pinguim BO: resultado da última consulta de vendas e verificação curta (ping) a cada 5 minutos.
-// Cadastros (rtm-clientes) e plano de cargas: idade dos dados carregados.
-export const LIGACOES = { pinguim: { estado: '?', txt: 'A verificar…' }, cad: { estado: '?', txt: '' }, cargas: { estado: '?', txt: '' } };
-const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)', cad: 'Cadastros RTM (clientes)', cargas: 'Plano de cargas' };
+// Os cadastros e o plano de cargas não contam como fontes externas: o plano é produzido na plataforma.
+export const LIGACOES = { pinguim: { estado: '?', txt: 'A verificar…' } };
+const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)' };
 const desde = (ms) => {
   const m = Math.round((Date.now() - ms) / 60000);
   return m < 1 ? t('agora') : m < 60 ? t('há {n} min', { n: m }) : t('há {n} h', { n: Math.round(m / 60) });
 };
-const diasAtras = (d) => Math.round((new Date(hoje() + 'T12:00:00Z') - new Date(String(d).slice(0, 10) + 'T12:00:00Z')) / 864e5);
 function marcarPinguim(ok, erro) {
   LIGACOES.pinguim = ok ? { estado: 'ok', txt: t('consulta directa'), hora: Date.now() } : { estado: 'erro', txt: erro || t('sem ligação'), hora: Date.now() };
   mostrarFontes();
 }
 export function avaliarFontes() {
-  if (DB.cad && DB.cad.dados_ate) {
-    const n = diasAtras(DB.cad.dados_ate);
-    LIGACOES.cad = { estado: n <= 1 ? 'ok' : 'aviso', txt: t('dados até {d}', { d: dl(DB.cad.dados_ate) + ' ' + String(DB.cad.dados_ate).slice(11, 16) }) };
-  } else LIGACOES.cad = { estado: 'erro', txt: t('sem ligação ao rtm-clientes') };
-  const uc = (DB.cargas || [])
-    .map((x) => x.data)
-    .sort()
-    .pop();
-  LIGACOES.cargas = uc ? { estado: diasAtras(uc) <= 2 ? 'ok' : 'aviso', txt: t('plano até {d}', { d: dl(uc) }) } : { estado: 'erro', txt: t('sem dados') };
   mostrarFontes();
 }
 export function mostrarFontes() {

@@ -136,7 +136,7 @@ Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e en
 
 - **Quem preenche e publica:** perfil Logística (LOG), nível G na matriz. Os restantes perfis com acesso vêem a versão publicada; os supervisores só as suas rotas.
 - **Preenchimento:** um cartão por rota. O motorista escolhe-se da lista e preenche o telefone, a matrícula, a viatura e a transportadora. As zonas escolhem-se da lista (sem nomes repetidos com grafias diferentes) e as quantidades indicam-se por artigo. O rascunho guarda-se sozinho.
-- **Atalhos:** *Copiar de …* (plano do dia anterior) e *Importar Excel* (lê o Excel no formato antigo, para a transição).
+- **Produzido na plataforma:** o plano é preenchido no portal (atalho *Copiar de …* para partir do plano do dia anterior); já não se importa o Excel antigo.
 - **Publicar e enviar:** valida (motorista, matrícula, zonas e carga em cada rota que sai), gera o Excel no formato habitual e envia-o por email à lista de destinatários, com o resumo no corpo. Uma alteração depois de publicado sai como *Rectificação* (versão 2, 3, …), com nota.
 - **Listas:** destinatários, motoristas, zonas, armazéns, viaturas, transportadoras e artigos. Motoristas, zonas e viaturas novos entram sozinhos ao publicar.
 - O plano publicado alimenta logo o *Stock por promotor / carrinha* e o escoamento.
