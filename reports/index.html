@@ -550,7 +550,22 @@
     .tile {
       padding: 16px 18px;
       display: grid;
-      gap: 4px
+      gap: 4px;
+      /* conteúdo encostado ao topo: os números ficam na mesma linha, com ou sem nota por baixo */
+      align-content: start;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0
+    }
+
+    /* Rótulo, número e nota partilham as linhas da fila: os números ficam alinhados mesmo
+       quando um rótulo ocupa duas linhas ou um quadro não tem nota */
+    @supports (grid-template-rows: subgrid) {
+      .tile {
+        grid-row: span 3;
+        grid-template-rows: subgrid;
+        align-content: normal
+      }
+      .tile .v { align-self: start }
     }
 
     .tile .l {
@@ -2627,6 +2642,27 @@
         REG.kpis.push(...list);
         const w = el('div', 'tiles');
         list.forEach((x) => { const d = el('div', 'glass tile' + (x.cls ? ' ' + x.cls : '')); d.append(el('span', 'l', x.l)); const v = el('span', 'v', x.v); if (x.tone) v.style.color = `var(--${x.tone})`; d.append(v); if (x.s) d.append(el('span', 's', x.s)); w.append(d); });
+        // Valores que não cabem no quadro: reduz a letra de toda a fila por igual, até caberem.
+        // Se nem com letra pequena cabem, os quadros ficam mais largos (passam a ocupar mais filas).
+        const ajustar = (alargado) => {
+          if (!w.isConnected) return;
+          const vs = [...w.querySelectorAll('.tile .v')];
+          if (!alargado) w.style.gridTemplateColumns = '';
+          vs.forEach((v) => { v.style.fontSize = ''; });
+          const cabe = (v) => v.scrollWidth <= v.clientWidth + 1;
+          const filas = {};
+          vs.forEach((v) => { const k = Math.round(v.parentNode.getBoundingClientRect().top); (filas[k] = filas[k] || []).push(v); });
+          let falta = 0;
+          Object.values(filas).forEach((f) => {
+            if (f.every(cabe)) return;
+            let px = Math.max(...f.map((v) => parseFloat(getComputedStyle(v).fontSize)));
+            const tenta = () => { f.forEach((v) => { v.style.fontSize = px + 'px'; }); return f.every(cabe); };
+            while (px > 15 && !tenta()) px -= 1;
+            f.forEach((v) => { if (!cabe(v)) { const t2 = v.parentNode; falta = Math.max(falta, v.scrollWidth + t2.offsetWidth - v.clientWidth + 2); } });
+          });
+          if (falta && !alargado) { w.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${Math.ceil(falta)}px), 1fr))`; ajustar(true); }
+        };
+        FITS.push(() => ajustar(false));
         return w;
       }
       const pill = (txt, cls) => el('span', 'pill ' + cls, txt);
