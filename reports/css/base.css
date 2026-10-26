@@ -363,18 +363,18 @@ h1 {
 
 /* A data é sempre mostrada como dia-mês-ano, seja qual for o idioma do navegador:
    o texto do campo nativo fica invisível e por cima aparece a data formatada */
-.date .campo {
+.date .dcampo {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-.date .campo input {
+.date .dcampo input {
   color: transparent;
   cursor: pointer;
 }
 
-.date .campo input::-webkit-datetime-edit {
+.date .dcampo input::-webkit-datetime-edit {
   color: transparent;
 }
 
@@ -1125,9 +1125,17 @@ tfoot td {
 
 .gsvg {
   display: block;
-  width: 100%;
-  min-width: 300px;
-  height: auto;
+  max-width: none;
+}
+
+.gsvg .g-base {
+  stroke: var(--line2);
+  stroke-width: 1;
+}
+
+.gsvg .g-meta-t {
+  fill: var(--muted);
+  font-weight: 600;
 }
 
 .gsvg .g-grid {

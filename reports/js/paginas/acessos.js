@@ -51,6 +51,7 @@ const NOMES_ACCAO = {
   alteracao_recusada: 'Alteração recusada',
   confirmacao_falhada: 'Confirmação falhada',
   importar_contas_antigas: 'Contas antigas importadas',
+  gestao_activada: 'Gestão de contas activada',
   perfil_alterado: 'Perfil alterado',
   perfil_criado: 'Perfil criado',
   perfil_apagado: 'Perfil apagado',
@@ -377,6 +378,7 @@ R.acessos = (pg) => {
   const U = GESTAO.utilizadores,
     obrig = GESTAO.perfis_dois_passos || ['SADM', 'TI', 'DIR'],
     gerir = GESTAO.pode_gerir;
+  if (GESTAO.compatibilidade) pg.append(cartaoActivar());
   const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem email' : u.activo ? 'Activa' : 'Inactiva');
   pg.append(
     tiles([
@@ -396,16 +398,6 @@ R.acessos = (pg) => {
       },
     ]),
   );
-  if (U.some((u) => u.compatibilidade))
-    pg.append(
-      el(
-        'p',
-        'note',
-        t(
-          'As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.',
-        ),
-      ),
-    );
   const cols = [
     { key: 'nome', label: t('Nome'), p: 0 },
     { key: 'login', label: t('Utilizador') },
@@ -649,8 +641,132 @@ R.acessos = (pg) => {
         ],
       }),
     );
-  }
+  } else pg.append(secBox(t('Registos de actividade'), '', el('p', 'note', t('Sem registos para mostrar.'))));
 };
+
+// ---- activação da gestão de contas (contas ainda na lista antiga) ----
+function cartaoActivar() {
+  const G = GESTAO,
+    c = el('div', 'glass ac-activar');
+  const txt = el('div');
+  txt.append(
+    el('h3', null, t('Activar a gestão de contas no portal')),
+    el(
+      'p',
+      null,
+      G.pode_activar
+        ? t(
+            'As contas vêm ainda da lista antiga e não podem ser criadas nem alteradas aqui. Ao activar, cada conta passa para a lista nova com email obrigatório, perfil e rotas, e a sua conta fica super administrador. As palavras-passe actuais mantêm-se. Faz-se uma só vez.',
+          )
+        : t(
+            'As contas vêm ainda da lista antiga e não podem ser criadas nem alteradas aqui. Peça ao administrador da plataforma (conta admin) para activar a gestão de contas.',
+          ),
+    ),
+  );
+  c.append(txt);
+  if (G.pode_activar) c.append(botao(t('Activar a gestão'), '', () => janelaActivar()));
+  return c;
+}
+function janelaActivar() {
+  const G = GESTAO;
+  janela(
+    t('Activar a gestão de contas'),
+    t(
+      'Reveja cada conta. O email é obrigatório para as contas activas (serve para recuperar a palavra-passe e para os avisos). Contas que já não são usadas: desactive-as.',
+    ),
+    (b, ft, fechar) => {
+      const linhas = G.utilizadores.map((u) => {
+        const eu = u.login === G.eu;
+        const iEmail = entrada('email', u.email || '', { autocomplete: 'off', placeholder: 'nome@naval.co.ao' });
+        iEmail.setAttribute('aria-label', t('Email') + ' · ' + u.login);
+        const sPerfil = el('select');
+        Object.entries(G.perfis).forEach(([k, v]) => {
+          const o = el('option', null, k + ' · ' + t(v));
+          o.value = k;
+          sPerfil.append(o);
+        });
+        sPerfil.value = eu ? 'SADM' : u.perfil;
+        sPerfil.disabled = eu;
+        sPerfil.setAttribute('aria-label', t('Perfil') + ' · ' + u.login);
+        const iRotas = entrada('text', (u.rotas || []).join(', '), { placeholder: t('ex.: 1001, 1002') });
+        iRotas.setAttribute('aria-label', t('Rotas') + ' · ' + u.login);
+        const cAct = entrada('checkbox');
+        cAct.checked = true;
+        cAct.disabled = eu;
+        cAct.setAttribute('aria-label', t('Conta activa') + ' · ' + u.login);
+        const tr = el('tr');
+        const id = el('td');
+        id.append(el('strong', null, u.nome), el('div', 'dim', u.login + (eu ? ' · ' + t('a sua conta') : '')));
+        const tdR = el('td');
+        tdR.append(iRotas);
+        const ver = () => {
+          iRotas.hidden = !G.por_rota.includes(sPerfil.value);
+          tr.classList.toggle('ac-off', !cAct.checked);
+        };
+        sPerfil.addEventListener('change', ver);
+        cAct.addEventListener('change', ver);
+        ver();
+        [id, iEmail, sPerfil, tdR, cAct].forEach((x, i) => {
+          if (x.tagName === 'TD') tr.append(x);
+          else {
+            const td = el('td', i === 4 ? 'c' : null);
+            td.append(x);
+            tr.append(td);
+          }
+        });
+        return { u, tr, iEmail, sPerfil, iRotas, cAct };
+      });
+      const tb = el('table', 'ac-mig'),
+        th = el('thead'),
+        hr = el('tr');
+      [t('Conta'), t('Email (obrigatório)'), t('Perfil'), t('Rotas'), t('Activa')].forEach((x) => hr.append(el('th', null, x)));
+      th.append(hr);
+      const tbd = el('tbody');
+      linhas.forEach((l) => tbd.append(l.tr));
+      tb.append(th, tbd);
+      const wrap = el('div', 'ac-mig-w');
+      wrap.append(tb);
+      const iA1 = entrada('text', '', { placeholder: t('Nome') }),
+        iA2 = entrada('text', '', { placeholder: t('Nome') });
+      const aprov = el('div', 'campos2');
+      aprov.append(campo(t('Aprovado por (1)'), iA1), campo(t('Aprovado por (2)'), iA2));
+      const erro = msgErro();
+      b.append(
+        wrap,
+        el('p', 'aviso', t('A sua conta fica super administrador. Indique as duas pessoas da Administração que aprovaram (controlo dual).')),
+        aprov,
+        erro,
+      );
+      const ir = botao(t('Activar a gestão'), '', () => {
+        erro.hidden = true;
+        const contas = {};
+        linhas.forEach((l) => {
+          contas[l.u.login] = {
+            email: l.iEmail.value.trim(),
+            perfil: l.sPerfil.value,
+            rotas: l.iRotas.value.split(/[,;\s]+/).filter(Boolean),
+            activo: l.cAct.checked,
+          };
+        });
+        ir.disabled = true;
+        pedirGestao({ accao: 'activar_gestao', contas, aprovado_por: [iA1.value, iA2.value] }).then((d) => {
+          ir.disabled = false;
+          if (d.cancelado) return;
+          if (!d.ok) {
+            erro.textContent = t(d.erro || 'Não foi possível activar.');
+            erro.hidden = false;
+            return;
+          }
+          fechar();
+          toast(t('Gestão de contas activada: {n} contas na lista nova. Active já a verificação em dois passos da sua conta.', { n: d.contas }), 8000);
+          recarregarGestao();
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), ir);
+      setTimeout(() => linhas[0] && linhas[0].iEmail.focus(), 50);
+    },
+  );
+}
 
 // ---- perfis: os do sistema (fixos) e os criados no portal pelo super administrador ----
 function seccaoPerfis(gerir) {

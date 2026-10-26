@@ -9,6 +9,7 @@ import { $, DB, el } from './util.js';
 import './paginas/inicio.js';
 import './paginas/vendas.js';
 import './paginas/terreno.js';
+import './paginas/sincronizacao.js';
 import './paginas/recebimentos.js';
 import './paginas/logistica.js';
 import './paginas/clientes.js';

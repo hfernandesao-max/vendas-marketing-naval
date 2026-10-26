@@ -283,7 +283,7 @@ R.cadastros = (pg) => {
         meta: M,
         series: [
           { nome: ant ? ds(ant) : '', vals: cats.map((c) => (ant ? v(c.txt, ant) : 0)), cls: 'g-prev' },
-          { nome: ds(ult), vals: cats.map((c) => v(c.txt, ult)), cls: (x) => (x >= M ? 'g-ok' : 'g-cur') },
+          { nome: ds(ult), vals: cats.map((c) => v(c.txt, ult)), cls: 'g-cur' },
         ],
       }),
     );
@@ -291,7 +291,6 @@ R.cadastros = (pg) => {
       legenda([
         ['g-prev', t('Dia anterior')],
         ['g-cur', t('Último dia')],
-        ['g-ok', t('Meta cumprida')],
         ['g-meta-l', t('Meta {m}', { m: M })],
       ]),
     );
@@ -305,13 +304,12 @@ R.cadastros = (pg) => {
       cats: ultimos.map((d) => ({ txt: diaCurto(d), titulo: ds(d) })),
       meta: metaRede,
       rot: ultimos.length > 10,
-      series: [{ nome: t('Novos clientes'), vals: ultimos.map(rede), cls: (x) => (x >= metaRede ? 'g-ok' : 'g-cur') }],
+      series: [{ nome: t('Novos clientes'), vals: ultimos.map(rede), cls: 'g-cur' }],
     }),
   );
   secR.querySelector('.sec-h').append(
     legenda([
       ['g-cur', t('Novos clientes')],
-      ['g-ok', t('Meta cumprida')],
       ['g-meta-l', t('Meta {m}/dia', { m: metaRede })],
     ]),
   );
@@ -390,7 +388,7 @@ R['cadastros-analise'] = (pg) => {
       rot: n > 10,
       series: [
         { nome: t('Período anterior'), vals: va, cls: 'g-prev' },
-        { nome: t('Período'), vals: vp, cls: (x) => (x >= M * rotas.length ? 'g-ok' : 'g-cur') },
+        { nome: t('Período'), vals: vp, cls: 'g-cur' },
       ],
     }),
   );
@@ -398,7 +396,6 @@ R['cadastros-analise'] = (pg) => {
     legenda([
       ['g-prev', t('Período anterior')],
       ['g-cur', t('Período')],
-      ['g-ok', t('Meta cumprida')],
       ['g-meta-l', t('Meta')],
     ]),
   );

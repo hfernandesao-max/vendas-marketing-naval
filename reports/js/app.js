@@ -21,7 +21,8 @@ function textos() {
   $('#l-de').textContent = t('De');
   $('#l-ate').textContent = t('Até');
   $('#xl-page span').textContent = t('Excel desta página');
-  $('#xl-all span').textContent = t('Excel completo');
+  $('#xl-all span').textContent = t('Exportar tudo');
+  $('#xl-all').title = t('Um só Excel com os indicadores, os relatórios de todas as páginas e os dados de base do período');
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }

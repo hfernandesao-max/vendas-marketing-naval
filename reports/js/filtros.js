@@ -10,6 +10,7 @@ import { $, DB, el } from './util.js';
 // ficam guardados no navegador e no endereço (uma ligação partilhada abre com os mesmos filtros).
 const FILTROS_PAGINA = {
   inicio: ['rota'],
+  sincronizacao: ['rota'],
   'vendas-promotor': ['rota', 'tipo', 'meio', 'estado'],
   'vendas-dia': ['rota', 'cliente', 'tipo', 'meio', 'estado'],
   'vendas-cliente': ['rota', 'cliente', 'tipo', 'meio', 'estado'],
@@ -78,6 +79,14 @@ export function lerFiltrosURL(qs) {
 // Os dados de cada página (DB.vendas, DB.artigos, ...) passam a ser a vista filtrada; os dados completos ficam em DADOS_COMPLETOS
 const DADOS_COMPLETOS = {},
   VISTA = {};
+/** Dados completos do período (sem os filtros das páginas), já com o âmbito do perfil aplicado no servidor. */
+export const dadosCompletos = () => {
+  const out = {};
+  ['vendas', 'artigos', 'cargas', 'clientes', 'cad'].forEach((k) => {
+    out[k] = DB[k] === VISTA[k] && k in DADOS_COMPLETOS ? DADOS_COMPLETOS[k] : DB[k];
+  });
+  return out;
+};
 export function prepararDados(pagina) {
   ['vendas', 'artigos', 'cargas', 'clientes', 'cad'].forEach((k) => {
     if (DB[k] !== VISTA[k]) DADOS_COMPLETOS[k] = DB[k];

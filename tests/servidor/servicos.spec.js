@@ -111,6 +111,25 @@ test('plano de cargas: reenviar e email de teste', async () => {
   expect(nada.status()).toBe(400);
 });
 
+test('sincronização dos smartphones: só leitura, âmbito pela matriz e indicação quando não há base de dados', async () => {
+  const fin = (await entrar('fin')).ctx;
+  expect((await fin.get('/reports/data/sincronizacao.php')).status()).toBe(403);
+  const r = await (await entrar('log')).ctx.get('/reports/data/sincronizacao.php');
+  expect(r.headers()['content-type']).toContain('application/json');
+  const d = await r.json();
+  if (d.disponivel) expect(Array.isArray(d.rotas)).toBe(true);
+  else expect(d.erro).toBeTruthy();
+});
+
+test('activar a gestão de contas: recusada quando a lista nova já existe', async () => {
+  const sadm = (await entrar('sadm')).ctx,
+    c = await csrf(sadm);
+  const vista = await (await sadm.get('/reports/data/gestao.php')).json();
+  expect(vista).toMatchObject({ pode_activar: false, compatibilidade: false, pode_gerir: true });
+  const r = await sadm.post('/reports/data/gestao.php', { data: { accao: 'activar_gestao', csrf: c, contas: {}, aprovado_por: ['A', 'B'] } });
+  expect(r.status()).toBe(403);
+});
+
 test('sair termina a sessão', async () => {
   const fin = (await entrar('fin')).ctx;
   await fin.get('/geo/auth/logout.php', { maxRedirects: 0 });

@@ -289,63 +289,80 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
   return c;
 }
 // Gráfico de barras agrupadas em SVG: categorias × séries, linha de meta opcional, valor por cima da última série
-export function barras({ cats, series, meta, metaTxt, altura = 220, rot = 0 }) {
-  const W = Math.max(320, cats.length * (series.length * 14 + 22)),
-    H = altura,
-    L = 34,
-    B = rot ? 46 : 26,
-    T = 18,
-    R = 8;
-  const max = Math.max(meta || 0, ...series.flatMap((s) => s.vals)) * 1.12 || 1;
-  const passo = (W - L - R) / cats.length,
-    bw = Math.min(18, (passo - 8) / series.length);
-  const y = (v) => T + (H - T - B) * (1 - v / max),
-    ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('class', 'gsvg');
-  svg.setAttribute('role', 'img');
-  const mk = (tag, at, txt) => {
-    const e = document.createElementNS(ns, tag);
-    Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v));
-    if (txt != null) e.textContent = txt;
-    svg.append(e);
-    return e;
-  };
-  const nice = max > 120 ? 50 : max > 40 ? 10 : 5;
-  for (let g = 0; g <= max; g += nice) {
-    mk('line', { x1: L, x2: W - R, y1: y(g), y2: y(g), class: 'g-grid' });
-    mk('text', { x: L - 6, y: y(g) + 4, class: 'g-ax', 'text-anchor': 'end' }, n0(g));
-  }
-  cats.forEach((c, i) => {
-    const x0 = L + passo * i + (passo - bw * series.length) / 2;
-    series.forEach((s, j) => {
-      const v = s.vals[i] || 0,
-        h = Math.max(v ? 2 : 0, H - B - y(v)),
-        cls = typeof s.cls === 'function' ? s.cls(v, i) : s.cls;
-      const r = mk('rect', { x: x0 + j * bw + 1, y: H - B - h, width: Math.max(2, bw - 2), height: h, rx: 3, class: cls });
-      const tt = document.createElementNS(ns, 'title');
-      tt.textContent = `${c.titulo || c.txt} · ${s.nome}: ${n0(v)}`;
-      r.append(tt);
-      if (j === series.length - 1 && cats.length <= 31)
-        mk('text', { x: x0 + j * bw + bw / 2, y: H - B - h - 4, class: 'g-val', 'text-anchor': 'middle' }, n0(v));
-    });
-    const tx = L + passo * i + passo / 2;
-    if (!rot || i % Math.ceil(cats.length / 12) === 0 || i === cats.length - 1)
-      mk(
-        'text',
-        rot
-          ? { x: tx, y: H - B + 14, class: 'g-ax', 'text-anchor': 'end', transform: `rotate(-35 ${tx} ${H - B + 14})` }
-          : { x: tx, y: H - 8, class: 'g-ax', 'text-anchor': 'middle' },
-        c.txt,
-      );
-  });
-  if (meta) {
-    mk('line', { x1: L, x2: W - R, y1: y(meta), y2: y(meta), class: 'g-meta' });
-    mk('text', { x: W - R, y: y(meta) - 5, class: 'g-ax', 'text-anchor': 'end' }, metaTxt || t('Meta {m}', { m: n0(meta) }));
-  }
+// Colunas agrupadas (período e período anterior) com linha de meta. Desenhado ao tamanho real do quadro
+// (sem ampliar o texto): eixo a começar em zero, colunas de largura limitada e centradas, meta como linha
+// tracejada com o rótulo à direita, valores só na série principal.
+export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0 }) {
   const w = el('div', 'gwrap');
-  w.append(svg);
+  const desenhar = (largura) => {
+    const Lw = Math.max(cats.length * (series.length * 12 + 14) + 50, Math.floor(largura || 640)),
+      H = altura,
+      L = 40,
+      B = rot ? 46 : 28,
+      T = 22,
+      Rm = 12;
+    const W = Lw;
+    const max = Math.max(meta || 0, ...series.flatMap((x) => x.vals)) * 1.15 || 1;
+    const passo = (W - L - Rm) / Math.max(1, cats.length),
+      bw = Math.min(28, Math.max(6, (passo * 0.7) / series.length));
+    const y = (v) => T + (H - T - B) * (1 - v / max),
+      ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('width', W);
+    svg.setAttribute('height', H);
+    svg.setAttribute('class', 'gsvg');
+    svg.setAttribute('role', 'img');
+    const mk = (tag, at, txt) => {
+      const e = document.createElementNS(ns, tag);
+      Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v));
+      if (txt != null) e.textContent = txt;
+      svg.append(e);
+      return e;
+    };
+    // Grelha com 4 a 5 linhas em números redondos
+    const bruto = max / 4,
+      mag = Math.pow(10, Math.floor(Math.log10(bruto || 1))),
+      nice = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((m) => m >= bruto) || mag;
+    for (let g = 0; g <= max; g += nice) {
+      mk('line', { x1: L, x2: W - Rm, y1: y(g), y2: y(g), class: 'g-grid' });
+      mk('text', { x: L - 8, y: y(g) + 4, class: 'g-ax', 'text-anchor': 'end' }, n0(g));
+    }
+    cats.forEach((c, i) => {
+      const x0 = L + passo * i + (passo - bw * series.length) / 2;
+      series.forEach((sr, j) => {
+        const v = sr.vals[i] || 0,
+          h = Math.max(v ? 2 : 0, H - B - y(v)),
+          cls = typeof sr.cls === 'function' ? sr.cls(v, i) : sr.cls;
+        const r = mk('rect', { x: x0 + j * bw + 1, y: H - B - h, width: Math.max(2, bw - 2), height: h, rx: 3, class: cls });
+        const tt = document.createElementNS(ns, 'title');
+        tt.textContent = `${c.titulo || c.txt} · ${sr.nome}: ${n0(v)}`;
+        r.append(tt);
+        if (j === series.length - 1 && cats.length <= 31 && v)
+          mk('text', { x: x0 + j * bw + bw / 2, y: H - B - h - 5, class: 'g-val', 'text-anchor': 'middle' }, n0(v));
+      });
+      const tx = L + passo * i + passo / 2;
+      if (!rot || i % Math.ceil(cats.length / 12) === 0 || i === cats.length - 1)
+        mk(
+          'text',
+          rot
+            ? { x: tx, y: H - B + 14, class: 'g-ax', 'text-anchor': 'end', transform: `rotate(-35 ${tx} ${H - B + 14})` }
+            : { x: tx, y: H - 9, class: 'g-ax', 'text-anchor': 'middle' },
+          c.txt,
+        );
+    });
+    mk('line', { x1: L, x2: W - Rm, y1: H - B, y2: H - B, class: 'g-base' });
+    if (meta) {
+      mk('line', { x1: L, x2: W - Rm, y1: y(meta), y2: y(meta), class: 'g-meta' });
+      mk('text', { x: W - Rm, y: y(meta) - 6, class: 'g-ax g-meta-t', 'text-anchor': 'end' }, metaTxt || t('Meta {m}', { m: n0(meta) }));
+    }
+    w.replaceChildren(svg);
+  };
+  desenhar(640);
+  // Volta a desenhar com a largura real do quadro (e ao mudar o tamanho da janela)
+  FITS.push(() => {
+    if (w.isConnected && Math.abs(w.clientWidth - +(w.firstChild && w.firstChild.getAttribute('width'))) > 4) desenhar(w.clientWidth);
+  });
   return w;
 }
 export const legenda = (itens) => {

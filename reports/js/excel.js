@@ -1,13 +1,13 @@
 // Exportação para Excel (página ou relatório completo), com registo da exportação no servidor.
 import { FITS, REG, definirFits, definirReg, download, fname, numType, rawVal } from './componentes/blocos.js';
-import { descreverFiltros, prepararDados } from './filtros.js';
+import { dadosCompletos, descreverFiltros, prepararDados } from './filtros.js';
 import { dl } from './formatos.js';
 import { t } from './i18n/i18n.js';
 import { R } from './paginas/registo.js';
 import { SESSAO, atual, podeExportar } from './perfil.js';
-import { hoje, st } from './periodo.js';
+import { hoje, inR, st } from './periodo.js';
 import { carregarScript } from './servidor.js';
-import { $, sum, toast } from './util.js';
+import { $, DB, sum, toast } from './util.js';
 
 export const carregarExcelJS = () => carregarScript('exceljs.min.js', 'ExcelJS');
 const NAVY = 'FF1E3A8A',
@@ -100,6 +100,15 @@ async function gerarExcel(paginas, nomeFicheiro) {
       ['Período', periodo],
       ['Filtros', descreverFiltros(paginas.length === 1 ? atual : '*') || t('Sem filtros')],
       ['Gerado em', dl(hoje()) + ' ' + new Date().toTimeString().slice(0, 5)],
+      ['Gerado por', SESSAO ? SESSAO.nome + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
+      ...(paginas.length > 1
+        ? [
+            [
+              'Conteúdo',
+              t('Resumo dos indicadores, relatórios de todas as páginas e dados de base do período (sem os filtros das páginas), com dicionário de dados.'),
+            ],
+          ]
+        : []),
       ['Nota', t('Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.')],
       ['', t('Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.')],
     ].forEach(([k, v], i) => {
@@ -110,7 +119,7 @@ async function gerarExcel(paginas, nomeFicheiro) {
       capa.getCell('C' + r).font = F();
       capa.mergeCells(`C${r}:D${r}`);
     });
-    const r0 = 10;
+    const r0 = paginas.length > 1 ? 13 : 11;
     capa.getCell('B' + r0).value = t('Índice');
     capa.getCell('B' + r0).font = F({ size: 13, bold: true, color: { argb: NAVY2 } });
     const hdr = capa.getRow(r0 + 1);
@@ -241,6 +250,8 @@ async function gerarExcel(paginas, nomeFicheiro) {
         linhaIndice(t(pg.grupo || 'Início'), t(pg.pagina), ws.name, rows.length);
       }),
     );
+    // Exportação completa: dados de base em tabelas do Excel e dicionário de dados
+    if (paginas.length > 1) acrescentarDados(wb, F, usados, capa, linhaIndice);
     const buf = await wb.xlsx.writeBuffer();
     download(
       paginas.length > 1 ? nomeConsolidado() : fname(nomeFicheiro, 'xlsx'),
@@ -275,4 +286,216 @@ export function recolher(id) {
   definirReg(guarda);
   definirFits(gf);
   return out;
+}
+
+// ---- Dados de base (exportação completa) ----
+// Boas práticas de exportação de dados: uma tabela por folha, cabeçalho numa só linha, sem células unidas,
+// tipos reais (datas como datas, valores como números), tabelas do Excel com nome e filtros, painéis
+// fixos e um dicionário de dados com a descrição de cada coluna.
+const TIPO_FMT = { data: FMT.date, kz: '#,##0.00', n: '#,##0', q: '#,##0.##' };
+function conjuntosDados() {
+  const D = dadosCompletos();
+  const vendas = D.vendas || [],
+    artigos = D.artigos || [];
+  const verNif = vendas.some((v) => v.nif) || (D.clientes || []).some((c) => c.nif);
+  const nif = verNif ? [['nif', 'NIF', 'texto', 'Número de identificação fiscal do cliente']] : [];
+  const sets = [
+    {
+      folha: 'Dados · Documentos',
+      tabela: 'Documentos',
+      desc: 'Documentos de venda do período (um por linha)',
+      cols: [
+        ['data', 'Data', 'data', 'Data do documento'],
+        ['hora', 'Hora', 'texto', 'Hora do documento'],
+        ['rota', 'Rota', 'texto', 'Código da rota (loja no Pinguim BO)'],
+        ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
+        ['tipo', 'Tipo de documento', 'texto', 'Factura-recibo ou factura'],
+        ['documento', 'Documento', 'texto', 'Número do documento'],
+        ['cliente_codigo', 'Código do cliente', 'texto', 'Código do cliente no Pinguim BO'],
+        ['cliente', 'Cliente', 'texto', 'Nome do cliente'],
+        ...nif,
+        ['total', 'Total (Kz)', 'kz', 'Valor do documento com IVA'],
+        ['valor_pago', 'Valor cobrado (Kz)', 'kz', 'Valor recebido no documento, já sem o troco'],
+        ['por_receber', 'Por receber (Kz)', 'kz', 'Total menos o valor cobrado'],
+        ['liquidado', 'Liquidado', 'texto', 'Sim se o documento está totalmente pago'],
+        ['meio_pagamento', 'Meios de cobrança', 'texto', 'Meios usados no documento'],
+      ],
+      rows: vendas.map((v) => ({ ...v, por_receber: Math.max(0, (+v.total || 0) - (+v.valor_pago || 0)), liquidado: t(v.liquidado ? 'Sim' : 'Não') })),
+    },
+    {
+      folha: 'Dados · Cobranças',
+      tabela: 'Cobrancas',
+      desc: 'Valores cobrados por documento e meio de cobrança',
+      cols: [
+        ['data', 'Data', 'data', 'Data do documento'],
+        ['rota', 'Rota', 'texto', 'Código da rota'],
+        ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
+        ['documento', 'Documento', 'texto', 'Número do documento'],
+        ['codigo', 'Código do meio', 'texto', 'Código do meio de cobrança no Pinguim BO'],
+        ['meio', 'Meio de cobrança', 'texto', 'Numerário, Multicaixa, transferência, …'],
+        ['valor', 'Valor (Kz)', 'kz', 'Valor cobrado por este meio'],
+      ],
+      rows: vendas.flatMap((v) => (v.pagamentos || []).map((p) => ({ data: v.data, rota: v.rota, promotor: v.promotor, documento: v.documento, ...p }))),
+    },
+    {
+      folha: 'Dados · Linhas de artigos',
+      tabela: 'LinhasArtigos',
+      desc: 'Linhas de artigo de cada documento de venda',
+      cols: [
+        ['data', 'Data', 'data', 'Data do documento'],
+        ['rota', 'Rota', 'texto', 'Código da rota'],
+        ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
+        ['documento', 'Documento', 'texto', 'Número do documento'],
+        ['codigo', 'Código do artigo', 'texto', 'Código do artigo'],
+        ['artigo', 'Artigo', 'texto', 'Descrição do artigo'],
+        ['unidade', 'Unidade', 'texto', 'Unidade de venda'],
+        ['quantidade', 'Quantidade', 'q', 'Quantidade vendida'],
+        ['preco_unitario', 'Preço unitário (Kz)', 'kz', 'Preço unitário sem IVA'],
+        ['valor_sem_iva', 'Valor sem IVA (Kz)', 'kz', 'Valor líquido da linha'],
+        ['desconto', 'Desconto (Kz)', 'kz', 'Desconto da linha'],
+        ['iva', 'IVA (Kz)', 'kz', 'Imposto da linha'],
+        ['total', 'Total (Kz)', 'kz', 'Valor da linha com IVA'],
+      ],
+      rows: artigos,
+    },
+    {
+      folha: 'Dados · Carteira',
+      tabela: 'Carteira',
+      desc: 'Carteira de clientes por rota e dia de visita',
+      cols: [
+        ['rota', 'Rota', 'texto', 'Código da rota'],
+        ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
+        ['codigo', 'Código do cliente', 'texto', 'Código do cliente'],
+        ['nome', 'Cliente', 'texto', 'Nome do cliente'],
+        ...nif,
+        ['tipo', 'Tipo de cliente', 'texto', 'Tipo de cliente'],
+        ['dia', 'Dia de visita', 'texto', 'Dia da semana da visita'],
+        ['estado', 'Estado', 'texto', 'Estado do cliente'],
+        ['gps', 'Com GPS', 'texto', 'Sim se o cliente tem coordenadas'],
+      ],
+      rows: (D.clientes || []).map((c) => ({ ...c, gps: c.tem_gps == null ? '' : t(c.tem_gps ? 'Sim' : 'Não') })),
+    },
+    {
+      folha: 'Dados · Plano de cargas',
+      tabela: 'PlanoCargas',
+      desc: 'Carga de cada carrinha por dia (plano de cargas da plataforma)',
+      cols: [
+        ['data', 'Data', 'data', 'Dia do plano'],
+        ['rota', 'Rota', 'texto', 'Código da rota'],
+        ['promotor', 'Promotor', 'texto', 'Promotor / vendedor'],
+        ['motorista', 'Motorista', 'texto', 'Motorista'],
+        ['matricula', 'Matrícula', 'texto', 'Matrícula da viatura'],
+        ['viatura', 'Viatura', 'texto', 'Modelo da viatura'],
+        ['transportadora', 'Transportadora', 'texto', 'Transportadora'],
+        ['zonas', 'Zonas', 'texto', 'Zonas de descarga'],
+        ['carga_fraldas', 'Fraldas (cx)', 'n', 'Caixas de fraldas'],
+        ['carga_sabao', 'Sabão (cx)', 'n', 'Caixas de sabão'],
+        ['carga_sabonete', 'Sabonete (cx)', 'n', 'Caixas de sabonete'],
+        ['carga', 'Total (cx)', 'n', 'Total de caixas carregadas'],
+      ],
+      rows: (D.cargas || []).filter((c) => inR(c.data)),
+    },
+  ];
+  // Cadastros: colunas como vêm do repositório rtm-clientes
+  const cad = (D.cad && D.cad.cadastros) || [];
+  if (cad.length) {
+    const ks = Object.keys(cad[0]).filter((k) => typeof cad[0][k] !== 'object' && k !== 'chave');
+    sets.push({
+      folha: 'Dados · Cadastros',
+      tabela: 'Cadastros',
+      desc: 'Cadastros de clientes RTM',
+      cols: ks.map((k) => [
+        k,
+        k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '),
+        /^data/.test(k) ? 'data' : typeof cad[0][k] === 'number' ? 'n' : 'texto',
+        '',
+      ]),
+      rows: cad,
+    });
+  }
+  // Stock (quando o portal o tem): linhas de carrinhas e de armazéns
+  const S = DB.stock;
+  if (S && (Array.isArray(S.linhas_carrinhas) || Array.isArray(S.linhas_armazens))) {
+    sets.push({
+      folha: 'Dados · Stock',
+      tabela: 'Stock',
+      desc: 'Posição de stock por carrinha e armazém (só quantidades diferentes de zero)',
+      cols: [
+        ['data', 'Data', 'data', 'Data da posição de stock'],
+        ['local', 'Carrinha / armazém', 'texto', 'Carrinha (rota) ou armazém central'],
+        ['rota', 'Rota', 'texto', 'Rota da carrinha'],
+        ['codigo', 'Código do artigo', 'texto', 'Código do artigo'],
+        ['artigo', 'Artigo', 'texto', 'Descrição do artigo'],
+        ['quantidade', 'Quantidade', 'q', 'Quantidade em stock'],
+      ],
+      rows: [
+        ...(S.linhas_carrinhas || []).map((l) => ({ ...l, local: l.carrinha || l.armazem, artigo: l.artigo || l.produto })),
+        ...(S.linhas_armazens || []).map((l) => ({ ...l, local: l.armazem, artigo: l.artigo || l.produto })),
+      ].filter((l) => +l.quantidade),
+    });
+  }
+  // Rotas
+  sets.push({
+    folha: 'Dados · Rotas',
+    tabela: 'Rotas',
+    desc: 'Rotas e promotores',
+    cols: [
+      ['rota', 'Rota', 'texto', 'Código da rota'],
+      ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
+    ],
+    rows: DB.rotas || [],
+  });
+  return sets;
+}
+function acrescentarDados(wb, F, usados, capa, linhaIndice) {
+  const dic = [];
+  conjuntosDados().forEach((ds) => {
+    if (!ds.rows.length) return;
+    const ws = wb.addWorksheet(nomeFolha(t(ds.folha), usados), { views: [{ state: 'frozen', ySplit: 3, showGridLines: true }] });
+    ws.getCell('A1').value = t(ds.desc) + ' · ' + t('Período') + ': ' + dl(st.de) + ' – ' + dl(st.ate);
+    ws.getCell('A1').font = F({ size: 12, bold: true, color: { argb: NAVY2 } });
+    const back = ws.getCell('A2');
+    back.value = { text: '← ' + t('Voltar ao índice'), hyperlink: `#'${capa.name}'!A1` };
+    back.font = F({ size: 9, color: { argb: 'FF2A6FE0' }, underline: true });
+    const valor = (c, r) => {
+      const v = r[c[0]];
+      if (v == null || v === '') return null;
+      if (c[2] === 'data') return toDate(String(v).slice(0, 10));
+      if (c[2] !== 'texto') return isNaN(+v) ? null : +v;
+      return String(v);
+    };
+    ws.addTable({
+      name: 'tbl' + ds.tabela,
+      ref: 'A3',
+      headerRow: true,
+      style: { theme: 'TableStyleMedium2', showRowStripes: true },
+      columns: ds.cols.map((c) => ({ name: t(c[1]), filterButton: true })),
+      rows: ds.rows.map((r) => ds.cols.map((c) => valor(c, r))),
+    });
+    ds.cols.forEach((c, i) => {
+      const col = ws.getColumn(i + 1);
+      if (TIPO_FMT[c[2]]) col.numFmt = TIPO_FMT[c[2]];
+      const lens = [String(t(c[1])).length + 4, ...ds.rows.slice(0, 300).map((r) => (c[2] === 'texto' ? String(r[c[0]] ?? '').length : 14))];
+      col.width = Math.min(48, Math.max(10, Math.max(...lens) + 2));
+      dic.push([ws.name, t(c[1]), { texto: 'Texto', data: 'Data', kz: 'Valor (Kz)', n: 'Número', q: 'Quantidade' }[c[2]], t(c[3] || '')]);
+    });
+    ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '3:3' };
+    linhaIndice(t('Dados de base'), t(ds.desc), ws.name, ds.rows.length);
+  });
+  // Dicionário de dados
+  const wd = wb.addWorksheet(nomeFolha(t('Dicionário de dados'), usados), { views: [{ state: 'frozen', ySplit: 3 }] });
+  wd.getCell('A1').value = t('Dicionário de dados');
+  wd.getCell('A1').font = F({ size: 12, bold: true, color: { argb: NAVY2 } });
+  wd.addTable({
+    name: 'tblDicionario',
+    ref: 'A3',
+    headerRow: true,
+    style: { theme: 'TableStyleLight9', showRowStripes: true },
+    columns: [t('Folha'), t('Coluna'), t('Tipo'), t('Descrição')].map((n) => ({ name: n, filterButton: true })),
+    rows: dic.map((d) => [d[0], d[1], t(d[2]), d[3]]),
+  });
+  [30, 28, 14, 70].forEach((w, i) => {
+    wd.getColumn(i + 1).width = w;
+  });
+  linhaIndice(t('Dados de base'), t('Dicionário de dados'), wd.name, dic.length);
 }

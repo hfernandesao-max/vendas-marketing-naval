@@ -118,7 +118,9 @@ As contas ficam em `dados-privados/utilizadores.json` e as alterações à matri
 ### Instalação no servidor (uma vez)
 
 1. Criar a pasta privada **fora** de `htdocs`, por exemplo `C:\Apache24\dados-privados` (é o valor por omissão: `../dados-privados` a partir do site). Para outro sítio, definir `DADOS_PRIVADOS=` no `.env`.
-2. Passar as contas antigas para a lista nova:
+2. **Pelo portal (recomendado):** entrar com a conta `admin`, abrir **Administração › Acessos** e carregar em **Activar a gestão**. Indica-se o email, o perfil e as rotas de cada conta antiga e as duas pessoas da Administração que aprovaram; a conta `admin` fica super administrador e as palavras-passe mantêm-se. Faz-se uma só vez; depois, passa-se directamente ao passo 4.
+
+   Em alternativa, pela linha de comandos — passar as contas antigas para a lista nova:
    `php ferramentas\utilizadores.php importar-antigo`
    A partir daqui, cada conta antiga só volta a entrar depois de ter email associado (passo 4). Convém fazer os passos 2 a 4 seguidos.
 3. Criar o primeiro super administrador e activá-lo:

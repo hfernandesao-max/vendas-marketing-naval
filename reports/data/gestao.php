@@ -15,13 +15,16 @@ if (!naval_e_post()) naval_json(naval_gestao_vista());
 $p = naval_pedido();
 $accao = (string) ($p['accao'] ?? '');
 $eu = (array) naval_utilizador();
-naval_gestao_autorizar($eu, $accao);
+if ($accao !== 'activar_gestao') naval_gestao_autorizar($eu, $accao);
+elseif (!naval_gestao_pode_activar($eu)) throw new NavalErro('A gestão de contas já está activa ou esta conta não a pode activar.', 403);
 naval_exigir_csrf($p);
 $pedirConfirmacao = naval_gestao_confirmar($eu, $accao, (string) ($p['confirmacao'] ?? ''));
 if ($pedirConfirmacao) naval_json($pedirConfirmacao);
 
 $login = trim((string) ($p['conta'] ?? ''));
 switch ($accao) {
+    case 'activar_gestao':
+        naval_json(['ok' => true] + naval_gestao_activar($p, $eu));
     case 'desbloquear':
         naval_json(['ok' => naval_desbloquear($login, $eu['login'])]);
     case 'guardar_conta':

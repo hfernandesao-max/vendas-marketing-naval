@@ -25,8 +25,55 @@ function naval_gestao_autorizar(array $eu, string $accao): void
         throw new NavalErro('Só o super administrador pode alterar contas e acessos.', 403);
     }
     if (!empty($eu['compatibilidade'])) {
-        throw new NavalErro('As contas vêm ainda da lista antiga. Crie primeiro a lista nova no servidor (ferramentas/utilizadores.php importar-antigo).');
+        throw new NavalErro('As contas vêm ainda da lista antiga. Active primeiro a gestão de contas no portal (Acessos › Activar a gestão de contas).');
     }
+}
+
+/** Pode activar a gestão: contas ainda na lista antiga e conta de administração (TI ou SADM). */
+function naval_gestao_pode_activar(?array $eu): bool
+{
+    return $eu && !empty($eu['compatibilidade']) && in_array($eu['perfil'] ?? '', ['TI', 'SADM'], true) && !is_file(naval_ficheiro_utilizadores());
+}
+
+/**
+ * Activação da gestão de contas no portal (uma só vez): passa as contas da lista antiga para a lista
+ * nova, com email (obrigatório e único), perfil e rotas de cada uma. Quem activa fica super
+ * administrador, com duas aprovações (controlo dual). As palavras-passe actuais mantêm-se.
+ */
+function naval_gestao_activar(array $p, array $eu): array
+{
+    $accao = 'activar_gestao';
+    if (!naval_gestao_pode_activar($eu)) naval_gestao_recusar('A gestão de contas já está activa ou esta conta não a pode activar.', $accao);
+    $antigas = naval_utilizadores();
+    $pedidas = is_array($p['contas'] ?? null) ? $p['contas'] : [];
+    $aprov = naval_gestao_aprovacoes($p['aprovado_por'] ?? []);
+    if (count($aprov) < 2) naval_gestao_recusar('Indique as duas pessoas da Administração que aprovaram (controlo dual do super administrador).', $accao);
+    $nova = [];
+    $emails = [];
+    foreach ($antigas as $login => $u) {
+        $x = is_array($pedidas[$login] ?? null) ? $pedidas[$login] : [];
+        $activo = $login === $eu['login'] ? true : !empty($x['activo']);
+        $email = trim((string) ($x['email'] ?? ''));
+        $perfil = $login === $eu['login'] ? 'SADM' : strtoupper(trim((string) ($x['perfil'] ?? $u['perfil'])));
+        $rotas = naval_gestao_aprovacoes($x['rotas'] ?? []);
+        if (!isset(naval_perfis()[$perfil])) naval_gestao_recusar('Perfil inválido na conta ' . $login . '.', $accao);
+        if ($activo || $email !== '') {
+            if (!naval_email_valido($email)) naval_gestao_recusar('Indique um email válido para a conta ' . $login . ' (ou desactive-a).', $accao);
+            $k = strtolower($email);
+            if (isset($emails[$k])) naval_gestao_recusar('O email ' . $email . ' está repetido nas contas ' . $emails[$k] . ' e ' . $login . '.', $accao);
+            $emails[$k] = $login;
+        }
+        if ($activo && in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) naval_gestao_recusar('A conta ' . $login . ' tem um perfil por rota: indique pelo menos uma rota.', $accao);
+        $nova[$login] = [
+            'nome' => $u['nome'] ?? $login, 'email' => $email, 'senha' => $u['senha'] ?? '', 'perfil' => $perfil,
+            'rotas' => in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [], 'activo' => $activo,
+            'criado' => date('Y-m-d'), 'criado_por' => $eu['login'],
+        ];
+    }
+    if (!isset($nova[$eu['login']])) naval_gestao_recusar('Conta não encontrada.', $accao);
+    naval_gravar_utilizadores($nova);
+    naval_registar('gestao_activada', ['contas' => array_keys($nova), 'super_administrador' => $eu['login'], 'aprovado_por' => $aprov]);
+    return ['contas' => count($nova), 'dois_passos_obrigatorio' => true];
 }
 
 /**
@@ -231,11 +278,13 @@ function naval_gestao_vista(): array
         'niveis' => $niveis,
         'por_rota' => naval_perfis_por_rota(),
         'perfis_dois_passos' => naval_perfis_mfa(),
-        'rotas' => $gerir ? naval_rotas_portal() : [],
+        'rotas' => $gerir || naval_gestao_pode_activar($eu) ? naval_rotas_portal() : [],
         'utilizadores' => $us,
         'registos' => naval_pode('registos') ? naval_ler_registos(300) : [],
         'pode_desbloquear' => naval_perfil() === 'SADM',
         'pode_gerir' => $gerir,
+        'pode_activar' => naval_gestao_pode_activar($eu),
+        'compatibilidade' => !empty($eu['compatibilidade']) || !is_file(naval_ficheiro_utilizadores()),
         'eu' => $eu['login'] ?? '',
         'confirmado' => (int) ($_SESSION['reforco_ate'] ?? 0) >= time(),
     ];

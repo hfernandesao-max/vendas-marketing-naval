@@ -50,6 +50,7 @@ const NAVAL_MATRIZ_TXT = [
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
+    'sincronizacao'        => 'V  V  V  Vr -  -  V  V  -  V',
     'excel-completo'       => '-  E  E  -  -  E  -  -  -  E',
     'nif'                  => 'V  -  V  V  V  V  V  -  -  V',
     // GEO

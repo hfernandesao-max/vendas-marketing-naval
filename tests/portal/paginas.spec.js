@@ -39,7 +39,7 @@ for (const [w, h] of ECRAS) {
             fora = [];
           document.querySelectorAll('body *').forEach((e) => {
             const b = e.getBoundingClientRect();
-            if (b.width && b.right > W + 1 && !e.closest('.tw, .rel-tabs, #side, .fb-pop') && getComputedStyle(e).position !== 'fixed')
+            if (b.width && b.right > W + 1 && !e.closest('.tw, .gwrap, .hm-wrap, .rel-tabs, #side, .fb-pop') && getComputedStyle(e).position !== 'fixed')
               fora.push(e.className || e.tagName);
           });
           const desalinhados = [],
