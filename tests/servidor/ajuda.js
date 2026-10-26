@@ -1,0 +1,27 @@
+// Funções comuns aos testes do servidor: entrar com uma conta de teste e chamar os serviços.
+import { request } from '@playwright/test';
+
+export const BASE = 'http://127.0.0.1:8810';
+export const SENHA = 'Teste-12345!';
+export const DIA = 'start_date=20261024&end_date=20261024';
+
+/** Entra com uma conta e devolve o contexto (com a sessão) e a resposta da entrada. */
+export async function entrar(login, senha = SENHA) {
+  const ctx = await request.newContext({ baseURL: BASE });
+  const resposta = await ctx.post('/geo/login.php', { form: { usuario: login, senha, redirect: '../reports/' }, maxRedirects: 0 });
+  return { ctx, resposta };
+}
+
+/** Código anti-falsificação da sessão (necessário nos pedidos de alteração). */
+export async function csrf(ctx) {
+  return (await (await ctx.get('/reports/data/sessao.php')).json()).csrf;
+}
+
+/** Texto da mensagem de erro mostrada na página de entrada. */
+export async function erroEntrada(resposta) {
+  const html = await resposta.text();
+  const m = html.match(/class="error-alert">[\s\S]*?<span>([^<]*)<\/span>/);
+  return m ? m[1].trim() : '';
+}
+
+export const vendasDoDia = async (ctx) => (await ctx.get(`/reports/data/api.php?${DIA}&include_items=1`)).json();

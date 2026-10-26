@@ -89,7 +89,7 @@ function naval_env(): array
     static $env = null;
     if ($env !== null) return $env;
     $env = [];
-    $f = dirname(__DIR__, 2) . '/.env';
+    $f = getenv('NAVAL_ENV') ?: dirname(__DIR__, 2) . '/.env';   // NAVAL_ENV: outro .env (testes automáticos)
     if (is_file($f)) {
         foreach (file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $l) {
             $l = trim($l);

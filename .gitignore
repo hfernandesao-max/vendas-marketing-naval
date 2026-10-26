@@ -11,3 +11,7 @@ dados-privados/
 
 # Modelos usados pelo portal (ex.: ficheiro de importação do SAP)
 !reports/modelos/*.xlsx
+node_modules/
+test-results/
+playwright-report/
+tests/servidor/ambiente/

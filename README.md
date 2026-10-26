@@ -176,3 +176,19 @@ O ficheiro é gerado **a partir do próprio modelo** (`reports/modelos/RTM_Sales
 - **Correspondência com o SAP**, na mesma página: Loja, SAP location e empregado de vendas de cada rota. Por omissão, `<rota> - FHR PIV` e `FHR PIV - ROTA <rota> - <promotor>`, como no exemplo do modelo. A SAP location tem de ser indicada para cada rota (o exemplo só traz a 1011 = RTM2).
 - **Lotes:** cada ficheiro gerado fica numerado, guardado e pode ser descarregado outra vez. Fica registado quem o gerou, quando, o período e os documentos.
 - **Acessos:** Financeiro (FIN) e Back-office (BO) geram; TI e Auditoria vêem e descarregam os lotes. Ficheiros em `dados-privados/sap/`.
+
+## Desenvolvimento: testes e normas de código
+
+Ferramentas só de desenvolvimento (não são precisas no servidor). Requer Node 22, PHP 8.1+ e Python 3.
+
+```bash
+npm ci                          # dependências de desenvolvimento
+npx playwright install chromium # navegador dos testes (uma vez)
+npm test                        # todos os testes (portal e servidor)
+npm run lint                    # normas de código (ESLint)
+npm run format:check            # formatação (Prettier)
+```
+
+- `tests/portal/` — o portal no navegador, com a API do Pinguim BO simulada: todas as páginas em quatro tamanhos de ecrã (sem erros, nada fora do ecrã, quadros alinhados), barra de filtros, relatórios, painel de gráficos, ficheiro SAP igual ao modelo e importação do plano de cargas.
+- `tests/servidor/` — os serviços PHP com contas de cada perfil e um Pinguim BO de teste: entrada, bloqueio e desbloqueio, âmbito por rota, NIF, gestão de contas, plano de cargas, ficheiro SAP e modo de estrutura. O ambiente de teste é criado por `tests/servidor/preparar.php` e usa um `.env` próprio (variável `NAVAL_ENV`); nada toca nos dados reais.
+- No GitHub, `.github/workflows/testes.yml` corre a verificação de sintaxe do PHP, as normas e todos os testes a cada alteração.

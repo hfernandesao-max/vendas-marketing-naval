@@ -81,7 +81,7 @@ if (!function_exists('simplexml_load_string')) {
 }
 
 // ── Credenciais do .env ──
-$envFile = __DIR__ . '/../../.env';
+$envFile = getenv('NAVAL_ENV') ?: __DIR__ . '/../../.env';
 $env = [];
 if (is_file($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {

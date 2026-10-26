@@ -1,0 +1,55 @@
+# Testes automáticos a cada alteração enviada para o GitHub (e em cada pedido de integração).
+# Verifica a sintaxe de todo o PHP, as normas de código e corre os testes do portal e do servidor.
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependências de desenvolvimento
+        run: npm ci
+
+      - name: Sintaxe do PHP
+        run: find . -name '*.php' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Normas de código
+        run: npm run lint && npm run format:check
+
+      - name: Navegador dos testes
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes do portal e do servidor
+        run: npm test
+
+      - name: Relatório dos testes (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-testes
+          path: playwright-report/
+          retention-days: 14

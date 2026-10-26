@@ -20,7 +20,7 @@ if (is_file($authFile)) {
 }
 
 $env = [];
-$envFile = __DIR__ . '/../../.env';
+$envFile = getenv('NAVAL_ENV') ?: __DIR__ . '/../../.env';
 if (is_file($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         $line = trim($line);
