@@ -8,3 +8,6 @@ reports/data/cadastros.json
 
 # Dados privados (utilizadores, registos, bloqueios) nunca vão para o GitHub
 dados-privados/
+
+# Modelos usados pelo portal (ex.: ficheiro de importação do SAP)
+!reports/modelos/*.xlsx
