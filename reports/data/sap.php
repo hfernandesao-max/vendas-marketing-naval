@@ -55,6 +55,12 @@ $CONFIG_OMISSAO = ['prefixo' => 'FHR PIV', 'moeda' => 'AOA', 'unidade' => 'CAR',
 $podeGerar = naval_pode_exportar('sap-exportar');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (isset($_GET['modelo'])) {
+        // Modelo original do SAP: o portal escreve os dados por cima, mantendo formatação, tema e larguras
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        readfile(__DIR__ . '/../modelos/RTM_Sales_SAP_Upload_Format.xlsx');
+        exit;
+    }
     if (isset($_GET['xlsx'])) {
         $n = (int) $_GET['xlsx'];
         $f = sap_pasta() . '/lote-' . $n . '.xlsx';

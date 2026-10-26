@@ -154,6 +154,8 @@ Enquanto o email não estiver configurado, o plano publica-se na mesma e o botã
 
 Gera, sempre que for preciso, o Excel no modelo **RTM_Sales_SAP_Upload_Format** (folha «Upload Format», cabeçalho em português na linha 1 e nomes técnicos na linha 2), a partir das vendas do Pinguim BO.
 
+O ficheiro é gerado **a partir do próprio modelo** (`reports/modelos/RTM_Sales_SAP_Upload_Format.xlsx`): estilos, tema, larguras, folha e as linhas 1 e 2 ficam exactamente como no original, e cada linha de dados usa a formatação da linha de exemplo do modelo. Só mudam as linhas de dados (as linhas de exemplo e as fórmulas de teste saem). Se o SAP passar a usar outro modelo, basta substituir esse ficheiro.
+
 - **Uma linha por artigo:** INVOICENO (tipo + número, por exemplo `FR FR0126S78515N/1`), data, loja, código do artigo, quantidade, unidade, tipo de documento, SAP location, valor sem IVA, IVA e total da linha. O total do documento, o Cash (numerário) e o MULTICAIXA são do documento e repetem-se em cada linha, como no modelo.
 - **Filtros:** o período do topo da página, as rotas e os tipos de documento (Factura-recibo e Factura). Por omissão ficam de fora os documentos já incluídos num ficheiro anterior, para não serem carregados duas vezes no SAP.
 - **Verificação antes de gerar.** Bloqueiam: rota sem SAP location, documento sem linhas e linha sem código de artigo. São só avisos: linhas que não somam o total do documento e pagamentos por outros meios (transferência, adiantamento), que o modelo não tem.
