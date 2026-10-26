@@ -11,7 +11,7 @@ test('mostra os gráficos de vendas, pagamentos, dívida, clientes e artigos', a
     expect.arrayContaining([
       'Vendas por dia',
       'Vendas por promotor',
-      'Como foi pago',
+      'Como foi recebido',
       'Antiguidade da dívida',
       'Melhores clientes',
       'Artigos mais vendidos',

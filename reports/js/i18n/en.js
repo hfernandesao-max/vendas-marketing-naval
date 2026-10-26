@@ -870,4 +870,5 @@ export const EN = {
   Emitido: 'Issued',
   'Carregado no SAP': 'Loaded into SAP',
   Anulado: 'Voided',
+  'Como foi recebido': 'How sales were collected',
 };

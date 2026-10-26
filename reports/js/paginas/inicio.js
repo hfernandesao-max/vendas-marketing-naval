@@ -73,7 +73,7 @@ function painelInicio(pg) {
       }),
     );
   }
-  // 3. Como foi pago (parte do todo)
+  // 3. Como foi recebido (parte do todo)
   if (pode('pagamentos') && V.length && temMeio()) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
@@ -87,7 +87,7 @@ function painelInicio(pg) {
     ].filter((p) => p.valor > 0.005 || p.cor === COR.s1);
     cards.push(
       cartaoGrafico({
-        titulo: t('Como foi pago'),
+        titulo: t('Como foi recebido'),
         sub: t('{p} das vendas já recebido', { p: pct(tot ? liq / tot : 0) }),
         destino: 'pagamentos',
         desenhar: (w) => grafParte(w, { partes }),
