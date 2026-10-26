@@ -1721,7 +1721,7 @@
 
     /* Página Início: cartões compactos (ícone à esquerda) para caber num só ecrã */
     .cards {
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, max(205px, calc((100% - 30px) / 4))), 1fr));
       gap: 10px
     }
 
@@ -1868,10 +1868,254 @@
         text-overflow: ellipsis
       }
     }
+
+    /* ===================== Ecrã de carregamento animado =====================
+       Logótipo Naval com anéis a pulsar, passos do carregamento e barra de progresso.
+       Depois do arranque, cada nova consulta mostra uma barra fina no topo. */
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      background:
+        radial-gradient(70% 55% at 50% 35%, rgba(10, 132, 255, .20), transparent 70%),
+        linear-gradient(180deg, #0A1124, #05070D);
+      transition: opacity .5s ease, visibility .5s
+    }
+
+    .loader.fora {
+      opacity: 0;
+      visibility: hidden
+    }
+
+    .ld-box {
+      width: min(100%, 380px);
+      display: grid;
+      justify-items: center;
+      text-align: center
+    }
+
+    .ld-logo {
+      position: relative;
+      width: 128px;
+      height: 128px;
+      display: grid;
+      place-items: center
+    }
+
+    .ld-logo img {
+      width: 74px;
+      height: auto;
+      position: relative;
+      z-index: 2;
+      animation: ld-flutua 3s ease-in-out infinite;
+      filter: drop-shadow(0 8px 22px rgba(10, 132, 255, .45))
+    }
+
+    .ld-anel {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid rgba(100, 160, 255, .55);
+      animation: ld-onda 2.4s cubic-bezier(.2, .6, .3, 1) infinite;
+      opacity: 0
+    }
+
+    .ld-anel:nth-child(2) {
+      animation-delay: .8s
+    }
+
+    .ld-anel:nth-child(3) {
+      animation-delay: 1.6s
+    }
+
+    .ld-orbita {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #0A84FF;
+      border-right-color: rgba(10, 132, 255, .35);
+      animation: ld-roda 1.2s linear infinite
+    }
+
+    .ld-titulo {
+      margin: 22px 0 2px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--fg)
+    }
+
+    .ld-sub {
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 18px
+    }
+
+    .ld-barra {
+      width: 100%;
+      height: 4px;
+      margin: 20px 0 16px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, .08);
+      overflow: hidden
+    }
+
+    .ld-barra i {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #1E4FB0, #0A84FF, #64D2FF);
+      background-size: 200% 100%;
+      animation: ld-brilho 1.6s linear infinite;
+      transition: width .45s ease
+    }
+
+    .ld-passos {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      display: grid;
+      gap: 9px;
+      text-align: left
+    }
+
+    .ld-passos li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--dim);
+      transition: color .3s
+    }
+
+    .ld-passos li .st {
+      flex: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, .18);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700
+    }
+
+    .ld-passos li.activo {
+      color: var(--fg)
+    }
+
+    .ld-passos li.activo .st {
+      border-color: #0A84FF;
+      border-top-color: transparent;
+      animation: ld-roda .8s linear infinite
+    }
+
+    .ld-passos li.feito {
+      color: var(--muted)
+    }
+
+    .ld-passos li.feito .st {
+      border-color: #0A84FF;
+      background: #0A84FF;
+      color: #fff
+    }
+
+    .ld-passos li.aviso .st {
+      border-color: var(--warn);
+      color: var(--warn)
+    }
+
+    .ld-passos li .det {
+      margin-left: auto;
+      font-size: 11.5px;
+      color: var(--dim)
+    }
+
+    /* barra fina no topo durante novas consultas */
+    .ld-topo {
+      position: fixed;
+      top: env(safe-area-inset-top, 0px);
+      left: 0;
+      right: 0;
+      height: 3px;
+      z-index: 90;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .2s
+    }
+
+    .ld-topo::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, #0A84FF, #64D2FF, transparent);
+      animation: ld-varre 1.1s ease-in-out infinite
+    }
+
+    body.a-carregar .ld-topo {
+      opacity: 1
+    }
+
+    body.a-carregar #page {
+      opacity: .45;
+      filter: saturate(.7);
+      transition: opacity .2s;
+      pointer-events: none
+    }
+
+    @keyframes ld-onda {
+      0% { transform: scale(.55); opacity: .9 }
+      100% { transform: scale(1.35); opacity: 0 }
+    }
+
+    @keyframes ld-roda {
+      to { transform: rotate(360deg) }
+    }
+
+    @keyframes ld-flutua {
+      0%, 100% { transform: translateY(0) }
+      50% { transform: translateY(-5px) }
+    }
+
+    @keyframes ld-brilho {
+      to { background-position: -200% 0 }
+    }
+
+    @keyframes ld-varre {
+      0% { transform: translateX(-100%) }
+      100% { transform: translateX(260%) }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ld-logo img, .ld-anel, .ld-orbita, .ld-passos li.activo .st, .ld-barra i, .ld-topo::before {
+        animation: none !important
+      }
+      .ld-anel {
+        opacity: .3
+      }
+    }
   </style>
 </head>
 
 <body>
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="ld-box">
+      <div class="ld-logo" aria-hidden="true"><span class="ld-anel"></span><span class="ld-anel"></span><span class="ld-anel"></span><span class="ld-orbita"></span><img src="../assets/globo.png" alt=""></div>
+      <div class="ld-titulo" id="ld-titulo">Portal RTM</div>
+      <div class="ld-sub" id="ld-sub">A preparar os relatórios…</div>
+      <div class="ld-barra"><i id="ld-barra"></i></div>
+      <ul class="ld-passos" id="ld-passos"></ul>
+    </div>
+  </div>
+  <div class="ld-topo" aria-hidden="true"></div>
   <div class="app" id="app">
     <aside class="side" id="side" aria-label="Menu">
       <div class="brand"><img src="../assets/globo.png" alt="">
@@ -1993,7 +2237,7 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
+        "Por meio de pagamento": "By payment method", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
         "plano até {d}": "plan up to {d}", "{a} de {b} fontes ligadas": "{a} of {b} sources connected", "Pinguim BO sem ligação": "Pinguim BO not connected", "Sem ligação": "Not connected", "Ligação parcial": "Partly connected", "Ligado": "Connected",
         "Pinguim BO (vendas)": "Pinguim BO (sales)", "Cadastros RTM (clientes)": "RTM registrations (customers)", "Plano de cargas": "Loading plan", "sem ligação ao servidor": "no connection to the server", "A verificar as fontes de dados…": "Checking data sources…", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
@@ -2194,6 +2438,7 @@
       setInterval(mostrarFontes, 30000);
 
       function fetchVendas(de, ate) {
+        document.body.classList.add('a-carregar');
         const sd = de.replace(/-/g, ''), ed = ate.replace(/-/g, '');
         return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed + '&include_items=1', { cache: 'no-store' })
           .then((r) => r.json().catch(() => ({ erro: 'Resposta inválida do servidor (HTTP ' + r.status + ').' })).then((d) => {
@@ -2207,6 +2452,7 @@
             DB.artigos = Array.isArray(d.artigos) ? d.artigos : [];
             diasSap = [...new Set(DB.vendas.map((x) => x.data))].sort();
             diasTodos = [...new Set([...diasSap, ...DB.cargas.map((x) => x.data)])].sort();
+            document.body.classList.remove('a-carregar');
           });
       }
 
@@ -3161,9 +3407,37 @@
       addEventListener('hashchange', route);
       let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FITS.forEach((f) => f()), 150); });
 
+      // ================= ecrã de carregamento =================
+      const LD = {
+        passos: [['base', 'Rotas, carteira e plano de cargas'], ['cad', 'Cadastros de clientes'], ['vendas', 'Vendas do Pinguim BO'], ['pronto', 'A montar os relatórios']],
+        estado: {},
+        iniciar() {
+          const ul = $('#ld-passos'); ul.replaceChildren();
+          this.passos.forEach(([id, txt]) => { const li = el('li'); li.id = 'ld-' + id; li.append(el('span', 'st'), el('span', null, t(txt)), el('span', 'det')); ul.append(li); });
+          $('#ld-titulo').textContent = t('Portal RTM');
+          this.marcar('base', 'activo');
+        },
+        marcar(id, est, det) {
+          const li = $('#ld-' + id); if (!li) return;
+          li.className = est; li.querySelector('.st').textContent = est === 'feito' ? '✓' : est === 'aviso' ? '!' : '';
+          if (det != null) li.querySelector('.det').textContent = det;
+          this.estado[id] = est;
+          const feitos = this.passos.filter(([k]) => ['feito', 'aviso'].includes(this.estado[k])).length;
+          $('#ld-barra').style.width = Math.max(8, Math.round(feitos / this.passos.length * 100)) + '%';
+          const prox = this.passos.find(([k]) => !['feito', 'aviso'].includes(this.estado[k]));
+          if (est !== 'activo' && prox && this.estado[prox[0]] !== 'activo') { this.marcar(prox[0], 'activo'); return; }
+          $('#ld-sub').textContent = prox ? t(prox[1]) + '…' : t('Pronto');
+        },
+        fechar() { setTimeout(() => { $('#loader').classList.add('fora'); setTimeout(() => { $('#loader').hidden = true; }, 600); }, 350); },
+      };
+      LD.iniciar();
+      // Segurança: se algo falhar sem resposta, o ecrã de carregamento sai ao fim de 45 s
+      const ldLimite = setTimeout(() => LD.fechar(), 45000);
+
       Promise.all(['rotas', 'clientes', 'cargas'].map((id) => fetch('data/' + id + '.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((d) => { DB[id] = d; })))
         .then(() => {
           ['rotas', 'clientes', 'cargas'].forEach((k) => { if (!Array.isArray(DB[k])) DB[k] = []; });
+          LD.marcar('base', DB.rotas.length ? 'feito' : 'aviso', t('{n} rotas', { n: DB.rotas.length }));
           DB.vendas = [];
           DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
           // Cadastros (rtm-clientes): no servidor via PHP; em alternativa, o ficheiro JSON copiado para data/
@@ -3173,17 +3447,20 @@
             // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
             if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
             avaliarFontes();
+            LD.marcar('cad', DB.cad ? 'feito' : 'aviso', DB.cad ? n0(DB.cad.cadastros.length) + ' ' + t('clientes') : t('sem ligação'));
           });
         })
         .then(() => {
           carregarFiltro();
-          if (st.preset || !st.de || !st.ate) return aplicarPreset(st.preset || 'mes');
-          return fetchVendas(st.de, st.ate);
+          return (st.preset || !st.de || !st.ate ? aplicarPreset(st.preset || 'mes') : fetchVendas(st.de, st.ate))
+            .then(() => LD.marcar('vendas', LIGACOES.pinguim.estado === 'ok' ? 'feito' : 'aviso', LIGACOES.pinguim.estado === 'ok' ? t('{n} documentos', { n: n0(DB.vendas.length) }) : t('sem ligação')));
         })
         .then(() => {
-          if (!diasTodos.length) { $('#titulo').textContent = t('Sem dados'); return; }
-          route();
-        });
+          if (!diasTodos.length) $('#titulo').textContent = t('Sem dados');
+          else route();
+          LD.marcar('pronto', 'feito'); clearTimeout(ldLimite); LD.fechar();
+        })
+        .catch((e) => { console.error(e); clearTimeout(ldLimite); LD.fechar(); });
     })();
   </script>
 </body>
