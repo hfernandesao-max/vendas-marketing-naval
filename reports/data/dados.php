@@ -23,6 +23,14 @@ if (!isset($regras[$f])) {
 naval_exigir($regras[$f]);
 $d = json_decode((string) @file_get_contents(__DIR__ . '/' . $f . '.json'), true);
 if (!is_array($d)) $d = [];
+// Plano de cargas: os dias publicados no portal juntam-se ao histórico (e substituem o mesmo dia e rota)
+if ($f === 'cargas') {
+    require_once __DIR__ . '/../../geo/auth/cargas.php';
+    $porChave = [];
+    foreach ($d as $x) $porChave[$x['chave'] ?? (($x['data'] ?? '') . '|' . ($x['rota'] ?? ''))] = $x;
+    foreach (naval_plano_para_cargas() as $x) $porChave[$x['chave']] = $x;
+    $d = array_values($porChave);
+}
 if ($f !== 'rotas') {
     $d = array_values(array_filter($d, function ($x) { return naval_rota_permitida($x['rota'] ?? ''); }));
 }

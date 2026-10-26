@@ -2169,6 +2169,52 @@
     select.nivel.mudou { border-color: var(--sky); box-shadow: inset 0 0 0 1px var(--sky) }
     select.nivel.pendente { border-color: var(--warn); background: rgba(255, 159, 10, .16); box-shadow: inset 0 0 0 1px var(--warn) }
     @media (max-width: 560px) { .campos2 { grid-template-columns: 1fr } .dlg-f .btn { flex: 1 } }
+
+    /* Plano de cargas */
+    .pc-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 16px }
+    .pc-dia { display: flex; align-items: center; gap: 6px; flex-wrap: wrap }
+    .pc-dia .btn.sm { min-width: 34px }
+    .pc-dia-t { font-size: 16px; text-transform: capitalize; margin: 0 4px }
+    .pc-dia input[type=date] { height: 32px; border-radius: 9px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .05); color: var(--fg); padding: 0 8px; font: inherit; font-size: 13px; color-scheme: dark }
+    .pc-estado { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; font-size: 12.5px; color: var(--muted) }
+    .pc-acc { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto }
+    .pc-alerta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-color: rgba(255, 159, 10, .45) }
+    .pc-alerta p { margin: 0; color: var(--warn); font-size: 13px }
+    .pc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 14px; margin-bottom: 18px; align-items: start }
+    .pc-card { padding: 14px 16px; display: grid; gap: 12px }
+    .pc-card.fora { opacity: .62 }
+    .pc-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px }
+    .pc-tit { display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0 }
+    .pc-tit input { width: 18px; height: 18px; accent-color: var(--accent); flex: none }
+    .pc-tit b { font-size: 15px }
+    .pc-tit span { color: var(--muted); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+    .pc-total { font-size: 12.5px; color: var(--sky); white-space: nowrap; font-weight: 600 }
+    .pc-corpo { display: grid; gap: 10px }
+    .pc-corpo[hidden], .pc-avs[hidden] { display: none }
+    .campos3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+    @media (max-width: 560px) { .campos3 { grid-template-columns: 1fr 1fr } }
+    .pc-qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px }
+    .pc-zonas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border-radius: 11px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .05); min-height: 40px }
+    .pc-zonas:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(10, 132, 255, .22) }
+    .pc-chips { display: contents }
+    .pc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: rgba(10, 132, 255, .18); border: 1px solid rgba(10, 132, 255, .4); font-size: 12.5px }
+    .pc-chip button { border: 0; background: transparent; color: var(--muted); font-size: 15px; line-height: 1; width: 20px; height: 20px; border-radius: 50%; cursor: pointer }
+    .pc-chip button:hover { background: rgba(255, 255, 255, .1); color: var(--fg) }
+    .campo .pc-zonas input { flex: 1 1 140px; height: 28px; border: 0; background: transparent; padding: 0 6px; box-shadow: none }
+    .pc-avs { display: flex; flex-wrap: wrap; gap: 6px }
+    .pc-err, .pc-av { font-size: 12px; padding: 3px 9px; border-radius: 999px }
+    .pc-err { background: rgba(255, 69, 58, .14); color: var(--bad) }
+    .pc-av { background: rgba(255, 159, 10, .12); color: var(--warn) }
+    .pc-resumo { margin-bottom: 14px }
+    .pc-lista { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px }
+    dialog.dlg.largo { width: min(920px, calc(100vw - 32px)) }
+    .pc-listas { display: grid; gap: 10px; min-height: 260px }
+    .pc-listas .seg { justify-self: start }
+    .pc-linha { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) 36px; gap: 6px; margin-bottom: 6px }
+    .pc-linha input, .pc-ta { height: 36px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .05); color: var(--fg); padding: 0 10px; font: inherit; font-size: 13.5px; min-width: 0 }
+    .pc-ta { height: auto; padding: 8px 10px; width: 100%; resize: vertical; line-height: 1.5 }
+    .nota-dlg { margin: 0 0 8px; color: var(--muted); font-size: 12.5px }
+    @media (max-width: 560px) { .pc-acc { margin-left: 0 } .pc-linha { grid-template-columns: 1fr 36px } }
   </style>
 </head>
 
@@ -2305,7 +2351,7 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Administração": "Administration", "Acessos": "Access", "O seu perfil não permite exportar o relatório completo.": "Your profile cannot export the full report.", "O seu perfil não permite exportar esta informação.": "Your profile cannot export this information.", "sem rotas atribuídas": "no routes assigned", "Contas activas": "Active accounts", "{n} contas no total": "{n} accounts in total", "Contas bloqueadas": "Locked accounts", "desbloqueio pelo super administrador": "unlocked by the super administrator", "Sem email associado": "No email linked", "Sem verificação em dois passos": "Without two-step verification", "perfis SADM, TI e DIR": "SADM, TI and DIR profiles", "As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.": "Accounts still come from the old list (geo/auth/config_users.php). Create the new list with ferramentas/utilizadores.php to apply profiles, routes and the mandatory email.", "Utilizadores": "Users", "Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.": "Accounts and profiles. Accounts are created and changed on the server; the super administrator unlocks them here.", "nenhuma": "none", "Todas": "All", "Nome": "Name", "Utilizador": "User", "Email": "Email", "Perfil": "Profile", "Rotas": "Routes", "Dois passos": "Two-step", "Activa": "Active", "Bloqueada": "Locked", "Inactiva": "Inactive", "Sem email": "No email", "Desbloquear": "Unlock", "Conta desbloqueada.": "Account unlocked.", "A conta de {c} passa a entrar só com a palavra-passe.": "{c}'s account will sign in with the password only.", "A palavra-passe temporária aparece no fim. A pessoa escolhe a sua na primeira entrada.": "The temporary password is shown at the end. The person chooses their own at first sign-in.", "Activar dois passos": "Turn on two-step", "Acção desconhecida.": "Unknown action.", "Alteração recusada": "Change refused", "Alterações a contas de super administrador exigem duas aprovações (nomes de duas pessoas da Administração).": "Changes to super administrator accounts need two approvals (names of two board members).", "Anular": "Discard", "Aprovado por (1)": "Approved by (1)", "Aprovado por (2)": "Approved by (2)", "As contas vêm ainda da lista antiga. Crie primeiro a lista nova no servidor (ferramentas/utilizadores.php importar-antigo).": "Accounts still come from the old list. First create the new list on the server (ferramentas/utilizadores.php importar-antigo).", "Cancelar": "Cancel", "Confirmar": "Confirm", "Confirmação falhada": "Confirmation failed", "Confirme a sua identidade": "Confirm your identity", "Conta activa": "Account active", "Conta activada": "Account activated", "Conta alterada": "Account changed", "Conta criada": "Account created", "Conta desactivada": "Account deactivated", "Conta guardada.": "Account saved.", "Conta não encontrada.": "Account not found.", "Conta {c}. Entregue-a à pessoa por um canal seguro: só aparece agora. Na primeira entrada terá de escolher uma nova.": "Account {c}. Give it to the person through a secure channel: it is shown only now. At first sign-in they must choose a new one.", "Conta {c}. Na aplicação de autenticação (Microsoft ou Google Authenticator), leia o código QR ou escreva a chave. A partir da próxima entrada é pedido o código de 6 dígitos.": "Account {c}. In the authenticator app (Microsoft or Google Authenticator), scan the QR code or type the key. From the next sign-in the 6-digit code is required.", "Contas antigas importadas": "Old accounts imported", "Contas de super administrador: indique as duas pessoas da Administração que aprovaram.": "Super administrator accounts: enter the two board members who approved.", "Contas e perfis. Em Gerir altera o perfil, as rotas, o email e a palavra-passe de cada conta.": "Accounts and profiles. Use Manage to change each account's profile, routes, email and password.", "Contas e perfis. Só o super administrador cria e altera contas.": "Accounts and profiles. Only the super administrator creates and changes accounts.", "Continuar": "Continue", "Copiado.": "Copied.", "Copiar": "Copy", "Copiar chave": "Copy key", "Criar conta": "Create account", "Código QR": "QR code", "Código": "Code", "Data de fim inválida.": "Invalid end date.", "Diferente da matriz original ({v})": "Different from the original matrix ({v})", "Dois passos activados": "Two-step turned on", "Dois passos retirados": "Two-step removed", "Email (obrigatório)": "Email (required)", "Email alterado": "Email changed", "Escolha o nível de cada perfil em cada página ou função e guarde. Contorno laranja: por guardar; azul: diferente da matriz original. A coluna SADM e as funções de administração não se alteram.": "Choose each profile's level for each page or function and save. Orange outline: not saved yet; blue: different from the original matrix. The SADM column and the administration functions cannot be changed.", "Este perfil exige verificação em dois passos.": "This profile requires two-step verification.", "Este perfil exige verificação em dois passos. Active-a em Gerir, junto da pessoa, com o telemóvel dela.": "This profile requires two-step verification. Turn it on in Manage, with the person and their phone.", "Faça isto junto da pessoa: ela lê o código QR com o telemóvel.": "Do this with the person: they scan the QR code with their phone.", "Fechar": "Close", "Gerar novo código QR": "New QR code", "Gerir": "Manage", "Guardar": "Save", "Guardar alterações": "Save changes", "Guardar {n} alterações": "Save {n} changes", "Guardar 1 alteração": "Save 1 change", "Matriz guardada: 1 alteração.": "Matrix saved: 1 change.", "Matriz guardada: {n} alterações.": "Matrix saved: {n} changes.", "Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Data access changes at once; each person sees the new menu when they refresh the page.", "Indique o nome.": "Enter the name.", "Insira a sua palavra-passe. Fica confirmado durante 10 minutos.": "Enter your password. The confirmation lasts 10 minutes.", "Insira o código de 6 dígitos da aplicação de autenticação. Fica confirmado durante 10 minutos.": "Enter the 6-digit code from the authenticator app. The confirmation lasts 10 minutes.", "Já existe uma conta com este utilizador.": "An account with this username already exists.", "Matriz alterada": "Matrix changed", "Matriz guardada: {n} alterações. Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Matrix saved: {n} changes. Data access changes at once; each person sees the new menu when they refresh the page.", "Matriz original reposta": "Original matrix restored", "Matriz original reposta.": "Original matrix restored.", "Nova conta": "New account", "Não pode retirar a verificação em dois passos da sua própria conta.": "You cannot remove two-step verification from your own account.", "Não pode retirar o seu próprio perfil de super administrador nem desactivar a sua conta.": "You cannot remove your own super administrator profile or deactivate your own account.", "O email é obrigatório e tem de ser válido.": "The email is required and must be valid.", "O utilizador tem de ter 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado.": "The username must have 3 to 40 characters: letters, numbers, dot, hyphen or underscore.", "Os perfis SUP e PRO precisam de pelo menos uma rota.": "SUP and PRO profiles need at least one route.", "Outras rotas, separadas por vírgulas": "Other routes, separated by commas", "Palavra-passe": "Password", "Palavra-passe alterada": "Password changed", "Palavra-passe reposta": "Password reset", "Palavra-passe temporária": "Temporary password", "Palavra-passe incorrecta.": "Wrong password.", "Código inválido.": "Invalid code.", "Perfil alterado": "Profile changed", "Perfil inválido.": "Invalid profile.", "Por guardar": "Not saved yet", "Repor": "Reset", "Repor matriz original": "Restore original matrix", "Repor palavra-passe": "Reset password", "Retirar": "Remove", "Retirar dois passos": "Remove two-step", "Rotas alteradas": "Routes changed", "Só o super administrador pode alterar contas e acessos.": "Only the super administrator can change accounts and access.", "Tem de ficar pelo menos um super administrador activo.": "At least one super administrator must stay active.", "Todas as alterações feitas à matriz no portal são apagadas e volta a matriz aprovada.": "All changes made to the matrix in the portal are removed and the approved matrix returns.", "Ver o NIF dos clientes": "See customers' tax ID (NIF)", "Verificação em dois passos": "Two-step verification", "Verificação em dois passos retirada.": "Two-step verification removed.", "Válida até (opcional)": "Valid until (optional)", "ex.: joao.silva": "e.g. joao.silva", "É criada uma chave nova. A aplicação de autenticação de {c} tem de ser configurada outra vez.": "A new key is created. {c}'s authenticator app must be set up again.", "É criada uma palavra-passe temporária para {c}. A actual deixa de funcionar.": "A temporary password is created for {c}. The current one stops working.", "Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.": "Last 300 records: sign-ins, sign-outs, locks, account and matrix changes, exports.", "Não foi possível guardar.": "Could not save.", "Não foi possível concluir.": "Could not complete.", "Sem resposta do servidor.": "No response from the server.", "Só o super administrador pode desbloquear contas.": "Only the super administrator can unlock accounts.", "Pedido inválido. Actualize a página e tente de novo.": "Invalid request. Refresh the page and try again.", "Não foi possível desbloquear.": "Could not unlock.", "Última entrada": "Last sign-in", "Matriz de acessos": "Access matrix", "V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.": "V view · V·r own routes only · E export · E·r export own routes only · G manage · A administer.", "Página ou função": "Page or function", "Registos de actividade": "Activity log", "Últimos 300 registos: entradas, saídas, bloqueios e exportações.": "Last 300 records: sign-ins, sign-outs, locks and exports.", "Data": "Date", "Acção": "Action", "Detalhe": "Detail", "A página Acessos precisa do servidor da plataforma (PHP).": "The Access page needs the platform server (PHP).", "A carregar…": "Loading…", "Super administrador": "Super administrator", "Administrador da plataforma": "Platform administrator", "Administração e Direcção": "Board and management", "Direcção Comercial e Marketing": "Sales and marketing management", "Supervisor de rotas": "Route supervisor", "Promotor": "Promoter", "Financeiro e Tesouraria": "Finance and treasury", "Back-office RTM": "RTM back office", "Logística e Armazém": "Logistics and warehouse", "Planeamento de rotas": "Route planning", "Auditoria e Controlo": "Audit and control", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
+        "Por meio de pagamento": "By payment method", "Administração": "Administration", "Acessos": "Access", "O seu perfil não permite exportar o relatório completo.": "Your profile cannot export the full report.", "O seu perfil não permite exportar esta informação.": "Your profile cannot export this information.", "sem rotas atribuídas": "no routes assigned", "Contas activas": "Active accounts", "{n} contas no total": "{n} accounts in total", "Contas bloqueadas": "Locked accounts", "desbloqueio pelo super administrador": "unlocked by the super administrator", "Sem email associado": "No email linked", "Sem verificação em dois passos": "Without two-step verification", "perfis SADM, TI e DIR": "SADM, TI and DIR profiles", "As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.": "Accounts still come from the old list (geo/auth/config_users.php). Create the new list with ferramentas/utilizadores.php to apply profiles, routes and the mandatory email.", "Utilizadores": "Users", "Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.": "Accounts and profiles. Accounts are created and changed on the server; the super administrator unlocks them here.", "nenhuma": "none", "Todas": "All", "Nome": "Name", "Utilizador": "User", "Email": "Email", "Perfil": "Profile", "Rotas": "Routes", "Dois passos": "Two-step", "Activa": "Active", "Bloqueada": "Locked", "Inactiva": "Inactive", "Sem email": "No email", "Desbloquear": "Unlock", "Conta desbloqueada.": "Account unlocked.", "A guardar…": "Saving…", "A lista de destinatários está vazia (Listas → Destinatários).": "The recipient list is empty (Lists → Recipients).", "A publicar…": "Publishing…", "A rota {r} sai neste dia": "Route {r} goes out this day", "Acrescentar": "Add", "Acrescentar zona…": "Add area…", "Ainda não pode publicar": "Cannot publish yet", "Alterações por guardar": "Unsaved changes", "Alterações por publicar": "Changes not yet published", "Armazém de carga": "Loading warehouse", "Armazéns de carga (um por linha)": "Loading warehouses (one per line)", "Armazéns e viaturas": "Warehouses and vehicles", "Artigos carregados nas carrinhas, pela ordem do Excel.": "Items loaded on the vans, in the Excel order.", "Copiado o plano de {d}. Corrija o que mudou hoje.": "Copied the plan of {d}. Correct what changed today.", "Copiar de {d}": "Copy from {d}", "Copiar do dia anterior": "Copy from previous day", "Corrija antes de publicar:": "Fix before publishing:", "Corrija estes pontos:": "Fix these points:", "Data inválida.": "Invalid date.", "Destinatários": "Recipients", "Dia do plano": "Plan day", "Dia seguinte": "Next day", "Dias anteriores": "Previous days", "Email de teste enviado para {e}.": "Test email sent to {e}.", "Email reenviado.": "Email resent.", "Enviado": "Sent", "Enviar email de teste para mim": "Send me a test email", "Este plano ainda não foi publicado.": "This plan has not been published yet.", "Excel enviado": "Excel sent", "Excel não disponível.": "Excel not available.", "Falhou": "Failed", "Guardado às {h}": "Saved at {h}", "Guardar listas": "Save lists", "Hoje": "Today", "Importadas {n} rotas do Excel de {d}.": "Imported {n} routes from the Excel of {d}.", "Importar Excel": "Import Excel", "Listas": "Lists", "Listas do plano de cargas": "Loading plan lists", "Listas guardadas.": "Lists saved.", "Motoristas": "Drivers", "Motorista": "Driver", "N.º da factura": "Invoice no.", "Nenhuma rota sai neste dia.": "No route goes out this day.", "Nota da rectificação": "Correction note", "Nota para os destinatários": "Note for recipients", "Não encontrei o cabeçalho do plano (SALES PERSON) no ficheiro.": "The plan header (SALES PERSON) was not found in the file.", "Não foi possível ler o Excel.": "Could not read the Excel.", "Não foi possível publicar.": "Could not publish.", "Não foi possível enviar.": "Could not send.", "Não sai": "Not going out", "O Excel do plano não chegou ao servidor. Tente de novo.": "The plan Excel did not reach the server. Try again.", "O email da versão {v} não seguiu: {e}": "The email for version {v} was not sent: {e}", "O envio de email ainda não está configurado no servidor. Pode preencher e publicar; o email segue quando a configuração estiver feita (botão Reenviar).": "Email sending is not set up on the server yet. You can fill in and publish; the email goes out once it is set up (Resend button).", "O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode reenviar depois.": "Email sending is not set up on the server yet: the plan is published, the Excel is available and you can resend later.", "O ficheiro não tem rotas.": "The file has no routes.", "O plano de cargas precisa do servidor da plataforma (PHP).": "The loading plan needs the platform server (PHP).", "O plano deste dia ainda não foi publicado pela Logística.": "Logistics has not published this day's plan yet.", "O que já preencheu para este dia é substituído pelo plano de {d}.": "What you filled in for this day is replaced by the plan of {d}.", "O que mudou (aparece no email)": "What changed (shown in the email)", "O seu perfil não permite alterar o plano de cargas.": "Your profile cannot change the loading plan.", "Observações": "Notes", "Opcional": "Optional", "Plano de {d}": "Plan for {d}", "Plano de {d}: {n} rotas, {c} caixas. Vai por email, com o Excel em anexo, para:": "Plan for {d}: {n} routes, {c} cases. It goes by email, with the Excel attached, to:", "Plano publicado e enviado a {n} destinatários.": "Plan published and sent to {n} recipients.", "Plano publicado, mas o email não seguiu: {e}": "Plan published, but the email was not sent: {e}", "Planos guardados e publicados. Clique no dia para o abrir.": "Saved and published plans. Click a day to open it.", "Por corrigir": "To fix", "Por preencher": "Not filled in", "Preenchimento e envio do plano diário": "Daily plan entry and sending", "Publicado": "Published", "Publicado por": "Published by", "Publicar e enviar": "Publish and send", "Publicar rectificação": "Publish correction", "Rascunho": "Draft", "Recebem o plano por email sempre que é publicado ou rectificado.": "They get the plan by email whenever it is published or corrected.", "Reenviar": "Resend", "Retirar {z}": "Remove {z}", "Rotas a sair": "Routes going out", "Fraldas": "Diapers", "Sabão": "Soap", "Sabonete": "Bar soap", "Sem rota identificada: {v}. Preencha essas rotas à mão.": "No route found for: {v}. Fill in those routes by hand.", "Telefone": "Phone", "Tem de haver pelo menos um artigo.": "There must be at least one item.", "Tipos de viatura": "Vehicle types", "Total de caixas": "Total cases", "Transportadora": "Carrier", "Transportadoras": "Carriers", "Uma zona por linha.": "One area per line.", "Usadas no preenchimento. Motoristas, zonas e viaturas novos entram sozinhos quando o plano é publicado.": "Used when filling in. New drivers, areas and vehicles are added automatically when the plan is published.", "Versão": "Version", "Versão {v} publicada por {p} às {h} de {d}": "Version {v} published by {p} at {h} on {d}", "Versão {v} publicada por {p}.": "Version {v} published by {p}.", "Viagens": "Trips", "Viatura": "Vehicle", "Matrícula": "Plate", "Zonas de descarga": "Unloading areas", "Zonas": "Areas", "Vendedor": "Salesperson", "Armazéns": "Warehouses", "Artigo": "Item", "Artigos": "Items", "a carga está a zero": "the load is zero", "a viatura também está na rota {r}": "the vehicle is also on route {r}", "falta a matrícula": "plate missing", "falta o motorista": "driver missing", "indique pelo menos uma zona": "enter at least one area", "o motorista também está na rota {r}": "the driver is also on route {r}", "sem número de factura": "no invoice number", "sem telefone do motorista": "no driver phone", "{n} avisos (por exemplo, falta de número de factura). Pode publicar na mesma.": "{n} warnings (for example, missing invoice number). You can still publish.", "{n} cx": "{n} cs", "Última alteração às {h} de {d}": "Last change at {h} on {d}", "Rota": "Route", "Caixas": "Cases", "Dia": "Day", "Estado": "Status", "Factura": "Invoice", "A conta de {c} passa a entrar só com a palavra-passe.": "{c}'s account will sign in with the password only.", "A palavra-passe temporária aparece no fim. A pessoa escolhe a sua na primeira entrada.": "The temporary password is shown at the end. The person chooses their own at first sign-in.", "Activar dois passos": "Turn on two-step", "Acção desconhecida.": "Unknown action.", "Alteração recusada": "Change refused", "Alterações a contas de super administrador exigem duas aprovações (nomes de duas pessoas da Administração).": "Changes to super administrator accounts need two approvals (names of two board members).", "Anular": "Discard", "Aprovado por (1)": "Approved by (1)", "Aprovado por (2)": "Approved by (2)", "As contas vêm ainda da lista antiga. Crie primeiro a lista nova no servidor (ferramentas/utilizadores.php importar-antigo).": "Accounts still come from the old list. First create the new list on the server (ferramentas/utilizadores.php importar-antigo).", "Cancelar": "Cancel", "Confirmar": "Confirm", "Confirmação falhada": "Confirmation failed", "Confirme a sua identidade": "Confirm your identity", "Conta activa": "Account active", "Conta activada": "Account activated", "Conta alterada": "Account changed", "Conta criada": "Account created", "Conta desactivada": "Account deactivated", "Conta guardada.": "Account saved.", "Conta não encontrada.": "Account not found.", "Conta {c}. Entregue-a à pessoa por um canal seguro: só aparece agora. Na primeira entrada terá de escolher uma nova.": "Account {c}. Give it to the person through a secure channel: it is shown only now. At first sign-in they must choose a new one.", "Conta {c}. Na aplicação de autenticação (Microsoft ou Google Authenticator), leia o código QR ou escreva a chave. A partir da próxima entrada é pedido o código de 6 dígitos.": "Account {c}. In the authenticator app (Microsoft or Google Authenticator), scan the QR code or type the key. From the next sign-in the 6-digit code is required.", "Contas antigas importadas": "Old accounts imported", "Contas de super administrador: indique as duas pessoas da Administração que aprovaram.": "Super administrator accounts: enter the two board members who approved.", "Contas e perfis. Em Gerir altera o perfil, as rotas, o email e a palavra-passe de cada conta.": "Accounts and profiles. Use Manage to change each account's profile, routes, email and password.", "Contas e perfis. Só o super administrador cria e altera contas.": "Accounts and profiles. Only the super administrator creates and changes accounts.", "Continuar": "Continue", "Copiado.": "Copied.", "Copiar": "Copy", "Copiar chave": "Copy key", "Criar conta": "Create account", "Código QR": "QR code", "Código": "Code", "Data de fim inválida.": "Invalid end date.", "Diferente da matriz original ({v})": "Different from the original matrix ({v})", "Dois passos activados": "Two-step turned on", "Dois passos retirados": "Two-step removed", "Email (obrigatório)": "Email (required)", "Email alterado": "Email changed", "Escolha o nível de cada perfil em cada página ou função e guarde. Contorno laranja: por guardar; azul: diferente da matriz original. A coluna SADM e as funções de administração não se alteram.": "Choose each profile's level for each page or function and save. Orange outline: not saved yet; blue: different from the original matrix. The SADM column and the administration functions cannot be changed.", "Este perfil exige verificação em dois passos.": "This profile requires two-step verification.", "Este perfil exige verificação em dois passos. Active-a em Gerir, junto da pessoa, com o telemóvel dela.": "This profile requires two-step verification. Turn it on in Manage, with the person and their phone.", "Faça isto junto da pessoa: ela lê o código QR com o telemóvel.": "Do this with the person: they scan the QR code with their phone.", "Fechar": "Close", "Gerar novo código QR": "New QR code", "Gerir": "Manage", "Guardar": "Save", "Guardar alterações": "Save changes", "Guardar {n} alterações": "Save {n} changes", "Guardar 1 alteração": "Save 1 change", "Matriz guardada: 1 alteração.": "Matrix saved: 1 change.", "Matriz guardada: {n} alterações.": "Matrix saved: {n} changes.", "Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Data access changes at once; each person sees the new menu when they refresh the page.", "Indique o nome.": "Enter the name.", "Insira a sua palavra-passe. Fica confirmado durante 10 minutos.": "Enter your password. The confirmation lasts 10 minutes.", "Insira o código de 6 dígitos da aplicação de autenticação. Fica confirmado durante 10 minutos.": "Enter the 6-digit code from the authenticator app. The confirmation lasts 10 minutes.", "Já existe uma conta com este utilizador.": "An account with this username already exists.", "Matriz alterada": "Matrix changed", "Matriz guardada: {n} alterações. Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Matrix saved: {n} changes. Data access changes at once; each person sees the new menu when they refresh the page.", "Matriz original reposta": "Original matrix restored", "Matriz original reposta.": "Original matrix restored.", "Nova conta": "New account", "Não pode retirar a verificação em dois passos da sua própria conta.": "You cannot remove two-step verification from your own account.", "Não pode retirar o seu próprio perfil de super administrador nem desactivar a sua conta.": "You cannot remove your own super administrator profile or deactivate your own account.", "O email é obrigatório e tem de ser válido.": "The email is required and must be valid.", "O utilizador tem de ter 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado.": "The username must have 3 to 40 characters: letters, numbers, dot, hyphen or underscore.", "Os perfis SUP e PRO precisam de pelo menos uma rota.": "SUP and PRO profiles need at least one route.", "Outras rotas, separadas por vírgulas": "Other routes, separated by commas", "Palavra-passe": "Password", "Palavra-passe alterada": "Password changed", "Palavra-passe reposta": "Password reset", "Palavra-passe temporária": "Temporary password", "Palavra-passe incorrecta.": "Wrong password.", "Código inválido.": "Invalid code.", "Perfil alterado": "Profile changed", "Perfil inválido.": "Invalid profile.", "Por guardar": "Not saved yet", "Repor": "Reset", "Repor matriz original": "Restore original matrix", "Repor palavra-passe": "Reset password", "Retirar": "Remove", "Retirar dois passos": "Remove two-step", "Rotas alteradas": "Routes changed", "Só o super administrador pode alterar contas e acessos.": "Only the super administrator can change accounts and access.", "Tem de ficar pelo menos um super administrador activo.": "At least one super administrator must stay active.", "Todas as alterações feitas à matriz no portal são apagadas e volta a matriz aprovada.": "All changes made to the matrix in the portal are removed and the approved matrix returns.", "Ver o NIF dos clientes": "See customers' tax ID (NIF)", "Verificação em dois passos": "Two-step verification", "Verificação em dois passos retirada.": "Two-step verification removed.", "Válida até (opcional)": "Valid until (optional)", "ex.: joao.silva": "e.g. joao.silva", "É criada uma chave nova. A aplicação de autenticação de {c} tem de ser configurada outra vez.": "A new key is created. {c}'s authenticator app must be set up again.", "É criada uma palavra-passe temporária para {c}. A actual deixa de funcionar.": "A temporary password is created for {c}. The current one stops working.", "Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.": "Last 300 records: sign-ins, sign-outs, locks, account and matrix changes, exports.", "Não foi possível guardar.": "Could not save.", "Não foi possível concluir.": "Could not complete.", "Sem resposta do servidor.": "No response from the server.", "Só o super administrador pode desbloquear contas.": "Only the super administrator can unlock accounts.", "Pedido inválido. Actualize a página e tente de novo.": "Invalid request. Refresh the page and try again.", "Não foi possível desbloquear.": "Could not unlock.", "Última entrada": "Last sign-in", "Matriz de acessos": "Access matrix", "V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.": "V view · V·r own routes only · E export · E·r export own routes only · G manage · A administer.", "Página ou função": "Page or function", "Registos de actividade": "Activity log", "Últimos 300 registos: entradas, saídas, bloqueios e exportações.": "Last 300 records: sign-ins, sign-outs, locks and exports.", "Data": "Date", "Acção": "Action", "Detalhe": "Detail", "A página Acessos precisa do servidor da plataforma (PHP).": "The Access page needs the platform server (PHP).", "A carregar…": "Loading…", "Super administrador": "Super administrator", "Administrador da plataforma": "Platform administrator", "Administração e Direcção": "Board and management", "Direcção Comercial e Marketing": "Sales and marketing management", "Supervisor de rotas": "Route supervisor", "Promotor": "Promoter", "Financeiro e Tesouraria": "Finance and treasury", "Back-office RTM": "RTM back office", "Logística e Armazém": "Logistics and warehouse", "Planeamento de rotas": "Route planning", "Auditoria e Controlo": "Audit and control", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
         "plano até {d}": "plan up to {d}", "{a} de {b} fontes ligadas": "{a} of {b} sources connected", "Pinguim BO sem ligação": "Pinguim BO not connected", "Sem ligação": "Not connected", "Ligação parcial": "Partly connected", "Ligado": "Connected",
         "Pinguim BO (vendas)": "Pinguim BO (sales)", "Cadastros RTM (clientes)": "RTM registrations (customers)", "Plano de cargas": "Loading plan", "sem ligação ao servidor": "no connection to the server", "A verificar as fontes de dados…": "Checking data sources…", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
@@ -2420,6 +2466,7 @@
       const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
       const ICON = {
         lock: 'M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+        clip: 'M9 3h6v3H9zM9 4.5H6v16.5h12V4.5h-3M9 11h6M9 15h6M9 19h3',
         users: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM22 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8',
         grow: 'M3 17l6-6 4 4 8-8M15 7h6v6',
         shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4',
@@ -2856,6 +2903,7 @@
         { id: 'documentos', grupo: 'Vendas RTM', icon: 'file', nome: 'Documentos' },
         { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Métodos de pagamento' },
         { id: 'auditoria', grupo: 'Auditoria', icon: 'shield', nome: 'Histórico de auditoria' },
+        { id: 'plano-cargas', grupo: 'Stock', icon: 'clip', nome: 'Plano de cargas' },
         { id: 'stock-carrinha', grupo: 'Stock', icon: 'truck', nome: 'Stock por promotor / carrinha' },
         { id: 'stock-armazem', grupo: 'Stock', icon: 'ware', nome: 'Stock por armazém' },
         { id: 'vendas-artigo', grupo: 'Stock', icon: 'box', nome: 'Vendas por artigo' },
@@ -2928,6 +2976,7 @@
           ['vendas-cliente', 'tag', 'Vendas RTM', 'Vendas por cliente', t('{n} clientes', { n: new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size })],
           ['documentos', 'file', 'Vendas RTM', 'Documentos', t('{n} documentos', { n: n0(V.length) })],
           ['pagamentos', 'card', 'Recebimentos', 'Métodos de pagamento', t('Dinheiro, Multicaixa e facturas pendentes'), temMeio() ? (al.pagamentos ? [t('{n} facturas pendentes', { n: al.pagamentos }), ''] : null) : [t('Falta o meio de pagamento'), 'bad']],
+          ['plano-cargas', 'clip', 'Stock', 'Plano de cargas', t('Preenchimento e envio do plano diário')],
           ['stock-carrinha', 'truck', 'Stock', 'Stock por promotor / carrinha', t('Carga das carrinhas pelo plano de cargas')],
           ['stock-armazem', 'ware', 'Stock', 'Stock por armazém', t('Stock no Pinguim BO'), pend],
           ['vendas-artigo', 'box', 'Stock', 'Vendas por artigo', t('Linhas de venda do Pinguim BO'), pend],
@@ -3443,6 +3492,445 @@
         }));
       };
 
+      // ================= Plano de cargas (preenchido pela Logística, publicado e enviado por email) =================
+      const PC = { data: null, resp: null, rotas: null, sujo: false, mud: 0, gravando: false, erro: null, guardadoEm: null, hist: null };
+      const chaveTxt = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+      const somaQ = (r) => Object.values(r.quantidades || {}).reduce((s, v) => s + (+v || 0), 0);
+      const isoDia = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+      const somaDias = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return isoDia(new Date(y, m - 1, d + n)); };
+      const postPlano = (corpo) => fetch('data/plano.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...corpo, csrf: SESSAO && SESSAO.csrf }) })
+        .then((r) => r.json().catch(() => ({ ok: false, erro: 'Sem resposta do servidor.' })), () => ({ ok: false, erro: 'Sem resposta do servidor.' }));
+
+      function carregarPlano(data) {
+        return fetch('data/plano.php?data=' + encodeURIComponent(data), { cache: 'no-store' }).then((r) => r.json()).then((d) => {
+          if (d.erro) { PC.erro = d.erro; return; }
+          PC.erro = null; PC.resp = d; PC.data = d.data; PC.sujo = false; PC.guardadoEm = null;
+          PC.rotas = montarRotasPlano(d);
+        }).catch(() => { PC.erro = t('O plano de cargas precisa do servidor da plataforma (PHP).'); });
+      }
+      // Uma linha por rota do portal; o plano guardado (ou copiado) preenche-a
+      function montarRotasPlano(d, base) {
+        const arts = d.listas.artigos;
+        const guardadas = base || (d.plano ? d.plano.rotas : []);
+        const por = {}; guardadas.forEach((r) => { por[r.rota] = r; });
+        const vazia = (rt) => ({ rota: rt.rota, vendedor: rt.promotor || '', sai: false, armazem: d.listas.armazens[0] || '', viagens: 1, zonas: [], quantidades: {}, motorista: '', telefone: '', matricula: '', viatura: '', transportadora: '', factura: '', obs: '' });
+        const lista = d.rotas.map((rt) => ({ ...vazia(rt), ...(por[rt.rota] || {}) }));
+        guardadas.filter((r) => !d.rotas.some((x) => x.rota === r.rota)).forEach((r) => lista.push({ ...vazia({ rota: r.rota }), ...r }));
+        lista.forEach((r) => { r.zonas = [...(r.zonas || [])]; r.quantidades = { ...r.quantidades }; arts.forEach((a) => { if (r.quantidades[a.id] == null) r.quantidades[a.id] = 0; }); });
+        return lista;
+      }
+      const estadoPlano = () => {
+        const p = PC.resp && PC.resp.plano;
+        if (!p || !p.rev) return PC.sujo ? 'rascunho' : 'novo';
+        if (!p.publicado) return 'rascunho';
+        if (!PC.resp.gere) return 'publicado';
+        return PC.sujo || p.rev > p.publicado.rev ? 'alterado' : 'publicado';
+      };
+      function validarPlano(rotas) {
+        const erros = [], avisos = [], saem = rotas.filter((r) => r.sai);
+        if (!saem.length) erros.push({ msg: t('Nenhuma rota sai neste dia.') });
+        const vistos = { m: {}, p: {} };
+        saem.forEach((r) => {
+          if (!r.motorista.trim()) erros.push({ rota: r.rota, msg: t('falta o motorista') });
+          if (!r.matricula.trim()) erros.push({ rota: r.rota, msg: t('falta a matrícula') });
+          if (!r.zonas.length) erros.push({ rota: r.rota, msg: t('indique pelo menos uma zona') });
+          if (somaQ(r) <= 0) erros.push({ rota: r.rota, msg: t('a carga está a zero') });
+          if (r.motorista.trim() && !r.telefone.trim()) avisos.push({ rota: r.rota, msg: t('sem telefone do motorista') });
+          if (!r.factura.trim()) avisos.push({ rota: r.rota, msg: t('sem número de factura') });
+          const km = chaveTxt(r.motorista), kp = chaveTxt(r.matricula);
+          if (km) { if (vistos.m[km]) avisos.push({ rota: r.rota, msg: t('o motorista também está na rota {r}', { r: vistos.m[km] }) }); else vistos.m[km] = r.rota; }
+          if (kp) { if (vistos.p[kp]) avisos.push({ rota: r.rota, msg: t('a viatura também está na rota {r}', { r: vistos.p[kp] }) }); else vistos.p[kp] = r.rota; }
+        });
+        return { erros, avisos };
+      }
+      let pcTimer = null;
+      function marcarSujo() { PC.sujo = true; PC.mud++; actualizarPlanoUI(); clearTimeout(pcTimer); pcTimer = setTimeout(guardarPlano, 1500); }
+      function guardarPlano() {
+        clearTimeout(pcTimer);
+        if (!PC.sujo || PC.gravando || !PC.resp || !PC.resp.gere) return Promise.resolve(true);
+        PC.gravando = true; actualizarPlanoUI();
+        const n = PC.mud;
+        return postPlano({ accao: 'guardar', data: PC.data, rev: PC.resp.plano ? PC.resp.plano.rev : 0, rotas: PC.rotas }).then((d) => {
+          PC.gravando = false;
+          if (d.ok) { PC.resp.plano = d.plano; PC.guardadoEm = new Date(); if (PC.mud === n) PC.sujo = false; else pcTimer = setTimeout(guardarPlano, 800); }
+          else toast(t(d.erro || 'Não foi possível guardar.'), 8000);
+          actualizarPlanoUI();
+          return !!d.ok;
+        });
+      }
+      function mudarDiaPlano(nova) {
+        if (!nova || nova === PC.data) return;
+        guardarPlano().then(() => { PC.resp = null; PC.rotas = null; PC.data = nova; draw(); });
+      }
+      addEventListener('beforeunload', (e) => { if (PC.sujo) { guardarPlano(); e.preventDefault(); e.returnValue = ''; } });
+
+      // ---- Excel no formato habitual (GENERAL SALES PLAN) ----
+      const b64 = (buf) => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+      function gerarExcelPlano(rotas, data, versao, artigos) {
+        return carregarExcelJS().then(() => {
+          const wb = new ExcelJS.Workbook(); wb.creator = 'Portal RTM · Grupo Naval';
+          const ws = wb.addWorksheet('GENERAL SALES PLAN', { views: [{ state: 'frozen', ySplit: 2 }], pageSetup: { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+          ws.columns = [22, 22, 12, 42, 12, 16, 12, 24, 15, 17, 16, 18, 18].map((w) => ({ width: w }));
+          const [y, m, dd] = data.split('-');
+          ws.mergeCells('A1:M1');
+          const c1 = ws.getCell('A1');
+          c1.value = `GENERAL SALES PLAN (DATE: ${dd}/${m}/${y.slice(2)})` + (versao > 1 ? ` · RECTIFICADO (V${versao})` : '');
+          c1.font = { bold: true, size: 18, color: { argb: 'FF1E4FB0' } }; c1.alignment = { horizontal: 'center', vertical: 'middle' }; ws.getRow(1).height = 28;
+          const borda = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          const r2 = ws.getRow(2); r2.height = 30;
+          ['REQUESTED DATE', 'SALES PERSON', 'LOADING', 'DISCHARGED', 'NUMBER OF TRIPS', 'ITEM', 'QUANTITY', 'DRIVER', 'PHONE NUMBER', 'PLATE', 'VEHICLE TYPE', 'COMPANY', 'INVOICE NUMBER'].forEach((h, i) => {
+            const c = r2.getCell(i + 1); c.value = h; c.border = borda;
+            c.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E4FB0' } }; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          });
+          const dataXl = new Date(Date.UTC(+y, +m - 1, +dd));
+          let lin = 3;
+          rotas.filter((r) => r.sai).forEach((r) => {
+            const n = Math.max(r.zonas.length, artigos.length, 1), ini = lin, fim = lin + n - 1;
+            for (let i = 0; i < n; i++) {
+              const row = ws.getRow(lin + i);
+              if (r.zonas[i]) row.getCell(4).value = r.zonas[i].toUpperCase();
+              if (artigos[i]) { row.getCell(6).value = artigos[i].nome.toUpperCase(); row.getCell(7).value = +r.quantidades[artigos[i].id] || 0; }
+            }
+            const tel = String(r.telefone || '').replace(/\s/g, '');
+            const unico = { 1: dataXl, 2: (r.vendedor || '').toUpperCase(), 3: (r.armazem || '').toUpperCase(), 5: +r.viagens || null, 8: (r.motorista || '').toUpperCase(), 9: /^\d{9}$/.test(tel) ? +tel : tel || null, 10: r.matricula || null, 11: (r.viatura || '').toUpperCase(), 12: (r.transportadora || '').toUpperCase(), 13: r.factura || null };
+            Object.entries(unico).forEach(([col, v]) => { ws.getRow(ini).getCell(+col).value = v === '' ? null : v; if (n > 1) ws.mergeCells(ini, +col, fim, +col); });
+            for (let i = ini; i <= fim; i++) for (let c = 1; c <= 13; c++) {
+              const cell = ws.getRow(i).getCell(c); cell.border = borda; cell.font = { bold: true, size: 10 };
+              cell.alignment = { vertical: 'middle', horizontal: c === 4 || c === 6 ? 'left' : 'center', wrapText: c === 4 || c === 2 };
+            }
+            ws.getRow(ini).getCell(1).numFmt = 'dd-mm-yyyy';
+            lin = fim + 1; ws.mergeCells(lin, 1, lin, 13); lin++;
+          });
+          return wb.xlsx.writeBuffer();
+        });
+      }
+
+      // ---- Importar o Excel feito à mão (transição) ----
+      function lerExcelPlano(file) {
+        return carregarExcelJS().then(() => file.arrayBuffer()).then((buf) => { const wb = new ExcelJS.Workbook(); return wb.xlsx.load(buf).then(() => wb); }).then((wb) => {
+          const ws = wb.worksheets[0]; let hdr = 0;
+          ws.eachRow((row, i) => { if (!hdr && row.values.some((v) => typeof v === 'string' && /SALES\s*PERSON/i.test(v))) hdr = i; });
+          if (!hdr) throw new Error(t('Não encontrei o cabeçalho do plano (SALES PERSON) no ficheiro.'));
+          const val = (row, c) => {
+            const cel = row.getCell(c);
+            if (cel.isMerged && cel.master && cel.master.address !== cel.address) return null;
+            let v = cel.value;
+            if (v && typeof v === 'object' && !(v instanceof Date)) v = v.result != null ? v.result : v.text != null ? v.text : v.richText ? v.richText.map((x) => x.text).join('') : null;
+            return v;
+          };
+          const txt = (v) => (v == null || v instanceof Date ? '' : String(v).replace(/\s+/g, ' ').trim());
+          const blocos = []; let b = null, dataF = null;
+          for (let i = hdr + 1; i <= ws.rowCount; i++) {
+            const row = ws.getRow(i), vend = txt(val(row, 2));
+            if (vend) {
+              b = { vendedor: vend, armazem: txt(val(row, 3)), viagens: +val(row, 5) || 1, zonas: [], itens: [], motorista: txt(val(row, 8)), telefone: txt(val(row, 9)), matricula: txt(val(row, 10)), viatura: txt(val(row, 11)), transportadora: txt(val(row, 12)), factura: txt(val(row, 13)) };
+              blocos.push(b);
+              const a = val(row, 1); if (a instanceof Date && !dataF) dataF = a.toISOString().slice(0, 10);
+            }
+            if (!b) continue;
+            const z = txt(val(row, 4)); if (z) b.zonas.push(z);
+            const it = txt(val(row, 6)); if (it) b.itens.push([it, +val(row, 7) || 0]);
+          }
+          return { blocos, dataF };
+        });
+      }
+      const titulo = (s) => String(s || '').toLowerCase().replace(/(^|[\s(-])(\p{L})/gu, (m, a, l) => a + l.toUpperCase()).replace(/ (E|De|Do|Da|Dos|Das) /g, (m) => m.toLowerCase());
+      // Associa cada bloco do Excel a uma rota: nome do vendedor e, quando não chega, viatura e motorista do histórico
+      function rotaDoBloco(b, d, usadas) {
+        const kv = chaveTxt(b.vendedor).split(' '), hist = (DB.cargas || []).slice().sort((x, y) => (x.data < y.data ? 1 : -1));
+        let melhor = null, pts = 0;
+        d.rotas.forEach((rt) => {
+          if (usadas.has(rt.rota)) return;
+          const kp = chaveTxt(rt.promotor).split(' ');
+          let s = 0;
+          if (kp.join(' ') === kv.join(' ')) s += 5;
+          if (kp[0] && kp[0] === kv[0]) s += 1;
+          if (kp.length > 1 && kp[kp.length - 1] === kv[kv.length - 1]) s += 1;
+          const hp = hist.find((h) => chaveTxt(h.matricula) === chaveTxt(b.matricula)); if (hp && hp.rota === rt.rota) s += 2;
+          const hm = hist.find((h) => chaveTxt(h.motorista) === chaveTxt(b.motorista)); if (hm && hm.rota === rt.rota) s += 2;
+          if (s > pts) { pts = s; melhor = rt; }
+        });
+        return pts >= 2 ? melhor : null;
+      }
+      function importarExcelPlano(file) {
+        lerExcelPlano(file).then(({ blocos, dataF }) => {
+          if (!blocos.length) { toast(t('O ficheiro não tem rotas.'), 6000); return; }
+          const alvo = dataF || PC.data;
+          const passo = alvo !== PC.data ? guardarPlano().then(() => carregarPlano(alvo)) : Promise.resolve();
+          return passo.then(() => {
+            const d = PC.resp, arts = d.listas.artigos, usadas = new Set(), falhas = [];
+            const L = d.listas, achar = (lista, v) => lista.find((x) => chaveTxt(x) === chaveTxt(v)) || titulo(v);
+            PC.rotas.forEach((r) => { r.sai = false; });
+            blocos.forEach((b) => {
+              const rt = rotaDoBloco(b, d, usadas);
+              if (!rt) { falhas.push(b.vendedor); return; }
+              usadas.add(rt.rota);
+              const r = PC.rotas.find((x) => x.rota === rt.rota);
+              const q = {}; arts.forEach((a) => { q[a.id] = 0; });
+              b.itens.forEach(([nome, v]) => { const a = arts.find((x) => chaveTxt(x.nome) === chaveTxt(nome)); if (a) q[a.id] += v; });
+              const mot = L.motoristas.find((x) => chaveTxt(x.nome) === chaveTxt(b.motorista));
+              Object.assign(r, {
+                sai: true, vendedor: rt.promotor || titulo(b.vendedor), armazem: b.armazem ? achar(L.armazens, b.armazem) : r.armazem, viagens: b.viagens,
+                zonas: [...new Map(b.zonas.map((z) => [chaveTxt(z), achar(L.zonas, z)])).values()], quantidades: q,
+                motorista: mot ? mot.nome : titulo(b.motorista), telefone: b.telefone || (mot ? mot.telefone : ''), matricula: b.matricula.toUpperCase(),
+                viatura: b.viatura ? achar(L.viaturas, b.viatura) : '', transportadora: b.transportadora ? achar(L.transportadoras, b.transportadora) : '', factura: b.factura,
+              });
+            });
+            marcarSujo(); draw();
+            const msg = t('Importadas {n} rotas do Excel de {d}.', { n: usadas.size, d: dl(alvo) }) + (falhas.length ? ' ' + t('Sem rota identificada: {v}. Preencha essas rotas à mão.', { v: falhas.join(', ') }) : '');
+            toast(msg, falhas.length ? 12000 : 6000);
+          });
+        }).catch((e) => toast(t('Não foi possível ler o Excel.') + ' ' + (e && e.message ? e.message : ''), 8000));
+      }
+
+      // ---- Publicar ----
+      function publicarPlano() {
+        const d = PC.resp, v = validarPlano(PC.rotas), dest = d.listas.destinatarios;
+        if (v.erros.length || !dest.length) {
+          janela(t('Ainda não pode publicar'), t('Corrija estes pontos:'), (b, ft, fechar) => {
+            const ul = el('ul', 'pc-lista'); v.erros.forEach((x) => ul.append(el('li', null, (x.rota ? t('Rota') + ' ' + x.rota + ': ' : '') + x.msg)));
+            if (!dest.length) ul.append(el('li', null, t('A lista de destinatários está vazia (Listas → Destinatários).')));
+            b.append(ul); ft.append(botao(t('Fechar'), '', fechar));
+          });
+          return;
+        }
+        const versao = ((d.plano && d.plano.publicado && d.plano.publicado.versao) || 0) + 1;
+        const saem = PC.rotas.filter((r) => r.sai);
+        janela(versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar'), t('Plano de {d}: {n} rotas, {c} caixas. Vai por email, com o Excel em anexo, para:', { d: dl(PC.data), n: saem.length, c: n0(saem.reduce((s, r) => s + somaQ(r), 0)) }), (b, ft, fechar) => {
+          const ul = el('ul', 'pc-lista'); dest.forEach((x) => ul.append(el('li', null, (x.nome ? x.nome + ' · ' : '') + x.email))); b.append(ul);
+          if (v.avisos.length) b.append(el('p', 'aviso', t('{n} avisos (por exemplo, falta de número de factura). Pode publicar na mesma.', { n: v.avisos.length })));
+          if (!d.email_configurado) b.append(el('p', 'aviso', t('O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode reenviar depois.')));
+          const nota = entrada('text', '', { maxLength: 300, placeholder: versao > 1 ? t('O que mudou (aparece no email)') : t('Opcional') });
+          b.append(campo(versao > 1 ? t('Nota da rectificação') : t('Nota para os destinatários'), nota));
+          const erro = msgErro(); b.append(erro);
+          const go = botao(versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar'), '', () => {
+            go.disabled = true; go.textContent = t('A publicar…');
+            guardarPlano().then(() => gerarExcelPlano(PC.rotas, PC.data, versao, d.listas.artigos)).then((buf) =>
+              postPlano({ accao: 'publicar', data: PC.data, rev: d.plano ? d.plano.rev : 0, rotas: PC.rotas, xlsx: b64(buf), nota: nota.value.trim() })
+            ).then((r) => {
+              go.disabled = false; go.textContent = versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar');
+              if (!r.ok) { erro.textContent = t(r.erro || 'Não foi possível publicar.') + (r.erros ? ' ' + r.erros.join(' ') : ''); erro.hidden = false; return; }
+              PC.resp.plano = r.plano; if (r.listas) PC.resp.listas = r.listas; PC.sujo = false; PC.hist = null; fechar(); draw();
+              toast(r.email && r.email.ok ? t('Plano publicado e enviado a {n} destinatários.', { n: r.email.para.length }) : t('Plano publicado, mas o email não seguiu: {e}', { e: r.email ? r.email.erro : '' }), 9000);
+            }).catch(() => { go.disabled = false; erro.textContent = t('Não foi possível publicar.'); erro.hidden = false; });
+          });
+          ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+        });
+      }
+
+      // ---- Listas (destinatários, motoristas, zonas, ...) ----
+      function janelaListas() {
+        const L = JSON.parse(JSON.stringify(PC.resp.listas));
+        janela(t('Listas do plano de cargas'), t('Usadas no preenchimento. Motoristas, zonas e viaturas novos entram sozinhos quando o plano é publicado.'), (b, ft, fechar, dlg) => {
+          dlg.classList.add('largo');
+          const seg = el('div', 'seg'), corpo = el('div', 'pc-listas');
+          const linhas = (arr, cols, novo) => {
+            const w = el('div');
+            const desenhar = () => {
+              w.replaceChildren();
+              arr.forEach((x, i) => {
+                const l = el('div', 'pc-linha');
+                cols.forEach(([k, ph, tipo]) => { const inp = entrada(tipo || 'text', x[k] || '', { placeholder: ph }); inp.addEventListener('input', () => { x[k] = inp.value; }); l.append(inp); });
+                const rm = botao('×', 'ghost sm', () => { arr.splice(i, 1); desenhar(); }); rm.setAttribute('aria-label', t('Retirar')); l.append(rm);
+                w.append(l);
+              });
+              w.append(botao(t('Acrescentar'), 'ghost sm', () => { arr.push(novo()); desenhar(); const ins = w.querySelectorAll('.pc-linha'); const u = ins[ins.length - 1]; if (u) u.querySelector('input').focus(); }));
+            };
+            desenhar(); return w;
+          };
+          const area = (k) => { const ta = el('textarea', 'pc-ta'); ta.value = L[k].join('\n'); ta.rows = 12; ta.addEventListener('input', () => { L[k] = ta.value.split('\n').map((s) => s.trim()).filter(Boolean); }); return ta; };
+          const abas = [
+            ['destinatarios', t('Destinatários'), () => { const w = el('div'); w.append(el('p', 'nota-dlg', t('Recebem o plano por email sempre que é publicado ou rectificado.')), linhas(L.destinatarios, [['nome', t('Nome')], ['email', 'email@naval.co.ao', 'email']], () => ({ nome: '', email: '' })));
+              const te = botao(t('Enviar email de teste para mim'), 'ghost sm', () => { te.disabled = true; postPlano({ accao: 'teste_email' }).then((r) => { te.disabled = false; toast(r.ok ? t('Email de teste enviado para {e}.', { e: r.para }) : t(r.erro || 'Não foi possível enviar.'), 9000); }); });
+              w.append(te); return w; }],
+            ['motoristas', t('Motoristas'), () => linhas(L.motoristas, [['nome', t('Nome')], ['telefone', t('Telefone'), 'tel'], ['matricula', t('Matrícula')], ['viatura', t('Viatura')], ['transportadora', t('Transportadora')]], () => ({ nome: '', telefone: '', matricula: '', viatura: '', transportadora: '' }))],
+            ['zonas', t('Zonas'), () => { const w = el('div'); w.append(el('p', 'nota-dlg', t('Uma zona por linha.')), area('zonas')); return w; }],
+            ['outras', t('Armazéns e viaturas'), () => { const w = el('div', 'campos2'); w.append(campo(t('Armazéns de carga (um por linha)'), area('armazens')), campo(t('Tipos de viatura'), area('viaturas')), campo(t('Transportadoras'), area('transportadoras'))); return w; }],
+            ['artigos', t('Artigos'), () => { const w = el('div'); w.append(el('p', 'nota-dlg', t('Artigos carregados nas carrinhas, pela ordem do Excel.')), linhas(L.artigos, [['nome', t('Artigo')]], () => ({ id: '', nome: '' }))); return w; }],
+          ];
+          let aba = 'destinatarios';
+          const mostrar = () => { seg.replaceChildren(); abas.forEach(([k, nome]) => { const x = el('button', k === aba ? 'on' : null, nome); x.type = 'button'; x.addEventListener('click', () => { aba = k; mostrar(); }); seg.append(x); }); corpo.replaceChildren(abas.find((a) => a[0] === aba)[2]()); };
+          mostrar(); b.append(seg, corpo);
+          const erro = msgErro(); b.append(erro);
+          const gd = botao(t('Guardar listas'), '', () => {
+            gd.disabled = true;
+            L.artigos.forEach((a) => { if (!a.id) a.id = chaveTxt(a.nome).toLowerCase().replace(/ /g, ''); });
+            postPlano({ accao: 'listas', listas: L }).then((r) => {
+              gd.disabled = false;
+              if (!r.ok) { erro.textContent = t(r.erro || 'Não foi possível guardar.'); erro.hidden = false; return; }
+              PC.resp.listas = r.listas; PC.rotas = montarRotasPlano(PC.resp, PC.rotas); fechar(); draw(); toast(t('Listas guardadas.'), 4000);
+            });
+          });
+          ft.append(botao(t('Cancelar'), 'ghost', fechar), gd);
+        });
+      }
+
+      // ---- Página ----
+      let pcUI = null;   // elementos actualizados sem redesenhar (estado, resumo, avisos de cada rota)
+      function actualizarPlanoUI() {
+        if (!pcUI || !pcUI.estado.isConnected) return;
+        const d = PC.resp, p = d.plano, est = estadoPlano();
+        const NOMES = { novo: 'Por preencher', rascunho: 'Rascunho', publicado: 'Publicado', alterado: 'Alterações por publicar' };
+        const cls = { novo: 'p-warn', rascunho: 'p-warn', publicado: 'p-ok', alterado: 'p-warn' };
+        const linha = [];
+        if (p && p.publicado) linha.push(t('Versão {v} publicada por {p} às {h} de {d}', { v: p.publicado.versao, p: p.publicado.por_nome || p.publicado.por, h: p.publicado.em.slice(11, 16), d: dl(p.publicado.em) }));
+        if (d.gere) linha.push(PC.gravando ? t('A guardar…') : PC.sujo ? t('Alterações por guardar') : PC.guardadoEm ? t('Guardado às {h}', { h: PC.guardadoEm.toTimeString().slice(0, 5) }) : p && p.alterado ? t('Última alteração às {h} de {d}', { h: p.alterado.slice(11, 16), d: dl(p.alterado) }) : '');
+        pcUI.estado.replaceChildren(pill(t(NOMES[est]), cls[est]), el('span', 'pc-estado-t', linha.filter(Boolean).join(' · ')));
+        if (pcUI.publicar) { pcUI.publicar.textContent = p && p.publicado ? t('Publicar rectificação') : t('Publicar e enviar'); pcUI.publicar.disabled = est === 'publicado' || PC.gravando; }
+        const v = validarPlano(PC.rotas), saem = PC.rotas.filter((r) => r.sai), arts = d.listas.artigos;
+        pcUI.resumo.replaceChildren(...[
+          [t('Rotas a sair'), n0(saem.length) + ' / ' + n0(PC.rotas.length)],
+          ...arts.map((a) => [t(a.nome), n0(saem.reduce((s, r) => s + (+r.quantidades[a.id] || 0), 0))]),
+          [t('Total de caixas'), n0(saem.reduce((s, r) => s + somaQ(r), 0))],
+          ...(d.gere ? [[t('Por corrigir'), n0(v.erros.length), v.erros.length ? 'bad' : null]] : []),
+        ].map(([l, val, tone]) => { const x = el('div', 'glass tile'); x.append(el('span', 'l', l)); const vv = el('span', 'v', val); if (tone) vv.style.color = `var(--${tone})`; x.append(vv); return x; }));
+        Object.entries(pcUI.cartoes).forEach(([rota, c]) => {
+          const r = PC.rotas.find((x) => x.rota === rota);
+          c.el.classList.toggle('fora', !r.sai); c.corpo.hidden = !r.sai; c.total.textContent = r.sai ? t('{n} cx', { n: n0(somaQ(r)) }) : t('Não sai');
+          const e = v.erros.filter((x) => x.rota === rota).map((x) => x.msg), a = v.avisos.filter((x) => x.rota === rota).map((x) => x.msg);
+          c.av.replaceChildren(...e.map((m) => el('span', 'pc-err', m)), ...a.map((m) => el('span', 'pc-av', m))); c.av.hidden = !r.sai || !(e.length + a.length);
+        });
+      }
+      function cartaoRota(r, d, dls) {
+        const c = el('section', 'glass pc-card'), cab = el('div', 'pc-cab');
+        const sai = entrada('checkbox'); sai.checked = r.sai; sai.setAttribute('aria-label', t('A rota {r} sai neste dia', { r: r.rota }));
+        const tit = el('label', 'pc-tit'); tit.append(sai, el('b', null, r.rota), el('span', null, r.vendedor || ''));
+        const total = el('span', 'pc-total'); cab.append(tit, total); c.append(cab);
+        const corpo = el('div', 'pc-corpo'), av = el('div', 'pc-avs');
+        sai.addEventListener('change', () => { r.sai = sai.checked; marcarSujo(); });
+        const inp = (k, rot, attrs, lista) => {
+          const i = entrada(attrs && attrs.type || 'text', r[k], attrs); if (lista) i.setAttribute('list', lista);
+          i.addEventListener('input', () => { r[k] = i.type === 'number' ? +i.value || 0 : i.value; marcarSujo(); });
+          return [campo(rot, i), i];
+        };
+        const [fMot, iMot] = inp('motorista', t('Motorista'), { autocomplete: 'off' }, dls.mot);
+        const [fTel, iTel] = inp('telefone', t('Telefone'), { type: 'tel', inputMode: 'tel' });
+        const [fMat, iMat] = inp('matricula', t('Matrícula'), { autocomplete: 'off' });
+        const [fVia, iVia] = inp('viatura', t('Viatura'), { autocomplete: 'off' }, dls.via);
+        const [fTra, iTra] = inp('transportadora', t('Transportadora'), { autocomplete: 'off' }, dls.tra);
+        iMot.addEventListener('change', () => {
+          const m = d.listas.motoristas.find((x) => chaveTxt(x.nome) === chaveTxt(iMot.value)); if (!m) return;
+          r.motorista = iMot.value = m.nome;
+          [[iTel, 'telefone'], [iMat, 'matricula'], [iVia, 'viatura'], [iTra, 'transportadora']].forEach(([i, k]) => { if (m[k]) { r[k] = i.value = m[k]; } });
+          marcarSujo();
+        });
+        iMat.addEventListener('blur', () => { iMat.value = r.matricula = iMat.value.toUpperCase().trim(); });
+        const [fArm] = inp('armazem', t('Armazém de carga'), { autocomplete: 'off' }, dls.arm);
+        const [fVg] = inp('viagens', t('Viagens'), { type: 'number', min: 0, max: 20, inputMode: 'numeric' });
+        const [fFac] = inp('factura', t('N.º da factura'));
+        const [fObs] = inp('obs', t('Observações'));
+        const qs = el('div', 'pc-qs');
+        d.listas.artigos.forEach((a) => {
+          const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
+          i.addEventListener('input', () => { r.quantidades[a.id] = Math.max(0, Math.round(+i.value || 0)); marcarSujo(); });
+          qs.append(campo(t(a.nome), i));
+        });
+        qs.append(fVg);
+        const linha = (...xs) => { const w = el('div', 'campos2'); w.append(...xs); return w; };
+        const l3 = el('div', 'campos3'); l3.append(fMat, fVia, fTra);
+        const zonas = el('div', 'campo'); zonas.append(el('span', null, t('Zonas de descarga')), editorZonas(r, d, dls.zon));
+        corpo.append(linha(fMot, fTel), l3, zonas, qs, linha(fArm, fFac), fObs);
+        c.append(corpo, av);
+        return { el: c, corpo, total, av };
+      }
+      function editorZonas(r, d, dl2) {
+        const w = el('div', 'pc-zonas'), chips = el('div', 'pc-chips');
+        const inp = entrada('text', '', { placeholder: t('Acrescentar zona…'), autocomplete: 'off' }); inp.setAttribute('list', dl2);
+        const desenhar = () => {
+          chips.replaceChildren(...r.zonas.map((z, i) => {
+            const ch = el('span', 'pc-chip', z), x = el('button', null, '×'); x.type = 'button'; x.setAttribute('aria-label', t('Retirar {z}', { z }));
+            x.addEventListener('click', () => { r.zonas.splice(i, 1); desenhar(); marcarSujo(); }); ch.append(x); return ch;
+          }));
+        };
+        const juntar = () => {
+          inp.value.split(/[,;]/).map((s) => s.trim()).filter(Boolean).forEach((z) => {
+            const ex = d.listas.zonas.find((x) => chaveTxt(x) === chaveTxt(z)), v = ex || z;
+            if (!r.zonas.some((x) => chaveTxt(x) === chaveTxt(v))) r.zonas.push(v);
+          });
+          inp.value = ''; desenhar(); marcarSujo();
+        };
+        inp.addEventListener('keydown', (e) => {
+          if ((e.key === 'Enter' || e.key === ',') && inp.value.trim()) { e.preventDefault(); juntar(); }
+          else if (e.key === 'Backspace' && !inp.value && r.zonas.length) { r.zonas.pop(); desenhar(); marcarSujo(); }
+        });
+        inp.addEventListener('input', (e) => { if (!e.inputType && d.listas.zonas.includes(inp.value)) juntar(); });   // escolhido na lista
+        inp.addEventListener('blur', () => { if (inp.value.trim()) juntar(); });
+        desenhar(); w.append(chips, inp); return w;
+      }
+      R['plano-cargas'] = (pg) => {
+        if (!PC.data) PC.data = hoje();
+        if (!PC.resp && !PC.erro) { pg.append(el('div', 'glass empty', t('A carregar…'))); carregarPlano(PC.data).then(() => { if (atual === 'plano-cargas') draw(); }); return; }
+        if (PC.erro) { pg.append(secBox(t('Plano de cargas'), '', el('p', null, PC.erro))); PC.erro = null; return; }
+        const d = PC.resp, gere = d.gere, p = d.plano;
+        // barra: dia, estado e acções
+        const barra = el('section', 'glass sec pc-barra'), dia = el('div', 'pc-dia');
+        const ant = botao('‹', 'ghost sm', () => mudarDiaPlano(somaDias(PC.data, -1))); ant.setAttribute('aria-label', t('Dia anterior'));
+        const seg = botao('›', 'ghost sm', () => mudarDiaPlano(somaDias(PC.data, 1))); seg.setAttribute('aria-label', t('Dia seguinte'));
+        const di = entrada('date', PC.data); di.setAttribute('aria-label', t('Dia do plano')); di.addEventListener('change', () => mudarDiaPlano(di.value));
+        const lbl = el('b', 'pc-dia-t', ds(PC.data));
+        dia.append(ant, lbl, di, seg); if (PC.data !== hoje()) dia.append(botao(t('Hoje'), 'ghost sm', () => mudarDiaPlano(hoje())));
+        const estado = el('div', 'pc-estado'), acc = el('div', 'pc-acc');
+        pcUI = { estado, resumo: el('div', 'tiles pc-resumo'), cartoes: {}, publicar: null };
+        if (gere) {
+          if (d.anterior) acc.append(botao(t('Copiar de {d}', { d: dl(d.anterior).slice(0, 5) }), 'ghost sm', () => {
+            const go = () => fetch('data/plano.php?data=' + d.anterior, { cache: 'no-store' }).then((r) => r.json()).then((x) => {
+              const src = x.plano ? (x.plano.publicado ? x.plano.publicado.rotas : x.plano.rotas) : [];
+              PC.rotas = montarRotasPlano(PC.resp, src.map((r) => ({ ...r, factura: '', obs: '' }))); marcarSujo(); draw();
+              toast(t('Copiado o plano de {d}. Corrija o que mudou hoje.', { d: dl(d.anterior) }), 6000);
+            });
+            if (PC.rotas.some((r) => r.sai)) confirmarAccao(t('Copiar do dia anterior'), t('O que já preencheu para este dia é substituído pelo plano de {d}.', { d: dl(d.anterior) }), t('Copiar'), () => go().then(() => ({ ok: true }))); else go();
+          }));
+          const fi = el('input'); fi.type = 'file'; fi.accept = '.xlsx'; fi.hidden = true; fi.addEventListener('change', () => { if (fi.files[0]) importarExcelPlano(fi.files[0]); fi.value = ''; });
+          acc.append(fi, botao(t('Importar Excel'), 'ghost sm', () => fi.click()), botao(t('Listas'), 'ghost sm', janelaListas));
+        }
+        if (p && p.publicado && d.exportar) { const a = el('a', 'btn ghost sm', t('Excel enviado')); a.href = 'data/plano.php?xlsx=' + PC.data; acc.append(a); }
+        if (gere) { pcUI.publicar = botao(t('Publicar e enviar'), 'sm', publicarPlano); acc.append(pcUI.publicar); }
+        barra.append(dia, estado, acc);
+        pg.append(barra);
+        // email que não seguiu
+        const env = gere && p && p.envios && p.envios.length ? p.envios[p.envios.length - 1] : null;
+        if (env && !env.ok) {
+          const box = el('div', 'glass sec pc-alerta'); box.append(el('p', null, t('O email da versão {v} não seguiu: {e}', { v: env.versao, e: env.erro })));
+          const rb = botao(t('Reenviar'), 'sm', () => { rb.disabled = true; postPlano({ accao: 'reenviar', data: PC.data }).then((r) => { rb.disabled = false; if (r.plano) PC.resp.plano = r.plano; toast(r.ok ? t('Email reenviado.') : t(r.erro || 'Não foi possível enviar.'), 8000); draw(); }); });
+          box.append(rb); pg.append(box);
+        } else if (gere && !d.email_configurado) pg.append(el('p', 'note', t('O envio de email ainda não está configurado no servidor. Pode preencher e publicar; o email segue quando a configuração estiver feita (botão Reenviar).')));
+        pg.append(pcUI.resumo);
+        if (gere) {
+          // listas para escolher
+          const dls = { mot: 'pc-dl-mot', via: 'pc-dl-via', tra: 'pc-dl-tra', arm: 'pc-dl-arm', zon: 'pc-dl-zon' };
+          [[dls.mot, d.listas.motoristas.map((m) => m.nome)], [dls.via, d.listas.viaturas], [dls.tra, d.listas.transportadoras], [dls.arm, d.listas.armazens], [dls.zon, d.listas.zonas]].forEach(([id, vals]) => {
+            const x = el('datalist'); x.id = id; vals.forEach((v) => { const o = el('option'); o.value = v; x.append(o); }); pg.append(x);
+          });
+          const grelha = el('div', 'pc-grid');
+          PC.rotas.forEach((r) => { const c = cartaoRota(r, d, dls); pcUI.cartoes[r.rota] = c; grelha.append(c.el); });
+          pg.append(grelha);
+        } else {
+          const saem = PC.rotas.filter((r) => r.sai);
+          if (!p || !p.publicado) pg.append(secBox(t('Plano de cargas'), '', el('p', null, t('O plano deste dia ainda não foi publicado pela Logística.'))));
+          else pg.append(tabela({
+            id: 'pc-t', titulo: t('Plano de {d}', { d: dl(PC.data) }), nota: t('Versão {v} publicada por {p}.', { v: p.publicado.versao, p: p.publicado.por_nome || p.publicado.por }), sort: 'rota', dir: 1, total: true,
+            rows: saem.map((r) => ({ ...r, chave: r.rota, zonas_t: r.zonas.join(', '), total: somaQ(r), ...Object.fromEntries(d.listas.artigos.map((a) => ['q_' + a.id, +r.quantidades[a.id] || 0])) })),
+            cols: [{ key: 'rota', label: t('Rota'), p: 0 }, { key: 'vendedor', label: t('Vendedor') }, { key: 'motorista', label: t('Motorista') }, { key: 'telefone', label: t('Telefone') },
+              { key: 'matricula', label: t('Matrícula') }, { key: 'zonas_t', label: t('Zonas'), wrap: true },
+              ...d.listas.artigos.map((a) => ({ key: 'q_' + a.id, label: t(a.nome), type: 'n', sum: true })), { key: 'total', label: t('Total'), type: 'n', sum: true }, { key: 'factura', label: t('Factura') }],
+          }));
+        }
+        // histórico
+        if (!PC.hist) fetch('data/plano.php?historico=1', { cache: 'no-store' }).then((r) => r.json()).then((h) => { PC.hist = h.dias || []; if (atual === 'plano-cargas') pg.append(historicoPlano()); }).catch(() => {});
+        else pg.append(historicoPlano());
+        actualizarPlanoUI();
+      };
+      function historicoPlano() {
+        const NOMES = { rascunho: 'Rascunho', publicado: 'Publicado', alterado: 'Alterações por publicar' };
+        return tabela({
+          id: 'pc-h', titulo: t('Dias anteriores'), nota: t('Planos guardados e publicados. Clique no dia para o abrir.'), sort: 'data', total: false, search: false,
+          rows: PC.hist.map((x) => ({ ...x, chave: x.data, estado_t: t(NOMES[x.estado] || x.estado), email_t: x.email === 'enviado' ? t('Enviado') : x.email === 'falhou' ? t('Falhou') : '—' })),
+          cols: [{ key: 'data', label: t('Dia'), p: 0, render: (v) => { const b = el('button', 'linkbtn', ds(v)); b.type = 'button'; b.addEventListener('click', () => { mudarDiaPlano(v); scrollTo(0, 0); }); return b; }, xl: (r) => dl(r.data) },
+            { key: 'estado_t', label: t('Estado') }, { key: 'versao', label: t('Versão'), type: 'n' }, { key: 'rotas', label: t('Rotas'), type: 'n' }, { key: 'carga', label: t('Caixas'), type: 'n' },
+            { key: 'publicado_por', label: t('Publicado por'), render: (v, r) => document.createTextNode(v ? v + ' · ' + dl(r.publicado_em) + ' ' + r.publicado_em.slice(11, 16) : '—') }, { key: 'email_t', label: t('Email') }],
+        });
+      }
+
       // ================= Acessos (administração) =================
       const NOMES_RECURSO = {
         'pagina-principal': 'Página principal e indicador das fontes', 'excel-completo': 'Excel completo (todas as páginas)',
@@ -3734,13 +4222,14 @@
         const p = paginaAtual();
         REG = { tabelas: [], kpis: [] }; FITS = [];
         textos(); mostrarFontes();
+        document.querySelector('.filters').style.display = p.id === 'plano-cargas' ? 'none' : '';
         $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
         $('#xl-all').hidden = !podeExportar('excel-completo');
         if (SESSAO) { $('#quem').hidden = false; $('#quem').replaceChildren(el('b', null, SESSAO.nome), el('span', null, t(SESSAO.perfil_nome) + (SESSAO.rotas ? ' · ' + (SESSAO.rotas.length ? SESSAO.rotas.join(', ') : t('sem rotas atribuídas')) : ''))); }
         $('#de').value = st.de; $('#ate').value = st.ate; $('#de-v').textContent = dl(st.de); $('#ate-v').textContent = dl(st.ate);
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
         Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
-        $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + (!st.de ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
+        $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + (!st.de || p.id === 'plano-cargas' ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
         $('#titulo').textContent = p.id === 'inicio' ? t('Onde pretende entrar?') : t(p.nome);
         $('#lead').textContent = p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
         const pg = $('#page'); pg.replaceChildren();

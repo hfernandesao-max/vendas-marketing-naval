@@ -115,3 +115,37 @@ As contas ficam em `dados-privados/utilizadores.json` e as alterações à matri
 A linha de comandos (`php ferramentas\utilizadores.php`) continua disponível para emergências, por exemplo se não houver nenhum super administrador activo. Comandos: `listar`, `criar`, `perfil`, `rotas`, `email`, `senha`, `dois-passos`, `activar`, `desactivar`, `validade`, `desbloquear`.
 
 Enquanto a lista nova não existir, o portal continua a usar `geo/auth/config_users.php` em modo de compatibilidade (administradores como TI, restantes como DIR) e a página Acessos avisa disso.
+
+## Plano de cargas (`reports/#plano-cargas`)
+
+Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e enviado por email todos os dias.
+
+- **Quem preenche e publica:** perfil Logística (LOG), nível G na matriz. Os restantes perfis com acesso vêem a versão publicada; os supervisores só as suas rotas.
+- **Preenchimento:** um cartão por rota. O motorista escolhe-se da lista e preenche o telefone, a matrícula, a viatura e a transportadora. As zonas escolhem-se da lista (sem nomes repetidos com grafias diferentes) e as quantidades indicam-se por artigo. O rascunho guarda-se sozinho.
+- **Atalhos:** *Copiar de …* (plano do dia anterior) e *Importar Excel* (lê o Excel no formato antigo, para a transição).
+- **Publicar e enviar:** valida (motorista, matrícula, zonas e carga em cada rota que sai), gera o Excel no formato habitual e envia-o por email à lista de destinatários, com o resumo no corpo. Uma alteração depois de publicado sai como *Rectificação* (versão 2, 3, …), com nota.
+- **Listas:** destinatários, motoristas, zonas, armazéns, viaturas, transportadoras e artigos. Motoristas, zonas e viaturas novos entram sozinhos ao publicar.
+- O plano publicado alimenta logo o *Stock por promotor / carrinha* e o escoamento.
+- Ficheiros em `dados-privados/plano-cargas/` (um JSON por dia, o Excel de cada versão e `listas.json`).
+
+### Envio de email pelo Microsoft 365
+
+O Microsoft 365 deixou de aceitar SMTP com palavra-passe em 2026, por isso a plataforma envia pelo Microsoft Graph com uma aplicação registada:
+
+1. Criar a caixa que envia, por exemplo `noreply@naval.co.ao` (caixa partilhada, sem licença).
+2. Em **Microsoft Entra** → *Registos de aplicações* → *Novo registo*: «Portal RTM – envio de email».
+3. *Permissões de API* → *Microsoft Graph* → *Permissões de aplicação* → **Mail.Send** → *Conceder consentimento de administrador*.
+4. *Certificados e segredos* → *Novo segredo do cliente* (anotar o valor e a data de expiração, para o renovar a tempo).
+5. Recomendado: limitar a aplicação à caixa `noreply` no Exchange Online (política de acesso da aplicação / RBAC para aplicações), para não poder enviar em nome de outras caixas.
+6. No `.env` do servidor:
+   ```
+   EMAIL_TENANT_ID=<identificador do inquilino>
+   EMAIL_CLIENT_ID=<identificador da aplicação>
+   EMAIL_CLIENT_SECRET=<segredo>
+   EMAIL_REMETENTE=noreply@naval.co.ao
+   PORTAL_URL=https://geo.naval.co.ao:2051
+   ```
+7. No `php.ini`, a extensão `openssl` tem de estar activa (o cURL é opcional).
+8. Testar no portal: *Plano de cargas* → *Listas* → *Destinatários* → **Enviar email de teste para mim**.
+
+Enquanto o email não estiver configurado, o plano publica-se na mesma e o botão *Reenviar* envia-o depois.

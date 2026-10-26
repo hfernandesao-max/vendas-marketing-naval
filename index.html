@@ -834,7 +834,7 @@
         if (!d || !d.permissoes) return;
         const P = d.permissoes, tem = (id) => !!P[id];
         const relatorios = ['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'stock-carrinha', 'stock-armazem',
-          'vendas-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'acessos'].some(tem);
+          'vendas-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'plano-cargas', 'acessos'].some(tem);
         const geo = ['geo-rotas', 'geo-zonas', 'geo-distribuidores'].some(tem);
         const ATALHO = { 'reports/#exportar': () => ['E', 'Er', 'G', 'A'].includes(P['excel-completo']), 'reports/#ranking': () => tem('ranking'), 'reports/#auditoria': () => tem('auditoria'),
           'geo/geo.php': () => tem('geo-rotas'), 'geo/view/': () => tem('geo-zonas'), 'geo/view/viewDist/': () => tem('geo-distribuidores') };

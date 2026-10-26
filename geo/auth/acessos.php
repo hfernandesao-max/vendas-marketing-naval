@@ -51,6 +51,7 @@ const NAVAL_MATRIZ_TXT = [
     'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V',
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E',
+    'plano-cargas'         => 'V  V  V  Vr -  -  V  G  V  V',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
     'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V',
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
@@ -97,6 +98,9 @@ function naval_env(): array
     }
     return $env;
 }
+
+// Datas e horas da plataforma na hora de Luanda (salvo outro fuso em FUSO_HORARIO no .env)
+date_default_timezone_set(naval_env()['FUSO_HORARIO'] ?? 'Africa/Luanda');
 
 /** Pasta privada (fora da pasta pública) para utilizadores, registos e bloqueios. */
 function naval_pasta_privada(): string
@@ -165,6 +169,8 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'G'];
         case 'geo-rotas-descarregar':
             return ['', 'V', 'Er', 'E'];
+        case 'plano-cargas':
+            return ['', 'Vr', 'V', 'E', 'G'];
         case 'geo-rotas':
         case 'geo-zonas':
         case 'geo-distribuidores':
