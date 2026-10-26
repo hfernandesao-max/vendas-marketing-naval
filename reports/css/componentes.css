@@ -611,6 +611,10 @@ select.nivel.pendente {
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+.fb-pop.fb-pop-dir {
+  left: auto;
+  right: 0;
+}
 .fb-pop-procura {
   margin: 8px 8px 2px;
   height: 32px;

@@ -210,6 +210,8 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
     if (fecharAberto) fecharAberto();
     desenharLista();
     pop.hidden = false;
+    // Abre para o lado onde cabe (botões encostados à direita abrem para a esquerda)
+    pop.classList.toggle('fb-pop-dir', w.getBoundingClientRect().left + pop.offsetWidth > document.documentElement.clientWidth - 8);
     b.setAttribute('aria-expanded', 'true');
     fecharAberto = fechar;
     setTimeout(() => {
