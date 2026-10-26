@@ -1,17 +1,8 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    if (!headers_sent()) {
-        session_set_cookie_params([
-            'path' => '/',
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-    session_start();
-}
+require_once dirname(__DIR__, 2) . '/nucleo/arranque.php';
+naval_iniciar_sessao();
 
 // Registo da saída
-require_once __DIR__ . '/acessos.php';
 if (!empty($_SESSION['usuario_login'])) naval_registar('saida');
 
 // Destruir todas as variáveis de sessão
@@ -25,9 +16,9 @@ if (ini_get('session.use_cookies')) {
         '',
         time() - 42000,
         '/',
-        $params['domain'] ?? '',
-        $params['secure'] ?? false,
-        $params['httponly'] ?? true
+        $params['domain'],
+        $params['secure'],
+        $params['httponly']
     );
 }
 

@@ -8,7 +8,7 @@ Documento de referência para quem mantém o código. O guia de utilização e i
 Navegador ──► reports/index.php  (controlador autenticado: sessão, perfil, páginas permitidas)
    │               └─ entrega reports/index.html (casca) + reports/css/*.css + reports/js/main.js (módulo)
    │
-   └─ fetch ──► reports/data/*.php  (serviços JSON, cada um verifica sessão, perfil e CSRF)
+   └─ fetch ──► reports/data/*.php  (controladores: pedido → serviço → resposta JSON)
                     ├─ api.php        → Pinguim BO (http://127.0.0.1:8089/rest/exportdata)
                     ├─ cadastros.php  → cadastros de clientes
                     ├─ plano.php      → plano de cargas (+ email Microsoft 365)
@@ -18,11 +18,11 @@ Navegador ──► reports/index.php  (controlador autenticado: sessão, perfil
                     ├─ registar.php   → registo das exportações
                     └─ dados.php      → ficheiros fixos (rotas, cargas, carteira) filtrados pelo perfil
                          │
-                         └─ geo/auth/*.php  (biblioteca: acessos, email, cargas) e dados-privados/ (fora da web)
+                         └─ nucleo/  (back-end: configuração, segurança, serviços de negócio) → dados-privados/ (fora da web)
 ```
 
 - **Front-end:** módulos ES nativos do navegador, sem passo de compilação. O que está no GitHub é exactamente o que o Apache serve; publicar continua a ser `git pull`.
-- **Back-end:** PHP 7.1+ (sem extensões opcionais obrigatórias). Toda a autorização é feita no servidor (`naval_exigir`, `naval_pode`); o front-end só esconde o que o perfil não pode ver.
+- **Back-end:** PHP 7.1 ou posterior (verificado no GitHub da 7.1 à 8.3), em camadas no `nucleo/`. Toda a autorização é feita no servidor (`naval_exigir`, `naval_pode`); o front-end só esconde o que o perfil não pode ver.
 - **Dados privados:** `dados-privados/` (contas, registos JSONL, planos, lotes SAP, token de email) nunca é servido pelo Apache nem vai para o GitHub.
 
 ## Módulos do front-end (`reports/js/`)
@@ -62,9 +62,59 @@ Camadas, de baixo para cima. Um módulo só importa das camadas iguais ou inferi
 
 Os módulos ES não permitem alterar uma variável importada. O estado partilhado é exportado como `let` e alterado só pela função `definir…` do próprio módulo (`definirIdioma`, `definirSessao`, `definirAtual`, `definirReg`, …). Objectos partilhados (`DB`, `R`, `FV`) são alterados nas propriedades.
 
-## Serviços PHP (`reports/data/`)
+## Back-end PHP em camadas (`nucleo/`)
 
-Cada serviço começa por `require auth_check.php` e `naval_exigir([...recursos])`. Escritas exigem POST com o token CSRF da sessão e o nível certo na matriz (`naval_pode_exportar`, nível E/G). Todas as acções relevantes ficam em registos JSONL (`naval_registar`).
+```
+reports/data/*.php      Controladores: lêem o pedido, verificam o acesso, chamam um serviço e respondem.
+        │               Não têm regras de negócio nem acesso directo a ficheiros.
+        ▼
+nucleo/servicos/        Serviços de negócio (casos de uso), sem HTTP: devolvem dados ou lançam NavalErro.
+  pinguim.php           ligação ao Pinguim BO (endereços alternativos, estado, diagnóstico, estrutura)
+  vendas.php            documentos FR/FT, pagamentos e troco, linhas de artigos, âmbito por perfil
+  cargas.php            plano de cargas: rascunho, conflito de versões, publicação, listas, email
+  sap.php               correspondência de rotas e lotes do ficheiro para o SAP
+  gestao.php            contas, confirmação da identidade, dois passos, matriz de acessos
+  cadastros.php, rotas.php, email.php (Microsoft 365)
+        │
+        ▼
+nucleo/seguranca/       Matriz de acessos, contas e palavras-passe, TOTP, bloqueios, sessão, registos
+nucleo/http.php         Respostas JSON, corpo do pedido, CSRF, NavalErro e erros fatais em JSON
+nucleo/armazem.php      Ficheiros JSON na pasta privada (escrita atómica, leitura tolerante)
+nucleo/cliente-http.php Pedidos a serviços externos (cURL ou, sem cURL, o cliente nativo do PHP)
+nucleo/config.php       O único leitor do .env
+```
+
+Entradas:
+
+| Quem                                    | Inclui                    | Faz                                                     |
+| --------------------------------------- | ------------------------- | ------------------------------------------------------- |
+| Serviços JSON (`reports/data/*.php`)    | `nucleo/api.php`          | núcleo, erros em JSON, sessão obrigatória (401 em JSON) |
+| Páginas HTML (`reports/index.php`, GEO) | `geo/auth/auth_check.php` | núcleo, sessão; sem sessão → página de entrada          |
+| Linha de comandos (`ferramentas/`)      | `nucleo/arranque.php`     | só o núcleo                                             |
+
+Regras:
+
+- **Erros:** um serviço lança `new NavalErro('Mensagem para o utilizador', códigoHTTP, [campos extra])`; o tratador de `nucleo/api.php` responde `{ok:false, erro, ...}`. Qualquer outro erro é registado no log do PHP e devolvido como 500 em JSON, nunca como HTML.
+- **Autorização** sempre no servidor: `naval_exigir([...])` no controlador; as escritas exigem POST com o código CSRF da sessão (`naval_exigir_csrf`) e o nível certo da matriz.
+- **Registos:** todas as acções relevantes ficam em `dados-privados/registos/` (`naval_registar`).
+- **Compatibilidade:** `geo/auth/acessos.php`, `email.php` e `cargas.php` ficam como entradas antigas que carregam o núcleo.
+- **Ficheiros do núcleo:** começam por `defined('NAVAL_NUCLEO') || exit;` e a pasta tem `Require all denied`.
+
+### Configuração (`.env`, na raiz do site)
+
+| Chave                                                                          | Para quê                                                  | Omissão                                                                             |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `USERNAME`, `PASSWORD`                                                         | credenciais do Pinguim BO                                 | —                                                                                   |
+| `PINGUIM_URL`                                                                  | endereços do Pinguim BO, por ordem, separados por vírgula | `http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2083/rest/exportdata` |
+| `DADOS_PRIVADOS`                                                               | pasta privada (contas, registos, planos, lotes)           | `../dados-privados` ao lado do site                                                 |
+| `UTILIZADORES_JSON`                                                            | ficheiro das contas                                       | `<DADOS_PRIVADOS>/utilizadores.json`                                                |
+| `RTM_CLIENTES_JSON`                                                            | cadastros gerados pelo repositório rtm-clientes           | ver README                                                                          |
+| `EMAIL_TENANT_ID`, `EMAIL_CLIENT_ID`, `EMAIL_CLIENT_SECRET`, `EMAIL_REMETENTE` | envio pelo Microsoft 365                                  | —                                                                                   |
+| `EMAIL_MODO`                                                                   | `ficheiro` grava os emails em vez de os enviar (testes)   | `graph`                                                                             |
+| `PORTAL_URL`                                                                   | endereço do portal nas ligações dos emails                | —                                                                                   |
+| `FUSO_HORARIO`                                                                 | fuso das datas e horas                                    | `Africa/Luanda`                                                                     |
+
+A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos).
 
 ## Testes e qualidade
 
@@ -73,12 +123,15 @@ Cada serviço começa por `require auth_check.php` e `naval_exigir([...recursos]
 | ESLint 10 (`eslint.config.js`)               | Erros e más práticas nos módulos e testes                                                           |
 | Prettier (`.prettierrc.json`) + EditorConfig | Formatação uniforme                                                                                 |
 | Playwright `portal`                          | Todas as páginas em 4 tamanhos de ecrã, filtros, relatórios, gráficos, ficheiro SAP igual ao modelo |
-| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado                                         |
-| GitHub Actions                               | `php -l`, ESLint, Prettier e todos os testes a cada alteração                                       |
+| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON     |
+| Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), vendas e troco, plano, SAP         |
+| PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                        |
+| PHPCompatibility (`phpcs.xml.dist`)          | O código corre no PHP 7.1 ou posterior                                                              |
+| GitHub Actions                               | Sintaxe e testes unitários no PHP 7.1, 7.4, 8.1 e 8.3; análise; ESLint, Prettier e todos os testes  |
 
 ## Próximas fases
 
 1. ~~Front-end em módulos, normas e testes automáticos~~ (concluída).
-2. API PHP em camadas (encaminhamento, serviços, acesso a dados) e um único leitor de `.env`.
+2. ~~Back-end PHP em camadas e um único leitor do `.env`~~ (concluída).
 3. Base de dados SQL Server com sincronização do Pinguim BO.
 4. Optimização (cache dos dados do dia, carregamento por página).

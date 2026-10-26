@@ -1,22 +1,12 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    if (!headers_sent()) {
-        session_set_cookie_params([
-            'path' => '/',
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-    session_start();
-}
+require_once __DIR__ . '/../nucleo/arranque.php';
+naval_iniciar_sessao();
 
 $allowedRedirects = ['geo.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../'];
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../';
 if (!in_array($redirect, $allowedRedirects, true)) {
     $redirect = 'geo.php';
 }
-
-require_once __DIR__ . '/auth/acessos.php';
 
 // Se já estiver autenticado (sessão ainda válida), redirecciona para a aplicação pretendida
 if (!empty($_SESSION['usuario_autenticado']) && naval_sessao_valida()) {

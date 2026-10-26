@@ -9,7 +9,8 @@
     "test:php": "playwright test --project=servidor",
     "lint": "eslint reports/js tests playwright.config.js eslint.config.js",
     "format": "prettier --write \"reports/js/**/*.js\" \"reports/css/**/*.css\" \"tests/**/*.js\" playwright.config.js eslint.config.js",
-    "format:check": "prettier --check \"reports/js/**/*.js\" \"reports/css/**/*.css\" \"tests/**/*.js\" playwright.config.js eslint.config.js"
+    "format:check": "prettier --check \"reports/js/**/*.js\" \"reports/css/**/*.css\" \"tests/**/*.js\" playwright.config.js eslint.config.js",
+    "test:unidade": "php tests/unidade/correr.php"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

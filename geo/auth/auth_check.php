@@ -1,27 +1,17 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    if (!headers_sent()) {
-        session_set_cookie_params([
-            'path' => '/',
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-    session_start();
-}
+/**
+ * Páginas HTML protegidas: abre a sessão (núcleo do back-end) e, sem sessão válida, envia para a
+ * página de entrada com o regresso à página pedida. Os serviços JSON usam nucleo/api.php.
+ */
+require_once dirname(__DIR__, 2) . '/nucleo/arranque.php';
+naval_iniciar_sessao();
 
-// Perfis, matriz de acessos e validade da sessão (30 min sem actividade, 10 h no máximo, conta activa)
-require_once __DIR__ . '/acessos.php';
-if (!empty($_SESSION['usuario_autenticado'])) {
-    naval_sessao_valida();
-}
-
- $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $scriptDir = str_replace('\\', '/', dirname($scriptName));
 $configuredBasePath = defined('NAVAL_AUTH_BASE_PATH') ? NAVAL_AUTH_BASE_PATH : null;
 $configuredRedirect = defined('NAVAL_AUTH_REDIRECT') ? NAVAL_AUTH_REDIRECT : null;
 
-if (!isset($_SESSION['usuario_autenticado']) || $_SESSION['usuario_autenticado'] !== true) {
+if (!naval_autenticado()) {
     // Os serviços de dados dos relatórios (reports/data/*.php) respondem JSON, não uma página de login.
     if (preg_match('#/reports/data/[^/]+\.php$#i', $scriptName)) {
         http_response_code(401);

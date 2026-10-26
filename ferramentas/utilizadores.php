@@ -27,7 +27,7 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(403);
     exit('Acesso proibido.');
 }
-require_once __DIR__ . '/../geo/auth/acessos.php';
+require_once __DIR__ . '/../nucleo/arranque.php';
 
 function sair(string $msg, int $codigo = 1): void
 {

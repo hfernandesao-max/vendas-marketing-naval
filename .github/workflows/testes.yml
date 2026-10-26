@@ -1,5 +1,7 @@
-# Testes automáticos a cada alteração enviada para o GitHub (e em cada pedido de integração).
-# Verifica a sintaxe de todo o PHP, as normas de código e corre os testes do portal e do servidor.
+# Testes automáticos a cada alteração enviada para o GitHub (e em cada pedido de integração):
+#  - php:      sintaxe e testes unitários do back-end em várias versões do PHP (da 7.1 à 8.3);
+#  - analise:  análise estática (PHPStan) e compatibilidade com o PHP 7.1 (PHPCompatibility);
+#  - testes:   normas do front-end e testes do portal e do servidor (Playwright).
 name: Testes
 
 on:
@@ -15,6 +17,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  php:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.1', '7.4', '8.1', '8.3']
+    name: PHP ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, simplexml, openssl
+          coverage: none
+
+      - name: Sintaxe do PHP
+        run: find . -name '*.php' -not -path './node_modules/*' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Testes unitários do back-end
+        run: php tests/unidade/correr.php
+
+  analise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Análise do PHP
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Ferramentas (composer)
+        run: composer install --no-interaction --no-progress
+
+      - name: Análise estática (PHPStan)
+        run: composer analisar
+
+      - name: Compatibilidade com o PHP 7.1
+        run: composer compatibilidade
+
   testes:
     runs-on: ubuntu-latest
     timeout-minutes: 20

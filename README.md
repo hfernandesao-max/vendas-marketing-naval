@@ -189,8 +189,15 @@ npx playwright install chromium # navegador dos testes (uma vez)
 npm test                        # todos os testes (portal e servidor)
 npm run lint                    # normas de código (ESLint)
 npm run format:check            # formatação (Prettier)
+npm run test:unidade            # testes unitários do back-end PHP (sem dependências)
+composer install                # ferramentas PHP (uma vez)
+composer analisar               # análise estática (PHPStan)
+composer compatibilidade        # compatibilidade com o PHP 7.1 (PHPCompatibility)
 ```
+
+O back-end está em camadas no `nucleo/` (controladores em `reports/data/`, serviços de negócio em `nucleo/servicos/`, segurança em `nucleo/seguranca/`); todas as chaves do `.env` estão em [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#configuração-env-na-raiz-do-site).
 
 - `tests/portal/` — o portal no navegador, com a API do Pinguim BO simulada: todas as páginas em quatro tamanhos de ecrã (sem erros, nada fora do ecrã, quadros alinhados), barra de filtros, relatórios, painel de gráficos, ficheiro SAP igual ao modelo e importação do plano de cargas.
 - `tests/servidor/` — os serviços PHP com contas de cada perfil e um Pinguim BO de teste: entrada, bloqueio e desbloqueio, âmbito por rota, NIF, gestão de contas, plano de cargas, ficheiro SAP e modo de estrutura. O ambiente de teste é criado por `tests/servidor/preparar.php` e usa um `.env` próprio (variável `NAVAL_ENV`); nada toca nos dados reais.
-- No GitHub, `.github/workflows/testes.yml` corre a verificação de sintaxe do PHP, as normas e todos os testes a cada alteração.
+- `tests/unidade/` — o núcleo e os serviços PHP isolados (`php tests/unidade/correr.php`).
+- No GitHub, `.github/workflows/testes.yml` corre a sintaxe e os testes unitários do PHP nas versões 7.1, 7.4, 8.1 e 8.3, a análise estática, a compatibilidade, as normas e todos os testes a cada alteração.

@@ -1,478 +1,51 @@
 <?php
 /**
- * API Proxy — Pinguim BO → JSON (formato vendas.json)
+ * Vendas do Pinguim BO → JSON (formato de vendas.json), com o âmbito do perfil.
  *
- * Recebe:  ?start_date=YYYYMMDD&end_date=YYYYMMDD&include_items=1
- * Devolve: JSON array com o mesmo schema de vendas.json. Com include_items=1,
- * devolve também as linhas de artigos da mesma consulta.
+ * GET ?start_date=AAAAMMDD&end_date=AAAAMMDD[&include_items=1]   vendas (e linhas de artigos)
+ * GET ?ping=1                                 estado da ligação ao Pinguim BO (indicador do portal)
+ * GET ?diag=1                                 diagnóstico do servidor (super administrador)
+ * GET ?estrutura=1&start_date=AAAAMMDD        secções e campos da exportação, sem dados pessoais (super administrador)
  *
- * Estrutura (super administrador): ?estrutura=1&start_date=AAAAMMDD mostra as secções, tipos de documento e campos do XML.
- * Diagnóstico (com sessão iniciada): ?diag=1 mostra a versão do PHP, as extensões,
- * o .env, os limites de tempo e memória e o tempo de resposta do Pinguim BO.
- *
- * Em caso de falha devolve sempre JSON {"erro": "...", "detalhe": "..."} com o
- * código HTTP adequado, em vez de um 500 sem explicação.
+ * Em caso de falha devolve sempre JSON {ok:false, erro, detalhe} com o código HTTP adequado.
  */
-
-// ── Erros: nunca imprimir HTML de erro; guardar no log e responder em JSON ──
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-error_reporting(E_ALL);
-ob_start();
-
-function responder(int $codigo, array $dados): void
-{
-    while (ob_get_level() > 0) ob_end_clean();
-    if (!headers_sent()) {
-        http_response_code($codigo);
-        header('Content-Type: application/json; charset=utf-8');
-        header('Cache-Control: no-store');
-    }
-    $flags = JSON_UNESCAPED_UNICODE | (defined('JSON_INVALID_UTF8_SUBSTITUTE') ? JSON_INVALID_UTF8_SUBSTITUTE : 0);
-    $json = json_encode($dados, $flags);
-    if ($json === false) {
-        if (!headers_sent()) http_response_code(500);
-        $json = json_encode(['erro' => 'Não foi possível converter os dados para JSON.', 'detalhe' => json_last_error_msg()]);
-    }
-    echo $json;
-    exit;
-}
-
-function falhar(int $codigo, string $erro, string $detalhe = ''): void
-{
-    error_log('[reports/api.php] ' . $erro . ($detalhe !== '' ? ' — ' . $detalhe : ''));
-    responder($codigo, ['erro' => $erro, 'detalhe' => $detalhe]);
-}
-
-// Erros fatais (função inexistente, tempo ou memória esgotados) passam a JSON legível
-register_shutdown_function(function () {
-    $e = error_get_last();
-    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        @ini_set('memory_limit', '-1'); // folga para conseguir responder depois de falta de memória
-        $msg = $e['message'];
-        $erro = 'Erro interno no servidor.';
-        if (stripos($msg, 'curl_init') !== false) $erro = 'A extensão cURL do PHP não está activa no servidor (php.ini: extension=curl).';
-        elseif (stripos($msg, 'simplexml') !== false) $erro = 'A extensão SimpleXML do PHP não está activa no servidor.';
-        elseif (stripos($msg, 'Maximum execution time') !== false) $erro = 'O Pinguim BO demorou demasiado a responder. Experimente um período mais curto.';
-        elseif (stripos($msg, 'Allowed memory size') !== false) $erro = 'Memória do PHP insuficiente para este período. Experimente um período mais curto.';
-        error_log('[reports/api.php] FATAL ' . $msg . ' em ' . $e['file'] . ':' . $e['line']);
-        responder(500, ['erro' => $erro, 'detalhe' => $msg . ' (' . basename($e['file']) . ':' . $e['line'] . ')']);
-    }
-});
-
-// ── Autenticação (sem sessão responde 401 em JSON) ──
-$authFile = __DIR__ . '/../../geo/auth/auth_check.php';
-if (!is_file($authFile)) {
-    falhar(500, 'Ficheiro de autenticação não encontrado.', 'Esperado em: ' . $authFile);
-}
-require_once $authFile;
+require_once __DIR__ . '/../../nucleo/api.php';
+naval_servico('pinguim');
+naval_servico('vendas');
+naval_servico('rotas');
 
 // Consultas ao Pinguim BO podem demorar; no Windows o limite do PHP conta tempo real
 @set_time_limit(180);
 @ini_set('memory_limit', '512M');
+naval_pinguim_requisitos();
 
-// ── Requisitos do PHP ──
-// Sem cURL usa-se o cliente HTTP nativo do PHP (precisa de allow_url_fopen; para https, da extensão openssl)
-if (!function_exists('curl_init') && !filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
-    falhar(500, 'O PHP do servidor não consegue fazer pedidos HTTP.', 'Active "extension=curl" ou "allow_url_fopen=On" no php.ini e reinicie o Apache.');
-}
-if (!function_exists('simplexml_load_string')) {
-    falhar(500, 'A extensão SimpleXML do PHP não está activa no servidor.', 'Active "extension=simplexml" no php.ini e reinicie o Apache.');
-}
+if (($_GET['ping'] ?? '') === '1') naval_json(naval_pinguim_estado());
 
-// ── Credenciais do .env ──
-$envFile = getenv('NAVAL_ENV') ?: __DIR__ . '/../../.env';
-$env = [];
-if (is_file($envFile)) {
-    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        $line = trim($line);
-        if ($line === '' || $line[0] === '#') continue;
-        if (strpos($line, '=') !== false) {
-            list($key, $val) = explode('=', $line, 2);
-            $env[trim($key)] = trim(trim($val), "\"'");
-        }
-    }
-}
-$username = $env['USERNAME'] ?? (getenv('PINGUIM_USERNAME') ?: '');
-$password = $env['PASSWORD'] ?? (getenv('PINGUIM_PASSWORD') ?: '');
-// Endereços da API do Pinguim BO, por ordem de tentativa (separados por vírgula no .env).
-// No servidor a API responde localmente na porta 8089; fora do servidor usa-se o acesso externo 2053.
-$boUrls = array_values(array_filter(array_map(
-    function ($u) { return rtrim(trim($u), '?'); },
-   // explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/rest/exportdata')
-    explode(',', $env['PINGUIM_URL'] ?? 'http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2083/rest/exportdata')
-)));
+naval_exigir(array_merge(['inicio', 'vendas-artigo'], NAVAL_PAGINAS_VENDAS));
+$dataAaaammdd = function (string $param, string $omissao) {
+    return (string) preg_replace('/\D/', '', (string) ($_GET[$param] ?? $omissao));
+};
 
-function chamarPinguim(string $url, string $user, string $pass, int $timeout = 150, int $connect = 15): array
-{
-    if (!function_exists('curl_init')) return chamarSemCurl($url, $user, $pass, $timeout, $connect);
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_USERPWD        => "$user:$pass",
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_CONNECTTIMEOUT => $connect,
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_ENCODING       => '',
-    ]);
-    $t0 = microtime(true);
-    $body = curl_exec($ch);
-    $res = [
-        'body'  => $body,
-        'http'  => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
-        'errno' => curl_errno($ch),
-        'erro'  => curl_error($ch),
-        'seg'   => round(microtime(true) - $t0, 2),
-        'url'   => $url,
-    ];
-    if (PHP_VERSION_ID < 80000) curl_close($ch);
-    return $res;
-}
-
-// Alternativa sem cURL: pedido HTTP com o cliente nativo do PHP (file_get_contents)
-function chamarSemCurl(string $url, string $user, string $pass, int $timeout, int $connect): array
-{
-    $t0 = microtime(true);
-    $res = ['body' => false, 'http' => 0, 'errno' => 0, 'erro' => '', 'seg' => 0, 'url' => $url];
-    if (stripos($url, 'https://') === 0 && !extension_loaded('openssl')) {
-        $res['errno'] = -1;
-        $res['erro'] = 'https sem a extensão openssl nem cURL';
-        return $res;
-    }
-    // Teste rápido da ligação, para não esperar o tempo total num endereço que não responde
-    $p = parse_url($url);
-    $host = $p['host'] ?? '';
-    $port = $p['port'] ?? ((($p['scheme'] ?? 'http') === 'https') ? 443 : 80);
-    $sock = @fsockopen($host, (int) $port, $errno, $errstr, $connect);
-    if (!$sock) {
-        $res['errno'] = $errno ?: -1;
-        $res['erro'] = 'Sem ligação a ' . $host . ':' . $port . ($errstr ? ' (' . trim($errstr) . ')' : '');
-        $res['seg'] = round(microtime(true) - $t0, 2);
-        return $res;
-    }
-    fclose($sock);
-    $ctx = stream_context_create([
-        'http' => [
-            'method'        => 'GET',
-            'header'        => 'Authorization: Basic ' . base64_encode("$user:$pass") . "\r\nConnection: close\r\n",
-            'timeout'       => $timeout,
-            'ignore_errors' => true,
-        ],
-        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
-    ]);
-    $body = @file_get_contents($url, false, $ctx);
-    $hdrs = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
-    foreach ($hdrs as $h) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $res['http'] = (int) $m[1];
-    }
-    if ($body === false && !$hdrs) {
-        $e = error_get_last();
-        $res['errno'] = -1;
-        $res['erro'] = $e ? $e['message'] : 'Pedido sem resposta';
-    }
-    $res['body'] = $body;
-    $res['seg'] = round(microtime(true) - $t0, 2);
-    return $res;
-}
-
-// Tenta cada endereço até um aceitar a ligação; devolve o resultado do primeiro que responde
-function chamarPrimeiro(array $bases, string $query, string $user, string $pass, int $timeout = 150): array
-{
-    $tentativas = [];
-    foreach ($bases as $i => $base) {
-        $res = chamarPinguim($base . '?' . $query, $user, $pass, $timeout, $i < count($bases) - 1 ? 5 : 15);
-        if ($res['errno'] === 0) { $res['tentativas'] = $tentativas; return $res; }
-        $tentativas[] = $base . ': ' . $res['erro'];
-    }
-    $res['tentativas'] = $tentativas;
-    return $res;
-}
-
-// ── Estado da ligação (indicador do portal): pedido curto ao Pinguim BO, sem devolver dados ──
-if (($_GET['ping'] ?? '') === '1') {
-    if ($username === '' || $password === '') {
-        responder(200, ['ok' => false, 'erro' => 'Faltam as credenciais do Pinguim BO no .env.']);
-    }
-    $hoje = date('Ymd');
-    $teste = chamarPrimeiro($boUrls, "start_date=$hoje&end_date=$hoje", $username, $password, 20);
-    $ok = $teste['errno'] === 0 && $teste['http'] === 200;
-    responder(200, [
-        'ok'       => $ok,
-        'segundos' => $teste['seg'],
-        'origem'   => $ok ? (parse_url($teste['url'], PHP_URL_HOST) . ':' . parse_url($teste['url'], PHP_URL_PORT)) : null,
-        'erro'     => $ok ? null : ($teste['errno'] !== 0 ? 'Sem ligação ao Pinguim BO' : 'Pinguim BO respondeu HTTP ' . $teste['http']),
-        'hora'     => date('Y-m-d H:i:s'),
-    ]);
-}
-
-// ── Permissões (matriz de acessos): só perfis com páginas de vendas; diagnóstico só para TI ──
-naval_exigir(['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-artigo', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes']);
-if (($_GET['diag'] ?? '') === '1' || ($_GET['estrutura'] ?? '') === '1') naval_exigir(['admin-config']);
-
-// ── Estrutura da exportação (só super administrador): que secções, tipos de documento e campos traz o Pinguim BO.
-//    Serve para encontrar dados ainda não usados pelo portal (por exemplo, o fecho de dia do RTM). ──
 if (($_GET['estrutura'] ?? '') === '1') {
-    $sd = preg_replace('/\D/', '', (string) ($_GET['start_date'] ?? date('Ymd')));
-    $ed = preg_replace('/\D/', '', (string) ($_GET['end_date'] ?? $sd));
-    $r = chamarPrimeiro($boUrls, "start_date=$sd&end_date=$ed", $username, $password, 120);
-    if ($r['errno'] !== 0 || !is_string($r['body'])) responder(502, ['erro' => 'Sem resposta do Pinguim BO.', 'detalhe' => $r['erro']]);
-    libxml_use_internal_errors(true);
-    $x = simplexml_load_string($r['body']);
-    if ($x === false) responder(502, ['erro' => 'O Pinguim BO não devolveu XML válido.', 'inicio' => substr($r['body'], 0, 300)]);
-    // Descreve um elemento: nomes dos campos, até 3 níveis, com um exemplo curto de cada valor
-    $descrever = function (SimpleXMLElement $e, int $nivel) use (&$descrever) {
-        $out = [];
-        foreach ($e->children() as $nome => $f) {
-            if (isset($out[$nome])) { if (is_array($out[$nome]) && isset($out[$nome]['_repete'])) $out[$nome]['_repete']++; continue; }
-            if ($f->count() && $nivel < 3) $out[$nome] = $descrever($f, $nivel + 1) + ['_repete' => 1];
-            else $out[$nome] = preg_replace('/^(.{0,40}).*$/us', '$1', trim((string) $f));
-        }
-        return $out;
-    };
-    $seccoes = [];
-    foreach ($x->children() as $nome => $sec) {
-        $n = $sec->count();
-        $info = ['elementos' => $n];
-        if ($n && !in_array($nome, ['entities', 'transactions'], true)) {   // clientes: sem dados; documentos: ver tipos_de_documento
-            $exemplo = null;
-            foreach ($sec->children() as $c) { $exemplo = $c; break; }
-            $info['exemplo'] = $exemplo ? $descrever($exemplo, 1) : null;
-        }
-        $seccoes[$nome] = $info;
-    }
-    $tipos = [];
-    if (isset($x->transactions)) {
-        foreach ($x->transactions->transaction as $tx) {
-            $tp = (string) $tx->document_type;
-            if (!isset($tipos[$tp])) $tipos[$tp] = ['documentos' => 0, 'exemplo' => $descrever($tx, 1)];
-            $tipos[$tp]['documentos']++;
-        }
-    }
-    foreach ($tipos as &$tp) {   // sem dados pessoais nos exemplos
-        foreach (['tax_number', 'entity_code'] as $k) if (isset($tp['exemplo'][$k])) $tp['exemplo'][$k] = '…';
-    }
-    unset($tp);
-    responder(200, ['periodo' => "$sd a $ed", 'bytes' => strlen($r['body']), 'seccoes' => $seccoes, 'tipos_de_documento' => $tipos]);
+    naval_exigir(['admin-config']);
+    $de = $dataAaaammdd('start_date', date('Ymd'));
+    $ate = $dataAaaammdd('end_date', $de);
+    $bytes = 0;
+    $xml = naval_pinguim_xml($de, $ate, 120, $bytes);
+    naval_json(['periodo' => "$de a $ate"] + naval_pinguim_estrutura($xml, $bytes));
 }
-
-// ── Diagnóstico ──
 if (($_GET['diag'] ?? '') === '1') {
-    $hoje = date('Ymd');
-    $teste = chamarPrimeiro($boUrls, "start_date=$hoje&end_date=$hoje", $username, $password, 60);
-    responder(200, [
-        'php'                => PHP_VERSION,
-        'curl'               => function_exists('curl_version') ? (curl_version()['version'] ?? true) : false,
-        'cliente_http'       => function_exists('curl_init') ? 'cURL' : 'nativo do PHP (sem cURL)',
-        'allow_url_fopen'    => ini_get('allow_url_fopen'),
-        'openssl'            => extension_loaded('openssl'),
-        'php_ini'            => php_ini_loaded_file(),
-        'simplexml'          => function_exists('simplexml_load_string'),
-        'env_encontrado'     => is_file($envFile),
-        'credenciais'        => $username !== '' && $password !== '',
-        'max_execution_time' => ini_get('max_execution_time'),
-        'memory_limit'       => ini_get('memory_limit'),
-        'pinguim_urls'       => $boUrls,
-        'pinguim_usado'      => $teste['errno'] === 0 ? $teste['url'] : null,
-        'pinguim_falhas'     => $teste['tentativas'],
-        'pinguim_http'       => $teste['http'],
-        'pinguim_erro'       => $teste['erro'],
-        'pinguim_segundos'   => $teste['seg'],
-        'pinguim_bytes'      => is_string($teste['body']) ? strlen($teste['body']) : 0,
-    ]);
+    naval_exigir(['admin-config']);
+    naval_json(naval_pinguim_diagnostico());
 }
 
-if ($username === '' || $password === '') {
-    falhar(500, 'Faltam as credenciais do Pinguim BO.', is_file($envFile) ? 'O .env não tem USERNAME e PASSWORD.' : 'Ficheiro .env não encontrado em: ' . realpath(__DIR__ . '/../..'));
+$de = (string) ($_GET['start_date'] ?? '');
+$ate = (string) ($_GET['end_date'] ?? '');
+$itens = ($_GET['include_items'] ?? '') === '1';
+if (!preg_match('/^\d{8}$/', $de) || !preg_match('/^\d{8}$/', $ate)) {
+    throw new NavalErro('Datas inválidas.', 400, ['detalhe' => 'Use start_date e end_date no formato AAAAMMDD.']);
 }
 
-// ── Parâmetros ──
-$start = $_GET['start_date'] ?? '';
-$end   = $_GET['end_date']   ?? '';
-$includeItems = ($_GET['include_items'] ?? '') === '1';
-
-if (!preg_match('/^\d{8}$/', $start) || !preg_match('/^\d{8}$/', $end)) {
-    falhar(400, 'Datas inválidas.', 'Use start_date e end_date no formato AAAAMMDD.');
-}
-
-// ── Chamada à API do Pinguim BO ──
-$r = chamarPrimeiro($boUrls, "start_date=$start&end_date=$end", $username, $password);
-if ($r['errno'] !== 0) {
-    falhar(502, 'Não foi possível contactar o Pinguim BO.', implode(' | ', $r['tentativas']));
-}
-if ($r['http'] === 401 || $r['http'] === 403) {
-    falhar(502, 'O Pinguim BO recusou as credenciais do .env.', 'HTTP ' . $r['http']);
-}
-if ($r['http'] !== 200 || !$r['body']) {
-    falhar(502, 'O Pinguim BO respondeu com erro.', 'HTTP ' . $r['http']);
-}
-
-// ── Parse XML ──
-libxml_use_internal_errors(true);
-$xml = simplexml_load_string($r['body'], 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_PARSEHUGE);
-if (!$xml) {
-    $e = libxml_get_errors();
-    falhar(502, 'A resposta do Pinguim BO não é XML válido.', $e ? trim($e[0]->message) : substr($r['body'], 0, 200));
-}
-unset($r);
-
-// ── Mapa de entidades (entity_code → nome, nif) ──
-$entities = [];
-if (isset($xml->entities)) {
-    foreach ($xml->entities->entity as $ent) {
-        $code = (string) $ent->code;
-        $entities[$code] = [
-            'desc' => (string) $ent->description,
-            'tax'  => (string) $ent->tax_number,
-        ];
-    }
-}
-
-// ── Mapa de meios de pagamento ──
-$pmMap = [
-    'NU' => 'Numerário',
-    'MC' => 'Multicaixa',
-    'TB' => 'Transferência Bancária',
-    'CS' => 'Advance',
-];
-// Os nomes que vêm no XML do Pinguim BO prevalecem; a lista acima só cobre códigos sem descrição
-if (isset($xml->payment_methods)) {
-    foreach ($xml->payment_methods->payment_method as $pm) {
-        $code = (string) $pm->code;
-        $desc = trim((string) $pm->description);
-        if ($code !== '' && $desc !== '') $pmMap[$code] = $desc;
-    }
-}
-
-// ── Mapa de promotores (rotas.json) ──
-$rotasFile = __DIR__ . '/rotas.json';
-$rotas = [];
-if (is_file($rotasFile)) {
-    $rotasData = json_decode((string) file_get_contents($rotasFile), true);
-    if (is_array($rotasData)) {
-        foreach ($rotasData as $rt) {
-            if (isset($rt['rota'], $rt['promotor'])) $rotas[$rt['rota']] = $rt['promotor'];
-        }
-    }
-}
-
-// ── Converter transacções FR/FT → vendas ──
-$vendas = [];
-$artigos = [];
-if (isset($xml->transactions)) {
-    foreach ($xml->transactions->transaction as $tx) {
-        $docType = (string) $tx->document_type;
-        // Apenas documentos de venda (Factura-recibo / Factura)
-        if ($docType !== 'FR' && $docType !== 'FT') continue;
-        if ((string) $tx->deleted === '1') continue;
-
-        $storeCode  = (string) $tx->store_code;
-        $entityCode = (string) $tx->entity_code;
-        $total      = (float) (string) $tx->total;
-        $date       = (string) $tx->transaction_date;
-        $time       = substr((string) $tx->transaction_time, 0, 5);
-        $docNr      = (string) $tx->document_nr;
-        $taxNr      = (string) $tx->tax_number;
-
-        // Nome do cliente
-        $clientName = isset($entities[$entityCode]) ? $entities[$entityCode]['desc'] : '';
-        if (!$clientName) {
-            $clientName = ($taxNr === '999999999') ? 'Consumidor Final' : '';
-        }
-
-        // Pagamentos do documento (footer): valor por meio de pagamento, como vem do Pinguim BO
-        $porMeio = [];
-        if (isset($tx->footer)) {
-            foreach ($tx->footer->line as $fl) {
-                $pCode = trim((string) $fl->payment_code);
-                $pAmt  = (float) (string) $fl->amount;
-                if ($pAmt == 0.0) continue;
-                $k = $pCode !== '' ? $pCode : '?';
-                $porMeio[$k] = ($porMeio[$k] ?? 0.0) + $pAmt;
-            }
-        }
-        // Troco: se o valor entregue passar o total do documento, o excesso sai do numerário
-        // (ou, sem numerário, do meio com maior valor), para o recebido nunca exceder a venda
-        $excesso = round(array_sum($porMeio) - $total, 2);
-        if ($excesso > 0 && $total > 0) {
-            $k = isset($porMeio['NU']) ? 'NU' : array_search(max($porMeio), $porMeio, true);
-            $porMeio[$k] = max(0.0, $porMeio[$k] - $excesso);
-        }
-        $pagamentos = [];
-        foreach ($porMeio as $k => $v) {
-            if (round($v, 2) == 0.0) continue;
-            $pagamentos[] = ['codigo' => $k, 'meio' => $pmMap[$k] ?? ($k === '?' ? 'Sem meio indicado' : $k), 'valor' => round($v, 2)];
-        }
-        $valorPago = round(array_sum(array_column($pagamentos, 'valor')), 2);
-
-        $promotor = $rotas[$storeCode] ?? $storeCode;
-
-        $vendas[] = [
-            'chave'           => $docNr,
-            'data'            => $date,
-            'hora'            => $time,
-            'rota'            => $storeCode,
-            'promotor'        => $promotor,
-            'tipo'            => $docType === 'FR' ? 'Factura-recibo' : 'Factura',
-            'documento'       => $docNr,
-            'cliente'         => $clientName,
-            'cliente_codigo'  => $entityCode,
-            'nif'             => $taxNr ?: ($entities[$entityCode]['tax'] ?? ''),
-            'liquidado'       => $valorPago >= round($total, 2),
-            'total'           => $total,
-            'valor_pago'      => $valorPago,
-            'pagamentos'      => $pagamentos,
-            'meio_pagamento'  => $pagamentos ? implode(', ', array_column($pagamentos, 'meio')) : null,
-        ];
-
-        if ($includeItems && isset($tx->detail)) {
-            $linhaN = 0;
-            foreach ($tx->detail->line as $line) {
-                $linhaN++;
-                $artigos[] = [
-                    'chave'          => $docNr . '|' . $linhaN,
-                    'data'           => $date,
-                    'rota'           => $storeCode,
-                    'promotor'       => $promotor,
-                    'documento'      => $docNr,
-                    'codigo'         => (string) $line->product_code,
-                    'artigo'         => (string) $line->product_description,
-                    'unidade'        => (string) $line->uom,
-                    'quantidade'     => (float) (string) $line->quantity,
-                    'preco_unitario' => (float) (string) $line->base_amount,
-                    'valor_sem_iva'  => (float) (string) $line->total,
-                    'desconto'       => (float) (string) $line->discount_amount,
-                    'iva'            => (float) (string) $line->tax_amount,
-                    'total'          => (float) (string) $line->total + (float) (string) $line->tax_amount,
-                ];
-            }
-        }
-    }
-}
-
-// ── Âmbito do utilizador: só as suas rotas (SUP e PRO), NIF só para quem o pode ver,
-//    e a Logística vê quantidades por artigo sem valores nem documentos de venda ──
-$rotasOk = naval_rotas();
-if ($rotasOk !== null) {
-    $vendas = array_values(array_filter($vendas, function ($v) use ($rotasOk) { return in_array((string) $v['rota'], $rotasOk, true); }));
-    $artigos = array_values(array_filter($artigos, function ($a) use ($rotasOk) { return in_array((string) $a['rota'], $rotasOk, true); }));
-}
-if (!naval_ve_nif()) {
-    foreach ($vendas as &$v) { $v['nif'] = ''; }
-    unset($v);
-}
-// Sem nenhuma página de vendas na matriz (por exemplo, Logística): só quantidades por artigo
-$veVendas = false;
-foreach (['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes'] as $rec) {
-    if (naval_pode($rec)) { $veVendas = true; break; }
-}
-if (!$veVendas) {
-    $vendas = [];
-    foreach ($artigos as &$a) {
-        foreach (['preco_unitario', 'valor_sem_iva', 'desconto', 'iva', 'total'] as $k) $a[$k] = null;
-        $a['documento'] = '';
-    }
-    unset($a);
-}
-
-responder(200, $includeItems ? ['vendas' => $vendas, 'artigos' => $artigos] : $vendas);
+$d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
+$d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());
+naval_json($itens ? $d : $d['vendas']);

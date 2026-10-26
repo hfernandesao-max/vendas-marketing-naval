@@ -1,0 +1,26 @@
+{
+    "name": "grupo-naval/portal-rtm",
+    "description": "Portal RTM e GeoMobilidade Naval: ferramentas de desenvolvimento do back-end PHP (não são precisas no servidor).",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.1"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "1.1.2",
+        "phpcompatibility/php-compatibility": "9.3.5",
+        "phpstan/phpstan": "2.1.31",
+        "squizlabs/php_codesniffer": "3.13.4"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "analisar": "phpstan analyse --memory-limit=1G --no-progress",
+        "compatibilidade": "phpcs -q",
+        "testes": "php tests/unidade/correr.php"
+    }
+}

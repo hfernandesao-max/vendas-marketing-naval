@@ -1,0 +1,2 @@
+# Núcleo do back-end: só é usado pelos serviços PHP, nunca servido directamente.
+Require all denied

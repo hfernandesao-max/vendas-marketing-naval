@@ -1,0 +1,14 @@
+# Análise estática do back-end PHP (PHPStan). Local: composer install && composer analisar
+parameters:
+    level: 5
+    phpVersion: 70100
+    paths:
+        - nucleo
+        - reports/data
+        - reports/index.php
+        - geo/auth
+        - geo/login.php
+        - ferramentas
+        - index.php
+    bootstrapFiles:
+        - nucleo/arranque.php

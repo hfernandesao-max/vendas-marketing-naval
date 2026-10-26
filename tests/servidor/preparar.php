@@ -24,7 +24,7 @@ file_put_contents($amb . '/.env', implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'EMAIL_MODO=ficheiro', 'PORTAL_URL=http://127.0.0.1:8810',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $amb . '/.env');
-require __DIR__ . '/../../geo/auth/acessos.php';
+require __DIR__ . '/../../nucleo/arranque.php';
 
 const SENHA_TESTE = 'Teste-12345!';
 $contas = [

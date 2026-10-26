@@ -7,7 +7,12 @@ require_once __DIR__ . '/../geo/auth/auth_check.php';
 $paginas = ['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'stock-carrinha',
     'stock-armazem', 'vendas-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'plano-cargas', 'sap-exportar', 'pendentes', 'acessos'];
 $algum = false;
-foreach ($paginas as $pg) if (naval_pode($pg)) { $algum = true; break; }
+foreach ($paginas as $pg) {
+    if (naval_pode($pg)) {
+        $algum = true;
+        break;
+    }
+}
 if (!$algum) naval_pagina_exigir('inicio', '../');
 
 header('Content-Type: text/html; charset=utf-8');
