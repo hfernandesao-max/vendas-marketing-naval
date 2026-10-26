@@ -4,28 +4,12 @@ import { LIM, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, confirmarAccao, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
-import { PAGES } from './catalogo.js';
+import { nomeRecurso } from './catalogo.js';
 import { R } from './registo.js';
 import { atual } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 
-const NOMES_RECURSO = {
-  'pagina-principal': 'Página principal e indicador das fontes',
-  'excel-completo': 'Excel completo (todas as páginas)',
-  'geo-rotas': 'GEO · optimização de rotas',
-  'geo-rotas-importar': 'GEO · importar CSV de clientes',
-  'geo-rotas-descarregar': 'GEO · descarregar rota optimizada',
-  'geo-zonas': 'GEO · delimitação de zonas (ver)',
-  'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas',
-  'geo-distribuidores': 'GEO · gestão de distribuidores',
-  nif: 'Ver o NIF dos clientes',
-  acessos: 'Página Acessos',
-  'admin-utilizadores': 'Utilizadores e perfis',
-  'admin-config': 'Configuração e ligações',
-  registos: 'Registos de acesso e exportações',
-};
-const nomeRecurso = (id) => t(NOMES_RECURSO[id] || (PAGES.find((p) => p.id === id) || {}).nome || id);
 const NOMES_ACCAO = {
   entrada: 'Entrada',
   saida: 'Saída',

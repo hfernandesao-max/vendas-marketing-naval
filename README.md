@@ -132,6 +132,21 @@ A linha de comandos (`php ferramentas\utilizadores.php`) continua disponível pa
 
 Enquanto a lista nova não existir, o portal continua a usar `geo/auth/config_users.php` em modo de compatibilidade (administradores como TI, restantes como DIR) e a página Acessos avisa disso.
 
+## Estrutura de dados (botão «Estrutura de dados»)
+
+Um só Excel, `RTM - Estrutura de Dados-DD-MM-AAAA.xlsx`, com o dicionário de dados da plataforma e **sem dados de negócio**:
+capa (proveniência, classificação, convenções e índice com ligações), *Tabelas e vistas* (linhas aproximadas, chave primária),
+*Colunas* (tipo de dados, nulos, PK, FK, identidade, valor por omissão, descrição), *Relações* (chaves estrangeiras e regras),
+*Índices*, *Modelo do portal* (conjuntos e campos do «Exportar tudo»), *Matriz de acessos*, *Perfis* e *Fontes de dados*.
+Cada folha é uma tabela do Excel com nome, filtros e cabeçalho fixo.
+
+- Serviço: `reports/data/estrutura-dados.php` → `nucleo/servicos/dicionario.php`; lê só o catálogo do SQL Server
+  (`sys.*`, ou `INFORMATION_SCHEMA` noutras bases de dados) com SELECT, pela mesma guarda de só leitura.
+- Acesso: recurso `estrutura-dados` da matriz (nível E): TI e AUD; o SADM tem sempre. Cada exportação fica nos registos.
+- O utilizador da base de dados só vê a estrutura dos objectos a que tem acesso; com `db_datareader` vê todas as tabelas.
+  Se faltarem objectos, conceder também `VIEW DEFINITION` (só leitura da estrutura).
+- As descrições vêm das propriedades `MS_Description` do SQL Server, quando existem.
+
 ## Plano de cargas (`reports/#plano-cargas`)
 
 Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e enviado por email todos os dias.

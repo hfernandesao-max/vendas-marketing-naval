@@ -1187,3 +1187,20 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   height: 12px;
   border-radius: 3px;
 }
+
+/* Estrutura de dados: só o ícone em ecrãs médios (nome no rótulo acessível e na dica) */
+@media (max-width: 1599px) {
+  .filters #xl-est {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .filters #xl-est span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

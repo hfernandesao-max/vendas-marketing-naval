@@ -1,6 +1,7 @@
 // Desenho da página actual e encaminhamento pelo endereço (#página/relatório?filtros).
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
+import { exportarEstrutura } from './estrutura.js';
 import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
 import { mostrarActualizacao } from './actualizacao.js';
 import { fetchVendas, mostrarFontes } from './fontes.js';
@@ -23,6 +24,11 @@ function textos() {
   $('#xl-page span').textContent = t('Excel desta página');
   $('#xl-all span').textContent = t('Exportar tudo');
   $('#xl-all').title = t('Um só Excel com os indicadores, os relatórios de todas as páginas e os dados de base do período');
+  $('#xl-est span').textContent = t('Estrutura de dados');
+  $('#xl-est').setAttribute('aria-label', t('Estrutura de dados'));
+  $('#xl-est').title = t(
+    'Dicionário de dados num só Excel: tabelas, colunas, chaves, relações e índices da base de dados, modelo do portal e matriz de acessos',
+  );
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
@@ -35,6 +41,7 @@ export function draw() {
   document.querySelector('.filters').style.display = p.id === 'plano-cargas' ? 'none' : '';
   $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
   $('#xl-all').hidden = !podeExportar('excel-completo');
+  $('#xl-est').hidden = !podeExportar('estrutura-dados');
   if (SESSAO) {
     $('#quem').hidden = false;
     $('#quem').replaceChildren(
@@ -121,6 +128,7 @@ $('#xl-all').addEventListener('click', () => {
   pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
   exportarExcel(pags, NOME_CONSOLIDADO);
 });
+$('#xl-est').addEventListener('click', () => exportarEstrutura());
 document.querySelectorAll('#lang button').forEach((b) =>
   b.addEventListener('click', () => {
     definirIdioma(b.dataset.l);

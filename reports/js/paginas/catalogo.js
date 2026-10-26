@@ -1,4 +1,5 @@
-// Catálogo das páginas do portal, por área de negócio.
+// Catálogo das páginas do portal, por área de negócio, e nomes dos recursos da matriz de acessos.
+import { t } from '../i18n/i18n.js';
 
 export const PAGES = [
   { id: 'inicio', grupo: null, icon: 'home', nome: 'Início' },
@@ -24,3 +25,22 @@ export const PAGES = [
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
 ];
+
+// Nomes das funções da matriz de acessos que não são páginas
+export const NOMES_RECURSO = {
+  'pagina-principal': 'Página principal e indicador das fontes',
+  'excel-completo': 'Excel completo (todas as páginas)',
+  'estrutura-dados': 'Estrutura de dados (dicionário de dados em Excel)',
+  'geo-rotas': 'GEO · optimização de rotas',
+  'geo-rotas-importar': 'GEO · importar CSV de clientes',
+  'geo-rotas-descarregar': 'GEO · descarregar rota optimizada',
+  'geo-zonas': 'GEO · delimitação de zonas (ver)',
+  'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas',
+  'geo-distribuidores': 'GEO · gestão de distribuidores',
+  nif: 'Ver o NIF dos clientes',
+  acessos: 'Página Acessos',
+  'admin-utilizadores': 'Utilizadores e perfis',
+  'admin-config': 'Configuração e ligações',
+  registos: 'Registos de acesso e exportações',
+};
+export const nomeRecurso = (id) => t(NOMES_RECURSO[id] || (PAGES.find((p) => p.id === id) || {}).nome || id);

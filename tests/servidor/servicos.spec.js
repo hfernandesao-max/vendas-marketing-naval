@@ -130,6 +130,18 @@ test('activar a gestão de contas: recusada quando a lista nova já existe', asy
   expect(r.status()).toBe(403);
 });
 
+test('estrutura de dados: só TI, AUD e SADM; sem base de dados indica o motivo; fica nos registos', async () => {
+  expect((await (await entrar('fin')).ctx.get('/reports/data/estrutura-dados.php')).status()).toBe(403);
+  const ti = (await entrar('ti')).ctx;
+  const r = await ti.get('/reports/data/estrutura-dados.php');
+  expect(r.status()).toBe(200);
+  const d = await r.json();
+  expect(d.perfis).toHaveProperty('SADM');
+  expect(d.matriz['estrutura-dados']).toMatchObject({ TI: 'E', AUD: 'E', FIN: '' });
+  if (!d.bd.disponivel) expect(d.bd.erro).toBeTruthy();
+  expect((await (await ti.get('/reports/data/sessao.php')).json()).permissoes['estrutura-dados']).toBe('E');
+});
+
 test('sair termina a sessão', async () => {
   const fin = (await entrar('fin')).ctx;
   await fin.get('/geo/auth/logout.php', { maxRedirects: 0 });

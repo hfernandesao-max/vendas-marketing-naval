@@ -10,7 +10,7 @@ import { carregarScript } from './servidor.js';
 import { $, DB, sum, toast } from './util.js';
 
 export const carregarExcelJS = () => carregarScript('exceljs.min.js', 'ExcelJS');
-const NAVY = 'FF1E3A8A',
+export const NAVY = 'FF1E3A8A',
   NAVY2 = 'FF283E81',
   SKY = 'FFDCE8FB',
   GREY = 'FF5F6573';
@@ -19,7 +19,7 @@ const toDate = (s) => {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d));
 };
-const nomeFolha = (s, usados) => {
+export const nomeFolha = (s, usados) => {
   const b =
     s
       .replace(/[[\]:*?/\\]/g, ' ')
@@ -293,7 +293,7 @@ export function recolher(id) {
 // tipos reais (datas como datas, valores como números), tabelas do Excel com nome e filtros, painéis
 // fixos e um dicionário de dados com a descrição de cada coluna.
 const TIPO_FMT = { data: FMT.date, kz: '#,##0.00', n: '#,##0', q: '#,##0.##' };
-function conjuntosDados() {
+export function conjuntosDados() {
   const D = dadosCompletos();
   const vendas = D.vendas || [],
     artigos = D.artigos || [];
