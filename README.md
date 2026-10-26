@@ -149,3 +149,14 @@ O Microsoft 365 deixou de aceitar SMTP com palavra-passe em 2026, por isso a pla
 8. Testar no portal: *Plano de cargas* → *Listas* → *Destinatários* → **Enviar email de teste para mim**.
 
 Enquanto o email não estiver configurado, o plano publica-se na mesma e o botão *Reenviar* envia-o depois.
+
+## Ficheiro de vendas para o SAP (`reports/#sap-exportar`)
+
+Gera, sempre que for preciso, o Excel no modelo **RTM_Sales_SAP_Upload_Format** (folha «Upload Format», cabeçalho em português na linha 1 e nomes técnicos na linha 2), a partir das vendas do Pinguim BO.
+
+- **Uma linha por artigo:** INVOICENO (tipo + número, por exemplo `FR FR0126S78515N/1`), data, loja, código do artigo, quantidade, unidade, tipo de documento, SAP location, valor sem IVA, IVA e total da linha. O total do documento, o Cash (numerário) e o MULTICAIXA são do documento e repetem-se em cada linha, como no modelo.
+- **Filtros:** o período do topo da página, as rotas e os tipos de documento (Factura-recibo e Factura). Por omissão ficam de fora os documentos já incluídos num ficheiro anterior, para não serem carregados duas vezes no SAP.
+- **Verificação antes de gerar.** Bloqueiam: rota sem SAP location, documento sem linhas e linha sem código de artigo. São só avisos: linhas que não somam o total do documento e pagamentos por outros meios (transferência, adiantamento), que o modelo não tem.
+- **Correspondência com o SAP**, na mesma página: Loja, SAP location e empregado de vendas de cada rota. Por omissão, `<rota> - FHR PIV` e `FHR PIV - ROTA <rota> - <promotor>`, como no exemplo do modelo. A SAP location tem de ser indicada para cada rota (o exemplo só traz a 1011 = RTM2).
+- **Lotes:** cada ficheiro gerado fica numerado, guardado e pode ser descarregado outra vez. Fica registado quem o gerou, quando, o período e os documentos.
+- **Acessos:** Financeiro (FIN) e Back-office (BO) geram; TI e Auditoria vêem e descarregam os lotes. Ficheiros em `dados-privados/sap/`.

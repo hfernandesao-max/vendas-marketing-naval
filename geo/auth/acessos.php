@@ -52,6 +52,7 @@ const NAVAL_MATRIZ_TXT = [
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E',
     'plano-cargas'         => 'V  V  V  Vr -  -  V  G  V  V',
+    'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
     'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V',
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
@@ -169,6 +170,8 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'G'];
         case 'geo-rotas-descarregar':
             return ['', 'V', 'Er', 'E'];
+        case 'sap-exportar':
+            return ['', 'V', 'E'];
         case 'plano-cargas':
             return ['', 'Vr', 'V', 'E', 'G'];
         case 'geo-rotas':
