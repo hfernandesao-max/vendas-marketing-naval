@@ -16,35 +16,92 @@ if (!in_array($redirect, $allowedRedirects, true)) {
     $redirect = 'geo.php';
 }
 
-// Se já estiver autenticado, redireciona para a aplicação pretendida
-if (isset($_SESSION['usuario_autenticado']) && $_SESSION['usuario_autenticado'] === true) {
+require_once __DIR__ . '/auth/acessos.php';
+
+// Se já estiver autenticado (sessão ainda válida), redirecciona para a aplicação pretendida
+if (!empty($_SESSION['usuario_autenticado']) && naval_sessao_valida()) {
     header('Location: ' . $redirect);
     exit;
 }
 
 $erro = '';
-$usuarios = require __DIR__ . '/auth/config_users.php';
+$passo = 'senha';
+$usuarios = naval_utilizadores();
+
+// Conclui a entrada: nova sessão, perfil, registo e redireccionamento
+function naval_concluir_login(string $login, array $u, string $redirect, bool $comMfa): void
+{
+    session_regenerate_id(true);
+    unset($_SESSION['mfa_pendente']);
+    $_SESSION['usuario_autenticado'] = true;
+    $_SESSION['usuario_login'] = $login;
+    $_SESSION['usuario_nome'] = $u['nome'] ?? $login;
+    $_SESSION['usuario_perfil'] = $u['perfil'] ?? '';
+    $_SESSION['login_time'] = time();
+    $_SESSION['ultima_actividade'] = time();
+    naval_limpar_falhas($login);
+    naval_registar('entrada', ['dois_passos' => $comMfa], $login);
+    if (!$comMfa && in_array($u['perfil'] ?? '', NAVAL_MFA, true)) naval_registar('dois_passos_em_falta', [], $login);
+    header('Location: ' . $redirect);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $usuario = trim($_POST['usuario'] ?? '');
-    $senha = $_POST['senha'] ?? '';
-
-    if (empty($usuario) || empty($senha)) {
-        $erro = 'Por favor, preencha todos os campos.';
-    } elseif (isset($usuarios[$usuario]) && password_verify($senha, $usuarios[$usuario]['senha'])) {
-        // Regenerar ID da sessão para prevenir Session Fixation
-        session_regenerate_id(true);
-
-        $_SESSION['usuario_autenticado'] = true;
-        $_SESSION['usuario_login'] = $usuario;
-        $_SESSION['usuario_nome'] = $usuarios[$usuario]['nome'];
-        $_SESSION['usuario_perfil'] = $usuarios[$usuario]['perfil'];
-        $_SESSION['login_time'] = time();
-
-        header('Location: ' . $redirect);
-        exit;
+    if (isset($_POST['codigo']) && !empty($_SESSION['mfa_pendente'])) {
+        // 2.º passo: código da aplicação de autenticação
+        $login = $_SESSION['mfa_pendente'];
+        $u = $usuarios[$login] ?? null;
+        $passo = 'mfa';
+        if (naval_bloqueado($login)) {
+            unset($_SESSION['mfa_pendente']);
+            $passo = 'senha';
+            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+        } elseif ($u && naval_totp_valido((string) ($u['mfa'] ?? ''), (string) $_POST['codigo'])) {
+            naval_concluir_login($login, $u, $redirect, true);
+        } else {
+            $resta = naval_falha_login($login);
+            naval_registar('entrada_falhada', ['motivo' => 'codigo'], $login);
+            if ($resta === 0) {
+                unset($_SESSION['mfa_pendente']);
+                $passo = 'senha';
+                $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+            } else {
+                $erro = 'Código inválido. ' . ($resta === 1 ? 'Resta 1 tentativa' : 'Restam ' . $resta . ' tentativas') . ' antes de a conta ser bloqueada.';
+            }
+        }
     } else {
-        $erro = 'Utilizador ou palavra-passe incorrectos.';
+        $usuario = trim($_POST['usuario'] ?? '');
+        $senha = $_POST['senha'] ?? '';
+        unset($_SESSION['mfa_pendente']);
+        // Aceita o utilizador ou o email associado à conta
+        [$loginEncontrado] = naval_procurar_conta($usuario);
+        if ($loginEncontrado) $usuario = $loginEncontrado;
+
+        if (empty($usuario) || empty($senha)) {
+            $erro = 'Por favor, preencha todos os campos.';
+        } elseif (naval_bloqueado($usuario)) {
+            naval_registar('entrada_bloqueada', [], $usuario);
+            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+        } elseif (isset($usuarios[$usuario]) && password_verify($senha, (string) $usuarios[$usuario]['senha'])) {
+            $u = $usuarios[$usuario];
+            if (empty($u['compatibilidade']) && !naval_email_valido($u['email'] ?? null)) {
+                naval_registar('entrada_recusada', ['motivo' => 'sem_email'], $usuario);
+                $erro = 'Esta conta não tem email associado. Peça ao administrador da plataforma para o associar.';
+            } elseif (!naval_conta_valida($u)) {
+                naval_registar('entrada_recusada', ['motivo' => 'conta_inactiva'], $usuario);
+                $erro = 'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.';
+            } elseif (!empty($u['mfa'])) {
+                $_SESSION['mfa_pendente'] = $usuario;
+                $passo = 'mfa';
+            } else {
+                naval_concluir_login($usuario, $u, $redirect, false);
+            }
+        } else {
+            $resta = naval_falha_login($usuario);
+            naval_registar('entrada_falhada', ['motivo' => 'senha'], $usuario);
+            $erro = $resta === 0 ? 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.'
+                : 'Utilizador ou palavra-passe incorrectos. ' . ($resta === 1 ? 'Resta 1 tentativa' : 'Restam ' . $resta . ' tentativas') . ' antes de a conta ser bloqueada.';
+        }
     }
 }
 ?>
@@ -379,11 +436,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="login.php">
       <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>" />
+<?php if ($passo === 'mfa'): ?>
       <div class="form-group">
-        <label for="usuario">Utilizador</label>
+        <label for="codigo">Código de verificação</label>
+        <div class="input-wrapper">
+          <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+          <input type="text" id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="Código de 6 dígitos" autocomplete="one-time-code" required autofocus />
+        </div>
+        <p style="margin:8px 2px 0;font-size:12.5px;opacity:.75">Abra a aplicação de autenticação no telemóvel e insira o código de GeoMobilidade Naval.</p>
+      </div>
+<?php else: ?>
+      <div class="form-group">
+        <label for="usuario">Utilizador ou email</label>
         <div class="input-wrapper">
           <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-          <input type="text" id="usuario" name="usuario" placeholder="Insira o seu utilizador" autocomplete="username" required autofocus />
+          <input type="text" id="usuario" name="usuario" placeholder="Utilizador ou email" autocomplete="username" required autofocus />
         </div>
       </div>
 
@@ -398,6 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       </div>
 
+<?php endif; ?>
       <button type="submit" class="btn-submit">
         <span>Entrar</span>
         <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
@@ -420,7 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     lucide.createIcons();
     const password = document.getElementById('senha');
     const togglePassword = document.getElementById('toggle-password');
-    togglePassword.addEventListener('click', () => {
+    if (togglePassword) togglePassword.addEventListener('click', () => {
       const reveal = password.type === 'password';
       password.type = reveal ? 'text' : 'password';
       togglePassword.setAttribute('aria-label', reveal ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe');

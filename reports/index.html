@@ -2102,6 +2102,24 @@
         opacity: .3
       }
     }
+
+    /* utilizador e perfil no menu lateral */
+    .quem {
+      display: grid;
+      gap: 1px;
+      margin: 0 10px 10px;
+      padding: 0 12px;
+      font-size: 12px
+    }
+
+    .quem b {
+      font-weight: 600;
+      color: var(--fg)
+    }
+
+    .quem span {
+      color: var(--dim)
+    }
   </style>
 </head>
 
@@ -2129,6 +2147,7 @@
         <span class="l2" id="fontes-l2"></span>
       </button>
       <div class="fontes-det" id="fontes-det" hidden></div>
+      <div class="quem" id="quem" hidden></div>
       <nav class="nav" id="nav"></nav>
       <div class="side-foot" id="foot">…</div>
     </aside>
@@ -2237,7 +2256,7 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
+        "Por meio de pagamento": "By payment method", "Administração": "Administration", "Acessos": "Access", "O seu perfil não permite exportar o relatório completo.": "Your profile cannot export the full report.", "O seu perfil não permite exportar esta informação.": "Your profile cannot export this information.", "sem rotas atribuídas": "no routes assigned", "Contas activas": "Active accounts", "{n} contas no total": "{n} accounts in total", "Contas bloqueadas": "Locked accounts", "desbloqueio pelo super administrador": "unlocked by the super administrator", "Sem email associado": "No email linked", "Sem verificação em dois passos": "Without two-step verification", "perfis SADM, TI e DIR": "SADM, TI and DIR profiles", "As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.": "Accounts still come from the old list (geo/auth/config_users.php). Create the new list with ferramentas/utilizadores.php to apply profiles, routes and the mandatory email.", "Utilizadores": "Users", "Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.": "Accounts and profiles. Accounts are created and changed on the server; the super administrator unlocks them here.", "nenhuma": "none", "Todas": "All", "Nome": "Name", "Utilizador": "User", "Email": "Email", "Perfil": "Profile", "Rotas": "Routes", "Dois passos": "Two-step", "Activa": "Active", "Bloqueada": "Locked", "Inactiva": "Inactive", "Sem email": "No email", "Desbloquear": "Unlock", "Conta desbloqueada.": "Account unlocked.", "Só o super administrador pode desbloquear contas.": "Only the super administrator can unlock accounts.", "Pedido inválido. Actualize a página e tente de novo.": "Invalid request. Refresh the page and try again.", "Não foi possível desbloquear.": "Could not unlock.", "Última entrada": "Last sign-in", "Matriz de acessos": "Access matrix", "V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.": "V view · V·r own routes only · E export · E·r export own routes only · G manage · A administer.", "Página ou função": "Page or function", "Registos de actividade": "Activity log", "Últimos 300 registos: entradas, saídas, bloqueios e exportações.": "Last 300 records: sign-ins, sign-outs, locks and exports.", "Data": "Date", "Acção": "Action", "Detalhe": "Detail", "A página Acessos precisa do servidor da plataforma (PHP).": "The Access page needs the platform server (PHP).", "A carregar…": "Loading…", "Super administrador": "Super administrator", "Administrador da plataforma": "Platform administrator", "Administração e Direcção": "Board and management", "Direcção Comercial e Marketing": "Sales and marketing management", "Supervisor de rotas": "Route supervisor", "Promotor": "Promoter", "Financeiro e Tesouraria": "Finance and treasury", "Back-office RTM": "RTM back office", "Logística e Armazém": "Logistics and warehouse", "Planeamento de rotas": "Route planning", "Auditoria e Controlo": "Audit and control", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
         "plano até {d}": "plan up to {d}", "{a} de {b} fontes ligadas": "{a} of {b} sources connected", "Pinguim BO sem ligação": "Pinguim BO not connected", "Sem ligação": "Not connected", "Ligação parcial": "Partly connected", "Ligado": "Connected",
         "Pinguim BO (vendas)": "Pinguim BO (sales)", "Cadastros RTM (clientes)": "RTM registrations (customers)", "Plano de cargas": "Loading plan", "sem ligação ao servidor": "no connection to the server", "A verificar as fontes de dados…": "Checking data sources…", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
@@ -2351,6 +2370,7 @@
       const sum = (a, f) => a.reduce((s, x) => s + (+(typeof f === 'function' ? f(x) : x[f]) || 0), 0);
       const group = (a, k) => a.reduce((m, x) => { const g = typeof k === 'function' ? k(x) : x[k]; (m[g] || (m[g] = [])).push(x); return m; }, {});
       const ICON = {
+        lock: 'M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
         users: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM22 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8',
         grow: 'M3 17l6-6 4 4 8-8M15 7h6v6',
         shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4',
@@ -2491,7 +2511,8 @@
         if (o.search !== false) { const s = el('input', 'search'); s.type = 'search'; s.placeholder = t('Procurar…'); s.setAttribute('aria-label', t('Procurar…') + ' ' + o.titulo); s.id = 'q-' + o.id; s.addEventListener('input', () => { q = s.value.trim().toLowerCase(); body(); }); tools.append(s); }
         const bx = el('button', 'btn sm'); bx.type = 'button'; bx.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>Excel';
         bx.addEventListener('click', () => exportarExcel([{ pagina: paginaAtual().nome, grupo: paginaAtual().grupo, kpis: [], tabelas: [{ ...reg, rows: filtradas() }] }], o.titulo));
-        tools.append(bx); h.append(hl, tools); sec.append(h);
+        if (podeExportar(atual)) tools.append(bx);
+        h.append(hl, tools); sec.append(h);
         const tw = el('div', 'tw'); const tb = el('table'); tw.append(tb); sec.append(tw);
         const more = el('div', 'more'); more.hidden = true; sec.append(more);
         // prioridade de cada coluna quando falta largura: 0 nunca sai; números maiores saem primeiro
@@ -2590,7 +2611,24 @@
       const nomeFolha = (s, usados) => { let b = s.replace(/[\[\]:*?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Folha'; let n = b, i = 2; while (usados.has(n.toLowerCase())) n = b.slice(0, 26) + ' ' + i++; usados.add(n.toLowerCase()); return n; };
       const colLetter = (n) => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
 
+      // Confirma no servidor que o perfil pode exportar e regista a exportação; sem servidor PHP segue
+      async function autorizarExportacao(completo, tabela, linhas) {
+        try {
+          const r = await fetch('data/registar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+            body: JSON.stringify({ pagina: atual, completo, tabela, linhas, periodo: dl(st.de) + ' – ' + dl(st.ate) }) });
+          const d = await r.json().catch(() => null);
+          if (!d) return !SESSAO; // resposta que não é JSON: teste local sem PHP
+          if (!d.ok) { toast(d.erro || t('O seu perfil não permite exportar esta informação.'), 7000); return false; }
+          return true;
+        } catch (e) { return !SESSAO; }
+      }
       async function exportarExcel(paginas, nomeFicheiro) {
+        const completo = paginas.length > 1, linhas = paginas.reduce((s, p) => s + (p.tabelas || []).reduce((a, tb) => a + (tb.rows || []).length, 0), 0);
+        if (!(completo ? podeExportar('excel-completo') : podeExportar(atual))) { toast(t('O seu perfil não permite exportar esta informação.'), 6000); return; }
+        if (!(await autorizarExportacao(completo, nomeFicheiro, linhas))) return;
+        return gerarExcel(paginas, nomeFicheiro);
+      }
+      async function gerarExcel(paginas, nomeFicheiro) {
         const bt = [$('#xl-page'), $('#xl-all')]; bt.forEach((b) => { b.disabled = true; });
         toast(t('A preparar o Excel…'));
         try {
@@ -2757,9 +2795,18 @@
         { id: 'cadastros-clientes', grupo: 'Cadastros', icon: 'file', nome: 'Clientes registados' },
         { id: 'clientes', grupo: 'Carteira', icon: 'phone', nome: 'Carteira de clientes' },
         { id: 'plano-visitas', grupo: 'Carteira', icon: 'scale', nome: 'Plano de visitas' },
+        { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
       ];
+      // ================= perfil do utilizador (matriz de acessos) =================
+      // SESSAO vem de data/sessao.php. Sem servidor PHP (teste local) fica null e tudo é visível;
+      // no servidor os dados são sempre filtrados pelos serviços PHP, seja o que for que o ecrã mostre.
+      let SESSAO = null;
+      const nivelDe = (id) => (SESSAO ? (SESSAO.permissoes || {})[id] || '' : 'A');
+      const podeVer = (id) => nivelDe(id) !== '';
+      const podeExportar = (id) => ['E', 'Er', 'G', 'A'].includes(nivelDe(id));
+      const paginasVisiveis = () => PAGES.filter((p) => podeVer(p.id));
       let atual = 'inicio';
-      const paginaAtual = () => PAGES.find((x) => x.id === atual) || PAGES[0];
+      const paginaAtual = () => PAGES.find((x) => x.id === atual) || paginasVisiveis()[0] || PAGES[0];
       function contarAlertas() {
         const V = vendasR();
         return { pagamentos: V.filter((x) => pendenteDe(x) > 0).length, clientes: DB.clientes.filter((x) => x.estado !== 'Ativo').length };
@@ -2767,7 +2814,7 @@
       function nav() {
         const n = $('#nav'); n.replaceChildren(); let g;
         const al = contarAlertas();
-        PAGES.forEach((p) => {
+        paginasVisiveis().forEach((p) => {
           if (p.grupo !== g) { g = p.grupo; if (g) n.append(el('div', 'navg', t(g))); }
           const a = el('a'); a.href = '#' + p.id; a.innerHTML = svg(p.icon); a.append(el('span', null, t(p.nome)));
           if (al[p.id]) a.append(el('span', 'n', String(al[p.id])));
@@ -2816,7 +2863,7 @@
           ['vendas-marca', 'tag', 'Stock', 'Vendas por promotor e marca', t('Linhas de venda do Pinguim BO'), pend],
           ['clientes', 'phone', 'Carteira', 'Carteira de clientes', t('{n} clientes activos', { n: n0(new Set(DB.clientes.filter((x) => x.estado === 'Ativo').map((x) => x.rota + '|' + x.codigo)).size) }), al.clientes ? [t('{n} por rever', { n: al.clientes }), ''] : null],
           ['plano-visitas', 'scale', 'Carteira', 'Plano de visitas', t('Clientes planeados que compraram')],
-        ].forEach(([id, ic, k, tt, d, b], i) => {
+        ].filter(([id]) => podeVer(id)).forEach(([id, ic, k, tt, d, b], i) => {
           const a = el('a', 'glass card-link'); a.href = '#' + id;
           const ico = el('div', 'ico' + (i >= 9 ? ' alt' : '')); ico.innerHTML = svg(ic); a.append(ico);
           if (b) { const bd = el('span', 'badge ' + (b[1] || ''), b[0]); bd.title = b[0]; a.append(bd); a.classList.add('com-aviso'); }
@@ -3325,6 +3372,70 @@
         }));
       };
 
+      // ================= Acessos (administração) =================
+      const NOMES_RECURSO = {
+        'pagina-principal': 'Página principal e indicador das fontes', 'excel-completo': 'Excel completo (todas as páginas)',
+        'geo-rotas': 'GEO · optimização de rotas', 'geo-rotas-importar': 'GEO · importar CSV de clientes', 'geo-rotas-descarregar': 'GEO · descarregar rota optimizada',
+        'geo-zonas': 'GEO · delimitação de zonas (ver)', 'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas', 'geo-distribuidores': 'GEO · gestão de distribuidores',
+        'acessos': 'Página Acessos', 'admin-utilizadores': 'Utilizadores e perfis', 'admin-config': 'Configuração e ligações', 'registos': 'Registos de acesso e exportações',
+      };
+      const nomeRecurso = (id) => t(NOMES_RECURSO[id] || (PAGES.find((p) => p.id === id) || {}).nome || id);
+      const NOMES_ACCAO = {
+        entrada: 'Entrada', saida: 'Saída', entrada_falhada: 'Entrada falhada', entrada_bloqueada: 'Entrada com conta bloqueada', entrada_recusada: 'Entrada recusada',
+        conta_bloqueada: 'Conta bloqueada', conta_desbloqueada: 'Conta desbloqueada', desbloqueio_recusado: 'Desbloqueio recusado', exportacao: 'Exportação para Excel',
+        exportacao_recusada: 'Exportação recusada', acesso_negado: 'Acesso negado', sessao_terminada: 'Sessão terminada', dois_passos_em_falta: 'Entrada sem dois passos',
+      };
+      let GESTAO = null;
+      function carregarGestao() {
+        return fetch('data/gestao.php', { cache: 'no-store' }).then((r) => r.json()).then((d) => { GESTAO = d && d.utilizadores ? d : { erro: (d && d.erro) || t('Sem dados') }; })
+          .catch(() => { GESTAO = { erro: t('A página Acessos precisa do servidor da plataforma (PHP).') }; });
+      }
+      R.acessos = (pg) => {
+        if (!GESTAO) { pg.append(el('div', 'glass empty', t('A carregar…'))); carregarGestao().then(() => { if (atual === 'acessos') draw(); }); return; }
+        if (GESTAO.erro) { pg.append(secBox(t('Acessos'), '', el('p', null, GESTAO.erro))); return; }
+        const U = GESTAO.utilizadores, obrig = ['SADM', 'TI', 'DIR'];
+        const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem email' : u.activo ? 'Activa' : 'Inactiva');
+        pg.append(tiles([
+          { l: t('Contas activas'), v: n0(U.filter((u) => u.activo && !u.bloqueado).length), s: t('{n} contas no total', { n: U.length }) },
+          { l: t('Contas bloqueadas'), v: n0(U.filter((u) => u.bloqueado).length), s: t('desbloqueio pelo super administrador'), tone: U.some((u) => u.bloqueado) ? 'bad' : null },
+          { l: t('Sem email associado'), v: n0(U.filter((u) => !u.email_ok).length), tone: U.some((u) => !u.email_ok) ? 'warn' : null },
+          { l: t('Sem verificação em dois passos'), v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos).length), s: t('perfis SADM, TI e DIR'), tone: U.some((u) => obrig.includes(u.perfil) && !u.dois_passos) ? 'warn' : null },
+        ]));
+        if (U.some((u) => u.compatibilidade)) pg.append(el('p', 'note', t('As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.')));
+        pg.append(tabela({
+          id: 'ac-u', titulo: t('Utilizadores'), nota: t('Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.'), sort: 'nome', dir: 1, total: false,
+          rows: U.map((u) => ({ ...u, chave: u.login, estado: estado(u), rotas_txt: u.rotas ? (u.rotas.join(', ') || t('nenhuma')) : t('Todas'), mfa: u.dois_passos ? t('Sim') : t('Não') })),
+          cols: [{ key: 'nome', label: t('Nome'), p: 0 }, { key: 'login', label: t('Utilizador') }, { key: 'email', label: t('Email') }, { key: 'perfil', label: t('Perfil'), render: (v, r) => document.createTextNode(v + ' · ' + t(r.perfil_nome)) },
+          { key: 'rotas_txt', label: t('Rotas') }, { key: 'mfa', label: t('Dois passos') },
+          { key: 'estado', label: t('Estado'), render: (v, r) => {
+            const w = el('span'); w.append(pill(t(v), v === 'Activa' ? 'p-ok' : v === 'Bloqueada' ? 'p-bad' : 'p-warn'));
+            if (r.bloqueado && GESTAO.pode_desbloquear) {
+              const b = el('button', 'linkbtn', t('Desbloquear')); b.type = 'button'; b.style.marginLeft = '8px';
+              b.addEventListener('click', () => fetch('data/gestao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accao: 'desbloquear', conta: r.login, csrf: SESSAO && SESSAO.csrf }) })
+                .then((x) => x.json()).then((d) => { toast(d.ok ? t('Conta desbloqueada.') : (d.erro ? t(d.erro) : t('Não foi possível desbloquear.')), 5000); GESTAO = null; draw(); }));
+              w.append(b);
+            }
+            return w;
+          }, xl: (r) => t(r.estado) },
+          { key: 'ultima_entrada', label: t('Última entrada'), render: (v) => document.createTextNode(v ? dl(v) + ' ' + v.slice(11, 16) : '—') }]
+        }));
+        const perfis = Object.keys(GESTAO.perfis);
+        const sig = { '': '—', V: 'V', Vr: 'V·r', E: 'E', Er: 'E·r', G: 'G', A: 'A' };
+        pg.append(tabela({
+          id: 'ac-m', titulo: t('Matriz de acessos'), nota: t('V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.'), sort: 'ordem', dir: 1, total: false, search: false,
+          rows: Object.entries(GESTAO.matriz).map(([rec, m], i) => { const o = { chave: rec, ordem: i, recurso: nomeRecurso(rec) }; perfis.forEach((p) => { o[p] = sig[m[p] || '']; }); return o; }),
+          cols: [{ key: 'recurso', label: t('Página ou função'), p: 0, wrap: true }, ...perfis.map((p) => ({ key: p, label: p }))]
+        }));
+        if ((GESTAO.registos || []).length) {
+          pg.append(tabela({
+            id: 'ac-r', titulo: t('Registos de actividade'), nota: t('Últimos 300 registos: entradas, saídas, bloqueios e exportações.'), sort: 'data', total: false,
+            rows: GESTAO.registos.map((r, i) => ({ chave: i + '|' + r.data, data: r.data, utilizador: r.utilizador, perfil: r.perfil, accao: t(NOMES_ACCAO[r.accao] || r.accao), detalhe: Object.entries(r.detalhe || {}).map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : v)).join(' · '), ip: r.ip })),
+            cols: [{ key: 'data', label: t('Data'), render: (v) => document.createTextNode(dl(v) + ' ' + String(v).slice(11, 19)) }, { key: 'utilizador', label: t('Utilizador'), p: 0 }, { key: 'perfil', label: t('Perfil') },
+            { key: 'accao', label: t('Acção') }, { key: 'detalhe', label: t('Detalhe'), wrap: true }, { key: 'ip', label: 'IP' }]
+          }));
+        }
+      };
+
       R['plano-visitas'] = (pg) => {
         const dias = [...new Set(DB.vendas.map((x) => x.data))].filter(inR).sort();
         const act = DB.clientes.filter((x) => x.estado === 'Ativo' && !isCF(x.nif));
@@ -3363,6 +3474,9 @@
         const p = paginaAtual();
         REG = { tabelas: [], kpis: [] }; FITS = [];
         textos(); mostrarFontes();
+        $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
+        $('#xl-all').hidden = !podeExportar('excel-completo');
+        if (SESSAO) { $('#quem').hidden = false; $('#quem').replaceChildren(el('b', null, SESSAO.nome), el('span', null, t(SESSAO.perfil_nome) + (SESSAO.rotas ? ' · ' + (SESSAO.rotas.length ? SESSAO.rotas.join(', ') : t('sem rotas atribuídas')) : ''))); }
         $('#de').value = st.de; $('#ate').value = st.ate; $('#de-v').textContent = dl(st.de); $('#ate-v').textContent = dl(st.ate);
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
         Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
@@ -3378,8 +3492,9 @@
       function route() {
         const h = location.hash.slice(1);
         // Atalho da página principal ("Exportações Excel"): abre o início e gera o Excel completo
-        if (h === 'exportar') { history.replaceState(null, '', '#inicio'); atual = 'inicio'; draw(); setTimeout(() => $('#xl-all').click(), 300); return; }
-        atual = PAGES.some((x) => x.id === h) ? h : 'inicio'; draw(); window.scrollTo(0, 0);
+        const primeira = (paginasVisiveis()[0] || PAGES[0]).id;
+        if (h === 'exportar') { history.replaceState(null, '', '#' + primeira); atual = primeira; draw(); if (podeExportar('excel-completo')) setTimeout(() => $('#xl-all').click(), 300); else toast(t('O seu perfil não permite exportar o relatório completo.'), 6000); return; }
+        atual = PAGES.some((x) => x.id === h) && podeVer(h) ? h : primeira; draw(); window.scrollTo(0, 0);
       }
 
       $('#xl-page').addEventListener('click', () => {
@@ -3388,7 +3503,7 @@
         exportarExcel([{ pagina: p.nome, grupo: p.grupo, kpis: REG.kpis, tabelas: REG.tabelas }], t(p.nome));
       });
       $('#xl-all').addEventListener('click', () => {
-        const pags = PAGES.filter((p) => p.id !== 'inicio').map((p) => { const r = recolher(p.id); return { pagina: p.nome, grupo: p.grupo, kpis: r.kpis, tabelas: r.tabelas }; });
+        const pags = paginasVisiveis().filter((p) => p.id !== 'inicio' && p.id !== 'acessos').map((p) => { const r = recolher(p.id); return { pagina: p.nome, grupo: p.grupo, kpis: r.kpis, tabelas: r.tabelas }; });
         const ini = recolher('inicio'); pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
         exportarExcel(pags, t('Relatório completo'));
       });
@@ -3434,7 +3549,18 @@
       // Segurança: se algo falhar sem resposta, o ecrã de carregamento sai ao fim de 45 s
       const ldLimite = setTimeout(() => LD.fechar(), 45000);
 
-      Promise.all(['rotas', 'clientes', 'cargas'].map((id) => fetch('data/' + id + '.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((d) => { DB[id] = d; })))
+      // Sessão (perfil, rotas e permissões); 401 = sessão terminada, volta ao login
+      const lerSessao = () => fetch('data/sessao.php', { cache: 'no-store' }).then((r) => {
+        if (r.status === 401) { location.href = '../geo/login.php?redirect=' + encodeURIComponent('../reports/'); throw new Error('sessao'); }
+        return r.text();
+      }).then((tx) => { try { const d = JSON.parse(tx); SESSAO = d && d.permissoes ? d : null; } catch (e) { SESSAO = null; } }).catch((e) => { if (e.message === 'sessao') throw e; });
+      // Ficheiros de dados: pelo serviço PHP (filtrado pelo perfil); sem PHP (teste local), o .json directo
+      const lerDados = (id) => fetch('data/dados.php?f=' + id, { cache: 'no-store' }).then((r) => r.text()).then((tx) => {
+        try { const d = JSON.parse(tx); return Array.isArray(d) ? d : []; }
+        catch (e) { return fetch('data/' + id + '.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []); }
+      }).catch(() => []);
+      lerSessao()
+        .then(() => Promise.all(['rotas', 'clientes', 'cargas'].map((id) => lerDados(id).then((d) => { DB[id] = d; }))))
         .then(() => {
           ['rotas', 'clientes', 'cargas'].forEach((k) => { if (!Array.isArray(DB[k])) DB[k] = []; });
           LD.marcar('base', DB.rotas.length ? 'feito' : 'aviso', t('{n} rotas', { n: DB.rotas.length }));

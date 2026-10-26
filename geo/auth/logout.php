@@ -10,6 +10,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Registo da saída
+require_once __DIR__ . '/acessos.php';
+if (!empty($_SESSION['usuario_login'])) naval_registar('saida');
+
 // Destruir todas as variáveis de sessão
 $_SESSION = [];
 

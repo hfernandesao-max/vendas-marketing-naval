@@ -1,4 +1,4 @@
-<?php require_once dirname(__DIR__) . '/auth/auth_check.php'; ?>
+<?php require_once dirname(__DIR__) . '/auth/auth_check.php'; naval_pagina_exigir('geo-zonas', '../../'); ?>
 <!DOCTYPE html>
 <html lang="pt">
 
@@ -131,6 +131,7 @@
   <script>
     lucide.createIcons();
   </script>
+<?= naval_geo_restricoes(['geo-zonas-gerir' => ['ativarModoDesenho', 'desativarModoDesenho', 'importarPolygons', 'importarPolygonsDoArquivo', 'exportarPolygons', 'removerZona', 'limparPolygonsCache', 'editarNomePolygon', 'editarNomePolygonById', 'editarCorPolygon', 'alterarCorGrupo', 'mostrarMenuContextoPolygon', 'exportarClientesDentroPolygonCSV', 'exportarClientesForaPolygonCSV', 'exportarClientesPolygonCSV', 'exportarResumoZonasCSV']]) ?>
 </body>
 
 </html>

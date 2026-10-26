@@ -35,9 +35,28 @@ $candidatos = array_values(array_filter([
     __DIR__ . '/cadastros.json',
     __DIR__ . '/../../../rtm-clientes/saida/portal_rtm.json',
 ]));
+naval_exigir(['cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'auditoria', 'inicio']);
+
 foreach ($candidatos as $f) {
     if (is_file($f)) {
-        readfile($f);
+        $d = json_decode((string) file_get_contents($f), true);
+        if (!is_array($d)) break;
+        // Âmbito do utilizador: só as suas rotas; NIF só para quem o pode ver;
+        // a lista de clientes registados só para quem tem acesso a ela
+        $rotasOk = naval_rotas();
+        $dentro = function ($x) use ($rotasOk) { return $rotasOk === null || in_array((string) ($x['rota'] ?? ''), $rotasOk, true); };
+        foreach (['cadastros', 'cadastros_diarios', 'carteira'] as $k) {
+            if (isset($d[$k]) && is_array($d[$k])) $d[$k] = array_values(array_filter($d[$k], $dentro));
+        }
+        if (!naval_ve_nif()) {
+            foreach (['cadastros', 'carteira'] as $k) foreach ($d[$k] ?? [] as $i => $x) $d[$k][$i]['nif'] = '';
+        }
+        if (!naval_pode('cadastros') && !naval_pode('cadastros-analise') && !naval_pode('cadastros-clientes')) {
+            $d['cadastros'] = [];
+            $d['cadastros_diarios'] = [];
+        }
+        if (!naval_pode('clientes') && !naval_pode('plano-visitas') && !naval_pode('auditoria')) $d['carteira'] = [];
+        echo json_encode($d, JSON_UNESCAPED_UNICODE);
         exit;
     }
 }

@@ -205,6 +205,10 @@ if (($_GET['ping'] ?? '') === '1') {
     ]);
 }
 
+// ── Permissões (matriz de acessos): só perfis com páginas de vendas; diagnóstico só para TI ──
+naval_exigir(['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-artigo', 'vendas-marca', 'plano-visitas']);
+if (($_GET['diag'] ?? '') === '1') naval_exigir(['admin-config']);
+
 // ── Diagnóstico ──
 if (($_GET['diag'] ?? '') === '1') {
     $hoje = date('Ymd');
@@ -397,6 +401,26 @@ if (isset($xml->transactions)) {
             }
         }
     }
+}
+
+// ── Âmbito do utilizador: só as suas rotas (SUP e PRO), NIF só para quem o pode ver,
+//    e a Logística vê quantidades por artigo sem valores nem documentos de venda ──
+$rotasOk = naval_rotas();
+if ($rotasOk !== null) {
+    $vendas = array_values(array_filter($vendas, function ($v) use ($rotasOk) { return in_array((string) $v['rota'], $rotasOk, true); }));
+    $artigos = array_values(array_filter($artigos, function ($a) use ($rotasOk) { return in_array((string) $a['rota'], $rotasOk, true); }));
+}
+if (!naval_ve_nif()) {
+    foreach ($vendas as &$v) { $v['nif'] = ''; }
+    unset($v);
+}
+if (naval_perfil() === 'LOG') {
+    $vendas = [];
+    foreach ($artigos as &$a) {
+        foreach (['preco_unitario', 'valor_sem_iva', 'desconto', 'iva', 'total'] as $k) $a[$k] = null;
+        $a['documento'] = '';
+    }
+    unset($a);
 }
 
 responder(200, $includeItems ? ['vendas' => $vendas, 'artigos' => $artigos] : $vendas);

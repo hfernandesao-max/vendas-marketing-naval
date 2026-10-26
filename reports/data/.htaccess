@@ -1,0 +1,4 @@
+# Os dados só saem pelos serviços PHP, que aplicam o perfil e as rotas de cada utilizador.
+<FilesMatch "\.(json|jsonl)$">
+    Require all denied
+</FilesMatch>

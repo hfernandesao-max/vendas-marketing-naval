@@ -10,6 +10,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Perfis, matriz de acessos e validade da sessão (30 min sem actividade, 10 h no máximo, conta activa)
+require_once __DIR__ . '/acessos.php';
+if (!empty($_SESSION['usuario_autenticado'])) {
+    naval_sessao_valida();
+}
+
  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $scriptDir = str_replace('\\', '/', dirname($scriptName));
 $configuredBasePath = defined('NAVAL_AUTH_BASE_PATH') ? NAVAL_AUTH_BASE_PATH : null;

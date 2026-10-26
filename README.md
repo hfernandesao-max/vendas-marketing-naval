@@ -76,3 +76,37 @@ No servidor:
    ```
 
 Sem estes dados, as páginas de cadastros mostram como configurar e a carteira usa `reports/data/clientes.json`.
+
+## Acessos e utilizadores
+
+As permissões seguem a matriz de acessos (11 perfis: SADM, TI, DIR, COM, SUP, PRO, FIN, BO, LOG, GEO, AUD) e são aplicadas no servidor: cada serviço em `reports/data/` verifica o perfil antes de responder, filtra as rotas dos supervisores e promotores, retira o NIF aos perfis que não o podem ver e regista as exportações. O menu só mostra o que o perfil pode abrir.
+
+Regras:
+
+- Cada conta tem de ter um email associado. Sem email a entrada é recusada.
+- À 3.ª palavra-passe errada a conta fica bloqueada. Só o super administrador (SADM) a desbloqueia, na página **Acessos** do portal ou pelo comando `desbloquear`.
+- A sessão termina após 30 minutos sem actividade e, em qualquer caso, ao fim de 10 horas.
+- Verificação em dois passos (código de 6 dígitos numa aplicação autenticadora) obrigatória para SADM, TI e DIR.
+- Contas SADM: criação, activação e mudança de perfil exigem duas aprovações (`--aprovado-por "Nome1,Nome2"`) e ficam inactivas até serem activadas.
+
+### Instalação no servidor
+
+1. Criar a pasta privada **fora** de `htdocs`, por exemplo `C:\Apache24\dados-privados` (é o valor por omissão: `../dados-privados` a partir do site). Para outro sítio, definir `DADOS_PRIVADOS=` no `.env`.
+2. Passar as contas antigas para a lista nova:
+   `php ferramentas\utilizadores.php importar-antigo`
+3. Associar o email a cada conta e definir o perfil e as rotas:
+   `php ferramentas\utilizadores.php email joao joao@naval.co.ao`
+   `php ferramentas\utilizadores.php perfil joao SUP`
+   `php ferramentas\utilizadores.php rotas joao 1001,1002`
+4. Criar contas novas (a palavra-passe temporária aparece no ecrã):
+   `php ferramentas\utilizadores.php criar joao --nome "João Silva" --email joao@naval.co.ao --perfil PRO --rotas 1003`
+5. Criar os super administradores e activá-los com duas aprovações:
+   `php ferramentas\utilizadores.php criar admin.emergencia --nome "..." --email ... --perfil SADM --aprovado-por "CEO,CFO"`
+   `php ferramentas\utilizadores.php activar admin.emergencia --aprovado-por "CEO,CFO"`
+6. Activar os dois passos para SADM, TI e DIR e ler o código QR / segredo na aplicação autenticadora:
+   `php ferramentas\utilizadores.php dois-passos joao`
+7. `php ferramentas\utilizadores.php listar` mostra todas as contas e o estado.
+
+Outros comandos: `senha`, `desactivar`, `activar`, `validade`, `desbloquear`. Os registos de actividade (entradas, saídas, bloqueios, exportações) ficam em `dados-privados/registos/acessos-AAAA-MM.jsonl` e aparecem na página Acessos.
+
+Enquanto a lista nova não existir, o portal continua a usar `geo/auth/config_users.php` em modo de compatibilidade (administradores como TI, restantes como DIR) e a página Acessos avisa disso.

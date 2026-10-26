@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/auth/auth_check.php'; ?>
+<?php require_once __DIR__ . '/auth/auth_check.php'; naval_pagina_exigir('geo-rotas', '../'); ?>
 <!doctype html>
 <html lang="pt">
 
@@ -153,6 +153,7 @@
   <script>
     lucide.createIcons();
   </script>
+<?= naval_geo_restricoes(['geo-rotas-descarregar' => ['#downloadCSV']]) ?>
 </body>
 
 </html>

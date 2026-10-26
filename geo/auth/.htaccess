@@ -1,4 +1,4 @@
 # Bloquear acesso direto aos ficheiros de autenticação e credenciais
-<FilesMatch "^(config_users\.php|auth_check\.php)$">
+<FilesMatch "^(config_users\.php|auth_check\.php|acessos\.php)$">
     Require all denied
 </FilesMatch>
