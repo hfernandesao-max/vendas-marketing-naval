@@ -32,6 +32,11 @@ switch ($accao) {
         naval_json(['ok' => true] + naval_gestao_dois_passos($login, !empty($p['activar']), $eu));
     case 'matriz':
         naval_json(['ok' => true, 'alteracoes' => naval_gestao_matriz(is_array($p['matriz'] ?? null) ? $p['matriz'] : [])]);
+    case 'guardar_perfil':
+        naval_json(['ok' => true] + naval_gestao_guardar_perfil($p, $eu));
+    case 'apagar_perfil':
+        naval_gestao_apagar_perfil((string) ($p['codigo'] ?? ''));
+        naval_json(['ok' => true]);
     case 'repor_matriz':
         naval_gravar_matriz(naval_matriz_base());
         naval_registar('matriz_reposta', []);

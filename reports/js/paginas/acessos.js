@@ -52,6 +52,8 @@ const NOMES_ACCAO = {
   confirmacao_falhada: 'Confirmação falhada',
   importar_contas_antigas: 'Contas antigas importadas',
   perfil_alterado: 'Perfil alterado',
+  perfil_criado: 'Perfil criado',
+  perfil_apagado: 'Perfil apagado',
   rotas_alteradas: 'Rotas alteradas',
   email_alterado: 'Email alterado',
   conta_activada: 'Conta activada',
@@ -389,7 +391,7 @@ R.acessos = (pg) => {
       {
         l: t('Sem verificação em dois passos'),
         v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos).length),
-        s: t('perfis SADM, TI e DIR'),
+        s: t('perfis {p}', { p: obrig.join(', ') }),
         tone: U.some((u) => obrig.includes(u.perfil) && !u.dois_passos) ? 'warn' : null,
       },
     ]),
@@ -476,6 +478,9 @@ R.acessos = (pg) => {
   if (gerir) secU.querySelector('.sec-tools').prepend(botao(t('Nova conta'), 'sm', () => janelaConta(null)));
   pg.append(secU);
 
+  // ---- perfis ----
+  pg.append(seccaoPerfis(gerir));
+
   // ---- matriz ----
   const perfis = Object.keys(GESTAO.perfis),
     M = GESTAO.matriz,
@@ -554,7 +559,14 @@ R.acessos = (pg) => {
         render: (v, r) => document.createTextNode(r.recurso),
         xl: (r) => r.recurso,
       },
-      ...perfis.map((p) => ({ key: p, label: p, p: 0, render: (v, r) => celula(r.chave, p), xl: (r) => NIVEL_SIG[M[r.chave][p] || ''] })),
+      ...perfis.map((p) => ({
+        key: p,
+        label: p,
+        title: GESTAO.perfis[p],
+        p: 0,
+        render: (v, r) => celula(r.chave, p),
+        xl: (r) => NIVEL_SIG[M[r.chave][p] || ''],
+      })),
     ],
   });
   if (gerir) {
@@ -639,3 +651,159 @@ R.acessos = (pg) => {
     );
   }
 };
+
+// ---- perfis: os do sistema (fixos) e os criados no portal pelo super administrador ----
+function seccaoPerfis(gerir) {
+  const P = GESTAO.perfis_info || [];
+  const sec = tabela({
+    id: 'ac-p',
+    titulo: t('Perfis'),
+    nota: gerir
+      ? t(
+          'Os perfis do sistema são fixos. Um perfil novo começa com as permissões do perfil de origem e passa a ser uma coluna da matriz, onde as pode ajustar.',
+        )
+      : t('Perfis de acesso e respectivas características.'),
+    sort: 'ordem',
+    dir: 1,
+    total: false,
+    search: false,
+    rows: P.map((p, i) => ({
+      ...p,
+      chave: p.codigo,
+      ordem: i,
+      tipo: p.sistema ? t('Sistema') : t('Criado no portal'),
+      ambito: p.por_rota ? t('Só as suas rotas') : t('Todas as rotas'),
+      mfa: p.dois_passos ? t('Obrigatória') : t('Opcional'),
+      estado: p.activo ? t('Activo') : t('Inactivo'),
+      origem: p.base ? p.base : '—',
+    })),
+    cols: [
+      { key: 'codigo', label: t('Código'), p: 0, get: (r) => r.ordem, render: (v, r) => document.createTextNode(r.codigo), xl: (r) => r.codigo },
+      { key: 'nome', label: t('Nome'), p: 0 },
+      { key: 'tipo', label: t('Tipo') },
+      { key: 'origem', label: t('Copiado de') },
+      { key: 'ambito', label: t('Âmbito') },
+      { key: 'mfa', label: t('Dois passos') },
+      { key: 'contas', label: t('Contas'), type: 'n' },
+      {
+        key: 'estado',
+        label: t('Estado'),
+        render: (v, r) => {
+          const w = el('span');
+          w.append(pill(v, r.activo ? 'p-ok' : 'p-warn'));
+          if (gerir && !r.sistema) {
+            const b = el('button', 'linkbtn', t('Gerir'));
+            b.type = 'button';
+            b.style.marginLeft = '8px';
+            b.setAttribute('aria-label', t('Gerir') + ' ' + r.codigo);
+            b.addEventListener('click', () => janelaPerfil(P.find((x) => x.codigo === r.codigo)));
+            w.append(b);
+          }
+          return w;
+        },
+        xl: (r) => r.estado,
+      },
+    ],
+  });
+  if (gerir) sec.querySelector('.sec-tools').prepend(botao(t('Novo perfil'), 'sm', () => janelaPerfil(null)));
+  return sec;
+}
+function janelaPerfil(p) {
+  const novo = !p;
+  p = p || { codigo: '', nome: '', por_rota: false, dois_passos: false, activo: true, contas: 0 };
+  janela(
+    novo ? t('Novo perfil') : p.codigo + ' · ' + p.nome,
+    novo
+      ? t('O perfil novo copia as permissões do perfil de origem; depois ajuste-as na matriz de acessos.')
+      : t('{n} contas com este perfil.', { n: p.contas }),
+    (b, ft, fechar) => {
+      const iCod = entrada('text', p.codigo, {
+        maxLength: 8,
+        autocomplete: 'off',
+        autocapitalize: 'characters',
+        spellcheck: false,
+        placeholder: t('ex.: VENDAS2'),
+      });
+      if (!novo) iCod.disabled = true;
+      iCod.addEventListener('input', () => {
+        iCod.value = iCod.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      });
+      const iNome = entrada('text', p.nome, { maxLength: 60, autocomplete: 'off', placeholder: t('ex.: Vendedor de loja') });
+      const l1 = el('div', 'campos2');
+      l1.append(campo(t('Código'), iCod), campo(t('Nome'), iNome));
+      b.append(l1);
+      let sBase = null;
+      if (novo) {
+        sBase = el('select');
+        const o0 = el('option', null, t('Nenhum (sem permissões)'));
+        o0.value = '';
+        sBase.append(o0);
+        (GESTAO.perfis_info || [])
+          .filter((x) => x.activo && x.codigo !== 'SADM')
+          .forEach((x) => {
+            const o = el('option', null, x.codigo + ' · ' + t(x.nome));
+            o.value = x.codigo;
+            sBase.append(o);
+          });
+        b.append(campo(t('Copiar as permissões de'), sBase));
+      }
+      const caixa = (txt, v) => {
+        const c = entrada('checkbox');
+        c.checked = !!v;
+        const l = el('label', 'interruptor');
+        l.append(c, document.createTextNode(txt));
+        b.append(l);
+        return c;
+      };
+      const cRota = caixa(t('Vê só as rotas atribuídas a cada conta (como supervisores e promotores)'), p.por_rota);
+      const cMfa = caixa(t('Verificação em dois passos obrigatória'), p.dois_passos);
+      const cAct = novo ? null : caixa(t('Perfil activo'), p.activo);
+      const erro = msgErro();
+      b.append(erro);
+      if (!novo && !p.contas) {
+        const acc = el('div', 'dlg-accoes');
+        acc.append(
+          botao(t('Apagar perfil'), 'ghost sm', () => {
+            fechar();
+            confirmarAccao(t('Apagar perfil'), t('O perfil {c} e as suas permissões na matriz são apagados.', { c: p.codigo }), t('Apagar'), () =>
+              pedirGestao({ accao: 'apagar_perfil', codigo: p.codigo }).then((d) => {
+                if (d.ok) {
+                  recarregarGestao();
+                  toast(t('Perfil apagado.'), 4000);
+                }
+                return d;
+              }),
+            );
+          }),
+        );
+        b.append(acc);
+      }
+      const go = botao(novo ? t('Criar perfil') : t('Guardar'), '', () => {
+        go.disabled = true;
+        erro.hidden = true;
+        pedirGestao({
+          accao: 'guardar_perfil',
+          novo,
+          codigo: iCod.value.trim(),
+          nome: iNome.value.trim(),
+          base: sBase ? sBase.value : undefined,
+          por_rota: cRota.checked,
+          dois_passos: cMfa.checked,
+          activo: cAct ? cAct.checked : true,
+        }).then((d) => {
+          go.disabled = false;
+          if (d.cancelado) return;
+          if (!d.ok) {
+            erro.textContent = t(d.erro || 'Não foi possível guardar.');
+            erro.hidden = false;
+            return;
+          }
+          fechar();
+          recarregarGestao();
+          toast(novo ? t('Perfil {c} criado. Ajuste as permissões na matriz de acessos.', { c: d.perfil }) : t('Perfil guardado.'), 6000);
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+    },
+  );
+}

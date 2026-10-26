@@ -12,7 +12,7 @@ function naval_pagina_exigir(string $recurso, string $voltar): void
     echo '<!doctype html><html lang="pt-PT"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         . '<title>Sem acesso · GeoMobilidade Naval</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#06080F;color:#F5F5F7;font:15px/1.5 -apple-system,Segoe UI,Roboto,Arial,sans-serif">'
         . '<div style="max-width:420px;padding:24px;text-align:center"><h1 style="font-size:22px;margin:0 0 8px">Sem acesso a esta página</h1>'
-        . '<p style="color:#A1A1AA;margin:0 0 20px">O seu perfil (' . htmlspecialchars(NAVAL_PERFIS[naval_perfil()] ?? naval_perfil()) . ') não inclui esta área. Se precisa dela, peça o acesso ao responsável da sua área.</p>'
+        . '<p style="color:#A1A1AA;margin:0 0 20px">O seu perfil (' . htmlspecialchars(naval_perfil_nome(naval_perfil())) . ') não inclui esta área. Se precisa dela, peça o acesso ao responsável da sua área.</p>'
         . '<a href="' . htmlspecialchars($voltar) . '" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#0A84FF;color:#fff;text-decoration:none;font-weight:600">Voltar à página principal</a></div></body></html>';
     exit;
 }

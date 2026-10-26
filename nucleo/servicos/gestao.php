@@ -98,8 +98,8 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     foreach ($d as $l => $x) {
         if ($l !== $login && strcasecmp(trim((string) ($x['email'] ?? '')), $email) === 0) naval_gestao_recusar('Este email já está associado à conta ' . $l . '.', $accao);
     }
-    if (!isset(NAVAL_PERFIS[$perfil])) naval_gestao_recusar('Perfil inválido.', $accao);
-    if (in_array($perfil, NAVAL_POR_ROTA, true) && !$rotas) naval_gestao_recusar('Os perfis SUP e PRO precisam de pelo menos uma rota.', $accao);
+    if (!isset(naval_perfis()[$perfil])) naval_gestao_recusar('Perfil inválido.', $accao);
+    if (in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) naval_gestao_recusar('Este perfil só vê as suas rotas: indique pelo menos uma rota.', $accao);
     if ($ate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $ate)) naval_gestao_recusar('Data de fim inválida.', $accao);
 
     // A própria conta: não se pode retirar o perfil SADM nem desactivar
@@ -115,7 +115,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $u['nome'] = $nome;
     $u['email'] = $email;
     $u['perfil'] = $perfil;
-    $u['rotas'] = in_array($perfil, NAVAL_POR_ROTA, true) ? $rotas : [];
+    $u['rotas'] = in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [];
     $u['activo'] = $activo;
     if ($ate === '') unset($u['valido_ate']); else $u['valido_ate'] = $ate;
     $senha = null;
@@ -139,7 +139,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
         if ($a != $b) $mud[$k] = is_array($b) ? implode(', ', $b) : (is_bool($b) ? ($b ? 'sim' : 'não') : (string) $b);
     }
     naval_registar($novo ? 'conta_criada' : 'conta_alterada', ['conta' => $login] + $mud + ($envolveSadm ? ['aprovado_por' => $aprov] : []));
-    return ['senha' => $senha, 'dois_passos_obrigatorio' => in_array($perfil, NAVAL_MFA, true) && empty($u['mfa'])];
+    return ['senha' => $senha, 'dois_passos_obrigatorio' => in_array($perfil, naval_perfis_mfa(), true) && empty($u['mfa'])];
 }
 
 /** Nova palavra-passe temporária para uma conta. */
@@ -184,7 +184,7 @@ function naval_gestao_matriz(array $nova): int
         if (!isset($antes[$rec]) || !is_array($col)) continue;
         foreach ($col as $perf => $nivel) {
             $nivel = (string) $nivel;
-            if (!in_array($perf, NAVAL_COLUNAS, true)) continue;
+            if (!in_array($perf, naval_colunas(), true)) continue;
             if (!in_array($nivel, naval_niveis_recurso($rec), true)) naval_gestao_recusar('Nível não permitido em ' . $rec . ' / ' . $perf . '.', 'matriz');
             if ($antes[$rec][$perf] !== $nivel) {
                 $final[$rec][$perf] = $nivel;
@@ -211,8 +211,8 @@ function naval_gestao_vista(): array
         $us[] = [
             'login' => $login, 'nome' => $u['nome'] ?? $login, 'email' => $u['email'] ?? '', 'perfil' => $u['perfil'] ?? '',
             'email_ok' => naval_email_valido($u['email'] ?? null), 'bloqueado' => isset($bloq[$login]), 'bloqueado_em' => $bloq[$login] ?? null,
-            'perfil_nome' => NAVAL_PERFIS[$u['perfil'] ?? ''] ?? ($u['perfil'] ?? ''),
-            'rotas' => in_array($u['perfil'] ?? '', NAVAL_POR_ROTA, true) ? array_values($u['rotas'] ?? []) : null,
+            'perfil_nome' => naval_perfil_nome((string) ($u['perfil'] ?? '')),
+            'rotas' => in_array($u['perfil'] ?? '', naval_perfis_por_rota(), true) ? array_values($u['rotas'] ?? []) : null,
             'activo' => naval_conta_valida($u), 'ligada' => !empty($u['activo']), 'valido_ate' => $u['valido_ate'] ?? null,
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
             'senha_temporaria' => !empty($u['trocar_senha']),
@@ -224,12 +224,13 @@ function naval_gestao_vista(): array
     $eu = naval_utilizador();
     $gerir = naval_perfil() === 'SADM' && empty($eu['compatibilidade']);
     return [
-        'perfis' => NAVAL_PERFIS,
+        'perfis' => naval_perfis(),
+        'perfis_info' => naval_gestao_perfis_vista(),
         'matriz' => naval_matriz(),
         'matriz_base' => naval_matriz_base(),
         'niveis' => $niveis,
-        'por_rota' => NAVAL_POR_ROTA,
-        'perfis_dois_passos' => NAVAL_MFA,
+        'por_rota' => naval_perfis_por_rota(),
+        'perfis_dois_passos' => naval_perfis_mfa(),
         'rotas' => $gerir ? naval_rotas_portal() : [],
         'utilizadores' => $us,
         'registos' => naval_pode('registos') ? naval_ler_registos(300) : [],
@@ -238,4 +239,106 @@ function naval_gestao_vista(): array
         'eu' => $eu['login'] ?? '',
         'confirmado' => (int) ($_SESSION['reforco_ate'] ?? 0) >= time(),
     ];
+}
+
+// ── Perfis criados no portal ──
+
+/** Lista para a página Acessos: cada perfil com as características e o número de contas. */
+function naval_gestao_perfis_vista(): array
+{
+    $contas = [];
+    foreach (naval_utilizadores() as $u) {
+        $p = (string) ($u['perfil'] ?? '');
+        $contas[$p] = ($contas[$p] ?? 0) + 1;
+    }
+    $out = [];
+    foreach (naval_perfis_todos() as $c => $x) $out[] = $x + ['contas' => $contas[$c] ?? 0];
+    return $out;
+}
+
+/**
+ * Cria ou altera um perfil. Novo: código (2 a 8 letras/números, a começar por letra), nome, perfil de
+ * origem (as permissões são copiadas dele). Os perfis do sistema não se alteram.
+ */
+function naval_gestao_guardar_perfil(array $p, array $eu): array
+{
+    $accao = 'guardar_perfil';
+    $todos = naval_perfis_todos();
+    $criados = naval_perfis_criados();
+    $codigo = strtoupper(trim((string) ($p['codigo'] ?? '')));
+    $novo = !empty($p['novo']);
+    $nome = naval_texto($p['nome'] ?? '', 60);
+    $porRota = !empty($p['por_rota']);
+    $doisPassos = !empty($p['dois_passos']);
+    $activo = !array_key_exists('activo', $p) || !empty($p['activo']);
+
+    if (!preg_match('/^[A-Z][A-Z0-9]{1,7}$/', $codigo)) naval_gestao_recusar('O código do perfil tem de ter 2 a 8 letras ou números, a começar por uma letra (ex.: VENDAS2).', $accao);
+    if ($nome === '') naval_gestao_recusar('Indique o nome do perfil.', $accao);
+    foreach ($todos as $c => $x) {
+        if ($c !== $codigo && strcasecmp($x['nome'], $nome) === 0) naval_gestao_recusar('Já existe um perfil com este nome (' . $c . ').', $accao);
+    }
+    if ($novo) {
+        if (isset($todos[$codigo])) naval_gestao_recusar('Já existe um perfil com o código ' . $codigo . '.', $accao);
+        $base = strtoupper(trim((string) ($p['base'] ?? '')));
+        if ($base === 'SADM') naval_gestao_recusar('Não é possível copiar o perfil de super administrador.', $accao);
+        if ($base !== '' && empty($todos[$base]['activo'])) naval_gestao_recusar('Perfil de origem inválido.', $accao);
+        $m = naval_matriz();
+        $copia = [];
+        if ($base !== '') foreach ($m as $rec => $col) if (($col[$base] ?? '') !== '') $copia[$rec] = $col[$base];
+        $x = ['nome' => $nome, 'base' => $base !== '' ? $base : null, 'matriz' => $copia, 'criado' => date('Y-m-d H:i'), 'criado_por' => $eu['login']];
+        $antes = null;
+    } else {
+        if (isset(NAVAL_PERFIS[$codigo])) naval_gestao_recusar('Os perfis do sistema não se alteram; crie um perfil novo a partir dele.', $accao);
+        if (!isset($criados[$codigo])) naval_gestao_recusar('Perfil não encontrado.', $accao);
+        $x = $criados[$codigo];
+        $antes = $x;
+    }
+    // Contas deste perfil: não se desactiva com contas activas; o âmbito por rota exige rotas em todas
+    $comPerfil = array_filter(naval_utilizadores(), function ($u) use ($codigo) { return ($u['perfil'] ?? '') === $codigo; });
+    if (!$activo && array_filter($comPerfil, 'naval_conta_valida')) {
+        naval_gestao_recusar('Há contas activas com este perfil: mude-lhes o perfil antes de o desactivar.', $accao);
+    }
+    if ($porRota) {
+        $semRotas = array_keys(array_filter($comPerfil, function ($u) { return empty($u['rotas']); }));
+        if ($semRotas) naval_gestao_recusar('Estas contas não têm rotas atribuídas: ' . implode(', ', $semRotas) . '. Atribua-lhes rotas antes de limitar o perfil às rotas.', $accao);
+    }
+    $x['nome'] = $nome;
+    $x['por_rota'] = $porRota;
+    $x['dois_passos'] = $doisPassos;
+    $x['activo'] = $activo;
+    if (!$novo) {
+        $x['alterado'] = date('Y-m-d H:i');
+        $x['alterado_por'] = $eu['login'];
+    }
+    $criados[$codigo] = $x;
+    naval_gravar_perfis($criados);
+    $mud = [];
+    foreach (['nome', 'por_rota', 'dois_passos', 'activo'] as $k) {
+        if (($antes[$k] ?? null) != $x[$k]) $mud[$k] = is_bool($x[$k]) ? ($x[$k] ? 'sim' : 'não') : $x[$k];
+    }
+    naval_registar($novo ? 'perfil_criado' : 'perfil_alterado', ['perfil' => $codigo] + ($novo ? ['copiado_de' => $x['base'] ?? '—'] : []) + $mud);
+    return ['perfil' => $codigo];
+}
+
+/** Apaga um perfil criado no portal que não tenha nenhuma conta. */
+function naval_gestao_apagar_perfil(string $codigo): void
+{
+    $codigo = strtoupper(trim($codigo));
+    $criados = naval_perfis_criados();
+    if (isset(NAVAL_PERFIS[$codigo])) naval_gestao_recusar('Os perfis do sistema não se apagam.', 'apagar_perfil');
+    if (!isset($criados[$codigo])) naval_gestao_recusar('Perfil não encontrado.', 'apagar_perfil');
+    foreach (naval_utilizadores() as $login => $u) {
+        if (($u['perfil'] ?? '') === $codigo) naval_gestao_recusar('A conta ' . $login . ' usa este perfil: mude-lhe o perfil antes de o apagar.', 'apagar_perfil');
+    }
+    unset($criados[$codigo]);
+    naval_gravar_perfis($criados);
+    // Retira as alterações à matriz que eram deste perfil
+    $alt = naval_matriz_alteracoes();
+    foreach ($alt as $rec => $col) {
+        unset($alt[$rec][$codigo]);
+        if (!$alt[$rec]) unset($alt[$rec]);
+    }
+    naval_json_gravar(naval_ficheiro_matriz(), $alt);
+    naval_matriz(true);
+    naval_registar('perfil_apagado', ['perfil' => $codigo]);
 }

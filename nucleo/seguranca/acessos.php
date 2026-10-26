@@ -5,7 +5,8 @@
  *   - nível por recurso: '' sem acesso, V ver, Vr ver só as suas rotas, E exportar,
  *     Er exportar só as suas rotas, G gerir, A administrar;
  *   - âmbito por rota (SUP e PRO) e dados pessoais (NIF) só para quem precisa.
- * A matriz do código pode ser alterada pelo super administrador no portal (dados-privados/matriz.json).
+ * A matriz do código pode ser alterada pelo super administrador no portal (dados-privados/matriz.json),
+ * que também pode criar perfis novos (ver perfis.php): cada um passa a ser uma coluna da matriz.
  */
 defined('NAVAL_NUCLEO') || exit;
 
@@ -78,6 +79,14 @@ function naval_matriz_base(): array
         foreach (NAVAL_COLUNAS as $i => $p) $m[$rec][$p] = ($v[$i] ?? '-') === '-' ? '' : $v[$i];
         $m[$rec]['SADM'] = 'A';
     }
+    // Perfis criados no portal: a «matriz original» é a cópia das permissões do perfil de origem
+    foreach (naval_perfis_criados() as $c => $x) {
+        if (empty($x['activo'])) continue;
+        foreach ($m as $rec => $col) {
+            $nivel = (string) ($x['matriz'][$rec] ?? '');
+            $m[$rec][$c] = in_array($nivel, naval_niveis_recurso($rec), true) ? $nivel : '';
+        }
+    }
     return $m;
 }
 
@@ -101,7 +110,7 @@ function naval_matriz(bool $recarregar = false): array
     foreach (naval_matriz_alteracoes() as $rec => $col) {
         if (!isset($m[$rec]) || !is_array($col)) continue;
         foreach ($col as $p => $nivel) {
-            if (in_array($p, NAVAL_COLUNAS, true) && in_array($nivel, naval_niveis_recurso($rec), true)) $m[$rec][$p] = $nivel;
+            if (in_array($p, naval_colunas(), true) && in_array($nivel, naval_niveis_recurso($rec), true)) $m[$rec][$p] = $nivel;
         }
     }
     return $m;
@@ -147,7 +156,7 @@ function naval_gravar_matriz(array $nova): void
     foreach ($nova as $rec => $col) {
         if (!isset($base[$rec]) || !is_array($col)) continue;
         foreach ($col as $p => $nivel) {
-            if (!in_array($p, NAVAL_COLUNAS, true) || !in_array($nivel, naval_niveis_recurso($rec), true)) continue;
+            if (!in_array($p, naval_colunas(), true) || !in_array($nivel, naval_niveis_recurso($rec), true)) continue;
             if ($base[$rec][$p] !== $nivel) $dif[$rec][$p] = $nivel;
         }
     }
@@ -179,7 +188,7 @@ function naval_rotas(): ?array
 {
     $u = naval_utilizador();
     if (!$u) return [];
-    if (in_array($u['perfil'], NAVAL_POR_ROTA, true)) return array_values(array_map('strval', $u['rotas'] ?? []));
+    if (in_array($u['perfil'], naval_perfis_por_rota(), true)) return array_values(array_map('strval', $u['rotas'] ?? []));
     return null;
 }
 

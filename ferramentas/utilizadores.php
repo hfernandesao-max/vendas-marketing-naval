@@ -98,7 +98,7 @@ switch ($cmd) {
         foreach ($d as $l => $u) {
             $est = isset($bloq[$l]) ? 'bloqueada' : (naval_conta_valida($u) ? 'activa' : (naval_email_valido($u['email'] ?? null) ? 'inactiva' : 'sem email'));
             printf("%-22s %-5s %-30s %-28s %-14s %s%s\n", $l, $u['perfil'], mb_strimwidth_seguro($u['nome'] ?? '', 30), $u['email'] ?? '—',
-                in_array($u['perfil'], NAVAL_POR_ROTA, true) ? implode(',', $u['rotas'] ?? []) : 'todas', $est, empty($u['mfa']) ? '' : ' · dois passos');
+                in_array($u['perfil'], naval_perfis_por_rota(), true) ? implode(',', $u['rotas'] ?? []) : 'todas', $est, empty($u['mfa']) ? '' : ' · dois passos');
         }
         echo 'Ficheiro: ' . ficheiro() . PHP_EOL;
         break;
@@ -119,12 +119,12 @@ switch ($cmd) {
     case 'criar':
         if ($login === '' || isset($d[$login])) sair('Indique um utilizador novo (este já existe ou está vazio).');
         $perfil = strtoupper((string) ($o['perfil'] ?? ''));
-        if (!isset(NAVAL_PERFIS[$perfil])) sair('Perfil inválido. Use: ' . implode(', ', array_keys(NAVAL_PERFIS)));
+        if (!isset(naval_perfis()[$perfil])) sair('Perfil inválido. Use: ' . implode(', ', array_keys(naval_perfis())));
         if (!naval_email_valido($o['email'] ?? null)) sair('O email é obrigatório e tem de ser válido (--email).');
         foreach ($d as $l => $u) if (strcasecmp($u['email'] ?? '', $o['email']) === 0) sair('Este email já está associado à conta ' . $l . '.');
         if (empty($o['nome'])) sair('Indique o nome (--nome "Nome Apelido").');
         $rotas = rotas_lista($o['rotas'] ?? null);
-        if (in_array($perfil, NAVAL_POR_ROTA, true) && !$rotas) sair('Os perfis SUP e PRO precisam de rotas (--rotas 1001,1002).');
+        if (in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) sair('Os perfis SUP e PRO precisam de rotas (--rotas 1001,1002).');
         if ($perfil === 'SADM') exigir_aprovacao_sadm($o, $login, 'criar');
         $s = senha_temporaria();
         $d[$login] = ['nome' => $o['nome'], 'email' => trim($o['email']), 'senha' => password_hash($s, PASSWORD_DEFAULT), 'perfil' => $perfil, 'rotas' => $rotas,
@@ -133,17 +133,17 @@ switch ($cmd) {
         naval_registar('conta_criada', ['conta' => $login, 'perfil' => $perfil, 'rotas' => $rotas], 'servidor');
         echo "Conta criada: $login ($perfil). Palavra-passe temporária: $s\n";
         if ($perfil === 'SADM') echo "Conta SADM criada desactivada. Active-a só em emergência (comando activar, com --aprovado-por).\n";
-        if (in_array($perfil, NAVAL_MFA, true)) echo "Este perfil exige verificação em dois passos: corra o comando dois-passos.\n";
+        if (in_array($perfil, naval_perfis_mfa(), true)) echo "Este perfil exige verificação em dois passos: corra o comando dois-passos.\n";
         break;
 
     case 'perfil':
         $u = $conta();
         $perfil = strtoupper($o['_'][2] ?? '');
-        if (!isset(NAVAL_PERFIS[$perfil])) sair('Perfil inválido. Use: ' . implode(', ', array_keys(NAVAL_PERFIS)));
+        if (!isset(naval_perfis()[$perfil])) sair('Perfil inválido. Use: ' . implode(', ', array_keys(naval_perfis())));
         if ($perfil === 'SADM' || $u['perfil'] === 'SADM') exigir_aprovacao_sadm($o, $login, 'perfil');
         $u['perfil'] = $perfil;
         if (isset($o['rotas'])) $u['rotas'] = rotas_lista($o['rotas']);
-        if (in_array($perfil, NAVAL_POR_ROTA, true) && empty($u['rotas'])) sair('Os perfis SUP e PRO precisam de rotas (--rotas 1001,1002).');
+        if (in_array($perfil, naval_perfis_por_rota(), true) && empty($u['rotas'])) sair('Os perfis SUP e PRO precisam de rotas (--rotas 1001,1002).');
         $d[$login] = $u; gravar($d);
         naval_registar('perfil_alterado', ['conta' => $login, 'perfil' => $perfil], 'servidor');
         echo "Perfil de $login: $perfil\n";

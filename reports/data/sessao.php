@@ -13,7 +13,7 @@ naval_json([
     'login' => $u['login'],
     'nome' => $u['nome'] ?? $u['login'],
     'perfil' => $u['perfil'],
-    'perfil_nome' => NAVAL_PERFIS[$u['perfil']] ?? $u['perfil'],
+    'perfil_nome' => naval_perfil_nome($u['perfil']),
     'rotas' => naval_rotas(),
     'nif' => naval_ve_nif(),
     'permissoes' => $perm,

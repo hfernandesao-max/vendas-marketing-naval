@@ -14,6 +14,7 @@ require_once __DIR__ . '/texto.php';
 require_once __DIR__ . '/armazem.php';
 require_once __DIR__ . '/http.php';
 require_once __DIR__ . '/seguranca/acessos.php';
+require_once __DIR__ . '/seguranca/perfis.php';
 require_once __DIR__ . '/seguranca/contas.php';
 require_once __DIR__ . '/seguranca/registos.php';
 require_once __DIR__ . '/seguranca/sessao.php';

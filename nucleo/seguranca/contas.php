@@ -9,8 +9,6 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 
-// Perfis que têm de usar verificação em dois passos (aplicada quando o segredo está configurado)
-const NAVAL_MFA = ['SADM', 'TI', 'DIR'];
 const NAVAL_SESSAO_INACTIVA = 1800;   // 30 minutos sem actividade
 const NAVAL_SESSAO_MAXIMA = 36000;    // 10 horas
 // Bloqueio: à 3.ª tentativa falhada a conta fica bloqueada até o super administrador a desbloquear
@@ -53,7 +51,7 @@ function naval_utilizadores(): array
 
 function naval_conta_valida(?array $u): bool
 {
-    if (!$u || empty($u['activo']) || !isset(NAVAL_PERFIS[$u['perfil'] ?? ''])) return false;
+    if (!$u || empty($u['activo']) || !isset(naval_perfis()[$u['perfil'] ?? ''])) return false;
     if (empty($u['compatibilidade']) && !naval_email_valido($u['email'] ?? null)) return false;
     if (!empty($u['valido_ate']) && date('Y-m-d') > $u['valido_ate']) return false;
     return true;

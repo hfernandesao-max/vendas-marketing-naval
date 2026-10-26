@@ -914,9 +914,10 @@ tfoot td {
   font-weight: 700;
 }
 
+/* Estado positivo nas etiquetas: azul Naval (sem verde em títulos e etiquetas) */
 .p-ok {
-  color: var(--ok);
-  background: rgba(61, 214, 140, 0.12);
+  color: var(--sky);
+  background: rgba(110, 195, 255, 0.13);
 }
 
 .p-warn {

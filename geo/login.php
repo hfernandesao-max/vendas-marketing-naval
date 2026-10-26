@@ -31,7 +31,7 @@ function naval_concluir_login(string $login, array $u, string $redirect, bool $c
     $_SESSION['ultima_actividade'] = time();
     naval_limpar_falhas($login);
     naval_registar('entrada', ['dois_passos' => $comMfa], $login);
-    if (!$comMfa && in_array($u['perfil'] ?? '', NAVAL_MFA, true)) naval_registar('dois_passos_em_falta', [], $login);
+    if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
     header('Location: ' . $redirect);
     exit;
 }

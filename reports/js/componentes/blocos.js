@@ -222,6 +222,7 @@ export function tabela(o) {
       tt.dataset.c = o.cols.indexOf(c);
       tt.setAttribute('aria-sort', c.key === ord.key ? (ord.dir > 0 ? 'ascending' : 'descending') : 'none');
       const bt = el('button', null, c.label + (c.key === ord.key ? (ord.dir > 0 ? ' ↑' : ' ↓') : ''));
+      if (c.title) bt.title = c.title;
       bt.type = 'button';
       bt.addEventListener('click', () => {
         if (ord.key === c.key) ord.dir *= -1;
