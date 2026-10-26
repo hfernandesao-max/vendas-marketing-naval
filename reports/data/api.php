@@ -206,7 +206,7 @@ if (($_GET['ping'] ?? '') === '1') {
 }
 
 // ── Permissões (matriz de acessos): só perfis com páginas de vendas; diagnóstico só para TI ──
-naval_exigir(['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-artigo', 'vendas-marca', 'plano-visitas', 'sap-exportar']);
+naval_exigir(['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-artigo', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes']);
 if (($_GET['diag'] ?? '') === '1') naval_exigir(['admin-config']);
 
 // ── Diagnóstico ──
@@ -416,7 +416,7 @@ if (!naval_ve_nif()) {
 }
 // Sem nenhuma página de vendas na matriz (por exemplo, Logística): só quantidades por artigo
 $veVendas = false;
-foreach (['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas', 'sap-exportar'] as $rec) {
+foreach (['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes'] as $rec) {
     if (naval_pode($rec)) { $veVendas = true; break; }
 }
 if (!$veVendas) {

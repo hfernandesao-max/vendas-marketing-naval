@@ -13,18 +13,30 @@ Portal da equipa RTM (Route to Market) do Grupo Naval Angola, no estilo do Porta
 
 Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 
-## Menu
+## Menu (por área de negócio)
 
-| Secção | Páginas |
+| Área | Páginas |
 |---|---|
-| Vendas RTM | Vendas por promotor · Vendas por dia · Vendas por cliente · Documentos |
-| Recebimentos | Métodos de pagamento (dinheiro, Multicaixa, por liquidar) |
-| Stock | Stock por promotor / carrinha (carga do plano de cargas) · Stock por armazém · Vendas por artigo · Vendas por promotor e marca |
-| Carteira | Carteira de clientes · Plano de visitas |
+| Início | Indicadores do período e atalhos |
+| **Vendas** | Vendas por promotor · por dia · por cliente · por artigo · por promotor e marca · Ranking · Documentos |
+| **Recebimentos** | Métodos de pagamento · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) · Ficheiro para o SAP |
+| **Clientes** | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados |
+| **Terreno** | Plano de visitas · Histórico de auditoria |
+| **Logística** | Plano de cargas · Stock por promotor / carrinha · Stock por armazém |
+| **Administração** | Acessos |
 
-Todas as páginas têm filtro de datas, idioma PT/EN e exportação **Excel (.xlsx)** (por tabela, por página ou completa): capa com índice, resumo de indicadores e uma folha por tabela, com cabeçalho fixo, filtros e totais `SUBTOTAL`.
+O menu só mostra as páginas que o perfil pode abrir (matriz de acessos).
 
-O ecrã ajusta-se sozinho para evitar barras de deslocamento: as tabelas mostram 20 linhas de cada vez e, quando falta largura, ficam compactas e escondem primeiro as colunas menos importantes (há sempre a opção de as mostrar).
+### Filtros
+
+Uma barra de filtros única, por baixo do período, igual em todas as páginas. Cada página mostra só os filtros que se aplicam aos seus dados:
+
+- **Rota / promotor** (escolha múltipla; os supervisores só vêem as suas rotas)
+- **Cliente** (nome, NIF ou código) e **Artigo** (nome ou código)
+- **Tipo de documento** (Factura-recibo, Factura), **Meio de pagamento**, **Estado** (pagos / pendentes)
+- **Município**, **Tipo de cliente** e **Estado do cliente** (páginas de clientes)
+
+Os filtros aplicam-se a quadros, tabelas e Excel (a capa do Excel indica os filtros usados), mantêm-se ao mudar de página, ficam guardados no navegador e no endereço — por exemplo `reports/#documentos?rota=1001,1003&estado=pendente` abre já filtrado. *Limpar filtros* repõe tudo.
 
 ## Dados (`reports/data/`)
 
