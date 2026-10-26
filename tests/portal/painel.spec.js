@@ -35,5 +35,5 @@ test('dica ao passar o rato e com o teclado; tabela alternativa; clicar abre o d
   await promotor.locator('button:has-text("Gráfico")').click();
   await promotor.locator('.vx-m').first().click();
   await expect(page).toHaveURL(/#documentos(\/dc)?\?rota=1004$/);
-  await expect(page.locator('.f-rota .f-btn')).toContainText('1004');
+  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('1004');
 });

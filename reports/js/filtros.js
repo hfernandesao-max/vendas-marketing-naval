@@ -1,10 +1,10 @@
 // Barra de filtros comum: estado, aplicação aos dados de cada página, endereço partilhável e controlos.
 import { draw } from './app.js';
-import { nomeRota, pendenteDe, promotorRota } from './calculos.js';
-import { botao, entrada } from './componentes/janelas.js';
+import { pendenteDe, promotorRota } from './calculos.js';
+import { escolha, etiquetas, fecharAberto, pesquisa } from './componentes/barra-filtros.js';
 import { t } from './i18n/i18n.js';
 import { SESSAO } from './perfil.js';
-import { $, DB, el, svg } from './util.js';
+import { $, DB, el } from './util.js';
 
 // Cada página mostra só os filtros que fazem sentido para os seus dados; os valores mantêm-se ao mudar de página,
 // ficam guardados no navegador e no endereço (uma ligação partilhada abre com os mesmos filtros).
@@ -54,7 +54,6 @@ export const normTxt = (s) =>
     .trim();
 const filtrosDe = (pagina) => FILTROS_PAGINA[pagina] || [];
 export const filtroAtivo = (pagina, k) => filtrosDe(pagina).includes(k) && (k === 'rota' ? FV.rota.length > 0 : !!FV[k]);
-const contarFiltros = (pagina) => filtrosDe(pagina).filter((k) => filtroAtivo(pagina, k)).length;
 // endereço: #pagina?rota=1001,1002&cliente=...
 export const filtrosURL = (pagina) =>
   filtrosDe(pagina)
@@ -124,6 +123,13 @@ export function prepararDados(pagina) {
     DB[k] = VISTA[k];
   });
 }
+// Tipos de documento: FR e FT
+function tiposPresentes() {
+  return [
+    ['FR', t('Factura-recibo')],
+    ['FT', t('Factura')],
+  ];
+}
 // Descrição dos filtros activos (capa do Excel, nota das páginas)
 export function descreverFiltros(pagina) {
   const NOMES = { tipo: { FR: 'Factura-recibo', FT: 'Factura' }, estado: { pago: 'Pagos', pendente: 'Pendentes' } };
@@ -149,8 +155,11 @@ const nomeMeio = (cod) => {
   for (const v of DADOS_COMPLETOS.vendas || DB.vendas || []) for (const x of v.pagamentos || []) if (x.codigo === cod) return x.meio;
   return cod;
 };
-// Barra de filtros
-export let filtroAberto = null;
+// Barra de filtros (design system em componentes/barra-filtros.js): pesquisas, escolhas e etiquetas
+export const filtroAberto = (aplica) => {
+  if (fecharAberto && aplica !== false) fecharAberto();
+};
+const ICONE_FILTRO = { rota: 'route', tipo: 'file', meio: 'card', estado: 'clock', municipio: 'ware', tipocli: 'users', estadocli: 'shield' };
 export function desenharFiltros(pagina) {
   const box = $('#filtros2'),
     lista = filtrosDe(pagina),
@@ -164,57 +173,55 @@ export function desenharFiltros(pagina) {
   };
   const opcoes = (arr) =>
     [...new Set(arr.filter((x) => x != null && String(x).trim() !== '').map(String))].sort((a, b) => a.localeCompare(b, 'pt', { numeric: true }));
-  const selectF = (k, rotulo, ops) => {
-    const w = el('label', 'f-ctl' + (FV[k] ? ' on' : '')),
-      s = el('select');
-    s.setAttribute('aria-label', rotulo);
-    ops.forEach(([v, txt]) => {
-      const o = el('option', null, txt);
-      o.value = v;
-      s.append(o);
-    });
-    s.value = FV[k] || '';
-    if (s.value !== (FV[k] || '')) {
-      const o = el('option', null, FV[k]);
-      o.value = FV[k];
-      s.append(o);
-      s.value = FV[k];
-    }
-    s.addEventListener('change', () => {
-      FV[k] = s.value;
-      aplicar();
-    });
-    w.append(s);
-    return w;
-  };
-  const textoF = (k, ph, sugestoes) => {
-    const w = el('label', 'f-ctl f-txt' + (FV[k] ? ' on' : '')),
-      i = entrada('search', FV[k], { placeholder: ph, autocomplete: 'off' });
-    i.setAttribute('aria-label', ph);
-    if (sugestoes.length) {
-      const id = 'dl-f-' + k;
-      const d = el('datalist');
-      d.id = id;
-      sugestoes.slice(0, 1500).forEach((v) => {
-        const o = el('option');
-        o.value = v;
-        d.append(o);
+  const linha = el('div', 'fb-linha');
+  const etiq = [];
+  // Escolha única (valor em FV[k], '' = todos)
+  const unica = (k, rotulo, ops) => {
+    if (FV[k] && !ops.some(([v]) => v === FV[k])) ops = [...ops, [FV[k], FV[k]]];
+    linha.append(
+      escolha({
+        titulo: rotulo,
+        icone: ICONE_FILTRO[k],
+        opcoes: ops.map(([v, txt]) => ({ id: v, titulo: txt })),
+        selecionados: FV[k] ? [FV[k]] : [],
+        multipla: false,
+        aoMudar: (sel) => {
+          FV[k] = sel[0] || '';
+          aplicar();
+        },
+      }),
+    );
+    if (FV[k]) {
+      const o = ops.find(([v]) => v === FV[k]);
+      etiq.push({
+        txt: rotulo + ': ' + (o ? o[1] : FV[k]),
+        remover: () => {
+          FV[k] = '';
+          aplicar();
+        },
       });
-      w.append(d);
-      i.setAttribute('list', id);
     }
-    const ir = () => {
-      if (i.value.trim() !== FV[k]) {
-        FV[k] = i.value.trim();
-        aplicar();
-      }
-    };
-    i.addEventListener('change', ir);
-    i.addEventListener('search', ir);
-    w.prepend(el('span', 'f-ico'));
-    w.querySelector('.f-ico').innerHTML = svg('filtro');
-    w.append(i);
-    return w;
+  };
+  const texto = (k, rotulo, sugestoes) => {
+    linha.append(
+      pesquisa({
+        rotulo,
+        valor: FV[k],
+        sugestoes,
+        aoMudar: (v) => {
+          FV[k] = v;
+          aplicar();
+        },
+      }),
+    );
+    if (FV[k])
+      etiq.push({
+        txt: '🔍 «' + FV[k] + '»',
+        remover: () => {
+          FV[k] = '';
+          aplicar();
+        },
+      });
   };
   const rotasDisp = () => {
     const minhas = SESSAO && Array.isArray(SESSAO.rotas) ? SESSAO.rotas.map(String) : null;
@@ -222,140 +229,88 @@ export function desenharFiltros(pagina) {
     if (minhas) rs = rs.filter((r) => minhas.includes(r));
     return rs;
   };
+  // Pesquisas primeiro (ocupam o espaço livre), depois as escolhas, como nas páginas de stock
+  lista
+    .filter((k) => k === 'cliente' || k === 'artigo')
+    .forEach((k) => {
+      if (k === 'cliente')
+        texto('cliente', t('Cliente (nome ou NIF)'), opcoes([...(C.vendas || []).map((x) => x.cliente), ...(C.clientes || []).map((x) => x.nome)]));
+      else texto('artigo', t('Artigo (nome ou código)'), opcoes((C.artigos || []).map((x) => x.artigo)));
+    });
   lista.forEach((k) => {
     if (k === 'rota') {
       const rs = rotasDisp();
       if (rs.length < 2 && !FV.rota.length) return;
-      const w = el('div', 'f-ctl f-rota' + (FV.rota.length ? ' on' : ''));
-      const b = el(
-        'button',
-        'f-btn',
-        FV.rota.length === 0 ? t('Todas as rotas') : FV.rota.length === 1 ? promotorRota(FV.rota[0]) : t('{n} rotas', { n: FV.rota.length }),
-      );
-      b.type = 'button';
-      b.setAttribute('aria-haspopup', 'true');
-      b.setAttribute('aria-expanded', 'false');
-      const pop = el('div', 'f-pop');
-      pop.hidden = true;
-      const sel = new Set(FV.rota);
-      const procura = entrada('search', '', { placeholder: t('Procurar rota ou promotor…') });
-      const lst = el('div', 'f-lst');
-      const desenhar = () => {
-        const q = normTxt(procura.value);
-        lst.replaceChildren();
-        rs.filter((r) => !q || normTxt(r + ' ' + nomeRota(r)).includes(q)).forEach((r) => {
-          const l = el('label', 'f-op'),
-            c = entrada('checkbox');
-          c.checked = sel.has(r);
-          c.addEventListener('change', () => {
-            if (c.checked) sel.add(r);
-            else sel.delete(r);
-          });
-          l.append(c, el('b', null, r), el('span', null, nomeRota(r) !== r ? nomeRota(r) : ''));
-          lst.append(l);
-        });
-      };
-      procura.addEventListener('input', desenhar);
-      const rod = el('div', 'f-rod');
-      rod.append(
-        botao(t('Todas'), 'ghost sm', () => {
-          sel.clear();
-          desenhar();
-        }),
-        botao(t('Aplicar'), 'sm', () => fechar(true)),
-      );
-      pop.append(procura, lst, rod);
-      const fechar = (aplica) => {
-        pop.hidden = true;
-        b.setAttribute('aria-expanded', 'false');
-        filtroAberto = null;
-        document.removeEventListener('mousedown', fora);
-        document.removeEventListener('keydown', esc);
-        if (aplica !== false) {
-          const novo = rs.filter((r) => sel.has(r));
-          if (novo.join() !== FV.rota.join()) {
-            FV.rota = novo;
+      linha.append(
+        escolha({
+          titulo: t('Rotas'),
+          icone: ICONE_FILTRO.rota,
+          opcoes: rs.map((r) => ({ id: r, titulo: promotorRota(r), subtitulo: t('Rota') + ' ' + r })),
+          selecionados: FV.rota.slice(),
+          multipla: true,
+          procurar: t('Procurar rota ou promotor…'),
+          aoMudar: (sel) => {
+            FV.rota = rs.filter((r) => sel.includes(r));
             aplicar();
-          }
-        }
-      };
-      const fora = (e) => {
-        if (!w.contains(e.target)) fechar(true);
-      };
-      const esc = (e) => {
-        if (e.key === 'Escape') {
-          fechar(false);
-          b.focus();
-        }
-      };
-      b.addEventListener('click', () => {
-        if (!pop.hidden) {
-          fechar(true);
-          return;
-        }
-        desenhar();
-        pop.hidden = false;
-        b.setAttribute('aria-expanded', 'true');
-        filtroAberto = fechar;
-        setTimeout(() => {
-          document.addEventListener('mousedown', fora);
-          document.addEventListener('keydown', esc);
-          procura.focus();
-        }, 0);
-      });
-      w.append(b, pop);
-      box.append(w);
-    } else if (k === 'cliente')
-      box.append(textoF('cliente', t('Cliente (nome ou NIF)'), opcoes([...(C.vendas || []).map((x) => x.cliente), ...(C.clientes || []).map((x) => x.nome)])));
-    else if (k === 'artigo') box.append(textoF('artigo', t('Artigo (nome ou código)'), opcoes((C.artigos || []).map((x) => x.artigo))));
-    else if (k === 'tipo')
-      box.append(
-        selectF('tipo', t('Tipo de documento'), [
-          ['', t('Todos os documentos')],
-          ['FR', t('Factura-recibo')],
-          ['FT', t('Factura')],
-        ]),
+          },
+        }),
       );
+      FV.rota.forEach((r) =>
+        etiq.push({
+          txt: promotorRota(r),
+          remover: () => {
+            FV.rota = FV.rota.filter((x) => x !== r);
+            aplicar();
+          },
+        }),
+      );
+    } else if (k === 'tipo') unica('tipo', t('Tipo de documento'), tiposPresentes(C.vendas));
     else if (k === 'meio') {
       const m = new Map();
       (C.vendas || []).forEach((v) => (v.pagamentos || []).forEach((x) => m.set(x.codigo, x.meio)));
-      box.append(
-        selectF('meio', t('Meio de cobrança'), [
-          ['', t('Todos os meios')],
-          ...[...m.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'pt')).map(([c, n]) => [c, t(n)]),
-          ['-', t('Sem meio indicado')],
-        ]),
-      );
+      unica('meio', t('Meio de cobrança'), [
+        ...[...m.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'pt')).map(([c, n]) => [c, t(n)]),
+        ['-', t('Sem meio indicado')],
+      ]);
     } else if (k === 'estado')
-      box.append(
-        selectF('estado', t('Estado'), [
-          ['', t('Pagos e pendentes')],
-          ['pago', t('Pagos')],
-          ['pendente', t('Pendentes')],
-        ]),
-      );
+      unica('estado', t('Estado'), [
+        ['pago', t('Pagos')],
+        ['pendente', t('Pendentes')],
+      ]);
     else if (k === 'municipio') {
       const ms = opcoes(((C.cad && C.cad.cadastros) || []).map((x) => x.municipio));
-      if (ms.length) box.append(selectF('municipio', t('Município'), [['', t('Todos os municípios')], ...ms.map((x) => [x, x])]));
+      if (ms.length)
+        unica(
+          'municipio',
+          t('Município'),
+          ms.map((x) => [x, x]),
+        );
     } else if (k === 'tipocli') {
       const ts = opcoes([...(C.clientes || []).map((x) => x.tipo), ...((C.cad && C.cad.cadastros) || []).map((x) => x.tipo)]);
-      if (ts.length) box.append(selectF('tipocli', t('Tipo de cliente'), [['', t('Todos os tipos de cliente')], ...ts.map((x) => [x, t(x)])]));
+      if (ts.length)
+        unica(
+          'tipocli',
+          t('Tipo de cliente'),
+          ts.map((x) => [x, t(x)]),
+        );
     } else if (k === 'estadocli') {
       const es = opcoes((C.clientes || []).map((x) => x.estado));
-      if (es.length) box.append(selectF('estadocli', t('Estado do cliente'), [['', t('Todos os estados')], ...es.map((x) => [x, t(x)])]));
+      if (es.length)
+        unica(
+          'estadocli',
+          t('Estado do cliente'),
+          es.map((x) => [x, t(x)]),
+        );
     }
   });
-  const n = contarFiltros(pagina);
-  if (n) {
-    const lp = el('button', 'linkbtn f-limpar', n === 1 ? t('Limpar filtro') : t('Limpar {n} filtros', { n }));
-    lp.type = 'button';
-    lp.addEventListener('click', () => {
+  box.append(
+    linha,
+    etiquetas(etiq, () => {
       filtrosDe(pagina).forEach((k) => {
         FV[k] = JSON.parse(JSON.stringify(FV0[k]));
       });
       aplicar();
-    });
-    box.append(lp);
-  }
-  box.hidden = !box.childNodes.length;
+    }),
+  );
+  box.hidden = !linha.childNodes.length;
 }
