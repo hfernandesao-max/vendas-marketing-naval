@@ -6,3 +6,11 @@ DirectoryIndex index.php
 <Files "index.html">
     Require all denied
 </Files>
+
+# Módulos JavaScript e estilos: o navegador guarda-os, mas confirma sempre com o servidor
+# se mudaram (resposta 304 quando não mudaram). Assim um «git pull» chega logo a todos.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

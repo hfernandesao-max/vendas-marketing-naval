@@ -1,0 +1,361 @@
+/* Estilos próprios de páginas: plano de cargas e ficheiro para o SAP. */
+/* Plano de cargas */
+.pc-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 16px;
+}
+.pc-dia {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pc-dia .btn.sm {
+  min-width: 34px;
+}
+.pc-dia-t {
+  font-size: 16px;
+  text-transform: capitalize;
+  margin: 0 4px;
+}
+.pc-dia input[type='date'] {
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color-scheme: dark;
+}
+.pc-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pc-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.pc-alerta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-color: rgba(255, 159, 10, 0.45);
+}
+.pc-alerta p {
+  margin: 0;
+  color: var(--warn);
+  font-size: 13px;
+}
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+  align-items: start;
+}
+.pc-card {
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+.pc-card.fora {
+  opacity: 0.62;
+}
+.pc-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pc-tit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  min-width: 0;
+}
+.pc-tit input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex: none;
+}
+.pc-tit b {
+  font-size: 15px;
+}
+.pc-tit span {
+  color: var(--muted);
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pc-total {
+  font-size: 12.5px;
+  color: var(--sky);
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pc-corpo {
+  display: grid;
+  gap: 10px;
+}
+.pc-corpo[hidden],
+.pc-avs[hidden] {
+  display: none;
+}
+.campos3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .campos3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.pc-qs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+}
+.pc-zonas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 11px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.05);
+  min-height: 40px;
+}
+.pc-zonas:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.22);
+}
+.pc-chips {
+  display: contents;
+}
+.pc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  background: rgba(10, 132, 255, 0.18);
+  border: 1px solid rgba(10, 132, 255, 0.4);
+  font-size: 12.5px;
+}
+.pc-chip button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.pc-chip button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+}
+.campo .pc-zonas input {
+  flex: 1 1 140px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  padding: 0 6px;
+  box-shadow: none;
+}
+.pc-avs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pc-err,
+.pc-av {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.pc-err {
+  background: rgba(255, 69, 58, 0.14);
+  color: var(--bad);
+}
+.pc-av {
+  background: rgba(255, 159, 10, 0.12);
+  color: var(--warn);
+}
+.pc-resumo {
+  margin-bottom: 14px;
+}
+.pc-lista {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13.5px;
+}
+dialog.dlg.largo {
+  width: min(920px, calc(100vw - 32px));
+}
+.pc-listas {
+  display: grid;
+  gap: 10px;
+  min-height: 260px;
+}
+.pc-listas .seg {
+  justify-self: start;
+}
+.pc-linha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) 36px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.pc-linha input,
+.pc-ta {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13.5px;
+  min-width: 0;
+}
+.pc-ta {
+  height: auto;
+  padding: 8px 10px;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+.nota-dlg {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+@media (max-width: 560px) {
+  .pc-acc {
+    margin-left: 0;
+  }
+  .pc-linha {
+    grid-template-columns: 1fr 36px;
+  }
+}
+
+/* Ficheiro para o SAP */
+.sap-barra {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+.sap-per {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sap-chips,
+.sap-op {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sap-chip {
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sap-chip.on {
+  background: rgba(10, 132, 255, 0.2);
+  border-color: var(--accent);
+}
+.sap-barra .pc-acc {
+  margin-left: 0;
+}
+.sap-avisos {
+  max-height: 260px;
+  overflow: auto;
+}
+.pc-err-t {
+  color: var(--bad);
+}
+.pc-av-t {
+  color: var(--warn);
+}
+.sap-map {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 10px;
+}
+.sap-map-l {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 150px minmax(0, 1.6fr);
+  gap: 8px;
+  align-items: center;
+}
+.sap-map-h span {
+  font-size: 11.5px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.sap-map-r {
+  display: grid;
+  line-height: 1.25;
+}
+.sap-map-r small {
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sap-map input {
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  min-width: 0;
+}
+.sap-map input.falta {
+  border-color: var(--bad);
+}
+.sap-map input:disabled {
+  opacity: 0.7;
+}
+@media (max-width: 760px) {
+  .sap-map-l {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sap-map-h {
+    display: none;
+  }
+}

@@ -179,6 +179,8 @@ O ficheiro é gerado **a partir do próprio modelo** (`reports/modelos/RTM_Sales
 
 ## Desenvolvimento: testes e normas de código
 
+O front-end está em módulos ES nativos (`reports/js/`, sem compilação) e estilos em `reports/css/`; a arquitectura, o mapa dos módulos e as regras estão em [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) e o guia de contribuição em [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Ferramentas só de desenvolvimento (não são precisas no servidor). Requer Node 22, PHP 8.1+ e Python 3.
 
 ```bash
