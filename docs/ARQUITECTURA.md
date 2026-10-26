@@ -118,16 +118,15 @@ A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automático
 
 ## Testes e qualidade
 
-| Ferramenta                                   | O que garante                                                                                       |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| ESLint 10 (`eslint.config.js`)               | Erros e más práticas nos módulos e testes                                                           |
-| Prettier (`.prettierrc.json`) + EditorConfig | Formatação uniforme                                                                                 |
-| Playwright `portal`                          | Todas as páginas em 4 tamanhos de ecrã, filtros, relatórios, gráficos, ficheiro SAP igual ao modelo |
-| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON     |
-| Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), vendas e troco, plano, SAP         |
-| PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                        |
-| PHPCompatibility (`phpcs.xml.dist`)          | O código corre no PHP 7.1 ou posterior                                                              |
-| GitHub Actions                               | Sintaxe e testes unitários no PHP 7.1, 7.4, 8.1 e 8.3; análise; ESLint, Prettier e todos os testes  |
+| Ferramenta                                   | O que garante                                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| ESLint 10 (`eslint.config.js`)               | Erros e más práticas nos módulos e testes                                                               |
+| Prettier (`.prettierrc.json`) + EditorConfig | Formatação uniforme                                                                                     |
+| Playwright `portal`                          | Todas as páginas em 4 tamanhos de ecrã, filtros, relatórios, gráficos, ficheiro SAP igual ao modelo     |
+| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON         |
+| Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), vendas e troco, plano, SAP             |
+| PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                            |
+| GitHub Actions                               | Sintaxe, testes unitários e dos serviços no PHP 7.1, 7.4, 8.1 e 8.3; PHPStan; ESLint, Prettier e testes |
 
 ## Próximas fases
 

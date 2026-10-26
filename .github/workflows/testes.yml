@@ -1,6 +1,6 @@
 # Testes automáticos a cada alteração enviada para o GitHub (e em cada pedido de integração):
-#  - php:      sintaxe e testes unitários do back-end em várias versões do PHP (da 7.1 à 8.3);
-#  - analise:  análise estática (PHPStan) e compatibilidade com o PHP 7.1 (PHPCompatibility);
+#  - php:      sintaxe, testes unitários e testes dos serviços em cada versão do PHP suportada (7.1 a 8.3);
+#  - analise:  análise estática do back-end (PHPStan);
 #  - testes:   normas do front-end e testes do portal e do servidor (Playwright).
 name: Testes
 
@@ -40,6 +40,14 @@ jobs:
       - name: Testes unitários do back-end
         run: php tests/unidade/correr.php
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Testes dos serviços nesta versão do PHP
+        run: npm ci && npx playwright test --project=servidor
+
   analise:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -58,9 +66,6 @@ jobs:
 
       - name: Análise estática (PHPStan)
         run: composer analisar
-
-      - name: Compatibilidade com o PHP 7.1
-        run: composer compatibilidade
 
   testes:
     runs-on: ubuntu-latest
