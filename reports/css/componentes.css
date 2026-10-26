@@ -977,3 +977,51 @@ section.sec[hidden] {
 .vt-l span {
   color: var(--muted);
 }
+
+/* Estado da informação no topo: hora da última actualização e «Actualizar» */
+.actual {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.actual:empty {
+  display: none;
+}
+.actual-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+.actual.vivo .actual-dot {
+  background: var(--sky);
+  box-shadow: 0 0 0 3px rgba(110, 195, 255, 0.18);
+  animation: actualPulso 2.4s ease-in-out infinite;
+}
+@keyframes actualPulso {
+  50% {
+    box-shadow: 0 0 0 6px rgba(110, 195, 255, 0);
+  }
+}
+.actual-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+}
+.actual-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .actual.vivo .actual-dot {
+    animation: none;
+  }
+}

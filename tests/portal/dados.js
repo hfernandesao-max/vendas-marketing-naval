@@ -46,13 +46,13 @@ export const artigos = vendas.map((v, i) => ({
   total: v.total,
 }));
 
-/** Abre o portal com a API do Pinguim BO simulada, o mês corrente como período e a data fixa. */
+/** Abre o portal com a API do Pinguim BO simulada e a data fixa; período: o mês (ou opcoes.periodo; null = o de omissão, hoje). */
 export async function abrir(page, hash = '', opcoes = {}) {
   await page.route('**/data/api.php*', (r) => r.fulfill({ json: { vendas, artigos } }));
   await page.addInitScript(
-    (limpar) => {
+    ({ limpar, periodo }) => {
       try {
-        localStorage.setItem('vm-filtro', JSON.stringify({ preset: 'mes' }));
+        if (periodo) sessionStorage.setItem('vm-periodo', JSON.stringify(periodo));
         if (limpar)
           Object.keys(localStorage)
             .filter((k) => k.startsWith('vm-') && k !== 'vm-filtro')
@@ -61,7 +61,7 @@ export async function abrir(page, hash = '', opcoes = {}) {
         /* sem armazenamento */
       }
     },
-    opcoes.manterMemoria ? false : true,
+    { limpar: !opcoes.manterMemoria, periodo: opcoes.periodo === undefined ? { preset: 'mes' } : opcoes.periodo },
   );
   await page.clock.setFixedTime(HOJE);
   const erros = [];

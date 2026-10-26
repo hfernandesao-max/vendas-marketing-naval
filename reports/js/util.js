@@ -17,6 +17,7 @@ export const group = (a, k) =>
   }, {});
 const ICON = {
   lock: 'M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+  actualizar: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
   clip: 'M9 3h6v3H9zM9 4.5H6v16.5h12V4.5h-3M9 11h6M9 15h6M9 19h3',
   upload: 'M12 15V3M7 8l5-5 5 5M4 15v5h16v-5',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',

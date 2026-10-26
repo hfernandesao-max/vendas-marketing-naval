@@ -4,7 +4,7 @@ import { LIGACOES, avaliarFontes, fetchVendas } from './fontes.js';
 import { n0 } from './formatos.js';
 import { t } from './i18n/i18n.js';
 import { definirSessao } from './perfil.js';
-import { aplicarPreset, carregarFiltro, diasTodos, st } from './periodo.js';
+import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
 import './paginas/inicio.js';
 import './paginas/vendas.js';
@@ -144,8 +144,8 @@ lerSessao()
     );
   })
   .then(() => {
-    if (!diasTodos.length) $('#titulo').textContent = t('Sem dados');
-    else route();
+    // Abre sempre, mesmo sem vendas ainda no dia de hoje: cada página mostra o seu estado vazio
+    route();
     LD.marcar('pronto', 'feito');
     clearTimeout(ldLimite);
     LD.fechar();

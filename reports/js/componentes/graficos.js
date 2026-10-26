@@ -167,7 +167,8 @@ export function grafBarras(w, { itens, cor = COR.s1, fmt = kzc }) {
       bh = 16,
       bw = Math.max(x.valor > 0 ? 2 : 0, (x.valor / max) * larg);
     g.append(svgEl('rect', { x: 0, y: y0, width: w, height: linha, class: 'vx-hit' }));
-    g.append(svgEl('text', { x: Lr - 10, y: y0 + linha / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, cortar(x.rot, Lr - 14)));
+    // Rótulos alinhados à esquerda (leitura natural das listas; IBCS / boas práticas de legibilidade)
+    g.append(svgEl('text', { x: 0, y: y0 + linha / 2 + 4, class: 'vx-rot' }, cortar(x.rot, Lr - 14)));
     g.append(svgEl('path', { d: pathBarra(Lr, y0 + (linha - bh) / 2, bw, bh, false), fill: x.cor || cor, class: 'vx-bar' }));
     g.append(svgEl('text', { x: Lr + bw + 8, y: y0 + linha / 2 + 4, class: 'vx-val' }, fmt(x.valor)));
     interactivo(g, x.titulo || x.rot, x.linhas, x.href);

@@ -1,8 +1,9 @@
-// Período escolhido (presets, datas de início e fim) e respectiva memória.
+// Período escolhido (presets, datas de início e fim). O portal abre sempre no dia de hoje (prática habitual
+// dos painéis de gestão: a informação actual primeiro); a escolha só se mantém durante a sessão do separador.
 import { draw } from './app.js';
 import { fetchVendas } from './fontes.js';
 
-export const st = { de: null, ate: null, preset: 'mes' };
+export const st = { de: null, ate: null, preset: 'hoje' };
 export let diasSap = [],
   diasTodos = [];
 export const inR = (d) => d >= st.de && d <= st.ate;
@@ -17,23 +18,24 @@ export const addD = (d, n) => {
   x.setUTCDate(x.getUTCDate() + n);
   return x.toISOString().slice(0, 10);
 };
+export const PRESETS = ['hoje', 'ontem', 'sete', 'mes', 'tudo'];
 export function presets() {
-  // Períodos calculados sempre a partir de hoje (data local), sem depender dos dias já carregados
+  // Períodos calculados sempre a partir de hoje (data local): acompanham a mudança de dia
   const hj = hoje(),
-    ult = st.preset === 'ultimo' && st.de === st.ate ? st.de : hj;
-  return { ultimo: ['Último dia', ult, ult], sete: ['7 dias', addD(hj, -6), hj], mes: ['Mês', hj.slice(0, 8) + '01', hj], tudo: ['Tudo', INICIO_PINGUIM, hj] };
+    on = addD(hj, -1);
+  return {
+    hoje: ['Hoje', hj, hj],
+    ontem: ['Ontem', on, on],
+    sete: ['7 dias', addD(hj, -6), hj],
+    mes: ['Mês', hj.slice(0, 8) + '01', hj],
+    tudo: ['Tudo', INICIO_PINGUIM, hj],
+  };
 }
-// Aplica um período: "Último dia" procura o dia mais recente com vendas nos últimos 7 dias
+// O período inclui o dia de hoje (os dados ainda estão a mudar)?
+export const periodoAberto = () => !!st.ate && st.ate >= hoje();
 export function aplicarPreset(k) {
+  if (!PRESETS.includes(k)) k = 'hoje';
   st.preset = k;
-  if (k === 'ultimo') {
-    const hj = hoje();
-    return fetchVendas(addD(hj, -6), hj).then(() => {
-      const d = diasSap[diasSap.length - 1] || hj;
-      st.de = d;
-      st.ate = d;
-    });
-  }
   const p = presets()[k];
   st.de = p[1];
   st.ate = p[2];
@@ -45,16 +47,19 @@ export function setPreset(k) {
     draw();
   });
 }
-// Guarda o tipo de período; as datas só ficam guardadas quando são escolhidas à mão
+// Guarda o período só nesta sessão do separador (ao abrir o portal de novo, volta ao dia de hoje)
 export function guardar() {
   try {
-    localStorage.setItem('vm-filtro', JSON.stringify(st.preset ? { preset: st.preset } : { de: st.de, ate: st.ate }));
+    sessionStorage.setItem('vm-periodo', JSON.stringify(st.preset ? { preset: st.preset } : { de: st.de, ate: st.ate }));
   } catch (e) {}
 }
 export function carregarFiltro() {
+  st.preset = 'hoje';
+  st.de = st.ate = null;
   try {
-    const x = JSON.parse(localStorage.getItem('vm-filtro') || 'null');
-    if (x && x.preset && ['ultimo', 'sete', 'mes', 'tudo'].includes(x.preset)) {
+    localStorage.removeItem('vm-filtro'); // memória antiga (entre visitas): já não se usa
+    const x = JSON.parse(sessionStorage.getItem('vm-periodo') || 'null');
+    if (x && x.preset && PRESETS.includes(x.preset)) {
       st.preset = x.preset;
       st.de = st.ate = null;
     } else if (x && !x.preset && x.de && x.ate) {

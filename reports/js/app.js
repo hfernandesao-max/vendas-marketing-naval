@@ -2,6 +2,7 @@
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
 import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
+import { mostrarActualizacao } from './actualizacao.js';
 import { fetchVendas, mostrarFontes } from './fontes.js';
 import { dl, ds, setFmt } from './formatos.js';
 import { LANG, definirIdioma, t } from './i18n/i18n.js';
@@ -58,6 +59,7 @@ export function draw() {
   $('#titulo').textContent = p.id === 'inicio' ? t('Visão geral') : t(p.nome);
   $('#lead').textContent =
     p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
+  mostrarActualizacao();
   if (filtroAberto) filtroAberto(false);
   prepararDados(p.id);
   desenharFiltros(p.id);

@@ -903,4 +903,8 @@ export const EN = {
   'Perfil guardado.': 'Profile saved.',
   'Perfil criado': 'Profile created',
   'Perfil apagado': 'Profile deleted',
+  Ontem: 'Yesterday',
+  'Informação actual · actualizada às {h} · actualiza sozinha a cada 5 min': 'Live data · updated at {h} · refreshes every 5 min',
+  'Período fechado · dados lidos às {h}': 'Closed period · data read at {h}',
+  Actualizar: 'Refresh',
 };

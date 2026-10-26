@@ -1,4 +1,5 @@
 // Ligação às fontes de dados externas (Pinguim BO) e indicador de estado.
+import { marcarActualizado } from './actualizacao.js';
 import { t } from './i18n/i18n.js';
 import { definirDiasSap, definirDiasTodos, diasSap } from './periodo.js';
 import { $, DB, el, toast } from './util.js';
@@ -93,6 +94,7 @@ export function fetchVendas(de, ate) {
             return [];
           }
           marcarPinguim(true);
+          marcarActualizado();
           return d;
         }),
     )
