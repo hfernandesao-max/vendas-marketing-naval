@@ -414,7 +414,12 @@ if (!naval_ve_nif()) {
     foreach ($vendas as &$v) { $v['nif'] = ''; }
     unset($v);
 }
-if (naval_perfil() === 'LOG') {
+// Sem nenhuma página de vendas na matriz (por exemplo, Logística): só quantidades por artigo
+$veVendas = false;
+foreach (['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas'] as $rec) {
+    if (naval_pode($rec)) { $veVendas = true; break; }
+}
+if (!$veVendas) {
     $vendas = [];
     foreach ($artigos as &$a) {
         foreach (['preco_unitario', 'valor_sem_iva', 'desconto', 'iva', 'total'] as $k) $a[$k] = null;

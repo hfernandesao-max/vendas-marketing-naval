@@ -1,6 +1,8 @@
 <?php
 /**
  * Gestão de utilizadores da plataforma (linha de comandos, no servidor).
+ * A gestão do dia-a-dia faz-se no portal, página Acessos (super administrador); isto serve para
+ * a instalação inicial e para emergências (por exemplo, se não houver nenhum super administrador activo).
  *
  * As contas ficam em dados-privados/utilizadores.json, fora da pasta pública e fora do GitHub
  * (ou no caminho indicado em UTILIZADORES_JSON no .env). Cada operação fica nos registos de acesso.
@@ -12,7 +14,7 @@
  *   php ferramentas/utilizadores.php perfil <utilizador> <PERFIL> [--rotas 1001,1002]
  *   php ferramentas/utilizadores.php rotas <utilizador> 1001,1002
  *   php ferramentas/utilizadores.php email <utilizador> nome@naval.co.ao
- *   php ferramentas/utilizadores.php senha <utilizador>              (gera uma palavra-passe temporária)
+ *   php ferramentas/utilizadores.php senha <utilizador>              (gera uma palavra-passe temporária, a mudar na entrada seguinte)
  *   php ferramentas/utilizadores.php dois-passos <utilizador>        (gera o segredo para a aplicação de autenticação)
  *   php ferramentas/utilizadores.php desactivar|activar <utilizador>
  *   php ferramentas/utilizadores.php validade <utilizador> 2026-12-31|nenhuma
@@ -35,7 +37,7 @@ function sair(string $msg, int $codigo = 1): void
 
 function ficheiro(): string
 {
-    return naval_env()['UTILIZADORES_JSON'] ?? (naval_pasta_privada() . '/utilizadores.json');
+    return naval_ficheiro_utilizadores();
 }
 
 function ler(): array
@@ -49,11 +51,7 @@ function ler(): array
 
 function gravar(array $d): void
 {
-    $f = ficheiro();
-    if (!is_dir(dirname($f))) mkdir(dirname($f), 0770, true);
-    ksort($d);
-    file_put_contents($f, json_encode($d, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
-    @chmod($f, 0660);
+    naval_gravar_utilizadores($d);
 }
 
 function opcoes(array $argv): array
@@ -68,10 +66,7 @@ function opcoes(array $argv): array
 
 function senha_temporaria(): string
 {
-    $c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    $s = '';
-    for ($i = 0; $i < 16; $i++) $s .= $c[random_int(0, strlen($c) - 1)];
-    return $s;
+    return naval_senha_temporaria();
 }
 
 function rotas_lista(?string $txt): array
@@ -133,7 +128,7 @@ switch ($cmd) {
         if ($perfil === 'SADM') exigir_aprovacao_sadm($o, $login, 'criar');
         $s = senha_temporaria();
         $d[$login] = ['nome' => $o['nome'], 'email' => trim($o['email']), 'senha' => password_hash($s, PASSWORD_DEFAULT), 'perfil' => $perfil, 'rotas' => $rotas,
-            'activo' => $perfil !== 'SADM', 'criado' => date('Y-m-d')] + (empty($o['ate']) ? [] : ['valido_ate' => $o['ate']]);
+            'activo' => $perfil !== 'SADM', 'trocar_senha' => true, 'criado' => date('Y-m-d')] + (empty($o['ate']) ? [] : ['valido_ate' => $o['ate']]);
         gravar($d);
         naval_registar('conta_criada', ['conta' => $login, 'perfil' => $perfil, 'rotas' => $rotas], 'servidor');
         echo "Conta criada: $login ($perfil). Palavra-passe temporária: $s\n";
@@ -175,19 +170,17 @@ switch ($cmd) {
     case 'senha':
         $u = $conta();
         $s = senha_temporaria();
-        $u['senha'] = password_hash($s, PASSWORD_DEFAULT); $d[$login] = $u; gravar($d);
+        $u['senha'] = password_hash($s, PASSWORD_DEFAULT); $u['trocar_senha'] = true; $d[$login] = $u; gravar($d);
         naval_registar('senha_reposta', ['conta' => $login], 'servidor');
         echo "Nova palavra-passe temporária de $login: $s\n";
         break;
 
     case 'dois-passos':
         $u = $conta();
-        $alf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        $seg = '';
-        for ($i = 0; $i < 32; $i++) $seg .= $alf[random_int(0, 31)];
+        $seg = naval_novo_segredo();
         $u['mfa'] = $seg; $d[$login] = $u; gravar($d);
         naval_registar('dois_passos_configurado', ['conta' => $login], 'servidor');
-        $uri = 'otpauth://totp/' . rawurlencode('GeoMobilidade Naval:' . ($u['email'] ?: $login)) . '?secret=' . $seg . '&issuer=' . rawurlencode('GeoMobilidade Naval') . '&digits=6&period=30';
+        $uri = naval_otpauth($seg, $u['email'] ?: $login);
         echo "Segredo para a aplicação de autenticação (Microsoft/Google Authenticator):\n  $seg\nOu crie um código QR com este endereço:\n  $uri\n";
         break;
 

@@ -57,6 +57,7 @@ const NAVAL_MATRIZ_TXT = [
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
     'excel-completo'       => '-  E  E  -  -  E  -  -  -  E',
+    'nif'                  => 'V  -  V  V  V  V  V  -  -  V',
     // GEO
     'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V',
     'geo-rotas-importar'   => 'G  -  -  -  -  -  G  -  G  -',
@@ -65,13 +66,12 @@ const NAVAL_MATRIZ_TXT = [
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -',
     'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V',
     // Administração
-    'acessos'              => 'A  V  -  -  -  -  -  -  -  V',
-    'admin-utilizadores'   => 'A  -  -  -  -  -  -  -  -  -',
-    'admin-config'         => 'A  -  -  -  -  -  -  -  -  -',
-    'registos'             => 'A  V  -  -  -  -  -  -  -  V',
+    'acessos'              => 'V  -  -  -  -  -  -  -  -  V',
+    'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -',
+    'admin-config'         => '-  -  -  -  -  -  -  -  -  -',
+    'registos'             => 'V  -  -  -  -  -  -  -  -  V',
 ];
-// Quem vê o NIF dos clientes (secção «Dados pessoais» da matriz)
-const NAVAL_VE_NIF = ['SADM', 'TI', 'COM', 'SUP', 'PRO', 'FIN', 'BO', 'AUD'];
+// Quem vê o NIF dos clientes: linha «nif» da matriz (editável no portal)
 // Perfis em que o âmbito é sempre limitado às rotas atribuídas
 const NAVAL_POR_ROTA = ['SUP', 'PRO'];
 // Perfis que têm de usar verificação em dois passos (aplicada quando o segredo está configurado)
@@ -105,10 +105,9 @@ function naval_pasta_privada(): string
     return rtrim($p, '/\\');
 }
 
-function naval_matriz(): array
+/** Matriz original (a do código), sem as alterações feitas no portal. */
+function naval_matriz_base(): array
 {
-    static $m = null;
-    if ($m !== null) return $m;
     $m = [];
     foreach (NAVAL_MATRIZ_TXT as $rec => $txt) {
         $v = preg_split('/\s+/', trim($txt));
@@ -116,6 +115,128 @@ function naval_matriz(): array
         $m[$rec]['SADM'] = 'A';
     }
     return $m;
+}
+
+function naval_ficheiro_matriz(): string
+{
+    return naval_pasta_privada() . '/matriz.json';
+}
+
+/** Alterações à matriz feitas pelo super administrador no portal: {recurso: {perfil: nível}}. */
+function naval_matriz_alteracoes(): array
+{
+    $f = naval_ficheiro_matriz();
+    if (!is_file($f)) return [];
+    $d = json_decode((string) file_get_contents($f), true);
+    return is_array($d) ? $d : [];
+}
+
+/** Matriz em vigor: a original com as alterações gravadas (só valores permitidos). */
+function naval_matriz(bool $recarregar = false): array
+{
+    static $m = null;
+    if ($m !== null && !$recarregar) return $m;
+    $m = naval_matriz_base();
+    foreach (naval_matriz_alteracoes() as $rec => $col) {
+        if (!isset($m[$rec]) || !is_array($col)) continue;
+        foreach ($col as $p => $nivel) {
+            if (in_array($p, NAVAL_COLUNAS, true) && in_array($nivel, naval_niveis_recurso($rec), true)) $m[$rec][$p] = $nivel;
+        }
+    }
+    return $m;
+}
+
+/** Níveis que cada página ou função admite na matriz. As funções de administração não são editáveis. */
+function naval_niveis_recurso(string $rec): array
+{
+    switch ($rec) {
+        case 'admin-utilizadores':
+        case 'admin-config':
+            return [];
+        case 'pagina-principal':
+        case 'acessos':
+        case 'registos':
+        case 'nif':
+            return ['', 'V'];
+        case 'excel-completo':
+            return ['', 'E'];
+        case 'geo-rotas-importar':
+        case 'geo-zonas-gerir':
+            return ['', 'G'];
+        case 'geo-rotas-descarregar':
+            return ['', 'V', 'Er', 'E'];
+        case 'geo-rotas':
+        case 'geo-zonas':
+        case 'geo-distribuidores':
+            return ['', 'Vr', 'V', 'G'];
+        default:
+            return ['', 'Vr', 'V', 'Er', 'E'];
+    }
+}
+
+/** Grava as alterações à matriz (só as diferenças em relação à original). */
+function naval_gravar_matriz(array $nova): void
+{
+    $base = naval_matriz_base();
+    $dif = [];
+    foreach ($nova as $rec => $col) {
+        if (!isset($base[$rec]) || !is_array($col)) continue;
+        foreach ($col as $p => $nivel) {
+            if (!in_array($p, NAVAL_COLUNAS, true) || !in_array($nivel, naval_niveis_recurso($rec), true)) continue;
+            if ($base[$rec][$p] !== $nivel) $dif[$rec][$p] = $nivel;
+        }
+    }
+    $dir = naval_pasta_privada();
+    if (!is_dir($dir)) @mkdir($dir, 0770, true);
+    file_put_contents(naval_ficheiro_matriz(), json_encode($dif, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    naval_matriz(true);
+}
+
+function naval_ficheiro_utilizadores(): string
+{
+    return naval_env()['UTILIZADORES_JSON'] ?? (naval_pasta_privada() . '/utilizadores.json');
+}
+
+/** Grava a lista de utilizadores (fora da pasta pública). */
+function naval_gravar_utilizadores(array $d): void
+{
+    $f = naval_ficheiro_utilizadores();
+    if (!is_dir(dirname($f))) @mkdir(dirname($f), 0770, true);
+    foreach ($d as $l => $u) unset($d[$l]['compatibilidade']);
+    ksort($d);
+    file_put_contents($f, json_encode($d, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    @chmod($f, 0660);
+}
+
+/** Palavra-passe temporária (16 caracteres, sem os que se confundem). */
+function naval_senha_temporaria(): string
+{
+    $c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    $s = '';
+    for ($i = 0; $i < 16; $i++) $s .= $c[random_int(0, strlen($c) - 1)];
+    return $s;
+}
+
+/** Regras da palavra-passe escolhida pelo utilizador. Devolve o erro ou null. */
+function naval_senha_fraca(string $s): ?string
+{
+    if (strlen($s) < 10) return 'A palavra-passe tem de ter pelo menos 10 caracteres.';
+    if (!preg_match('/[A-Za-z]/', $s) || !preg_match('/\d/', $s)) return 'A palavra-passe tem de ter letras e números.';
+    return null;
+}
+
+/** Segredo novo para a verificação em dois passos (base32). */
+function naval_novo_segredo(): string
+{
+    $alf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $s = '';
+    for ($i = 0; $i < 32; $i++) $s .= $alf[random_int(0, 31)];
+    return $s;
+}
+
+function naval_otpauth(string $segredo, string $conta): string
+{
+    return 'otpauth://totp/' . rawurlencode('GeoMobilidade Naval:' . $conta) . '?secret=' . $segredo . '&issuer=' . rawurlencode('GeoMobilidade Naval') . '&digits=6&period=30';
 }
 
 /** Lista de utilizadores: ficheiro privado; sem ele, a lista antiga em modo de compatibilidade. */
@@ -219,7 +340,7 @@ function naval_rota_permitida($rota): bool
 
 function naval_ve_nif(): bool
 {
-    return in_array(naval_perfil(), NAVAL_VE_NIF, true);
+    return naval_nivel('nif') !== '';
 }
 
 /** Pelo menos um dos recursos com acesso; sem isso responde 403 em JSON. */

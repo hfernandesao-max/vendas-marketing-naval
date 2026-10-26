@@ -2120,6 +2120,40 @@
     .quem span {
       color: var(--dim)
     }
+
+    /* Janelas da página Acessos (contas, confirmação, palavra-passe, dois passos) */
+    dialog.dlg { border: 1px solid var(--line2); border-radius: 20px; padding: 0; width: min(580px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+      background: linear-gradient(160deg, rgba(26, 32, 52, .98), rgba(12, 16, 30, .98)); color: var(--fg); box-shadow: 0 30px 80px rgba(0, 0, 0, .55) }
+    dialog.dlg::backdrop { background: rgba(2, 6, 16, .62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px) }
+    .dlg form { display: flex; flex-direction: column; max-height: calc(100dvh - 34px) }
+    .dlg-h { padding: 20px 22px 6px }
+    .dlg-h h3 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em }
+    .dlg-h p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5 }
+    .dlg-b { padding: 12px 22px 16px; overflow: auto; display: grid; gap: 13px }
+    .dlg-f { padding: 14px 22px 18px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--line) }
+    .dlg-accoes { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line) }
+    .campo { display: grid; gap: 6px; min-width: 0 }
+    .campo > span { font-size: 12.5px; color: var(--muted) }
+    .campo input, .campo select { height: 40px; width: 100%; border-radius: 11px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .05); color: var(--fg); padding: 0 12px; font: inherit; font-size: 14px }
+    .campo input:disabled { opacity: .6 }
+    .campo input:focus, .campo select:focus, select.nivel:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(10, 132, 255, .22) }
+    .campos2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+    .campos2[hidden], .campo[hidden], .dlg p[hidden] { display: none }
+    .chips-rotas { display: flex; flex-wrap: wrap; gap: 6px; max-height: 156px; overflow: auto; padding: 2px }
+    .chips-rotas label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line2); font-size: 12.5px; cursor: pointer; white-space: nowrap }
+    .chips-rotas input { accent-color: var(--accent); margin: 0 }
+    .chips-rotas label:has(input:checked) { background: rgba(10, 132, 255, .18); border-color: var(--accent) }
+    .interruptor { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; width: max-content }
+    .interruptor input { width: 18px; height: 18px; accent-color: var(--accent) }
+    .dlg .aviso { font-size: 12.5px; color: var(--warn); margin: 0; line-height: 1.5 }
+    .dlg .erro { font-size: 13px; color: var(--bad); margin: 0; line-height: 1.5 }
+    .segredo { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 18px; letter-spacing: .05em; padding: 13px 15px; border-radius: 12px; background: rgba(255, 255, 255, .06); word-break: break-all; user-select: all; text-align: center }
+    .qr { background: #fff; padding: 10px; border-radius: 14px; justify-self: center; line-height: 0 }
+    .qr svg { width: 200px; height: 200px }
+    select.nivel { height: 30px; min-width: 52px; border-radius: 8px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .05); color: var(--fg); padding: 0 4px; font: inherit; font-size: 13px; cursor: pointer }
+    select.nivel.mudou { border-color: var(--sky); box-shadow: inset 0 0 0 1px var(--sky) }
+    select.nivel.pendente { border-color: var(--warn); background: rgba(255, 159, 10, .16); box-shadow: inset 0 0 0 1px var(--warn) }
+    @media (max-width: 560px) { .campos2 { grid-template-columns: 1fr } .dlg-f .btn { flex: 1 } }
   </style>
 </head>
 
@@ -2256,7 +2290,7 @@
         "Dias com vendas": "Days with sales",
         "Dias de visita": "Visit days",
         "Dinheiro": "Cash",
-        "Por meio de pagamento": "By payment method", "Administração": "Administration", "Acessos": "Access", "O seu perfil não permite exportar o relatório completo.": "Your profile cannot export the full report.", "O seu perfil não permite exportar esta informação.": "Your profile cannot export this information.", "sem rotas atribuídas": "no routes assigned", "Contas activas": "Active accounts", "{n} contas no total": "{n} accounts in total", "Contas bloqueadas": "Locked accounts", "desbloqueio pelo super administrador": "unlocked by the super administrator", "Sem email associado": "No email linked", "Sem verificação em dois passos": "Without two-step verification", "perfis SADM, TI e DIR": "SADM, TI and DIR profiles", "As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.": "Accounts still come from the old list (geo/auth/config_users.php). Create the new list with ferramentas/utilizadores.php to apply profiles, routes and the mandatory email.", "Utilizadores": "Users", "Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.": "Accounts and profiles. Accounts are created and changed on the server; the super administrator unlocks them here.", "nenhuma": "none", "Todas": "All", "Nome": "Name", "Utilizador": "User", "Email": "Email", "Perfil": "Profile", "Rotas": "Routes", "Dois passos": "Two-step", "Activa": "Active", "Bloqueada": "Locked", "Inactiva": "Inactive", "Sem email": "No email", "Desbloquear": "Unlock", "Conta desbloqueada.": "Account unlocked.", "Só o super administrador pode desbloquear contas.": "Only the super administrator can unlock accounts.", "Pedido inválido. Actualize a página e tente de novo.": "Invalid request. Refresh the page and try again.", "Não foi possível desbloquear.": "Could not unlock.", "Última entrada": "Last sign-in", "Matriz de acessos": "Access matrix", "V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.": "V view · V·r own routes only · E export · E·r export own routes only · G manage · A administer.", "Página ou função": "Page or function", "Registos de actividade": "Activity log", "Últimos 300 registos: entradas, saídas, bloqueios e exportações.": "Last 300 records: sign-ins, sign-outs, locks and exports.", "Data": "Date", "Acção": "Action", "Detalhe": "Detail", "A página Acessos precisa do servidor da plataforma (PHP).": "The Access page needs the platform server (PHP).", "A carregar…": "Loading…", "Super administrador": "Super administrator", "Administrador da plataforma": "Platform administrator", "Administração e Direcção": "Board and management", "Direcção Comercial e Marketing": "Sales and marketing management", "Supervisor de rotas": "Route supervisor", "Promotor": "Promoter", "Financeiro e Tesouraria": "Finance and treasury", "Back-office RTM": "RTM back office", "Logística e Armazém": "Logistics and warehouse", "Planeamento de rotas": "Route planning", "Auditoria e Controlo": "Audit and control", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
+        "Por meio de pagamento": "By payment method", "Administração": "Administration", "Acessos": "Access", "O seu perfil não permite exportar o relatório completo.": "Your profile cannot export the full report.", "O seu perfil não permite exportar esta informação.": "Your profile cannot export this information.", "sem rotas atribuídas": "no routes assigned", "Contas activas": "Active accounts", "{n} contas no total": "{n} accounts in total", "Contas bloqueadas": "Locked accounts", "desbloqueio pelo super administrador": "unlocked by the super administrator", "Sem email associado": "No email linked", "Sem verificação em dois passos": "Without two-step verification", "perfis SADM, TI e DIR": "SADM, TI and DIR profiles", "As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.": "Accounts still come from the old list (geo/auth/config_users.php). Create the new list with ferramentas/utilizadores.php to apply profiles, routes and the mandatory email.", "Utilizadores": "Users", "Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.": "Accounts and profiles. Accounts are created and changed on the server; the super administrator unlocks them here.", "nenhuma": "none", "Todas": "All", "Nome": "Name", "Utilizador": "User", "Email": "Email", "Perfil": "Profile", "Rotas": "Routes", "Dois passos": "Two-step", "Activa": "Active", "Bloqueada": "Locked", "Inactiva": "Inactive", "Sem email": "No email", "Desbloquear": "Unlock", "Conta desbloqueada.": "Account unlocked.", "A conta de {c} passa a entrar só com a palavra-passe.": "{c}'s account will sign in with the password only.", "A palavra-passe temporária aparece no fim. A pessoa escolhe a sua na primeira entrada.": "The temporary password is shown at the end. The person chooses their own at first sign-in.", "Activar dois passos": "Turn on two-step", "Acção desconhecida.": "Unknown action.", "Alteração recusada": "Change refused", "Alterações a contas de super administrador exigem duas aprovações (nomes de duas pessoas da Administração).": "Changes to super administrator accounts need two approvals (names of two board members).", "Anular": "Discard", "Aprovado por (1)": "Approved by (1)", "Aprovado por (2)": "Approved by (2)", "As contas vêm ainda da lista antiga. Crie primeiro a lista nova no servidor (ferramentas/utilizadores.php importar-antigo).": "Accounts still come from the old list. First create the new list on the server (ferramentas/utilizadores.php importar-antigo).", "Cancelar": "Cancel", "Confirmar": "Confirm", "Confirmação falhada": "Confirmation failed", "Confirme a sua identidade": "Confirm your identity", "Conta activa": "Account active", "Conta activada": "Account activated", "Conta alterada": "Account changed", "Conta criada": "Account created", "Conta desactivada": "Account deactivated", "Conta guardada.": "Account saved.", "Conta não encontrada.": "Account not found.", "Conta {c}. Entregue-a à pessoa por um canal seguro: só aparece agora. Na primeira entrada terá de escolher uma nova.": "Account {c}. Give it to the person through a secure channel: it is shown only now. At first sign-in they must choose a new one.", "Conta {c}. Na aplicação de autenticação (Microsoft ou Google Authenticator), leia o código QR ou escreva a chave. A partir da próxima entrada é pedido o código de 6 dígitos.": "Account {c}. In the authenticator app (Microsoft or Google Authenticator), scan the QR code or type the key. From the next sign-in the 6-digit code is required.", "Contas antigas importadas": "Old accounts imported", "Contas de super administrador: indique as duas pessoas da Administração que aprovaram.": "Super administrator accounts: enter the two board members who approved.", "Contas e perfis. Em Gerir altera o perfil, as rotas, o email e a palavra-passe de cada conta.": "Accounts and profiles. Use Manage to change each account's profile, routes, email and password.", "Contas e perfis. Só o super administrador cria e altera contas.": "Accounts and profiles. Only the super administrator creates and changes accounts.", "Continuar": "Continue", "Copiado.": "Copied.", "Copiar": "Copy", "Copiar chave": "Copy key", "Criar conta": "Create account", "Código QR": "QR code", "Código": "Code", "Data de fim inválida.": "Invalid end date.", "Diferente da matriz original ({v})": "Different from the original matrix ({v})", "Dois passos activados": "Two-step turned on", "Dois passos retirados": "Two-step removed", "Email (obrigatório)": "Email (required)", "Email alterado": "Email changed", "Escolha o nível de cada perfil em cada página ou função e guarde. Contorno laranja: por guardar; azul: diferente da matriz original. A coluna SADM e as funções de administração não se alteram.": "Choose each profile's level for each page or function and save. Orange outline: not saved yet; blue: different from the original matrix. The SADM column and the administration functions cannot be changed.", "Este perfil exige verificação em dois passos.": "This profile requires two-step verification.", "Este perfil exige verificação em dois passos. Active-a em Gerir, junto da pessoa, com o telemóvel dela.": "This profile requires two-step verification. Turn it on in Manage, with the person and their phone.", "Faça isto junto da pessoa: ela lê o código QR com o telemóvel.": "Do this with the person: they scan the QR code with their phone.", "Fechar": "Close", "Gerar novo código QR": "New QR code", "Gerir": "Manage", "Guardar": "Save", "Guardar alterações": "Save changes", "Guardar {n} alterações": "Save {n} changes", "Guardar 1 alteração": "Save 1 change", "Matriz guardada: 1 alteração.": "Matrix saved: 1 change.", "Matriz guardada: {n} alterações.": "Matrix saved: {n} changes.", "Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Data access changes at once; each person sees the new menu when they refresh the page.", "Indique o nome.": "Enter the name.", "Insira a sua palavra-passe. Fica confirmado durante 10 minutos.": "Enter your password. The confirmation lasts 10 minutes.", "Insira o código de 6 dígitos da aplicação de autenticação. Fica confirmado durante 10 minutos.": "Enter the 6-digit code from the authenticator app. The confirmation lasts 10 minutes.", "Já existe uma conta com este utilizador.": "An account with this username already exists.", "Matriz alterada": "Matrix changed", "Matriz guardada: {n} alterações. Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.": "Matrix saved: {n} changes. Data access changes at once; each person sees the new menu when they refresh the page.", "Matriz original reposta": "Original matrix restored", "Matriz original reposta.": "Original matrix restored.", "Nova conta": "New account", "Não pode retirar a verificação em dois passos da sua própria conta.": "You cannot remove two-step verification from your own account.", "Não pode retirar o seu próprio perfil de super administrador nem desactivar a sua conta.": "You cannot remove your own super administrator profile or deactivate your own account.", "O email é obrigatório e tem de ser válido.": "The email is required and must be valid.", "O utilizador tem de ter 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado.": "The username must have 3 to 40 characters: letters, numbers, dot, hyphen or underscore.", "Os perfis SUP e PRO precisam de pelo menos uma rota.": "SUP and PRO profiles need at least one route.", "Outras rotas, separadas por vírgulas": "Other routes, separated by commas", "Palavra-passe": "Password", "Palavra-passe alterada": "Password changed", "Palavra-passe reposta": "Password reset", "Palavra-passe temporária": "Temporary password", "Palavra-passe incorrecta.": "Wrong password.", "Código inválido.": "Invalid code.", "Perfil alterado": "Profile changed", "Perfil inválido.": "Invalid profile.", "Por guardar": "Not saved yet", "Repor": "Reset", "Repor matriz original": "Restore original matrix", "Repor palavra-passe": "Reset password", "Retirar": "Remove", "Retirar dois passos": "Remove two-step", "Rotas alteradas": "Routes changed", "Só o super administrador pode alterar contas e acessos.": "Only the super administrator can change accounts and access.", "Tem de ficar pelo menos um super administrador activo.": "At least one super administrator must stay active.", "Todas as alterações feitas à matriz no portal são apagadas e volta a matriz aprovada.": "All changes made to the matrix in the portal are removed and the approved matrix returns.", "Ver o NIF dos clientes": "See customers' tax ID (NIF)", "Verificação em dois passos": "Two-step verification", "Verificação em dois passos retirada.": "Two-step verification removed.", "Válida até (opcional)": "Valid until (optional)", "ex.: joao.silva": "e.g. joao.silva", "É criada uma chave nova. A aplicação de autenticação de {c} tem de ser configurada outra vez.": "A new key is created. {c}'s authenticator app must be set up again.", "É criada uma palavra-passe temporária para {c}. A actual deixa de funcionar.": "A temporary password is created for {c}. The current one stops working.", "Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.": "Last 300 records: sign-ins, sign-outs, locks, account and matrix changes, exports.", "Não foi possível guardar.": "Could not save.", "Não foi possível concluir.": "Could not complete.", "Sem resposta do servidor.": "No response from the server.", "Só o super administrador pode desbloquear contas.": "Only the super administrator can unlock accounts.", "Pedido inválido. Actualize a página e tente de novo.": "Invalid request. Refresh the page and try again.", "Não foi possível desbloquear.": "Could not unlock.", "Última entrada": "Last sign-in", "Matriz de acessos": "Access matrix", "V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.": "V view · V·r own routes only · E export · E·r export own routes only · G manage · A administer.", "Página ou função": "Page or function", "Registos de actividade": "Activity log", "Últimos 300 registos: entradas, saídas, bloqueios e exportações.": "Last 300 records: sign-ins, sign-outs, locks and exports.", "Data": "Date", "Acção": "Action", "Detalhe": "Detail", "A página Acessos precisa do servidor da plataforma (PHP).": "The Access page needs the platform server (PHP).", "A carregar…": "Loading…", "Super administrador": "Super administrator", "Administrador da plataforma": "Platform administrator", "Administração e Direcção": "Board and management", "Direcção Comercial e Marketing": "Sales and marketing management", "Supervisor de rotas": "Route supervisor", "Promotor": "Promoter", "Financeiro e Tesouraria": "Finance and treasury", "Back-office RTM": "RTM back office", "Logística e Armazém": "Logistics and warehouse", "Planeamento de rotas": "Route planning", "Auditoria e Controlo": "Audit and control", "Rotas, carteira e plano de cargas": "Routes, portfolio and loading plan", "Cadastros de clientes": "Customer registrations", "Vendas do Pinguim BO": "Pinguim BO sales", "A montar os relatórios": "Building the reports", "Pronto": "Ready", "clientes": "customers", "agora": "now", "há {n} min": "{n} min ago", "há {n} h": "{n} h ago", "consulta directa": "live query", "sem ligação": "not connected", "dados até {d}": "data up to {d}", "sem ligação ao rtm-clientes": "not connected to rtm-clientes",
         "plano até {d}": "plan up to {d}", "{a} de {b} fontes ligadas": "{a} of {b} sources connected", "Pinguim BO sem ligação": "Pinguim BO not connected", "Sem ligação": "Not connected", "Ligação parcial": "Partly connected", "Ligado": "Connected",
         "Pinguim BO (vendas)": "Pinguim BO (sales)", "Cadastros RTM (clientes)": "RTM registrations (customers)", "Plano de cargas": "Loading plan", "sem ligação ao servidor": "no connection to the server", "A verificar as fontes de dados…": "Checking data sources…", "Cadastros": "Registrations", "Cadastros · visão geral": "Registrations · overview", "Análise de cadastros": "Registration analysis", "Clientes registados": "Registered customers", "Sem dados de cadastros": "No registration data", "Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.": "Registrations come from the rtm-clientes repository (RTM backoffice «Clientes» export). On the server, clone that repository next to the site folder or set the file in RTM_CLIENTES_JSON in .env.", "Meta {m}": "Target {m}", "Meta {m}/dia": "Target {m}/day", "Meta": "Target", "{a} de {b}": "{a} of {b}", "{p} concluído · meta {d}": "{p} done · target {d}", "Activos": "Active", "{p} validados": "{p} validated", "Por validar": "To be validated", "{n} com NIF a corrigir": "{n} with tax ID to fix", "Novos em {d}": "New on {d}", "Novos": "New", "meta {m}": "target {m}", "Rotas na meta": "Routes on target", "no último dia (≥{m})": "on the last day (≥{m})", "Para chegar aos {n}": "To reach {n}", "por rota/dia · {n} dias úteis": "per route/day · {n} working days", "Na meta em pelo menos metade dos dias": "On target on at least half the days", "Rotas com {m} ou mais novos clientes em ≥50% dos dias com cadastros.": "Routes with {m} or more new customers on ≥50% of days with registrations.", "Nunca chegaram à meta": "Never reached the target", "Rotas que ainda não registaram {m} clientes num só dia.": "Routes that have not yet registered {m} customers in a single day.", "Média": "Average", "Dias na meta": "Days on target", "Cadastros por rota e por dia": "Registrations by route and day", "Novos clientes por dia útil (últimos {n}). Verde: meta de {m} atingida; vermelho: abaixo da meta. Média e dias na meta contam os dias com cadastros.": "New customers per working day (last {n}). Green: target of {m} met; red: below target. Average and days on target count days with registrations.", "{a} vs {b}": "{a} vs {b}", "Novos clientes por rota no último dia e no dia anterior.": "New customers by route on the last day and the day before.", "Dia anterior": "Previous day", "Meta cumprida": "Target met", "Rede por dia": "Network by day", "Novos clientes de todas as rotas por dia útil.": "New customers across all routes per working day.", "Novos clientes": "New customers", "Dados do RTM até {d}. A data de registo é a da primeira exportação em que o cliente aparece; registos na Foodtec não contam.": "RTM data up to {d}. The registration date is the first export in which the customer appears; registrations at Foodtec do not count.", "Cadastros no período": "Registrations in period", "Período anterior": "Previous period", "sem dados": "no data", "Variação": "Change", "Média por rota/dia útil": "Average per route/working day", "meta {m} · {p} · {n} dias úteis": "target {m} · {p} · {n} working days", "Cadastros por dia": "Registrations by day", "Cada barra do período ao lado do dia correspondente do período anterior.": "Each period bar next to the matching day of the previous period.", "Por rota no período": "By route in the period", "% da meta = média diária da rota ÷ {m}.": "% of target = route daily average ÷ {m}.", "Anterior": "Previous", "Média por dia": "Average per day", "% da meta": "% of target", "Todas": "All", "Situação": "Status", "Registados no período": "Registered in period", "Clientes válidos": "Valid customers", "NIF a corrigir": "Tax ID to fix", "A excluir (Foodtec)": "To exclude (Foodtec)", "Data de registo = primeira exportação do RTM em que o cliente aparece.": "Registration date = first RTM export in which the customer appears.", "Município": "Municipality", "Data de registo": "Registration date", "Cliente válido": "Valid customer", "Corrigir – NIF inválido": "Fix – invalid tax ID", "Excluir – registo na Foodtec": "Exclude – registered at Foodtec", "Validar – NIF repetido": "Check – repeated tax ID", "Pendente": "Pending", "Visitas marcadas não realizadas": "Scheduled visits not made", "{p} das visitas marcadas": "{p} of scheduled visits", "Visitas marcadas": "Scheduled visits",
         "Visitas não realizadas": "Visits not made", "Visita marcada não realizada (sem venda registada)": "Scheduled visit not made (no sale recorded)", "Visitas marcadas por promotor": "Scheduled visits by promoter",
@@ -2808,6 +2842,7 @@
       let atual = 'inicio';
       const paginaAtual = () => PAGES.find((x) => x.id === atual) || paginasVisiveis()[0] || PAGES[0];
       function contarAlertas() {
+        if (!DB.vendas || !DB.clientes) return { pagamentos: 0, clientes: 0 };
         const V = vendasR();
         return { pagamentos: V.filter((x) => pendenteDe(x) > 0).length, clientes: DB.clientes.filter((x) => x.estado !== 'Ativo').length };
       }
@@ -3377,23 +3412,173 @@
         'pagina-principal': 'Página principal e indicador das fontes', 'excel-completo': 'Excel completo (todas as páginas)',
         'geo-rotas': 'GEO · optimização de rotas', 'geo-rotas-importar': 'GEO · importar CSV de clientes', 'geo-rotas-descarregar': 'GEO · descarregar rota optimizada',
         'geo-zonas': 'GEO · delimitação de zonas (ver)', 'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas', 'geo-distribuidores': 'GEO · gestão de distribuidores',
-        'acessos': 'Página Acessos', 'admin-utilizadores': 'Utilizadores e perfis', 'admin-config': 'Configuração e ligações', 'registos': 'Registos de acesso e exportações',
+        'nif': 'Ver o NIF dos clientes', 'acessos': 'Página Acessos', 'admin-utilizadores': 'Utilizadores e perfis', 'admin-config': 'Configuração e ligações', 'registos': 'Registos de acesso e exportações',
       };
       const nomeRecurso = (id) => t(NOMES_RECURSO[id] || (PAGES.find((p) => p.id === id) || {}).nome || id);
       const NOMES_ACCAO = {
         entrada: 'Entrada', saida: 'Saída', entrada_falhada: 'Entrada falhada', entrada_bloqueada: 'Entrada com conta bloqueada', entrada_recusada: 'Entrada recusada',
         conta_bloqueada: 'Conta bloqueada', conta_desbloqueada: 'Conta desbloqueada', desbloqueio_recusado: 'Desbloqueio recusado', exportacao: 'Exportação para Excel',
         exportacao_recusada: 'Exportação recusada', acesso_negado: 'Acesso negado', sessao_terminada: 'Sessão terminada', dois_passos_em_falta: 'Entrada sem dois passos',
+        conta_criada: 'Conta criada', conta_alterada: 'Conta alterada', senha_reposta: 'Palavra-passe reposta', senha_alterada: 'Palavra-passe alterada',
+        dois_passos_configurado: 'Dois passos activados', dois_passos_retirado: 'Dois passos retirados', matriz_alterada: 'Matriz alterada', matriz_reposta: 'Matriz original reposta',
+        alteracao_recusada: 'Alteração recusada', confirmacao_falhada: 'Confirmação falhada', importar_contas_antigas: 'Contas antigas importadas', perfil_alterado: 'Perfil alterado',
+        rotas_alteradas: 'Rotas alteradas', email_alterado: 'Email alterado', conta_activada: 'Conta activada', conta_desactivada: 'Conta desactivada',
       };
-      let GESTAO = null;
+      let GESTAO = null, MPEND = {};
       function carregarGestao() {
         return fetch('data/gestao.php', { cache: 'no-store' }).then((r) => r.json()).then((d) => { GESTAO = d && d.utilizadores ? d : { erro: (d && d.erro) || t('Sem dados') }; })
           .catch(() => { GESTAO = { erro: t('A página Acessos precisa do servidor da plataforma (PHP).') }; });
       }
+      const recarregarGestao = () => { GESTAO = null; MPEND = {}; draw(); };
+      const NIVEL_SIG = { '': '—', V: 'V', Vr: 'V·r', E: 'E', Er: 'E·r', G: 'G', A: 'A' };
+
+      // ---- janelas (diálogos) ----
+      function janela(titulo, nota, montar) {
+        const d = el('dialog', 'dlg'), f = el('form'), h = el('div', 'dlg-h'), b = el('div', 'dlg-b'), ft = el('div', 'dlg-f');
+        h.append(el('h3', null, titulo)); if (nota) h.append(el('p', null, nota));
+        f.addEventListener('submit', (e) => e.preventDefault());
+        f.append(h, b, ft); d.append(f); document.body.append(d);
+        const fechar = () => { if (d.open) d.close(); };
+        d.addEventListener('close', () => setTimeout(() => d.remove(), 0));
+        montar(b, ft, fechar, d);
+        d.showModal();
+        return d;
+      }
+      const campo = (rotulo, input) => { const l = el('label', 'campo'); l.append(el('span', null, rotulo), input); return l; };
+      const entrada = (tipo, valor, attrs) => { const i = el('input'); i.type = tipo; if (valor != null) i.value = valor; Object.assign(i, attrs || {}); return i; };
+      const botao = (txt, cls, fn) => { const b = el('button', 'btn' + (cls ? ' ' + cls : ''), txt); b.type = 'button'; if (fn) b.addEventListener('click', fn); return b; };
+      const msgErro = () => { const p = el('p', 'erro'); p.hidden = true; p.setAttribute('role', 'alert'); return p; };
+
+      function confirmarIdentidade(metodo, erro) {
+        return new Promise((ok) => {
+          let feito = false;
+          janela(t('Confirme a sua identidade'), metodo === 'codigo' ? t('Insira o código de 6 dígitos da aplicação de autenticação. Fica confirmado durante 10 minutos.') : t('Insira a sua palavra-passe. Fica confirmado durante 10 minutos.'), (b, ft, fechar, d) => {
+            const i = metodo === 'codigo' ? entrada('text', '', { inputMode: 'numeric', maxLength: 7, autocomplete: 'one-time-code' }) : entrada('password', '', { autocomplete: 'current-password' });
+            b.append(campo(metodo === 'codigo' ? t('Código') : t('Palavra-passe'), i));
+            if (erro) { const p = msgErro(); p.textContent = t(erro); p.hidden = false; b.append(p); }
+            const ir = () => { if (!i.value.trim()) { i.focus(); return; } feito = true; ok(i.value.trim()); fechar(); };
+            i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ir(); } });
+            ft.append(botao(t('Cancelar'), 'ghost', fechar), botao(t('Confirmar'), '', ir));
+            d.addEventListener('close', () => { if (!feito) ok(null); });
+            setTimeout(() => i.focus(), 50);
+          });
+        });
+      }
+      // Pedido de alteração: pede a confirmação da identidade quando o servidor a exigir
+      function pedirGestao(corpo, confirmacao) {
+        return fetch('data/gestao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...corpo, csrf: SESSAO && SESSAO.csrf, confirmacao }) })
+          .then((r) => r.json().catch(() => ({ ok: false, erro: 'Sem resposta do servidor.' })), () => ({ ok: false, erro: 'Sem resposta do servidor.' }))
+          .then((d) => {
+            if (d.sair) { toast(t(d.erro), 6000); setTimeout(() => { location.href = '../geo/login.php?redirect=../reports/'; }, 1800); return { ok: false, cancelado: true }; }
+            if (d.confirmar) return confirmarIdentidade(d.confirmar, d.erro).then((c) => (c == null ? { ok: false, cancelado: true } : pedirGestao(corpo, c)));
+            return d;
+          });
+      }
+      function confirmarAccao(titulo, texto, rotulo, accao) {
+        janela(titulo, texto, (b, ft, fechar) => {
+          const erro = msgErro(); b.append(erro);
+          const go = botao(rotulo, '', () => {
+            go.disabled = true;
+            accao().then((d) => { go.disabled = false; if (d.cancelado) return; if (!d.ok) { erro.textContent = t(d.erro || 'Não foi possível concluir.'); erro.hidden = false; return; } fechar(); });
+          });
+          ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+        });
+      }
+      const copiar = (txt) => { try { navigator.clipboard.writeText(txt).then(() => toast(t('Copiado.'), 2500), () => {}); } catch (e) { /* sem área de transferência */ } };
+      function mostrarSenha(login, senha, mfa) {
+        janela(t('Palavra-passe temporária'), t('Conta {c}. Entregue-a à pessoa por um canal seguro: só aparece agora. Na primeira entrada terá de escolher uma nova.', { c: login }), (b, ft, fechar) => {
+          b.append(el('div', 'segredo', senha));
+          if (mfa) b.append(el('p', 'aviso', t('Este perfil exige verificação em dois passos. Active-a em Gerir, junto da pessoa, com o telemóvel dela.')));
+          ft.append(botao(t('Copiar'), 'ghost', () => copiar(senha)), botao(t('Fechar'), '', fechar));
+        });
+      }
+      let qrPronto = null;
+      const carregarQr = () => qrPronto || (qrPronto = new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'vendor/qrcode.js'; s.onload = ok; s.onerror = () => { qrPronto = null; ko(); }; document.head.appendChild(s); }));
+      function mostrarDoisPassos(login, segredo, uri) {
+        janela(t('Verificação em dois passos'), t('Conta {c}. Na aplicação de autenticação (Microsoft ou Google Authenticator), leia o código QR ou escreva a chave. A partir da próxima entrada é pedido o código de 6 dígitos.', { c: login }), (b, ft, fechar) => {
+          const qr = el('div', 'qr'); qr.setAttribute('role', 'img'); qr.setAttribute('aria-label', t('Código QR'));
+          b.append(qr, el('div', 'segredo', segredo.replace(/(.{4})/g, '$1 ').trim()));
+          carregarQr().then(() => { const q = window.qrcode(0, 'M'); q.addData(uri); q.make(); qr.innerHTML = q.createSvgTag(4, 2); }).catch(() => { qr.hidden = true; });
+          ft.append(botao(t('Copiar chave'), 'ghost', () => copiar(segredo)), botao(t('Fechar'), '', fechar));
+        });
+      }
+
+      // ---- conta: criar e alterar ----
+      function janelaConta(u) {
+        const G = GESTAO, novo = !u;
+        u = u || { login: '', nome: '', email: '', perfil: 'COM', rotas: [], ligada: true, valido_ate: null };
+        janela(novo ? t('Nova conta') : u.nome, novo ? t('A palavra-passe temporária aparece no fim. A pessoa escolhe a sua na primeira entrada.') : u.login + ' · ' + u.perfil + ' · ' + t(u.perfil_nome), (b, ft, fechar) => {
+          const iNome = entrada('text', u.nome, { autocomplete: 'off' });
+          const iLogin = entrada('text', u.login, { autocomplete: 'off', autocapitalize: 'off', spellcheck: false, placeholder: t('ex.: joao.silva') }); if (!novo) iLogin.disabled = true;
+          const iEmail = entrada('email', u.email, { autocomplete: 'off', placeholder: 'nome@naval.co.ao' });
+          const sPerfil = el('select'); Object.entries(G.perfis).forEach(([k, v]) => { const o = el('option', null, k + ' · ' + t(v)); o.value = k; sPerfil.append(o); }); sPerfil.value = u.perfil;
+          const iAte = entrada('date', u.valido_ate || '');
+          const cAct = entrada('checkbox'); cAct.checked = !!u.ligada; const lAct = el('label', 'interruptor'); lAct.append(cAct, document.createTextNode(t('Conta activa')));
+          // rotas (supervisores e promotores)
+          const caixaRotas = el('div', 'campo'); caixaRotas.append(el('span', null, t('Rotas')));
+          const chips = el('div', 'chips-rotas'), marcadas = new Set((u.rotas || []).map(String));
+          const lista = [...G.rotas, ...[...marcadas].filter((r) => !G.rotas.some((x) => x.rota === r)).map((r) => ({ rota: r, promotor: '' }))];
+          lista.forEach((r) => { const l = el('label'); const c = entrada('checkbox'); c.value = r.rota; c.checked = marcadas.has(r.rota); l.title = r.promotor; l.append(c, document.createTextNode(r.rota + (r.promotor ? ' · ' + r.promotor : ''))); chips.append(l); });
+          const iOutras = entrada('text', '', { placeholder: t('Outras rotas, separadas por vírgulas') });
+          caixaRotas.append(chips, iOutras);
+          // aprovações (super administrador)
+          const iA1 = entrada('text', '', { placeholder: t('Nome') }), iA2 = entrada('text', '', { placeholder: t('Nome') });
+          const caixaAprov = el('div', 'campos2'); caixaAprov.append(campo(t('Aprovado por (1)'), iA1), campo(t('Aprovado por (2)'), iA2));
+          const notaAprov = el('p', 'aviso', t('Contas de super administrador: indique as duas pessoas da Administração que aprovaram.'));
+          const erro = msgErro();
+          const actualizar = () => {
+            const p = sPerfil.value;
+            caixaRotas.hidden = !G.por_rota.includes(p);
+            const precisa = (p === 'SADM' && (novo || u.perfil !== 'SADM' || (cAct.checked && !u.ligada))) || (!novo && u.perfil === 'SADM' && p !== 'SADM');
+            caixaAprov.hidden = notaAprov.hidden = !precisa;
+          };
+          sPerfil.addEventListener('change', actualizar); cAct.addEventListener('change', actualizar);
+          const l2 = el('div', 'campos2'); l2.append(campo(t('Utilizador'), iLogin), campo(t('Email (obrigatório)'), iEmail));
+          const l3 = el('div', 'campos2'); l3.append(campo(t('Perfil'), sPerfil), campo(t('Válida até (opcional)'), iAte));
+          b.append(campo(t('Nome'), iNome), l2, l3, caixaRotas, lAct, notaAprov, caixaAprov);
+          if (!novo) {
+            const acc = el('div', 'dlg-accoes');
+            acc.append(botao(t('Repor palavra-passe'), 'ghost sm', () => {
+              fechar();
+              confirmarAccao(t('Repor palavra-passe'), t('É criada uma palavra-passe temporária para {c}. A actual deixa de funcionar.', { c: u.nome }), t('Repor'), () => pedirGestao({ accao: 'senha', conta: u.login }).then((d) => { if (d.ok) { recarregarGestao(); mostrarSenha(u.login, d.senha, false); } return d; }));
+            }));
+            acc.append(botao(u.dois_passos ? t('Gerar novo código QR') : t('Activar dois passos'), 'ghost sm', () => {
+              fechar();
+              confirmarAccao(t('Verificação em dois passos'), u.dois_passos ? t('É criada uma chave nova. A aplicação de autenticação de {c} tem de ser configurada outra vez.', { c: u.nome }) : t('Faça isto junto da pessoa: ela lê o código QR com o telemóvel.'), t('Continuar'),
+                () => pedirGestao({ accao: 'dois_passos', conta: u.login, activar: true }).then((d) => { if (d.ok) { recarregarGestao(); mostrarDoisPassos(u.login, d.segredo, d.uri); } return d; }));
+            }));
+            if (u.dois_passos && u.login !== G.eu) acc.append(botao(t('Retirar dois passos'), 'ghost sm', () => {
+              fechar();
+              confirmarAccao(t('Retirar dois passos'), t('A conta de {c} passa a entrar só com a palavra-passe.', { c: u.nome }) + (G.perfis_dois_passos.includes(u.perfil) ? ' ' + t('Este perfil exige verificação em dois passos.') : ''), t('Retirar'),
+                () => pedirGestao({ accao: 'dois_passos', conta: u.login, activar: false }).then((d) => { if (d.ok) { recarregarGestao(); toast(t('Verificação em dois passos retirada.'), 4000); } return d; }));
+            }));
+            if (u.bloqueado) acc.append(botao(t('Desbloquear'), 'ghost sm', () => pedirGestao({ accao: 'desbloquear', conta: u.login }).then((d) => { if (d.ok) { fechar(); recarregarGestao(); toast(t('Conta desbloqueada.'), 4000); } })));
+            b.append(acc);
+          }
+          b.append(erro);
+          actualizar();
+          const guardar = botao(novo ? t('Criar conta') : t('Guardar'), '', () => {
+            const rotas = [...chips.querySelectorAll('input:checked')].map((c) => c.value).concat(iOutras.value.split(',').map((s) => s.trim()).filter(Boolean));
+            const login = novo ? iLogin.value.trim() : u.login;
+            guardar.disabled = true; erro.hidden = true;
+            pedirGestao({ accao: 'guardar_conta', novo, conta: login, nome: iNome.value.trim(), email: iEmail.value.trim(), perfil: sPerfil.value, rotas, valido_ate: iAte.value, activo: cAct.checked, aprovado_por: caixaAprov.hidden ? [] : [iA1.value, iA2.value] })
+              .then((d) => {
+                guardar.disabled = false;
+                if (d.cancelado) return;
+                if (!d.ok) { erro.textContent = t(d.erro || 'Não foi possível guardar.'); erro.hidden = false; return; }
+                fechar(); recarregarGestao();
+                if (d.senha) mostrarSenha(login, d.senha, d.dois_passos_obrigatorio); else toast(t('Conta guardada.'), 4000);
+              });
+          });
+          ft.append(botao(t('Cancelar'), 'ghost', fechar), guardar);
+          setTimeout(() => (novo ? iNome : iEmail).focus(), 50);
+        });
+      }
+
       R.acessos = (pg) => {
         if (!GESTAO) { pg.append(el('div', 'glass empty', t('A carregar…'))); carregarGestao().then(() => { if (atual === 'acessos') draw(); }); return; }
         if (GESTAO.erro) { pg.append(secBox(t('Acessos'), '', el('p', null, GESTAO.erro))); return; }
-        const U = GESTAO.utilizadores, obrig = ['SADM', 'TI', 'DIR'];
+        const U = GESTAO.utilizadores, obrig = GESTAO.perfis_dois_passos || ['SADM', 'TI', 'DIR'], gerir = GESTAO.pode_gerir;
         const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem email' : u.activo ? 'Activa' : 'Inactiva');
         pg.append(tiles([
           { l: t('Contas activas'), v: n0(U.filter((u) => u.activo && !u.bloqueado).length), s: t('{n} contas no total', { n: U.length }) },
@@ -3402,34 +3587,73 @@
           { l: t('Sem verificação em dois passos'), v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos).length), s: t('perfis SADM, TI e DIR'), tone: U.some((u) => obrig.includes(u.perfil) && !u.dois_passos) ? 'warn' : null },
         ]));
         if (U.some((u) => u.compatibilidade)) pg.append(el('p', 'note', t('As contas vêm ainda da lista antiga (geo/auth/config_users.php). Crie a lista nova com ferramentas/utilizadores.php para aplicar os perfis, as rotas e o email obrigatório.')));
-        pg.append(tabela({
-          id: 'ac-u', titulo: t('Utilizadores'), nota: t('Contas e perfis. A criação e alteração de contas faz-se no servidor; o desbloqueio, aqui, pelo super administrador.'), sort: 'nome', dir: 1, total: false,
-          rows: U.map((u) => ({ ...u, chave: u.login, estado: estado(u), rotas_txt: u.rotas ? (u.rotas.join(', ') || t('nenhuma')) : t('Todas'), mfa: u.dois_passos ? t('Sim') : t('Não') })),
-          cols: [{ key: 'nome', label: t('Nome'), p: 0 }, { key: 'login', label: t('Utilizador') }, { key: 'email', label: t('Email') }, { key: 'perfil', label: t('Perfil'), render: (v, r) => document.createTextNode(v + ' · ' + t(r.perfil_nome)) },
+        const cols = [{ key: 'nome', label: t('Nome'), p: 0 }, { key: 'login', label: t('Utilizador') }, { key: 'email', label: t('Email') }, { key: 'perfil', label: t('Perfil'), render: (v, r) => document.createTextNode(v + ' · ' + t(r.perfil_nome)) },
           { key: 'rotas_txt', label: t('Rotas') }, { key: 'mfa', label: t('Dois passos') },
           { key: 'estado', label: t('Estado'), render: (v, r) => {
             const w = el('span'); w.append(pill(t(v), v === 'Activa' ? 'p-ok' : v === 'Bloqueada' ? 'p-bad' : 'p-warn'));
+            if (r.senha_temporaria && r.activo) { w.append(document.createTextNode(' ')); w.append(pill(t('Palavra-passe temporária'), 'p-warn')); }
             if (r.bloqueado && GESTAO.pode_desbloquear) {
               const b = el('button', 'linkbtn', t('Desbloquear')); b.type = 'button'; b.style.marginLeft = '8px';
-              b.addEventListener('click', () => fetch('data/gestao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accao: 'desbloquear', conta: r.login, csrf: SESSAO && SESSAO.csrf }) })
-                .then((x) => x.json()).then((d) => { toast(d.ok ? t('Conta desbloqueada.') : (d.erro ? t(d.erro) : t('Não foi possível desbloquear.')), 5000); GESTAO = null; draw(); }));
+              b.addEventListener('click', () => pedirGestao({ accao: 'desbloquear', conta: r.login }).then((d) => { if (d.cancelado) return; toast(d.ok ? t('Conta desbloqueada.') : (d.erro ? t(d.erro) : t('Não foi possível desbloquear.')), 5000); recarregarGestao(); }));
               w.append(b);
             }
             return w;
           }, xl: (r) => t(r.estado) },
-          { key: 'ultima_entrada', label: t('Última entrada'), render: (v) => document.createTextNode(v ? dl(v) + ' ' + v.slice(11, 16) : '—') }]
-        }));
-        const perfis = Object.keys(GESTAO.perfis);
-        const sig = { '': '—', V: 'V', Vr: 'V·r', E: 'E', Er: 'E·r', G: 'G', A: 'A' };
-        pg.append(tabela({
-          id: 'ac-m', titulo: t('Matriz de acessos'), nota: t('V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.'), sort: 'ordem', dir: 1, total: false, search: false,
-          rows: Object.entries(GESTAO.matriz).map(([rec, m], i) => { const o = { chave: rec, ordem: i, recurso: nomeRecurso(rec) }; perfis.forEach((p) => { o[p] = sig[m[p] || '']; }); return o; }),
-          cols: [{ key: 'recurso', label: t('Página ou função'), p: 0, wrap: true }, ...perfis.map((p) => ({ key: p, label: p }))]
-        }));
+          { key: 'ultima_entrada', label: t('Última entrada'), render: (v) => document.createTextNode(v ? dl(v) + ' ' + v.slice(11, 16) : '—') }];
+        if (gerir) cols.push({ key: 'gerir', label: '', p: 0, render: (v, r) => { const b = el('button', 'linkbtn', t('Gerir')); b.type = 'button'; b.setAttribute('aria-label', t('Gerir') + ' ' + r.nome); b.addEventListener('click', () => janelaConta(U.find((x) => x.login === r.login))); return b; }, xl: () => '' });
+        const secU = tabela({
+          id: 'ac-u', titulo: t('Utilizadores'), nota: gerir ? t('Contas e perfis. Em Gerir altera o perfil, as rotas, o email e a palavra-passe de cada conta.') : t('Contas e perfis. Só o super administrador cria e altera contas.'), sort: 'nome', dir: 1, total: false,
+          rows: U.map((u) => ({ ...u, chave: u.login, estado: estado(u), rotas_txt: u.rotas ? (u.rotas.join(', ') || t('nenhuma')) : t('Todas'), mfa: u.dois_passos ? t('Sim') : t('Não'), gerir: '' })),
+          cols
+        });
+        if (gerir) secU.querySelector('.sec-tools').prepend(botao(t('Nova conta'), 'sm', () => janelaConta(null)));
+        pg.append(secU);
+
+        // ---- matriz ----
+        const perfis = Object.keys(GESTAO.perfis), M = GESTAO.matriz, BASE = GESTAO.matriz_base;
+        const difBase = Object.keys(M).some((rec) => perfis.some((p) => (M[rec][p] || '') !== (BASE[rec][p] || '')));
+        const nPend = () => Object.values(MPEND).reduce((s, x) => s + Object.keys(x).length, 0);
+        let bGuardar, bAnular;
+        const actualizarBotoes = () => { if (!bGuardar) return; const n = nPend(); bGuardar.disabled = !n; bGuardar.textContent = n === 1 ? t('Guardar 1 alteração') : n ? t('Guardar {n} alterações', { n }) : t('Guardar alterações'); bAnular.hidden = !n; };
+        const celula = (rec, p) => {
+          const atual = M[rec][p] || '', opts = GESTAO.niveis[rec] || [];
+          if (!gerir || p === 'SADM' || !opts.length) return document.createTextNode(NIVEL_SIG[atual]);
+          const s = el('select', 'nivel'); opts.forEach((n) => { const o = el('option', null, NIVEL_SIG[n]); o.value = n; s.append(o); });
+          const pend = MPEND[rec] && MPEND[rec][p]; s.value = pend != null ? pend : atual;
+          s.setAttribute('aria-label', nomeRecurso(rec) + ' · ' + p);
+          const marca = () => { s.classList.toggle('pendente', s.value !== atual); s.classList.toggle('mudou', s.value === atual && atual !== (BASE[rec][p] || '')); s.title = s.value !== atual ? t('Por guardar') : atual !== (BASE[rec][p] || '') ? t('Diferente da matriz original ({v})', { v: NIVEL_SIG[BASE[rec][p] || ''] }) : ''; };
+          s.addEventListener('change', () => { if (s.value === atual) { if (MPEND[rec]) delete MPEND[rec][p]; } else (MPEND[rec] = MPEND[rec] || {})[p] = s.value; marca(); actualizarBotoes(); });
+          marca(); return s;
+        };
+        LIM['ac-m'] = Math.max(LIM['ac-m'] || 0, 200);
+        const secM = tabela({
+          id: 'ac-m', titulo: t('Matriz de acessos'), sort: 'ordem', dir: 1, total: false, search: false,
+          nota: (gerir ? t('Escolha o nível de cada perfil em cada página ou função e guarde. Contorno laranja: por guardar; azul: diferente da matriz original. A coluna SADM e as funções de administração não se alteram.') + ' ' : '') + t('V ver · V·r ver só as suas rotas · E exportar · E·r exportar só as suas rotas · G gerir · A administrar.'),
+          rows: Object.keys(M).map((rec, i) => { const o = { chave: rec, ordem: i, recurso: nomeRecurso(rec) }; perfis.forEach((p) => { o[p] = NIVEL_SIG[M[rec][p] || '']; }); return o; }),
+          cols: [{ key: 'recurso', label: t('Página ou função'), p: 0, wrap: true, get: (r) => r.ordem, render: (v, r) => document.createTextNode(r.recurso), xl: (r) => r.recurso }, ...perfis.map((p) => ({ key: p, label: p, p: 0, render: (v, r) => celula(r.chave, p), xl: (r) => NIVEL_SIG[M[r.chave][p] || ''] }))]
+        });
+        if (gerir) {
+          const tools = secM.querySelector('.sec-tools');
+          bAnular = botao(t('Anular'), 'ghost sm', () => { MPEND = {}; draw(); });
+          bGuardar = botao(t('Guardar alterações'), 'sm', () => {
+            const n = nPend(); if (!n) return;
+            bGuardar.disabled = true;
+            pedirGestao({ accao: 'matriz', matriz: MPEND }).then((d) => {
+              if (d.cancelado) { actualizarBotoes(); return; }
+              if (!d.ok) { toast(t(d.erro || 'Não foi possível guardar.'), 6000); actualizarBotoes(); return; }
+              toast((n === 1 ? t('Matriz guardada: 1 alteração.') : t('Matriz guardada: {n} alterações.', { n })) + ' ' + t('Aplica-se já nos dados; cada pessoa vê o menu novo quando actualizar a página.'), 7000); recarregarGestao();
+            });
+          });
+          tools.prepend(bAnular, bGuardar);
+          if (difBase) tools.append(botao(t('Repor matriz original'), 'ghost sm', () => confirmarAccao(t('Repor matriz original'), t('Todas as alterações feitas à matriz no portal são apagadas e volta a matriz aprovada.'), t('Repor'),
+            () => pedirGestao({ accao: 'repor_matriz' }).then((d) => { if (d.ok) { recarregarGestao(); toast(t('Matriz original reposta.'), 4000); } return d; }))));
+          actualizarBotoes();
+        }
+        pg.append(secM);
         if ((GESTAO.registos || []).length) {
           pg.append(tabela({
-            id: 'ac-r', titulo: t('Registos de actividade'), nota: t('Últimos 300 registos: entradas, saídas, bloqueios e exportações.'), sort: 'data', total: false,
-            rows: GESTAO.registos.map((r, i) => ({ chave: i + '|' + r.data, data: r.data, utilizador: r.utilizador, perfil: r.perfil, accao: t(NOMES_ACCAO[r.accao] || r.accao), detalhe: Object.entries(r.detalhe || {}).map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : v)).join(' · '), ip: r.ip })),
+            id: 'ac-r', titulo: t('Registos de actividade'), nota: t('Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.'), sort: 'data', total: false,
+            rows: GESTAO.registos.map((r, i) => ({ chave: i + '|' + r.data, data: r.data, utilizador: r.utilizador, perfil: r.perfil, accao: t(NOMES_ACCAO[r.accao] || r.accao), detalhe: Object.entries(r.detalhe || {}).map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : typeof v === 'boolean' ? (v ? t('Sim') : t('Não')) : v)).join(' · '), ip: r.ip })),
             cols: [{ key: 'data', label: t('Data'), render: (v) => document.createTextNode(dl(v) + ' ' + String(v).slice(11, 19)) }, { key: 'utilizador', label: t('Utilizador'), p: 0 }, { key: 'perfil', label: t('Perfil') },
             { key: 'accao', label: t('Acção') }, { key: 'detalhe', label: t('Detalhe'), wrap: true }, { key: 'ip', label: 'IP' }]
           }));
@@ -3480,7 +3704,7 @@
         $('#de').value = st.de; $('#ate').value = st.ate; $('#de-v').textContent = dl(st.de); $('#ate-v').textContent = dl(st.ate);
         const ps = presets(), seg = $('#presets'); seg.replaceChildren();
         Object.entries(ps).forEach(([k, v]) => { const b = el('button', st.preset === k ? 'on' : null, t(v[0])); b.type = 'button'; b.addEventListener('click', () => setPreset(k)); seg.append(b); });
-        $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`);
+        $('#eyebrow').textContent = t(p.grupo || 'Portal RTM') + (!st.de ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
         $('#titulo').textContent = p.id === 'inicio' ? t('Onde pretende entrar?') : t(p.nome);
         $('#lead').textContent = p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
         const pg = $('#page'); pg.replaceChildren();

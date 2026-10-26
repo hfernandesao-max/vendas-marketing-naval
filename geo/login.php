@@ -46,8 +46,45 @@ function naval_concluir_login(string $login, array $u, string $redirect, bool $c
     exit;
 }
 
+// Depois de confirmada a identidade: palavra-passe temporária obriga a escolher uma nova antes de entrar
+function naval_apos_verificacao(string $login, array $u, string $redirect, bool $comMfa): void
+{
+    if (!empty($u['trocar_senha'])) {
+        unset($_SESSION['mfa_pendente']);
+        $_SESSION['troca_pendente'] = ['login' => $login, 'mfa' => $comMfa, 'ate' => time() + 600];
+        return;
+    }
+    naval_concluir_login($login, $u, $redirect, $comMfa);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['codigo']) && !empty($_SESSION['mfa_pendente'])) {
+    $troca = $_SESSION['troca_pendente'] ?? null;
+    if (isset($_POST['nova_senha']) && $troca && $troca['ate'] >= time()) {
+        // Nova palavra-passe (obrigatória após uma palavra-passe temporária)
+        $login = $troca['login'];
+        $u = $usuarios[$login] ?? null;
+        $nova = (string) $_POST['nova_senha'];
+        $passo = 'nova';
+        if (!$u || !naval_conta_valida($u)) {
+            unset($_SESSION['troca_pendente']);
+            $passo = 'senha';
+            $erro = 'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.';
+        } elseif ($nova !== (string) ($_POST['confirmar_senha'] ?? '')) {
+            $erro = 'As duas palavras-passe não são iguais.';
+        } elseif ($f = naval_senha_fraca($nova)) {
+            $erro = $f;
+        } elseif (password_verify($nova, (string) $u['senha'])) {
+            $erro = 'Escolha uma palavra-passe diferente da temporária.';
+        } else {
+            $u['senha'] = password_hash($nova, PASSWORD_DEFAULT);
+            unset($u['trocar_senha']);
+            $usuarios[$login] = $u;
+            naval_gravar_utilizadores($usuarios);
+            naval_registar('senha_alterada', [], $login);
+            unset($_SESSION['troca_pendente']);
+            naval_concluir_login($login, $u, $redirect, (bool) $troca['mfa']);
+        }
+    } elseif (isset($_POST['codigo']) && !empty($_SESSION['mfa_pendente'])) {
         // 2.º passo: código da aplicação de autenticação
         $login = $_SESSION['mfa_pendente'];
         $u = $usuarios[$login] ?? null;
@@ -57,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $passo = 'senha';
             $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
         } elseif ($u && naval_totp_valido((string) ($u['mfa'] ?? ''), (string) $_POST['codigo'])) {
-            naval_concluir_login($login, $u, $redirect, true);
+            naval_apos_verificacao($login, $u, $redirect, true);
+            $passo = 'nova';
         } else {
             $resta = naval_falha_login($login);
             naval_registar('entrada_falhada', ['motivo' => 'codigo'], $login);
@@ -72,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $usuario = trim($_POST['usuario'] ?? '');
         $senha = $_POST['senha'] ?? '';
-        unset($_SESSION['mfa_pendente']);
+        unset($_SESSION['mfa_pendente'], $_SESSION['troca_pendente']);
         // Aceita o utilizador ou o email associado à conta
         [$loginEncontrado] = naval_procurar_conta($usuario);
         if ($loginEncontrado) $usuario = $loginEncontrado;
@@ -94,7 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['mfa_pendente'] = $usuario;
                 $passo = 'mfa';
             } else {
-                naval_concluir_login($usuario, $u, $redirect, false);
+                naval_apos_verificacao($usuario, $u, $redirect, false);
+                $passo = 'nova';
             }
         } else {
             $resta = naval_falha_login($usuario);
@@ -436,7 +475,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="login.php">
       <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>" />
-<?php if ($passo === 'mfa'): ?>
+<?php if ($passo === 'nova'): ?>
+      <p style="margin:0 2px 16px;font-size:13px;line-height:1.5;color:#c9d0e0">Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 10 caracteres, com letras e números.</p>
+      <div class="form-group">
+        <label for="nova_senha">Nova palavra-passe</label>
+        <div class="input-wrapper">
+          <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+          <input type="password" id="nova_senha" name="nova_senha" minlength="10" autocomplete="new-password" required autofocus />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="confirmar_senha">Confirmar a nova palavra-passe</label>
+        <div class="input-wrapper">
+          <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+          <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="10" autocomplete="new-password" required />
+        </div>
+      </div>
+<?php elseif ($passo === 'mfa'): ?>
       <div class="form-group">
         <label for="codigo">Código de verificação</label>
         <div class="input-wrapper">
