@@ -27,6 +27,8 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 
 O menu só mostra as páginas que o perfil pode abrir (matriz de acessos).
 
+Cada página é um **grupo de relatórios**: o menu é uma árvore (área → página → relatório, com áreas que recolhem) e, no topo do conteúdo, separadores com os relatórios da página. Mostra-se um relatório de cada vez, com os indicadores e os filtros da página sempre visíveis. Cada relatório tem endereço próprio (por exemplo `reports/#vendas-dia/vd-mat`) e a página lembra o último relatório aberto. O «Excel desta página» continua a levar todos os relatórios da página.
+
 ### Filtros
 
 Uma barra de filtros única, por baixo do período, igual em todas as páginas. Cada página mostra só os filtros que se aplicam aos seus dados:
