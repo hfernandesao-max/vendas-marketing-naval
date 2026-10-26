@@ -9,7 +9,7 @@ export const PAGES = [
   { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
   { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Ranking' },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
-  { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Recebimentos por meio' },
+  { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Cobranças' },
   { id: 'pendentes', grupo: 'Recebimentos', icon: 'clock', nome: 'Facturas pendentes' },
   { id: 'sap-exportar', grupo: 'Recebimentos', icon: 'upload', nome: 'Ficheiro para o SAP' },
   { id: 'clientes', grupo: 'Clientes', icon: 'phone', nome: 'Carteira de clientes' },

@@ -131,7 +131,7 @@ export function descreverFiltros(pagina) {
     .filter((k) => filtroAtivo(pagina, k))
     .map((k) => {
       if (k === 'rota') return (FV.rota.length > 1 ? t('Rotas') : t('Rota')) + ': ' + FV.rota.join(', ');
-      if (k === 'meio') return t('Meio de recebimento') + ': ' + (FV.meio === '-' ? t('Sem meio indicado') : nomeMeio(FV.meio));
+      if (k === 'meio') return t('Meio de cobrança') + ': ' + (FV.meio === '-' ? t('Sem meio indicado') : nomeMeio(FV.meio));
       const rot = {
         cliente: 'Cliente',
         tipo: 'Tipo de documento',
@@ -320,7 +320,7 @@ export function desenharFiltros(pagina) {
       const m = new Map();
       (C.vendas || []).forEach((v) => (v.pagamentos || []).forEach((x) => m.set(x.codigo, x.meio)));
       box.append(
-        selectF('meio', t('Meio de recebimento'), [
+        selectF('meio', t('Meio de cobrança'), [
           ['', t('Todos os meios')],
           ...[...m.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'pt')).map(([c, n]) => [c, t(n)]),
           ['-', t('Sem meio indicado')],

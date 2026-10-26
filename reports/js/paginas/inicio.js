@@ -73,7 +73,7 @@ function painelInicio(pg) {
       }),
     );
   }
-  // 3. Como foi recebido (parte do todo)
+  // 3. Como foi cobrado (parte do todo)
   if (pode('pagamentos') && V.length && temMeio()) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
@@ -87,7 +87,7 @@ function painelInicio(pg) {
     ].filter((p) => p.valor > 0.005 || p.cor === COR.s1);
     cards.push(
       cartaoGrafico({
-        titulo: t('Como foi recebido'),
+        titulo: t('Como foi cobrado'),
         sub: t('{p} das vendas já recebido', { p: pct(tot ? liq / tot : 0) }),
         destino: 'pagamentos',
         desenhar: (w) => grafParte(w, { partes }),
@@ -288,8 +288,8 @@ R.inicio = (pg) => {
       tiles([
         { l: t('Vendas RTM'), v: kz2(tot), s: t('{n} documentos', { n: n0(V.length) }), cls: 'full-value' },
         { l: t('Recebido'), v: kz2(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }), cls: 'full-value' },
-        { l: t('Em dinheiro'), v: temMeio() ? kz2(din) : '—', s: temMeio() ? '' : t('Falta o meio de recebimento'), cls: 'full-value' },
-        { l: t('Em Multicaixa'), v: temMeio() ? kz2(mc) : '—', s: temMeio() ? '' : t('Falta o meio de recebimento'), cls: 'full-value' },
+        { l: t('Em dinheiro'), v: temMeio() ? kz2(din) : '—', s: temMeio() ? '' : t('Falta o meio de cobrança'), cls: 'full-value' },
+        { l: t('Em Multicaixa'), v: temMeio() ? kz2(mc) : '—', s: temMeio() ? '' : t('Falta o meio de cobrança'), cls: 'full-value' },
         { l: t('Facturas pendentes'), v: kz2(tot - liq), tone: tot - liq > 0 ? 'warn' : null, cls: 'full-value' },
         { l: t('Clientes com compras'), v: n0(new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size) },
       ]),

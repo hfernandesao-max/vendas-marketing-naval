@@ -19,7 +19,7 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 |---|---|
 | Início | Indicadores do período e atalhos |
 | **Vendas** | Vendas por promotor · por dia · por cliente · por artigo · por promotor e marca · Ranking · Documentos |
-| **Recebimentos** | Recebimentos por meio (dinheiro recebido das vendas por meio de recebimento, taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) · Ficheiro para o SAP |
+| **Recebimentos** | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) · Ficheiro para o SAP |
 | **Clientes** | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados |
 | **Terreno** | Plano de visitas · Histórico de auditoria |
 | **Logística** | Plano de cargas · Stock por promotor / carrinha · Stock por armazém |
@@ -35,7 +35,7 @@ Uma barra de filtros única, por baixo do período, igual em todas as páginas. 
 
 - **Rota / promotor** (escolha múltipla; os supervisores só vêem as suas rotas)
 - **Cliente** (nome, NIF ou código) e **Artigo** (nome ou código)
-- **Tipo de documento** (Factura-recibo, Factura), **Meio de recebimento**, **Estado** (pagos / pendentes)
+- **Tipo de documento** (Factura-recibo, Factura), **Meio de cobrança**, **Estado** (pagos / pendentes)
 - **Município**, **Tipo de cliente** e **Estado do cliente** (páginas de clientes)
 
 Os filtros aplicam-se a quadros, tabelas e Excel (a capa do Excel indica os filtros usados), mantêm-se ao mudar de página, ficam guardados no navegador e no endereço — por exemplo `reports/#documentos?rota=1001,1003&estado=pendente` abre já filtrado. *Limpar filtros* repõe tudo.

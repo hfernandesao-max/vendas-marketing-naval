@@ -382,48 +382,102 @@ select.nivel.pendente {
   }
 }
 
-/* Páginas como grupos de relatórios: menu em árvore e separadores */
+/* Menu principal em acordeão: áreas fechadas, uma aberta de cada vez */
 .nav .navg {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 11px;
   width: 100%;
+  margin: 2px 0;
+  padding: 8px 12px;
   border: 0;
+  border-radius: 11px;
   background: transparent;
   font-family: inherit;
-  font-size: 10.5px;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--dim);
-  padding: 10px 12px 3px;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.3;
+  color: #dce4f5;
   cursor: pointer;
   text-align: left;
-  border-radius: 8px;
+}
+.nav .navg svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke: #bfd0ee;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nav .navg .navg-t {
+  flex: 1;
 }
 .nav .navg::after {
   content: '';
   width: 6px;
   height: 6px;
+  flex: none;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg);
-  margin-right: 4px;
-  transition: transform 0.15s;
-  opacity: 0.8;
-}
-.nav .navg[aria-expanded='false']::after {
   transform: rotate(-45deg);
+  margin: 0 4px 0 2px;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+.nav .navg[aria-expanded='true']::after {
+  transform: rotate(45deg);
+}
+.nav .navg[aria-expanded='true'] .navg-n {
+  display: none;
 }
 .nav .navg:hover {
-  color: var(--muted);
+  background: rgba(63, 140, 255, 0.08);
+}
+.nav .navg.atual {
+  color: #fff;
+}
+.nav .navg.atual svg {
+  stroke: var(--accent);
 }
 .nav .navg:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-.navl[hidden] {
-  display: none;
+.navl {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+.navl.aberta {
+  grid-template-rows: 1fr;
+}
+.navl-in {
+  min-height: 0;
+  overflow: hidden;
+  margin-left: 21px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line2);
+}
+.navl.aberta .navl-in {
+  margin-bottom: 4px;
+}
+.nav .navl a {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.nav .navl a svg {
+  width: 17px;
+  height: 17px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .navl,
+  .nav .navg::after {
+    transition: none;
+  }
 }
 .nav-sub {
   display: grid;

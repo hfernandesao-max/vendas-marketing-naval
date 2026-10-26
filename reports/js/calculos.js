@@ -131,7 +131,7 @@ export function ocorrencias(V) {
   V.forEach((x) => {
     if (!(+x.total > 0)) out.push({ x, tipo: 'valor', txt: t('Valor nulo ou negativo') });
     if (pendenteDe(x) > 0.005 && x.data < lim) out.push({ x, tipo: 'pend', txt: t('Pendente há mais de 3 dias') });
-    if (recebidoDe(x) > 0 && !pagosDe(x).some((p) => p.codigo !== '?')) out.push({ x, tipo: 'meio', txt: t('Recebido sem meio de recebimento indicado') });
+    if (recebidoDe(x) > 0 && !pagosDe(x).some((p) => p.codigo !== '?')) out.push({ x, tipo: 'meio', txt: t('Cobrado sem meio de cobrança indicado') });
   });
   return out;
 }

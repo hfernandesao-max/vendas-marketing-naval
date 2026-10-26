@@ -12,7 +12,7 @@ test('o Excel completo tem o nome do controlo de gestão consolidado e a data do
 
 test('recebimentos usam «meio de recebimento» e mostram a taxa de cobrança', async ({ page }) => {
   await abrir(page, '#pagamentos');
-  await expect(page.locator('#nav a[href="#pagamentos"]').first()).toContainText('Recebimentos por meio');
+  await expect(page.locator('#nav a[href="#pagamentos"]').first()).toContainText('Cobranças');
   await expect(page.locator('.tile', { hasText: 'Valor recebido' })).toContainText('Taxa de cobrança');
   await expect(page.locator('body')).not.toContainText('Meio de pagamento');
 });

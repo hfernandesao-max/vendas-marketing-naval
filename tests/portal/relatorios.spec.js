@@ -21,16 +21,27 @@ test('lembra o último relatório aberto em cada página', async ({ page }) => {
   await expect(page.locator('.rel-tab.on')).toHaveText('Documentos Pinguim');
 });
 
-test('as áreas do menu recolhem e expandem', async ({ page }) => {
+test('menu em acordeão: áreas fechadas, só uma aberta de cada vez, a da página actual abre sozinha', async ({ page }) => {
   await abrir(page, '#inicio');
-  const grupo = page.locator('.navg', { hasText: 'Clientes' });
-  await grupo.click();
-  await expect(grupo).toHaveAttribute('aria-expanded', 'false');
-  await grupo.click();
-  await expect(grupo).toHaveAttribute('aria-expanded', 'true');
+  const grupo = (nome) => page.locator('.navg', { hasText: nome });
+  await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(0);
+  await expect(page.locator('#nav a[href="#clientes"]')).not.toBeInViewport();
+  await grupo('Clientes').click();
+  await expect(grupo('Clientes')).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#nav a[href="#clientes"]')).toBeVisible();
+  await grupo('Vendas').click();
+  await expect(grupo('Vendas')).toHaveAttribute('aria-expanded', 'true');
+  await expect(grupo('Clientes')).toHaveAttribute('aria-expanded', 'false');
+  await grupo('Vendas').click();
+  await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(0);
+  // ao abrir uma página por endereço, a sua área abre e fica destacada
+  await page.goto(page.url().replace(/#.*$/, '#pendentes'));
+  await expect(grupo('Recebimentos')).toHaveAttribute('aria-expanded', 'true');
+  await expect(grupo('Recebimentos')).toHaveClass(/atual/);
+  await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(1);
 });
 
 test('menu organizado por áreas de negócio', async ({ page }) => {
   await abrir(page, '#inicio');
-  await expect(page.locator('#nav .navg')).toHaveText(['Vendas', 'Recebimentos', 'Clientes', 'Terreno', 'Logística', 'Administração']);
+  await expect(page.locator('#nav .navg .navg-t')).toHaveText(['Vendas', 'Recebimentos', 'Clientes', 'Terreno', 'Logística', 'Administração']);
 });

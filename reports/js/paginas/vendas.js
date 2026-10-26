@@ -318,7 +318,7 @@ R.documentos = (pg) => {
         { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'cliente', label: t('Cliente'), wrap: true },
         { key: 'nif', label: t('NIF') },
-        { key: 'meio_pagamento', label: t('Meio de recebimento') },
+        { key: 'meio_pagamento', label: t('Meio de cobrança') },
         {
           key: 'liquidado',
           label: t('Pago'),
