@@ -1,4 +1,4 @@
-// Recebimentos: métodos de pagamento e facturas pendentes.
+// Recebimentos: dinheiro recebido das vendas por meio de recebimento e facturas pendentes.
 import { isCF, pagosDe, pendenteDe, porMeio, promotorRota, recebidoDe, temMeio, valorCat, vendasR } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { kz2, mkz, n0, pct } from '../formatos.js';
@@ -155,9 +155,9 @@ R.pagamentos = (pg) => {
     pp0 = (v) => t('{p} do recebido', { p: pct(liq ? v / liq : null) });
   pg.append(
     tiles([
-      { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
-      { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de pagamento') },
-      { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de pagamento') },
+      { l: t('Valor recebido'), v: mkz(liq), s: t('Taxa de cobrança: {p}', { p: pct(tot ? liq / tot : null) }) },
+      { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de recebimento') },
+      { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de recebimento') },
       {
         l: t('Facturas pendentes'),
         v: mkz(pend),
@@ -174,11 +174,11 @@ R.pagamentos = (pg) => {
         'p',
         null,
         t(
-          'A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de pagamento de cada documento (ou o mapa de recebimentos do Pinguim BO).',
+          'A exportação de vendas do Pinguim BO que temos indica só se cada documento está liquidado. Para separar o que foi recebido em dinheiro e em Multicaixa, a exportação tem de trazer o meio de recebimento de cada documento (ou o mapa de recebimentos do Pinguim BO).',
         ),
       ),
     );
-    secs.append(secBox(t('Falta o meio de pagamento'), t('Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.'), box));
+    secs.append(secBox(t('Falta o meio de recebimento'), t('Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.'), box));
   }
   // Meios de pagamento tal como vêm do Pinguim BO
   const PM = porMeio(V);
@@ -186,8 +186,8 @@ R.pagamentos = (pg) => {
   secs.append(
     tabela({
       id: 'pg-meio',
-      titulo: t('Por meio de pagamento'),
-      nota: t('Valores recebidos por tipo de pagamento, como registados no Pinguim BO (sem troco).'),
+      titulo: t('Por meio de recebimento'),
+      nota: t('Dinheiro efectivamente recebido das vendas, por meio de recebimento, como registado no Pinguim BO (já sem o troco).'),
       rows: PM.map((o) => ({
         chave: o.meio,
         meio: o.meio,
@@ -201,7 +201,7 @@ R.pagamentos = (pg) => {
       total: true,
       search: false,
       cols: [
-        { key: 'meio', label: t('Meio de pagamento') },
+        { key: 'meio', label: t('Meio de recebimento') },
         { key: 'codigo', label: t('Código'), p: 0 },
         { key: 'categoria', label: t('Tipo'), p: 0 },
         { key: 'docs', label: t('Documentos'), type: 'n', sum: true },

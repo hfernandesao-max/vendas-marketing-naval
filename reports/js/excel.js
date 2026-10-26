@@ -62,6 +62,9 @@ async function autorizarExportacao(completo, tabela, linhas) {
     return !SESSAO;
   }
 }
+// Nome do Excel completo: «RTM - Controlo de Gestão Consolidado-DD-MM-AAAA», com a data do dia em que é retirado
+export const NOME_CONSOLIDADO = 'RTM - Controlo de Gestão Consolidado';
+export const nomeConsolidado = () => NOME_CONSOLIDADO + '-' + dl(hoje()) + '.xlsx';
 export async function exportarExcel(paginas, nomeFicheiro) {
   const completo = paginas.length > 1,
     linhas = paginas.reduce((s, p) => s + (p.tabelas || []).reduce((a, tb) => a + (tb.rows || []).length, 0), 0);
@@ -91,7 +94,7 @@ async function gerarExcel(paginas, nomeFicheiro) {
     capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 34 }, { width: 10 }];
     capa.getCell('B2').value = 'Grupo Naval Angola';
     capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
-    capa.getCell('B3').value = t('Portal RTM') + (paginas.length === 1 ? ' · ' + t(paginas[0].pagina) : '');
+    capa.getCell('B3').value = paginas.length === 1 ? t('Portal RTM') + ' · ' + t(paginas[0].pagina) : NOME_CONSOLIDADO;
     capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
     [
       ['Período', periodo],
@@ -239,7 +242,10 @@ async function gerarExcel(paginas, nomeFicheiro) {
       }),
     );
     const buf = await wb.xlsx.writeBuffer();
-    download(fname(nomeFicheiro, 'xlsx'), new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    download(
+      paginas.length > 1 ? nomeConsolidado() : fname(nomeFicheiro, 'xlsx'),
+      new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    );
     toast(t('Excel transferido.'), 2500);
   } catch (e) {
     console.error(e);

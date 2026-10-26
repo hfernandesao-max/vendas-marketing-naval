@@ -5,6 +5,9 @@
 import { defineConfig } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
+// Nomes de ficheiro com acentos (ex.: «Gestão») precisam de um ambiente UTF-8 no navegador dos testes
+process.env.LC_ALL = process.env.LC_ALL || 'C.UTF-8';
+
 const ENV_TESTE = fileURLToPath(new URL('./tests/servidor/ambiente/.env', import.meta.url));
 
 export default defineConfig({

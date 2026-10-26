@@ -22,7 +22,7 @@ R.auditoria = (pg) => {
       { l: t('Documentos verificados'), v: n0(V.length), s: t('{n} com ocorrências', { n: n0(docsCom.size) }), tone: docsCom.size ? 'warn' : null },
       { l: t('Possíveis duplicados'), v: n0(dup.length), s: mkz(sum(dup, (o) => o.x.total)), tone: dup.length ? 'warn' : null },
       { l: t('Pendentes há mais de 3 dias'), v: n0(pend.length), s: mkz(sum(pend, (o) => pendenteDe(o.x))), tone: pend.length ? 'warn' : null },
-      { l: t('Pagos sem meio de pagamento'), v: n0(meio.length), s: mkz(sum(meio, (o) => recebidoDe(o.x))), tone: meio.length ? 'warn' : null },
+      { l: t('Recebidos sem meio indicado'), v: n0(meio.length), s: mkz(sum(meio, (o) => recebidoDe(o.x))), tone: meio.length ? 'warn' : null },
       {
         l: t('Visitas marcadas não realizadas'),
         v: n0(falt.length),
@@ -69,7 +69,7 @@ R.auditoria = (pg) => {
         { key: 'total', label: t('Total'), type: 'kz', sum: true },
         { key: 'dup', label: t('Possíveis duplicados'), type: 'n', sum: true },
         { key: 'pend', label: t('Pendentes há mais de 3 dias'), type: 'n', sum: true },
-        { key: 'meio', label: t('Pagos sem meio de pagamento'), type: 'n', sum: true },
+        { key: 'meio', label: t('Recebidos sem meio indicado'), type: 'n', sum: true },
         { key: 'marcadas', label: t('Visitas marcadas'), type: 'n', sum: true },
         { key: 'nao_visitadas', label: t('Visitas não realizadas'), type: 'n', sum: true },
         { key: 'estado', label: t('Estado'), render: (v, r) => pill(v, r.com ? 'p-warn' : 'p-ok'), xl: (r) => r.estado },

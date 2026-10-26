@@ -1,6 +1,6 @@
 // Desenho da página actual e encaminhamento pelo endereço (#página/relatório?filtros).
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
-import { exportarExcel, recolher } from './excel.js';
+import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
 import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
 import { fetchVendas, mostrarFontes } from './fontes.js';
 import { dl, ds, setFmt } from './formatos.js';
@@ -116,7 +116,7 @@ $('#xl-all').addEventListener('click', () => {
     });
   const ini = recolher('inicio');
   pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
-  exportarExcel(pags, t('Relatório completo'));
+  exportarExcel(pags, NOME_CONSOLIDADO);
 });
 document.querySelectorAll('#lang button').forEach((b) =>
   b.addEventListener('click', () => {
