@@ -320,7 +320,8 @@ export function tiles(list) {
         });
         return f.every(cabe);
       };
-      while (px > 15 && !tenta()) px -= 1;
+      // Mínimo de 15 px; já com os quadros alargados, desce até 11 px antes de deixar cortar
+      while (px > (alargado ? 11 : 15) && !tenta()) px -= 1;
       f.forEach((v) => {
         if (!cabe(v)) {
           const t2 = v.parentNode;

@@ -169,3 +169,5 @@ addEventListener('resize', () => {
   clearTimeout(rz);
   rz = setTimeout(() => FITS.forEach((f) => f()), 150);
 });
+// A letra Inter chega depois do primeiro desenho (display=swap) e muda as medidas: volta a ajustar os quadros
+if (document.fonts) document.fonts.addEventListener('loadingdone', () => FITS.forEach((f) => f()));
