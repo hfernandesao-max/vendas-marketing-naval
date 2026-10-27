@@ -3,7 +3,8 @@ import { marcarActualizado } from './actualizacao.js';
 import { t } from './i18n/i18n.js';
 import { definirDiasSap, definirDiasTodos, diasSap } from './periodo.js';
 import { $, DB, el, toast } from './util.js';
-import { apiFetch } from './api.js';
+import { apiDescarregar, apiFetch } from './api.js';
+import { SESSAO } from './perfil.js';
 
 // Pinguim BO: resultado da última consulta de vendas e verificação curta (ping) a cada 5 minutos.
 // Os cadastros e o plano de cargas não contam como fontes externas: o plano é produzido na plataforma.
@@ -51,6 +52,13 @@ export function mostrarFontes() {
     );
     det.append(d);
   });
+  // Super administrador: diagnóstico do servidor (PHP, .env, ligações) pela API, com o token
+  if (SESSAO && (SESSAO.permissoes || {})['admin-config']) {
+    const b = el('button', 'linkbtn', t('Diagnóstico do servidor'));
+    b.type = 'button';
+    b.addEventListener('click', () => apiDescarregar('vendas/diagnostico', 'diagnostico-servidor.json').catch((e) => toast(e.message, 6000)));
+    det.append(b);
+  }
   $('#fontes').title = ks.map((k) => t(NOMES_FONTE[k]) + ': ' + LIGACOES[k].txt).join('\n');
 }
 function pingPinguim() {

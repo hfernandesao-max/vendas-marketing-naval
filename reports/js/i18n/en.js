@@ -205,6 +205,8 @@ export const EN = {
   'Página principal': 'Home page',
   Sair: 'Sign out',
   'Terminar sessão': 'Sign out',
+  'Diagnóstico do servidor': 'Server diagnostics',
+  'A carregar o stock…': 'Loading stock…',
   'A mostrar {a} de {b}': 'Showing {a} of {b}',
   'Mostrar mais {n}': 'Show {n} more',
   'Mostrar todas': 'Show all',
