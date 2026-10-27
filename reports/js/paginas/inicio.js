@@ -5,8 +5,10 @@ import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
-import { podeVer } from '../perfil.js';
-import { hoje, inR } from '../periodo.js';
+import { atual, podeVer } from '../perfil.js';
+import { draw } from '../app.js';
+import { FV, filtroAtivo } from '../filtros.js';
+import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
 
 function painelInicio(pg) {
@@ -313,21 +315,166 @@ function ecraUnico(pg, grelha) {
   FITS.unshift(ajustar); // antes dos gráficos, que se desenham à altura do quadro
 }
 
+// ── Comparação com o período anterior (boas práticas de KPI: valor, variação e tendência) ──
+// Comparável «like-for-like»: Hoje → ontem; N dias → os N dias anteriores; Mês (até hoje) → o mesmo
+// intervalo do mês anterior. Com o período aberto (inclui hoje), o último dia comparável conta só até
+// à hora actual, para não comparar um dia a meio com um dia completo. «Tudo» não tem comparação.
+const COMP = { chave: '', vendas: null, aLer: false };
+function periodoComparavel() {
+  if (!st.de || !st.ate || st.preset === 'tudo') return null;
+  const hj = hoje();
+  let de, ate, nome;
+  if (st.preset === 'mes') {
+    const [a, m, d] = st.ate.split('-').map(Number);
+    const ini = new Date(Date.UTC(a, m - 2, 1)),
+      ultimo = new Date(Date.UTC(a, m - 1, 0)).getUTCDate();
+    de = ini.toISOString().slice(0, 10);
+    ate = de.slice(0, 8) + String(Math.min(d, ultimo)).padStart(2, '0');
+    nome = t('mesmo período do mês anterior');
+  } else {
+    const n = Math.round((Date.parse(st.ate) - Date.parse(st.de)) / 864e5) + 1;
+    ate = addD(st.de, -1);
+    de = addD(st.de, -n);
+    nome = n === 1 ? (st.de === hj ? t('ontem') : t('dia anterior')) : t('{n} dias anteriores', { n });
+  }
+  const ateHora = st.ate === hj ? new Date().toTimeString().slice(0, 5) : null;
+  return { de, ate, nome: ateHora ? t('{p} até às {h}', { p: nome, h: ateHora }) : nome, ateHora };
+}
+function lerComparavel(pc) {
+  const chave = pc.de + '|' + pc.ate;
+  if (COMP.chave === chave && COMP.vendas) return COMP.vendas;
+  if (COMP.aLer === chave) return null;
+  COMP.aLer = chave;
+  fetch(`data/api.php?start_date=${pc.de.replace(/-/g, '')}&end_date=${pc.ate.replace(/-/g, '')}`, { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      COMP.chave = chave;
+      COMP.vendas = d ? (Array.isArray(d) ? d : d.vendas || []) : [];
+    })
+    .catch(() => {
+      COMP.chave = chave;
+      COMP.vendas = [];
+    })
+    .finally(() => {
+      COMP.aLer = false;
+      if (atual === 'inicio' && !document.querySelector('dialog[open]')) {
+        const y = scrollY;
+        draw();
+        scrollTo(0, y);
+      }
+    });
+  return null;
+}
+const metricas = (V) => {
+  const tot = sum(V, 'total'),
+    liq = sum(V, recebidoDe);
+  return {
+    tot,
+    liq,
+    din: valorCat(V, 'dinheiro'),
+    mc: valorCat(V, 'multicaixa'),
+    pend: tot - liq,
+    cli: new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+  };
+};
+/** Variação para o quadro: ▲/▼ e a percentagem; azul quando favorável, vermelho quando desfavorável. */
+function variacao(actual, anterior, nome, fmt, menosEMelhor) {
+  if (anterior == null) return null;
+  const titulo = t('Período comparável ({p}): {v}', { p: nome, v: fmt(anterior) });
+  if (!anterior) return actual ? { txt: t('novo'), cls: 'neutro', title: titulo } : null;
+  const d = (actual - anterior) / Math.abs(anterior);
+  if (Math.abs(d) < 0.0005) return { txt: '= 0%', cls: 'neutro', title: titulo };
+  const sobe = d > 0,
+    bom = menosEMelhor ? !sobe : sobe;
+  return { txt: (sobe ? '▲ ' : '▼ ') + pct(Math.abs(d)), cls: bom ? 'bom' : 'mau', title: titulo + ' · ' + t('vs {p}', { p: nome }) };
+}
+/** Série para a mini-linha: por dia no período; num só dia, acumulado por hora até agora. */
+function serie(V, f) {
+  if (st.de === st.ate) {
+    const ate = st.ate === hoje() ? new Date().getHours() : 23;
+    const porHora = Array.from({ length: ate + 1 }, () => []);
+    V.forEach((x) => {
+      const h = parseInt(String(x.hora || '0').slice(0, 2), 10) || 0;
+      if (h <= ate) porHora[h].push(x);
+    });
+    let acum = [];
+    return porHora.map((rs) => f((acum = acum.concat(rs))));
+  }
+  const dias = [];
+  for (let d = st.de; d <= st.ate && dias.length < 400; d = addD(d, 1)) dias.push(d);
+  const por = group(V, 'data');
+  return dias.map((d) => f(por[d] || []));
+}
+
 R.inicio = (pg) => {
   const V = vendasR(),
     tot = sum(V, 'total'),
     liq = sum(V, recebidoDe);
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa');
+  // Período comparável (lido em segundo plano; os quadros actualizam-se quando chega)
+  const pc = periodoComparavel();
+  let ant = null;
+  if (pc) {
+    let P = lerComparavel(pc);
+    if (P) {
+      if (filtroAtivo('inicio', 'rota')) P = P.filter((x) => FV.rota.includes(String(x.rota)));
+      if (pc.ateHora) P = P.filter((x) => x.data < pc.ate || String(x.hora || '00:00').slice(0, 5) <= pc.ateHora);
+      ant = metricas(P);
+    }
+  }
+  const cur = metricas(V);
+  const vr = (k, fmt, menos) => (ant ? variacao(cur[k], ant[k], pc.nome, fmt, menos) : null);
+  const sp = (f, nome) => ({ spark: serie(V, f), sparkTitulo: t('Tendência de {m} no período', { m: nome }) });
   if (['vendas-promotor', 'documentos', 'pagamentos'].some(podeVer))
     pg.append(
       tiles([
-        { l: t('Vendas RTM'), v: kz2(tot), s: t('{n} documentos', { n: n0(V.length) }), cls: 'full-value' },
-        { l: t('Recebido'), v: kz2(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }), cls: 'full-value' },
-        { l: t('Em dinheiro'), v: temMeio() ? kz2(din) : '—', s: temMeio() ? '' : t('Falta o meio de cobrança'), cls: 'full-value' },
-        { l: t('Em Multicaixa'), v: temMeio() ? kz2(mc) : '—', s: temMeio() ? '' : t('Falta o meio de cobrança'), cls: 'full-value' },
-        { l: t('Facturas pendentes'), v: kz2(tot - liq), tone: tot - liq > 0 ? 'warn' : null, cls: 'full-value' },
-        { l: t('Clientes com compras'), v: n0(new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size) },
+        {
+          l: t('Vendas RTM'),
+          v: kz2(tot),
+          s: t('{n} documentos', { n: n0(V.length) }),
+          cls: 'full-value',
+          var: vr('tot', kz2),
+          ...sp((rs) => sum(rs, 'total'), t('vendas')),
+        },
+        {
+          l: t('Recebido'),
+          v: kz2(liq),
+          s: t('{p} do total', { p: pct(tot ? liq / tot : null) }),
+          cls: 'full-value',
+          var: vr('liq', kz2),
+          ...sp((rs) => sum(rs, recebidoDe), t('recebido')),
+        },
+        {
+          l: t('Em dinheiro'),
+          v: temMeio() ? kz2(din) : '—',
+          s: temMeio() ? '' : t('Falta o meio de cobrança'),
+          cls: 'full-value',
+          var: temMeio() ? vr('din', kz2) : null,
+          ...(temMeio() ? sp((rs) => valorCat(rs, 'dinheiro'), t('dinheiro')) : {}),
+        },
+        {
+          l: t('Em Multicaixa'),
+          v: temMeio() ? kz2(mc) : '—',
+          s: temMeio() ? '' : t('Falta o meio de cobrança'),
+          cls: 'full-value',
+          var: temMeio() ? vr('mc', kz2) : null,
+          ...(temMeio() ? sp((rs) => valorCat(rs, 'multicaixa'), t('Multicaixa')) : {}),
+        },
+        {
+          l: t('Facturas pendentes'),
+          v: kz2(tot - liq),
+          tone: tot - liq > 0 ? 'warn' : null,
+          cls: 'full-value',
+          var: vr('pend', kz2, true),
+          ...sp((rs) => sum(rs, 'total') - sum(rs, recebidoDe), t('pendentes')),
+        },
+        {
+          l: t('Clientes com compras'),
+          v: n0(cur.cli),
+          var: vr('cli', n0),
+          ...sp((rs) => new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, t('clientes')),
+        },
       ]),
     );
   const kp = pg.querySelector('.tiles');

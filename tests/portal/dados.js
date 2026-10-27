@@ -48,7 +48,7 @@ export const artigos = vendas.map((v, i) => ({
 
 /** Abre o portal com a API do Pinguim BO simulada e a data fixa; período: o mês (ou opcoes.periodo; null = o de omissão, hoje). */
 export async function abrir(page, hash = '', opcoes = {}) {
-  await page.route('**/data/api.php*', (r) => r.fulfill({ json: { vendas, artigos } }));
+  await page.route('**/data/api.php*', opcoes.api || ((r) => r.fulfill({ json: { vendas, artigos } })));
   await page.addInitScript(
     ({ limpar, periodo }) => {
       try {

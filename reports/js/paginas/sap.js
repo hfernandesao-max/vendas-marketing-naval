@@ -375,7 +375,7 @@ R['sap-exportar'] = (pg) => {
     return;
   }
   if (SAPD.erro) {
-    pg.append(secBox(t('Ficheiro para o SAP'), '', el('p', null, SAPD.erro)));
+    pg.append(secBox(t('Vendas para o SAP'), '', el('p', null, SAPD.erro)));
     return;
   }
   const gera = SAPD.pode_gerar,

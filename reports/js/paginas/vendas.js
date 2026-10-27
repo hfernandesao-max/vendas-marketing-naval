@@ -348,10 +348,28 @@ R['vendas-artigo'] = (pg) => {
     iva: sum(ls, 'iva'),
     total: sum(ls, 'total'),
   }));
+  // Preço unitário médio sem IVA (média ponderada: valor líquido sem IVA ÷ quantidade), a métrica de
+  // preço habitual na análise de vendas (ASP); com várias unidades de venda no mesmo artigo não se calcula
+  rows.forEach((r) => {
+    r.preco_unit = r.quantidade && !r.unidade.includes(',') ? r.valor_sem_iva / r.quantidade : null;
+  });
+  const precoMedio = (rs) => {
+    const q = sum(
+      rs.filter((r) => r.preco_unit != null),
+      'quantidade',
+    );
+    return q
+      ? sum(
+          rs.filter((r) => r.preco_unit != null),
+          'valor_sem_iva',
+        ) / q
+      : null;
+  };
   pg.append(
     tiles([
       { l: t('Artigos vendidos'), v: n0(rows.length), s: t('{n} linhas de venda', { n: n0(A.length) }) },
       { l: t('Qtd.'), v: n0(sum(rows, 'quantidade')) },
+      { l: t('Valor s/ IVA'), v: mkz(sum(rows, 'valor_sem_iva')), s: t('vendas líquidas, sem IVA') },
       { l: t('Valor c/ IVA'), v: mkz(sum(rows, 'total')) },
       { l: t('Desconto'), v: mkz(sum(rows, 'desconto')) },
     ]),
@@ -360,7 +378,7 @@ R['vendas-artigo'] = (pg) => {
     tabela({
       id: 'va',
       titulo: t('Vendas por artigo'),
-      nota: t('Linhas de venda do Pinguim BO no período.'),
+      nota: t('Linhas de venda do Pinguim BO no período. Preço unit. s/ IVA: preço médio ponderado (valor s/ IVA ÷ quantidade), já com os descontos.'),
       rows,
       sort: 'total',
       total: true,
@@ -368,12 +386,13 @@ R['vendas-artigo'] = (pg) => {
         { key: 'codigo', label: t('Código') },
         { key: 'artigo', label: t('Artigo'), wrap: true },
         { key: 'unidade', label: t('Un.') },
-        { key: 'docs', label: t('Documentos'), type: 'n', sum: true },
         { key: 'quantidade', label: t('Qtd.'), type: 'n', sum: true },
+        { key: 'preco_unit', label: t('Preço unit. s/ IVA'), type: 'kz', sum: precoMedio },
         { key: 'valor_sem_iva', label: t('Valor s/ IVA'), type: 'kz', sum: true },
         { key: 'desconto', label: t('Desconto'), type: 'kz', sum: true },
         { key: 'iva', label: t('IVA'), type: 'kz', sum: true },
         { key: 'total', label: t('Valor c/ IVA'), type: 'bar', sum: true },
+        { key: 'docs', label: t('Documentos'), type: 'n', sum: true },
       ],
     }),
   );

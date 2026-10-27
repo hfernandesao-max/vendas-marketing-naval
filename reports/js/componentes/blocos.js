@@ -289,11 +289,28 @@ export function tiles(list) {
   const w = el('div', 'tiles');
   list.forEach((x) => {
     const d = el('div', 'glass tile' + (x.cls ? ' ' + x.cls : ''));
-    d.append(el('span', 'l', x.l));
+    // Rótulo e, à direita, a variação face ao período comparável (▲/▼, cor pelo sentido favorável)
+    const l = el('span', 'l', x.var ? null : x.l);
+    if (x.var) {
+      l.classList.add('l-var');
+      const lt = el('span', 'l-t', x.l);
+      lt.title = x.l;
+      l.append(lt);
+      const vv = el('span', 'tile-var ' + (x.var.cls || ''), x.var.txt);
+      if (x.var.title) vv.title = x.var.title;
+      l.append(vv);
+    }
+    d.append(l);
     const v = el('span', 'v', x.v);
     if (x.tone) v.style.color = `var(--${x.tone})`;
     d.append(v);
-    if (x.s) d.append(el('span', 's', x.s));
+    // Nota e, à direita, a mini-linha da tendência no período
+    if (x.s || (x.spark && x.spark.length > 1)) {
+      const sEl = el('span', 's' + (x.spark && x.spark.length > 1 ? ' s-spark' : ''));
+      sEl.append(el('span', null, x.s || ''));
+      if (x.spark && x.spark.length > 1) sEl.append(sparkline(x.spark, x.sparkTitulo));
+      d.append(sEl);
+    }
     w.append(d);
   });
   // Valores que não cabem no quadro: reduz a letra de toda a fila por igual, até caberem.
@@ -337,6 +354,38 @@ export function tiles(list) {
   };
   FITS.push(() => ajustar(false));
   return w;
+}
+/** Mini-linha da tendência (sparkline): só a forma, sem eixos; o último ponto marcado. */
+export function sparkline(vals, titulo) {
+  const W = 72,
+    H = 22,
+    p = 2;
+  const max = Math.max(...vals),
+    min = Math.min(...vals, 0),
+    amp = max - min || 1;
+  const pts = vals.map((v, i) => [p + (i * (W - 2 * p)) / (vals.length - 1), H - p - ((v - min) / amp) * (H - 2 * p)]);
+  const ns = 'http://www.w3.org/2000/svg';
+  const sv = document.createElementNS(ns, 'svg');
+  sv.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  sv.setAttribute('width', W);
+  sv.setAttribute('height', H);
+  sv.setAttribute('class', 'spark');
+  sv.setAttribute('role', 'img');
+  sv.setAttribute('aria-label', titulo || t('Tendência no período'));
+  const pl = document.createElementNS(ns, 'polyline');
+  pl.setAttribute('points', pts.map((q) => q.map((n) => n.toFixed(1)).join(',')).join(' '));
+  const c = document.createElementNS(ns, 'circle');
+  const [lx, ly] = pts[pts.length - 1];
+  c.setAttribute('cx', lx.toFixed(1));
+  c.setAttribute('cy', ly.toFixed(1));
+  c.setAttribute('r', '2.2');
+  sv.append(pl, c);
+  if (titulo) {
+    const tt = document.createElementNS(ns, 'title');
+    tt.textContent = titulo;
+    sv.prepend(tt);
+  }
+  return sv;
 }
 export const pill = (txt, cls) => el('span', 'pill ' + cls, txt);
 export const secBox = (titulo, nota, conteudo) => {

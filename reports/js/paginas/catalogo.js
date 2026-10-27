@@ -12,7 +12,6 @@ export const PAGES = [
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
   { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Cobranças' },
   { id: 'pendentes', grupo: 'Recebimentos', icon: 'clock', nome: 'Facturas pendentes' },
-  { id: 'sap-exportar', grupo: 'Recebimentos', icon: 'upload', nome: 'Ficheiro para o SAP' },
   { id: 'clientes', grupo: 'Clientes', icon: 'phone', nome: 'Carteira de clientes' },
   { id: 'cadastros', grupo: 'Clientes', icon: 'users', nome: 'Cadastros · visão geral' },
   { id: 'cadastros-analise', grupo: 'Clientes', icon: 'grow', nome: 'Análise de cadastros' },
@@ -24,6 +23,8 @@ export const PAGES = [
   { id: 'registo-cargas', grupo: 'Logística', icon: 'box', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
+  // Interfaces com outros sistemas (separadas da análise; segregação de funções e controlo de interfaces)
+  { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
 ];
 

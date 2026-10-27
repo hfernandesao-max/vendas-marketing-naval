@@ -70,7 +70,15 @@ export function organizarRelatorios(pg, pagina) {
 // Menu principal em acordeão (padrão de divulgação da WAI-ARIA): as áreas começam fechadas e só uma
 // fica aberta de cada vez; abrir outra fecha a anterior. A área da página aberta abre-se sozinha e
 // fica destacada; com a área fechada, o número de alertas das suas páginas aparece no título.
-const ICONE_GRUPO = { Vendas: 'chart', Recebimentos: 'card', Clientes: 'users', Terreno: 'route', Logística: 'truck', Administração: 'lock' };
+const ICONE_GRUPO = {
+  Vendas: 'chart',
+  Recebimentos: 'card',
+  Clientes: 'users',
+  Terreno: 'route',
+  Logística: 'truck',
+  Integrações: 'upload',
+  Administração: 'lock',
+};
 let grupoAberto = null,
   ultimaPagina = null;
 try {

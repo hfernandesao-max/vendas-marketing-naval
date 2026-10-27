@@ -1398,3 +1398,62 @@ table.ac-mig tr.ac-off td:not(:last-child) {
 .nav .nav-sub a.on::before {
   display: none;
 }
+
+/* Indicadores: variação face ao período comparável e mini-linha da tendência.
+   Sem verde (identidade Naval): favorável em azul, desfavorável em vermelho, sem variação em cinzento;
+   a seta (▲/▼) e o texto dizem o sentido, a cor não é a única pista. */
+.tile .l.l-var {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.tile-var {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: help;
+}
+.tile-var.bom {
+  color: #8cc2ff;
+  background: rgba(63, 140, 255, 0.16);
+}
+.tile-var.mau {
+  color: #ff9b9b;
+  background: rgba(255, 107, 107, 0.16);
+}
+.tile-var.neutro {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+}
+.tile .s.s-spark {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+}
+.spark {
+  flex: none;
+  overflow: visible;
+}
+.spark polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.spark circle {
+  fill: var(--accent);
+}
+.tile .l-var .l-t,
+.tile .s.s-spark > span:first-child {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
