@@ -124,7 +124,7 @@ jobs:
           NAVAL_ENV="$PWD/tests/servidor/ambiente/.env" nohup php -S 0.0.0.0:8810 > /dev/null 2>&1 &
           sleep 2 && curl -sf http://127.0.0.1:8810/geo/login.php > /dev/null
       - name: ZAP (varrimento passivo da página de entrada e das páginas públicas)
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         continue-on-error: true
         with:
           target: http://127.0.0.1:8810/geo/login.php
