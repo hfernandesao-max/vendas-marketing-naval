@@ -15,6 +15,7 @@ try {
 } catch (Throwable $e) {
     error_log('[sincronizacao] ' . $e->getMessage());
     naval_json(['disponivel' => false, 'erro' => 'Sem ligação à base de dados do Pinguim BO.', 'detalhe' => $e->getMessage()]);
+    exit;
 }
 $d['rotas'] = naval_filtrar_rotas($d['rotas']);
 naval_json(['disponivel' => true] + $d);

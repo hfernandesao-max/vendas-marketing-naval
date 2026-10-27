@@ -76,7 +76,7 @@ function naval_origem_transferencias(array $principais, string $desde): ?array
     $cods = array_keys($principais);
     $marcas = [];
     $params = [':desde' => $desde];
-    foreach (array_values($cods) as $i => $c) {
+    foreach ($cods as $i => $c) {
         $marcas[] = ':p' . $i;
         $params[':p' . $i] = (string) $c;
     }

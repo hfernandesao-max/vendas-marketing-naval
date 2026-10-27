@@ -104,7 +104,7 @@ function naval_dic_montar(string $base, string $motor, array $objectos, array $c
         if (!empty($c['CHAVE_PRIMARIA'])) $pk[$k][] = (string) $c['COLUNA'];
         $tipo = isset($c['BYTES'])
             ? naval_dic_tipo((string) $c['TIPO'], (int) $c['BYTES'], (int) $c['PRECISAO'], (int) $c['ESCALA'])
-            : strtolower((string) $c['TIPO']) . (isset($c['COMPRIMENTO']) && $c['COMPRIMENTO'] !== null ? '(' . ((int) $c['COMPRIMENTO'] === -1 ? 'max' : (int) $c['COMPRIMENTO']) . ')' : '');
+            : strtolower((string) $c['TIPO']) . (isset($c['COMPRIMENTO']) ? '(' . ((int) $c['COMPRIMENTO'] === -1 ? 'max' : (int) $c['COMPRIMENTO']) . ')' : '');
         $cols[] = [
             'esquema' => (string) $c['ESQUEMA'], 'objecto' => (string) $c['OBJECTO'], 'ordem' => (int) $c['ORDEM'], 'coluna' => (string) $c['COLUNA'],
             'tipo' => $tipo, 'nulo' => !empty($c['NULO']), 'chave_primaria' => !empty($c['CHAVE_PRIMARIA']), 'identidade' => !empty($c['IDENTIDADE']),
