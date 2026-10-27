@@ -1054,4 +1054,27 @@ export const EN = {
   Dados: 'Data',
   Vista: 'View',
   'Base de dados indisponível.': 'Database unavailable.',
+  'Relatório consolidado': 'Consolidated report',
+  'Relatório de gestão do período num só Excel: indicadores e relatórios de todas as páginas, com os dados de base do período':
+    "Management report for the period in a single Excel file: indicators and reports from every page, with the period's base data",
+  'Exportar dados': 'Export data',
+  'Todos os dados de gestão do negócio num só Excel, desde o arranque do Pinguim BO: tabelas de dados e dicionário de dados':
+    'All business management data in a single Excel file, since Pinguim BO went live: data tables and data dictionary',
+  'Exportar dados (todos os dados de gestão em Excel)': 'Export data (all management data in Excel)',
+  'Dicionário técnico da base de dados (Excel)': 'Technical database dictionary (Excel)',
+  'Dicionário técnico da base de dados': 'Technical database dictionary',
+  'Excel com as tabelas, colunas, chaves, relações e índices da base de dados do Pinguim BO, o modelo do portal e a matriz de acessos':
+    'Excel file with the Pinguim BO database tables, columns, keys, relationships and indexes, the portal model and the access matrix',
+  'A preparar os dados de gestão…': 'Preparing the management data…',
+  'Não foi possível ler os dados do Pinguim BO.': 'Could not read the Pinguim BO data.',
+  'Todas as rotas do perfil': 'All routes of the profile',
+  'Todos os dados de gestão do negócio, em tabelas, com dicionário de dados.': 'All business management data, in tables, with a data dictionary.',
+  'desde o arranque do Pinguim BO até hoje': 'since Pinguim BO went live until today',
+  'Sem os filtros das páginas. Rotas: {r}.': 'Without page filters. Routes: {r}.',
+  'Confidencial. Contém dados de clientes e de vendas: não partilhar fora do Grupo Naval.':
+    'Confidential. Contains customer and sales data: do not share outside Grupo Naval.',
+  'Valores em kwanzas (Kz). Fontes: Pinguim BO (vendas, cobranças, artigos, clientes, stock), plano de cargas e cadastros RTM.':
+    'Amounts in kwanzas (Kz). Sources: Pinguim BO (sales, collections, items, customers, stock), loading plan and RTM registrations.',
+  'Conjuntos de dados do portal (os mesmos do Excel «Exportar dados»): campo técnico, nome, tipo e descrição.':
+    'Portal datasets (the same as in the «Export data» Excel file): technical field, name, type and description.',
 };

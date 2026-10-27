@@ -142,6 +142,19 @@ test('estrutura de dados: só TI, AUD e SADM; sem base de dados indica o motivo;
   expect((await (await ti.get('/reports/data/sessao.php')).json()).permissoes['estrutura-dados']).toBe('E');
 });
 
+test('exportar dados: permitido a DIR, FIN e AUD (nível E) e registado; recusado aos restantes', async () => {
+  const fin = (await entrar('fin')).ctx;
+  const ok = await fin.post('/reports/data/registar.php', {
+    data: { pagina: 'exportar-dados', completo: false, linhas: 10, periodo: '20-10-2026 – 26-10-2026' },
+  });
+  expect(await ok.json()).toEqual({ ok: true });
+  for (const conta of ['log', 'sup', 'ti']) {
+    const r = await (await entrar(conta)).ctx.post('/reports/data/registar.php', { data: { pagina: 'exportar-dados', completo: false } });
+    expect(r.status(), conta).toBe(403);
+  }
+  expect((await (await fin.get('/reports/data/sessao.php')).json()).permissoes['exportar-dados']).toBe('E');
+});
+
 test('sair termina a sessão', async () => {
   const fin = (await entrar('fin')).ctx;
   await fin.get('/geo/auth/logout.php', { maxRedirects: 0 });

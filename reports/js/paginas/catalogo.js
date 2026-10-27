@@ -30,7 +30,8 @@ export const PAGES = [
 export const NOMES_RECURSO = {
   'pagina-principal': 'Página principal e indicador das fontes',
   'excel-completo': 'Excel completo (todas as páginas)',
-  'estrutura-dados': 'Estrutura de dados (dicionário de dados em Excel)',
+  'exportar-dados': 'Exportar dados (todos os dados de gestão em Excel)',
+  'estrutura-dados': 'Dicionário técnico da base de dados (Excel)',
   'geo-rotas': 'GEO · optimização de rotas',
   'geo-rotas-importar': 'GEO · importar CSV de clientes',
   'geo-rotas-descarregar': 'GEO · descarregar rota optimizada',

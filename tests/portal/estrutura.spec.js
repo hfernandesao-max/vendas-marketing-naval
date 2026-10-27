@@ -1,10 +1,32 @@
-// «Estrutura de dados»: dicionário de dados num só Excel (catálogo da base de dados, modelo do portal, matriz).
+// «Dicionário técnico da base de dados» (Administração › Acessos): estrutura num só Excel, sem dados de negócio.
 import { test, expect } from '@playwright/test';
 import { createRequire } from 'node:module';
 import { abrir } from './dados.js';
 
 const require = createRequire(import.meta.url);
 const ExcelJS = require('exceljs');
+
+const GESTAO = {
+  perfis: { SADM: 'Super administrador' },
+  perfis_info: [],
+  matriz: { ranking: { SADM: 'A' } },
+  matriz_base: { ranking: { SADM: 'A' } },
+  niveis: { ranking: [] },
+  por_rota: [],
+  perfis_dois_passos: ['SADM'],
+  rotas: [],
+  utilizadores: [],
+  registos: [],
+  pode_gerir: false,
+  eu: 'sadm',
+};
+async function abrirAcessos(page, estrutura) {
+  await page.route('**/data/gestao.php*', (r) => r.fulfill({ json: GESTAO }));
+  await page.route('**/data/estrutura-dados.php*', (r) => r.fulfill({ json: estrutura }));
+  const erros = await abrir(page, '#acessos');
+  await expect(page.locator('#ac-dicionario')).toContainText('Dicionário técnico da base de dados');
+  return erros;
+}
 
 const ESTRUTURA = {
   gerado: '2026-10-26 23:59:00',
@@ -130,12 +152,10 @@ const ESTRUTURA = {
   },
 };
 
-test('estrutura de dados: um Excel com capa, catálogo da base de dados, modelo do portal e matriz', async ({ page }) => {
-  await page.route('**/data/estrutura-dados.php*', (r) => r.fulfill({ json: ESTRUTURA }));
-  const erros = await abrir(page, '#inicio');
-  await expect(page.locator('#xl-est')).toContainText('Estrutura de dados');
-  const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click('#xl-est')]);
-  expect(d.suggestedFilename()).toBe('RTM - Estrutura de Dados-26-10-2026.xlsx');
+test('dicionário técnico: um Excel com capa, catálogo da base de dados, modelo do portal e matriz', async ({ page }) => {
+  const erros = await abrirAcessos(page, ESTRUTURA);
+  const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click('#ac-dicionario')]);
+  expect(d.suggestedFilename()).toBe('RTM - Dicionário Técnico da Base de Dados-26-10-2026.xlsx');
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(await d.path());
   expect(wb.worksheets.map((w) => w.name)).toEqual([
@@ -166,18 +186,13 @@ test('estrutura de dados: um Excel com capa, catálogo da base de dados, modelo 
   expect(erros).toEqual([]);
 });
 
-test('estrutura de dados sem base de dados: segue com o modelo do portal e indica o motivo na capa', async ({ page }) => {
-  await page.route('**/data/estrutura-dados.php*', (r) =>
-    r.fulfill({
-      json: {
-        perfis: ESTRUTURA.perfis,
-        matriz: ESTRUTURA.matriz,
-        bd: { disponivel: false, erro: 'A ligação à base de dados do Pinguim BO não está configurada no .env do servidor.' },
-      },
-    }),
-  );
-  await abrir(page, '#inicio');
-  const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click('#xl-est')]);
+test('dicionário técnico sem base de dados: segue com o modelo do portal e indica o motivo na capa', async ({ page }) => {
+  await abrirAcessos(page, {
+    perfis: ESTRUTURA.perfis,
+    matriz: ESTRUTURA.matriz,
+    bd: { disponivel: false, erro: 'A ligação à base de dados do Pinguim BO não está configurada no .env do servidor.' },
+  });
+  const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click('#ac-dicionario')]);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(await d.path());
   expect(wb.worksheets.map((w) => w.name)).toEqual(['Capa', 'Modelo do portal', 'Matriz de acessos', 'Perfis', 'Fontes de dados']);

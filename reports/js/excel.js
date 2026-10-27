@@ -293,8 +293,8 @@ export function recolher(id) {
 // tipos reais (datas como datas, valores como números), tabelas do Excel com nome e filtros, painéis
 // fixos e um dicionário de dados com a descrição de cada coluna.
 const TIPO_FMT = { data: FMT.date, kz: '#,##0.00', n: '#,##0', q: '#,##0.##' };
-export function conjuntosDados() {
-  const D = dadosCompletos();
+/** Conjuntos de dados de base. D: dados (por omissão os do período, sem filtros); dentro: datas incluídas. */
+export function conjuntosDados(D = dadosCompletos(), dentro = inR) {
   const vendas = D.vendas || [],
     artigos = D.artigos || [];
   const verNif = vendas.some((v) => v.nif) || (D.clientes || []).some((c) => c.nif);
@@ -393,7 +393,7 @@ export function conjuntosDados() {
         ['carga_sabonete', 'Sabonete (cx)', 'n', 'Caixas de sabonete'],
         ['carga', 'Total (cx)', 'n', 'Total de caixas carregadas'],
       ],
-      rows: (D.cargas || []).filter((c) => inR(c.data)),
+      rows: (D.cargas || []).filter((c) => dentro(c.data)),
     },
   ];
   // Cadastros: colunas como vêm do repositório rtm-clientes
@@ -447,12 +447,12 @@ export function conjuntosDados() {
   });
   return sets;
 }
-function acrescentarDados(wb, F, usados, capa, linhaIndice) {
+export function acrescentarDados(wb, F, usados, capa, linhaIndice, conjuntos = conjuntosDados(), periodo = dl(st.de) + ' – ' + dl(st.ate)) {
   const dic = [];
-  conjuntosDados().forEach((ds) => {
+  conjuntos.forEach((ds) => {
     if (!ds.rows.length) return;
     const ws = wb.addWorksheet(nomeFolha(t(ds.folha), usados), { views: [{ state: 'frozen', ySplit: 3, showGridLines: true }] });
-    ws.getCell('A1').value = t(ds.desc) + ' · ' + t('Período') + ': ' + dl(st.de) + ' – ' + dl(st.ate);
+    ws.getCell('A1').value = t(ds.desc) + ' · ' + t('Período') + ': ' + periodo;
     ws.getCell('A1').font = F({ size: 12, bold: true, color: { argb: NAVY2 } });
     const back = ws.getCell('A2');
     back.value = { text: '← ' + t('Voltar ao índice'), hyperlink: `#'${capa.name}'!A1` };

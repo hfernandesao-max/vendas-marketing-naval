@@ -1188,14 +1188,47 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   border-radius: 3px;
 }
 
-/* Estrutura de dados: só o ícone em ecrãs médios (nome no rótulo acessível e na dica) */
+/* Exportar dados: só o ícone em ecrãs médios (nome no rótulo acessível e na dica) */
 @media (max-width: 1599px) {
-  .filters #xl-est {
+  .filters #xl-dados {
     width: 38px;
     padding: 0;
     justify-content: center;
   }
-  .filters #xl-est span {
+  .filters #xl-dados span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+.ac-accoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Barra de topo numa só linha em portáteis: campos de data e botões mais compactos */
+@media (max-width: 1599px) {
+  .filters .date .dcampo input {
+    width: 104px;
+  }
+  .filters > .btn {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+}
+@media (max-width: 1439px) {
+  .filters #xl-page {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .filters #xl-page span {
     position: absolute;
     width: 1px;
     height: 1px;

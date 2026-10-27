@@ -1,4 +1,4 @@
-// «Exportar tudo»: um só Excel com resumo, relatórios, dados de base em tabelas do Excel e dicionário de dados.
+// «Relatório consolidado»: um só Excel com resumo, relatórios, dados de base em tabelas do Excel e dicionário de dados.
 import { test, expect } from '@playwright/test';
 import { createRequire } from 'node:module';
 import { abrir } from './dados.js';
@@ -6,9 +6,9 @@ import { abrir } from './dados.js';
 const require = createRequire(import.meta.url);
 const ExcelJS = require('exceljs');
 
-test('exportar tudo: folhas de dados com tabelas, tipos reais e dicionário', async ({ page }) => {
+test('relatório consolidado: folhas de dados com tabelas, tipos reais e dicionário', async ({ page }) => {
   await abrir(page, '#inicio');
-  await expect(page.locator('#xl-all')).toContainText('Exportar tudo');
+  await expect(page.locator('#xl-all')).toContainText('Relatório consolidado');
   const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click('#xl-all')]);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(await d.path());

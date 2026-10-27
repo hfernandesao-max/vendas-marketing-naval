@@ -1,4 +1,4 @@
-// Excel «Estrutura de dados»: dicionário de dados completo num só ficheiro, sem dados de negócio.
+// Excel «Dicionário técnico da base de dados» (Administração › Acessos): estrutura, sem dados de negócio.
 // Boas práticas de documentação de dados (metadados técnicos e de negócio, ao estilo DAMA-DMBOK):
 // capa com proveniência e classificação, índice com ligações, uma tabela do Excel com nome por folha,
 // cabeçalho numa só linha, painéis fixos, filtros, sem células unidas nas tabelas e convenções explicadas.
@@ -9,9 +9,9 @@ import { t } from './i18n/i18n.js';
 import { nomeRecurso } from './paginas/catalogo.js';
 import { SESSAO, podeExportar } from './perfil.js';
 import { hoje } from './periodo.js';
-import { $, toast } from './util.js';
+import { toast } from './util.js';
 
-export const NOME_ESTRUTURA = 'RTM - Estrutura de Dados';
+export const NOME_ESTRUTURA = 'RTM - Dicionário Técnico da Base de Dados';
 export const nomeEstrutura = () => NOME_ESTRUTURA + '-' + dl(hoje()) + '.xlsx';
 const NIVEIS = { '': '—', Vr: 'V·r', V: 'V', Er: 'E·r', E: 'E', G: 'G', A: 'A' };
 const TIPOS_PORTAL = { texto: 'Texto', data: 'Data', kz: 'Valor (Kz)', n: 'Número', q: 'Quantidade' };
@@ -32,13 +32,12 @@ async function lerEstrutura() {
   }
 }
 
-export async function exportarEstrutura() {
+export async function exportarEstrutura(bt) {
   if (!podeExportar('estrutura-dados')) {
     toast(t('O seu perfil não permite exportar a estrutura de dados.'), 6000);
     return;
   }
-  const bt = $('#xl-est');
-  bt.disabled = true;
+  if (bt) bt.disabled = true;
   toast(t('A preparar a estrutura de dados…'));
   try {
     const [E] = await Promise.all([lerEstrutura(), carregarExcelJS()]);
@@ -50,7 +49,7 @@ export async function exportarEstrutura() {
     console.error(e);
     toast(e && e.message ? t(e.message) : t('Não foi possível gerar o Excel.'), 6000);
   }
-  bt.disabled = false;
+  if (bt) bt.disabled = false;
 }
 
 function gerar(E) {
@@ -232,7 +231,7 @@ function gerar(E) {
   );
   folha(
     'Modelo do portal',
-    'Conjuntos de dados do portal (os mesmos do Excel «Exportar tudo»): campo técnico, nome, tipo e descrição.',
+    'Conjuntos de dados do portal (os mesmos do Excel «Exportar dados»): campo técnico, nome, tipo e descrição.',
     'ModeloPortal',
     ['Conjunto', 'Descrição do conjunto', 'Ordem', 'Campo', 'Nome', 'Tipo', 'Descrição'],
     modelo,

@@ -5,8 +5,9 @@ import { botao, campo, confirmarAccao, copiar, entrada, janela, msgErro } from '
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { nomeRecurso } from './catalogo.js';
+import { exportarEstrutura } from '../estrutura.js';
 import { R } from './registo.js';
-import { atual } from '../perfil.js';
+import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 
@@ -363,6 +364,15 @@ R.acessos = (pg) => {
     obrig = GESTAO.perfis_dois_passos || ['SADM', 'TI', 'DIR'],
     gerir = GESTAO.pode_gerir;
   if (GESTAO.compatibilidade) pg.append(cartaoActivar());
+  // Documentação técnica (TI e auditoria): estrutura da base de dados, sem dados de negócio
+  if (podeExportar('estrutura-dados')) {
+    const acc = el('div', 'ac-accoes');
+    const b = botao(t('Dicionário técnico da base de dados'), 'ghost sm', () => exportarEstrutura(b));
+    b.id = 'ac-dicionario';
+    b.title = t('Excel com as tabelas, colunas, chaves, relações e índices da base de dados do Pinguim BO, o modelo do portal e a matriz de acessos');
+    acc.append(b);
+    pg.append(acc);
+  }
   const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem email' : u.activo ? 'Activa' : 'Inactiva');
   pg.append(
     tiles([

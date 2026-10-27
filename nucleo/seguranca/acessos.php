@@ -52,6 +52,7 @@ const NAVAL_MATRIZ_TXT = [
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
     'sincronizacao'        => 'V  V  V  Vr -  -  V  V  -  V',
     'excel-completo'       => '-  E  E  -  -  E  -  -  -  E',
+    'exportar-dados'       => '-  E  -  -  -  E  -  -  -  E',
     'estrutura-dados'      => 'E  -  -  -  -  -  -  -  -  E',
     'nif'                  => 'V  -  V  V  V  V  V  -  -  V',
     // GEO
@@ -132,6 +133,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'V'];
         case 'excel-completo':
         case 'estrutura-dados':
+        case 'exportar-dados':
             return ['', 'E'];
         case 'geo-rotas-importar':
         case 'geo-zonas-gerir':

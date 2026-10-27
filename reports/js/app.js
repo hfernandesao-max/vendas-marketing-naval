@@ -1,7 +1,7 @@
 // Desenho da página actual e encaminhamento pelo endereço (#página/relatório?filtros).
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
-import { exportarEstrutura } from './estrutura.js';
+import { exportarDados } from './dados-gestao.js';
 import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
 import { mostrarActualizacao } from './actualizacao.js';
 import { fetchVendas, mostrarFontes } from './fontes.js';
@@ -22,13 +22,13 @@ function textos() {
   $('#l-de').textContent = t('De');
   $('#l-ate').textContent = t('Até');
   $('#xl-page span').textContent = t('Excel desta página');
-  $('#xl-all span').textContent = t('Exportar tudo');
-  $('#xl-all').title = t('Um só Excel com os indicadores, os relatórios de todas as páginas e os dados de base do período');
-  $('#xl-est span').textContent = t('Estrutura de dados');
-  $('#xl-est').setAttribute('aria-label', t('Estrutura de dados'));
-  $('#xl-est').title = t(
-    'Dicionário de dados num só Excel: tabelas, colunas, chaves, relações e índices da base de dados, modelo do portal e matriz de acessos',
-  );
+  $('#xl-page').setAttribute('aria-label', t('Excel desta página'));
+  $('#xl-page').title = t('Excel desta página');
+  $('#xl-all span').textContent = t('Relatório consolidado');
+  $('#xl-all').title = t('Relatório de gestão do período num só Excel: indicadores e relatórios de todas as páginas, com os dados de base do período');
+  $('#xl-dados span').textContent = t('Exportar dados');
+  $('#xl-dados').setAttribute('aria-label', t('Exportar dados'));
+  $('#xl-dados').title = t('Todos os dados de gestão do negócio num só Excel, desde o arranque do Pinguim BO: tabelas de dados e dicionário de dados');
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
@@ -41,7 +41,7 @@ export function draw() {
   document.querySelector('.filters').style.display = p.id === 'plano-cargas' ? 'none' : '';
   $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
   $('#xl-all').hidden = !podeExportar('excel-completo');
-  $('#xl-est').hidden = !podeExportar('estrutura-dados');
+  $('#xl-dados').hidden = !podeExportar('exportar-dados');
   if (SESSAO) {
     $('#quem').hidden = false;
     $('#quem').replaceChildren(
@@ -128,7 +128,7 @@ $('#xl-all').addEventListener('click', () => {
   pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
   exportarExcel(pags, NOME_CONSOLIDADO);
 });
-$('#xl-est').addEventListener('click', () => exportarEstrutura());
+$('#xl-dados').addEventListener('click', () => exportarDados());
 document.querySelectorAll('#lang button').forEach((b) =>
   b.addEventListener('click', () => {
     definirIdioma(b.dataset.l);
