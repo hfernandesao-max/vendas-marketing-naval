@@ -1,4 +1,6 @@
-# Os dados só saem pelos serviços PHP, que aplicam o perfil e as rotas de cada utilizador.
-<FilesMatch "\.(json|jsonl)$">
+# Os dados só saem pela API central (api/index.php/v1/…), que aplica o token, o perfil e as rotas de cada
+# utilizador. Nada desta pasta é servido directamente: nem os ficheiros de dados, nem serviços PHP antigos
+# (reports/data/*.php, substituídos pela API) que tenham ficado no servidor depois de uma actualização.
+<FilesMatch "\.(json|jsonl|php|phtml)$">
     Require all denied
 </FilesMatch>

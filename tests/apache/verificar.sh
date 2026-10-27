@@ -82,6 +82,10 @@ echo "API central:"
 espera 401 /api/index.php/v1/sessao /api/v1/sessao
 espera 403 /nucleo/api/router.php /nucleo/api/v1/sessao.php /api/.htaccess
 espera 404 /api/index.php/v1/nao-existe
+# serviço antigo que tenha ficado no servidor depois de uma actualização: nunca servido
+echo '<?php echo "antigo";' > "$RAIZ/reports/data/antigo-teste.php"
+espera 403 /reports/data/antigo-teste.php
+rm -f "$RAIZ/reports/data/antigo-teste.php"
 # fluxo completo pelo Apache: entrar → token (X-CSRF-Token) → pedido com «Authorization: Bearer»
 CJ="$TMP/cookies"
 CS="$(curl -s -c "$CJ" -b "$CJ" "$URL/geo/login.php" | grep -o 'name="csrf" value="[^"]*"' | cut -d'"' -f4)"
