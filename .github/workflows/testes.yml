@@ -30,7 +30,7 @@ jobs:
         php: ['7.1', '7.4', '8.1', '8.3']
     name: PHP ${{ matrix.php }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 10
     name: Análise do PHP
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -115,7 +115,7 @@ jobs:
     timeout-minutes: 10
     name: Regras do Apache
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Apache 2.4 com PHP
         timeout-minutes: 6
