@@ -126,13 +126,18 @@ lerSessao()
     LD.marcar('base', DB.rotas.length ? 'feito' : 'aviso', t('{n} rotas', { n: DB.rotas.length }));
     DB.vendas = [];
     DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
-    // Cadastros (rtm-clientes): no servidor via PHP; em alternativa, o ficheiro JSON copiado para data/
+    // Cadastros (rtm-clientes): no servidor, só pelo serviço PHP (com o âmbito do perfil). O ficheiro JSON
+    // directo só serve nos testes locais sem PHP (no servidor está bloqueado, e bem, pelo .htaccess: 403).
     const ler = (u) =>
       fetch(u, { cache: 'no-store' })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null);
+        .then((r) => {
+          const json = (r.headers.get('content-type') || '').includes('application/json');
+          if (u.endsWith('.php') && json) return r.json().then((d) => ({ php: true, d: r.ok ? d : null }));
+          return r.ok ? r.json().then((d) => ({ php: false, d })) : { php: false, d: null };
+        })
+        .catch(() => ({ php: false, d: null }));
     return ler('data/cadastros.php')
-      .then((d) => (d && d.cadastros ? d : ler('data/cadastros.json')))
+      .then((x) => (x.php ? x.d : ler('data/cadastros.json').then((y) => y.d)))
       .then((d) => {
         DB.cad = d && Array.isArray(d.cadastros) ? d : null;
         // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json

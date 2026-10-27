@@ -151,3 +151,30 @@ test('pasta privada protegida pelo Apache e ficheiros de bloqueio sem o texto es
   const bloqueios = fs.readdirSync(new URL('bloqueios/', priv)).map((f) => fs.readFileSync(new URL('bloqueios/' + f, priv), 'utf8'));
   expect(bloqueios.join('\n')).not.toContain('palavra.passe.no.campo.errado');
 });
+
+test('CSP: relatórios das violações recebidos e gravados sem parâmetros dos endereços', async () => {
+  const ctx = await request.newContext({ baseURL: BASE });
+  const h = (await ctx.get('/geo/login.php')).headers();
+  expect(h['content-security-policy-report-only']).toContain('report-uri /reports/data/csp.php');
+  expect(h['reporting-endpoints']).toContain('csp=');
+  expect((await ctx.get('/reports/data/csp.php')).status()).toBe(405);
+  const r = await ctx.post('/reports/data/csp.php', {
+    headers: { 'Content-Type': 'application/csp-report' },
+    data: JSON.stringify({
+      'csp-report': { 'document-uri': BASE + '/reports/?t=segredo', 'effective-directive': 'script-src-elem', 'blocked-uri': 'https://exemplo.test/x.js?k=1' },
+    }),
+  });
+  expect(r.status()).toBe(204);
+  const fs = await import('node:fs');
+  const dir = new URL('./ambiente/dados-privados/registos/', import.meta.url);
+  const f = fs.readdirSync(dir).find((x) => x.startsWith('csp-2'));
+  const txt = fs
+    .readFileSync(new URL(f, dir), 'utf8')
+    .trim()
+    .split('\n')
+    .map((l) => JSON.stringify(JSON.parse(l)).replace(/\\\//g, '/'))
+    .join('\n');
+  expect(txt).toContain('https://exemplo.test/x.js');
+  expect(txt).not.toContain('segredo');
+  expect(txt).not.toContain('k=1');
+});
