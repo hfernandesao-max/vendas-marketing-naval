@@ -12,60 +12,32 @@ import { atual } from '../perfil.js';
 import { addD } from '../periodo.js';
 import { el } from '../util.js';
 
-let SYNC = null,
-  lidoEm = 0,
-  aLer = false;
+import { ESTADO_SYNC, SY, aoActualizar, haQuanto, lerSync } from '../smartphones.js';
+
+// Dados partilhados com o indicador do menu lateral (lidos a cada minuto em smartphones.js)
 const ESTADOS = {
-  em_dia: ['Em dia', 'p-ok', 0],
-  atencao: ['Atenção', 'p-warn', 1],
-  critico: ['Crítico', 'p-bad', 2],
-  sem_registo: ['Sem registo', 'p-bad', 3],
+  em_dia: [ESTADO_SYNC.em_dia[0], 'p-ok', 0],
+  atencao: [ESTADO_SYNC.atencao[0], 'p-warn', 1],
+  critico: [ESTADO_SYNC.critico[0], 'p-bad', 2],
+  sem_registo: [ESTADO_SYNC.sem_registo[0], 'p-bad', 3],
 };
-function ler() {
-  if (aLer) return Promise.resolve();
-  aLer = true;
-  return fetch('data/sincronizacao.php', { cache: 'no-store' })
-    .then((r) => r.json())
-    .catch(() => ({ disponivel: false, erro: t('A sincronização precisa do servidor da plataforma (PHP) e da base de dados do Pinguim BO.') }))
-    .then((d) => {
-      SYNC = d;
-      lidoEm = Date.now();
-    })
-    .finally(() => {
-      aLer = false;
-    });
-}
 const redesenhar = () => {
   if (atual !== 'sincronizacao' || document.querySelector('dialog[open]')) return;
   const y = window.scrollY;
   draw();
   window.scrollTo(0, y);
 };
-// Estado em tempo quase real: com a página aberta e visível, volta a ler a cada minuto
-setInterval(() => {
-  if (atual === 'sincronizacao' && !document.hidden) ler().then(redesenhar);
-}, 60000);
-
-/** «há 3 h 12 min», «há 2 dias» */
-export function haQuanto(min) {
-  if (min == null) return '—';
-  if (min < 1) return t('agora');
-  if (min < 60) return t('há {n} min', { n: min });
-  if (min < 48 * 60) {
-    const h = Math.floor(min / 60),
-      m = min % 60;
-    return m ? t('há {h} h {m} min', { h, m }) : t('há {n} h', { n: h });
-  }
-  return t('há {n} dias', { n: Math.floor(min / 1440) });
-}
+aoActualizar(redesenhar);
+export { haQuanto };
 
 R.sincronizacao = (pg) => {
+  const SYNC = SY.dados;
   if (!SYNC) {
     pg.append(el('div', 'glass empty', t('A carregar…')));
-    ler().then(redesenhar);
+    lerSync();
     return;
   }
-  if (Date.now() - lidoEm > 60000) ler().then(redesenhar);
+  if (Date.now() - SY.lidoEm > 60000) lerSync();
   if (!SYNC.disponivel) {
     aguardar(pg, t(SYNC.erro || 'Sem dados de sincronização.'), [
       t('Ligação à base de dados do Pinguim BO (SQL Server) no .env do servidor'),

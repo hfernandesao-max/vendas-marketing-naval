@@ -1216,4 +1216,13 @@ export const EN = {
   'Preço unit. s/ IVA': 'Unit price excl. VAT',
   'Vendas para o SAP': 'Sales to SAP',
   Integrações: 'Integrations',
+  'nunca sincronizou': 'never synced',
+  'Smartphones: todos em dia': 'Smartphones: all up to date',
+  'Smartphones: {a} de {b} em dia': 'Smartphones: {a} of {b} up to date',
+  '{n} sem comunicar': '{n} not communicating',
+  'Em dia: até {a} h; atenção: até {b} h; crítico: mais de {b} h.': 'Up to date: up to {a} h; warning: up to {b} h; critical: over {b} h.',
+  'Comunicação dos smartphones com o servidor (verde: até {a} h · âmbar: até {b} h · vermelho: mais de {b} h ou nunca). Clique para ver o detalhe.':
+    'Smartphone communication with the server (green: up to {a} h · amber: up to {b} h · red: over {b} h or never). Click for details.',
+  Smartphones: 'Smartphones',
+  '{a}/{b} em dia': '{a}/{b} up to date',
 };
