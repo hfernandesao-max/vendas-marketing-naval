@@ -267,7 +267,7 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
   bt.type = 'button';
   bt.setAttribute('aria-pressed', 'false');
   const rotulo = (b, ico, txt) => {
-    b.innerHTML = ico;
+    b.innerHTML = ico; // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
     b.append(el('span', 'viz-acc-t', txt));
     b.title = txt;
     b.setAttribute('aria-label', txt + ' · ' + titulo);

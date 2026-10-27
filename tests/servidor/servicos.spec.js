@@ -56,9 +56,11 @@ test('dados fixos com o âmbito do perfil: rotas, cargas e clientes', async () =
 
 test('registo das exportações: permitido e recusado conforme a matriz', async () => {
   const dir = (await entrar('dir')).ctx;
-  expect(await (await dir.post('/reports/data/registar.php', { data: { pagina: 'vendas-dia', completo: false, linhas: 3 } })).json()).toEqual({ ok: true });
+  expect(
+    await (await dir.post('/reports/data/registar.php', { data: { csrf: await csrf(dir), pagina: 'vendas-dia', completo: false, linhas: 3 } })).json(),
+  ).toEqual({ ok: true });
   const sup = (await entrar('sup')).ctx;
-  const r = await sup.post('/reports/data/registar.php', { data: { pagina: 'vendas-dia', completo: true } });
+  const r = await sup.post('/reports/data/registar.php', { data: { csrf: await csrf(sup), pagina: 'vendas-dia', completo: true } });
   expect(r.status()).toBe(403);
   expect((await r.json()).erro).toContain('não permite exportar');
 });
@@ -145,19 +147,22 @@ test('estrutura de dados: só TI, AUD e SADM; sem base de dados indica o motivo;
 test('exportar dados: permitido a DIR, FIN e AUD (nível E) e registado; recusado aos restantes', async () => {
   const fin = (await entrar('fin')).ctx;
   const ok = await fin.post('/reports/data/registar.php', {
-    data: { pagina: 'exportar-dados', completo: false, linhas: 10, periodo: '20-10-2026 – 26-10-2026' },
+    data: { csrf: await csrf(fin), pagina: 'exportar-dados', completo: false, linhas: 10, periodo: '20-10-2026 – 26-10-2026' },
   });
   expect(await ok.json()).toEqual({ ok: true });
   for (const conta of ['log', 'sup', 'ti']) {
-    const r = await (await entrar(conta)).ctx.post('/reports/data/registar.php', { data: { pagina: 'exportar-dados', completo: false } });
+    const c = (await entrar(conta)).ctx;
+    const r = await c.post('/reports/data/registar.php', { data: { csrf: await csrf(c), pagina: 'exportar-dados', completo: false } });
     expect(r.status(), conta).toBe(403);
   }
   expect((await (await fin.get('/reports/data/sessao.php')).json()).permissoes['exportar-dados']).toBe('E');
+  // sem o código CSRF o registo é recusado (mesmo para quem pode exportar)
+  expect((await fin.post('/reports/data/registar.php', { data: { pagina: 'exportar-dados', completo: false } })).status()).toBe(403);
 });
 
 test('sair termina a sessão', async () => {
   const fin = (await entrar('fin')).ctx;
-  await fin.get('/geo/auth/logout.php?t=' + (await csrf(fin)), { maxRedirects: 0 });
+  await fin.post('/geo/auth/logout.php', { form: { csrf: await csrf(fin) }, maxRedirects: 0 });
   expect((await fin.get('/reports/data/sessao.php')).status()).toBe(401);
 });
 
@@ -167,5 +172,7 @@ test('exportação em todos os menus: níveis E na sincronização, no plano de 
   const ti = await (await (await entrar('ti')).ctx.get('/reports/data/sessao.php')).json();
   expect(ti.permissoes.acessos).toBe('E');
   const aud = (await entrar('aud')).ctx;
-  expect(await (await aud.post('/reports/data/registar.php', { data: { pagina: 'acessos', completo: false, linhas: 5 } })).json()).toEqual({ ok: true });
+  expect(
+    await (await aud.post('/reports/data/registar.php', { data: { csrf: await csrf(aud), pagina: 'acessos', completo: false, linhas: 5 } })).json(),
+  ).toEqual({ ok: true });
 });

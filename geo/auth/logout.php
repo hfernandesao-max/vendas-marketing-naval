@@ -5,8 +5,8 @@ naval_iniciar_sessao();
 // Protecção CSRF: só termina a sessão com o código anti-falsificação da sessão (POST ou ?t= nas ligações
 // «Terminar sessão» geradas pelo servidor). Sem ele (por exemplo, uma imagem noutro site a apontar para
 // aqui), pede confirmação em vez de terminar a sessão.
-$token = (string) ($_POST['csrf'] ?? $_GET['t'] ?? '');
-if (!empty($_SESSION['usuario_autenticado']) && !hash_equals(naval_csrf(), $token)) {
+$valido = isset($_POST['csrf']) ? hash_equals(naval_csrf(), (string) $_POST['csrf']) : hash_equals(naval_token_saida(), (string) ($_GET['t'] ?? ''));
+if (!empty($_SESSION['usuario_autenticado']) && !$valido) {
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-store');
     $t = htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8');

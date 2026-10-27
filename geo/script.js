@@ -151,6 +151,7 @@ function initMap(Lats, Lngs, coords, coordsToOptimize) {
       const detailsCard = document.getElementById("markerDetailsCard");
       if(detailsCard) {
         detailsCard.classList.remove("empty");
+        // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
         detailsCard.innerHTML = `
           <div class="detail-row">
             <span class="detail-label">Código do Cliente</span>
@@ -211,6 +212,7 @@ function initMap(Lats, Lngs, coords, coordsToOptimize) {
               const detailsCard = document.getElementById("markerDetailsCard");
               if(detailsCard) {
                 detailsCard.classList.remove("empty");
+                // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
                 detailsCard.innerHTML = `
                   <div class="detail-row">
                     <span class="detail-label">Código do Cliente</span>
@@ -797,6 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resultados.forEach(m => {
         const item = document.createElement("div");
         item.className = "search-item";
+        // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
         item.innerHTML = `<strong>${escHtml(m.CODIGO)}</strong> - ${escHtml(m.NOME)}`;
         item.addEventListener("click", () => {
           google.maps.event.trigger(m, 'click');

@@ -19,7 +19,7 @@ export let fecharAberto = null;
  */
 export function pesquisa({ rotulo, valor = '', sugestoes = [], imediato = false, aoMudar }) {
   const w = el('div', 'fb-pesq' + (valor ? ' on' : ''));
-  w.innerHTML = LUPA;
+  w.innerHTML = LUPA; // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
   const i = el('input');
   i.type = 'search';
   i.value = valor;
@@ -96,7 +96,7 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
       txt = t('{n} selecionados', { n: sel.length });
       n = String(sel.length);
     }
-    b.innerHTML = svg(icone);
+    b.innerHTML = svg(icone); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
     b.append(el('span', 'fb-ms-t', titulo + ': ' + txt));
     if (n) b.append(el('span', 'fb-n', n));
     b.insertAdjacentHTML('beforeend', SETA);

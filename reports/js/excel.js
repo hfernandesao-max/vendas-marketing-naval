@@ -49,7 +49,7 @@ async function autorizarExportacao(completo, tabela, linhas) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
-      body: JSON.stringify({ pagina: atual, completo, tabela, linhas, periodo: dl(st.de) + ' – ' + dl(st.ate) }),
+      body: JSON.stringify({ pagina: atual, completo, tabela, linhas, periodo: dl(st.de) + ' – ' + dl(st.ate), csrf: SESSAO && SESSAO.csrf }),
     });
     const d = await r.json().catch(() => null);
     if (!d) return !SESSAO; // resposta que não é JSON: teste local sem PHP

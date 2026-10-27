@@ -39,19 +39,25 @@ function naval_bd(): PDO
     $drivers = PDO::getAvailableDrivers();
     $opcoes = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_TIMEOUT => 10];
 
+    // Ligação cifrada (ASVS 9.2.2): DB_ENCRYPT=1 por omissão; DB_CONFIAR_CERTIFICADO=0 exige um certificado
+    // válido no SQL Server (recomendado); =1 aceita o certificado próprio do SQL Server (cifra sem validar).
+    $cifrar = naval_config('DB_ENCRYPT', '1') !== '0';
+    $confiar = naval_config('DB_CONFIAR_CERTIFICADO', '1') !== '0';
+    $tls = ';Encrypt=' . ($cifrar ? 'yes' : 'no') . ';TrustServerCertificate=' . ($confiar ? 'yes' : 'no');   // ODBC
+    $tlsSqlsrv = ';Encrypt=' . ($cifrar ? 'true' : 'false') . ';TrustServerCertificate=' . ($confiar ? 'true' : 'false');   // pdo_sqlsrv
     if ($dsnEnv !== '') return $pdo = new PDO($dsnEnv, $user, $pass, $opcoes);
     if ($driver === 'sqlsrv' && in_array('sqlsrv', $drivers, true)) {
-        return $pdo = new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . ';TrustServerCertificate=true', $user, $pass, $opcoes);
+        return $pdo = new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . $tlsSqlsrv, $user, $pass, $opcoes);
     }
     if (in_array('odbc', $drivers, true)) {
         $odbc = naval_config('DB_ODBC_DRIVER', 'ODBC Driver 17 for SQL Server');
         $tempo = (int) naval_config('DB_TIMEOUT', '5');
         $servidor = 'Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . ';';
         try {
-            return $pdo = new PDO('odbc:Driver={' . $odbc . '};' . $servidor . 'Encrypt=no;TrustServerCertificate=yes;LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
+            return $pdo = new PDO('odbc:Driver={' . $odbc . '};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
         } catch (PDOException $e) {
             if ($odbc === 'SQL Server') throw $e;
-            return $pdo = new PDO('odbc:Driver={SQL Server};' . $servidor . 'LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
+            return $pdo = new PDO('odbc:Driver={SQL Server};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
         }
     }
     if ($driver === 'mysql' && in_array('mysql', $drivers, true)) {

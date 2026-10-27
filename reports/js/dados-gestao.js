@@ -21,7 +21,7 @@ async function autorizar(linhas, periodo) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
-      body: JSON.stringify({ pagina: 'exportar-dados', completo: false, tabela: NOME_DADOS, linhas, periodo }),
+      body: JSON.stringify({ pagina: 'exportar-dados', completo: false, tabela: NOME_DADOS, linhas, periodo, csrf: SESSAO && SESSAO.csrf }),
     });
     const d = await r.json().catch(() => null);
     if (!d) return !SESSAO;

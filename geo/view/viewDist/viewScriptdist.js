@@ -12,6 +12,13 @@ function escJsAttr(v) {
 function escJsVal(v) {
   return typeof v === 'number' && isFinite(v) ? String(v) : escJsAttr(v);
 }
+// Célula de CSV segura: entre aspas, aspas duplicadas e sem fórmulas (=, +, -, @ no início abrem fórmulas
+// no Excel: «CSV injection», OWASP). Os números (incluindo negativos, como as latitudes) ficam como estão.
+function csvCampo(v) {
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
 let selectedCategory = null;
 let jsonData = [];
 let coords = [];
@@ -307,6 +314,7 @@ function editarCorPolygon(polygon) {
   colorGrid += '</div>';
 
   // Input para cor personalizada
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   overlay.innerHTML = `
     <h3 style="margin: 0 0 15px 0; color: #333;">Alterar cor da zona</h3>
     <div style="margin-bottom: 15px;">
@@ -505,6 +513,7 @@ function mostrarMenuContextoPolygon(event, polygon) {
   const polygonId = polygon._id;
   const zonaNome = polygonLabels.get(polygonId) || `Zona ${allPolygons.indexOf(polygon) + 1}`;
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   menu.innerHTML = `
     <div style="padding: 8px 16px; font-weight: bold; border-bottom: 1px solid #eee;">
       ${escHtml(zonaNome)}
@@ -677,14 +686,14 @@ function exportarClientesPolygonCSV() {
 
   const linhasCSV = todosClientes.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`,
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome),
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude,
-      marcador.Status,
-      `"${marcador.Zona}"`
+      csvCampo(marcador.Status),
+      csvCampo(marcador.Zona)
     ].join(',');
   });
 
@@ -719,13 +728,13 @@ function exportarClientesDentroPolygonCSV() {
 
   const linhasCSV = resultado.dentro.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`,
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome),
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude,
-      `"${marcador.Zona}"`
+      csvCampo(marcador.Zona)
     ].join(',');
   });
 
@@ -759,10 +768,10 @@ function exportarClientesForaPolygonCSV() {
 
   const linhasCSV = resultado.fora.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`,
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome),
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude
     ].join(',');
@@ -800,16 +809,16 @@ function exportarResumoZonasCSV() {
   resultado.zonaDetalhes.forEach((clientes, zonaNome) => {
     const vendedores = [...new Set(clientes.map(c => c.Vendedor))].join('; ');
     linhasCSV.push([
-      `"${zonaNome}"`,
+      csvCampo(zonaNome),
       clientes.length,
-      `"${vendedores}"`
+      csvCampo(vendedores)
     ].join(','));
   });
 
   linhasCSV.push([
     'TOTAL',
     resultado.totalDentro,
-    `"${[...new Set(resultado.dentro.map(c => c.Vendedor))].join('; ')}"`
+    csvCampo([...new Set(resultado.dentro.map(c => c.Vendedor))].join('; '))
   ].join(','));
 
   const csvContent = [headers.join(','), ...linhasCSV].join('\n');
@@ -973,6 +982,7 @@ function criarPromptNomeZona(polygon, nomePadrao) {
     min-width: 300px;
   `;
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   overlay.innerHTML = `
     <h3 style="margin: 0 0 15px 0; color: #333;">Nome da zona</h3>
     <input type="text" id="zona-nome-input" 
@@ -1210,6 +1220,7 @@ function mostrarMenuCorDistribuidor(event, marker) {
   });
   colorGrid += '</div>';
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   menu.innerHTML = `
     <div style="margin-bottom: 10px; font-weight: bold;">
       Alterar cor do grupo:<br>
@@ -1458,6 +1469,7 @@ function criarLegenda(map, distribuidorCores) {
     </button>
   `;
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   legendDiv.innerHTML = legendHTML;
 
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legendDiv);
@@ -1596,7 +1608,7 @@ function loadCSV(file) {
 
     complete: function () {
       console.log("Total carregado:", count);
-      document.getElementById('textClients').innerHTML = 'Total de clientes carregados: ' + count;
+      document.getElementById('textClients').textContent = 'Total de clientes carregados: ' + count;
       console.log("Primeiro registo:", jsonData[0]);
       console.log("Colunas disponíveis:", Object.keys(jsonData[0]));
 

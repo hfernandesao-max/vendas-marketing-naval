@@ -121,7 +121,7 @@ export function nav() {
         id = 'navl-' + slugRel(p.grupo);
       const b = el('button', 'navg' + (p.grupo === grupoAtual ? ' atual' : ''));
       b.type = 'button';
-      b.innerHTML = svg(ICONE_GRUPO[p.grupo] || 'file');
+      b.innerHTML = svg(ICONE_GRUPO[p.grupo] || 'file'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
       b.append(el('span', 'navg-t', t(p.grupo)));
       const alertas = visiveis.filter((x) => x.grupo === p.grupo && x.id !== 'pagamentos').reduce((s, x) => s + (al[x.id] || 0), 0);
       if (alertas) b.append(el('span', 'n navg-n', String(alertas)));
@@ -143,7 +143,7 @@ export function nav() {
     } else if (!p.grupo) caixa = n;
     const a = el('a');
     a.href = '#' + p.id;
-    a.innerHTML = svg(p.icon);
+    a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
     a.append(el('span', null, t(p.nome)));
     if (al[p.id] && p.id !== 'pagamentos') a.append(el('span', 'n', String(al[p.id])));
     if (p.id === atual) {

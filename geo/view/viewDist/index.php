@@ -44,7 +44,7 @@
         <a href="../../reports.php" title="Ir para os relatórios" class="nav-btn">
           <i data-lucide="bar-chart-3"></i> Reports
         </a>
-        <a href="../../auth/logout.php?t=<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
+        <a href="../../auth/logout.php?t=<?= htmlspecialchars(naval_token_saida(), ENT_QUOTES, 'UTF-8') ?>" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
           <i data-lucide="log-out"></i> Sair
         </a>
       </div>

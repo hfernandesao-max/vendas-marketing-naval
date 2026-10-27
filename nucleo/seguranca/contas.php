@@ -36,6 +36,9 @@ function naval_utilizadores(): array
     if (is_file($f)) {
         $d = json_decode((string) file_get_contents($f), true);
         if (is_array($d)) return $d;
+        // Falhar de forma segura: lista nova existente mas ilegível → ninguém entra (nunca volta à lista antiga)
+        error_log('[contas] ' . basename($f) . ' ilegível: entradas recusadas até ser reposto.');
+        return [];
     }
     $antigo = naval_raiz() . '/geo/auth/config_users.php';
     if (!is_file($antigo)) return [];
@@ -97,12 +100,109 @@ function naval_senha_temporaria(): string
     return $s;
 }
 
-/** Regras da palavra-passe escolhida pelo utilizador. Devolve o erro ou null. */
-function naval_senha_fraca(string $s): ?string
+const NAVAL_SENHA_MIN = 12;   // ASVS 2.1.1 / NIST SP 800-63B
+const NAVAL_SENHA_MAX_BYTES = 72;   // limite do bcrypt: acima disto os caracteres seriam ignorados sem aviso
+const NAVAL_SENHA_TEMPORARIA_HORAS = 24;
+
+/**
+ * Regras da palavra-passe escolhida pelo utilizador (ASVS 2.1, NIST SP 800-63B): pelo menos 12 caracteres,
+ * sem regras de composição obrigatórias, recusada se for comum ou divulgada em fugas de dados, ou se for
+ * só o nome da conta, do email ou da empresa com números. Devolve o erro ou null.
+ */
+function naval_senha_fraca(string $s, string $login = '', string $email = ''): ?string
 {
-    if (strlen($s) < 10) return 'A palavra-passe tem de ter pelo menos 10 caracteres.';
-    if (!preg_match('/[A-Za-z]/', $s) || !preg_match('/\d/', $s)) return 'A palavra-passe tem de ter letras e números.';
+    if (naval_comprimento($s) < NAVAL_SENHA_MIN) return 'A palavra-passe tem de ter pelo menos ' . NAVAL_SENHA_MIN . ' caracteres (pode usar uma frase).';
+    if (strlen($s) > NAVAL_SENHA_MAX_BYTES) return 'A palavra-passe é demasiado longa (máximo 64 caracteres).';
+    $min = mb_strtolower($s, 'UTF-8');
+    if (in_array($min, naval_senhas_comuns(), true)) return 'Esta palavra-passe é muito comum ou apareceu em fugas de dados. Escolha outra.';
+    $letras = (string) preg_replace('/[^a-z]/', '', naval_comparavel($min));
+    $contexto = ['naval', 'gruponaval', 'geomobilidade', 'geomobilidadenaval', 'portalrtm', 'luanda', 'angola', 'password', 'palavrapasse', 'senha'];
+    foreach ([$login, strstr($email, '@', true) ?: ''] as $x) {
+        $x = (string) preg_replace('/[^a-z]/', '', naval_comparavel(mb_strtolower((string) $x, 'UTF-8')));
+        if (strlen($x) >= 4) $contexto[] = $x;
+    }
+    foreach ($contexto as $c) {
+        if ($letras === $c || $letras === $c . $c) return 'A palavra-passe não pode ser o nome da conta, do email ou da empresa com números ou símbolos.';
+    }
+    if (preg_match('/^(.)\1+$/u', $s) || preg_match('/^(0123456789|1234567890|abcdefghijkl|qwertyuiop)/i', $s)) return 'A palavra-passe é demasiado previsível.';
     return null;
+}
+
+/** Lista local de palavras-passe comuns (nucleo/seguranca/senhas-comuns.txt), lida uma vez por pedido. */
+function naval_senhas_comuns(): array
+{
+    static $l = null;
+    if ($l !== null) return $l;
+    $l = [];
+    foreach (file(__DIR__ . '/senhas-comuns.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $x) {
+        if ($x !== '' && $x[0] !== '#') $l[] = mb_strtolower(trim($x), 'UTF-8');
+    }
+    return $l;
+}
+
+/** Texto em minúsculas sem acentos (para comparar palavras-passe com nomes). */
+function naval_comparavel(string $s): string
+{
+    $t = function_exists('iconv') ? @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s) : false;
+    return is_string($t) ? strtolower($t) : $s;
+}
+
+/** Palavra-passe temporária expirada (24 h depois de criada)? Contas antigas sem data não expiram já. */
+function naval_temporaria_expirada(array $u): bool
+{
+    return !empty($u['trocar_senha']) && !empty($u['temporaria_ate']) && (int) $u['temporaria_ate'] < time();
+}
+
+/** Marca uma palavra-passe temporária na conta (obriga a escolher outra e expira em 24 h). */
+function naval_marcar_temporaria(array $u, string $senha): array
+{
+    $u['senha'] = password_hash($senha, PASSWORD_DEFAULT);
+    $u['trocar_senha'] = true;
+    $u['temporaria_ate'] = time() + NAVAL_SENHA_TEMPORARIA_HORAS * 3600;
+    return naval_nova_versao($u);
+}
+
+/**
+ * Versão das credenciais da conta: muda quando a palavra-passe ou os dois passos mudam. As sessões
+ * abertas com uma versão anterior terminam no pedido seguinte (ASVS 3.3.3).
+ */
+function naval_nova_versao(array $u): array
+{
+    $u['versao'] = (int) ($u['versao'] ?? 0) + 1;
+    return $u;
+}
+
+/** A conta tem de configurar os dois passos antes de entrar (perfil com dois passos obrigatórios)? */
+function naval_mfa_inscricao_obrigatoria(array $u): bool
+{
+    if (naval_config('MFA_OBRIGATORIA', '1') === '0' || !empty($u['mfa']) || !empty($u['compatibilidade'])) return false;
+    return in_array($u['perfil'] ?? '', naval_perfis_mfa(), true);
+}
+
+/**
+ * Endereço IP do cliente. Atrás de um proxy inverso de confiança (PROXY_CONFIAVEIS no .env, IP separados
+ * por vírgula) usa o último endereço de X-Forwarded-For acrescentado por esse proxy; caso contrário, REMOTE_ADDR.
+ */
+function naval_ip_cliente(): string
+{
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $proxies = array_filter(array_map('trim', explode(',', naval_config('PROXY_CONFIAVEIS'))));
+    if ($ip !== '' && in_array($ip, $proxies, true) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $l = array_map('trim', explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']));
+        $x = (string) end($l);
+        if (filter_var($x, FILTER_VALIDATE_IP)) return $x;
+    }
+    return $ip;
+}
+
+/**
+ * Nome a gravar nos registos para uma tentativa de entrada: o utilizador se a conta existir; senão um
+ * identificador (sem guardar o texto escrito, que pode ser uma palavra-passe escrita no campo errado).
+ */
+function naval_id_registo(string $escrito): string
+{
+    if ($escrito === '' || isset(naval_utilizadores()[$escrito])) return $escrito;
+    return 'desconhecido-' . substr(hash('sha256', strtolower(trim($escrito))), 0, 10);
 }
 
 /** Segredo novo para a verificação em dois passos (base32). */
@@ -130,6 +230,7 @@ function naval_sessao_valida(): bool
     if ($agora - $ultima > NAVAL_SESSAO_INACTIVA) $motivo = 'inactividade';
     elseif ($agora - $inicio > NAVAL_SESSAO_MAXIMA) $motivo = 'duracao_maxima';
     elseif (!naval_utilizador()) $motivo = 'conta_invalida';
+    elseif ((int) (naval_utilizador()['versao'] ?? 0) !== (int) ($_SESSION['versao_credencial'] ?? 0)) $motivo = 'credenciais_alteradas';
     if ($motivo) {
         naval_registar('sessao_terminada', ['motivo' => $motivo]);
         $_SESSION = [];
@@ -182,11 +283,13 @@ function naval_totp_aceitar(string $login, string $segredo, string $codigo): boo
 {
     $p = naval_totp_periodo($segredo, $codigo);
     if ($p === null) return false;
-    $f = naval_pasta('bloqueios') . '/totp-' . hash('sha256', strtolower(trim($login))) . '.json';
-    $u = naval_json_ler($f);
-    if ((int) ($u['periodo'] ?? 0) >= $p) return false;
-    naval_json_gravar($f, ['periodo' => $p], false);
-    return true;
+    return naval_exclusivo('totp', function () use ($login, $p) {
+        $f = naval_pasta('bloqueios') . '/totp-' . hash('sha256', strtolower(trim($login))) . '.json';
+        $u = naval_json_ler($f);
+        if ((int) ($u['periodo'] ?? 0) >= $p) return false;
+        naval_json_gravar($f, ['periodo' => $p], false);
+        return true;
+    });
 }
 
 // ── Bloqueio de contas ──
@@ -210,14 +313,22 @@ function naval_bloqueado(string $login): bool
 /** Regista uma tentativa falhada; devolve as tentativas que restam (0 = bloqueada agora). */
 function naval_falha_login(string $login): int
 {
+    return naval_exclusivo('bloqueio-' . substr(hash('sha256', strtolower(trim($login))), 0, 16), function () use ($login) {
+        return naval_falha_login_agora($login);
+    });
+}
+
+function naval_falha_login_agora(string $login): int
+{
     $d = naval_estado_bloqueio($login);
-    $d['login'] = $login;
+    // só guarda o nome de contas que existem (não o texto escrito numa conta inexistente)
+    $d['login'] = isset(naval_utilizadores()[$login]) ? $login : '';
     $d['falhas'] = (int) $d['falhas'] + 1;
     $d['ultima'] = date('Y-m-d H:i:s');
     if ($d['falhas'] >= NAVAL_MAX_TENTATIVAS && empty($d['bloqueado'])) {
         $d['bloqueado'] = true;
         $d['bloqueado_em'] = date('Y-m-d H:i:s');
-        naval_registar('conta_bloqueada', ['tentativas' => $d['falhas']], $login);
+        naval_registar('conta_bloqueada', ['tentativas' => $d['falhas']], naval_id_registo($login));
     }
     naval_json_gravar(naval_bloqueio_ficheiro($login), $d, false);
     return max(0, NAVAL_MAX_TENTATIVAS - $d['falhas']);
@@ -264,13 +375,16 @@ function naval_ip_suspenso(string $ip): bool
 function naval_ip_falha(string $ip): void
 {
     if ($ip === '') return;
-    $f = naval_ip_falhas($ip);
-    $f[] = time();
-    naval_json_gravar(naval_ip_ficheiro($ip), ['falhas' => array_slice($f, -100)], false);
-    if (count($f) === naval_ip_max_falhas()) naval_registar('ip_suspenso', ['ip' => $ip, 'falhas' => count($f)]);
+    naval_exclusivo('limite-ip', function () use ($ip) {
+        $f = naval_ip_falhas($ip);
+        $f[] = time();
+        naval_json_gravar(naval_ip_ficheiro($ip), ['falhas' => array_slice($f, -100)], false);
+        if (count($f) === naval_ip_max_falhas()) naval_registar('ip_suspenso', ['ip' => $ip, 'falhas' => count($f)]);
+    });
 }
 
 /** Hash fictício (bcrypt, custo 10) para verificar a palavra-passe de contas inexistentes no mesmo tempo. */
+// nosemgrep: detected-bcrypt-hash -- hash de um valor aleatório descartado (não é a palavra-passe de ninguém)
 const NAVAL_HASH_FICTICIO = '$2y$10$MjKGPMs.jY2pD91k9Lt9vuNY2o8UZJzgmn1D9h6hhNitzidO0.XjG';
 
 /** Desbloqueio: só o super administrador (no portal) ou a ferramenta do servidor. */

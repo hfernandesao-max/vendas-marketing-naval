@@ -48,7 +48,14 @@ teste('palavras-passe: temporária com 16 caracteres; regras da escolhida', func
     igual(16, strlen(naval_senha_temporaria()));
     verdade(naval_senha_fraca('curta1') !== null);
     verdade(naval_senha_fraca('sónumeros1234') === null);
-    verdade(naval_senha_fraca('semnumerosaqui') !== null);
+    verdade(naval_senha_fraca('semnumerosaqui') === null, 'sem regras de composição (ASVS 2.1.9)');
+    verdade(naval_senha_fraca('onze-carac.') !== null, 'mínimo 12 (ASVS 2.1.1)');
+    verdade(naval_senha_fraca('password1234') !== null, 'comum / divulgada (ASVS 2.1.7)');
+    verdade(naval_senha_fraca('Naval2026!!!') !== null, 'nome da empresa com números');
+    verdade(naval_senha_fraca('joao.silva2026', 'joao.silva') !== null, 'nome da conta com números');
+    verdade(naval_senha_fraca('aaaaaaaaaaaaaa') !== null, 'repetida');
+    verdade(naval_senha_fraca(str_repeat('x7', 40)) !== null, 'acima de 72 bytes (limite do bcrypt)');
+    verdade(naval_senha_fraca('uma frase com espaços e acentuação') === null, 'frases aceites');
 });
 
 teste('TOTP (RFC 6238, SHA-1): vector de teste e janela de ±30 s', function () {
@@ -67,7 +74,8 @@ teste('bloqueio à 3.ª tentativa e desbloqueio', function () {
     verdade(!naval_bloqueado('teste.bloqueio'));
     igual(0, naval_falha_login('teste.bloqueio'));
     verdade(naval_bloqueado('TESTE.BLOQUEIO'));
-    verdade(isset(naval_contas_bloqueadas()['teste.bloqueio']));
+    // conta inexistente: bloqueada, mas o texto escrito não é guardado nem listado ao super administrador
+    verdade(!isset(naval_contas_bloqueadas()['teste.bloqueio']));
     verdade(naval_desbloquear('teste.bloqueio', 'unidade'));
     verdade(!naval_bloqueado('teste.bloqueio'));
 });
@@ -139,4 +147,35 @@ teste('Pinguim BO: sem endereços predefinidos no código; só http(s) e verific
     igual([], $c['enderecos']);
     verdade($c['verificar_ssl']);
     verdade(!naval_pinguim_configurado());
+});
+
+
+teste('palavra-passe temporária expira em 24 h e muda a versão das credenciais', function () {
+    $u = naval_marcar_temporaria(['versao' => 2], 'Temp-ABCDEFGH23');
+    verdade(!empty($u['trocar_senha']) && $u['versao'] === 3 && password_verify('Temp-ABCDEFGH23', $u['senha']));
+    verdade(!naval_temporaria_expirada($u));
+    $u['temporaria_ate'] = time() - 1;
+    verdade(naval_temporaria_expirada($u));
+    verdade(!naval_temporaria_expirada(['trocar_senha' => true]), 'contas antigas sem data');
+});
+
+teste('dois passos obrigatórios: inscrição pedida só a perfis marcados e sem segredo', function () {
+    $mfa = naval_perfis_mfa();
+    verdade(in_array('SADM', $mfa, true));
+    verdade(naval_mfa_inscricao_obrigatoria(['perfil' => 'SADM']));
+    verdade(!naval_mfa_inscricao_obrigatoria(['perfil' => 'SADM', 'mfa' => 'ABC']));
+    verdade(!naval_mfa_inscricao_obrigatoria(['perfil' => 'SADM', 'compatibilidade' => true]), 'lista antiga: depois de activar a gestão');
+});
+
+teste('bloqueio exclusivo reentrante e IP do cliente só por proxy de confiança', function () {
+    igual(7, naval_exclusivo('teste', function () { return naval_exclusivo('teste', function () { return 7; }); }));
+    $_SERVER['REMOTE_ADDR'] = '10.0.0.5';
+    $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
+    igual('10.0.0.5', naval_ip_cliente(), 'sem PROXY_CONFIAVEIS ignora X-Forwarded-For');
+    unset($_SERVER['HTTP_X_FORWARDED_FOR']);
+});
+
+teste('registos: texto escrito numa conta inexistente não é guardado', function () {
+    $id = naval_id_registo('MinhaSenha#2026');
+    verdade(strpos($id, 'desconhecido-') === 0 && strpos($id, 'Senha') === false);
 });

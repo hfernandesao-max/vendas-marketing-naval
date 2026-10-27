@@ -102,22 +102,23 @@ Regras:
 
 ### Configuração (`.env`, na raiz do site)
 
-| Chave                                                                          | Para quê                                                  | Omissão                               |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------- |
-| `USERNAME`, `PASSWORD`                                                         | credenciais do Pinguim BO                                 | —                                     |
-| `PINGUIM_URL`                                                                  | endereços do Pinguim BO, por ordem, separados por vírgula | — (obrigatória)                       |
-| `PINGUIM_VERIFICAR_SSL`                                                        | verificação do certificado HTTPS do Pinguim BO            | `1` (ligada)                          |
-| `DB_HOST`, `DB_NAME` (ou `DB_DSN`), `DB_USER`, `DB_PASS`, `DB_PORT`            | base de dados do Pinguim BO (só leitura)                  | — (obrigatórias); porta `1433`        |
-| `GOOGLE_MAPS_API_KEY`                                                          | chave de navegador do Google Maps (GEO), com restrições   | — (obrigatória para os mapas)         |
-| `LOGIN_MAX_FALHAS_IP`                                                          | entradas falhadas por IP em 15 min antes de suspender     | `20`                                  |
-| `PROXY_HTTPS`, `CSP_APLICAR`, `APP_DEBUG`                                      | proxy HTTPS de confiança; CSP aplicada; diagnóstico       | `0` (nunca `APP_DEBUG=1` em produção) |
-| `DADOS_PRIVADOS`                                                               | pasta privada (contas, registos, planos, lotes)           | `../dados-privados` ao lado do site   |
-| `UTILIZADORES_JSON`                                                            | ficheiro das contas                                       | `<DADOS_PRIVADOS>/utilizadores.json`  |
-| `RTM_CLIENTES_JSON`                                                            | cadastros gerados pelo repositório rtm-clientes           | ver README                            |
-| `EMAIL_TENANT_ID`, `EMAIL_CLIENT_ID`, `EMAIL_CLIENT_SECRET`, `EMAIL_REMETENTE` | envio pelo Microsoft 365                                  | —                                     |
-| `EMAIL_MODO`                                                                   | `ficheiro` grava os emails em vez de os enviar (testes)   | `graph`                               |
-| `PORTAL_URL`                                                                   | endereço do portal nas ligações dos emails                | —                                     |
-| `FUSO_HORARIO`                                                                 | fuso das datas e horas                                    | `Africa/Luanda`                       |
+| Chave                                                                                                                      | Para quê                                                                       | Omissão                                            |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------- |
+| `USERNAME`, `PASSWORD`                                                                                                     | credenciais do Pinguim BO                                                      | —                                                  |
+| `PINGUIM_URL`                                                                                                              | endereços do Pinguim BO, por ordem, separados por vírgula                      | — (obrigatória)                                    |
+| `PINGUIM_VERIFICAR_SSL`                                                                                                    | verificação do certificado HTTPS do Pinguim BO                                 | `1` (ligada)                                       |
+| `DB_HOST`, `DB_NAME` (ou `DB_DSN`), `DB_USER`, `DB_PASS`, `DB_PORT`                                                        | base de dados do Pinguim BO (só leitura)                                       | — (obrigatórias); porta `1433`                     |
+| `GOOGLE_MAPS_API_KEY`                                                                                                      | chave de navegador do Google Maps (GEO), com restrições                        | — (obrigatória para os mapas)                      |
+| `LOGIN_MAX_FALHAS_IP`                                                                                                      | entradas falhadas por IP em 15 min antes de suspender                          | `20`                                               |
+| `PROXY_HTTPS`, `CSP_APLICAR`, `APP_DEBUG`                                                                                  | proxy HTTPS de confiança; CSP aplicada; diagnóstico                            | `0` (nunca `APP_DEBUG=1` em produção)              |
+| `MFA_OBRIGATORIA`, `EXIGIR_HTTPS`, `PROXY_CONFIAVEIS`, `DB_ENCRYPT`, `DB_CONFIAR_CERTIFICADO`, `EMAIL_DOMINIOS_PERMITIDOS` | dois passos obrigatórios; HTTPS; proxy; cifra do SQL Server; domínios de email | `1`, `0`, —, `1`, `1`, — (ver `docs/SEGURANCA.md`) |
+| `DADOS_PRIVADOS`                                                                                                           | pasta privada (contas, registos, planos, lotes)                                | `../dados-privados` ao lado do site                |
+| `UTILIZADORES_JSON`                                                                                                        | ficheiro das contas                                                            | `<DADOS_PRIVADOS>/utilizadores.json`               |
+| `RTM_CLIENTES_JSON`                                                                                                        | cadastros gerados pelo repositório rtm-clientes                                | ver README                                         |
+| `EMAIL_TENANT_ID`, `EMAIL_CLIENT_ID`, `EMAIL_CLIENT_SECRET`, `EMAIL_REMETENTE`                                             | envio pelo Microsoft 365                                                       | —                                                  |
+| `EMAIL_MODO`                                                                                                               | `ficheiro` grava os emails em vez de os enviar (testes)                        | `graph`                                            |
+| `PORTAL_URL`                                                                                                               | endereço do portal nas ligações dos emails                                     | —                                                  |
+| `FUSO_HORARIO`                                                                                                             | fuso das datas e horas                                                         | `Africa/Luanda`                                    |
 
 | `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
 

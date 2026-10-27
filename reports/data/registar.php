@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../../nucleo/api.php';
 
 $p = naval_pedido();
+naval_exigir_csrf($p);   // o registo das exportações também só aceita pedidos do próprio portal (CSRF)
 $pagina = (string) preg_replace('/[^a-z0-9-]/', '', (string) ($p['pagina'] ?? ''));
 $completo = !empty($p['completo']);
 $recurso = $completo ? 'excel-completo' : $pagina;

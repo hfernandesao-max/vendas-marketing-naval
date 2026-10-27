@@ -128,7 +128,7 @@ switch ($cmd) {
         if ($perfil === 'SADM') exigir_aprovacao_sadm($o, $login, 'criar');
         $s = senha_temporaria();
         $d[$login] = ['nome' => $o['nome'], 'email' => trim($o['email']), 'senha' => password_hash($s, PASSWORD_DEFAULT), 'perfil' => $perfil, 'rotas' => $rotas,
-            'activo' => $perfil !== 'SADM', 'trocar_senha' => true, 'criado' => date('Y-m-d')] + (empty($o['ate']) ? [] : ['valido_ate' => $o['ate']]);
+            'activo' => $perfil !== 'SADM', 'trocar_senha' => true, 'temporaria_ate' => time() + NAVAL_SENHA_TEMPORARIA_HORAS * 3600, 'criado' => date('Y-m-d')] + (empty($o['ate']) ? [] : ['valido_ate' => $o['ate']]);
         gravar($d);
         naval_registar('conta_criada', ['conta' => $login, 'perfil' => $perfil, 'rotas' => $rotas], 'servidor');
         echo "Conta criada: $login ($perfil). Palavra-passe temporária: $s\n";
@@ -170,7 +170,7 @@ switch ($cmd) {
     case 'senha':
         $u = $conta();
         $s = senha_temporaria();
-        $u['senha'] = password_hash($s, PASSWORD_DEFAULT); $u['trocar_senha'] = true; $d[$login] = $u; gravar($d);
+        $d[$login] = naval_marcar_temporaria($u, $s); gravar($d);   // expira em 24 h e termina as sessões abertas
         naval_registar('senha_reposta', ['conta' => $login], 'servidor');
         echo "Nova palavra-passe temporária de $login: $s\n";
         break;
@@ -178,7 +178,7 @@ switch ($cmd) {
     case 'dois-passos':
         $u = $conta();
         $seg = naval_novo_segredo();
-        $u['mfa'] = $seg; $d[$login] = $u; gravar($d);
+        $u['mfa'] = $seg; $d[$login] = naval_nova_versao($u); gravar($d);
         naval_registar('dois_passos_configurado', ['conta' => $login], 'servidor');
         $uri = naval_otpauth($seg, $u['email'] ?: $login);
         echo "Segredo para a aplicação de autenticação (Microsoft/Google Authenticator):\n  $seg\nOu crie um código QR com este endereço:\n  $uri\n";

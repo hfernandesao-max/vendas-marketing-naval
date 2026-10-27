@@ -12,6 +12,13 @@ function escJsAttr(v) {
 function escJsVal(v) {
   return typeof v === 'number' && isFinite(v) ? String(v) : escJsAttr(v);
 }
+// Célula de CSV segura: entre aspas, aspas duplicadas e sem fórmulas (=, +, -, @ no início abrem fórmulas
+// no Excel: «CSV injection», OWASP). Os números (incluindo negativos, como as latitudes) ficam como estão.
+function csvCampo(v) {
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
 let selectedCategory = null;
 let jsonData = [];
 let coords = [];
@@ -482,14 +489,14 @@ function exportarClientesPolygonCSV() {
   // Criar linhas do CSV
   const linhasCSV = todosClientes.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`, // Escapar aspas
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome), // Escapar aspas
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude,
-      marcador.Status,
-      `"${marcador.Zona}"`
+      csvCampo(marcador.Status),
+      csvCampo(marcador.Zona)
     ].join(',');
   });
 
@@ -527,13 +534,13 @@ function exportarClientesDentroPolygonCSV() {
 
   const linhasCSV = resultado.dentro.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`,
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome),
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude,
-      `"${marcador.Zona}"`
+      csvCampo(marcador.Zona)
     ].join(',');
   });
 
@@ -568,10 +575,10 @@ function exportarClientesForaPolygonCSV() {
 
   const linhasCSV = resultado.fora.map(marcador => {
     return [
-      marcador.Codigo,
-      `"${marcador.Nome.replace(/"/g, '""')}"`,
-      `"${marcador.Vendedor.replace(/"/g, '""')}"`,
-      `"${marcador.Dia.replace(/"/g, '""')}"`,
+      csvCampo(marcador.Codigo),
+      csvCampo(marcador.Nome),
+      csvCampo(marcador.Vendedor),
+      csvCampo(marcador.Dia),
       marcador.Latitude,
       marcador.Longitude
     ].join(',');
@@ -611,9 +618,9 @@ function exportarResumoZonasCSV() {
     // Contar vendedores únicos
     const vendedores = [...new Set(clientes.map(c => c.Vendedor))].join('; ');
     linhasCSV.push([
-      `"${zonaNome}"`,
+      csvCampo(zonaNome),
       clientes.length,
-      `"${vendedores}"`
+      csvCampo(vendedores)
     ].join(','));
   });
 
@@ -621,7 +628,7 @@ function exportarResumoZonasCSV() {
   linhasCSV.push([
     'TOTAL',
     resultado.totalDentro,
-    `"${[...new Set(resultado.dentro.map(c => c.Vendedor))].join('; ')}"`
+    csvCampo([...new Set(resultado.dentro.map(c => c.Vendedor))].join('; '))
   ].join(','));
 
   const csvContent = [headers.join(','), ...linhasCSV].join('\n');
@@ -821,6 +828,7 @@ function criarPromptNomeZona(polygon, nomePadrao) {
     min-width: 300px;
   `;
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   overlay.innerHTML = `
     <h3 style="margin: 0 0 15px 0; color: #ccc;">Nome da zona</h3>
     <input type="text" id="zona-nome-input" 
@@ -1091,6 +1099,7 @@ function criarLegenda(map, vendedorCores) {
     </button>
   `;
 
+  // nosemgrep: insecure-innerhtml, insecure-document-method -- dados escapados com escHtml/escJsAttr (revisto em 27-10-2026)
   legendDiv.innerHTML = legendHTML;
 
   // Adicionar ao mapa
@@ -1209,7 +1218,7 @@ function loadCSV(file) {
 
     complete: function () {
       console.log("Total carregado:", count);
-      document.getElementById('textClients').innerHTML = 'Total de clientes carregados: ' + count;
+      document.getElementById('textClients').textContent = 'Total de clientes carregados: ' + count;
       console.log("Dados processados:", jsonData);
 
       const lats = jsonData.map((coords) => parseFloat(coords.Latitude));

@@ -6,6 +6,13 @@ defined('NAVAL_NUCLEO') || exit;
 function naval_iniciar_sessao(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        // HTTPS obrigatório (EXIGIR_HTTPS=1 no .env): pedidos em HTTP são redireccionados para HTTPS
+        if (naval_config('EXIGIR_HTTPS', '0') === '1' && !naval_https() && !headers_sent() && PHP_SAPI !== 'cli') {
+            $host = (string) parse_url(naval_config('PORTAL_URL'), PHP_URL_HOST) ?: (string) preg_replace('/[^A-Za-z0-9.-]/', '', (string) ($_SERVER['SERVER_NAME'] ?? ''));
+            $porta = (string) parse_url(naval_config('PORTAL_URL'), PHP_URL_PORT);
+            header('Location: https://' . $host . ($porta !== '' ? ':' . $porta : '') . (string) ($_SERVER['REQUEST_URI'] ?? '/'), true, 301);
+            exit;
+        }
         if (!headers_sent()) {
             // Boas práticas OWASP: só cookies (nunca o identificador no URL), modo estrito (recusa
             // identificadores que o servidor não criou), cookie só por HTTP, mesmo site e, em HTTPS, Secure.
@@ -16,6 +23,8 @@ function naval_iniciar_sessao(): void
             @ini_set('session.sid_length', '48');
             @ini_set('session.sid_bits_per_character', '6');
             $seguro = naval_https();
+            // Nome próprio do cookie; em HTTPS com o prefixo __Host- (só este site, só HTTPS, caminho /)
+            session_name($seguro ? '__Host-NAVALSESS' : 'NAVALSESS');
             if (PHP_VERSION_ID >= 70300) session_set_cookie_params(['path' => '/', 'secure' => $seguro, 'httponly' => true, 'samesite' => 'Lax']);
             else session_set_cookie_params(0, '/; samesite=Lax', '', $seguro, true);   // PHP 7.1 e 7.2
             naval_cabecalhos_seguranca();
@@ -45,6 +54,7 @@ function naval_cabecalhos_seguranca(): void
     if ($feito || headers_sent()) return;
     $feito = true;
     header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: no-store, private');   // páginas e dados autenticados não ficam em caches (ASVS 8.2.1)
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: camera=(), microphone=(), payment=(), usb=(), geolocation=(self)');

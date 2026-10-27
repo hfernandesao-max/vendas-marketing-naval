@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 process.env.LC_ALL = process.env.LC_ALL || 'C.UTF-8';
 
 const ENV_TESTE = fileURLToPath(new URL('./tests/servidor/ambiente/.env', import.meta.url));
+const ENV_TESTE_MFA = fileURLToPath(new URL('./tests/servidor/ambiente-mfa/.env', import.meta.url));
 
 export default defineConfig({
   timeout: 60_000,
@@ -39,6 +40,14 @@ export default defineConfig({
       url: 'http://127.0.0.1:8810/geo/login.php',
       reuseExistingServer: !process.env.CI,
       env: { NAVAL_ENV: ENV_TESTE },
+      stderr: 'ignore',
+    },
+    {
+      // mesmo código, com os dois passos obrigatórios (configuração na entrada); o ambiente é preparado pelo servidor anterior
+      command: 'php -S 127.0.0.1:8811',
+      url: 'http://127.0.0.1:8811/geo/login.php',
+      reuseExistingServer: !process.env.CI,
+      env: { NAVAL_ENV: ENV_TESTE_MFA },
       stderr: 'ignore',
     },
   ],

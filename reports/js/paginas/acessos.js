@@ -154,7 +154,7 @@ function mostrarDoisPassos(login, segredo, uri) {
           const q = window.qrcode(0, 'M');
           q.addData(uri);
           q.make();
-          qr.innerHTML = q.createSvgTag(4, 2);
+          qr.innerHTML = q.createSvgTag(4, 2); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG gerado pela biblioteca de QR
         })
         .catch(() => {
           qr.hidden = true;

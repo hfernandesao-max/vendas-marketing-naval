@@ -22,6 +22,8 @@ $pedirConfirmacao = naval_gestao_confirmar($eu, $accao, (string) ($p['confirmaca
 if ($pedirConfirmacao) naval_json($pedirConfirmacao);
 
 $login = trim((string) ($p['conta'] ?? ''));
+// Todas as alterações em exclusivo: contas, perfis e matriz são lidos e gravados sem outro pedido pelo meio
+naval_exclusivo('utilizadores', function () use ($accao, $p, $eu, $login) {
 switch ($accao) {
     case 'activar_gestao':
         naval_json(['ok' => true] + naval_gestao_activar($p, $eu));
@@ -45,4 +47,5 @@ switch ($accao) {
         naval_registar('matriz_reposta', []);
         naval_json(['ok' => true]);
 }
+});
 throw new NavalErro('Acção desconhecida.');

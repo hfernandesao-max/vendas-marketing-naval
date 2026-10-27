@@ -84,7 +84,7 @@ for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referr
   if echo "$H" | grep -qi "^$h"; then echo "  ok    $h (estático)"; else echo "  FALHA cabeçalho em falta no estático: $h"; FALHAS=$((FALHAS+1)); fi
 done
 H="$(curl -s -D - -o /dev/null "$URL/geo/login.php")"
-for h in "Content-Security-Policy: frame-ancestors" "X-Content-Type-Options: nosniff" "Set-Cookie: PHPSESSID=.*HttpOnly"; do
+for h in "Content-Security-Policy: frame-ancestors" "X-Content-Type-Options: nosniff" "Set-Cookie: NAVALSESS=.*HttpOnly"; do
   if echo "$H" | grep -qiE "^$h"; then echo "  ok    $h (PHP)"; else echo "  FALHA cabeçalho em falta no PHP: $h"; FALHAS=$((FALHAS+1)); fi
 done
 if echo "$H" | grep -qi "^X-Powered-By"; then echo "  FALHA X-Powered-By presente"; FALHAS=$((FALHAS+1)); else echo "  ok    sem X-Powered-By"; fi

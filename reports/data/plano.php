@@ -18,7 +18,8 @@ $gere = naval_plano_gere();
 if (!naval_e_post()) {
     if (isset($_GET['xlsx'])) {
         $data = (string) $_GET['xlsx'];
-        $p = naval_data_valida($data) ? naval_plano_ler($data) : null;
+        if (!naval_data_valida($data)) throw new NavalErro('Excel não disponível.', 404);   // só AAAA-MM-DD (nome de ficheiro seguro)
+        $p = naval_plano_ler($data);
         $v = (int) ($p['publicado']['versao'] ?? 0);
         $f = naval_plano_ficheiro_xlsx($data, $v);
         if (!$v || !is_file($f) || !naval_pode_exportar('plano-cargas') || naval_rotas() !== null) throw new NavalErro('Excel não disponível.', 404);

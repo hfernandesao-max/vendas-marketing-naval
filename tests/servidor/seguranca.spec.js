@@ -1,7 +1,7 @@
 // Segurança do servidor PHP: CSRF na entrada e na saída, enumeração de contas, cabeçalhos, cookie de
 // sessão, limites dos pedidos e detalhes técnicos dos erros (auditoria de 27-10-2026).
 import { test, expect, request } from '@playwright/test';
-import { entrar, csrf, tokenEntrada, erroEntrada, BASE, SENHA } from './ajuda.js';
+import { entrar, csrf, tokenEntrada, erroEntrada, totp, BASE, SENHA } from './ajuda.js';
 
 test('entrada sem o código anti-falsificação (CSRF) é recusada e não abre sessão', async () => {
   const ctx = await request.newContext({ baseURL: BASE });
@@ -52,7 +52,7 @@ test('cabeçalhos de segurança e cookie de sessão HttpOnly + SameSite', async 
 });
 
 test('identificador de sessão inventado não é aceite (modo estrito)', async () => {
-  const ctx = await request.newContext({ baseURL: BASE, extraHTTPHeaders: { Cookie: 'PHPSESSID=identificadorinventado1234567890' } });
+  const ctx = await request.newContext({ baseURL: BASE, extraHTTPHeaders: { Cookie: 'NAVALSESS=identificadorinventado1234567890' } });
   const r = await ctx.get('/geo/login.php');
   expect(r.headers()['set-cookie'] || '').not.toContain('identificadorinventado');
 });
@@ -83,4 +83,71 @@ test('GEO: chave do Google Maps vem do .env (escapada) e as bibliotecas são loc
   expect(html).not.toContain('unpkg.com');
   expect(html).toMatch(/auth\/logout\.php\?t=[0-9a-f]{32}/);
   expect((await ctx.get('/geo/vendor/lucide-1.62.0.min.js')).status()).toBe(200);
+});
+
+// ── Segunda validação (ASVS 4.0.3 nível 2) ──
+
+test('dois passos obrigatórios: a pessoa configura-os na entrada e depois são pedidos sempre', async () => {
+  const BASE_MFA = 'http://127.0.0.1:8811';
+  const ctx = await request.newContext({ baseURL: BASE_MFA });
+  const r = await ctx.post('/geo/login.php', {
+    form: { usuario: 'ti', senha: SENHA, redirect: '../reports/', csrf: await tokenEntrada(ctx) },
+    maxRedirects: 0,
+  });
+  const html = await r.text();
+  expect(html).toContain('id="qr-inscricao"');
+  expect((await ctx.get('/reports/data/sessao.php')).status()).toBe(401); // ainda não entrou
+  const segredo = (html.match(/id="chave-inscricao">([A-Z2-7 ]+)</) || [])[1].replace(/ /g, '');
+  const t = (html.match(/name="csrf" value="([^"]+)"/) || [])[1];
+  const errado = await ctx.post('/geo/login.php', { form: { codigo_inscricao: '000000', redirect: '../reports/', csrf: t }, maxRedirects: 0 });
+  expect(await erroEntrada(errado)).toContain('Código inválido');
+  const ok = await ctx.post('/geo/login.php', { form: { codigo_inscricao: totp(segredo), redirect: '../reports/', csrf: t }, maxRedirects: 0 });
+  expect(ok.status()).toBe(302);
+  expect((await ctx.get('/reports/data/sessao.php')).status()).toBe(200);
+  // nova entrada: já pede o código (não volta a mostrar o QR)
+  const outro = await request.newContext({ baseURL: BASE_MFA });
+  const r2 = await outro.post('/geo/login.php', {
+    form: { usuario: 'ti', senha: SENHA, redirect: '../reports/', csrf: await tokenEntrada(outro) },
+    maxRedirects: 0,
+  });
+  const h2 = await r2.text();
+  expect(h2).toContain('name="codigo"');
+  expect(h2).not.toContain('id="qr-inscricao"');
+});
+
+test('mudar a palavra-passe: regras ASVS, recusa comuns, termina as outras sessões e mantém a actual', async () => {
+  const a = (await entrar('aud')).ctx;
+  const b = (await entrar('aud')).ctx; // outra sessão da mesma conta
+  const mudar = async (actual, nova) => {
+    const html = await (await a.get('/geo/senha.php')).text();
+    const t = (html.match(/name="csrf" value="([^"]+)"/) || [])[1];
+    return (await a.post('/geo/senha.php', { form: { csrf: t, actual, nova, confirmar: nova } })).text();
+  };
+  expect(await mudar('Errada-0000!', 'Outra-frase-segura-27')).toContain('actual está incorrecta');
+  expect(await mudar(SENHA, 'curta-1')).toContain('pelo menos 12');
+  expect(await mudar(SENHA, 'password1234')).toContain('muito comum');
+  expect(await mudar(SENHA, 'Naval2026!!!')).toContain('nome da conta, do email ou da empresa');
+  expect(await mudar(SENHA, 'Outra frase segura 27')).toContain('Palavra-passe alterada');
+  expect((await a.get('/reports/data/sessao.php')).status()).toBe(200);
+  expect((await b.get('/reports/data/sessao.php')).status()).toBe(401);
+  // repõe a palavra-passe dos testes
+  expect(await mudar('Outra frase segura 27', SENHA)).toContain('Palavra-passe alterada');
+});
+
+test('repor a palavra-passe de uma conta termina as sessões abertas dessa conta', async () => {
+  const pro = (await entrar('pro')).ctx;
+  expect((await pro.get('/reports/data/sessao.php')).status()).toBe(200);
+  const sadm = (await entrar('sadm')).ctx;
+  const r = await (await sadm.post('/reports/data/gestao.php', { data: { accao: 'senha', conta: 'pro', csrf: await csrf(sadm), confirmacao: SENHA } })).json();
+  expect(r.ok).toBe(true);
+  expect((await pro.get('/reports/data/sessao.php')).status()).toBe(401);
+});
+
+test('pasta privada protegida pelo Apache e ficheiros de bloqueio sem o texto escrito em contas inexistentes', async () => {
+  const fs = await import('node:fs');
+  const priv = new URL('./ambiente/dados-privados/', import.meta.url);
+  expect(fs.readFileSync(new URL('.htaccess', priv), 'utf8')).toContain('Require all denied');
+  await entrar('palavra.passe.no.campo.errado', 'x');
+  const bloqueios = fs.readdirSync(new URL('bloqueios/', priv)).map((f) => fs.readFileSync(new URL('bloqueios/' + f, priv), 'utf8'));
+  expect(bloqueios.join('\n')).not.toContain('palavra.passe.no.campo.errado');
 });

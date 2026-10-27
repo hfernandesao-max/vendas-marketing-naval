@@ -1,0 +1,26 @@
+# Integração automática das actualizações do Dependabot de correcção (patch) e menores, e de todas as
+# actualizações de segurança: activa o «auto-merge», que só integra depois de passarem as verificações
+# obrigatórias do ramo main (testes, PHP, Apache e segurança). As actualizações maiores ficam para revisão.
+name: Dependabot — integração automática
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  integrar:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'hfernandesao-max/vendas-marketing-naval'
+    runs-on: ubuntu-latest
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Activar a integração automática (depois das verificações)
+        if: steps.meta.outputs.update-type != 'version-update:semver-major' || steps.meta.outputs.ghsa-id != ''
+        run: gh pr merge --auto --squash "$PR"
+        env:
+          PR: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

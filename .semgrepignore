@@ -1,0 +1,10 @@
+# Ficheiros fora da análise estática (bibliotecas de terceiros com versão fixa, dados e ambientes de teste)
+node_modules/
+reports/vendor/
+geo/vendor/
+test-results/
+playwright-report/
+tests/servidor/ambiente/
+tests/servidor/ambiente-mfa/
+reports/data/*.json
+nucleo/seguranca/senhas-comuns.txt

@@ -1,0 +1,161 @@
+# Verificação de segurança automática (DevSecOps), em cada alteração e todas as semanas:
+#  - segredos:      gitleaks na árvore actual e nos commits novos (chaves, palavras-passe, tokens);
+#  - dependencias:  npm audit e OSV-Scanner (base de dados de vulnerabilidades OSV / GitHub Advisories);
+#  - sast:          Semgrep (regras OWASP Top 10, PHP, JavaScript, segredos) e CodeQL (JavaScript);
+#                   resultados no separador «Security › Code scanning» do GitHub;
+#  - dast:          OWASP ZAP (varrimento passivo) contra o portal a correr com dados de teste;
+#  - alerta:        na verificação semanal, se alguma falhar, abre (ou actualiza) um «issue» «Segurança».
+# As correcções das dependências chegam como pedidos de integração do Dependabot (.github/dependabot.yml).
+name: Segurança
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 5 * * 1' # segundas-feiras às 06:23 em Luanda
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguranca-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  segredos:
+    name: Segredos (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: gitleaks 8.28.0
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar xz gitleaks
+          ./gitleaks dir . --no-banner --redact --exit-code 1
+          # commits novos deste envio (o histórico antigo tem um alerta conhecido, ver docs/SEGURANCA.md)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ./gitleaks git . --no-banner --redact --exit-code 1 --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            ./gitleaks git . --no-banner --redact --exit-code 1 --log-opts="${{ github.event.before }}..${{ github.sha }}"
+          fi
+
+  dependencias:
+    name: Dependências vulneráveis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: npm audit (moderada ou superior)
+        run: npm audit --audit-level=moderate
+      - name: OSV-Scanner
+        run: |
+          curl -sSL -o osv-scanner https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
+          chmod +x osv-scanner
+          ./osv-scanner scan source --lockfile package-lock.json
+
+  sast:
+    name: Análise estática (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Semgrep
+        run: |
+          pip install -q semgrep==1.182.1
+          # todas as severidades para o GitHub; falha só com resultados de severidade ERROR
+          semgrep scan --metrics=off --config p/owasp-top-ten --config p/php --config p/javascript --config p/secrets --sarif -o semgrep.sarif . || true
+          semgrep scan --metrics=off --config p/owasp-top-ten --config p/php --config p/javascript --config p/secrets --severity ERROR --error .
+      - name: Enviar para o GitHub (Code scanning)
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  codeql:
+    name: Análise estática (CodeQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - node_modules
+              - reports/vendor
+              - geo/vendor
+              - tests
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: codeql-javascript
+
+  dast:
+    name: Varrimento dinâmico (OWASP ZAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Portal com dados de teste
+        run: |
+          php tests/servidor/preparar.php
+          NAVAL_ENV="$PWD/tests/servidor/ambiente/.env" nohup php -S 0.0.0.0:8810 > /dev/null 2>&1 &
+          sleep 2 && curl -sf http://127.0.0.1:8810/geo/login.php > /dev/null
+      - name: ZAP (varrimento passivo da página de entrada e das páginas públicas)
+        uses: zaproxy/action-baseline@v0.14.0
+        continue-on-error: true
+        with:
+          target: http://127.0.0.1:8810/geo/login.php
+          allow_issue_writing: false
+          fail_action: false
+          cmd_options: '-a -I'
+      - name: Relatório do ZAP
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: relatorio-zap
+          path: report_*.*
+          if-no-files-found: ignore
+          retention-days: 30
+
+  alerta:
+    name: Alerta da verificação semanal
+    needs: [segredos, dependencias, sast, codeql]
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const titulo = 'Segurança: a verificação semanal encontrou problemas';
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const corpo = `A verificação de segurança de ${new Date().toISOString().slice(0, 10)} falhou.\n\n` +
+              `Detalhes: ${url}\n\nVer também *Security › Code scanning* e *Security › Dependabot*.`;
+            const { data } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'seguranca' });
+            const aberto = data.find((i) => i.title === titulo);
+            if (aberto) await github.rest.issues.createComment({ ...context.repo, issue_number: aberto.number, body: corpo });
+            else await github.rest.issues.create({ ...context.repo, title: titulo, body: corpo, labels: ['seguranca'] });

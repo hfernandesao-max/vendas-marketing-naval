@@ -85,7 +85,8 @@ function naval_gestao_confirmar(array $eu, string $accao, string $conf): ?array
     if ($accao === 'desbloquear' || (int) ($_SESSION['reforco_ate'] ?? 0) >= time()) return null;
     $metodo = empty($eu['mfa']) ? 'senha' : 'codigo';
     if ($conf === '') return ['ok' => false, 'confirmar' => $metodo];
-    $valido = $metodo === 'codigo' ? naval_totp_valido((string) $eu['mfa'], $conf) : password_verify($conf, (string) ($eu['senha'] ?? ''));
+    // código de dois passos de uso único também na confirmação (ASVS 2.8.4)
+    $valido = $metodo === 'codigo' ? naval_totp_aceitar((string) $eu['login'], (string) $eu['mfa'], $conf) : password_verify($conf, (string) ($eu['senha'] ?? ''));
     if (!$valido) {
         $_SESSION['reforco_falhas'] = (int) ($_SESSION['reforco_falhas'] ?? 0) + 1;
         naval_registar('confirmacao_falhada', ['accao' => $accao]);
@@ -168,8 +169,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $senha = null;
     if ($novo) {
         $senha = naval_senha_temporaria();
-        $u['senha'] = password_hash($senha, PASSWORD_DEFAULT);
-        $u['trocar_senha'] = true;
+        $u = naval_marcar_temporaria($u, $senha);   // expira em 24 h
     }
     $u['alterado'] = date('Y-m-d H:i');
     $u['alterado_por'] = $eu['login'];
@@ -195,8 +195,7 @@ function naval_gestao_repor_senha(string $login): string
     $d = naval_utilizadores();
     if (!isset($d[$login])) naval_gestao_recusar('Conta não encontrada.', 'senha');
     $senha = naval_senha_temporaria();
-    $d[$login]['senha'] = password_hash($senha, PASSWORD_DEFAULT);
-    $d[$login]['trocar_senha'] = true;
+    $d[$login] = naval_marcar_temporaria($d[$login], $senha);   // expira em 24 h e termina as sessões abertas da conta
     naval_gravar_utilizadores($d);
     naval_registar('senha_reposta', ['conta' => $login]);
     return $senha;
@@ -210,12 +209,14 @@ function naval_gestao_dois_passos(string $login, bool $activar, array $eu): arra
     if ($activar) {
         $seg = naval_novo_segredo();
         $d[$login]['mfa'] = $seg;
+        $d[$login] = naval_nova_versao($d[$login]);
         naval_gravar_utilizadores($d);
         naval_registar('dois_passos_configurado', ['conta' => $login]);
         return ['segredo' => $seg, 'uri' => naval_otpauth($seg, (string) ($d[$login]['email'] ?? '') ?: $login)];
     }
     if ($login === $eu['login']) naval_gestao_recusar('Não pode retirar a verificação em dois passos da sua própria conta.', 'dois_passos');
     unset($d[$login]['mfa']);
+    $d[$login] = naval_nova_versao($d[$login]);
     naval_gravar_utilizadores($d);
     naval_registar('dois_passos_retirado', ['conta' => $login]);
     return [];

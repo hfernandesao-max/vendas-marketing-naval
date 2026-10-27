@@ -43,3 +43,31 @@ function naval_jsonl_acrescentar(string $f, array $linha): void
     if (!is_dir($dir)) @mkdir($dir, 0770, true);
     @file_put_contents($f, json_encode($linha, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
 }
+
+/**
+ * Executa $f em exclusivo (bloqueio de ficheiro com flock na pasta privada): serializa as sequências
+ * ler → alterar → gravar dos ficheiros partilhados (contas, bloqueios, limites), para que dois pedidos
+ * em simultâneo não percam alterações um do outro (ASVS 11.1.6). Reentrante no mesmo pedido.
+ *
+ * @template T
+ * @param callable(): T $f
+ * @return T
+ */
+function naval_exclusivo(string $nome, callable $f)
+{
+    static $abertos = [];
+    $nome = (string) preg_replace('/[^a-z0-9_-]/i', '', $nome);
+    if (isset($abertos[$nome])) return $f();   // já temos o bloqueio neste pedido
+    $dir = naval_pasta_privada() . '/bloqueios-ficheiros';
+    if (!is_dir($dir)) @mkdir($dir, 0770, true);
+    $h = @fopen($dir . '/' . $nome . '.lock', 'c');
+    if (!$h || !flock($h, LOCK_EX)) throw new NavalErro('O servidor está ocupado. Tente de novo.', 503);
+    $abertos[$nome] = true;
+    try {
+        return $f();
+    } finally {
+        unset($abertos[$nome]);
+        flock($h, LOCK_UN);
+        fclose($h);
+    }
+}

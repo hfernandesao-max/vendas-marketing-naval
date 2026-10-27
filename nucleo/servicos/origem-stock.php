@@ -150,9 +150,9 @@ function naval_origem_stock(array $principais, int $dias = 90): array
 {
     $cache = naval_pasta('sap') . '/origens.json';
     $c = naval_json_ler($cache);
-    if ($c && ($c['chave'] ?? '') === md5((string) json_encode($principais)) && (int) ($c['em'] ?? 0) > time() - 900) return $c['dados'];
+    if ($c && ($c['chave'] ?? '') === hash('sha256', (string) json_encode($principais)) && (int) ($c['em'] ?? 0) > time() - 900) return $c['dados'];
     $r = naval_origem_calcular($principais, $dias);
-    naval_json_gravar($cache, ['chave' => md5((string) json_encode($principais)), 'em' => time(), 'dados' => $r]);
+    naval_json_gravar($cache, ['chave' => hash('sha256', (string) json_encode($principais)), 'em' => time(), 'dados' => $r]);
     return $r;
 }
 

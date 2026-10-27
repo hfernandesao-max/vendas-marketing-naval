@@ -110,6 +110,15 @@ function naval_exigir_csrf(array $q): void
     }
 }
 
+/**
+ * Código só para a ligação «Terminar sessão» (?t=…): derivado do código CSRF, para que o endereço (que
+ * fica no histórico e nos registos do servidor) não revele o código que protege as alterações.
+ */
+function naval_token_saida(): string
+{
+    return substr(hash_hmac('sha256', 'terminar-sessao', naval_csrf()), 0, 32);
+}
+
 /** Código CSRF da sessão (criado na primeira vez). */
 function naval_csrf(): string
 {

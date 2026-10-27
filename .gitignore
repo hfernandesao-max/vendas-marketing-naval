@@ -15,6 +15,7 @@ node_modules/
 test-results/
 playwright-report/
 tests/servidor/ambiente/
+tests/servidor/ambiente-mfa/
 
 # Ferramentas PHP de desenvolvimento (composer install); reports/vendor/ é do portal e fica
 /vendor/

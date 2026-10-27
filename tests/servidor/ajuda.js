@@ -1,5 +1,6 @@
 // Funções comuns aos testes do servidor: entrar com uma conta de teste e chamar os serviços.
 import { request } from '@playwright/test';
+import { createHmac } from 'node:crypto';
 
 export const BASE = 'http://127.0.0.1:8810';
 export const SENHA = 'Teste-12345!';
@@ -34,3 +35,20 @@ export async function erroEntrada(resposta) {
 }
 
 export const vendasDoDia = async (ctx) => (await ctx.get(`/reports/data/api.php?${DIA}&include_items=1`)).json();
+
+/** Código TOTP (RFC 6238, 6 dígitos, 30 s) de um segredo base32, como a aplicação de autenticação. */
+export function totp(segredo, quando = Date.now()) {
+  const alf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bits = segredo
+    .replace(/[^A-Z2-7]/gi, '')
+    .toUpperCase()
+    .split('')
+    .map((c) => alf.indexOf(c).toString(2).padStart(5, '0'))
+    .join('');
+  const chave = Buffer.from((bits.match(/.{8}/g) || []).map((b) => parseInt(b, 2)));
+  const passo = Buffer.alloc(8);
+  passo.writeUInt32BE(Math.floor(quando / 30000), 4);
+  const h = createHmac('sha1', chave).update(passo).digest();
+  const o = h[19] & 0xf;
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1000000).padStart(6, '0');
+}

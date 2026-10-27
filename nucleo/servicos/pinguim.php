@@ -114,6 +114,8 @@ function naval_pinguim_diagnostico(): array
         'php_ini' => php_ini_loaded_file(),
         'simplexml' => function_exists('simplexml_load_string'),
         'env_encontrado' => is_file(naval_ficheiro_env()),
+        'pasta_privada_dentro_da_publica' => naval_pasta_privada_publica(),   // deve ser false
+        'https' => naval_https(),
         'credenciais' => naval_pinguim_configurado(),
         'max_execution_time' => ini_get('max_execution_time'),
         'memory_limit' => ini_get('memory_limit'),

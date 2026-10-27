@@ -570,7 +570,7 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
           <span class="status-dot"></span>
           <span><?= htmlspecialchars($userName) ?> (<?= htmlspecialchars($userProfile) ?>)</span>
         </div>
-        <a href="auth/logout.php?t=<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" class="btn-logout-header" title="Terminar sessão">
+        <a href="auth/logout.php?t=<?= htmlspecialchars(naval_token_saida(), ENT_QUOTES, 'UTF-8') ?>" class="btn-logout-header" title="Terminar sessão">
           <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
           <span>Sair</span>
         </a>

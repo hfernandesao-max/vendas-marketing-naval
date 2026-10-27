@@ -45,7 +45,33 @@ function naval_config(string $chave, string $omissao = ''): string
 /** Pasta privada (fora da pasta pública): contas, registos, planos, lotes do SAP. */
 function naval_pasta_privada(): string
 {
-    return rtrim(naval_config('DADOS_PRIVADOS', dirname(naval_raiz()) . '/dados-privados'), '/\\');
+    $d = rtrim(naval_config('DADOS_PRIVADOS', dirname(naval_raiz()) . '/dados-privados'), '/\\');
+    naval_proteger_pasta($d);
+    return $d;
+}
+
+/**
+ * Defesa em profundidade (ASVS 12.5.1): a pasta privada deve ficar fora da pasta pública; se, por engano,
+ * ficar dentro dela, este .htaccess impede o Apache de a servir (contas, segredos de dois passos, registos).
+ */
+function naval_proteger_pasta(string $d): void
+{
+    static $feito = [];
+    if (isset($feito[$d])) return;
+    $feito[$d] = true;
+    if (is_dir($d) && !is_file($d . '/.htaccess')) {
+        @file_put_contents($d . '/.htaccess', "# Pasta privada da plataforma: nunca servida pelo Apache\nRequire all denied\n");
+    }
+}
+
+/** A pasta privada está dentro da pasta pública do Apache? (aviso no diagnóstico do super administrador) */
+function naval_pasta_privada_publica(): bool
+{
+    $raiz = realpath((string) ($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: realpath(naval_raiz());
+    $priv = realpath(naval_pasta_privada());
+    if (!$raiz || !$priv) return false;
+    $n = function ($p) { return rtrim(strtolower(str_replace('\\', '/', $p)), '/') . '/'; };
+    return strpos($n($priv), $n($raiz)) === 0;
 }
 
 /** Subpasta da pasta privada, criada se ainda não existir. */

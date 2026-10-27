@@ -70,7 +70,7 @@ export function mostrarActualizacao() {
   );
   const b = el('button', 'linkbtn actual-btn');
   b.type = 'button';
-  b.innerHTML = svg('actualizar');
+  b.innerHTML = svg('actualizar'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
   b.append(el('span', null, t('Actualizar')));
   b.addEventListener('click', () => {
     b.disabled = true;
