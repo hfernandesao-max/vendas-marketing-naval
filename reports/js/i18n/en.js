@@ -1077,4 +1077,32 @@ export const EN = {
     'Amounts in kwanzas (Kz). Sources: Pinguim BO (sales, collections, items, customers, stock), loading plan and RTM registrations.',
   'Conjuntos de dados do portal (os mesmos do Excel «Exportar dados»): campo técnico, nome, tipo e descrição.':
     'Portal datasets (the same as in the «Export data» Excel file): technical field, name, type and description.',
+  'Excel de rascunho transferido. Só a versão publicada é oficial.': 'Draft Excel downloaded. Only the published version is official.',
+  'Exportar Excel': 'Export Excel',
+  'Há alterações por publicar. Escolha a versão:': 'There are unpublished changes. Choose the version:',
+  'Versão {v} publicada': 'Published version {v}',
+  'Rascunho actual': 'Current draft',
+  'Enviar por email': 'Send by email',
+  'Vai a versão {v} do plano de {d}, publicada às {h}, com o Excel em anexo.':
+    'Version {v} of the {d} plan, published at {h}, is sent with the Excel file attached.',
+  'Há alterações por publicar e não vão neste email. Para as enviar, publique uma rectificação.':
+    'There are unpublished changes that will not be in this email. To send them, publish a correction.',
+  'O envio de email ainda não está configurado no servidor.': 'Email sending is not yet configured on the server.',
+  Enviar: 'Send',
+  'Escolha pelo menos um destinatário da lista.': 'Choose at least one recipient from the list.',
+  'Plano enviado a {n} destinatários.': 'Plan sent to {n} recipients.',
+  'Publicar plano': 'Publish plan',
+  'Plano de {d}: {n} rotas, {c} caixas. Fica como versão {v}, oficial e sem alterações; correcções seguem como rectificação.':
+    'Plan for {d}: {n} routes, {c} boxes. It becomes version {v}, official and locked; corrections are issued as a correction.',
+  'Enviar por email agora, com o Excel em anexo': 'Send by email now, with the Excel file attached',
+  'A lista de destinatários está vazia (Listas → Destinatários): o plano fica publicado sem envio.':
+    'The recipient list is empty (Lists → Recipients): the plan is published without sending.',
+  'O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode enviar depois.':
+    'Email sending is not yet configured on the server: the plan is published, the Excel file is available, and you can send it later.',
+  'Publicar rectificação e enviar': 'Publish correction and send',
+  'Publicar sem enviar': 'Publish without sending',
+  'Plano publicado (versão {v}). Não foi enviado por email.': 'Plan published (version {v}). It was not sent by email.',
+  Publicar: 'Publish',
+  'O plano deste dia ainda não foi publicado. O plano é preparado e publicado na plataforma pela Logística (nível G na matriz de acessos).':
+    'The plan for this day has not been published yet. The plan is prepared and published in the platform by Logistics (level G in the access matrix).',
 };

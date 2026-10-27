@@ -1,6 +1,6 @@
 // Plano de cargas: produzido na plataforma (preenchimento, publicação e envio por email).
 import { draw } from '../app.js';
-import { pill, secBox, tabela } from '../componentes/blocos.js';
+import { download, pill, secBox, tabela } from '../componentes/blocos.js';
 import { botao, campo, confirmarAccao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { carregarExcelJS } from '../excel.js';
 import { dl, ds, n0 } from '../formatos.js';
@@ -144,7 +144,7 @@ addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
-function gerarExcelPlano(rotas, data, versao, artigos) {
+function gerarExcelPlano(rotas, data, versao, artigos, rascunho = false) {
   return carregarExcelJS().then(() => {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Portal RTM · Grupo Naval';
@@ -156,7 +156,10 @@ function gerarExcelPlano(rotas, data, versao, artigos) {
     const [y, m, dd] = data.split('-');
     ws.mergeCells('A1:M1');
     const c1 = ws.getCell('A1');
-    c1.value = `GENERAL SALES PLAN (DATE: ${dd}/${m}/${y.slice(2)})` + (versao > 1 ? ` · RECTIFICADO (V${versao})` : '');
+    c1.value =
+      `GENERAL SALES PLAN (DATE: ${dd}/${m}/${y.slice(2)})` + (rascunho ? ' · RASCUNHO — NÃO PUBLICADO' : versao > 1 ? ` · RECTIFICADO (V${versao})` : '');
+    // Cópia não oficial identificada em todas as páginas impressas
+    if (rascunho) ws.headerFooter = { oddHeader: '&C&"Arial,Bold"&14RASCUNHO — NÃO PUBLICADO', oddFooter: '&LPortal RTM&R&P / &N' };
     c1.font = { bold: true, size: 18, color: { argb: 'FF1E4FB0' } };
     c1.alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getRow(1).height = 28;
@@ -234,16 +237,118 @@ function gerarExcelPlano(rotas, data, versao, artigos) {
   });
 }
 
-// ---- Publicar ----
+// ---- Destinatários (escolha por envio, só da lista controlada pela Logística) ----
+function escolhaDestinatarios(dest) {
+  const w = el('div', 'pc-dest');
+  const caixas = dest.map((x) => {
+    const l = el('label', 'pc-dest-i');
+    const c = entrada('checkbox');
+    c.checked = true;
+    c.value = x.email;
+    l.append(c, el('span', null, x.nome ? x.nome + ' · ' + x.email : x.email));
+    w.append(l);
+    return c;
+  });
+  // grupo com título (não é um <label>: tem várias caixas de selecção lá dentro)
+  const g = el('div', 'campo');
+  g.setAttribute('role', 'group');
+  g.setAttribute('aria-label', t('Destinatários'));
+  g.append(el('span', null, t('Destinatários')), w);
+  return { el: g, escolhidos: () => caixas.filter((c) => c.checked).map((c) => c.value) };
+}
+const nomeExcelPlano = (data, sufixo) => 'PLANO_DE_CARGAS_' + dl(data).replace(/-/g, '.') + (sufixo ? '_' + sufixo : '') + '.xlsx';
+
+// ---- Exportar Excel: versão publicada (oficial) ou rascunho identificado como não publicado ----
+function exportarExcelPlano() {
+  const d = PC.resp,
+    p = d.plano,
+    est = estadoPlano();
+  if (p && p.publicado && est === 'publicado') {
+    location.href = 'data/plano.php?xlsx=' + PC.data;
+    return;
+  }
+  const go = () =>
+    guardarPlano()
+      .then(() => gerarExcelPlano(PC.rotas, PC.data, 0, d.listas.artigos, true))
+      .then((buf) => {
+        download(nomeExcelPlano(PC.data, 'RASCUNHO'), new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+        postPlano({ accao: 'exportado', data: PC.data }).catch(() => {});
+        toast(t('Excel de rascunho transferido. Só a versão publicada é oficial.'), 6000);
+      });
+  if (p && p.publicado)
+    janela(t('Exportar Excel'), t('Há alterações por publicar. Escolha a versão:'), (b, ft, fechar) => {
+      ft.append(
+        botao(t('Cancelar'), 'ghost', fechar),
+        botao(t('Versão {v} publicada', { v: p.publicado.versao }), 'ghost', () => {
+          fechar();
+          location.href = 'data/plano.php?xlsx=' + PC.data;
+        }),
+        botao(t('Rascunho actual'), '', () => {
+          fechar();
+          go();
+        }),
+      );
+    });
+  else go();
+}
+
+// ---- Enviar por email a versão publicada ----
+function enviarPlano() {
+  const d = PC.resp,
+    p = d.plano,
+    dest = d.listas.destinatarios;
+  if (!p || !p.publicado) return;
+  if (!dest.length) {
+    toast(t('A lista de destinatários está vazia (Listas → Destinatários).'), 7000);
+    return;
+  }
+  janela(
+    t('Enviar por email'),
+    t('Vai a versão {v} do plano de {d}, publicada às {h}, com o Excel em anexo.', { v: p.publicado.versao, d: dl(PC.data), h: p.publicado.em.slice(11, 16) }),
+    (b, ft, fechar) => {
+      if (estadoPlano() === 'alterado')
+        b.append(el('p', 'aviso', t('Há alterações por publicar e não vão neste email. Para as enviar, publique uma rectificação.')));
+      if (!d.email_configurado) b.append(el('p', 'aviso', t('O envio de email ainda não está configurado no servidor.')));
+      const esc = escolhaDestinatarios(dest);
+      b.append(esc.el);
+      const erro = msgErro();
+      b.append(erro);
+      const go = botao(t('Enviar'), '', () => {
+        const para = esc.escolhidos();
+        if (!para.length) {
+          erro.textContent = t('Escolha pelo menos um destinatário da lista.');
+          erro.hidden = false;
+          return;
+        }
+        go.disabled = true;
+        postPlano({ accao: 'enviar', data: PC.data, para }).then((r) => {
+          go.disabled = false;
+          if (r.plano) PC.resp.plano = r.plano;
+          if (!r.ok) {
+            erro.textContent = t(r.erro || 'Não foi possível enviar.');
+            erro.hidden = false;
+            return;
+          }
+          fechar();
+          PC.hist = null;
+          draw();
+          toast(t('Plano enviado a {n} destinatários.', { n: r.email.para.length }), 7000);
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+    },
+  );
+}
+
+// ---- Publicar (versão oficial), com envio por email opcional ----
 function publicarPlano() {
   const d = PC.resp,
     v = validarPlano(PC.rotas),
     dest = d.listas.destinatarios;
-  if (v.erros.length || !dest.length) {
+  if (v.erros.length) {
     janela(t('Ainda não pode publicar'), t('Corrija estes pontos:'), (b, ft, fechar) => {
       const ul = el('ul', 'pc-lista');
       v.erros.forEach((x) => ul.append(el('li', null, (x.rota ? t('Rota') + ' ' + x.rota + ': ' : '') + x.msg)));
-      if (!dest.length) ul.append(el('li', null, t('A lista de destinatários está vazia (Listas → Destinatários).')));
       b.append(ul);
       ft.append(botao(t('Fechar'), '', fechar));
     });
@@ -252,37 +357,63 @@ function publicarPlano() {
   const versao = ((d.plano && d.plano.publicado && d.plano.publicado.versao) || 0) + 1;
   const saem = PC.rotas.filter((r) => r.sai);
   janela(
-    versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar'),
-    t('Plano de {d}: {n} rotas, {c} caixas. Vai por email, com o Excel em anexo, para:', {
+    versao > 1 ? t('Publicar rectificação') : t('Publicar plano'),
+    t('Plano de {d}: {n} rotas, {c} caixas. Fica como versão {v}, oficial e sem alterações; correcções seguem como rectificação.', {
       d: dl(PC.data),
       n: saem.length,
       c: n0(saem.reduce((s, r) => s + somaQ(r), 0)),
+      v: versao,
     }),
     (b, ft, fechar) => {
-      const ul = el('ul', 'pc-lista');
-      dest.forEach((x) => ul.append(el('li', null, (x.nome ? x.nome + ' · ' : '') + x.email)));
-      b.append(ul);
       if (v.avisos.length)
         b.append(el('p', 'aviso', t('{n} avisos (por exemplo, falta de número de factura). Pode publicar na mesma.', { n: v.avisos.length })));
-      if (!d.email_configurado)
+      const cEnv = entrada('checkbox');
+      cEnv.checked = dest.length > 0;
+      cEnv.disabled = !dest.length;
+      const lEnv = el('label', 'interruptor');
+      lEnv.append(cEnv, document.createTextNode(t('Enviar por email agora, com o Excel em anexo')));
+      b.append(lEnv);
+      if (!dest.length) b.append(el('p', 'aviso', t('A lista de destinatários está vazia (Listas → Destinatários): o plano fica publicado sem envio.')));
+      else if (!d.email_configurado)
         b.append(
-          el('p', 'aviso', t('O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode reenviar depois.')),
+          el('p', 'aviso', t('O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode enviar depois.')),
         );
+      const esc = escolhaDestinatarios(dest);
+      const cDest = esc.el;
+      if (dest.length) b.append(cDest);
       const nota = entrada('text', '', { maxLength: 300, placeholder: versao > 1 ? t('O que mudou (aparece no email)') : t('Opcional') });
-      b.append(campo(versao > 1 ? t('Nota da rectificação') : t('Nota para os destinatários'), nota));
+      const cNota = campo(versao > 1 ? t('Nota da rectificação') : t('Nota para os destinatários'), nota);
+      b.append(cNota);
       const erro = msgErro();
       b.append(erro);
-      const go = botao(versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar'), '', () => {
+      const rotulo = () => (cEnv.checked ? (versao > 1 ? t('Publicar rectificação e enviar') : t('Publicar e enviar')) : t('Publicar sem enviar'));
+      const go = botao(rotulo(), '', () => {
+        const enviar = cEnv.checked,
+          para = enviar ? esc.escolhidos() : [];
+        if (enviar && !para.length) {
+          erro.textContent = t('Escolha pelo menos um destinatário da lista.');
+          erro.hidden = false;
+          return;
+        }
         go.disabled = true;
         go.textContent = t('A publicar…');
         guardarPlano()
           .then(() => gerarExcelPlano(PC.rotas, PC.data, versao, d.listas.artigos))
           .then((buf) =>
-            postPlano({ accao: 'publicar', data: PC.data, rev: d.plano ? d.plano.rev : 0, rotas: PC.rotas, xlsx: b64(buf), nota: nota.value.trim() }),
+            postPlano({
+              accao: 'publicar',
+              data: PC.data,
+              rev: d.plano ? d.plano.rev : 0,
+              rotas: PC.rotas,
+              xlsx: b64(buf),
+              nota: nota.value.trim(),
+              enviar,
+              para,
+            }),
           )
           .then((r) => {
             go.disabled = false;
-            go.textContent = versao > 1 ? t('Publicar rectificação') : t('Publicar e enviar');
+            go.textContent = rotulo();
             if (!r.ok) {
               erro.textContent = t(r.erro || 'Não foi possível publicar.') + (r.erros ? ' ' + r.erros.join(' ') : '');
               erro.hidden = false;
@@ -295,17 +426,24 @@ function publicarPlano() {
             fechar();
             draw();
             toast(
-              r.email && r.email.ok
-                ? t('Plano publicado e enviado a {n} destinatários.', { n: r.email.para.length })
-                : t('Plano publicado, mas o email não seguiu: {e}', { e: r.email ? r.email.erro : '' }),
+              !r.email
+                ? t('Plano publicado (versão {v}). Não foi enviado por email.', { v: versao })
+                : r.email.ok
+                  ? t('Plano publicado e enviado a {n} destinatários.', { n: r.email.para.length })
+                  : t('Plano publicado, mas o email não seguiu: {e}', { e: r.email.erro || '' }),
               9000,
             );
           })
           .catch(() => {
             go.disabled = false;
+            go.textContent = rotulo();
             erro.textContent = t('Não foi possível publicar.');
             erro.hidden = false;
           });
+      });
+      cEnv.addEventListener('change', () => {
+        cDest.hidden = !cEnv.checked;
+        go.textContent = rotulo();
       });
       ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
     },
@@ -522,7 +660,7 @@ function actualizarPlanoUI() {
     );
   pcUI.estado.replaceChildren(pill(t(NOMES[est]), cls[est]), el('span', 'pc-estado-t', linha.filter(Boolean).join(' · ')));
   if (pcUI.publicar) {
-    pcUI.publicar.textContent = p && p.publicado ? t('Publicar rectificação') : t('Publicar e enviar');
+    pcUI.publicar.textContent = p && p.publicado ? t('Publicar rectificação') : t('Publicar');
     pcUI.publicar.disabled = est === 'publicado' || PC.gravando;
   }
   const v = validarPlano(PC.rotas),
@@ -714,8 +852,11 @@ R['plano-cargas'] = (pg) => {
   const di = entrada('date', PC.data);
   di.setAttribute('aria-label', t('Dia do plano'));
   di.addEventListener('change', () => mudarDiaPlano(di.value));
+  // dia-mês-ano seja qual for o idioma do navegador (o texto nativo fica escondido)
+  const dc = el('span', 'pc-dcampo');
+  dc.append(di, el('span', 'dv', dl(PC.data)));
   const lbl = el('b', 'pc-dia-t', ds(PC.data));
-  dia.append(ant, lbl, di, seg);
+  dia.append(ant, lbl, dc, seg);
   if (PC.data !== hoje()) dia.append(botao(t('Hoje'), 'ghost sm', () => mudarDiaPlano(hoje())));
   const estado = el('div', 'pc-estado'),
     acc = el('div', 'pc-acc');
@@ -749,13 +890,25 @@ R['plano-cargas'] = (pg) => {
       );
     acc.append(botao(t('Listas'), 'ghost sm', janelaListas));
   }
-  if (p && p.publicado && d.exportar) {
-    const a = el('a', 'btn ghost sm', t('Excel enviado'));
+  // Exportar Excel: quem gere exporta sempre (rascunho identificado); os outros, a versão publicada
+  if (gere) {
+    const bx = botao(t('Exportar Excel'), 'ghost sm', exportarExcelPlano);
+    bx.id = 'pc-excel';
+    acc.append(bx);
+  } else if (p && p.publicado && d.exportar) {
+    const a = el('a', 'btn ghost sm', t('Exportar Excel'));
+    a.id = 'pc-excel';
     a.href = 'data/plano.php?xlsx=' + PC.data;
     acc.append(a);
   }
+  if (gere && p && p.publicado) {
+    const be = botao(t('Enviar por email'), 'ghost sm', enviarPlano);
+    be.id = 'pc-enviar';
+    acc.append(be);
+  }
   if (gere) {
-    pcUI.publicar = botao(t('Publicar e enviar'), 'sm', publicarPlano);
+    pcUI.publicar = botao(t('Publicar'), 'sm', publicarPlano);
+    pcUI.publicar.id = 'pc-publicar';
     acc.append(pcUI.publicar);
   }
   barra.append(dia, estado, acc);
@@ -815,7 +968,18 @@ R['plano-cargas'] = (pg) => {
     pg.append(grelha);
   } else {
     const saem = PC.rotas.filter((r) => r.sai);
-    if (!p || !p.publicado) pg.append(secBox(t('Plano de cargas'), '', el('p', null, t('O plano deste dia ainda não foi publicado pela Logística.'))));
+    if (!p || !p.publicado)
+      pg.append(
+        secBox(
+          t('Plano de cargas'),
+          '',
+          el(
+            'p',
+            null,
+            t('O plano deste dia ainda não foi publicado. O plano é preparado e publicado na plataforma pela Logística (nível G na matriz de acessos).'),
+          ),
+        ),
+      );
     else
       pg.append(
         tabela({

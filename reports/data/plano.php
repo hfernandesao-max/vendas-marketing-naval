@@ -5,7 +5,7 @@
  * GET  ?data=AAAA-MM-DD     plano do dia, listas e rotas
  * GET  ?historico=1         dias com plano
  * GET  ?xlsx=AAAA-MM-DD     Excel da última publicação desse dia
- * POST {accao: guardar | publicar | reenviar | listas | teste_email, csrf, ...}
+ * POST {accao: guardar | publicar (enviar, para) | enviar (para) | reenviar | listas | teste_email | exportado, csrf, ...}
  *
  * Ver: nível V (ou V·r, só as suas rotas). Preencher, publicar e gerir as listas: nível G (Logística).
  */
@@ -64,10 +64,18 @@ switch ($accao) {
             naval_json(['ok' => true, 'plano' => $p]);
         }
         $xlsx = base64_decode((string) ($q['xlsx'] ?? ''), true);
-        naval_json(['ok' => true] + naval_plano_publicar($p, $xlsx === false ? '' : $xlsx, (string) ($q['nota'] ?? ''), $eu, $listas));
+        naval_json(['ok' => true] + naval_plano_publicar($p, $xlsx === false ? '' : $xlsx, (string) ($q['nota'] ?? ''), $eu, $listas,
+            !array_key_exists('enviar', $q) || !empty($q['enviar']), (array) ($q['para'] ?? [])));
+    case 'enviar':
     case 'reenviar':
-        $r = naval_plano_reenviar((string) ($q['data'] ?? ''), $listas, $eu);
+        $r = naval_plano_reenviar((string) ($q['data'] ?? ''), $listas, $eu, (array) ($q['para'] ?? []));
         naval_json(['ok' => $r['email']['ok'], 'erro' => $r['email']['erro']] + $r);
+    case 'exportado':
+        // Excel de rascunho gerado no portal: fica nos registos (controlo das cópias não oficiais)
+        $data = (string) ($q['data'] ?? '');
+        if (!naval_data_valida($data)) throw new NavalErro('Data inválida.');
+        naval_registar('exportacao', ['pagina' => 'plano-cargas', 'data' => $data, 'versao' => 'rascunho']);
+        naval_json(['ok' => true]);
     case 'listas':
         naval_json(['ok' => true, 'listas' => naval_plano_actualizar_listas((array) ($q['listas'] ?? []), $listas)]);
     case 'teste_email':

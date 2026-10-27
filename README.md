@@ -159,10 +159,12 @@ _Relações_, _Índices_, _Modelo do portal_, _Matriz de acessos_, _Perfis_ e _F
 
 Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e enviado por email todos os dias.
 
-- **Quem preenche e publica:** perfil Logística (LOG), nível G na matriz. Os restantes perfis com acesso vêem a versão publicada; os supervisores só as suas rotas.
+- **Quem preenche e publica:** perfil Logística (LOG), nível G na matriz, e o super administrador. Os restantes perfis com acesso vêem a versão publicada; os supervisores só as suas rotas.
 - **Preenchimento:** um cartão por rota. O motorista escolhe-se da lista e preenche o telefone, a matrícula, a viatura e a transportadora. As zonas escolhem-se da lista (sem nomes repetidos com grafias diferentes) e as quantidades indicam-se por artigo. O rascunho guarda-se sozinho.
 - **Produzido na plataforma:** o plano é preenchido no portal (atalho _Copiar de …_ para partir do plano do dia anterior); já não se importa o Excel antigo.
-- **Publicar e enviar:** valida (motorista, matrícula, zonas e carga em cada rota que sai), gera o Excel no formato habitual e envia-o por email à lista de destinatários, com o resumo no corpo. Uma alteração depois de publicado sai como _Rectificação_ (versão 2, 3, …), com nota.
+- **Exportar Excel:** a qualquer momento. Com alterações por publicar sai um _rascunho_, identificado no título e em cada página impressa como «RASCUNHO — NÃO PUBLICADO» e com `_RASCUNHO` no nome; com o plano publicado sai a versão oficial guardada no servidor. Todas as exportações ficam nos registos.
+- **Publicar:** valida (motorista, matrícula, zonas e carga em cada rota que sai), gera o Excel no formato habitual e fixa-o como versão oficial. O envio por email é opcional no momento da publicação (destinatários escolhidos da lista). Uma alteração depois de publicado sai como _Rectificação_ (versão 2, 3, …), com nota.
+- **Enviar por email:** envia a versão publicada, com o Excel em anexo e o resumo no corpo, aos destinatários escolhidos da lista de destinatários (endereços fora da lista são recusados pelo servidor). Cada envio fica registado (quem, quando, para quem, versão).
 - **Listas:** destinatários, motoristas, zonas, armazéns, viaturas, transportadoras e artigos. Motoristas, zonas e viaturas novos entram sozinhos ao publicar.
 - O plano publicado alimenta logo o _Stock por promotor / carrinha_ e o escoamento.
 - Ficheiros em `dados-privados/plano-cargas/` (um JSON por dia, o Excel de cada versão e `listas.json`).

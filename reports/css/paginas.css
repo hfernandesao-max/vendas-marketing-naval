@@ -367,3 +367,49 @@ dialog.dlg.largo {
   gap: 6px;
   align-items: center;
 }
+
+/* Dia do plano sempre em dia-mês-ano */
+.pc-dcampo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.pc-dcampo input[type='date'] {
+  color: transparent;
+  width: 128px;
+}
+.pc-dcampo input[type='date']::-webkit-datetime-edit {
+  color: transparent;
+}
+.pc-dcampo .dv {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+/* Escolha dos destinatários de cada envio */
+.pc-dest {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.pc-dest-i {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.pc-dest-i input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}

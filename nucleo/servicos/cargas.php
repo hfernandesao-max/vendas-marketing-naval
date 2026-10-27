@@ -327,15 +327,31 @@ function naval_plano_actualizar(string $data, int $rev, array $rotasPedido, arra
 }
 
 /**
- * Publica o plano: valida, guarda a versão e o Excel, aprende as listas e envia o email.
- * Devolve ['plano', 'listas', 'email'].
+ * Destinatários escolhidos para um envio: só endereços da lista de destinatários (controlada pela
+ * Logística); $para vazio = todos. Lança NavalErro se a escolha ficar vazia.
  */
-function naval_plano_publicar(array $p, string $xlsx, string $nota, array $eu, array $listas): array
+function naval_plano_destinatarios(array $listas, array $para): array
+{
+    $todos = $listas['destinatarios'];
+    if (!$todos) throw new NavalErro('A lista de destinatários está vazia (Listas → Destinatários).');
+    if (!$para) return $todos;
+    $quero = array_map('strtolower', array_map('trim', array_map('strval', $para)));
+    $dest = array_values(array_filter($todos, function ($d) use ($quero) { return in_array(strtolower($d['email']), $quero, true); }));
+    if (!$dest) throw new NavalErro('Escolha pelo menos um destinatário da lista.');
+    return $dest;
+}
+
+/**
+ * Publica o plano: valida, guarda a versão e o Excel e aprende as listas; envia o email só se $enviar
+ * (aos destinatários escolhidos em $para, ou a todos). Devolve ['plano', 'listas', 'email' (ou null)].
+ */
+function naval_plano_publicar(array $p, string $xlsx, string $nota, array $eu, array $listas, bool $enviar = true, array $para = []): array
 {
     $rotas = $p['rotas'];
     $erros = naval_plano_erros($rotas, $listas['artigos']);
-    if (!$listas['destinatarios']) $erros[] = 'A lista de destinatários está vazia (Listas → Destinatários).';
+    if ($enviar && !$listas['destinatarios']) $erros[] = 'A lista de destinatários está vazia (Listas → Destinatários).';
     if ($erros) throw new NavalErro('Corrija antes de publicar:', 400, ['erros' => $erros]);
+    if ($enviar) naval_plano_destinatarios($listas, $para);   // escolha válida antes de gravar a versão
     if ($xlsx === '' || substr($xlsx, 0, 2) !== 'PK' || strlen($xlsx) > 3 * 1024 * 1024) throw new NavalErro('O Excel do plano não chegou ao servidor. Tente de novo.');
     $versao = (int) ($p['publicado']['versao'] ?? 0) + 1;
     naval_ficheiro_gravar(naval_plano_ficheiro_xlsx($p['data'], $versao), $xlsx);
@@ -344,18 +360,19 @@ function naval_plano_publicar(array $p, string $xlsx, string $nota, array $eu, a
     $saem = array_filter($rotas, function ($r) { return $r['sai']; });
     naval_plano_aprender($listas, $saem);
     naval_plano_gravar_listas($listas);
-    $envio = naval_plano_enviar($p, $listas, $eu);
-    $p['envios'][] = $envio;
+    $envio = $enviar ? naval_plano_enviar($p, $listas, $eu, $para) : null;
+    if ($envio) $p['envios'][] = $envio;
     naval_plano_gravar($p);
-    naval_registar('plano_publicado', ['data' => $p['data'], 'versao' => $versao, 'rotas' => count($saem), 'email' => $envio['ok'] ? 'enviado a ' . count($envio['para']) : 'falhou']);
+    naval_registar('plano_publicado', ['data' => $p['data'], 'versao' => $versao, 'rotas' => count($saem),
+        'email' => !$envio ? 'não enviado' : ($envio['ok'] ? 'enviado a ' . count($envio['para']) : 'falhou')]);
     return ['plano' => $p, 'listas' => naval_plano_listas(), 'email' => $envio];
 }
 
-/** Envia (ou reenvia) por email a versão publicada, com o Excel em anexo. Devolve o registo do envio. */
-function naval_plano_enviar(array $p, array $listas, array $eu): array
+/** Envia por email a versão publicada, com o Excel em anexo, aos destinatários escolhidos. Devolve o registo do envio. */
+function naval_plano_enviar(array $p, array $listas, array $eu, array $para = []): array
 {
     $pub = $p['publicado'];
-    $dest = $listas['destinatarios'];
+    $dest = naval_plano_destinatarios($listas, $para);
     [$a, $m, $d] = explode('-', $p['data']);
     $assunto = 'Plano de cargas · ' . $d . '-' . $m . '-' . $a . ($pub['versao'] > 1 ? ' · RECTIFICADO (versão ' . $pub['versao'] . ')' : '');
     $xlsx = naval_plano_ficheiro_xlsx($p['data'], (int) $pub['versao']);
@@ -365,15 +382,15 @@ function naval_plano_enviar(array $p, array $listas, array $eu): array
     return ['em' => date('Y-m-d H:i:s'), 'por' => $eu['login'], 'versao' => $pub['versao'], 'para' => array_column($dest, 'email'), 'ok' => $r['ok'], 'erro' => $r['erro']];
 }
 
-/** Reenvia o email da versão publicada de um dia. Devolve ['plano', 'email']. */
-function naval_plano_reenviar(string $data, array $listas, array $eu): array
+/** Envia (ou reenvia) o email da versão publicada de um dia. Devolve ['plano', 'email']. */
+function naval_plano_reenviar(string $data, array $listas, array $eu, array $para = []): array
 {
     $p = naval_data_valida($data) ? naval_plano_ler($data) : null;
     if (!$p || empty($p['publicado'])) throw new NavalErro('Este plano ainda não foi publicado.');
-    $envio = naval_plano_enviar($p, $listas, $eu);
+    $envio = naval_plano_enviar($p, $listas, $eu, $para);
     $p['envios'][] = $envio;
     naval_plano_gravar($p);
-    naval_registar('plano_reenviado', ['data' => $data, 'versao' => $p['publicado']['versao'], 'email' => $envio['ok'] ? 'enviado' : 'falhou']);
+    naval_registar('plano_enviado', ['data' => $data, 'versao' => $p['publicado']['versao'], 'para' => $envio['para'], 'email' => $envio['ok'] ? 'enviado' : 'falhou']);
     return ['plano' => $p, 'email' => $envio];
 }
 
