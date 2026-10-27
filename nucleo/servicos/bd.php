@@ -96,7 +96,7 @@ function naval_bd_estado(): array
 {
     $t0 = microtime(true);
     naval_bd_consultar('SELECT 1 AS OK');
-    return ['ok' => true, 'segundos' => round(microtime(true) - $t0, 3), 'origem' => 'SQL Server (' . naval_config('DB_NAME', 'PingWinBO') . ')'];
+    return ['ok' => true, 'segundos' => round(microtime(true) - $t0, 3), 'origem' => 'SQL Server' . (naval_detalhe(naval_config('DB_NAME')) ? ' (' . naval_config('DB_NAME') . ')' : '')];   // nome da base só para SADM/TI
 }
 
 /** AAAAMMDD ou AAAA-MM-DD → AAAA-MM-DD. */

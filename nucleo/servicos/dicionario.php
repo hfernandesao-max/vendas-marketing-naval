@@ -21,7 +21,7 @@ function naval_dic_tipo(string $tipo, int $bytes, int $precisao, int $escala): s
 /** Estrutura completa (SQL Server). Sem SQL Server (catálogo sys.* indisponível): INFORMATION_SCHEMA. */
 function naval_bd_dicionario(): array
 {
-    $base = naval_config('DB_NAME', 'PingWinBO');
+    $base = naval_config('DB_NAME');
     try {
         $versao = naval_bd_consultar('SELECT CAST(SERVERPROPERTY(\'ProductVersion\') AS VARCHAR(40)) AS VERSAO, CAST(SERVERPROPERTY(\'Edition\') AS VARCHAR(80)) AS EDICAO');
         $objectos = naval_bd_consultar("
