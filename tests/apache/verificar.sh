@@ -71,6 +71,10 @@ espera 403 /.env /.env.exemplo /.gitignore /.htaccess /.git/config /.git/HEAD /.
   /nucleo/config.php /nucleo/servicos/bd.php /ferramentas/utilizadores.php /tests/servidor/preparar.php /tests/servidor/ambiente/.env \
   /docs/ARQUITECTURA.md /node_modules/ /geo/apache_vhost.conf /geo/config.php /geo/auth/config_users.php \
   /reports/data/vendas.json /reports/data/rotas.json /reports/modelos/
+# ficheiros de dados que existam na raiz do site (por exemplo, exportações de clientes ou de stock)
+while IFS= read -r -d '' f; do
+  n="$(basename "$f")"; espera 403 "/$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$n")"
+done < <(find "$RAIZ" -maxdepth 1 -type f \( -iname '*.csv' -o -iname '*.xlsx' -o -iname '*.sql' -o -iname '*.bak' \) -print0)
 echo "Servidos:"
 espera 200 /geo/login.php /geo/vendor/lucide-1.62.0.min.js /geo/vendor/papaparse-5.3.0.min.js /reports/js/app.js /geo/style.css
 espera 302 /index.php /reports/
