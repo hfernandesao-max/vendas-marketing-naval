@@ -39,6 +39,7 @@ const NAVAL_MATRIZ_TXT = [
     'pagamentos'           => 'V  E  V  Vr Vr E  -  -  -  E',
     'pendentes'            => 'V  E  V  Vr Vr E  -  -  -  E',
     'auditoria'            => 'V  V  E  Vr -  E  V  -  -  E',
+    'registo-cargas'       => 'V  V  E  Vr Vr V  -  E  -  V',
     'stock-carrinha'       => 'V  V  E  Vr Vr V  -  E  -  V',
     'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V',
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',

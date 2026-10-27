@@ -22,7 +22,7 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 | **Recebimentos**  | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) · Ficheiro para o SAP |
 | **Clientes**      | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados                                                                             |
 | **Terreno**       | Plano de visitas · Histórico de auditoria                                                                                                                               |
-| **Logística**     | Plano de cargas · Stock por promotor / carrinha · Stock por armazém                                                                                                     |
+| **Logística**     | Plano de cargas · Registo de cargas · Stock por promotor / carrinha · Stock por armazém                                                                                 |
 | **Administração** | Acessos                                                                                                                                                                 |
 
 O menu só mostra as páginas que o perfil pode abrir (matriz de acessos).
@@ -166,7 +166,7 @@ Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e en
 - **Publicar:** valida (motorista, matrícula, zonas e carga em cada rota que sai), gera o Excel no formato habitual e fixa-o como versão oficial. O envio por email é opcional no momento da publicação (destinatários escolhidos da lista). Uma alteração depois de publicado sai como _Rectificação_ (versão 2, 3, …), com nota.
 - **Enviar por email:** envia a versão publicada, com o Excel em anexo e o resumo no corpo, aos destinatários escolhidos da lista de destinatários (endereços fora da lista são recusados pelo servidor). Cada envio fica registado (quem, quando, para quem, versão).
 - **Listas:** destinatários, motoristas, zonas, armazéns, viaturas, transportadoras e artigos. Motoristas, zonas e viaturas novos entram sozinhos ao publicar.
-- O plano publicado alimenta logo o _Stock por promotor / carrinha_ e o escoamento.
+- O plano publicado alimenta logo o **Registo de cargas** (Logística): cargas expedidas por rota e viatura, resumo diário e utilização de cada viatura. A organização segue o fluxo logístico — planear (plano de cargas) → expedir (registo de cargas) → stock (páginas de stock) — e as páginas de stock mostram só posições de stock.
 - Ficheiros em `dados-privados/plano-cargas/` (um JSON por dia, o Excel de cada versão e `listas.json`).
 
 ### Envio de email pelo Microsoft 365

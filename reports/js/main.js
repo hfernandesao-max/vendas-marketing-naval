@@ -12,6 +12,7 @@ import './paginas/terreno.js';
 import './paginas/sincronizacao.js';
 import './paginas/recebimentos.js';
 import './paginas/logistica.js';
+import './paginas/cargas.js';
 import './paginas/clientes.js';
 import './paginas/plano-cargas.js';
 import './paginas/sap.js';

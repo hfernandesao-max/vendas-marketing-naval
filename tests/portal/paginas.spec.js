@@ -18,6 +18,7 @@ const PAGINAS = [
   'cadastros-clientes',
   'plano-visitas',
   'auditoria',
+  'registo-cargas',
   'stock-carrinha',
   'stock-armazem',
 ];

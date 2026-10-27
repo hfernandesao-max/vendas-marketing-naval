@@ -1105,4 +1105,28 @@ export const EN = {
   Publicar: 'Publish',
   'O plano deste dia ainda não foi publicado. O plano é preparado e publicado na plataforma pela Logística (nível G na matriz de acessos).':
     'The plan for this day has not been published yet. The plan is prepared and published in the platform by Logistics (level G in the access matrix).',
+  '+{n}': '+{n}',
+  'Saídas de viatura': 'Vehicle departures',
+  '{n} dias com plano publicado': '{n} days with a published plan',
+  Viaturas: 'Vehicles',
+  'Média por saída': 'Average per departure',
+  caixas: 'boxes',
+  'Registo de cargas': 'Load register',
+  'Sem cargas no período escolhido. O registo é feito a partir dos planos de cargas publicados (Logística › Plano de cargas).':
+    'No loads in the selected period. The register is built from the published loading plans (Logistics › Loading plan).',
+  'Cargas por rota e viatura': 'Loads by route and vehicle',
+  'Uma linha por saída: rota, viatura e caixas carregadas, segundo a versão publicada do plano de cargas de cada dia.':
+    "One row per departure: route, vehicle and boxes loaded, according to the published version of each day's loading plan.",
+  'Tipo de viatura': 'Vehicle type',
+  'Total (cx)': 'Total (boxes)',
+  'N.º de zonas': 'No. of zones',
+  'Cargas por dia': 'Loads by day',
+  'Resumo diário das saídas e das caixas carregadas.': 'Daily summary of departures and boxes loaded.',
+  'Cargas por viatura': 'Loads by vehicle',
+  'Utilização de cada viatura no período: dias de saída, rotas servidas e caixas transportadas.':
+    'Use of each vehicle in the period: departure days, routes served and boxes carried.',
+  'Dias de saída': 'Departure days',
+  'Média por dia (cx)': 'Average per day (boxes)',
+  'Para mostrar o stock de cada carrinha (por promotor), a exportação de stock do Pinguim BO deve trazer:':
+    'To show the stock of each van (by promoter), the Pinguim BO stock export must include:',
 };

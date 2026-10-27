@@ -198,7 +198,7 @@ function painelInicio(pg) {
       );
   }
   // 7. Caixas carregadas por dia (plano de cargas)
-  if (pode('stock-carrinha') && (DB.cargas || []).some((x) => inR(x.data))) {
+  if (pode('registo-cargas') && (DB.cargas || []).some((x) => inR(x.data))) {
     const dias = Object.values(
       group(
         DB.cargas.filter((x) => inR(x.data)),
@@ -211,7 +211,7 @@ function painelInicio(pg) {
       cartaoGrafico({
         titulo: t('Caixas carregadas por dia'),
         sub: t('{c} caixas em {n} dias, segundo o plano de cargas', { c: n0(sum(dias, 'c')), n: dias.length }),
-        destino: 'stock-carrinha',
+        destino: 'registo-cargas',
         desenhar: (w) =>
           grafColunas(w, {
             fmt: n0,

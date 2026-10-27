@@ -21,6 +21,7 @@ export const PAGES = [
   { id: 'auditoria', grupo: 'Terreno', icon: 'shield', nome: 'Histórico de auditoria' },
   { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos smartphones' },
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Plano de cargas' },
+  { id: 'registo-cargas', grupo: 'Logística', icon: 'box', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },

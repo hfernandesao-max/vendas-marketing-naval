@@ -27,6 +27,7 @@ const FILTROS_PAGINA = {
   'cadastros-clientes': ['rota', 'cliente', 'municipio', 'tipocli'],
   'plano-visitas': ['rota', 'cliente'],
   auditoria: ['rota', 'cliente', 'tipo'],
+  'registo-cargas': ['rota'],
   'stock-carrinha': ['rota'],
   'stock-armazem': ['rota'],
   'plano-cargas': [],

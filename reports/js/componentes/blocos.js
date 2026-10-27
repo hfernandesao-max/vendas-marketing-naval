@@ -246,7 +246,7 @@ export function tabela(o) {
     sorted.slice(0, LIM[o.id] || PASSO).forEach((r) => {
       const tr2 = el('tr');
       o.cols.forEach((c, i) => {
-        const td = el('td', (numType(c) || c.nowrap ? 'n0' : 't') + (numType(c) ? ' n' : '') + (c.wrap ? ' w' : ''));
+        const td = el('td', (numType(c) || c.nowrap || c.type === 'date' ? 'n0' : 't') + (numType(c) ? ' n' : '') + (c.wrap ? ' w' : ''));
         td.dataset.c = i;
         td.dataset.l = c.label;
         td.append(cellNode(c, r, maxs[c.key]));
