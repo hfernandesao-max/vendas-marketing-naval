@@ -89,6 +89,12 @@ export function draw() {
     if (location.hash !== novo && location.hash.split('?')[0].split('/')[0] === '#' + p.id) history.replaceState(null, '', novo);
   }
   nav();
+  // «Excel desta página»: inactivo (com a explicação) quando a página não tem dados para exportar
+  if (p.id !== 'inicio') {
+    const vazio = !REG.tabelas.some((x) => (x.rows || []).length) && !REG.kpis.length;
+    $('#xl-page').disabled = vazio;
+    $('#xl-page').title = vazio ? t('Esta página ainda não tem dados para exportar.') : t('Excel desta página');
+  } else $('#xl-page').disabled = false;
   try {
     sessionStorage.setItem(ULTIMA, location.hash || '#' + p.id);
   } catch (e) {

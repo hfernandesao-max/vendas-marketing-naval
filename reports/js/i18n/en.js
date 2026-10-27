@@ -1225,4 +1225,6 @@ export const EN = {
     'Smartphone communication with the server (green: up to {a} h · amber: up to {b} h · red: over {b} h or never). Click for details.',
   Smartphones: 'Smartphones',
   '{a}/{b} em dia': '{a}/{b} up to date',
+  'Esta página ainda não tem dados para exportar.': 'This page has no data to export yet.',
+  'Últimos 14 dias. Número de sincronizações terminadas por rota e dia.': 'Last 14 days. Number of completed syncs per route and day.',
 };

@@ -44,14 +44,14 @@ const NAVAL_MATRIZ_TXT = [
     'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V',
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E',
-    'plano-cargas'         => 'V  V  V  Vr -  -  V  G  V  V',
+    'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
     'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V',
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
-    'sincronizacao'        => 'V  V  V  Vr -  -  V  V  -  V',
+    'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E',
     'excel-completo'       => '-  E  E  -  -  E  -  -  -  E',
     'exportar-dados'       => '-  E  -  -  -  E  -  -  -  E',
     'estrutura-dados'      => 'E  -  -  -  -  -  -  -  -  E',
@@ -64,7 +64,7 @@ const NAVAL_MATRIZ_TXT = [
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -',
     'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V',
     // Administração
-    'acessos'              => 'V  -  -  -  -  -  -  -  -  V',
+    'acessos'              => 'E  -  -  -  -  -  -  -  -  E',
     'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -',
     'admin-config'         => '-  -  -  -  -  -  -  -  -  -',
     'registos'             => 'V  -  -  -  -  -  -  -  -  V',
@@ -127,8 +127,9 @@ function naval_niveis_recurso(string $rec): array
         case 'admin-utilizadores':
         case 'admin-config':
             return [];
-        case 'pagina-principal':
         case 'acessos':
+            return ['', 'V', 'E'];   // exportar contas, perfis, matriz e registos (revisão de acessos / auditoria)
+        case 'pagina-principal':
         case 'registos':
         case 'nif':
             return ['', 'V'];

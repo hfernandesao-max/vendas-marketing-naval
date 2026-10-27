@@ -2,7 +2,7 @@
 // com estado por limites de tempo, histórico de 14 dias e actualização automática a cada minuto.
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
-import { aguardar, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
+import { REG, aguardar, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { legenda } from '../componentes/graficos.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { diaCurto, dl, ds, n0 } from '../formatos.js';
@@ -150,6 +150,26 @@ R.sincronizacao = (pg) => {
   mat.append(tb);
   requestAnimationFrame(() => {
     mat.scrollLeft = mat.scrollWidth;
+  });
+  // A matriz rota × dia também vai para o Excel da página (uma coluna por dia)
+  REG.tabelas.push({
+    id: 'sy-dias',
+    titulo: t('Sincronizações por dia'),
+    nota: t('Últimos 14 dias. Número de sincronizações terminadas por rota e dia.'),
+    total: true,
+    cols: [
+      { key: 'rota_t', label: t('Rota / promotor') },
+      ...dias.map((d) => ({ key: 'd_' + d, label: dl(d), type: 'n', sum: true })),
+      { key: 'total', label: t('Total'), type: 'n', sum: true },
+    ],
+    rows: [...rotas]
+      .sort((a, b) => String(a.rota).localeCompare(String(b.rota)))
+      .map((r) => ({
+        chave: r.rota,
+        rota_t: promotorRota(r.rota, r.promotor),
+        ...Object.fromEntries(dias.map((d) => ['d_' + d, (r.dias || {})[d] || 0])),
+        total: dias.reduce((s, d) => s + ((r.dias || {})[d] || 0), 0),
+      })),
   });
   const secH = secBox(t('Sincronizações por dia'), t('Últimos 14 dias. Dias sem nenhuma sincronização ficam vazios.'), mat);
   secH.querySelector('.sec-h').append(

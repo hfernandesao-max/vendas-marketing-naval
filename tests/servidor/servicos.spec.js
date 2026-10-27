@@ -160,3 +160,12 @@ test('sair termina a sessão', async () => {
   await fin.get('/geo/auth/logout.php', { maxRedirects: 0 });
   expect((await fin.get('/reports/data/sessao.php')).status()).toBe(401);
 });
+
+test('exportação em todos os menus: níveis E na sincronização, no plano de cargas e nos acessos (revisão de acessos)', async () => {
+  const dir = await (await (await entrar('dir')).ctx.get('/reports/data/sessao.php')).json();
+  expect(dir.permissoes).toMatchObject({ sincronizacao: 'E', 'plano-cargas': 'E' });
+  const ti = await (await (await entrar('ti')).ctx.get('/reports/data/sessao.php')).json();
+  expect(ti.permissoes.acessos).toBe('E');
+  const aud = (await entrar('aud')).ctx;
+  expect(await (await aud.post('/reports/data/registar.php', { data: { pagina: 'acessos', completo: false, linhas: 5 } })).json()).toEqual({ ok: true });
+});
