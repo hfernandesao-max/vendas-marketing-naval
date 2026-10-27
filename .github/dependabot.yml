@@ -1,7 +1,7 @@
 # Dependabot: verifica todas as semanas se há versões novas (e correcções de segurança) das dependências
 # e abre pedidos de integração com a actualização. Os testes e a verificação de segurança correm em cada
 # pedido; as actualizações de correcção (patch) e menores são integradas sozinhas quando tudo passa
-# (.github/workflows/dependabot-integrar.yml). As maiores ficam para revisão.
+# (.github/workflows/dependabot-integrar.yml, sem depender de definições do repositório). As maiores ficam para revisão.
 version: 2
 updates:
   - package-ecosystem: npm

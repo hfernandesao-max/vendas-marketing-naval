@@ -1,6 +1,7 @@
 # Integração automática das actualizações do Dependabot de correcção (patch) e menores, e de todas as
-# actualizações de segurança: activa o «auto-merge», que só integra depois de passarem as verificações
-# obrigatórias do ramo main (testes, PHP, Apache e segurança). As actualizações maiores ficam para revisão.
+# actualizações de segurança: espera que TODAS as outras verificações do pedido (testes, PHP 7.1–8.3, Apache,
+# segurança) terminem com sucesso e só então integra. Se alguma falhar, não integra e fica para revisão.
+# As actualizações maiores (que podem mudar o comportamento) ficam sempre para revisão humana.
 name: Dependabot — integração automática
 
 on: pull_request
@@ -8,19 +9,40 @@ on: pull_request
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   integrar:
+    name: Integrar actualização do Dependabot
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'hfernandesao-max/vendas-marketing-naval'
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
       - id: meta
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Activar a integração automática (depois das verificações)
+
+      - name: Esperar pelas verificações e integrar
         if: steps.meta.outputs.update-type != 'version-update:semver-major' || steps.meta.outputs.ghsa-id != ''
-        run: gh pr merge --auto --squash "$PR"
         env:
           PR: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROPRIO: Integrar actualização do Dependabot
+        run: |
+          sleep 60   # dar tempo a que as outras verificações comecem
+          for i in $(seq 1 120); do
+            estado="$(gh pr checks "$PR" --json name,bucket -q "[.[] | select(.name != env.PROPRIO)]")"
+            total=$(echo "$estado" | jq length)
+            pend=$(echo "$estado" | jq '[.[] | select(.bucket == "pending")] | length')
+            falha=$(echo "$estado" | jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length')
+            if [ "$falha" -gt 0 ]; then echo "Há verificações falhadas: fica para revisão."; exit 1; fi
+            if [ "$total" -gt 0 ] && [ "$pend" -eq 0 ]; then
+              echo "Todas as $total verificações passaram: a integrar."
+              gh pr merge --squash --delete-branch "$PR"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "As verificações não terminaram a tempo: fica para revisão."
+          exit 1
