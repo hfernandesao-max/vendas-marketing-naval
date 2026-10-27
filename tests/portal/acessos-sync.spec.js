@@ -55,8 +55,11 @@ test('Acessos: separadores e activação da gestão de contas com email, perfil 
   await page.getByRole('button', { name: 'Activar a gestão' }).click();
   const dlg = page.locator('dialog[open]');
   await expect(dlg.locator('tbody tr')).toHaveCount(2);
-  await dlg.getByLabel('Email · admin').fill('admin@naval.co.ao');
-  await dlg.getByLabel('Email · michael.samson').fill('michael.samson@naval.co.ao');
+  // espera o foco inicial da janela (primeiro campo) antes de preencher
+  await expect(dlg.getByLabel('Email · admin', { exact: true })).toBeFocused();
+  await dlg.getByLabel('Email · admin', { exact: true }).fill('admin@naval.co.ao');
+  await dlg.getByLabel('Email · michael.samson', { exact: true }).fill('michael.samson@naval.co.ao');
+  await expect(dlg.getByLabel('Email · admin', { exact: true })).toHaveValue('admin@naval.co.ao');
   await expect(dlg.getByLabel('Perfil · admin')).toBeDisabled();
   await dlg.getByPlaceholder('Nome', { exact: true }).nth(0).fill('Pessoa A');
   await dlg.getByPlaceholder('Nome', { exact: true }).nth(1).fill('Pessoa B');

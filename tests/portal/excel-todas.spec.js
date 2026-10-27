@@ -1,4 +1,4 @@
-// «Excel desta página» em todas as páginas com dados; inactivo (com explicação) quando não há nada a exportar.
+// «Excel desta página» em todas as páginas com dados (os cadastros dependem de um ficheiro privado, fora do GitHub); inactivo (com explicação) quando não há nada a exportar.
 import { test, expect } from '@playwright/test';
 import { createRequire } from 'node:module';
 import { abrir } from './dados.js';
@@ -16,9 +16,6 @@ const PAGINAS = [
   'pagamentos',
   'pendentes',
   'clientes',
-  'cadastros',
-  'cadastros-analise',
-  'cadastros-clientes',
   'plano-visitas',
   'auditoria',
   'registo-cargas',
