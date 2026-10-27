@@ -56,6 +56,44 @@ R.clientes = (pg) => {
     };
   });
   const secs = el('div', 'secs');
+  // Primeiro o registo dos clientes (dados mestre), depois a análise da carteira por rota
+  secs.append(
+    tabela({
+      id: 'cl-d',
+      titulo: t('Clientes'),
+      nota: t('Um cliente por linha: rota, dias de visita, estado do cadastro, GPS e se comprou no período.'),
+      rows,
+      sort: 'nome',
+      dir: 1,
+      cols: [
+        { key: 'rota', label: t('Rota'), p: 4 },
+        { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'codigo', label: t('Código') },
+        { key: 'nome', label: t('Cliente'), wrap: true },
+        { key: 'nif', label: t('NIF') },
+        { key: 'tipo', label: t('Tipo') },
+        { key: 'dias', label: t('Dias de visita') },
+        {
+          key: 'estado',
+          label: t('Estado'),
+          xl: (r) => t(ESTADO_PT[r.estado] || r.estado),
+          render: (v) => pill(t(ESTADO_PT[v] || v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'),
+        },
+        {
+          key: 'gps',
+          label: t('GPS'),
+          render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-warn'),
+          xl: (r) => t(r.gps ? 'Sim' : 'Não'),
+        },
+        {
+          key: 'comprou',
+          label: t('Comprou no período'),
+          render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-mut'),
+          xl: (r) => t(r.comprou ? 'Sim' : 'Não'),
+        },
+      ],
+    }),
+  );
   secs.append(
     tabela({
       id: 'cl-r',
@@ -81,36 +119,6 @@ R.clientes = (pg) => {
             const a = sum(rs, 'clientes');
             return a ? sum(rs, 'compraram') / a : null;
           },
-        },
-      ],
-    }),
-  );
-  secs.append(
-    tabela({
-      id: 'cl-d',
-      titulo: t('Clientes'),
-      rows,
-      sort: 'nome',
-      dir: 1,
-      cols: [
-        { key: 'rota', label: t('Rota'), p: 4 },
-        { key: 'promotor', label: t('Promotor'), p: 0 },
-        { key: 'codigo', label: t('Código') },
-        { key: 'nome', label: t('Cliente'), wrap: true },
-        { key: 'nif', label: t('NIF') },
-        { key: 'tipo', label: t('Tipo') },
-        { key: 'dias', label: t('Dias de visita') },
-        {
-          key: 'estado',
-          label: t('Estado'),
-          xl: (r) => t(ESTADO_PT[r.estado] || r.estado),
-          render: (v) => pill(t(ESTADO_PT[v] || v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'),
-        },
-        {
-          key: 'comprou',
-          label: t('Comprou no período'),
-          render: (v) => pill(t(v ? 'Sim' : 'Não'), v ? 'p-ok' : 'p-mut'),
-          xl: (r) => t(r.comprou ? 'Sim' : 'Não'),
         },
       ],
     }),

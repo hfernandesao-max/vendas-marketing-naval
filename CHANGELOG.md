@@ -22,6 +22,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   destinatários fora da lista e regista cada envio. Dia do plano sempre em dd-mm-aaaa.
 - «Stock por promotor / carrinha» mostra só stock (as cargas passaram ao Registo de cargas).
 - Barra de topo numa só linha em portáteis; datas nunca partem a linha nas tabelas.
+- Carteira de clientes: primeiro **Clientes** (registo, agora com coluna GPS) e depois **Carteira por rota** (análise).
 
 ## 26-10-2026
 

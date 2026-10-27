@@ -1129,4 +1129,7 @@ export const EN = {
   'Média por dia (cx)': 'Average per day (boxes)',
   'Para mostrar o stock de cada carrinha (por promotor), a exportação de stock do Pinguim BO deve trazer:':
     'To show the stock of each van (by promoter), the Pinguim BO stock export must include:',
+  'Um cliente por linha: rota, dias de visita, estado do cadastro, GPS e se comprou no período.':
+    'One customer per row: route, visit days, registration status, GPS and whether they bought in the period.',
+  GPS: 'GPS',
 };
