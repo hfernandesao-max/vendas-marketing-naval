@@ -1146,4 +1146,19 @@ export const EN = {
   'Origem do stock desta viatura: {o}': 'Stock origin of this vehicle: {o}',
   'saldos de stock dos armazéns principais e das viaturas': 'stock balances of the main warehouses and vehicles',
   'transferências de stock do Pinguim BO (documentos)': 'Pinguim BO stock transfers (documents)',
+  'Sem SAP location para as rotas {r}: indique a SAP location por omissão em Correspondência com o SAP.':
+    'No SAP location for routes {r}: enter the default SAP location under SAP mapping.',
+  'Rotas {r} sem abastecimento registado no período: as linhas seguem com a SAP location por omissão ({l}). Confirme no SAP.':
+    'Routes {r} have no recorded supply in the period: their lines use the default SAP location ({l}). Please confirm in SAP.',
+  'Determinação da location': 'Location determination',
+  'SAP location por omissão': 'Default SAP location',
+  'Usada quando a viatura não teve abastecimento registado (avariada, em manutenção, sem carga). As vendas seguem para o SAP com esta location e ficam assinaladas na pré-visualização, nos avisos e no registo do lote, para confirmação.':
+    'Used when the vehicle had no recorded supply (broken down, in maintenance, no load). Sales go to SAP with this location and are flagged in the preview, the warnings and the batch register for confirmation.',
+  'por omissão (sem abastecimento)': 'default (no supply)',
+  'Sem abastecimento registado desta viatura no período: usa a SAP location por omissão.':
+    'No recorded supply for this vehicle in the period: the default SAP location is used.',
+  '{n} linhas com a location por omissão {l} (rotas {r})': '{n} lines with the default location {l} (routes {r})',
+  'Indicada na rota': 'Set on the route',
+  'Origem do stock': 'Stock origin',
+  'Por omissão (sem abastecimento)': 'Default (no supply)',
 };

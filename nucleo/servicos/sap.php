@@ -22,7 +22,8 @@ require_once __DIR__ . '/origem-stock.php';
 
 // Configuração por omissão. A SAP storage location de cada venda é determinada automaticamente pela origem
 // do stock (armazém principal que abasteceu a viatura); na rota só se indica para a substituir.
-const NAVAL_SAP_OMISSAO = ['prefixo' => 'FHR PIV', 'moeda' => 'AOA', 'unidade' => 'CAR', 'armazens' => NAVAL_ARMAZENS_PRINCIPAIS, 'rotas' => []];
+// SAP location por omissão: viaturas sem abastecimento registado (avariadas, em manutenção) não bloqueiam o envio.
+const NAVAL_SAP_OMISSAO = ['prefixo' => 'FHR PIV', 'moeda' => 'AOA', 'unidade' => 'CAR', 'armazens' => NAVAL_ARMAZENS_PRINCIPAIS, 'local_omissao' => 'RTM2', 'rotas' => []];
 const NAVAL_SAP_MODELO = '/reports/modelos/RTM_Sales_SAP_Upload_Format.xlsx';
 
 function naval_sap_pasta(): string
@@ -34,6 +35,7 @@ function naval_sap_config(): array
 {
     $c = naval_json_ler(naval_sap_pasta() . '/config.json', NAVAL_SAP_OMISSAO);
     if (empty($c['armazens'])) $c['armazens'] = NAVAL_ARMAZENS_PRINCIPAIS;
+    if (!isset($c['local_omissao'])) $c['local_omissao'] = NAVAL_SAP_OMISSAO['local_omissao'];
     return $c;
 }
 
@@ -170,7 +172,10 @@ function naval_sap_anular(int $n, string $motivo, array $eu): array
 function naval_sap_gravar_config(array $c): array
 {
     $nova = ['prefixo' => naval_texto($c['prefixo'] ?? 'FHR PIV', 40), 'moeda' => strtoupper(naval_texto($c['moeda'] ?? 'AOA', 5)), 'unidade' => strtoupper(naval_texto($c['unidade'] ?? 'CAR', 10)),
-        'armazens' => [], 'rotas' => []];
+        'armazens' => [], 'local_omissao' => strtoupper(naval_texto($c['local_omissao'] ?? NAVAL_SAP_OMISSAO['local_omissao'], 20)), 'rotas' => []];
+    if ($nova['local_omissao'] === '' || in_array($nova['local_omissao'], ['N/A', 'NA', '-'], true)) {
+        throw new NavalErro('Indique uma SAP location por omissão válida no SAP (por exemplo RTM2): «N/A» seria recusado no carregamento.');
+    }
     // Armazéns principais → SAP location (código do armazém no Pinguim BO, nome e localização no SAP)
     foreach ((array) ($c['armazens'] ?? NAVAL_ARMAZENS_PRINCIPAIS) as $cod => $a) {
         $cod = naval_texto($cod, 20);
@@ -224,9 +229,16 @@ function naval_sap_novo_lote(array $q, string $xlsx, array $eu): array
             'n_documentos' => count($docs), 'linhas' => (int) ($q['linhas'] ?? 0), 'total' => round((float) ($q['total'] ?? 0), 2),
             'ficheiro' => $nome, 'bytes' => strlen($xlsx), 'sha256' => hash('sha256', $xlsx), 'documentos' => $docs,
         ];
+        // Excepção registada: linhas que seguiram com a SAP location por omissão (viatura sem abastecimento)
+        $om = (array) ($q['omissao'] ?? []);
+        if ((int) ($om['linhas'] ?? 0) > 0) {
+            $lote['omissao'] = ['linhas' => (int) $om['linhas'], 'rotas' => array_values(array_map('strval', (array) ($om['rotas'] ?? []))),
+                'local' => naval_texto($om['local'] ?? '', 20)];
+        }
         $lotes[] = $lote;
         naval_sap_gravar_lotes($lotes);
-        naval_registar('sap_lote', ['lote' => $n, 'documentos' => count($docs), 'total' => $lote['total'], 'periodo' => $de . ' a ' . $ate, 'sha256' => $lote['sha256']]);
+        naval_registar('sap_lote', ['lote' => $n, 'documentos' => count($docs), 'total' => $lote['total'], 'periodo' => $de . ' a ' . $ate, 'sha256' => $lote['sha256']]
+            + (isset($lote['omissao']) ? ['location_por_omissao' => $lote['omissao']['linhas'] . ' linhas (rotas ' . implode(', ', $lote['omissao']['rotas']) . ')'] : []));
         unset($lote['documentos']);
         return $lote;
     });

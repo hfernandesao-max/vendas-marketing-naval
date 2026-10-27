@@ -35,14 +35,26 @@ const mapaSap = (rota, cfg) => {
 };
 // SAP storage location de cada linha (determinação automática pela origem do stock, como no SAP):
 //   1. a indicada na rota (substituição manual); 2. a do armazém principal de onde o artigo veio para
-//   a viatura dessa rota; 3. a predominante da rota; 4. a do armazém principal de onde o artigo sai.
+//   a viatura dessa rota; 3. a predominante da rota; 4. a do armazém principal de onde o artigo sai;
+//   5. a SAP location por omissão (viatura sem abastecimento registado: avariada, em manutenção, …).
+// Nunca «N/A»: o SAP valida a storage location e recusaria a linha; usa-se um valor válido e a
+// excepção fica assinalada para revisão (gestão por excepção).
 const origens = () => SAPD.origens || { rotas: {}, artigos: {} };
 const localDeterminado = (rota, codigo) => {
   const o = origens(),
     r = o.rotas[rota];
   return (r && ((codigo && r.artigos[codigo]) || r.local)) || (codigo && o.artigos[codigo]) || '';
 };
-const localLinha = (rota, codigo) => mapaSap(rota).local || localDeterminado(rota, codigo);
+const localOmissao = () => (SAPD.config && SAPD.config.local_omissao) || '';
+/** {local, como}: como = rota (manual) | origem (stock) | omissao (sem abastecimento registado) | '' */
+const localLinha = (rota, codigo) => {
+  const manual = mapaSap(rota).local;
+  if (manual) return { local: manual, como: 'rota' };
+  const auto = localDeterminado(rota, codigo);
+  if (auto) return { local: auto, como: 'origem' };
+  return localOmissao() ? { local: localOmissao(), como: 'omissao' } : { local: '', como: '' };
+};
+const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Por omissão (sem abastecimento)' };
 function linhasSap() {
   const c = SAPD.config;
   const V = (DB.vendas || []).filter((v) => inR(v.data)); // rota e tipo de documento vêm da barra de filtros
@@ -54,7 +66,8 @@ function linhasSap() {
     linhas = [],
     erros = [],
     avisos = [],
-    semLocal = new Set();
+    semLocal = new Set(),
+    porOmissao = new Set();
   let repetidos = 0;
   V.slice()
     .sort((a, b) => (a.data + a.hora + a.documento < b.data + b.hora + b.documento ? -1 : 1))
@@ -94,7 +107,9 @@ function linhasSap() {
           t('{d}: {v} pagos por {m}; o modelo só tem Cash e MULTICAIXA.', { d: docTxt, v: kz(sum(outros, 'valor')), m: outros.map((p) => p.meio).join(', ') }),
         );
       ls.forEach((a) => {
-        if (!localLinha(v.rota, a.codigo)) semLocal.add(v.rota);
+        const lc = localLinha(v.rota, a.codigo);
+        if (!lc.local) semLocal.add(v.rota);
+        if (lc.como === 'omissao') porOmissao.add(v.rota);
         if (!a.codigo) erros.push(t('{d}: linha «{a}» sem código de artigo.', { d: docTxt, a: a.artigo }));
         const net = r2(a.valor_sem_iva),
           tax = r2(a.iva);
@@ -109,7 +124,8 @@ function linhasSap() {
           quantidade: +a.quantidade || 0,
           uom: a.unidade || c.unidade,
           tipo: v.tipo,
-          local: localLinha(v.rota, a.codigo),
+          local: lc.local,
+          local_como: t(COMO[lc.como] || '—'),
           net,
           tax,
           gross: r2(net + tax),
@@ -126,12 +142,15 @@ function linhasSap() {
     });
   if (semLocal.size)
     erros.unshift(
-      t(
-        'Sem SAP location para as rotas {r}: não há transferências de stock dos armazéns principais para estas viaturas. Indique-a em Correspondência com o SAP.',
-        {
-          r: [...semLocal].sort().join(', '),
-        },
-      ),
+      t('Sem SAP location para as rotas {r}: indique a SAP location por omissão em Correspondência com o SAP.', { r: [...semLocal].sort().join(', ') }),
+    );
+  // Excepção que não bloqueia: vendas de viaturas sem abastecimento registado seguem com a SAP location por omissão
+  if (porOmissao.size)
+    avisos.unshift(
+      t('Rotas {r} sem abastecimento registado no período: as linhas seguem com a SAP location por omissão ({l}). Confirme no SAP.', {
+        r: [...porOmissao].sort().join(', '),
+        l: localOmissao(),
+      }),
     );
   return { docs, linhas, erros, avisos, repetidos };
 }
@@ -303,6 +322,12 @@ function gerarFicheiroSap() {
               documentos: L.docs.map((v) => v.documento),
               linhas: L.linhas.length,
               total,
+              // excepções registadas no lote (trilho de auditoria): linhas com a SAP location por omissão
+              omissao: {
+                linhas: L.linhas.filter((l) => l.local_como === t(COMO.omissao)).length,
+                rotas: [...new Set(L.linhas.filter((l) => l.local_como === t(COMO.omissao)).map((l) => l.rota))].sort(),
+                local: localOmissao(),
+              },
               xlsx: b64(buf),
             }).then((r) => {
               go.disabled = false;
@@ -425,6 +450,7 @@ R['sap-exportar'] = (pg) => {
         { key: 'quantidade', label: 'QUANTITY', type: 'n', sum: true },
         { key: 'uom', label: 'UNIT' },
         { key: 'local', label: 'STORAGELOCATION' },
+        { key: 'local_como', label: t('Determinação da location'), p: 4 },
         { key: 'net', label: 'NETSALES', type: 'kz', sum: true },
         { key: 'tax', label: 'TAXAMOUNT', type: 'kz', sum: true },
         { key: 'gross', label: 'GROSSSALES', type: 'kz', sum: true },
@@ -499,6 +525,23 @@ R['sap-exportar'] = (pg) => {
     ta.append(l);
   });
   ap.append(ta);
+  // SAP location por omissão: para viaturas sem abastecimento registado (nunca bloqueia o envio)
+  const om = entrada('text', cfg.local_omissao || '');
+  om.disabled = !gera;
+  om.setAttribute('aria-label', t('SAP location por omissão'));
+  om.addEventListener('input', () => (cfg.local_omissao = om.value.trim().toUpperCase()));
+  const cOm = campo(t('SAP location por omissão'), om);
+  cOm.classList.add('sap-omissao');
+  ap.append(
+    cOm,
+    el(
+      'p',
+      'note',
+      t(
+        'Usada quando a viatura não teve abastecimento registado (avariada, em manutenção, sem carga). As vendas seguem para o SAP com esta location e ficam assinaladas na pré-visualização, nos avisos e no registo do lote, para confirmação.',
+      ),
+    ),
+  );
   sec.append(ap);
   const tb = el('div', 'sap-map');
   const cab = el('div', 'sap-map-l sap-map-h');
@@ -522,15 +565,22 @@ R['sap-exportar'] = (pg) => {
     // SAP location: automática pela origem do stock; o campo só serve para a substituir
     const det = O.rotas && O.rotas[r];
     const auto = localDeterminado(r, '');
-    const loc = c('local', auto ? auto + ' · ' + t('automático') : t('obrigatório'));
+    const loc = c(
+      'local',
+      auto ? auto + ' · ' + t('automático') : localOmissao() ? localOmissao() + ' · ' + t('por omissão (sem abastecimento)') : t('obrigatório'),
+    );
     if (det)
       loc.title = t('Origem do stock desta viatura: {o}', {
         o: Object.entries(det.armazens)
           .map(([cod, q]) => ((cfg.armazens[cod] && cfg.armazens[cod].nome) || cod) + ' ' + n0(q))
           .join(' · '),
       });
-    if (!m.local && !auto) loc.classList.add('falta');
+    if (!m.local && !auto && !localOmissao()) loc.classList.add('falta');
     if (!m.local && auto) loc.classList.add('auto');
+    if (!m.local && !auto && localOmissao()) {
+      loc.classList.add('omissao');
+      loc.title = t('Sem abastecimento registado desta viatura no período: usa a SAP location por omissão.');
+    }
     l.append(rt, c('loja', pad.loja), loc, c('empregado', pad.empregado));
     tb.append(l);
   });
@@ -578,11 +628,15 @@ function registoLotes(gera) {
       rotas_t: x.rotas.length ? x.rotas.join(', ') : t('Todas'),
       estado_t: t(ESTADOS[x.estado || 'emitido'][0]),
       detalhe:
-        x.estado === 'carregado'
+        (x.estado === 'carregado'
           ? t('por {p} em {d}', { p: x.carregado.por_nome, d: dl(x.carregado.em) }) + (x.carregado.referencia ? ' · ' + x.carregado.referencia : '')
           : x.estado === 'anulado'
             ? t('por {p} em {d}', { p: x.anulado.por_nome, d: dl(x.anulado.em) }) + ' · ' + x.anulado.motivo
-            : '',
+            : '') +
+        (x.omissao
+          ? (x.estado === 'emitido' ? '' : ' · ') +
+            t('{n} linhas com a location por omissão {l} (rotas {r})', { n: x.omissao.linhas, l: x.omissao.local, r: x.omissao.rotas.join(', ') })
+          : ''),
       hash: x.sha256 ? x.sha256.slice(0, 12) + '…' : '—',
     })),
     cols: [

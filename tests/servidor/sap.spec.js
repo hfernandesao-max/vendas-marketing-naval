@@ -92,4 +92,32 @@ test('SAP location automática: armazéns principais 1150 → RTM1 e 1151 → RT
   const c = await csrf(fin);
   const r = await fin.post('/reports/data/sap.php', { data: { accao: 'config', csrf: c, config: { armazens: { 1150: { nome: 'X', local: '' } } } } });
   expect(r.status()).toBe(400);
+  // location por omissão: válida no SAP, nunca «N/A»; por omissão RTM2
+  expect(d.config.local_omissao).toBe('RTM2');
+  const na = await fin.post('/reports/data/sap.php', { data: { accao: 'config', csrf: c, config: { local_omissao: 'N/A' } } });
+  expect(na.status()).toBe(400);
+  expect((await na.json()).erro).toContain('N/A');
+});
+
+test('lote com linhas na location por omissão: a excepção fica registada no lote', async () => {
+  const fin = (await entrar('fin')).ctx,
+    c = await csrf(fin);
+  const xlsx = Buffer.from('PK\u0003\u0004teste').toString('base64');
+  const r = await (
+    await fin.post('/reports/data/sap.php', {
+      data: {
+        accao: 'lote',
+        csrf: c,
+        de: '2026-10-25',
+        ate: '2026-10-25',
+        documentos: ['FR TESTE-OMISSAO/1'],
+        linhas: 3,
+        total: 1000,
+        omissao: { linhas: 3, rotas: ['1009'], local: 'RTM2' },
+        xlsx,
+      },
+    })
+  ).json();
+  expect(r.ok).toBe(true);
+  expect(r.lote.omissao).toEqual({ linhas: 3, rotas: ['1009'], local: 'RTM2' });
 });
