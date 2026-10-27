@@ -72,6 +72,11 @@ const lerSessao = () =>
   fetch('data/sessao.php', { cache: 'no-store' })
     .then((r) => {
       if (r.status === 401) {
+        try {
+          sessionStorage.setItem('vm-voltar', '1'); // depois de entrar de novo, volta à página onde estava
+        } catch (e) {
+          /* sem armazenamento */
+        }
         location.href = '../geo/login.php?redirect=' + encodeURIComponent('../reports/');
         throw new Error('sessao');
       }

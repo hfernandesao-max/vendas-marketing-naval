@@ -65,8 +65,11 @@ export function draw() {
   $('#eyebrow').textContent =
     t(p.grupo || 'Portal RTM') + (!st.de || p.id === 'plano-cargas' ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
   $('#titulo').textContent = p.id === 'inicio' ? t('Visão geral') : t(p.nome);
+  // Na página principal em ecrã de computador o espaço vai para os gráficos (painel num só ecrã)
   $('#lead').textContent =
-    p.id === 'inicio' ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.') : '';
+    p.id === 'inicio' && innerWidth < 1200
+      ? t('Vendas, recebimentos, stock e carteira de clientes da equipa RTM, a partir do Pinguim BO e do plano de cargas.')
+      : '';
   mostrarActualizacao();
   if (filtroAberto) filtroAberto(false);
   prepararDados(p.id);
@@ -86,10 +89,48 @@ export function draw() {
     if (location.hash !== novo && location.hash.split('?')[0].split('/')[0] === '#' + p.id) history.replaceState(null, '', novo);
   }
   nav();
+  try {
+    sessionStorage.setItem(ULTIMA, location.hash || '#' + p.id);
+  } catch (e) {
+    /* sem armazenamento */
+  }
   requestAnimationFrame(() => FITS.forEach((f) => f()));
   document.title = (p.id === 'inicio' ? t('Portal RTM') : t(p.nome)) + ' · Grupo Naval';
 }
+// Ao actualizar (F5) o portal volta à página e ao relatório onde estava: o endereço (#página/relatório?filtros)
+// é o estado; se o endereço chegar sem ele (portal dentro de outra página, ou entrada pelo login), usa-se o
+// último endereço deste separador do navegador.
+const ULTIMA = 'vm-ultima-pagina';
+function restaurarPagina() {
+  if (location.hash.length > 1) return;
+  let nav = '';
+  try {
+    nav = (performance.getEntriesByType('navigation')[0] || {}).type || '';
+  } catch (e) {
+    /* navegador antigo */
+  }
+  const embebido = window.self !== window.top;
+  let voltar = false;
+  try {
+    voltar = sessionStorage.getItem('vm-voltar') === '1';
+    sessionStorage.removeItem('vm-voltar');
+  } catch (e) {
+    /* sem armazenamento */
+  }
+  if (nav !== 'reload' && !embebido && !voltar) return;
+  try {
+    const u = sessionStorage.getItem(ULTIMA);
+    if (u && /^#[a-z0-9-]+/.test(u)) history.replaceState(null, '', u);
+  } catch (e) {
+    /* sem armazenamento */
+  }
+}
+let primeiraVez = true;
 export function route() {
+  if (primeiraVez) {
+    primeiraVez = false;
+    restaurarPagina();
+  }
   const [base, qs] = location.hash.slice(1).split('?');
   const [h, sub] = base.split('/');
   definirRelPedido(sub || '');

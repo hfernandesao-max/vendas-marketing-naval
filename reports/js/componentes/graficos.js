@@ -109,8 +109,8 @@ function interactivo(g, titulo, linhas, href) {
   }
 }
 // Colunas (uma série ao longo do tempo), com linha de referência opcional
-export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref }) {
-  const H = 230,
+export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref, altura }) {
+  const H = Math.max(120, Math.round(altura || 230)),
     T = 22,
     B = 26,
     R = 8,
@@ -149,10 +149,23 @@ export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref }) {
   }
   return sv;
 }
+// Com altura limitada (painel num só ecrã): mostra as maiores e junta as restantes em «Outros (n)»,
+// para o gráfico caber sem barra de deslocação (visão geral; o detalhe está no relatório)
+function caberEm(itens, altura, linhaMin) {
+  if (!altura) return itens;
+  const cabem = Math.max(2, Math.floor((altura - 8) / linhaMin));
+  if (itens.length <= cabem) return itens;
+  const resto = itens.slice(cabem - 1);
+  return [
+    ...itens.slice(0, cabem - 1),
+    { rot: t('Outros ({n})', { n: resto.length }), valor: sum(resto, 'valor'), cor: COR.neutro, linhas: [[n0(resto.length), t('outros')]] },
+  ];
+}
 // Barras horizontais ordenadas (comparar valores); cor por linha opcional (antiguidade)
-export function grafBarras(w, { itens, cor = COR.s1, fmt = kzc }) {
-  if (w < 480) return grafBarrasEmpilhadas(w, { itens, cor, fmt });
-  const linha = 30,
+export function grafBarras(w, { itens, cor = COR.s1, fmt = kzc, altura }) {
+  if (w < 480) return grafBarrasEmpilhadas(w, { itens: caberEm(itens, altura, 32), cor, fmt, altura });
+  itens = caberEm(itens, altura, 22);
+  const linha = altura ? Math.max(22, Math.min(30, Math.floor((altura - 8) / Math.max(1, itens.length)))) : 30,
     T = 4,
     H = T + itens.length * linha + 4;
   const Lr = Math.min(190, Math.max(90, w * 0.34)),
@@ -177,8 +190,8 @@ export function grafBarras(w, { itens, cor = COR.s1, fmt = kzc }) {
   return sv;
 }
 // Versão estreita (telemóvel): nome por cima, barra por baixo com o valor na ponta
-function grafBarrasEmpilhadas(w, { itens, cor, fmt }) {
-  const linha = 44,
+function grafBarrasEmpilhadas(w, { itens, cor, fmt, altura }) {
+  const linha = altura ? Math.max(32, Math.min(44, Math.floor((altura - 2) / Math.max(1, itens.length)))) : 44,
     H = itens.length * linha + 2,
     Rv = Math.max(56, 8 + 7.2 * Math.max(...itens.map((x) => fmt(x.valor).length), 1));
   const max = Math.max(...itens.map((x) => x.valor), 0) || 1,
@@ -189,9 +202,11 @@ function grafBarrasEmpilhadas(w, { itens, cor, fmt }) {
       y0 = i * linha,
       bw = Math.max(x.valor > 0 ? 2 : 0, (x.valor / max) * larg);
     g.append(svgEl('rect', { x: 0, y: y0, width: w, height: linha, class: 'vx-hit' }));
-    g.append(svgEl('text', { x: 0, y: y0 + 15, class: 'vx-rot' }, cortar(x.rot, w - 4)));
-    g.append(svgEl('path', { d: pathBarra(0, y0 + 22, bw, 14, false), fill: x.cor || cor, class: 'vx-bar' }));
-    g.append(svgEl('text', { x: bw + 8, y: y0 + 33, class: 'vx-val' }, fmt(x.valor)));
+    const bh = linha >= 40 ? 14 : 10,
+      by = y0 + linha - bh - 4;
+    g.append(svgEl('text', { x: 0, y: by - 5, class: 'vx-rot' }, cortar(x.rot, w - 4)));
+    g.append(svgEl('path', { d: pathBarra(0, by, bw, bh, false), fill: x.cor || cor, class: 'vx-bar' }));
+    g.append(svgEl('text', { x: bw + 8, y: by + bh - 1, class: 'vx-val' }, fmt(x.valor)));
     interactivo(g, x.titulo || x.rot, x.linhas, x.href);
     sv.append(g);
   });
@@ -243,14 +258,26 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
     hd = el('div');
   hd.append(el('h3', null, titulo));
   if (sub) hd.append(el('p', null, sub));
+  // Acções com ícone e texto; no painel num só ecrã fica só o ícone (o nome vai na dica e no leitor de ecrã)
+  const ICO_TAB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 14.5h16M10 10v9"/></svg>',
+    ICO_GRAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11M10 19V6M15 19v-5M20 19V9M3 19h18"/></svg>',
+    ICO_IR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   const acc = el('div', 'viz-acc');
-  const bt = el('button', 'linkbtn', t('Tabela'));
+  const bt = el('button', 'linkbtn');
   bt.type = 'button';
   bt.setAttribute('aria-pressed', 'false');
+  const rotulo = (b, ico, txt) => {
+    b.innerHTML = ico;
+    b.append(el('span', 'viz-acc-t', txt));
+    b.title = txt;
+    b.setAttribute('aria-label', txt + ' · ' + titulo);
+  };
+  rotulo(bt, ICO_TAB, t('Tabela'));
   acc.append(bt);
   if (destino) {
-    const a = el('a', 'linkbtn', t('Ver relatório') + ' →');
+    const a = el('a', 'linkbtn');
     a.href = '#' + destino;
+    rotulo(a, ICO_IR, t('Ver relatório'));
     acc.append(a);
   }
   h.append(hd, acc);
@@ -275,16 +302,18 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
     tb.hidden = !ver;
     corpo.hidden = ver;
     bt.setAttribute('aria-pressed', ver ? 'true' : 'false');
-    bt.textContent = ver ? t('Gráfico') : t('Tabela');
+    rotulo(bt, ver ? ICO_GRAF : ICO_TAB, ver ? t('Gráfico') : t('Tabela'));
   });
   c.append(h, corpo, tb);
-  let ultima = 0;
+  // Desenhado ao tamanho real do quadro; no painel num só ecrã também à altura disponível
+  let ultima = '';
   FITS.push(() => {
     if (!corpo.isConnected || corpo.hidden) return;
-    const w = Math.floor(corpo.clientWidth);
-    if (!w || w === ultima) return;
-    ultima = w;
-    corpo.replaceChildren(desenhar(w));
+    const w = Math.floor(corpo.clientWidth),
+      h = c.closest('.ecra-unico') ? Math.floor(corpo.clientHeight) : 0;
+    if (!w || w + 'x' + h === ultima) return;
+    ultima = w + 'x' + h;
+    corpo.replaceChildren(desenhar(w, h || undefined));
   });
   return c;
 }

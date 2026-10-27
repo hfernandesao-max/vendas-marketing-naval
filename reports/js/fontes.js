@@ -85,6 +85,11 @@ export function fetchVendas(de, ate) {
         .catch(() => ({ erro: 'Resposta inválida do servidor (HTTP ' + r.status + ').' }))
         .then((d) => {
           if (r.status === 401) {
+            try {
+              sessionStorage.setItem('vm-voltar', '1'); // depois de entrar de novo, volta à página onde estava
+            } catch (e) {
+              /* sem armazenamento */
+            }
             location.href = '../geo/login.php?redirect=' + encodeURIComponent('../reports/');
             return [];
           }

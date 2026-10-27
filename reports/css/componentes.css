@@ -1237,3 +1237,164 @@ table.ac-mig tr.ac-off td:not(:last-child) {
     white-space: nowrap;
   }
 }
+
+/* Menu lateral: estados claros e consistentes (como nos sistemas de design Material, Fluent e Apple HIG)
+   - normal: ícone neutro;  - ao passar o rato: ícone e texto claros;
+   - área aberta: ícone claro;  - área da página aberta: ícone e texto na cor de destaque;
+   - página aberta: pílula azul, ícone e texto brancos e barra indicadora à esquerda. */
+.nav a svg,
+.nav .navg svg {
+  stroke: #8d97ad;
+  transition: stroke 0.15s ease;
+}
+.nav a,
+.nav .navg {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.nav a:hover svg,
+.nav .navg:hover svg,
+.nav .navg[aria-expanded='true'] svg {
+  stroke: #e8eefb;
+}
+.nav .navg.atual,
+.nav .navg.atual .navg-t {
+  color: #fff;
+  font-weight: 650;
+}
+.nav .navg.atual svg {
+  stroke: var(--accent);
+}
+.nav a.on {
+  position: relative;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.28);
+}
+.nav a.on svg {
+  stroke: #fff;
+}
+.nav a.on::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.nav a:focus-visible,
+.nav .navg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Início num só ecrã (computador): indicadores compactos e grelha de 4 × 2 gráficos à altura que sobra */
+.inicio-ecra .tiles-kpi {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.inicio-ecra .tiles-kpi .tile {
+  padding: 10px 14px;
+  gap: 2px;
+}
+.inicio-ecra .tiles-kpi .tile .s {
+  font-size: 11.5px;
+}
+.viz-grid.ecra-unico {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: var(--viz-h, 260px);
+  gap: 12px;
+  margin-bottom: 0;
+}
+.ecra-unico .viz-card {
+  padding: 12px 14px 10px;
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ecra-unico .viz-h h3 {
+  font-size: 14px;
+}
+.ecra-unico .viz-h p {
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ecra-unico .viz-h > div {
+  min-width: 0;
+}
+.ecra-unico .viz-acc {
+  gap: 10px;
+  font-size: 11.5px;
+}
+.ecra-unico .viz-corpo {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.ecra-unico .viz-tab {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.ecra-unico .viz-leg {
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.viz-acc .linkbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.viz-acc svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ecra-unico .viz-h {
+  align-items: center;
+}
+.ecra-unico .viz-h h3 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ecra-unico .viz-acc {
+  gap: 4px;
+  padding-top: 0;
+}
+.ecra-unico .viz-acc .viz-acc-t {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ecra-unico .viz-acc .linkbtn {
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  border-radius: 8px;
+}
+.ecra-unico .viz-acc .linkbtn:hover {
+  background: rgba(63, 140, 255, 0.14);
+}
+/* Relatórios da página aberta (sub-itens): destaque discreto, sem pílula nem barra */
+.nav .nav-sub a.on {
+  box-shadow: none;
+  font-weight: 600;
+}
+.nav .nav-sub a.on::before {
+  display: none;
+}

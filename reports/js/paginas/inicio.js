@@ -1,6 +1,6 @@
 // Início: indicadores e painel de gráficos.
 import { META_ROTA, isCF, pendenteDe, porPromotor, recebidoDe, temCad, temMeio, valorCat, vendasR } from '../calculos.js';
-import { tiles } from '../componentes/blocos.js';
+import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -26,8 +26,9 @@ function painelInicio(pg) {
         titulo: t('Vendas por dia'),
         sub: t('{v} em {n} dias · média {m} por dia', { v: kzc(tot) + ' Kz', n: dias.length, m: kzc(tot / dias.length) + ' Kz' }),
         destino: 'vendas-dia',
-        desenhar: (w) =>
+        desenhar: (w, h) =>
           grafColunas(w, {
+            altura: h,
             itens: dias.map((x) => ({
               valor: x.v,
               rot: diaCurto(x.d),
@@ -55,8 +56,9 @@ function painelInicio(pg) {
         titulo: t('Vendas por promotor'),
         sub: top ? t('Maior venda: {p} ({q} do total)', { p: top.promotor, q: pct(tot ? top.total / tot : 0) }) : '',
         destino: 'vendas-promotor',
-        desenhar: (w) =>
+        desenhar: (w, h) =>
           grafBarras(w, {
+            altura: h,
             itens: P.map((x) => ({
               valor: x.total,
               rot: x.promotor,
@@ -114,8 +116,9 @@ function painelInicio(pg) {
           titulo: t('Antiguidade da dívida'),
           sub: t('{v} por receber em {n} facturas', { v: kzc(sum(P, 'v')) + ' Kz', n: n0(P.length) }),
           destino: 'pendentes',
-          desenhar: (w) =>
+          desenhar: (w, h) =>
             grafBarras(w, {
+              altura: h,
               itens: fx.map((x) => ({
                 ...x,
                 linhas: [
@@ -146,10 +149,11 @@ function painelInicio(pg) {
       cards.push(
         cartaoGrafico({
           titulo: t('Melhores clientes'),
-          sub: t('Os {n} clientes com mais compras no período (sem consumidor final)', { n: C.length }),
+          sub: t('Clientes com mais compras no período (sem consumidor final)'),
           destino: 'vendas-cliente',
-          desenhar: (w) =>
+          desenhar: (w, h) =>
             grafBarras(w, {
+              altura: h,
               itens: C.map((x) => ({
                 valor: x.v,
                 rot: x.nome,
@@ -179,8 +183,9 @@ function painelInicio(pg) {
           titulo: t('Artigos mais vendidos'),
           sub: comValor ? t('Por valor vendido, com IVA') : t('Por quantidade vendida'),
           destino: 'vendas-artigo',
-          desenhar: (w) =>
+          desenhar: (w, h) =>
             grafBarras(w, {
+              altura: h,
               fmt: comValor ? kzc : n0,
               itens: rows.map((x) => ({
                 valor: comValor ? x.v : x.q,
@@ -212,8 +217,9 @@ function painelInicio(pg) {
         titulo: t('Caixas carregadas por dia'),
         sub: t('{c} caixas em {n} dias, segundo o plano de cargas', { c: n0(sum(dias, 'c')), n: dias.length }),
         destino: 'registo-cargas',
-        desenhar: (w) =>
+        desenhar: (w, h) =>
           grafColunas(w, {
+            altura: h,
             fmt: n0,
             itens: dias.map((x) => ({
               valor: x.c,
@@ -248,8 +254,9 @@ function painelInicio(pg) {
           titulo: t('Novos clientes por dia'),
           sub: t('{n} cadastros no período · meta diária da rede {m}', { n: n0(sum(D, 'n')), m: n0(meta) }),
           destino: 'cadastros-analise',
-          desenhar: (w) =>
+          desenhar: (w, h) =>
             grafColunas(w, {
+              altura: h,
               fmt: n0,
               ref: { valor: meta, rot: t('Meta {m}', { m: n0(meta) }) },
               itens: D.map((x) => ({
@@ -275,6 +282,35 @@ function painelInicio(pg) {
   const grelha = el('div', 'viz-grid');
   grelha.append(...cards);
   pg.append(grelha);
+  ecraUnico(pg, grelha);
+}
+
+// Painel num só ecrã (boas práticas de dashboards: visão geral sem deslocação, «regra dos 5 segundos»):
+// em ecrãs de computador os gráficos ficam numa grelha de 4 × 2 com a altura que sobra no ecrã; cada
+// gráfico mostra o essencial (as maiores parcelas e «Outros») e o detalhe fica no relatório.
+const ECRA_MIN = { w: 1200, h: 700 };
+function ecraUnico(pg, grelha) {
+  const ajustar = () => {
+    if (!grelha.isConnected) return;
+    const ok = innerWidth >= ECRA_MIN.w && innerHeight >= ECRA_MIN.h && !matchMedia('print').matches;
+    grelha.classList.toggle('ecra-unico', ok);
+    pg.classList.toggle('inicio-ecra', ok);
+    if (!ok) return;
+    const filas = Math.ceil(grelha.children.length / 4),
+      topo = grelha.getBoundingClientRect().top + scrollY,
+      gap = 12,
+      fundo = 16;
+    let h = Math.max(170, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
+    grelha.style.setProperty('--viz-h', h + 'px');
+    // o que ainda sobrar (margens da página, rodapé) sai da altura dos quadros: nada de barra de deslocação
+    const excesso = document.documentElement.scrollHeight - innerHeight;
+    if (excesso > 0 && h > 170) {
+      h = Math.max(170, h - Math.ceil(excesso / filas));
+      grelha.style.setProperty('--viz-h', h + 'px');
+    }
+  };
+  ajustar();
+  FITS.unshift(ajustar); // antes dos gráficos, que se desenham à altura do quadro
 }
 
 R.inicio = (pg) => {
@@ -294,5 +330,7 @@ R.inicio = (pg) => {
         { l: t('Clientes com compras'), v: n0(new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size) },
       ]),
     );
+  const kp = pg.querySelector('.tiles');
+  if (kp) kp.classList.add('tiles-kpi');
   painelInicio(pg);
 };
