@@ -114,7 +114,12 @@ Regras:
 | `PORTAL_URL`                                                                   | endereço do portal nas ligações dos emails                | —                                                                                   |
 | `FUSO_HORARIO`                                                                 | fuso das datas e horas                                    | `Africa/Luanda`                                                                     |
 
+| `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
+
 A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos).
+
+Configuração guardada no portal (pasta privada, não no `.env`): correspondência com o SAP em `sap/config.json`
+(armazéns principais 1150 → RTM1 e 1151 → RTM2, SAP location por omissão RTM2), perfis criados e alterações à matriz.
 
 ## Testes e qualidade
 
