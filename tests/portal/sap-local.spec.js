@@ -9,7 +9,7 @@ const ARMAZENS = {
 const rotas = [...new Set(vendas.map((v) => v.rota))];
 
 async function abrirSap(page, origens, config = {}) {
-  await page.route('**/data/sap.php**', (r) =>
+  await page.route('**/v1/sap**', (r) =>
     r.fulfill({
       json: {
         config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', armazens: ARMAZENS, rotas: {}, ...config },

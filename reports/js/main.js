@@ -18,6 +18,7 @@ import './paginas/clientes.js';
 import './paginas/plano-cargas.js';
 import './paginas/sap.js';
 import './paginas/acessos.js';
+import { apiFetch } from './api.js';
 
 const LD = {
   passos: [
@@ -70,7 +71,7 @@ const ldLimite = setTimeout(() => LD.fechar(), 45000);
 
 // Sessão (perfil, rotas e permissões); 401 = sessão terminada, volta ao login
 const lerSessao = () =>
-  fetch('data/sessao.php', { cache: 'no-store' })
+  apiFetch('sessao')
     .then((r) => {
       if (r.status === 401) {
         try {
@@ -96,7 +97,7 @@ const lerSessao = () =>
     });
 // Ficheiros de dados: pelo serviço PHP (filtrado pelo perfil); sem PHP (teste local), o .json directo
 const lerDados = (id) =>
-  fetch('data/dados.php?f=' + id, { cache: 'no-store' })
+  apiFetch('dados/' + id)
     .then((r) => r.text())
     .then((tx) => {
       try {
@@ -128,15 +129,15 @@ lerSessao()
     DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
     // Cadastros (rtm-clientes): no servidor, só pelo serviço PHP (com o âmbito do perfil). O ficheiro JSON
     // directo só serve nos testes locais sem PHP (no servidor está bloqueado, e bem, pelo .htaccess: 403).
-    const ler = (u) =>
-      fetch(u, { cache: 'no-store' })
+    const ler = (u, api) =>
+      (api ? apiFetch(u) : fetch(u, { cache: 'no-store' }))
         .then((r) => {
           const json = (r.headers.get('content-type') || '').includes('application/json');
-          if (u.endsWith('.php') && json) return r.json().then((d) => ({ php: true, d: r.ok ? d : null }));
+          if (api && json) return r.json().then((d) => ({ php: true, d: r.ok ? d : null }));
           return r.ok ? r.json().then((d) => ({ php: false, d })) : { php: false, d: null };
         })
         .catch(() => ({ php: false, d: null }));
-    return ler('data/cadastros.php')
+    return ler('cadastros', true)
       .then((x) => (x.php ? x.d : ler('data/cadastros.json').then((y) => y.d)))
       .then((d) => {
         DB.cad = d && Array.isArray(d.cadastros) ? d : null;

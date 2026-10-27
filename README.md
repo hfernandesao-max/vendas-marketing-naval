@@ -15,16 +15,16 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 
 ## Menu (por área de negócio)
 
-| Área              | Páginas                                                                                                                                                                 |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Início            | Indicadores do período e atalhos                                                                                                                                        |
-| **Vendas**        | Vendas por promotor · por dia · por cliente · por artigo · por promotor e marca · Ranking · Documentos                                                                  |
-| **Recebimentos**  | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias)                       |
-| **Clientes**      | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados                                                                             |
-| **Terreno**       | Plano de visitas · Histórico de auditoria · Sincronização dos smartphones                                                                                               |
-| **Logística**     | Plano de cargas · Registo de cargas · Stock por promotor / carrinha · Stock por armazém                                                                                 |
-| **Integrações**   | Vendas para o SAP (interface de vendas para a contabilidade: ficheiro, lotes e controlo de ficheiros emitidos)                                                          |
-| **Administração** | Acessos                                                                                                                                                                 |
+| Área              | Páginas                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Início            | Indicadores do período e atalhos                                                                                                                  |
+| **Vendas**        | Vendas por promotor · por dia · por cliente · por artigo · por promotor e marca · Ranking · Documentos                                            |
+| **Recebimentos**  | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) |
+| **Clientes**      | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados                                                       |
+| **Terreno**       | Plano de visitas · Histórico de auditoria · Sincronização dos smartphones                                                                         |
+| **Logística**     | Plano de cargas · Registo de cargas · Stock por promotor / carrinha · Stock por armazém                                                           |
+| **Integrações**   | Vendas para o SAP (interface de vendas para a contabilidade: ficheiro, lotes e controlo de ficheiros emitidos)                                    |
+| **Administração** | Acessos                                                                                                                                           |
 
 O menu só mostra as páginas que o perfil pode abrir (matriz de acessos).
 
@@ -56,7 +56,7 @@ Ainda por receber do Pinguim BO: meio de pagamento de cada documento, linhas de 
 
 O site é público: qualquer pessoa com o link vê vendas, promotores e clientes.
 
-## API do Pinguim BO (`reports/data/api.php`)
+## API do Pinguim BO (`nucleo/servicos/pinguim.php`, pela API central: `v1/vendas`)
 
 As credenciais e o endereço ficam no `.env` na raiz do projecto (não vai para o GitHub):
 
@@ -68,9 +68,9 @@ PINGUIM_URL=http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2053/re
 
 `PINGUIM_URL` aceita vários endereços separados por vírgula, tentados por ordem. No servidor responde o local (porta 8089); num computador fora do servidor usa-se o externo (2053). Sem `PINGUIM_URL`, são estes os valores usados.
 
-Diagnóstico, com sessão iniciada: `reports/data/api.php?diag=1`.
+Diagnóstico (super administrador, com sessão iniciada): `v1/vendas/diagnostico` da API central (ver `docs/API.md`).
 
-## Cadastros de clientes (`reports/data/cadastros.php`)
+## Cadastros de clientes (API central: `v1/cadastros`)
 
 As páginas **Cadastros** (visão geral, análise e clientes registados), a **Carteira de clientes** e o **plano de visitas** da auditoria usam o ficheiro `saida/portal_rtm.json` do repositório privado **rtm-clientes**, actualizado pelo GitHub Actions sempre que se carrega a exportação «Clientes» do RTM.
 
@@ -94,7 +94,7 @@ Sem estes dados, as páginas de cadastros mostram como configurar e a carteira u
 
 ## Acessos e utilizadores
 
-As permissões seguem a matriz de acessos (11 perfis: SADM, TI, DIR, COM, SUP, PRO, FIN, BO, LOG, GEO, AUD) e são aplicadas no servidor: cada serviço em `reports/data/` verifica o perfil antes de responder, filtra as rotas dos supervisores e promotores, retira o NIF aos perfis que não o podem ver e regista as exportações. O menu só mostra o que o perfil pode abrir.
+As permissões seguem a matriz de acessos (11 perfis: SADM, TI, DIR, COM, SUP, PRO, FIN, BO, LOG, GEO, AUD) e são aplicadas no servidor: cada serviço da API central (`nucleo/api/v1/`) verifica o perfil antes de responder, filtra as rotas dos supervisores e promotores, retira o NIF aos perfis que não o podem ver e regista as exportações. O menu só mostra o que o perfil pode abrir.
 
 Regras:
 
@@ -150,7 +150,7 @@ Um só Excel, `RTM - Dicionário Técnico da Base de Dados-DD-MM-AAAA.xlsx`, **s
 classificação, convenções e índice), _Tabelas e vistas_, _Colunas_ (tipo, nulos, PK, FK, identidade, valor por omissão),
 _Relações_, _Índices_, _Modelo do portal_, _Matriz de acessos_, _Perfis_ e _Fontes de dados_.
 
-- Serviço: `reports/data/estrutura-dados.php` → `nucleo/servicos/dicionario.php`; lê só o catálogo do SQL Server
+- Serviço: API `v1/estrutura-dados` (`nucleo/api/v1/estrutura-dados.php`) → `nucleo/servicos/dicionario.php`; lê só o catálogo do SQL Server
   (`sys.*`, ou `INFORMATION_SCHEMA`) com SELECT, pela mesma guarda de só leitura.
 - Acesso: recurso `estrutura-dados` (E: TI e AUD; SADM sempre).
 - Com `db_datareader` o utilizador da base de dados vê todas as tabelas; se faltarem objectos, conceder `VIEW DEFINITION`.
@@ -226,7 +226,7 @@ composer install                # ferramentas PHP (uma vez)
 composer analisar               # análise estática (PHPStan)
 ```
 
-O back-end está em camadas no `nucleo/` (controladores em `reports/data/`, serviços de negócio em `nucleo/servicos/`, segurança em `nucleo/seguranca/`); todas as chaves do `.env` estão em [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#configuração-env-na-raiz-do-site).
+O back-end está em camadas no `nucleo/` (API central em `api/` + `nucleo/api/`, serviços de negócio em `nucleo/servicos/`, segurança em `nucleo/seguranca/`); todas as chaves do `.env` estão em [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#configuração-env-na-raiz-do-site).
 
 - `tests/portal/` — o portal no navegador, com a API do Pinguim BO simulada: todas as páginas em quatro tamanhos de ecrã (sem erros, nada fora do ecrã, quadros alinhados), barra de filtros, relatórios, painel de gráficos, ficheiro SAP igual ao modelo e importação do plano de cargas.
 - `tests/servidor/` — os serviços PHP com contas de cada perfil e um Pinguim BO de teste: entrada, bloqueio e desbloqueio, âmbito por rota, NIF, gestão de contas, plano de cargas, ficheiro SAP e modo de estrutura. O ambiente de teste é criado por `tests/servidor/preparar.php` e usa um `.env` próprio (variável `NAVAL_ENV`); nada toca nos dados reais.

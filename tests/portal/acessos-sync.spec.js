@@ -35,14 +35,14 @@ const vistaAntiga = {
 
 test('Acessos: separadores e activação da gestão de contas com email, perfil e duas aprovações', async ({ page }) => {
   let enviado = null;
-  await page.route('**/data/gestao.php*', (r) => {
+  await page.route('**/v1/gestao*', (r) => {
     if (r.request().method() === 'POST') {
       enviado = r.request().postDataJSON();
       return r.fulfill({ json: { ok: true, contas: 2 } });
     }
     return r.fulfill({ json: vistaAntiga });
   });
-  await page.route('**/data/sessao.php*', (r) => r.fulfill({ json: { csrf: 'x' } }));
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
   const erros = await abrir(page, '#acessos');
   await expect(page.locator('.ac-activar')).toContainText('Activar a gestão de contas no portal');
   // os separadores dos relatórios (iguais aos das outras páginas) ficam por baixo do aviso de activação
@@ -72,7 +72,7 @@ test('Acessos: separadores e activação da gestão de contas com email, perfil 
 });
 
 test('Sincronização dos smartphones: estado por limites, ordem por gravidade e histórico de 14 dias', async ({ page }) => {
-  await page.route('**/data/sincronizacao.php*', (r) =>
+  await page.route('**/v1/sincronizacao*', (r) =>
     r.fulfill({
       json: {
         disponivel: true,

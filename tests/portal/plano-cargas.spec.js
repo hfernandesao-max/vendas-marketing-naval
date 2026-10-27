@@ -55,7 +55,7 @@ const PUBLICADO = {
 };
 
 async function abrirPlano(page, plano, pedidos) {
-  await page.route('**/data/plano.php**', (r) => {
+  await page.route('**/v1/plano**', (r) => {
     const q = r.request();
     if (q.method() === 'POST') {
       const corpo = q.postDataJSON();
@@ -67,7 +67,7 @@ async function abrirPlano(page, plano, pedidos) {
     if (q.url().includes('historico')) return r.fulfill({ json: { dias: [] } });
     return r.fulfill({ json: resposta(plano) });
   });
-  await page.route('**/data/sessao.php*', (r) => r.fulfill({ json: { csrf: 'x' } }));
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
   return abrir(page, '#plano-cargas');
 }
 

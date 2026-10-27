@@ -5,21 +5,17 @@ Documento de referência para quem mantém o código. O guia de utilização e i
 ## Visão geral
 
 ```
-Navegador ──► reports/index.php  (controlador autenticado: sessão, perfil, páginas permitidas)
-   │               └─ entrega reports/index.html (casca) + reports/css/*.css + reports/js/main.js (módulo)
+Navegador ──► reports/index.php  (casca autenticada: sessão, perfil, código CSRF em <meta>)
+   │               └─ entrega reports/index.html + reports/css/*.css + reports/js/main.js (front-end estático)
    │
-   └─ fetch ──► reports/data/*.php  (controladores: pedido → serviço → resposta JSON)
-                    ├─ api.php        → Pinguim BO (http://127.0.0.1:8089/rest/exportdata)
-                    ├─ cadastros.php  → cadastros de clientes
-                    ├─ plano.php      → plano de cargas (+ email Microsoft 365)
-                    ├─ sap.php        → ficheiro para o SAP (lotes, correspondência de rotas)
-                    ├─ gestao.php     → contas e matriz de acessos
-                    ├─ sessao.php     → sessão e perfil do utilizador
-                    ├─ registar.php   → registo das exportações
-                    └─ dados.php      → ficheiros fixos (rotas, cargas, carteira) filtrados pelo perfil
-                         │
-                         └─ nucleo/  (back-end: configuração, segurança, serviços de negócio) → dados-privados/ (fora da web)
+   └─ reports/js/api.js ──► api/index.php/v1/<recurso>   (API central; Authorization: Bearer <JWT de 15 min>)
+                                 └─ nucleo/api/router.php  (origem, rota, método, token, ritmo, corpo)
+                                       └─ nucleo/api/v1/*.php  (serviços da API: pedido → serviço → JSON)
+                                             └─ nucleo/servicos/ → Pinguim BO · dados-privados/ (fora da web)
 ```
+
+Módulos separados: **front-end** em `reports/` (HTML, CSS e JS estáticos, sem acesso a dados); **back-end** em
+`nucleo/` (privado, recusado pelo Apache); **API** em `api/` (único ponto público de dados). Referência: `docs/API.md`.
 
 - **Front-end:** módulos ES nativos do navegador, sem passo de compilação. O que está no GitHub é exactamente o que o Apache serve; publicar continua a ser `git pull`.
 - **Back-end:** PHP 7.1 ou posterior (verificado no GitHub da 7.1 à 8.3), em camadas no `nucleo/`. Toda a autorização é feita no servidor (`naval_exigir`, `naval_pode`); o front-end só esconde o que o perfil não pode ver.
@@ -36,6 +32,7 @@ Camadas, de baixo para cima. Um módulo só importa das camadas iguais ou inferi
 |             | `util.js`                    | `DB` (dados carregados), DOM, somas, agrupamentos, ícones, avisos                         |
 |             | `perfil.js`                  | Sessão do utilizador e permissões da matriz                                               |
 |             | `servidor.js`                | `postJson` (POST com CSRF) e `carregarScript` (bibliotecas de `vendor/` a pedido)         |
+|             | `api.js`                     | cliente central da API v1: token JWT em memória, renovação, `apiFetch`, `apiDescarregar`  |
 |             | `periodo.js`                 | Período escolhido e memória                                                               |
 | Regras      | `calculos.js`                | Regras de negócio: vendas do período, pagamentos, pendentes, rotas, visitas               |
 |             | `filtros.js`                 | Barra de filtros comum, aplicação aos dados (`prepararDados`), endereço partilhável       |
@@ -65,7 +62,8 @@ Os módulos ES não permitem alterar uma variável importada. O estado partilhad
 ## Back-end PHP em camadas (`nucleo/`)
 
 ```
-reports/data/*.php      Controladores: lêem o pedido, verificam o acesso, chamam um serviço e respondem.
+nucleo/api/router.php   API central v1: origem, rota, método, token JWT (nucleo/seguranca/jwt.php), ritmo.
+nucleo/api/v1/*.php     Serviços da API: lêem o pedido, verificam o acesso, chamam um serviço e respondem.
         │               Não têm regras de negócio nem acesso directo a ficheiros.
         ▼
 nucleo/servicos/        Serviços de negócio (casos de uso), sem HTTP: devolvem dados ou lançam NavalErro.
@@ -88,13 +86,13 @@ Entradas:
 
 | Quem                                    | Inclui                    | Faz                                                     |
 | --------------------------------------- | ------------------------- | ------------------------------------------------------- |
-| Serviços JSON (`reports/data/*.php`)    | `nucleo/api.php`          | núcleo, erros em JSON, sessão obrigatória (401 em JSON) |
+| API central (`api/index.php/v1/…`)      | `nucleo/api/router.php`   | núcleo, erros em JSON, token JWT obrigatório (401 JSON) |
 | Páginas HTML (`reports/index.php`, GEO) | `geo/auth/auth_check.php` | núcleo, sessão; sem sessão → página de entrada          |
 | Linha de comandos (`ferramentas/`)      | `nucleo/arranque.php`     | só o núcleo                                             |
 
 Regras:
 
-- **Erros:** um serviço lança `new NavalErro('Mensagem para o utilizador', códigoHTTP, [campos extra])`; o tratador de `nucleo/api.php` responde `{ok:false, erro, ...}`. Qualquer outro erro é registado no log do PHP e devolvido como 500 em JSON, nunca como HTML.
+- **Erros:** um serviço lança `new NavalErro('Mensagem para o utilizador', códigoHTTP, [campos extra])`; o tratador da API responde `{ok:false, erro, ...}`. Qualquer outro erro é registado no log do PHP e devolvido como 500 em JSON, nunca como HTML.
 - **Autorização** sempre no servidor: `naval_exigir([...])` no controlador; as escritas exigem POST com o código CSRF da sessão (`naval_exigir_csrf`) e o nível certo da matriz.
 - **Registos:** todas as acções relevantes ficam em `dados-privados/registos/` (`naval_registar`).
 - **Compatibilidade:** `geo/auth/acessos.php`, `email.php` e `cargas.php` ficam como entradas antigas que carregam o núcleo.
@@ -131,20 +129,22 @@ Configuração guardada no portal (pasta privada, não no `.env`): correspondên
 
 ## Testes e qualidade
 
-| Ferramenta                                   | O que garante                                                                                           |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| ESLint 10 (`eslint.config.js`)               | Erros e más práticas nos módulos e testes                                                               |
-| Prettier (`.prettierrc.json`) + EditorConfig | Formatação uniforme                                                                                     |
-| Playwright `portal`                          | Todas as páginas em 4 tamanhos de ecrã, filtros, relatórios, gráficos, ficheiro SAP igual ao modelo     |
-| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON         |
-| Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), vendas e troco, plano, SAP             |
-| PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                            |
-| `tests/apache/verificar.sh`                  | Regras dos `.htaccess` num Apache 2.4 real: ficheiros internos recusados, cabeçalhos de segurança       |
-| GitHub Actions                               | Sintaxe, testes unitários e dos serviços no PHP 7.1, 7.4, 8.1 e 8.3; PHPStan; ESLint, Prettier e testes |
+| Ferramenta                                   | O que garante                                                                                              |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| ESLint 10 (`eslint.config.js`)               | Erros e más práticas nos módulos e testes                                                                  |
+| Prettier (`.prettierrc.json`) + EditorConfig | Formatação uniforme                                                                                        |
+| Playwright `portal`                          | Todas as páginas em 4 tamanhos de ecrã, filtros, relatórios, gráficos, ficheiro SAP igual ao modelo        |
+| Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON            |
+| Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), JWT (RFC 8725), cache, vendas, plano, SAP |
+| PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                               |
+| `tests/apache/verificar.sh`                  | Regras dos `.htaccess` num Apache 2.4 real: ficheiros internos recusados, cabeçalhos de segurança          |
+| GitHub Actions                               | Sintaxe, testes unitários e dos serviços no PHP 7.1, 7.4, 8.1 e 8.3; PHPStan; ESLint, Prettier e testes    |
 
 ## Próximas fases
 
 1. ~~Front-end em módulos, normas e testes automáticos~~ (concluída).
 2. ~~Back-end PHP em camadas e um único leitor do `.env`~~ (concluída).
-3. Base de dados SQL Server com sincronização do Pinguim BO.
-4. Optimização (cache dos dados do dia, carregamento por página).
+3. Base de dados SQL Server do Pinguim BO: leitura directa, só `SELECT` (projecto com as duas fontes), com a cache da
+   fase 4. Base própria sincronizada: por decidir (exigiria escrita numa base nova).
+4. ~~Optimização (cache dos dados do dia, ETag/304, compressão, carregamento por página)~~ (concluída).
+5. ~~Módulos separados (front-end, back-end) e API central v1 com JWT~~ (concluída; `docs/API.md`).

@@ -3,7 +3,7 @@
 // passam para o novo dia. O topo mostra a hora da última actualização e permite actualizar à mão.
 import { draw } from './app.js';
 import { fecharAberto } from './componentes/barra-filtros.js';
-import { fetchVendas } from './fontes.js';
+import { fetchVendas, pedirFresco } from './fontes.js';
 import { t } from './i18n/i18n.js';
 import { aplicarPreset, periodoAberto, presets, st } from './periodo.js';
 import { $, el, svg } from './util.js';
@@ -27,6 +27,7 @@ export function actualizar(forcar) {
   if (aActualizar || (!forcar && ocupado())) return Promise.resolve();
   aActualizar = true;
   const y = window.scrollY;
+  if (forcar) pedirFresco(); // pedido da pessoa: sem a cache do servidor
   const p = st.preset ? presets()[st.preset] : null;
   const ler = p ? aplicarPreset(st.preset) : fetchVendas(st.de, st.ate);
   return ler

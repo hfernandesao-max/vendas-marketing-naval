@@ -39,7 +39,7 @@ test('página sem dados: o botão fica inactivo e explica porquê', async ({ pag
 });
 
 test('sincronização dos smartphones: o Excel inclui o estado e o histórico de 14 dias', async ({ page }) => {
-  await page.route('**/data/sincronizacao.php*', (r) =>
+  await page.route('**/v1/sincronizacao*', (r) =>
     r.fulfill({
       json: {
         disponivel: true,

@@ -4,7 +4,7 @@
  * do Pinguim BO (só SELECT às vistas do catálogo, sem dados de negócio) e o modelo de acessos do portal.
  * Só para perfis com o nível E em «estrutura-dados»; cada pedido fica nos registos como exportação.
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('dicionario');
 
 if (!naval_pode_exportar('estrutura-dados')) {

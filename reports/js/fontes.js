@@ -3,6 +3,7 @@ import { marcarActualizado } from './actualizacao.js';
 import { t } from './i18n/i18n.js';
 import { definirDiasSap, definirDiasTodos, diasSap } from './periodo.js';
 import { $, DB, el, toast } from './util.js';
+import { apiFetch } from './api.js';
 
 // Pinguim BO: resultado da última consulta de vendas e verificação curta (ping) a cada 5 minutos.
 // Os cadastros e o plano de cargas não contam como fontes externas: o plano é produzido na plataforma.
@@ -53,7 +54,7 @@ export function mostrarFontes() {
   $('#fontes').title = ks.map((k) => t(NOMES_FONTE[k]) + ': ' + LIGACOES[k].txt).join('\n');
 }
 function pingPinguim() {
-  return fetch('data/api.php?ping=1', { cache: 'no-store' })
+  return apiFetch('vendas/estado')
     .then((r) => (r.status === 401 ? null : r.json()))
     .then((d) => {
       if (d) marcarPinguim(!!d.ok, d.erro);
@@ -99,11 +100,18 @@ document.addEventListener('keydown', (ev) => {
 setInterval(pingPinguim, 5 * 60000);
 setInterval(mostrarFontes, 30000);
 
+// «Actualizar»: os pedidos dos próximos segundos pedem dados frescos ao servidor (sem a cache de 2 min)
+let frescoAte = 0;
+export const pedirFresco = () => {
+  frescoAte = Date.now() + 5000;
+};
+const frescoPedido = () => Date.now() < frescoAte;
+
 export function fetchVendas(de, ate) {
   document.body.classList.add('a-carregar');
   const sd = de.replace(/-/g, ''),
     ed = ate.replace(/-/g, '');
-  return fetch('data/api.php?start_date=' + sd + '&end_date=' + ed + '&include_items=1', { cache: 'no-store' })
+  return apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + '&include_items=1' + (frescoPedido() ? '&fresco=1' : ''))
     .then((r) =>
       r
         .json()

@@ -1,0 +1,16 @@
+# API central: só o ponto de entrada index.php é servido; endereços curtos (api/v1/...) com mod_rewrite.
+Options -Indexes
+DirectoryIndex index.php
+AcceptPathInfo On
+<FilesMatch "^(?!index\.php$).+\.(php|phtml|inc)$">
+    Require all denied
+</FilesMatch>
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(v[0-9]+/.*)$ index.php/$1 [QSA,L]
+</IfModule>
+# O cabeçalho Authorization chega ao PHP também com CGI/FastCGI
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>

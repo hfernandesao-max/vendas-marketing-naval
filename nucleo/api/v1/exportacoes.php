@@ -3,7 +3,7 @@
  * Regista as exportações para Excel e confirma que o perfil as pode fazer.
  * O portal chama este serviço antes de gerar cada ficheiro; sem «ok» não exporta.
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 
 $p = naval_pedido();
 naval_exigir_csrf($p);   // o registo das exportações também só aceita pedidos do próprio portal (CSRF)

@@ -8,6 +8,7 @@ import { SESSAO, atual, podeExportar } from './perfil.js';
 import { hoje, inR, st } from './periodo.js';
 import { carregarScript } from './servidor.js';
 import { $, DB, sum, toast } from './util.js';
+import { apiFetch } from './api.js';
 
 export const carregarExcelJS = () => carregarScript('exceljs.min.js', 'ExcelJS');
 export const NAVY = 'FF1E3A8A',
@@ -45,7 +46,7 @@ const colLetter = (n) => {
 // Confirma no servidor que o perfil pode exportar e regista a exportação; sem servidor PHP segue
 async function autorizarExportacao(completo, tabela, linhas) {
   try {
-    const r = await fetch('data/registar.php', {
+    const r = await apiFetch('exportacoes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',

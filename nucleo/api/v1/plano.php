@@ -9,7 +9,7 @@
  *
  * Ver: nível V (ou V·r, só as suas rotas). Preencher, publicar e gerir as listas: nível G (Logística).
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('cargas');
 naval_exigir(['plano-cargas']);
 $gere = naval_plano_gere();

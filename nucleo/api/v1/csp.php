@@ -7,15 +7,10 @@
  * corpo até 16 KB, só os campos da norma, endereços sem parâmetros (podem ter dados), no máximo
  * 300 relatórios por dia, gravados na pasta privada (registos/csp-AAAA-MM.jsonl). Responde sempre 204.
  */
-require_once __DIR__ . '/../../nucleo/arranque.php';
+defined('NAVAL_API') || exit;   // rota pública v1/csp-relatorio (POST; método e tipo verificados pela API)
 
 const NAVAL_CSP_MAX_DIA = 300;
 
-if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-    http_response_code(405);
-    header('Allow: POST');
-    exit;
-}
 $corpo = (string) file_get_contents('php://input', false, null, 0, 16384);
 $j = json_decode($corpo, true);
 $relatorios = [];
@@ -51,3 +46,4 @@ if ($relatorios) {
     });
 }
 http_response_code(204);
+exit;

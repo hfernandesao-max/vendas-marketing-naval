@@ -1,6 +1,6 @@
 <?php
 /** Cadastros de clientes RTM → JSON para o portal (Cadastros, Carteira e Plano de visitas), com o âmbito do perfil. */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('cadastros');
 naval_exigir(['cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'auditoria', 'inicio']);
 

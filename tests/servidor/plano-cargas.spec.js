@@ -26,19 +26,19 @@ test.describe.configure({ mode: 'serial' });
 test('a Logística guarda o rascunho; nomes de zona repetidos juntam-se; conflito de versão', async () => {
   const log = (await entrar('log')).ctx,
     c = await csrf(log);
-  const r = await (await log.post('/reports/data/plano.php', { data: { accao: 'guardar', csrf: c, data: DATA, rev: 0, rotas: [rota('1001')] } })).json();
+  const r = await (await log.post('/api/index.php/v1/plano', { data: { accao: 'guardar', csrf: c, data: DATA, rev: 0, rotas: [rota('1001')] } })).json();
   expect(r.ok).toBe(true);
   expect(r.plano.rev).toBe(1);
   expect(r.plano.rotas[0].zonas).toEqual(['Avô Cumbe', 'Samba']);
   expect(r.plano.rotas[0].matricula).toBe('LD-58-73-GY');
-  const conflito = await log.post('/reports/data/plano.php', { data: { accao: 'guardar', csrf: c, data: DATA, rev: 0, rotas: [] } });
+  const conflito = await log.post('/api/index.php/v1/plano', { data: { accao: 'guardar', csrf: c, data: DATA, rev: 0, rotas: [] } });
   expect(conflito.status()).toBe(409);
 });
 
 test('publicar exige destinatários e rotas completas', async () => {
   const log = (await entrar('log')).ctx,
     c = await csrf(log);
-  const r = await log.post('/reports/data/plano.php', {
+  const r = await log.post('/api/index.php/v1/plano', {
     data: { accao: 'publicar', csrf: c, data: DATA, rev: 1, rotas: [rota('1001', { motorista: '', zonas: [] })], xlsx: XLSX },
   });
   expect(r.status()).toBe(400);
@@ -51,13 +51,13 @@ test('publicar envia o email à lista e só a versão publicada chega aos outros
   const log = (await entrar('log')).ctx,
     c = await csrf(log);
   const l = await (
-    await log.post('/reports/data/plano.php', {
+    await log.post('/api/index.php/v1/plano', {
       data: { accao: 'listas', csrf: c, listas: { destinatarios: [{ nome: 'Transportes', email: 'transportes@naval.co.ao' }] } },
     })
   ).json();
   expect(l.ok).toBe(true);
   const p = await (
-    await log.post('/reports/data/plano.php', {
+    await log.post('/api/index.php/v1/plano', {
       data: {
         accao: 'publicar',
         csrf: c,
@@ -72,16 +72,16 @@ test('publicar envia o email à lista e só a versão publicada chega aos outros
   expect(p.plano.publicado.versao).toBe(1);
   expect(p.email).toMatchObject({ ok: true, para: ['transportes@naval.co.ao'] });
 
-  const sup = await (await (await entrar('sup')).ctx.get(`/reports/data/plano.php?data=${DATA}`)).json();
+  const sup = await (await (await entrar('sup')).ctx.get(`/api/index.php/v1/plano?data=${DATA}`)).json();
   expect(sup.gere).toBe(false);
   expect(sup.plano.rotas.map((r) => r.rota)).toEqual(['1001']);
-  expect((await (await entrar('fin')).ctx.get(`/reports/data/plano.php?data=${DATA}`)).status()).toBe(403);
+  expect((await (await entrar('fin')).ctx.get(`/api/index.php/v1/plano?data=${DATA}`)).status()).toBe(403);
 });
 
 test('publicar sem enviar; enviar depois só aos destinatários escolhidos da lista; rascunho exportado fica nos registos', async () => {
   const log = (await entrar('log')).ctx,
     c = await csrf(log);
-  await log.post('/reports/data/plano.php', {
+  await log.post('/api/index.php/v1/plano', {
     data: {
       accao: 'listas',
       csrf: c,
@@ -94,9 +94,9 @@ test('publicar sem enviar; enviar depois só aos destinatários escolhidos da li
     },
   });
   const DIA = '2026-10-21';
-  const g = await (await log.post('/reports/data/plano.php', { data: { accao: 'guardar', csrf: c, data: DIA, rev: 0, rotas: [rota('1001')] } })).json();
+  const g = await (await log.post('/api/index.php/v1/plano', { data: { accao: 'guardar', csrf: c, data: DIA, rev: 0, rotas: [rota('1001')] } })).json();
   const p = await (
-    await log.post('/reports/data/plano.php', {
+    await log.post('/api/index.php/v1/plano', {
       data: { accao: 'publicar', csrf: c, data: DIA, rev: g.plano.rev, rotas: [rota('1001')], xlsx: XLSX, enviar: false },
     })
   ).json();
@@ -106,14 +106,14 @@ test('publicar sem enviar; enviar depois só aos destinatários escolhidos da li
   expect(p.plano.envios || []).toHaveLength(0);
 
   // destinatário fora da lista: recusado (só a lista controlada pela Logística)
-  const fora = await log.post('/reports/data/plano.php', { data: { accao: 'enviar', csrf: c, data: DIA, para: ['alguem@externo.com'] } });
+  const fora = await log.post('/api/index.php/v1/plano', { data: { accao: 'enviar', csrf: c, data: DIA, para: ['alguem@externo.com'] } });
   expect(fora.status()).toBe(400);
-  const e = await (await log.post('/reports/data/plano.php', { data: { accao: 'enviar', csrf: c, data: DIA, para: ['ARMAZEM@naval.co.ao'] } })).json();
+  const e = await (await log.post('/api/index.php/v1/plano', { data: { accao: 'enviar', csrf: c, data: DIA, para: ['ARMAZEM@naval.co.ao'] } })).json();
   expect(e.ok).toBe(true);
   expect(e.email.para).toEqual(['armazem@naval.co.ao']);
 
-  expect((await (await log.post('/reports/data/plano.php', { data: { accao: 'exportado', csrf: c, data: DIA } })).json()).ok).toBe(true);
+  expect((await (await log.post('/api/index.php/v1/plano', { data: { accao: 'exportado', csrf: c, data: DIA } })).json()).ok).toBe(true);
   // quem só vê não envia nem publica
   const sup = (await entrar('sup')).ctx;
-  expect((await sup.post('/reports/data/plano.php', { data: { accao: 'enviar', csrf: await csrf(sup), data: DIA } })).status()).toBe(403);
+  expect((await sup.post('/api/index.php/v1/plano', { data: { accao: 'enviar', csrf: await csrf(sup), data: DIA } })).status()).toBe(403);
 });

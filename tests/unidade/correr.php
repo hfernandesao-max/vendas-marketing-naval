@@ -7,7 +7,7 @@
 $amb = sys_get_temp_dir() . '/naval-unidade-' . getmypid();
 @mkdir($amb . '/privado', 0770, true);
 file_put_contents($amb . '/.env', implode("\n", [
-    '# comentário', 'DADOS_PRIVADOS=' . $amb . '/privado', 'EMAIL_MODO=ficheiro', 'VAZIO=', 'ASPAS="com aspas"', 'IGUAL=a=b', 'FUSO_HORARIO=Africa/Luanda',
+    '# comentário', 'DADOS_PRIVADOS=' . $amb . '/privado', 'EMAIL_MODO=ficheiro', 'VAZIO=', 'ASPAS="com aspas"', 'IGUAL=a=b', 'FUSO_HORARIO=Africa/Luanda', 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'PORTAL_URL=https://portal.teste',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $amb . '/.env');
 require dirname(__DIR__, 2) . '/nucleo/arranque.php';

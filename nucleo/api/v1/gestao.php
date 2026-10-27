@@ -6,7 +6,7 @@
  * GET: perfis com acesso à página Acessos.
  * POST {accao, csrf, confirmacao, ...}: só o super administrador, com confirmação da identidade.
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('gestao');
 naval_exigir(['acessos']);
 

@@ -71,3 +71,49 @@ function naval_exclusivo(string $nome, callable $f)
         fclose($h);
     }
 }
+
+/**
+ * Cache no servidor (pasta privada cache/): devolve o valor guardado com menos de $segundos ou calcula-o
+ * com $f e guarda-o. Um só pedido calcula de cada vez (os outros esperam e usam o resultado), para que
+ * vários utilizadores a abrir o portal ao mesmo tempo não repitam a mesma consulta à base de dados.
+ * $fresco=true recalcula (botão «Actualizar»). Valores null não são guardados (falha da fonte).
+ *
+ * @template T
+ * @param callable(): T $f
+ * @return T
+ */
+function naval_cache(string $chave, int $segundos, callable $f, bool $fresco = false)
+{
+    $id = substr(hash('sha256', $chave), 0, 40);
+    $ficheiro = naval_pasta('cache') . '/' . $id . '.json';
+    $ler = function () use ($ficheiro, $segundos, $fresco) {
+        if ($fresco || !is_file($ficheiro) || filemtime($ficheiro) < time() - $segundos) return null;
+        $d = naval_json_ler($ficheiro);
+        return array_key_exists('valor', $d) ? $d : null;
+    };
+    $c = $ler();
+    if ($c !== null) return $c['valor'];
+    return naval_exclusivo('cache-' . $id, function () use ($ler, $f, $ficheiro) {
+        $c = $ler();                       // outro pedido pode ter acabado de o calcular
+        if ($c !== null) return $c['valor'];
+        $v = $f();
+        if ($v !== null) naval_json_gravar($ficheiro, ['valor' => $v], false);
+        if (random_int(1, 50) === 1) naval_cache_limpar();
+        return $v;
+    });
+}
+
+/** Apaga as entradas da cache com mais de 2 dias. */
+function naval_cache_limpar(int $idade = 172800): void
+{
+    foreach (glob(naval_pasta('cache') . '/*.json') ?: [] as $f) {
+        if (filemtime($f) < time() - $idade) @unlink($f);   // nosemgrep: unlink-use -- ficheiros da própria cache, nome derivado de hash
+    }
+}
+
+/** Tempo de cache das consultas de um período: curto se inclui hoje/ontem (dados a mudar), longo se fechado. */
+function naval_cache_periodo(string $ate): int
+{
+    $fim = (string) preg_replace('/\D/', '', $ate);
+    return $fim >= date('Ymd', time() - 86400) ? 120 : 1800;
+}

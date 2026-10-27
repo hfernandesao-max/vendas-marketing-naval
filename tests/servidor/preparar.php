@@ -29,6 +29,8 @@ function preparar_ambiente(string $amb, int $porta, array $extra): string
         'DADOS_PRIVADOS=' . $priv, 'EMAIL_MODO=ficheiro', 'PORTAL_URL=http://127.0.0.1:' . $porta,
         // os testes fazem muitas entradas falhadas de propósito a partir do mesmo IP (127.0.0.1)
         'LOGIN_MAX_FALHAS_IP=500', 'GOOGLE_MAPS_API_KEY=chave-de-teste',
+        'JWT_SEGREDO=' . bin2hex(random_bytes(32)),   // chave de teste, nova em cada execução
+        'API_RITMO_TOKEN=1000',                        // os testes entram muitas vezes com a mesma conta
     ], $extra)) . "\n");
     return $priv;
 }

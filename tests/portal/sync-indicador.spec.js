@@ -28,7 +28,7 @@ const SYNC = {
 };
 
 test('menu lateral: um ponto por smartphone com a cor do estado, resumo em texto e detalhe na dica', async ({ page }) => {
-  await page.route('**/data/sincronizacao.php*', (r) => r.fulfill({ json: SYNC }));
+  await page.route('**/v1/sincronizacao*', (r) => r.fulfill({ json: SYNC }));
   const erros = await abrir(page, '#inicio');
   const ind = page.locator('#sync-mini');
   await expect(ind).toBeVisible();
@@ -46,7 +46,7 @@ test('menu lateral: um ponto por smartphone com a cor do estado, resumo em texto
 });
 
 test('sem acesso à página de sincronização: o indicador não aparece', async ({ page }) => {
-  await page.route('**/data/sincronizacao.php*', (r) => r.fulfill({ status: 403, json: { erro: 'sem acesso' } }));
+  await page.route('**/v1/sincronizacao*', (r) => r.fulfill({ status: 403, json: { erro: 'sem acesso' } }));
   await abrir(page, '#inicio');
   await expect(page.locator('#sync-mini')).toBeHidden();
 });

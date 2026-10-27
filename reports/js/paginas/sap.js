@@ -11,10 +11,11 @@ import { SESSAO, atual } from '../perfil.js';
 import { inR, st } from '../periodo.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { DB, b64, el, sum, toast } from '../util.js';
+import { apiDescarregar, apiFetch } from '../api.js';
 
 let SAPD = null;
 function carregarSap() {
-  return fetch('data/sap.php', { cache: 'no-store' })
+  return apiFetch('sap')
     .then((r) => r.json())
     .then((d) => {
       SAPD = d && d.config ? d : { erro: (d && d.erro) || t('Sem dados') };
@@ -23,7 +24,7 @@ function carregarSap() {
       SAPD = { erro: t('O ficheiro para o SAP precisa do servidor da plataforma (PHP).') };
     });
 }
-const postSap = (corpo) => postJson('data/sap.php', corpo);
+const postSap = (corpo) => postJson('sap', corpo);
 const codigoTipo = (tp) => (tp === 'Factura' ? 'FT' : 'FR');
 const r2 = (v) => Math.round((+v || 0) * 100) / 100;
 const rotasPortal = () => [...new Set([...Object.keys(DB.mapRota || {}), ...(DB.vendas || []).map((v) => v.rota)])].filter(Boolean).sort();
@@ -165,7 +166,7 @@ const xmlEsc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').rep
 function gerarExcelSap(linhas) {
   let zip;
   return carregarJSZip()
-    .then(() => fetch('data/sap.php?modelo=1', { cache: 'no-store' }))
+    .then(() => apiFetch('sap/modelo'))
     .then((r) => {
       if (!r.ok) throw new Error(t('Não foi possível abrir o modelo do SAP.'));
       return r.arrayBuffer();
@@ -661,7 +662,11 @@ function registoLotes(gera) {
           }
           if (SAPD.segunda_via) {
             const a = el('a', 'linkbtn', t('Segunda via'));
-            a.href = 'data/sap.php?xlsx=' + r.numero;
+            a.href = '#';
+            a.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              apiDescarregar('sap/excel?numero=' + encodeURIComponent(r.numero), r.ficheiro || 'SAP.xlsx').catch((e) => toast(e.message, 6000));
+            });
             a.title = t('Cópia do ficheiro emitido, para auditoria (fica registada)');
             box.append(a);
           }

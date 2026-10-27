@@ -10,6 +10,7 @@ import { nomeRecurso } from './paginas/catalogo.js';
 import { SESSAO, podeExportar } from './perfil.js';
 import { hoje } from './periodo.js';
 import { toast } from './util.js';
+import { apiFetch } from './api.js';
 
 export const NOME_ESTRUTURA = 'RTM - Dicionário Técnico da Base de Dados';
 export const nomeEstrutura = () => NOME_ESTRUTURA + '-' + dl(hoje()) + '.xlsx';
@@ -21,7 +22,7 @@ const dataHora = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(
 /** Pede a estrutura ao servidor; sem servidor PHP (testes locais) segue só com o modelo do portal. */
 async function lerEstrutura() {
   try {
-    const r = await fetch('data/estrutura-dados.php', { cache: 'no-store' });
+    const r = await apiFetch('estrutura-dados');
     const d = await r.json().catch(() => null);
     if (!d) return { bd: { disponivel: false, erro: t('A estrutura da base de dados precisa do servidor da plataforma (PHP).') } };
     if (!r.ok) throw new Error(d.erro || t('O seu perfil não permite exportar a estrutura de dados.'));

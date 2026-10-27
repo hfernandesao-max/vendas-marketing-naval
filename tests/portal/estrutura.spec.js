@@ -21,8 +21,8 @@ const GESTAO = {
   eu: 'sadm',
 };
 async function abrirAcessos(page, estrutura) {
-  await page.route('**/data/gestao.php*', (r) => r.fulfill({ json: GESTAO }));
-  await page.route('**/data/estrutura-dados.php*', (r) => r.fulfill({ json: estrutura }));
+  await page.route('**/v1/gestao*', (r) => r.fulfill({ json: GESTAO }));
+  await page.route('**/v1/estrutura-dados*', (r) => r.fulfill({ json: estrutura }));
   const erros = await abrir(page, '#acessos');
   await expect(page.locator('#ac-dicionario')).toContainText('Dicionário técnico da base de dados');
   return erros;

@@ -239,7 +239,7 @@ function naval_plano_email_html(array $p, array $artigos, string $ligacao): stri
         . '<p style="margin:14px 0 0;font-size:11px;color:#8A97B3">Mensagem automática do Portal RTM · Grupo Naval. Não responda a este email.</p></div>';
 }
 
-// ── Casos de uso da página «Plano de cargas» (chamados por reports/data/plano.php) ──
+// ── Casos de uso da página «Plano de cargas» (chamados pela API: nucleo/api/v1/plano.php) ──
 
 /** Quem pode preencher, publicar e gerir as listas (Logística, nível G, e o super administrador). */
 function naval_plano_gere(): bool

@@ -78,6 +78,18 @@ done < <(find "$RAIZ" -maxdepth 1 -type f \( -iname '*.csv' -o -iname '*.xlsx' -
 echo "Servidos:"
 espera 200 /geo/login.php /geo/vendor/lucide-1.62.0.min.js /geo/vendor/papaparse-5.3.0.min.js /reports/js/app.js /geo/style.css
 espera 302 /index.php /reports/
+echo "API central:"
+espera 401 /api/index.php/v1/sessao /api/v1/sessao
+espera 403 /nucleo/api/router.php /nucleo/api/v1/sessao.php /api/.htaccess
+espera 404 /api/index.php/v1/nao-existe
+# fluxo completo pelo Apache: entrar → token (X-CSRF-Token) → pedido com «Authorization: Bearer»
+CJ="$TMP/cookies"
+CS="$(curl -s -c "$CJ" -b "$CJ" "$URL/geo/login.php" | grep -o 'name="csrf" value="[^"]*"' | cut -d'"' -f4)"
+curl -s -c "$CJ" -b "$CJ" -o /dev/null --data-urlencode "usuario=dir" --data-urlencode "senha=Teste-12345!" --data-urlencode "redirect=../reports/" --data-urlencode "csrf=$CS" "$URL/geo/login.php"
+CP="$(curl -s -b "$CJ" "$URL/reports/" | grep -o 'csrf-token" content="[^"]*' | cut -d'"' -f3)"
+TK="$(curl -s -b "$CJ" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CP" -d '{}' "$URL/api/index.php/v1/auth/token" | php -r 'echo json_decode(stream_get_contents(STDIN), true)["access_token"] ?? "";')"
+r="$(curl -s -o /dev/null -w '%{http_code}' -b "$CJ" -H "Authorization: Bearer $TK" "$URL/api/v1/sessao")"
+if [ -n "$TK" ] && [ "$r" = 200 ]; then echo "  ok    200 sessão → token JWT → API com Bearer (Authorization chega ao PHP)"; else echo "  FALHA fluxo do token pelo Apache (token: ${#TK} caracteres, HTTP $r)"; FALHAS=$((FALHAS+1)); fi
 echo "Cabeçalhos:"
 H="$(curl -s -D - -o /dev/null "$URL/reports/js/app.js")"
 for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referrer-Policy: strict-origin-when-cross-origin" "Permissions-Policy:"; do

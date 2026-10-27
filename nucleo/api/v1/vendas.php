@@ -2,14 +2,14 @@
 /**
  * Vendas do Pinguim BO → JSON (formato de vendas.json), com o âmbito do perfil.
  *
- * GET ?start_date=AAAAMMDD&end_date=AAAAMMDD[&include_items=1]   vendas (e linhas de artigos)
- * GET ?ping=1                                 estado da ligação ao Pinguim BO (indicador do portal)
- * GET ?diag=1                                 diagnóstico do servidor (super administrador)
- * GET ?estrutura=1&start_date=AAAAMMDD        secções e campos da exportação, sem dados pessoais (super administrador)
+ * GET v1/vendas?start_date=AAAAMMDD&end_date=AAAAMMDD[&include_items=1]   vendas (e linhas de artigos)
+ * GET v1/vendas/estado                       estado da ligação ao Pinguim BO (indicador do portal)
+ * GET v1/vendas/diagnostico                  diagnóstico do servidor (super administrador)
+ * GET v1/vendas/estrutura?start_date=AAAAMMDD secções e campos da exportação, sem dados pessoais (super administrador)
  *
  * Em caso de falha devolve sempre JSON {ok:false, erro, detalhe} com o código HTTP adequado.
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('pinguim');
 naval_servico('vendas');
 naval_servico('rotas');
@@ -47,6 +47,13 @@ if (!preg_match('/^\d{8}$/', $de) || !preg_match('/^\d{8}$/', $ate)) {
 }
 naval_validar_periodo($de, $ate);
 
-$d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
+// Cache no servidor (fase 4): o mesmo período não volta a ser consultado durante 2 min (se inclui hoje)
+// ou 30 min (período fechado); «fresco=1» (botão Actualizar) consulta de novo. O âmbito do perfil
+// (rotas, NIF) aplica-se depois, a cada pedido.
+$chave = 'vendas|' . $de . '|' . $ate . '|' . ($itens ? 1 : 0) . '|' . hash('sha256', (string) json_encode(naval_promotores()));
+$d = naval_cache($chave, naval_cache_periodo($ate), function () use ($de, $ate, $itens) {
+    $d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
+    return $d;
+}, ($_GET['fresco'] ?? '') === '1');
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());
 naval_json($itens ? $d : $d['vendas']);

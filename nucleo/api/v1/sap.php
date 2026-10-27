@@ -7,7 +7,7 @@
  * GET ?xlsx=N       segunda via do Excel do lote N (só auditoria: TI, AUD)
  * POST {accao: config | lote | confirmar | anular, csrf, ...}   nível E (Financeiro e Back-office)
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('sap');
 naval_exigir(['sap-exportar']);
 $podeGerar = naval_pode_exportar('sap-exportar');

@@ -70,8 +70,8 @@ function naval_cabecalhos_seguranca(): void
         header('Content-Security-Policy: ' . $origens . '; ' . $base);
     } else {
         header('Content-Security-Policy: ' . $base);
-        // relatórios das violações para o servidor (reports/data/csp.php → registos/csp-AAAA-MM.jsonl)
-        $relatorio = rtrim((string) parse_url(naval_config('PORTAL_URL'), PHP_URL_PATH), '/') . '/reports/data/csp.php';
+        // relatórios das violações para o servidor (API v1/csp-relatorio → registos/csp-AAAA-MM.jsonl)
+        $relatorio = rtrim((string) parse_url(naval_config('PORTAL_URL'), PHP_URL_PATH), '/') . '/api/index.php/v1/csp-relatorio';
         header('Reporting-Endpoints: csp="' . $relatorio . '"');
         header('Content-Security-Policy-Report-Only: ' . $origens . '; report-uri ' . $relatorio . '; report-to csp');
     }

@@ -4,7 +4,8 @@ parameters:
     phpVersion: 70100
     paths:
         - nucleo
-        - reports/data
+        - api
+        - geo/senha.php
         - reports/index.php
         - geo/auth
         - geo/login.php

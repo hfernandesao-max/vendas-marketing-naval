@@ -9,7 +9,7 @@ const ExcelJS = require('exceljs');
 test('exportar dados: todo o histórico, sem os filtros das páginas, em tabelas do Excel com dicionário', async ({ page }) => {
   const pedidos = [];
   page.on('request', (r) => {
-    if (r.url().includes('/data/api.php')) pedidos.push(r.url());
+    if (r.url().includes('/v1/vendas?')) pedidos.push(r.url());
   });
   // período aberto no portal: só hoje — a exportação de dados não depende dele
   const erros = await abrir(page, '#vendas-dia', { periodo: null });

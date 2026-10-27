@@ -25,7 +25,7 @@ const CARGAS = [
 ];
 
 test('registo de cargas: no menu Logística, por rota e viatura, por dia e por viatura; o stock deixa de mostrar cargas', async ({ page }) => {
-  await page.route('**/data/dados.php?f=cargas*', (r) => r.fulfill({ json: CARGAS }));
+  await page.route('**/v1/dados/cargas*', (r) => r.fulfill({ json: CARGAS }));
   await page.route('**/cargas.json*', (r) => r.fulfill({ json: CARGAS }));
   const erros = await abrir(page, '#registo-cargas');
   await expect(page.locator('#nav a[href="#registo-cargas"]').first()).toContainText('Registo de cargas');

@@ -48,9 +48,44 @@ function naval_json(array $dados, int $estado = 200): void
     if ($json === false) {
         if (!headers_sent()) http_response_code(500);
         $json = json_encode(['ok' => false, 'erro' => 'Não foi possível converter os dados para JSON.', 'detalhe' => json_last_error_msg()]);
+        $estado = 500;
     }
+    $json = (string) $json;
+    if ($estado === 200 && defined('NAVAL_API')) naval_json_optimizar($json);
     echo $json;
     exit;
+}
+
+/**
+ * Respostas da API (GET 200): validação por ETag (304 sem corpo quando o navegador já tem a mesma versão;
+ * Cache-Control «private, no-cache» obriga a confirmar sempre com o servidor) e compressão gzip das respostas
+ * grandes. As respostas com segredos (token, código CSRF) ficam «no-store» e sem compressão (BREACH).
+ */
+function naval_json_optimizar(string &$json): void
+{
+    if (headers_sent() || !empty($GLOBALS['naval_api_sensivel']) || ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
+    $etag = 'W/"' . substr(hash('sha256', $json), 0, 32) . '"';
+    header('Cache-Control: private, no-cache');
+    header_remove('Pragma');
+    header_remove('Expires');
+    header('ETag: ' . $etag);
+    header('Vary: Authorization, Accept-Encoding');
+    $pedido = array_map('trim', explode(',', (string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')));
+    if (in_array($etag, $pedido, true)) {
+        http_response_code(304);
+        header_remove('Content-Type');
+        $json = '';
+        return;
+    }
+    $aceita = stripos((string) ($_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''), 'gzip') !== false;
+    if ($aceita && strlen($json) > 2048 && function_exists('gzencode') && !ini_get('zlib.output_compression')) {
+        $gz = gzencode($json, 5);
+        if (is_string($gz)) {
+            header('Content-Encoding: gzip');
+            header('Content-Length: ' . strlen($gz));
+            $json = $gz;
+        }
+    }
 }
 
 /** Envia um ficheiro guardado (Excel) e termina o pedido. */

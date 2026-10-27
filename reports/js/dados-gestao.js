@@ -10,6 +10,7 @@ import { t } from './i18n/i18n.js';
 import { SESSAO, podeExportar } from './perfil.js';
 import { INICIO_PINGUIM, hoje } from './periodo.js';
 import { $, toast } from './util.js';
+import { apiFetch } from './api.js';
 
 export const NOME_DADOS = 'RTM - Dados de Gestão';
 export const nomeDados = () => NOME_DADOS + '-' + dl(hoje()) + '.xlsx';
@@ -17,7 +18,7 @@ export const nomeDados = () => NOME_DADOS + '-' + dl(hoje()) + '.xlsx';
 /** Confirma no servidor que o perfil pode exportar os dados e regista a exportação; sem PHP (testes locais) segue. */
 async function autorizar(linhas, periodo) {
   try {
-    const r = await fetch('data/registar.php', {
+    const r = await apiFetch('exportacoes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -37,7 +38,7 @@ async function autorizar(linhas, periodo) {
 
 /** Vendas e linhas de artigos de todo o histórico (sem mexer nos dados do período aberto no portal). */
 async function lerHistorico(de, ate) {
-  const r = await fetch(`data/api.php?start_date=${de.replace(/-/g, '')}&end_date=${ate.replace(/-/g, '')}&include_items=1`, { cache: 'no-store' });
+  const r = await apiFetch(`vendas?start_date=${de.replace(/-/g, '')}&end_date=${ate.replace(/-/g, '')}&include_items=1`);
   const d = await r.json().catch(() => null);
   if (!r.ok || !d || d.erro) throw new Error((d && d.erro) || t('Não foi possível ler os dados do Pinguim BO.'));
   return { vendas: Array.isArray(d) ? d : d.vendas || [], artigos: Array.isArray(d.artigos) ? d.artigos : [] };

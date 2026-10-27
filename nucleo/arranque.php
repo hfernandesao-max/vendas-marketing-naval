@@ -3,7 +3,7 @@
  * Arranque do back-end: carrega o núcleo comum (configuração, HTTP, armazenamento, segurança).
  * Os serviços de negócio (nucleo/servicos/) são carregados por quem os usa.
  *
- *   reports/data/*.php   →  require nucleo/api.php      (serviços JSON com sessão)
+ *   api/index.php        →  require nucleo/api/router.php (API central v1, token JWT)
  *   páginas HTML         →  require geo/auth/auth_check.php
  *   ferramentas da linha de comandos → require nucleo/arranque.php
  */

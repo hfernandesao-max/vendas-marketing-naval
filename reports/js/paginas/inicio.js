@@ -10,6 +10,7 @@ import { draw } from '../app.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
+import { apiFetch } from '../api.js';
 
 function painelInicio(pg) {
   const V = vendasR(),
@@ -345,7 +346,7 @@ function lerComparavel(pc) {
   if (COMP.chave === chave && COMP.vendas) return COMP.vendas;
   if (COMP.aLer === chave) return null;
   COMP.aLer = chave;
-  fetch(`data/api.php?start_date=${pc.de.replace(/-/g, '')}&end_date=${pc.ate.replace(/-/g, '')}`, { cache: 'no-store' })
+  apiFetch(`vendas?start_date=${pc.de.replace(/-/g, '')}&end_date=${pc.ate.replace(/-/g, '')}`)
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
       COMP.chave = chave;

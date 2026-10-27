@@ -10,13 +10,14 @@ import { atual } from '../perfil.js';
 import { hoje } from '../periodo.js';
 import { postJson } from '../servidor.js';
 import { b64, chaveTxt, el, somaDias, toast } from '../util.js';
+import { apiDescarregar, apiFetch } from '../api.js';
 
 const PC = { data: null, resp: null, rotas: null, sujo: false, mud: 0, gravando: false, erro: null, guardadoEm: null, hist: null };
 const somaQ = (r) => Object.values(r.quantidades || {}).reduce((s, v) => s + (+v || 0), 0);
-const postPlano = (corpo) => postJson('data/plano.php', corpo);
+const postPlano = (corpo) => postJson('plano', corpo);
 
 function carregarPlano(data) {
-  return fetch('data/plano.php?data=' + encodeURIComponent(data), { cache: 'no-store' })
+  return apiFetch('plano?data=' + encodeURIComponent(data))
     .then((r) => r.json())
     .then((d) => {
       if (d.erro) {
@@ -258,13 +259,16 @@ function escolhaDestinatarios(dest) {
 }
 const nomeExcelPlano = (data, sufixo) => 'PLANO_DE_CARGAS_' + dl(data).replace(/-/g, '.') + (sufixo ? '_' + sufixo : '') + '.xlsx';
 
+// Excel da versão publicada (gerado e guardado no servidor), transferido pela API com o token
+const excelPublicado = () => apiDescarregar('plano/excel?data=' + encodeURIComponent(PC.data), nomeExcelPlano(PC.data)).catch((e) => toast(e.message, 6000));
+
 // ---- Exportar Excel: versão publicada (oficial) ou rascunho identificado como não publicado ----
 function exportarExcelPlano() {
   const d = PC.resp,
     p = d.plano,
     est = estadoPlano();
   if (p && p.publicado && est === 'publicado') {
-    location.href = 'data/plano.php?xlsx=' + PC.data;
+    excelPublicado();
     return;
   }
   const go = () =>
@@ -281,7 +285,7 @@ function exportarExcelPlano() {
         botao(t('Cancelar'), 'ghost', fechar),
         botao(t('Versão {v} publicada', { v: p.publicado.versao }), 'ghost', () => {
           fechar();
-          location.href = 'data/plano.php?xlsx=' + PC.data;
+          excelPublicado();
         }),
         botao(t('Rascunho actual'), '', () => {
           fechar();
@@ -866,7 +870,7 @@ R['plano-cargas'] = (pg) => {
       acc.append(
         botao(t('Copiar de {d}', { d: dl(d.anterior).slice(0, 5) }), 'ghost sm', () => {
           const go = () =>
-            fetch('data/plano.php?data=' + d.anterior, { cache: 'no-store' })
+            apiFetch('plano?data=' + encodeURIComponent(d.anterior))
               .then((r) => r.json())
               .then((x) => {
                 const src = x.plano ? (x.plano.publicado ? x.plano.publicado.rotas : x.plano.rotas) : [];
@@ -898,7 +902,11 @@ R['plano-cargas'] = (pg) => {
   } else if (p && p.publicado && d.exportar) {
     const a = el('a', 'btn ghost sm', t('Exportar Excel'));
     a.id = 'pc-excel';
-    a.href = 'data/plano.php?xlsx=' + PC.data;
+    a.href = '#';
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      excelPublicado();
+    });
     acc.append(a);
   }
   if (gere && p && p.publicado) {
@@ -1012,7 +1020,7 @@ R['plano-cargas'] = (pg) => {
   }
   // histórico
   if (!PC.hist)
-    fetch('data/plano.php?historico=1', { cache: 'no-store' })
+    apiFetch('plano/historico')
       .then((r) => r.json())
       .then((h) => {
         PC.hist = h.dias || [];

@@ -4,7 +4,7 @@
  * do utilizador: só as suas rotas e NIF só para quem o pode ver. Os .json desta pasta não são
  * acessíveis directamente (ver .htaccess).
  */
-require_once __DIR__ . '/../../nucleo/api.php';
+defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('rotas');
 
 $f = (string) ($_GET['f'] ?? '');
@@ -15,7 +15,7 @@ $regras = [
 ];
 if (!isset($regras[$f])) throw new NavalErro('Ficheiro desconhecido.');
 naval_exigir($regras[$f]);
-$d = naval_json_ler(__DIR__ . '/' . $f . '.json');
+$d = naval_json_ler(naval_raiz() . '/reports/data/' . $f . '.json');
 
 // Plano de cargas: os dias publicados no portal juntam-se ao histórico (e substituem o mesmo dia e rota)
 if ($f === 'cargas') {

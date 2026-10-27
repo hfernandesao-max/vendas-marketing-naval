@@ -14,7 +14,7 @@ test('a sessão devolve o perfil, as rotas e as permissões de cada conta', asyn
   const casos = { sup: ['SUP', ['1001']], log: ['LOG', null], sadm: ['SADM', null] };
   for (const [login, [perfil, rotas]] of Object.entries(casos)) {
     const { ctx } = await entrar(login);
-    const s = await (await ctx.get('/reports/data/sessao.php')).json();
+    const s = await (await ctx.get('/api/index.php/v1/sessao')).json();
     expect(s.perfil).toBe(perfil);
     expect(s.rotas).toEqual(rotas);
     expect(s.csrf).toMatch(/^[0-9a-f]{32}$/);
@@ -47,9 +47,9 @@ test('três palavras-passe erradas bloqueiam a conta até o super administrador 
 
   // a Direcção não pode desbloquear; o super administrador pode
   const dir = (await entrar('dir')).ctx;
-  expect((await dir.post('/reports/data/gestao.php', { data: { accao: 'desbloquear', conta: 'aud', csrf: await csrf(dir) } })).status()).toBe(403);
+  expect((await dir.post('/api/index.php/v1/gestao', { data: { accao: 'desbloquear', conta: 'aud', csrf: await csrf(dir) } })).status()).toBe(403);
   const sadm = (await entrar('sadm')).ctx;
-  const r = await sadm.post('/reports/data/gestao.php', { data: { accao: 'desbloquear', conta: 'aud', csrf: await csrf(sadm) } });
+  const r = await sadm.post('/api/index.php/v1/gestao', { data: { accao: 'desbloquear', conta: 'aud', csrf: await csrf(sadm) } });
   expect((await r.json()).ok).toBe(true);
   expect((await entrar('aud')).resposta.status()).toBe(302);
 });
@@ -66,14 +66,14 @@ test('alterar contas exige o super administrador, o código da sessão e a confi
     rotas: [],
     activo: true,
   };
-  expect((await sadm.post('/reports/data/gestao.php', { data: { ...corpo, csrf: 'x' } })).status()).toBe(403);
+  expect((await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: 'x' } })).status()).toBe(403);
   const c = await csrf(sadm);
-  expect(await (await sadm.post('/reports/data/gestao.php', { data: { ...corpo, csrf: c } })).json()).toMatchObject({ ok: false, confirmar: 'senha' });
-  const ok = await (await sadm.post('/reports/data/gestao.php', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
+  expect(await (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: c } })).json()).toMatchObject({ ok: false, confirmar: 'senha' });
+  const ok = await (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
   expect(ok.ok).toBe(true);
   expect(ok.senha).toHaveLength(16);
   // email repetido é recusado
-  const rep = await (await sadm.post('/reports/data/gestao.php', { data: { ...corpo, conta: 'outro.teste', csrf: c } })).json();
+  const rep = await (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, conta: 'outro.teste', csrf: c } })).json();
   expect(rep.erro).toContain('já está associado');
 });
 

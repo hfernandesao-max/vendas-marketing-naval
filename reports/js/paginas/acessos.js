@@ -10,6 +10,7 @@ import { R } from './registo.js';
 import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
+import { apiFetch } from '../api.js';
 
 const NOMES_ACCAO = {
   entrada: 'Entrada',
@@ -48,7 +49,7 @@ const NOMES_ACCAO = {
 let GESTAO = null,
   MPEND = {};
 function carregarGestao() {
-  return fetch('data/gestao.php', { cache: 'no-store' })
+  return apiFetch('gestao')
     .then((r) => r.json())
     .then((d) => {
       GESTAO = d && d.utilizadores ? d : { erro: (d && d.erro) || t('Sem dados') };
@@ -110,7 +111,7 @@ function confirmarIdentidade(metodo, erro) {
 }
 // Pedido de alteração: pede a confirmação da identidade quando o servidor a exigir
 function pedirGestao(corpo, confirmacao) {
-  return postJson('data/gestao.php', { ...corpo, confirmacao }).then((d) => {
+  return postJson('gestao', { ...corpo, confirmacao }).then((d) => {
     if (d.sair) {
       toast(t(d.erro), 6000);
       setTimeout(() => {

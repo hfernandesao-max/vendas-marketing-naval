@@ -11,9 +11,9 @@ const MODELO = 'reports/modelos/RTM_Sales_SAP_Upload_Format.xlsx';
 
 test('gera o Excel igual ao modelo do SAP', async ({ page }) => {
   const rotas = Object.fromEntries([...new Set(vendas.map((v) => v.rota))].map((r) => [r, { local: 'RTM' + r.slice(-1) }]));
-  await page.route('**/data/sap.php**', (r) => {
+  await page.route('**/v1/sap**', (r) => {
     const u = r.request().url();
-    if (u.includes('modelo=1'))
+    if (u.includes('/sap/modelo'))
       return r.fulfill({ body: readFileSync(MODELO), contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     if (r.request().method() === 'POST') return r.fulfill({ json: { ok: true, lote: { numero: 1, ficheiro: 'teste.xlsx' } } });
     return r.fulfill({ json: { config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', rotas }, lotes: [], exportados: {}, pode_gerar: true } });

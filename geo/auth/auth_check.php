@@ -12,14 +12,6 @@ $configuredBasePath = defined('NAVAL_AUTH_BASE_PATH') ? NAVAL_AUTH_BASE_PATH : n
 $configuredRedirect = defined('NAVAL_AUTH_REDIRECT') ? NAVAL_AUTH_REDIRECT : null;
 
 if (!naval_autenticado()) {
-    // Os serviços de dados dos relatórios (reports/data/*.php) respondem JSON, não uma página de login.
-    if (preg_match('#/reports/data/[^/]+\.php$#i', $scriptName)) {
-        http_response_code(401);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Autenticação necessária.']);
-        exit;
-    }
-
     // No servidor Apache em C:\Apache24\htdocs\geo com o domínio geo.naval.co.ao,
     // a aplicação é servida na raiz ('/'). Se acessada sob subdiretório '/geo/', preserva o caminho.
     $basePath = $configuredBasePath ?: '/';

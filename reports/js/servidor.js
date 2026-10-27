@@ -1,12 +1,13 @@
 // Comunicação com o servidor: pedidos POST com a protecção CSRF da sessão e carregamento,
 // a pedido, das bibliotecas de terceiros (vendor/) que só algumas páginas usam.
+import { apiFetch } from './api.js';
 import { SESSAO } from './perfil.js';
 
 const SEM_RESPOSTA = { ok: false, erro: 'Sem resposta do servidor.' };
 
-/** POST JSON com o token CSRF; devolve sempre um objecto ({ok:false, erro} quando falha a rede ou o JSON). */
-export const postJson = (url, corpo) =>
-  fetch(url, {
+/** POST JSON à API (rota relativa a v1/) com o token de acesso e o código CSRF; devolve sempre um objecto ({ok:false, erro} quando falha a rede ou o JSON). */
+export const postJson = (rota, corpo) =>
+  apiFetch(rota, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...corpo, csrf: SESSAO && SESSAO.csrf }),

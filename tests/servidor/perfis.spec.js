@@ -7,7 +7,7 @@ test.describe.configure({ mode: 'serial' });
 test('criar perfil a partir de outro, criar uma conta com ele e ajustar a matriz', async () => {
   const sadm = (await entrar('sadm')).ctx,
     c = await csrf(sadm);
-  const pedir = async (corpo) => (await sadm.post('/reports/data/gestao.php', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
+  const pedir = async (corpo) => (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
 
   // validações
   expect((await pedir({ accao: 'guardar_perfil', novo: true, codigo: 'TI', nome: 'Outro' })).erro).toContain('Já existe');
@@ -18,7 +18,7 @@ test('criar perfil a partir de outro, criar uma conta com ele e ajustar a matriz
   // novo perfil copiado do Financeiro
   const r = await pedir({ accao: 'guardar_perfil', novo: true, codigo: 'TES', nome: 'Tesouraria', base: 'FIN', por_rota: false, dois_passos: false });
   expect(r).toMatchObject({ ok: true, perfil: 'TES' });
-  const vista = await (await sadm.get('/reports/data/gestao.php')).json();
+  const vista = await (await sadm.get('/api/index.php/v1/gestao')).json();
   expect(vista.perfis.TES).toBe('Tesouraria');
   expect(vista.matriz['sap-exportar'].TES).toBe(vista.matriz['sap-exportar'].FIN);
   expect(vista.perfis_info.find((p) => p.codigo === 'TES')).toMatchObject({ sistema: false, base: 'FIN', contas: 0, activo: true });
@@ -48,13 +48,13 @@ test('criar perfil a partir de outro, criar uma conta com ele e ajustar a matriz
 test('perfil sem contas: desactivar e apagar; só o super administrador cria perfis', async () => {
   const sadm = (await entrar('sadm')).ctx,
     c = await csrf(sadm);
-  const pedir = async (corpo) => (await sadm.post('/reports/data/gestao.php', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
+  const pedir = async (corpo) => (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
   expect((await pedir({ accao: 'guardar_perfil', novo: true, codigo: 'TMP', nome: 'Temporário', base: '' })).ok).toBe(true);
   expect((await pedir({ accao: 'guardar_perfil', codigo: 'TMP', nome: 'Temporário', activo: false })).ok).toBe(true);
-  expect(Object.keys((await (await sadm.get('/reports/data/gestao.php')).json()).perfis)).not.toContain('TMP');
+  expect(Object.keys((await (await sadm.get('/api/index.php/v1/gestao')).json()).perfis)).not.toContain('TMP');
   expect(await pedir({ accao: 'apagar_perfil', codigo: 'TMP' })).toEqual({ ok: true });
 
   const ti = (await entrar('ti')).ctx;
-  const r = await ti.post('/reports/data/gestao.php', { data: { accao: 'guardar_perfil', novo: true, codigo: 'XX', nome: 'X', csrf: await csrf(ti) } });
+  const r = await ti.post('/api/index.php/v1/gestao', { data: { accao: 'guardar_perfil', novo: true, codigo: 'XX', nome: 'X', csrf: await csrf(ti) } });
   expect(r.status()).toBe(403);
 });

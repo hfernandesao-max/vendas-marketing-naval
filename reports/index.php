@@ -16,4 +16,6 @@ foreach ($paginas as $pg) {
 if (!$algum) naval_pagina_exigir('inicio', '../');
 
 header('Content-Type: text/html; charset=utf-8');
-readfile(__DIR__ . '/index.html');
+// Código CSRF da sessão para o cliente da API trocar a sessão por um token de acesso (reports/js/api.js)
+$meta = '<meta name="csrf-token" content="' . htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') . '">';
+echo preg_replace('/<head>/i', '<head>' . "\n  " . $meta, (string) file_get_contents(__DIR__ . '/index.html'), 1);

@@ -7,6 +7,7 @@ import { dl } from './formatos.js';
 import { t } from './i18n/i18n.js';
 import { podeVer } from './perfil.js';
 import { $, el } from './util.js';
+import { apiFetch } from './api.js';
 
 export const SY = { dados: null, lidoEm: 0, aLer: null };
 const ouvintes = [];
@@ -35,7 +36,7 @@ export function haQuanto(min) {
 
 export function lerSync() {
   if (SY.aLer) return SY.aLer;
-  SY.aLer = fetch('data/sincronizacao.php', { cache: 'no-store' })
+  SY.aLer = apiFetch('sincronizacao')
     .then((r) => (r.status === 403 || r.status === 401 ? { disponivel: false, semAcesso: true } : r.json()))
     .catch(() => ({ disponivel: false, erro: t('A sincronização precisa do servidor da plataforma (PHP) e da base de dados do Pinguim BO.') }))
     .then((d) => {

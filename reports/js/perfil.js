@@ -3,7 +3,7 @@ import { pendenteDe, vendasR } from './calculos.js';
 import { PAGES } from './paginas/catalogo.js';
 import { DB } from './util.js';
 
-// SESSAO vem de data/sessao.php. Sem servidor PHP (teste local) fica null e tudo é visível;
+// SESSAO vem da API (v1/sessao). Sem servidor PHP (teste local) fica null e tudo é visível;
 // no servidor os dados são sempre filtrados pelos serviços PHP, seja o que for que o ecrã mostre.
 export let SESSAO = null;
 const nivelDe = (id) => (SESSAO ? (SESSAO.permissoes || {})[id] || '' : 'A');

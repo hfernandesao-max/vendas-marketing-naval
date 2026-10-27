@@ -26,7 +26,7 @@ test('a escolha de período vale só na sessão; «Ontem» é um período fechad
 test('actualiza sozinho com o período aberto e pelo botão «Actualizar»', async ({ page }) => {
   let pedidos = 0;
   page.on('request', (r) => {
-    if (r.url().includes('api.php?start_date')) pedidos++;
+    if (r.url().includes('/v1/vendas?start_date')) pedidos++;
   });
   await abrir(page, '#inicio', { periodo: null });
   const antes = pedidos;
