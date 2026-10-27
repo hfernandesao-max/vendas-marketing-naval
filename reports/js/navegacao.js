@@ -105,13 +105,13 @@ export function nav() {
   const al = contarAlertas(),
     q = filtrosURL(atual),
     grupoAtual = (PAGES.find((x) => x.id === atual) || {}).grupo;
-  // Ao mudar de página, abre a área dessa página (no Início mantém a que estava aberta)
+  // Ao mudar de página, abre a área dessa página; ao voltar ao Início o menu volta ao estado inicial
+  // (todas as áreas fechadas, como uma «casa» limpa)
   if (atual !== ultimaPagina) {
     ultimaPagina = atual;
-    if (grupoAtual) {
-      grupoAberto = grupoAtual;
-      guardarGrupo();
-    }
+    if (grupoAtual) grupoAberto = grupoAtual;
+    else if (atual === 'inicio') grupoAberto = null;
+    guardarGrupo();
   }
   const visiveis = paginasVisiveis();
   let caixa = n;
@@ -151,6 +151,14 @@ export function nav() {
       a.setAttribute('aria-current', 'page');
     }
     a.addEventListener('click', () => $('#app').classList.remove('open'));
+    // Início: fecha todas as áreas do menu (mesmo já estando no Início) e volta ao topo
+    if (p.id === 'inicio')
+      a.addEventListener('click', () => {
+        grupoAberto = null;
+        guardarGrupo();
+        abrirGrupo(n, null);
+        window.scrollTo(0, 0);
+      });
     caixa.append(a);
     // relatórios da página aberta
     if (p.id === atual && RELS.length) {

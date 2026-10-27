@@ -60,16 +60,41 @@ function pingPinguim() {
     })
     .catch(() => marcarPinguim(false, t('sem ligação ao servidor')));
 }
-$('#fontes').addEventListener('click', () => {
+// Detalhe das fontes: abre ao clicar e fecha sozinho ao fim de 8 s (ou ao clicar fora, com Esc ou ao
+// clicar de novo); com o rato ou o foco em cima, espera que saia para voltar a contar.
+export const FECHO_FONTES = 8000;
+let fechoFontes = null;
+function contarFecho() {
+  clearTimeout(fechoFontes);
+  fechoFontes = setTimeout(() => detalheFontes(false), FECHO_FONTES);
+}
+export function detalheFontes(abrir) {
   const d = $('#fontes-det');
-  d.hidden = !d.hidden;
-  $('#fontes').setAttribute('aria-expanded', String(!d.hidden));
-});
+  d.hidden = !abrir;
+  $('#fontes').setAttribute('aria-expanded', String(abrir));
+  clearTimeout(fechoFontes);
+  if (abrir) contarFecho();
+}
+$('#fontes').addEventListener('click', () => detalheFontes($('#fontes-det').hidden));
 $('#fontes-mini').addEventListener('click', (ev) => {
   ev.stopPropagation();
   $('#app').classList.add('open');
-  $('#fontes-det').hidden = false;
-  $('#fontes').setAttribute('aria-expanded', 'true');
+  detalheFontes(true);
+});
+['#fontes', '#fontes-det'].forEach((q) => {
+  $(q).addEventListener('mouseenter', () => clearTimeout(fechoFontes));
+  $(q).addEventListener('mouseleave', () => {
+    if (!$('#fontes-det').hidden) contarFecho();
+  });
+});
+document.addEventListener('mousedown', (ev) => {
+  if (!$('#fontes-det').hidden && !ev.target.closest('#fontes, #fontes-det, #fontes-mini')) detalheFontes(false);
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && !$('#fontes-det').hidden) {
+    detalheFontes(false);
+    $('#fontes').focus();
+  }
 });
 setInterval(pingPinguim, 5 * 60000);
 setInterval(mostrarFontes, 30000);

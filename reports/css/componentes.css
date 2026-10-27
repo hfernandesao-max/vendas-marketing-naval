@@ -1535,3 +1535,38 @@ table.ac-mig tr.ac-off td:not(:last-child) {
 .sync-t b.mau {
   color: #ff9b9b;
 }
+
+/* Fontes de dados: com ligação parcial (alguma fonte sem comunicar) a bolinha alterna entre verde e âmbar;
+   sem ligação, vermelho a pulsar. Com «reduzir movimento», fica fixa na cor do estado. */
+#fontes-dot.aviso,
+#fontes-mini-dot.aviso {
+  animation: fontes-parcial 1.6s ease-in-out infinite;
+}
+#fontes-dot.erro,
+#fontes-mini-dot.erro {
+  animation: fontes-erro 1.6s ease-in-out infinite;
+}
+@keyframes fontes-parcial {
+  0%,
+  100% {
+    background: var(--ok);
+    box-shadow: 0 0 0 3px rgba(61, 214, 140, 0.18);
+  }
+  50% {
+    background: var(--warn);
+    box-shadow: 0 0 0 3px rgba(245, 181, 71, 0.22);
+  }
+}
+@keyframes fontes-erro {
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 107, 107, 0.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fontes-dot.aviso,
+  #fontes-mini-dot.aviso,
+  #fontes-dot.erro,
+  #fontes-mini-dot.erro {
+    animation: none;
+  }
+}
