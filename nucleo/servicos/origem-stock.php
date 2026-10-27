@@ -16,6 +16,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/bd.php';
+if (is_file(__DIR__ . '/stock.php')) require_once __DIR__ . '/stock.php';   // serviço de stock, quando o projecto o tem
 
 const NAVAL_ARMAZENS_PRINCIPAIS = [
     '1150' => ['nome' => 'RTM REFITEC/FOODTEC PIV – FOOD', 'local' => 'RTM1'],
