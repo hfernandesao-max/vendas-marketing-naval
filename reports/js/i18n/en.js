@@ -1132,4 +1132,18 @@ export const EN = {
   'Um cliente por linha: rota, dias de visita, estado do cadastro, GPS e se comprou no período.':
     'One customer per row: route, visit days, registration status, GPS and whether they bought in the period.',
   GPS: 'GPS',
+  'Sem SAP location para as rotas {r}: não há transferências de stock dos armazéns principais para estas viaturas. Indique-a em Correspondência com o SAP.':
+    'No SAP location for routes {r}: there are no stock transfers from the main warehouses to these vehicles. Enter it under SAP mapping.',
+  'Para cada rota: Loja, SAP location e empregado de vendas como existem no SAP. Em branco fica o padrão mostrado. A SAP location é determinada pela origem do stock de cada viatura; só se indica na rota para a substituir.':
+    'For each route: store, SAP location and sales employee as set up in SAP. Blank keeps the default shown. The SAP location is determined by the stock origin of each vehicle; enter it on a route only to override it.',
+  'Armazéns principais e SAP location': 'Main warehouses and SAP location',
+  'Determinação automática por {f} ({p}).': 'Automatic determination from {f} ({p}).',
+  'Ainda sem transferências de stock dos armazéns principais para as viaturas: indique a SAP location em cada rota.':
+    'No stock transfers from the main warehouses to the vehicles yet: enter the SAP location on each route.',
+  'Armazém principal (Pinguim BO)': 'Main warehouse (Pinguim BO)',
+  'Rotas abastecidas': 'Routes supplied',
+  automático: 'automatic',
+  'Origem do stock desta viatura: {o}': 'Stock origin of this vehicle: {o}',
+  'saldos de stock dos armazéns principais e das viaturas': 'stock balances of the main warehouses and vehicles',
+  'transferências de stock do Pinguim BO (documentos)': 'Pinguim BO stock transfers (documents)',
 };

@@ -79,3 +79,17 @@ test('controlo de ficheiros emitidos: sem segunda emissão, segunda via só para
   expect(tarde.status()).toBe(409);
   expect((await tarde.json()).erro).toContain('estorno');
 });
+
+test('SAP location automática: armazéns principais 1150 → RTM1 e 1151 → RTM2; origem do stock por rota', async () => {
+  const fin = (await entrar('fin')).ctx;
+  const d = await (await fin.get('/reports/data/sap.php')).json();
+  expect(d.config.armazens['1150'].local).toBe('RTM1');
+  expect(d.config.armazens['1151'].local).toBe('RTM2');
+  expect(d.origens.fonte).toBeTruthy();
+  expect(d.origens.rotas['1001'].local).toBe('RTM2');
+  expect(Object.keys(d.origens.rotas['1001'].armazens)).toEqual(['1151']);
+  // armazéns principais configuráveis; sem SAP location são recusados
+  const c = await csrf(fin);
+  const r = await fin.post('/reports/data/sap.php', { data: { accao: 'config', csrf: c, config: { armazens: { 1150: { nome: 'X', local: '' } } } } });
+  expect(r.status()).toBe(400);
+});

@@ -413,3 +413,23 @@ dialog.dlg.largo {
   height: 16px;
   accent-color: var(--accent);
 }
+
+/* SAP location automática (origem do stock): o valor determinado aparece em azul no campo */
+.sap-map input.auto::placeholder {
+  color: var(--accent);
+  opacity: 1;
+}
+.sap-arm {
+  margin-top: 16px;
+}
+.sap-arm h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.sap-map-arm .sap-map-l {
+  grid-template-columns: 150px minmax(0, 1fr) 150px minmax(0, 1.6fr);
+}
+.sap-arm-rotas {
+  font-size: 12.5px;
+  color: var(--muted);
+}

@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 27-10-2026
 
 ### Adicionado
+- **SAP STORAGELOCATION automática** pela origem do stock: armazéns principais 1150 (FOOD) → RTM1 e 1151 (NON FOOD) → RTM2;
+  cada linha leva a localização do armazém que abasteceu a viatura (transferências do Pinguim BO ou saldos de stock).
+  Com os dados de 20 a 24-10-2026, todas as rotas → RTM2.
 - **Logística › Registo de cargas**: cargas expedidas a partir dos planos publicados — por rota e viatura
   (matrícula, tipo de viatura, motorista, transportadora, caixas por artigo, zonas), por dia e por viatura.
   Recurso `registo-cargas` na matriz de acessos.

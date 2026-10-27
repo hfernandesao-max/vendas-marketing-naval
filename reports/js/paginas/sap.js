@@ -33,6 +33,16 @@ const mapaSap = (rota, cfg) => {
     m = c.rotas[rota] || {};
   return { loja: m.loja || `${rota} - ${c.prefixo}`, local: m.local || '', empregado: m.empregado || `${c.prefixo} - ROTA ${rota} - ${nomeRota(rota)}` };
 };
+// SAP storage location de cada linha (determinação automática pela origem do stock, como no SAP):
+//   1. a indicada na rota (substituição manual); 2. a do armazém principal de onde o artigo veio para
+//   a viatura dessa rota; 3. a predominante da rota; 4. a do armazém principal de onde o artigo sai.
+const origens = () => SAPD.origens || { rotas: {}, artigos: {} };
+const localDeterminado = (rota, codigo) => {
+  const o = origens(),
+    r = o.rotas[rota];
+  return (r && ((codigo && r.artigos[codigo]) || r.local)) || (codigo && o.artigos[codigo]) || '';
+};
+const localLinha = (rota, codigo) => mapaSap(rota).local || localDeterminado(rota, codigo);
 function linhasSap() {
   const c = SAPD.config;
   const V = (DB.vendas || []).filter((v) => inR(v.data)); // rota e tipo de documento vêm da barra de filtros
@@ -71,7 +81,7 @@ function linhasSap() {
           ),
         );
       const outros = pg.filter((p) => p.codigo !== 'NU' && p.codigo !== 'MC');
-      if (!m.local) semLocal.add(v.rota);
+
       if (!ls.length) {
         erros.push(t('{d}: o documento não tem linhas de artigo.', { d: docTxt }));
         return;
@@ -84,6 +94,7 @@ function linhasSap() {
           t('{d}: {v} pagos por {m}; o modelo só tem Cash e MULTICAIXA.', { d: docTxt, v: kz(sum(outros, 'valor')), m: outros.map((p) => p.meio).join(', ') }),
         );
       ls.forEach((a) => {
+        if (!localLinha(v.rota, a.codigo)) semLocal.add(v.rota);
         if (!a.codigo) erros.push(t('{d}: linha «{a}» sem código de artigo.', { d: docTxt, a: a.artigo }));
         const net = r2(a.valor_sem_iva),
           tax = r2(a.iva);
@@ -98,7 +109,7 @@ function linhasSap() {
           quantidade: +a.quantidade || 0,
           uom: a.unidade || c.unidade,
           tipo: v.tipo,
-          local: m.local,
+          local: localLinha(v.rota, a.codigo),
           net,
           tax,
           gross: r2(net + tax),
@@ -113,7 +124,15 @@ function linhasSap() {
       });
       docs.push(v);
     });
-  if (semLocal.size) erros.unshift(t('Falta a SAP location das rotas {r} (Correspondência com o SAP, mais abaixo).', { r: [...semLocal].sort().join(', ') }));
+  if (semLocal.size)
+    erros.unshift(
+      t(
+        'Sem SAP location para as rotas {r}: não há transferências de stock dos armazéns principais para estas viaturas. Indique-a em Correspondência com o SAP.',
+        {
+          r: [...semLocal].sort().join(', '),
+        },
+      ),
+    );
   return { docs, linhas, erros, avisos, repetidos };
 }
 // Gera o ficheiro a partir do pacote do próprio modelo do SAP (RTM_Sales_SAP_Upload_Format.xlsx):
@@ -424,7 +443,13 @@ R['sap-exportar'] = (pg) => {
     hd = el('div');
   hd.append(
     el('h2', null, t('Correspondência com o SAP')),
-    el('p', null, t('Para cada rota: Loja, SAP location e empregado de vendas como existem no SAP. Em branco fica o padrão mostrado.')),
+    el(
+      'p',
+      null,
+      t(
+        'Para cada rota: Loja, SAP location e empregado de vendas como existem no SAP. Em branco fica o padrão mostrado. A SAP location é determinada pela origem do stock de cada viatura; só se indica na rota para a substituir.',
+      ),
+    ),
   );
   h.append(hd);
   sec.append(h);
@@ -439,6 +464,42 @@ R['sap-exportar'] = (pg) => {
   };
   geral.append(ci('prefixo', t('Prefixo da loja e do empregado')), ci('moeda', t('Moeda')), ci('unidade', t('Unidade por omissão')));
   sec.append(geral);
+  // Armazéns principais (origem do stock) → SAP location
+  if (!cfg.armazens) cfg.armazens = {};
+  const ap = el('div', 'sap-arm');
+  ap.append(el('h3', null, t('Armazéns principais e SAP location')));
+  const O = origens();
+  ap.append(
+    el(
+      'p',
+      'note',
+      O.fonte
+        ? t('Determinação automática por {f} ({p}).', { f: t(O.fonte), p: O.periodo })
+        : t('Ainda sem transferências de stock dos armazéns principais para as viaturas: indique a SAP location em cada rota.'),
+    ),
+  );
+  const ta = el('div', 'sap-map sap-map-arm');
+  const cabA = el('div', 'sap-map-l sap-map-h');
+  [t('Código'), t('Armazém principal (Pinguim BO)'), 'SAP LOCATION', t('Rotas abastecidas')].forEach((x) => cabA.append(el('span', null, x)));
+  ta.append(cabA);
+  Object.entries(cfg.armazens).forEach(([cod, a]) => {
+    const l = el('div', 'sap-map-l');
+    const nome = entrada('text', a.nome || '');
+    nome.disabled = !gera;
+    nome.setAttribute('aria-label', cod + ' nome');
+    nome.addEventListener('input', () => (a.nome = nome.value.trim()));
+    const loc = entrada('text', a.local || '');
+    loc.disabled = !gera;
+    loc.setAttribute('aria-label', cod + ' SAP location');
+    loc.addEventListener('input', () => (a.local = loc.value.trim().toUpperCase()));
+    const abastecidas = Object.entries(O.rotas || {})
+      .filter(([, x]) => x.armazens && x.armazens[cod])
+      .map(([r]) => r);
+    l.append(el('b', 'sap-map-r', cod), nome, loc, el('span', 'sap-arm-rotas', abastecidas.length ? abastecidas.join(', ') : '—'));
+    ta.append(l);
+  });
+  ap.append(ta);
+  sec.append(ap);
   const tb = el('div', 'sap-map');
   const cab = el('div', 'sap-map-l sap-map-h');
   [t('Rota'), 'LOJA', 'STORAGELOCATION', 'SALES EMPLOYEE'].forEach((x) => cab.append(el('span', null, x)));
@@ -458,8 +519,18 @@ R['sap-exportar'] = (pg) => {
     };
     const rt = el('span', 'sap-map-r');
     rt.append(el('b', null, r), el('small', null, nomeRota(r)));
-    const loc = c('local', t('obrigatório'));
-    if (!m.local) loc.classList.add('falta');
+    // SAP location: automática pela origem do stock; o campo só serve para a substituir
+    const det = O.rotas && O.rotas[r];
+    const auto = localDeterminado(r, '');
+    const loc = c('local', auto ? auto + ' · ' + t('automático') : t('obrigatório'));
+    if (det)
+      loc.title = t('Origem do stock desta viatura: {o}', {
+        o: Object.entries(det.armazens)
+          .map(([cod, q]) => ((cfg.armazens[cod] && cfg.armazens[cod].nome) || cod) + ' ' + n0(q))
+          .join(' · '),
+      });
+    if (!m.local && !auto) loc.classList.add('falta');
+    if (!m.local && auto) loc.classList.add('auto');
     l.append(rt, c('loja', pad.loja), loc, c('empregado', pad.empregado));
     tb.append(l);
   });

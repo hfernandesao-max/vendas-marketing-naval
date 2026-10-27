@@ -18,8 +18,11 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 
-// Configuração por omissão: o exemplo do modelo (rota 1011 → loja «1011 - FHR PIV», SAP location RTM2)
-const NAVAL_SAP_OMISSAO = ['prefixo' => 'FHR PIV', 'moeda' => 'AOA', 'unidade' => 'CAR', 'rotas' => ['1011' => ['local' => 'RTM2']]];
+require_once __DIR__ . '/origem-stock.php';
+
+// Configuração por omissão. A SAP storage location de cada venda é determinada automaticamente pela origem
+// do stock (armazém principal que abasteceu a viatura); na rota só se indica para a substituir.
+const NAVAL_SAP_OMISSAO = ['prefixo' => 'FHR PIV', 'moeda' => 'AOA', 'unidade' => 'CAR', 'armazens' => NAVAL_ARMAZENS_PRINCIPAIS, 'rotas' => []];
 const NAVAL_SAP_MODELO = '/reports/modelos/RTM_Sales_SAP_Upload_Format.xlsx';
 
 function naval_sap_pasta(): string
@@ -29,7 +32,9 @@ function naval_sap_pasta(): string
 
 function naval_sap_config(): array
 {
-    return naval_json_ler(naval_sap_pasta() . '/config.json', NAVAL_SAP_OMISSAO);
+    $c = naval_json_ler(naval_sap_pasta() . '/config.json', NAVAL_SAP_OMISSAO);
+    if (empty($c['armazens'])) $c['armazens'] = NAVAL_ARMAZENS_PRINCIPAIS;
+    return $c;
 }
 
 function naval_sap_lotes(): array
@@ -84,7 +89,9 @@ function naval_sap_resumo(): array
     $lotes = naval_sap_lotes();
     $exportados = naval_sap_exportados($lotes);
     $resumo = array_map(function ($l) { unset($l['documentos']); return $l; }, array_reverse($lotes));
-    return ['config' => naval_sap_config(), 'lotes' => array_slice($resumo, 0, 200), 'exportados' => $exportados, 'segunda_via' => naval_sap_pode_segunda_via()];
+    $config = naval_sap_config();
+    return ['config' => $config, 'origens' => naval_origem_stock($config['armazens']), 'lotes' => array_slice($resumo, 0, 200), 'exportados' => $exportados,
+        'segunda_via' => naval_sap_pode_segunda_via()];
 }
 
 /** Segunda via do lote N (só auditoria): ficheiro original, com o nome marcado como segunda via. */
@@ -162,7 +169,16 @@ function naval_sap_anular(int $n, string $motivo, array $eu): array
 /** Grava a configuração (só valores limpos; rotas sem nenhum valor são retiradas). */
 function naval_sap_gravar_config(array $c): array
 {
-    $nova = ['prefixo' => naval_texto($c['prefixo'] ?? 'FHR PIV', 40), 'moeda' => strtoupper(naval_texto($c['moeda'] ?? 'AOA', 5)), 'unidade' => strtoupper(naval_texto($c['unidade'] ?? 'CAR', 10)), 'rotas' => []];
+    $nova = ['prefixo' => naval_texto($c['prefixo'] ?? 'FHR PIV', 40), 'moeda' => strtoupper(naval_texto($c['moeda'] ?? 'AOA', 5)), 'unidade' => strtoupper(naval_texto($c['unidade'] ?? 'CAR', 10)),
+        'armazens' => [], 'rotas' => []];
+    // Armazéns principais → SAP location (código do armazém no Pinguim BO, nome e localização no SAP)
+    foreach ((array) ($c['armazens'] ?? NAVAL_ARMAZENS_PRINCIPAIS) as $cod => $a) {
+        $cod = naval_texto($cod, 20);
+        $local = strtoupper(naval_texto($a['local'] ?? '', 20));
+        if ($cod === '' || $local === '') continue;
+        $nova['armazens'][$cod] = ['nome' => naval_texto($a['nome'] ?? '', 80), 'local' => $local];
+    }
+    if (!$nova['armazens']) throw new NavalErro('Indique pelo menos um armazém principal com a SAP location.');
     foreach ((array) ($c['rotas'] ?? []) as $rota => $m) {
         $rota = naval_texto($rota, 20);
         if ($rota === '') continue;
