@@ -15,6 +15,7 @@ let token = null;
 let expira = 0;
 let aPedir = null;
 let semServidor = false;
+let erroToken = null; // porque é que o servidor não deu o token (configuração, API indisponível…)
 
 const csrfPagina = () => {
   const m = document.querySelector('meta[name="csrf-token"]');
@@ -34,21 +35,33 @@ export function obterToken(novo = false) {
       body: '{}',
     })
       .then((r) => {
-        if (!(r.headers.get('content-type') || '').includes('application/json')) {
-          semServidor = true; // ficheiros estáticos (testes locais): sem API
+        const json = (r.headers.get('content-type') || '').includes('application/json');
+        if (!json && r.status === 501) {
+          semServidor = true; // servidor de ficheiros estáticos (testes locais, sem PHP): sem API
+          return null;
+        }
+        if (!json) {
+          // ex.: 404/500 em HTML do Apache — a API não está publicada ou não responde
+          erroToken = { estado: r.status, erro: 'A API do portal não respondeu (HTTP ' + r.status + ' em api/index.php/v1/auth/token).' };
           return null;
         }
         return r.json().then((d) => {
           if (r.ok && d && d.access_token) {
             token = d.access_token;
             expira = Date.now() + (d.expires_in || 900) * 1000;
+            erroToken = null;
             return token;
           }
           token = null;
+          // 401 = sessão terminada (o portal volta à página de entrada); outro código = problema do servidor
+          erroToken = r.status === 401 ? null : { estado: r.status, erro: (d && d.erro) || 'O servidor não emitiu o token de acesso (HTTP ' + r.status + ').' };
           return null;
         });
       })
-      .catch(() => null)
+      .catch(() => {
+        erroToken = { estado: 0, erro: 'Sem ligação ao servidor do portal.' };
+        return null;
+      })
       .finally(() => {
         aPedir = null;
       });
@@ -74,6 +87,15 @@ export async function apiFetch(rota, init = {}) {
       headers: { ...(init.headers || {}), ...(tk ? { Authorization: 'Bearer ' + tk } : {}) },
     });
   const tk = await obterToken();
+  // Sem token por um problema do servidor (ex.: JWT_SEGREDO em falta no .env): não envia o pedido sem token
+  // (daria 401 e o portal voltaria à página de entrada em ciclo); devolve o erro real, que o portal mostra.
+  if (!tk && erroToken) {
+    console.error('[API] ' + erroToken.erro);
+    return new Response(JSON.stringify({ ok: false, erro: erroToken.erro, codigo: 'token_indisponivel' }), {
+      status: erroToken.estado >= 400 && erroToken.estado !== 401 ? erroToken.estado : 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
   let r = await pedir(tk);
   if (r.status === 401 && tk) {
     const novo = await obterToken(true);
