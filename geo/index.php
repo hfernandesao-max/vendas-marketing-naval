@@ -38,7 +38,7 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- Icons -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="vendor/lucide-1.62.0.min.js"></script>
 
   <!-- Theme Styles -->
   <link rel="stylesheet" href="theme.css" />
@@ -570,7 +570,7 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
           <span class="status-dot"></span>
           <span><?= htmlspecialchars($userName) ?> (<?= htmlspecialchars($userProfile) ?>)</span>
         </div>
-        <a href="auth/logout.php" class="btn-logout-header" title="Terminar sessão">
+        <a href="auth/logout.php?t=<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" class="btn-logout-header" title="Terminar sessão">
           <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
           <span>Sair</span>
         </a>

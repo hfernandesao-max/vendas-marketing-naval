@@ -1,3 +1,13 @@
+// Segurança: escapa texto antes de o pôr em HTML (os nomes de clientes, rotas e zonas vêm de ficheiros CSV/JSON)
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+// Texto como argumento JavaScript dentro de um atributo onclick="…"
+function escJsAttr(v) {
+  return escHtml(JSON.stringify(String(v == null ? '' : v)));
+}
 "use strict";
 let selectedCategory = null;
 let selectedStatus = "Ativo";
@@ -144,19 +154,19 @@ function initMap(Lats, Lngs, coords, coordsToOptimize) {
         detailsCard.innerHTML = `
           <div class="detail-row">
             <span class="detail-label">Código do Cliente</span>
-            <span class="detail-value">${marker.CODIGO}</span>
+            <span class="detail-value">${escHtml(marker.CODIGO)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Cliente</span>
-            <span class="detail-value">${marker.NOME}</span>
+            <span class="detail-value">${escHtml(marker.NOME)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Distribuidor / Rota</span>
-            <span class="detail-value">${marker.VENDEDOR}</span>
+            <span class="detail-value">${escHtml(marker.VENDEDOR)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Dia de Visita</span>
-            <span class="detail-value">${marker.DIA}</span>
+            <span class="detail-value">${escHtml(marker.DIA)}</span>
           </div>
         `;
       }
@@ -204,19 +214,19 @@ function initMap(Lats, Lngs, coords, coordsToOptimize) {
                 detailsCard.innerHTML = `
                   <div class="detail-row">
                     <span class="detail-label">Código do Cliente</span>
-                    <span class="detail-value">${m.CODIGO}</span>
+                    <span class="detail-value">${escHtml(m.CODIGO)}</span>
                   </div>
                   <div class="detail-row">
                     <span class="detail-label">Cliente</span>
-                    <span class="detail-value">${m.NOME}</span>
+                    <span class="detail-value">${escHtml(m.NOME)}</span>
                   </div>
                   <div class="detail-row">
                     <span class="detail-label">Distribuidor / Rota</span>
-                    <span class="detail-value">${m.VENDEDOR}</span>
+                    <span class="detail-value">${escHtml(m.VENDEDOR)}</span>
                   </div>
                   <div class="detail-row">
                     <span class="detail-label">Dia de Visita</span>
-                    <span class="detail-value">${m.DIA}</span>
+                    <span class="detail-value">${escHtml(m.DIA)}</span>
                   </div>
                 `;
               }
@@ -787,7 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resultados.forEach(m => {
         const item = document.createElement("div");
         item.className = "search-item";
-        item.innerHTML = `<strong>${m.CODIGO}</strong> - ${m.NOME}`;
+        item.innerHTML = `<strong>${escHtml(m.CODIGO)}</strong> - ${escHtml(m.NOME)}`;
         item.addEventListener("click", () => {
           google.maps.event.trigger(m, 'click');
           searchResults.innerHTML = "";

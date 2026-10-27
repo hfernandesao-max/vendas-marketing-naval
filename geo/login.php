@@ -22,7 +22,7 @@ $usuarios = naval_utilizadores();
 function naval_concluir_login(string $login, array $u, string $redirect, bool $comMfa): void
 {
     session_regenerate_id(true);
-    unset($_SESSION['mfa_pendente']);
+    unset($_SESSION['mfa_pendente'], $_SESSION['csrf']);   // novo identificador e novo código CSRF para a sessão autenticada
     $_SESSION['usuario_autenticado'] = true;
     $_SESSION['usuario_login'] = $login;
     $_SESSION['usuario_nome'] = $u['nome'] ?? $login;
@@ -47,7 +47,19 @@ function naval_apos_verificacao(string $login, array $u, string $redirect, bool 
     naval_concluir_login($login, $u, $redirect, $comMfa);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string) ($_POST['csrf'] ?? ''))) {
+    // Protecção CSRF do formulário de entrada (evita «login CSRF»): o código vem da sessão
+    $erro = 'A página de entrada expirou. Tente de novo.';
+    if (!empty($_SESSION['troca_pendente'])) $passo = 'nova';
+    elseif (!empty($_SESSION['mfa_pendente'])) $passo = 'mfa';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && naval_ip_suspenso($ip)) {
+    // Demasiadas tentativas falhadas a partir deste endereço (força bruta): suspende durante 15 minutos
+    http_response_code(429);
+    header('Retry-After: ' . NAVAL_IP_JANELA);
+    naval_registar('entrada_suspensa_ip', [], trim((string) ($_POST['usuario'] ?? $_SESSION['mfa_pendente'] ?? '')));
+    $erro = 'Demasiadas tentativas falhadas a partir deste endereço. Aguarde 15 minutos e tente de novo.';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $troca = $_SESSION['troca_pendente'] ?? null;
     if (isset($_POST['nova_senha']) && $troca && $troca['ate'] >= time()) {
         // Nova palavra-passe (obrigatória após uma palavra-passe temporária)
@@ -83,11 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['mfa_pendente']);
             $passo = 'senha';
             $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
-        } elseif ($u && naval_totp_valido((string) ($u['mfa'] ?? ''), (string) $_POST['codigo'])) {
+        } elseif ($u && naval_totp_aceitar($login, (string) ($u['mfa'] ?? ''), (string) $_POST['codigo'])) {
             naval_apos_verificacao($login, $u, $redirect, true);
             $passo = 'nova';
         } else {
             $resta = naval_falha_login($login);
+            naval_ip_falha($ip);
             naval_registar('entrada_falhada', ['motivo' => 'codigo'], $login);
             if ($resta === 0) {
                 unset($_SESSION['mfa_pendente']);
@@ -110,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (naval_bloqueado($usuario)) {
             naval_registar('entrada_bloqueada', [], $usuario);
             $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
-        } elseif (isset($usuarios[$usuario]) && password_verify($senha, (string) $usuarios[$usuario]['senha'])) {
+        } elseif (password_verify($senha, isset($usuarios[$usuario]) ? (string) $usuarios[$usuario]['senha'] : NAVAL_HASH_FICTICIO) && isset($usuarios[$usuario])) {
+            // (conta inexistente: verifica um hash fictício, para o tempo de resposta não revelar se a conta existe)
             $u = $usuarios[$usuario];
             if (empty($u['compatibilidade']) && !naval_email_valido($u['email'] ?? null)) {
                 naval_registar('entrada_recusada', ['motivo' => 'sem_email'], $usuario);
@@ -127,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $resta = naval_falha_login($usuario);
+            naval_ip_falha($ip);
             naval_registar('entrada_falhada', ['motivo' => 'senha'], $usuario);
             $erro = $resta === 0 ? 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.'
                 : 'Utilizador ou palavra-passe incorrectos. ' . ($resta === 1 ? 'Resta 1 tentativa' : 'Restam ' . $resta . ' tentativas') . ' antes de a conta ser bloqueada.';
@@ -145,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="theme.css" />
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="vendor/lucide-1.62.0.min.js"></script>
   <style>
     body {
       display: flex;
@@ -465,6 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="login.php">
       <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>" />
+      <input type="hidden" name="csrf" value="<?= htmlspecialchars(naval_csrf()) ?>" />
 <?php if ($passo === 'nova'): ?>
       <p style="margin:0 2px 16px;font-size:13px;line-height:1.5;color:#c9d0e0">Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 10 caracteres, com letras e números.</p>
       <div class="form-group">

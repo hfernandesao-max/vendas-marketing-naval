@@ -45,6 +45,7 @@ $itens = ($_GET['include_items'] ?? '') === '1';
 if (!preg_match('/^\d{8}$/', $de) || !preg_match('/^\d{8}$/', $ate)) {
     throw new NavalErro('Datas inválidas.', 400, ['detalhe' => 'Use start_date e end_date no formato AAAAMMDD.']);
 }
+naval_validar_periodo($de, $ate);
 
 $d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());

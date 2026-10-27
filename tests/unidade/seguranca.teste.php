@@ -80,3 +80,63 @@ teste('registos de actividade: uma linha JSON por acção, mais recentes primeir
     igual('primeira', $r[1]['accao']);
     igual(['x' => 1], $r[1]['detalhe']);
 });
+
+teste('dois passos: cada código só é aceite uma vez (sem reutilização)', function () {
+    $seg = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+    $agora = naval_totp($seg, (int) floor(time() / 30));
+    verdade(naval_totp_aceitar('teste.totp', $seg, $agora), 'primeira utilização');
+    verdade(!naval_totp_aceitar('teste.totp', $seg, $agora), 'reutilização recusada');
+    verdade(!naval_totp_aceitar('teste.totp', $seg, '000000') || $agora === '000000');
+    verdade(!naval_totp_aceitar('teste.totp', '', $agora), 'sem segredo');
+});
+
+teste('limite por IP: suspende após as falhas permitidas na janela, sem bloquear contas', function () {
+    $ip = '203.0.113.' . random_int(1, 254);
+    verdade(!naval_ip_suspenso($ip));
+    for ($i = 0; $i < naval_ip_max_falhas() - 1; $i++) naval_ip_falha($ip);
+    verdade(!naval_ip_suspenso($ip), 'ainda dentro do limite');
+    naval_ip_falha($ip);
+    verdade(naval_ip_suspenso($ip), 'suspenso no limite');
+    verdade(!naval_ip_suspenso('203.0.113.255'), 'outros IP não são afectados');
+    verdade(!naval_ip_suspenso(''), 'sem IP');
+    // falhas antigas (fora da janela) não contam
+    naval_json_gravar(naval_ip_ficheiro($ip), ['falhas' => array_fill(0, 50, time() - NAVAL_IP_JANELA - 1)], false);
+    verdade(!naval_ip_suspenso($ip), 'janela expirada');
+});
+
+teste('hash fictício: verificação de contas inexistentes leva o mesmo custo e nunca é aceite', function () {
+    igual(10, password_get_info(NAVAL_HASH_FICTICIO)['options']['cost'] ?? 0);
+    verdade(!password_verify('', NAVAL_HASH_FICTICIO));
+    verdade(!password_verify('Teste-12345!', NAVAL_HASH_FICTICIO));
+});
+
+teste('período: datas reais, início ≤ fim e no máximo 400 dias', function () {
+    naval_validar_periodo('20261001', '20261027');
+    naval_validar_periodo('2025-10-01', '2026-10-27');   // aceita AAAA-MM-DD (≤ 400 dias)
+    lanca(400, function () { naval_validar_periodo('20261340', '20261341'); });
+    lanca(400, function () { naval_validar_periodo('20261027', '20261001'); });
+    lanca(400, function () { naval_validar_periodo('20240101', '20261027'); });
+    lanca(400, function () { naval_validar_periodo('abc', '20261027'); });
+});
+
+teste('configuração: chaves em falta só pelo nome e erro 503 sem valores', function () {
+
+    igual(['NAO_EXISTE', 'VAZIO'], naval_config_em_falta(['DADOS_PRIVADOS', 'NAO_EXISTE', 'VAZIO']));
+    $e = lanca(503, function () { naval_exigir_config(['DADOS_PRIVADOS', 'NAO_EXISTE'], 'o teste'); });
+    verdade(strpos($e->getMessage(), 'NAO_EXISTE') !== false);
+    verdade(strpos($e->getMessage(), naval_config('DADOS_PRIVADOS')) === false, 'não revela valores');
+    verdade(!naval_debug(), 'diagnóstico desligado por omissão');
+});
+
+teste('detalhe técnico dos erros: escondido fora do modo de diagnóstico e dos perfis SADM/TI', function () {
+    igual([], naval_detalhe('SQLSTATE[08001] servidor 10.0.0.1'));
+    igual([], naval_detalhe(''));
+});
+
+naval_servico('pinguim');
+teste('Pinguim BO: sem endereços predefinidos no código; só http(s) e verificação TLS ligada por omissão', function () {
+    $c = naval_pinguim_config();
+    igual([], $c['enderecos']);
+    verdade($c['verificar_ssl']);
+    verdade(!naval_pinguim_configurado());
+});

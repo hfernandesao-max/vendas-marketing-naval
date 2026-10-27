@@ -28,10 +28,12 @@ function naval_bd(): PDO
     if (!naval_bd_configurada()) throw new RuntimeException('A base de dados não está configurada no .env (DB_HOST, DB_NAME, DB_USER, DB_PASS).');
 
     $driver = strtolower(naval_config('DB_DRIVER', 'sqlsrv'));
-    $host = naval_config('DB_HOST', '127.0.0.1');
+    // sem valores predefinidos para o servidor e o utilizador (nunca «sa»): vêm só do .env
+    if (naval_config('DB_DSN') === '') naval_exigir_config(['DB_HOST', 'DB_NAME'], 'a base de dados do Pinguim BO');
+    $host = naval_config('DB_HOST');
     $port = naval_config('DB_PORT', '1433');
-    $nome = naval_config('DB_NAME', 'PingWinBO');
-    $user = naval_config('DB_USER', 'sa');
+    $nome = naval_config('DB_NAME');
+    $user = naval_config('DB_USER');   // vazio = autenticação integrada do Windows
     $pass = naval_config('DB_PASS');
     $dsnEnv = naval_config('DB_DSN');
     $drivers = PDO::getAvailableDrivers();

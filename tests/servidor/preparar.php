@@ -22,6 +22,8 @@ mkdir($priv, 0770, true);
 file_put_contents($amb . '/.env', implode("\n", [
     'USERNAME=u', 'PASSWORD=p', 'PINGUIM_URL=http://127.0.0.1:8801/index.php',
     'DADOS_PRIVADOS=' . $priv, 'EMAIL_MODO=ficheiro', 'PORTAL_URL=http://127.0.0.1:8810',
+    // os testes fazem muitas entradas falhadas de propósito a partir do mesmo IP (127.0.0.1)
+    'LOGIN_MAX_FALHAS_IP=500', 'GOOGLE_MAPS_API_KEY=chave-de-teste',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $amb . '/.env');
 require __DIR__ . '/../../nucleo/arranque.php';

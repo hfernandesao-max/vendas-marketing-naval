@@ -39,3 +39,20 @@ function naval_geo_restricoes(array $grupos): string
     return '<style>' . implode(',', $css) . '{display:none!important}</style>'
         . '<script>(function(){var n=' . json_encode($js) . ';n.forEach(function(f){window[f]=function(){alert("O seu perfil não permite esta acção.");};});})();</script>';
 }
+
+/**
+ * Script do Google Maps com a chave do .env (GOOGLE_MAPS_API_KEY), nunca escrita no código.
+ * A chave de navegador fica visível na página (é assim que o Google Maps funciona): tem de estar
+ * restringida na Google Cloud Console aos endereços do portal (HTTP referrers) e só à Maps JavaScript API.
+ * $parametros: outros parâmetros do URL (por exemplo ['libraries' => 'drawing']).
+ */
+function naval_google_maps_script(array $parametros = []): string
+{
+    $chave = naval_config('GOOGLE_MAPS_API_KEY');
+    if ($chave === '') {
+        error_log('[geo] GOOGLE_MAPS_API_KEY em falta no .env: o mapa não carrega.');
+        return '<script>console.error("Mapa indisponível: falta GOOGLE_MAPS_API_KEY no .env do servidor.");</script>';
+    }
+    $url = 'https://maps.googleapis.com/maps/api/js?' . http_build_query(['key' => $chave, 'v' => '3.64'] + $parametros + ['callback' => 'initMap'], '', '&', PHP_QUERY_RFC3986);
+    return '<script src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" defer></script>';
+}

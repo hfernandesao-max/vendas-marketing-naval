@@ -1,3 +1,17 @@
+// Segurança: escapa texto antes de o pôr em HTML (os nomes de clientes, rotas e zonas vêm de ficheiros CSV/JSON)
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+// Texto como argumento JavaScript dentro de um atributo onclick="…"
+function escJsAttr(v) {
+  return escHtml(JSON.stringify(String(v == null ? '' : v)));
+}
+// Identificador (número) ou texto como argumento JavaScript num onclick="…", sem mudar o tipo
+function escJsVal(v) {
+  return typeof v === 'number' && isFinite(v) ? String(v) : escJsAttr(v);
+}
 let selectedCategory = null;
 let jsonData = [];
 let coords = [];
@@ -283,10 +297,10 @@ function editarCorPolygon(polygon) {
   let colorGrid = '<div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(6, 30px); gap: 5px;">';
   colors.forEach(color => {
     colorGrid += `
-      <div style="width: 30px; height: 30px; background: ${color}; 
+      <div style="width: 30px; height: 30px; background: ${escHtml(color)}; 
                   border: 2px solid ${color === currentColor ? '#000' : '#ccc'}; 
                   border-radius: 4px; cursor: pointer;"
-           onclick="aplicarCorPolygon(${polygonId}, '${color}')">
+           onclick="aplicarCorPolygon(${escJsVal(polygonId)}, ${escJsAttr(color)})">
       </div>
     `;
   });
@@ -298,9 +312,9 @@ function editarCorPolygon(polygon) {
     <div style="margin-bottom: 15px;">
       <label style="display: block; margin-bottom: 5px; font-weight: bold;">Cor actual:</label>
       <div style="display: flex; align-items: center; margin-bottom: 15px;">
-        <div style="width: 30px; height: 30px; background: ${currentColor}; 
+        <div style="width: 30px; height: 30px; background: ${escHtml(currentColor)}; 
                     border: 2px solid #000; border-radius: 4px; margin-right: 10px;"></div>
-        <span>${currentColor}</span>
+        <span>${escHtml(currentColor)}</span>
       </div>
     </div>
     
@@ -312,10 +326,10 @@ function editarCorPolygon(polygon) {
     <div style="margin-bottom: 15px;">
       <label style="display: block; margin-bottom: 5px; font-weight: bold;">Cor personalizada:</label>
       <input type="color" id="polygon-color-picker" 
-             value="${currentColor}" 
+             value="${escHtml(currentColor)}" 
              style="width: 100%; height: 40px; margin-bottom: 10px;">
       <input type="text" id="polygon-color-hex" 
-             value="${currentColor}" 
+             value="${escHtml(currentColor)}" 
              placeholder="#RRGGBB"
              style="width: 100%; padding: 8px; border: 2px solid #4285F4; 
                     border-radius: 4px; box-sizing: border-box;">
@@ -493,18 +507,18 @@ function mostrarMenuContextoPolygon(event, polygon) {
 
   menu.innerHTML = `
     <div style="padding: 8px 16px; font-weight: bold; border-bottom: 1px solid #eee;">
-      ${zonaNome}
+      ${escHtml(zonaNome)}
     </div>
     <div style="cursor: pointer; padding: 8px 16px; hover:background: #f0f0f0;"
-         onclick="editarNomePolygon(polygons[${allPolygons.indexOf(polygon)}]); document.getElementById('polygon-context-menu').remove();">
+         onclick="editarNomePolygon(polygons[${Number(allPolygons.indexOf(polygon))}]); document.getElementById('polygon-context-menu').remove();">
       ✏️ Renomear zona
     </div>
     <div style="cursor: pointer; padding: 8px 16px; hover:background: #f0f0f0;"
-         onclick="editarCorPolygon(polygons[${allPolygons.indexOf(polygon)}]); document.getElementById('polygon-context-menu').remove();">
+         onclick="editarCorPolygon(polygons[${Number(allPolygons.indexOf(polygon))}]); document.getElementById('polygon-context-menu').remove();">
       🎨 Alterar cor
     </div>
     <div style="cursor: pointer; padding: 8px 16px; hover:background: #f0f0f0; color: #d32f2f; border-top: 1px solid #eee;"
-         onclick="removerZona('${polygonId}'); document.getElementById('polygon-context-menu').remove();">
+         onclick="removerZona(${escJsAttr(polygonId)}); document.getElementById('polygon-context-menu').remove();">
       🗑️ Remover zona
     </div>
   `;
@@ -962,7 +976,7 @@ function criarPromptNomeZona(polygon, nomePadrao) {
   overlay.innerHTML = `
     <h3 style="margin: 0 0 15px 0; color: #333;">Nome da zona</h3>
     <input type="text" id="zona-nome-input" 
-           value="${nomePadrao}" 
+           value="${escHtml(nomePadrao)}" 
            style="width: 100%; padding: 10px; margin-bottom: 15px; 
                   border: 2px solid #4285F4; border-radius: 4px; 
                   font-size: 16px; box-sizing: border-box;">
@@ -1109,13 +1123,13 @@ function adicionarClientesAoMapa(coords, map) {
 
             var contentString =
               "<div>" +
-              `<p style="color:#000000;"><strong>DISTRIBUIDOR: </strong>${marker.DISTRIBUIDOR}</p>` +
-              `<p style="color:#000000;"><strong>CÓDIGO DO CLIENTE: </strong>${marker.CODIGO}</p>` +
-              `<p style="color:#000000;"><strong>TIPO DE ESTABELECIMENTO: </strong>${marker.TIPO_ESTABELECIMENTO}</p>` +
-              `<p style="color:#000000;"><strong>CLIENTE: </strong>${marker.NOME} ${distribuidorBadge}</p>` +
-              `<p style="color:#000000;"><strong>VENDEDOR: </strong>${marker.VENDEDOR}</p>` +
-              `<p style="color:#000000;"><strong>DIA DE VISITA: </strong>${marker.DIA}</p>` +
-              `<p style="color:${marker.COR}"><strong>GRUPO: </strong><span style="color:${marker.COR}">● ${marker.DISTRIBUIDOR}</span></p>` +
+              `<p style="color:#000000;"><strong>DISTRIBUIDOR: </strong>${escHtml(marker.DISTRIBUIDOR)}</p>` +
+              `<p style="color:#000000;"><strong>CÓDIGO DO CLIENTE: </strong>${escHtml(marker.CODIGO)}</p>` +
+              `<p style="color:#000000;"><strong>TIPO DE ESTABELECIMENTO: </strong>${escHtml(marker.TIPO_ESTABELECIMENTO)}</p>` +
+              `<p style="color:#000000;"><strong>CLIENTE: </strong>${escHtml(marker.NOME)} ${distribuidorBadge}</p>` +
+              `<p style="color:#000000;"><strong>VENDEDOR: </strong>${escHtml(marker.VENDEDOR)}</p>` +
+              `<p style="color:#000000;"><strong>DIA DE VISITA: </strong>${escHtml(marker.DIA)}</p>` +
+              `<p style="color:${escHtml(marker.COR)}"><strong>GRUPO: </strong><span style="color:${escHtml(marker.COR)}">● ${escHtml(marker.DISTRIBUIDOR)}</span></p>` +
               `<p><small style="color:#000000;">Clique para alterar cor do grupo</small></p>` +
               "</div>";
             infowindow.setContent(contentString);
@@ -1186,10 +1200,10 @@ function mostrarMenuCorDistribuidor(event, marker) {
   let colorGrid = '<div style="margin-bottom: 10px; display: grid; grid-template-columns: repeat(6, 25px); gap: 3px;">';
   colors.forEach(color => {
     colorGrid += `
-      <div style="width: 25px; height: 25px; background: ${color}; 
+      <div style="width: 25px; height: 25px; background: ${escHtml(color)}; 
                   border: 2px solid ${color === corAtual ? '#000' : '#ccc'}; 
                   border-radius: 4px; cursor: pointer;"
-           onclick="alterarCorGrupo('${distribuidor}', '${color}'); 
+           onclick="alterarCorGrupo(${escJsAttr(distribuidor)}, ${escJsAttr(color)}); 
                     document.getElementById('distribuidor-color-menu').remove();">
       </div>
     `;
@@ -1199,7 +1213,7 @@ function mostrarMenuCorDistribuidor(event, marker) {
   menu.innerHTML = `
     <div style="margin-bottom: 10px; font-weight: bold;">
       Alterar cor do grupo:<br>
-      <span style="color: ${corAtual}">${distribuidor}</span>
+      <span style="color: ${escHtml(corAtual)}">${escHtml(distribuidor)}</span>
     </div>
     
     <div style="margin-bottom: 15px;">
@@ -1211,10 +1225,10 @@ function mostrarMenuCorDistribuidor(event, marker) {
       <div style="font-size: 12px; margin-bottom: 5px;">Cor personalizada:</div>
       <div style="display: flex; gap: 5px;">
         <input type="color" id="distribuidor-color-picker" 
-               value="${corAtual}" 
+               value="${escHtml(corAtual)}" 
                style="width: 40px; height: 40px;">
         <input type="text" id="distribuidor-color-hex" 
-               value="${corAtual}" 
+               value="${escHtml(corAtual)}" 
                placeholder="#RRGGBB"
                style="flex: 1; padding: 8px; border: 2px solid #4285F4; 
                       border-radius: 4px; box-sizing: border-box;">
@@ -1316,7 +1330,7 @@ function criarLegenda(map, distribuidorCores) {
   legendHTML += `
     <div style="margin: 5px 0; display: flex; align-items: center; background: #FFF0F0; padding: 5px; border-radius: 3px;">
       <span style="display: inline-block; width: 14px; height: 14px; 
-                   background-color: ${COR_DISTRIBUIDOR}; border: 2px solid #FFFFFF; 
+                   background-color: ${escHtml(COR_DISTRIBUIDOR)}; border: 2px solid #FFFFFF; 
                    border-radius: 50%; margin-right: 8px; box-shadow: 0 0 3px rgba(0,0,0,0.5);"></span>
       <span style="font-weight: bold; color: #CC0000;">DISTRIBUIDOR (Tipo Estabelecimento)</span>
     </div>
@@ -1330,14 +1344,14 @@ function criarLegenda(map, distribuidorCores) {
                   display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center;">
           <span style="display: inline-block; width: 12px; height: 12px; 
-                       background-color: ${cor}; border: 1px solid #000; 
+                       background-color: ${escHtml(cor)}; border: 1px solid #000; 
                        border-radius: 50%; margin-right: 8px; cursor: pointer;"
-                onclick="alterarCorGrupo('${distribuidor}', '${cor}')"
+                onclick="alterarCorGrupo(${escJsAttr(distribuidor)}, ${escJsAttr(cor)})"
                 title="Alterar cor">
           </span>
-          <span style="color:#000000;">${distribuidor}</span>
+          <span style="color:#000000;">${escHtml(distribuidor)}</span>
         </div>
-        <button onclick="alterarCorGrupo('${distribuidor}', gerarCorHex())" 
+        <button onclick="alterarCorGrupo(${escJsAttr(distribuidor)}, gerarCorHex())" 
                 style="padding: 2px 6px; font-size: 10px; background: #4285F4; 
                        color: white; border: none; border-radius: 2px; cursor: pointer;"
                 title="Gerar nova cor">
@@ -1365,21 +1379,21 @@ function criarLegenda(map, distribuidorCores) {
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
           <div style="display: flex; align-items: center;">
             <span style="display: inline-block; width: 12px; height: 12px; 
-                         background-color: ${cor}; border: 1px solid #000; 
+                         background-color: ${escHtml(cor)}; border: 1px solid #000; 
                          border-radius: 2px; margin-right: 8px; cursor: pointer;"
-                  onclick="aplicarCorPolygon('${polygon._id}', '${cor}')"
+                  onclick="aplicarCorPolygon(${escJsAttr(polygon._id)}, ${escJsAttr(cor)})"
                   title="Alterar cor">
             </span>
-            <span style="color:#000000;font-weight: bold;">${zonaNome}</span>
+            <span style="color:#000000;font-weight: bold;">${escHtml(zonaNome)}</span>
           </div>
           <div>
-            <button onclick="editarNomePolygonById(${polygon._id})" 
+            <button onclick="editarNomePolygonById(${escJsVal(polygon._id)})" 
                     style="padding: 2px 6px; font-size: 10px; background: #4285F4; 
                            color: white; border: none; border-radius: 2px; cursor: pointer; margin-right: 3px;"
                     title="Renomear zona">
               ✏️
             </button>
-            <button onclick="removerZona(${polygon._id})" 
+            <button onclick="removerZona(${escJsVal(polygon._id)})" 
                     style="padding: 2px 6px; font-size: 10px; background: #EA4335; 
                            color: white; border: none; border-radius: 2px; cursor: pointer;"
                     title="Remover zona">
@@ -1548,7 +1562,7 @@ function loadCSV(file) {
 
   console.log("Estado aplicado:", selectedStatus);
   console.log("Novo ficheiro:", file.name);
-  document.getElementById("csvDocName").innerHTML = "Documento: " + file.name;
+  document.getElementById("csvDocName").textContent = "Documento: " + file.name;
 
   const maxRows = 20000;
 

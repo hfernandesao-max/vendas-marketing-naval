@@ -1,3 +1,17 @@
+// Segurança: escapa texto antes de o pôr em HTML (os nomes de clientes, rotas e zonas vêm de ficheiros CSV/JSON)
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+// Texto como argumento JavaScript dentro de um atributo onclick="…"
+function escJsAttr(v) {
+  return escHtml(JSON.stringify(String(v == null ? '' : v)));
+}
+// Identificador (número) ou texto como argumento JavaScript num onclick="…", sem mudar o tipo
+function escJsVal(v) {
+  return typeof v === 'number' && isFinite(v) ? String(v) : escJsAttr(v);
+}
 let selectedCategory = null;
 let jsonData = [];
 let coords = [];
@@ -810,7 +824,7 @@ function criarPromptNomeZona(polygon, nomePadrao) {
   overlay.innerHTML = `
     <h3 style="margin: 0 0 15px 0; color: #ccc;">Nome da zona</h3>
     <input type="text" id="zona-nome-input" 
-           value="${nomePadrao}" 
+           value="${escHtml(nomePadrao)}" 
            style="width: 100%; padding: 10px; margin-bottom: 15px; 
                   border: 2px solid #4285F4; border-radius: 4px; 
                   font-size: 16px; box-sizing: border-box;">
@@ -931,11 +945,11 @@ function adicionarClientesAoMapa(coords, map) {
           return function () {
             var contentString =
               "<div>" +
-              `<p style="color:#000000"><strong>CÓDIGO DO CLIENTE: </strong>${marker.CODIGO}</p>` +
-              `<p style="color:#000000"><strong>CLIENTE: </strong>${marker.NOME}</p>` +
-              `<p style="color:#000000"><strong>VENDEDOR: </strong>${marker.VENDEDOR}</p>` +
-              `<p style="color:#000000"><strong>DIA DE VISITA: </strong>${marker.DIA}</p>` +
-              `<p style="color:#000000"><strong>GRUPO: </strong><span style="color:${marker.COR}">● ${marker.VENDEDOR}</span></p>` +
+              `<p style="color:#000000"><strong>CÓDIGO DO CLIENTE: </strong>${escHtml(marker.CODIGO)}</p>` +
+              `<p style="color:#000000"><strong>CLIENTE: </strong>${escHtml(marker.NOME)}</p>` +
+              `<p style="color:#000000"><strong>VENDEDOR: </strong>${escHtml(marker.VENDEDOR)}</p>` +
+              `<p style="color:#000000"><strong>DIA DE VISITA: </strong>${escHtml(marker.DIA)}</p>` +
+              `<p style="color:#000000"><strong>GRUPO: </strong><span style="color:${escHtml(marker.COR)}">● ${escHtml(marker.VENDEDOR)}</span></p>` +
               "</div>";
             infowindow.setContent(contentString);
             infowindow.open(map, marker);
@@ -989,9 +1003,9 @@ function criarLegenda(map, vendedorCores) {
     legendHTML += `
       <div style="margin: 5px 0; display: flex; align-items: center;color:#000000;">
         <span style="display: inline-block; width: 12px; height: 12px; 
-                     background-color: ${cor}; border: 1px solid #000; 
+                     background-color: ${escHtml(cor)}; border: 1px solid #000; 
                      border-radius: 50%; margin-right: 8px;color:#000000;"></span>
-        <span style="color:#000000;">${vendedor || 'Sem Vendedor'}</span>
+        <span style="color:#000000;">${escHtml(vendedor || 'Sem Vendedor')}</span>
       </div>
     `;
   });
@@ -1015,17 +1029,17 @@ function criarLegenda(map, vendedorCores) {
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
           <div style="display: flex; align-items: center;">
             <span style="display: inline-block; width: 12px; height: 12px; 
-                         background-color: ${cor}; border: 1px solid #000; 
+                         background-color: ${escHtml(cor)}; border: 1px solid #000; 
                          border-radius: 2px; margin-right: 8px;"></span>
-            <span style="font-weight: bold; color:#000000;">${zonaNome}</span>
+            <span style="font-weight: bold; color:#000000;">${escHtml(zonaNome)}</span>
           </div>
           <div>
-            <button onclick="editarNomePolygonById(${polygon._id})" 
+            <button onclick="editarNomePolygonById(${escJsVal(polygon._id)})" 
                     title="Editar nome"
                     style="padding: 2px 6px; font-size: 10px; background: #4285F4; color: white; border: none; border-radius: 2px; cursor: pointer; margin-right: 3px;">
               ✏️
             </button>
-            <button onclick="removerZona(${polygon._id})" 
+            <button onclick="removerZona(${escJsVal(polygon._id)})" 
                     title="Remover zona"
                     style="padding: 2px 6px; font-size: 10px; background: #EA4335; color: white; border: none; border-radius: 2px; cursor: pointer;">
               🗑️
@@ -1160,7 +1174,7 @@ function loadCSV(file) {
 
   console.log("Estado aplicado:", selectedStatus);
   console.log("Novo ficheiro:", file.name);
-  document.getElementById("csvDocName").innerHTML = "Documento: " + file.name;
+  document.getElementById("csvDocName").textContent = "Documento: " + file.name;
 
   const maxRows = 10000;
 

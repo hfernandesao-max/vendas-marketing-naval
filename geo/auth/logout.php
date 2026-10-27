@@ -2,6 +2,22 @@
 require_once dirname(__DIR__, 2) . '/nucleo/arranque.php';
 naval_iniciar_sessao();
 
+// Protecção CSRF: só termina a sessão com o código anti-falsificação da sessão (POST ou ?t= nas ligações
+// «Terminar sessão» geradas pelo servidor). Sem ele (por exemplo, uma imagem noutro site a apontar para
+// aqui), pede confirmação em vez de terminar a sessão.
+$token = (string) ($_POST['csrf'] ?? $_GET['t'] ?? '');
+if (!empty($_SESSION['usuario_autenticado']) && !hash_equals(naval_csrf(), $token)) {
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    $t = htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+        . '<title>Terminar sessão</title><style>body{font-family:Arial,sans-serif;background:#0f1d3a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
+        . 'form{background:#16264a;padding:2rem;border-radius:10px;text-align:center}button{background:#2a6fe0;color:#fff;border:0;border-radius:6px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer}</style></head>'
+        . '<body><form method="post" action="logout.php"><p>Terminar a sessão na plataforma?</p><input type="hidden" name="csrf" value="' . $t . '">'
+        . '<button type="submit">Terminar sessão</button></form></body></html>';
+    exit;
+}
+
 // Registo da saída
 if (!empty($_SESSION['usuario_login'])) naval_registar('saida');
 

@@ -55,3 +55,37 @@ function naval_pasta(string $sub): string
     if (!is_dir($d)) @mkdir($d, 0770, true);
     return $d;
 }
+
+/** Chaves obrigatórias que faltam no .env (só os nomes, nunca os valores). */
+function naval_config_em_falta(array $chaves): array
+{
+    return array_values(array_filter($chaves, function ($k) {
+        return naval_config((string) $k) === '';
+    }));
+}
+
+/**
+ * Exige chaves do .env para uma funcionalidade; sem elas, erro 503 com os nomes das chaves em falta
+ * (sem valores predefinidos no código e sem revelar caminhos do servidor).
+ */
+function naval_exigir_config(array $chaves, string $para): void
+{
+    $falta = naval_config_em_falta($chaves);
+    if ($falta) {
+        throw new NavalErro('Configuração incompleta no servidor para ' . $para . ' (.env: ' . implode(', ', $falta) . ').', 503);
+    }
+}
+
+/** Modo de diagnóstico (APP_DEBUG=1 no .env): só em desenvolvimento; em produção os erros não mostram detalhes. */
+function naval_debug(): bool
+{
+    return in_array(strtolower(naval_config('APP_DEBUG', '0')), ['1', 'true', 'sim', 'yes', 'on'], true);
+}
+
+/** Pedido feito por HTTPS (directamente ou atrás de um proxy de confiança indicado em PROXY_HTTPS=1). */
+function naval_https(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') return true;
+    if ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443') return true;
+    return naval_config('PROXY_HTTPS', '0') === '1' && strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+}

@@ -82,6 +82,26 @@ function naval_pedido(): array
     return $q;
 }
 
+const NAVAL_PERIODO_MAX_DIAS = 400;   // um ano e um mês (comparações homólogas); evita pedidos enormes à base de dados
+
+/**
+ * Valida um período AAAAMMDD (ou AAAA-MM-DD): datas reais, início ≤ fim e no máximo NAVAL_PERIODO_MAX_DIAS.
+ * Lança NavalErro 400 se não for válido.
+ */
+function naval_validar_periodo(string $de, string $ate, int $max = NAVAL_PERIODO_MAX_DIAS): void
+{
+    $data = function (string $d) {
+        $d = (string) preg_replace('/\D/', '', $d);
+        if (!preg_match('/^(\d{4})(\d{2})(\d{2})$/', $d, $m) || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) return null;
+        return (int) gmmktime(0, 0, 0, (int) $m[2], (int) $m[3], (int) $m[1]);
+    };
+    $a = $data($de);
+    $b = $data($ate);
+    if ($a === null || $b === null) throw new NavalErro('Datas inválidas.', 400, ['detalhe' => 'Use datas reais no formato AAAAMMDD.']);
+    if ($a > $b) throw new NavalErro('A data inicial é posterior à data final.', 400);
+    if (($b - $a) / 86400 + 1 > $max) throw new NavalErro('Período demasiado longo (máximo ' . $max . ' dias). Escolha um período mais curto.', 400);
+}
+
 /** Pedido de alteração: tem de trazer o código anti-falsificação (CSRF) da sessão. */
 function naval_exigir_csrf(array $q): void
 {
@@ -95,6 +115,21 @@ function naval_csrf(): string
 {
     if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
     return (string) $_SESSION['csrf'];
+}
+
+/**
+ * Detalhe técnico de um erro (mensagens do PHP, da base de dados, endereços internos): só aparece na
+ * resposta em modo de diagnóstico (APP_DEBUG=1) ou para os perfis que operam a plataforma (SADM, TI).
+ * Para os restantes fica só no log do PHP, para não expor a infra-estrutura nem dados internos.
+ */
+function naval_detalhe(string $detalhe): array
+{
+    if ($detalhe === '') return [];
+    $perfil = '';
+    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['usuario_autenticado']) && function_exists('naval_utilizador')) {
+        $perfil = (string) (naval_utilizador()['perfil'] ?? '');
+    }
+    return naval_debug() || in_array($perfil, ['SADM', 'TI'], true) ? ['detalhe' => $detalhe] : [];
 }
 
 /**
@@ -112,7 +147,7 @@ function naval_erros_em_json(string $origem): void
             naval_json(['ok' => false, 'erro' => $e->getMessage()] + $e->extra(), $e->estado());
         }
         error_log('[' . $origem . '] ' . get_class($e) . ': ' . $e->getMessage() . ' em ' . $e->getFile() . ':' . $e->getLine());
-        naval_json(['ok' => false, 'erro' => 'Erro interno no servidor.', 'detalhe' => $e->getMessage()], 500);
+        naval_json(['ok' => false, 'erro' => 'Erro interno no servidor.'] + naval_detalhe($e->getMessage()), 500);
     });
     register_shutdown_function(function () use ($origem) {
         $e = error_get_last();
@@ -125,6 +160,6 @@ function naval_erros_em_json(string $origem): void
         elseif (stripos($msg, 'Maximum execution time') !== false) $erro = 'O Pinguim BO demorou demasiado a responder. Experimente um período mais curto.';
         elseif (stripos($msg, 'Allowed memory size') !== false) $erro = 'Memória do PHP insuficiente para este período. Experimente um período mais curto.';
         error_log('[' . $origem . '] FATAL ' . $msg . ' em ' . $e['file'] . ':' . $e['line']);
-        naval_json(['ok' => false, 'erro' => $erro, 'detalhe' => $msg . ' (' . basename($e['file']) . ':' . $e['line'] . ')'], 500);
+        naval_json(['ok' => false, 'erro' => $erro] + naval_detalhe($msg . ' (' . basename($e['file']) . ':' . $e['line'] . ')'), 500);
     });
 }

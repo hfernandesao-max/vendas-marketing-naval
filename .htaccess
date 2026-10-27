@@ -1,11 +1,39 @@
 Options -Indexes
 DirectoryIndex index.php
+ServerSignature Off
 
 # A interface do hub é servida pelo controlador PHP autenticado.
 <Files "index.html">
     Require all denied
 </Files>
 
-<Files ".env">
+# ── Ficheiros que nunca podem ser servidos pelo Apache ──────────────────────────────────────
+# Configuração e segredos (.env, .env.*, .git, .htaccess e outros ficheiros começados por ponto)
+<FilesMatch "^\.">
     Require all denied
-</Files>
+</FilesMatch>
+# Dados (CSV, folhas de cálculo, bases de dados), cópias de segurança, registos e configurações
+<FilesMatch "(?i)\.(csv|tsv|xlsx?|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|log|jsonl|ini|conf|cfg|dist|neon|lock|sh|ps1|bat|py)$|~$">
+    Require all denied
+</FilesMatch>
+# Documentação e configurações do projecto na raiz (não são páginas do portal)
+<FilesMatch "^(composer\.json|package(-lock)?\.json|README\.md|CHANGELOG\.md|CONTRIBUTING\.md|eslint\.config\.js|playwright\.config\.js|phpstan\.neon\.dist)$">
+    Require all denied
+</FilesMatch>
+
+# Pastas internas (código do núcleo, ferramentas, testes, documentação, dependências) e pastas
+# começadas por ponto (.git, .github): <If> é do núcleo do Apache 2.4, não precisa de mod_rewrite.
+<If "%{REQUEST_URI} =~ m#/\.(?!well-known/)# || %{REQUEST_URI} =~ m#/(nucleo|ferramentas|tests|docs|node_modules|test-results|playwright-report|scripts|dados-privados)(/|$)#">
+    Require all denied
+</If>
+
+# ── Cabeçalhos de segurança (também enviados pelo PHP nas páginas e serviços) ───────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)"
+    Header always unset X-Powered-By
+    # HSTS só quando o site estiver em HTTPS (o navegador ignora-o em HTTP)
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on'"
+</IfModule>

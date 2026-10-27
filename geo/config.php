@@ -1,23 +1,24 @@
 <?php
 /**
- * Configuração Geral da Aplicação GeoMobilidadeNaval
+ * Configuração Geral da Aplicação GeoMobilidadeNaval (compatibilidade).
  *
- * Servidor de Hospedagem: Apache 2.4 (C:\Apache24\htdocs\geo)
- * Domínio / Host: geo.naval.co.ao:2051
+ * Sem valores fixos no código: o endereço público vem de PORTAL_URL no .env, lido pelo núcleo
+ * (nucleo/config.php é o único sítio que lê o .env).
  */
+require_once dirname(__DIR__) . '/nucleo/arranque.php';
 
 if (!defined('APP_PATH')) {
     define('APP_PATH', __DIR__);
 }
 
+if (!defined('APP_URL')) {
+    define('APP_URL', rtrim(naval_config('PORTAL_URL'), '/'));
+}
+
 if (!defined('APP_DOMAIN')) {
-    define('APP_DOMAIN', 'geo.naval.co.ao');
+    define('APP_DOMAIN', (string) parse_url(APP_URL, PHP_URL_HOST));
 }
 
 if (!defined('APP_PORT')) {
-    define('APP_PORT', '2051');
-}
-
-if (!defined('APP_URL')) {
-    define('APP_URL', 'http://geo.naval.co.ao:2051');
+    define('APP_PORT', (string) parse_url(APP_URL, PHP_URL_PORT));
 }

@@ -1,7 +1,8 @@
 # Testes automáticos a cada alteração enviada para o GitHub (e em cada pedido de integração):
 #  - php:      sintaxe, testes unitários e testes dos serviços em cada versão do PHP suportada (7.1 a 8.3);
 #  - analise:  análise estática do back-end (PHPStan);
-#  - testes:   normas do front-end e testes do portal e do servidor (Playwright).
+#  - testes:   normas do front-end e testes do portal e do servidor (Playwright);
+#  - apache:   regras dos .htaccess num Apache 2.4 real (ficheiros internos recusados, cabeçalhos).
 name: Testes
 
 on:
@@ -105,3 +106,16 @@ jobs:
           name: relatorio-testes
           path: playwright-report/
           retention-days: 14
+
+  apache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Regras do Apache
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Apache 2.4 com PHP
+        run: sudo apt-get update -q && sudo apt-get install -y -q apache2 libapache2-mod-php
+
+      - name: Ficheiros internos recusados, páginas servidas e cabeçalhos de segurança
+        run: sudo bash tests/apache/verificar.sh

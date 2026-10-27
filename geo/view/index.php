@@ -12,13 +12,11 @@
   <link rel="stylesheet" href="../theme.css" />
   <title>GeoMobilidade Naval</title>
 
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="../vendor/lucide-1.62.0.min.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="../vendor/papaparse-5.3.0.min.js"></script>
   <script src="../viewScript.js" defer></script>
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlk6zhL-VjbGA6FuTRf250gKeEgXMMiMY&libraries=drawing&v=3.64&callback=initMap"
-    defer></script>
+  <?= naval_google_maps_script(['libraries' => 'drawing']) ?>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js"></script>
 
@@ -46,7 +44,7 @@
         <a href="../reports.php" title="Ir para os relatórios" class="nav-btn">
           <i data-lucide="bar-chart-3"></i> Reports
         </a>
-        <a href="../auth/logout.php" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
+        <a href="../auth/logout.php?t=<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
           <i data-lucide="log-out"></i> Sair
         </a>
       </div>

@@ -102,21 +102,28 @@ Regras:
 
 ### Configuração (`.env`, na raiz do site)
 
-| Chave                                                                          | Para quê                                                  | Omissão                                                                             |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `USERNAME`, `PASSWORD`                                                         | credenciais do Pinguim BO                                 | —                                                                                   |
-| `PINGUIM_URL`                                                                  | endereços do Pinguim BO, por ordem, separados por vírgula | `http://127.0.0.1:8089/rest/exportdata,https://bo.naval.co.ao:2083/rest/exportdata` |
-| `DADOS_PRIVADOS`                                                               | pasta privada (contas, registos, planos, lotes)           | `../dados-privados` ao lado do site                                                 |
-| `UTILIZADORES_JSON`                                                            | ficheiro das contas                                       | `<DADOS_PRIVADOS>/utilizadores.json`                                                |
-| `RTM_CLIENTES_JSON`                                                            | cadastros gerados pelo repositório rtm-clientes           | ver README                                                                          |
-| `EMAIL_TENANT_ID`, `EMAIL_CLIENT_ID`, `EMAIL_CLIENT_SECRET`, `EMAIL_REMETENTE` | envio pelo Microsoft 365                                  | —                                                                                   |
-| `EMAIL_MODO`                                                                   | `ficheiro` grava os emails em vez de os enviar (testes)   | `graph`                                                                             |
-| `PORTAL_URL`                                                                   | endereço do portal nas ligações dos emails                | —                                                                                   |
-| `FUSO_HORARIO`                                                                 | fuso das datas e horas                                    | `Africa/Luanda`                                                                     |
+| Chave                                                                          | Para quê                                                  | Omissão                               |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------- |
+| `USERNAME`, `PASSWORD`                                                         | credenciais do Pinguim BO                                 | —                                     |
+| `PINGUIM_URL`                                                                  | endereços do Pinguim BO, por ordem, separados por vírgula | — (obrigatória)                       |
+| `PINGUIM_VERIFICAR_SSL`                                                        | verificação do certificado HTTPS do Pinguim BO            | `1` (ligada)                          |
+| `DB_HOST`, `DB_NAME` (ou `DB_DSN`), `DB_USER`, `DB_PASS`, `DB_PORT`            | base de dados do Pinguim BO (só leitura)                  | — (obrigatórias); porta `1433`        |
+| `GOOGLE_MAPS_API_KEY`                                                          | chave de navegador do Google Maps (GEO), com restrições   | — (obrigatória para os mapas)         |
+| `LOGIN_MAX_FALHAS_IP`                                                          | entradas falhadas por IP em 15 min antes de suspender     | `20`                                  |
+| `PROXY_HTTPS`, `CSP_APLICAR`, `APP_DEBUG`                                      | proxy HTTPS de confiança; CSP aplicada; diagnóstico       | `0` (nunca `APP_DEBUG=1` em produção) |
+| `DADOS_PRIVADOS`                                                               | pasta privada (contas, registos, planos, lotes)           | `../dados-privados` ao lado do site   |
+| `UTILIZADORES_JSON`                                                            | ficheiro das contas                                       | `<DADOS_PRIVADOS>/utilizadores.json`  |
+| `RTM_CLIENTES_JSON`                                                            | cadastros gerados pelo repositório rtm-clientes           | ver README                            |
+| `EMAIL_TENANT_ID`, `EMAIL_CLIENT_ID`, `EMAIL_CLIENT_SECRET`, `EMAIL_REMETENTE` | envio pelo Microsoft 365                                  | —                                     |
+| `EMAIL_MODO`                                                                   | `ficheiro` grava os emails em vez de os enviar (testes)   | `graph`                               |
+| `PORTAL_URL`                                                                   | endereço do portal nas ligações dos emails                | —                                     |
+| `FUSO_HORARIO`                                                                 | fuso das datas e horas                                    | `Africa/Luanda`                       |
 
 | `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
 
-A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos).
+A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos). Não há valores de ligação
+predefinidos no código: sem as chaves obrigatórias, o serviço responde com os **nomes** das chaves em falta (nunca
+com valores nem caminhos). Segurança da plataforma e instruções para o servidor: `docs/SEGURANCA.md`.
 
 Configuração guardada no portal (pasta privada, não no `.env`): correspondência com o SAP em `sap/config.json`
 (armazéns principais 1150 → RTM1 e 1151 → RTM2, SAP location por omissão RTM2), perfis criados e alterações à matriz.
@@ -131,6 +138,7 @@ Configuração guardada no portal (pasta privada, não no `.env`): correspondên
 | Playwright `servidor`                        | PHP real com contas de cada perfil e um Pinguim BO simulado; contrato de todos os serviços JSON         |
 | Testes unitários (`tests/unidade/`)          | Núcleo e serviços isolados: .env, JSON, matriz, TOTP (RFC 6238), vendas e troco, plano, SAP             |
 | PHPStan nível 5 (`phpstan.neon.dist`)        | Análise estática do back-end                                                                            |
+| `tests/apache/verificar.sh`                  | Regras dos `.htaccess` num Apache 2.4 real: ficheiros internos recusados, cabeçalhos de segurança       |
 | GitHub Actions                               | Sintaxe, testes unitários e dos serviços no PHP 7.1, 7.4, 8.1 e 8.3; PHPStan; ESLint, Prettier e testes |
 
 ## Próximas fases

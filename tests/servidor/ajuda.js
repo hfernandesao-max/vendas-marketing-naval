@@ -5,10 +5,19 @@ export const BASE = 'http://127.0.0.1:8810';
 export const SENHA = 'Teste-12345!';
 export const DIA = 'start_date=20261024&end_date=20261024';
 
+/** Código anti-falsificação do formulário de entrada (lido da página, como faz o navegador). */
+export async function tokenEntrada(ctx) {
+  const html = await (await ctx.get('/geo/login.php')).text();
+  return (html.match(/name="csrf" value="([^"]+)"/) || [])[1] || '';
+}
+
 /** Entra com uma conta e devolve o contexto (com a sessão) e a resposta da entrada. */
 export async function entrar(login, senha = SENHA) {
   const ctx = await request.newContext({ baseURL: BASE });
-  const resposta = await ctx.post('/geo/login.php', { form: { usuario: login, senha, redirect: '../reports/' }, maxRedirects: 0 });
+  const resposta = await ctx.post('/geo/login.php', {
+    form: { usuario: login, senha, redirect: '../reports/', csrf: await tokenEntrada(ctx) },
+    maxRedirects: 0,
+  });
   return { ctx, resposta };
 }
 

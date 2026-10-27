@@ -161,11 +161,32 @@ function naval_totp(string $segredo, int $passo): string
 
 function naval_totp_valido(string $segredo, string $codigo): bool
 {
-    $codigo = preg_replace('/\D/', '', $codigo);
-    if (strlen($codigo) !== 6) return false;
+    return naval_totp_periodo($segredo, $codigo) !== null;
+}
+
+/** Período de 30 s em que o código é válido (janela de ±1 período), ou null. */
+function naval_totp_periodo(string $segredo, string $codigo): ?int
+{
+    $codigo = (string) preg_replace('/\D/', '', $codigo);
+    if (strlen($codigo) !== 6 || $segredo === '') return null;
     $p = (int) floor(time() / 30);
-    foreach ([-1, 0, 1] as $d) if (hash_equals(naval_totp($segredo, $p + $d), $codigo)) return true;
-    return false;
+    foreach ([-1, 0, 1] as $d) if (hash_equals(naval_totp($segredo, $p + $d), $codigo)) return $p + $d;
+    return null;
+}
+
+/**
+ * Código de dois passos na entrada: válido e ainda não usado (RFC 6238, §5.2: cada código só serve uma
+ * vez, para que um código interceptado não possa ser reutilizado dentro da janela de validade).
+ */
+function naval_totp_aceitar(string $login, string $segredo, string $codigo): bool
+{
+    $p = naval_totp_periodo($segredo, $codigo);
+    if ($p === null) return false;
+    $f = naval_pasta('bloqueios') . '/totp-' . hash('sha256', strtolower(trim($login))) . '.json';
+    $u = naval_json_ler($f);
+    if ((int) ($u['periodo'] ?? 0) >= $p) return false;
+    naval_json_gravar($f, ['periodo' => $p], false);
+    return true;
 }
 
 // ── Bloqueio de contas ──
@@ -208,6 +229,49 @@ function naval_limpar_falhas(string $login): void
     $f = naval_bloqueio_ficheiro($login);
     if (is_file($f) && !naval_bloqueado($login)) @unlink($f);
 }
+
+// ── Limite de tentativas por endereço IP (força bruta e «password spraying») ──
+// Complementa o bloqueio por conta: muitas falhas do mesmo IP em pouco tempo, mesmo em contas diferentes,
+// suspendem as entradas a partir desse IP durante a janela (sem bloquear as contas).
+const NAVAL_IP_JANELA = 900;   // 15 minutos
+
+function naval_ip_max_falhas(): int
+{
+    return max(3, (int) naval_config('LOGIN_MAX_FALHAS_IP', '20'));
+}
+
+function naval_ip_ficheiro(string $ip): string
+{
+    return naval_pasta('limites') . '/' . hash('sha256', $ip) . '.json';
+}
+
+/** Falhas recentes (dentro da janela) de um IP. */
+function naval_ip_falhas(string $ip): array
+{
+    $d = naval_json_ler(naval_ip_ficheiro($ip));
+    $limite = time() - NAVAL_IP_JANELA;
+    return array_values(array_filter((array) ($d['falhas'] ?? []), function ($t) use ($limite) {
+        return (int) $t > $limite;
+    }));
+}
+
+/** O IP excedeu as falhas permitidas na janela? */
+function naval_ip_suspenso(string $ip): bool
+{
+    return $ip !== '' && count(naval_ip_falhas($ip)) >= naval_ip_max_falhas();
+}
+
+function naval_ip_falha(string $ip): void
+{
+    if ($ip === '') return;
+    $f = naval_ip_falhas($ip);
+    $f[] = time();
+    naval_json_gravar(naval_ip_ficheiro($ip), ['falhas' => array_slice($f, -100)], false);
+    if (count($f) === naval_ip_max_falhas()) naval_registar('ip_suspenso', ['ip' => $ip, 'falhas' => count($f)]);
+}
+
+/** Hash fictício (bcrypt, custo 10) para verificar a palavra-passe de contas inexistentes no mesmo tempo. */
+const NAVAL_HASH_FICTICIO = '$2y$10$MjKGPMs.jY2pD91k9Lt9vuNY2o8UZJzgmn1D9h6hhNitzidO0.XjG';
 
 /** Desbloqueio: só o super administrador (no portal) ou a ferramenta do servidor. */
 function naval_desbloquear(string $login, string $por): bool

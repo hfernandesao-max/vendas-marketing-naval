@@ -28,7 +28,7 @@ test('erros de pedido e de acesso vêm em JSON com o código certo', async () =>
 test('estado da ligação e diagnóstico do Pinguim BO', async () => {
   const ping = await (await (await entrar('log')).ctx.get('/reports/data/api.php?ping=1')).json();
   expect(ping.ok).toBe(true);
-  expect(ping.origem).toBe('127.0.0.1:8801');
+  expect(ping.origem).toBe('Pinguim BO'); // endereço interno só para SADM/TI (ver seguranca.spec.js)
   const diag = await (await (await entrar('sadm')).ctx.get('/reports/data/api.php?diag=1')).json();
   expect(diag).toMatchObject({ env_encontrado: true, credenciais: true, pinguim_http: 200 });
   expect(diag.pinguim_urls).toEqual(['http://127.0.0.1:8801/index.php']);
@@ -157,7 +157,7 @@ test('exportar dados: permitido a DIR, FIN e AUD (nível E) e registado; recusad
 
 test('sair termina a sessão', async () => {
   const fin = (await entrar('fin')).ctx;
-  await fin.get('/geo/auth/logout.php', { maxRedirects: 0 });
+  await fin.get('/geo/auth/logout.php?t=' + (await csrf(fin)), { maxRedirects: 0 });
   expect((await fin.get('/reports/data/sessao.php')).status()).toBe(401);
 });
 

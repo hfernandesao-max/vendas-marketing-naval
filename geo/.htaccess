@@ -3,14 +3,15 @@
 
 DirectoryIndex index.php index.html
 
-# Proteger ficheiros sensíveis contra acesso direto
-<FilesMatch "^(api\.txt|config_users\.php|\.htaccess|\.env)">
+# Proteger ficheiros sensíveis contra acesso directo (as regras gerais estão no .htaccess da raiz)
+<FilesMatch "^(api\.txt|config_users\.php|config\.php|apache_vhost\.conf|\.htaccess|\.env.*)$">
     Require all denied
 </FilesMatch>
 
-# Configuração de cabeçalhos de segurança (se mod_headers estiver habilitado)
+# Cabeçalhos de segurança (se mod_headers estiver activo). O X-XSS-Protection foi retirado:
+# os navegadores actuais ignoram-no e a recomendação da OWASP é não o enviar (ou enviar «0»).
 <IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
