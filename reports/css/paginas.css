@@ -447,3 +447,15 @@ dialog.dlg.largo {
   max-width: 260px;
   margin-top: 12px;
 }
+
+/* Registos de actividade: localização aproximada do IP */
+.ac-local {
+  white-space: normal;
+}
+.ac-band {
+  font-size: 15px;
+  line-height: 1;
+}
+.ac-mapa {
+  font-size: 12px;
+}

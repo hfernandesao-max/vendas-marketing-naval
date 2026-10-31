@@ -612,7 +612,10 @@ R.acessos = (pg) => {
       tabela({
         id: 'ac-r',
         titulo: t('Registos de actividade'),
-        nota: t('Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.'),
+        nota:
+          t('Últimos 300 registos: entradas, saídas, bloqueios, alterações de contas e da matriz, exportações.') +
+          ' ' +
+          t('Localização aproximada pelo endereço IP (país e cidade, raio indicado), calculada no servidor com base de dados local. IP Geolocation by DB-IP.'),
         sort: 'data',
         total: false,
         rows: GESTAO.registos.map((r, i) => ({
@@ -625,6 +628,8 @@ R.acessos = (pg) => {
             .map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : typeof v === 'boolean' ? (v ? t('Sim') : t('Não')) : v))
             .join(' · '),
           ip: r.ip,
+          local: textoLocal(r.local),
+          _loc: r.local || null,
         })),
         cols: [
           { key: 'data', label: t('Data'), render: (v) => document.createTextNode(dl(v) + ' ' + String(v).slice(11, 19)) },
@@ -632,6 +637,7 @@ R.acessos = (pg) => {
           { key: 'perfil', label: t('Perfil') },
           { key: 'accao', label: t('Acção') },
           { key: 'detalhe', label: t('Detalhe'), wrap: true },
+          { key: 'local', label: t('Localização'), wrap: true, render: (v, row) => celulaLocal(row._loc) },
           { key: 'ip', label: 'IP' },
         ],
       }),
@@ -917,4 +923,38 @@ function janelaPerfil(p) {
       ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
     },
   );
+}
+
+// ---- localização aproximada do IP (registos de actividade) ----
+const bandeira = (cc) => (/^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '');
+function textoLocal(l) {
+  if (!l) return '';
+  if (l.rede === 'interna') return t('Rede interna');
+  const nomes = [l.cidade, l.regiao && l.regiao !== l.cidade ? l.regiao : '', l.pais_nome || l.pais].filter(Boolean).join(', ');
+  return nomes + (l.raio_km ? ' (≈ ' + l.raio_km + ' km)' : '');
+}
+function celulaLocal(l) {
+  const w = el('span', 'ac-local');
+  if (!l) {
+    w.textContent = '—';
+    return w;
+  }
+  const txt = textoLocal(l);
+  if (l.rede === 'interna') {
+    w.textContent = txt;
+    w.title = t('Endereço da rede da empresa, VPN ou do próprio servidor');
+    return w;
+  }
+  const b = bandeira(l.pais);
+  if (b) w.append(el('span', 'ac-band', b), ' ');
+  w.append(txt);
+  if (l.lat != null && l.lon != null) {
+    const a = el('a', 'ac-mapa', t('mapa'));
+    a.href = 'https://www.openstreetmap.org/?mlat=' + l.lat + '&mlon=' + l.lon + '#map=10/' + l.lat + '/' + l.lon;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    w.append(' · ', a);
+  }
+  w.title = [t('Localização aproximada pelo IP, não é uma morada.'), l.fonte, l.posterior ? t('Calculada depois do registo.') : ''].filter(Boolean).join(' ');
+  return w;
 }

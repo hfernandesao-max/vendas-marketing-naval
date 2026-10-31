@@ -2,6 +2,20 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 01-11-2026
+
+### Segurança
+- **Localização das entradas nos Registos de actividade:** país, região e cidade aproximados de cada IP (com o raio de
+  precisão e ligação ao mapa), calculados no servidor com uma base de dados local no formato MaxMind DB
+  (`nucleo/seguranca/geoip.php`, leitor próprio sem dependências); o IP nunca sai do servidor. Endereços privados
+  aparecem como «Rede interna». Actualização mensal da base (DB-IP City Lite, CC BY 4.0) com
+  `ferramentas/actualizar-geoip.php`. Os registos passam a usar o IP do cliente atrás de proxy de confiança.
+
+### Dados
+- **Plano de cargas sem dados de Excel:** o pré-preenchimento, as listas e as páginas de stock por carrinha e
+  escoamento usam só os planos publicados no portal; o histórico importado dos Excel de transportes
+  (`reports/data/cargas.json`) deixa de ser lido.
+
 ## 31-10-2026
 
 ### Plano de cargas

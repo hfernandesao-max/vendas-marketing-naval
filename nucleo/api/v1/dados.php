@@ -15,15 +15,12 @@ $regras = [
 ];
 if (!isset($regras[$f])) throw new NavalErro('Ficheiro desconhecido.');
 naval_exigir($regras[$f]);
-$d = naval_json_ler(naval_raiz() . '/reports/data/' . $f . '.json');
-
-// Plano de cargas: os dias publicados no portal juntam-se ao histórico (e substituem o mesmo dia e rota)
+// Plano de cargas: só os planos publicados no portal (o antigo histórico importado de Excel já não é usado)
 if ($f === 'cargas') {
     naval_servico('cargas');
-    $porChave = [];
-    foreach ($d as $x) $porChave[$x['chave'] ?? (($x['data'] ?? '') . '|' . ($x['rota'] ?? ''))] = $x;
-    foreach (naval_plano_para_cargas() as $x) $porChave[$x['chave']] = $x;
-    $d = array_values($porChave);
+    $d = naval_plano_para_cargas();
+} else {
+    $d = naval_json_ler(naval_raiz() . '/reports/data/' . $f . '.json');
 }
 if ($f !== 'rotas') $d = naval_filtrar_rotas($d);
 if ($f === 'clientes' && !naval_ve_nif()) {
