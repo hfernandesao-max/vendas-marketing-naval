@@ -190,7 +190,8 @@
   gap: 6px;
 }
 .pc-err,
-.pc-av {
+.pc-av,
+.pc-info {
   font-size: 12px;
   padding: 3px 9px;
   border-radius: 999px;
@@ -202,6 +203,10 @@
 .pc-av {
   background: rgba(255, 159, 10, 0.12);
   color: var(--warn);
+}
+.pc-info {
+  background: rgba(63, 140, 255, 0.14);
+  color: var(--accent);
 }
 .pc-resumo {
   margin-bottom: 14px;

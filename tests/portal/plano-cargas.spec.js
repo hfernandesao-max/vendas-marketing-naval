@@ -54,7 +54,7 @@ const PUBLICADO = {
   publicado: { versao: 1, rev: 3, em: '2026-10-26 08:00:00', por: 'log', por_nome: 'Logística', nota: '', rotas: [ROTA] },
 };
 
-async function abrirPlano(page, plano, pedidos) {
+async function abrirPlano(page, plano, pedidos, extra = {}) {
   await page.route('**/v1/plano**', (r) => {
     const q = r.request();
     if (q.method() === 'POST') {
@@ -65,7 +65,7 @@ async function abrirPlano(page, plano, pedidos) {
       return r.fulfill({ json: { ok: true, plano } });
     }
     if (q.url().includes('historico')) return r.fulfill({ json: { dias: [] } });
-    return r.fulfill({ json: resposta(plano) });
+    return r.fulfill({ json: { ...resposta(plano), ...extra } });
   });
   await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
   return abrir(page, '#plano-cargas');
@@ -101,4 +101,21 @@ test('publicado: enviar por email só aos destinatários escolhidos', async ({ p
   await dlg.getByLabel('Transportes · transportes@naval.co.ao').uncheck();
   await dlg.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect.poll(() => pedidos.find((p) => p.accao === 'enviar')).toMatchObject({ data: '2026-10-26', para: ['armazem@naval.co.ao'] });
+});
+
+test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo, sem factura', async ({ page }) => {
+  const pedidos = [];
+  const sug = { ...ROTA, origem: '2026-10-22', factura: undefined, obs: undefined, telefone: '924516916' };
+  const erros = await abrirPlano(page, null, pedidos, { sugestoes: [sug] });
+  const c = page.locator('.pc-card').first();
+  await expect(c.getByLabel('Motorista')).toHaveValue('Adão Paulo');
+  await expect(c.getByLabel('Telefone')).toHaveValue('924516916');
+  await expect(c.getByLabel('Matrícula')).toHaveValue('LD-58-73-GY');
+  await expect(c.getByLabel('Transportadora')).toHaveValue('Velotrans');
+  await expect(c.getByLabel('Fraldas')).toHaveValue('90');
+  await expect(c.getByLabel('N.º da factura')).toHaveValue('');
+  await expect(c.locator('.pc-info')).toContainText('22-10');
+  await expect(c.locator('.pc-err')).toHaveCount(0);
+  await expect(c.locator('.pc-av')).toContainText('sem número de factura');
+  expect(erros).toEqual([]);
 });

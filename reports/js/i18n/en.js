@@ -391,6 +391,7 @@ export const EN = {
   'Armazéns e viaturas': 'Warehouses and vehicles',
   'Artigos carregados nas carrinhas, pela ordem do Excel.': 'Items loaded on the vans, in the Excel order.',
   'Copiado o plano de {d}. Corrija o que mudou hoje.': 'Copied the plan of {d}. Correct what changed today.',
+  'pré-preenchido com o registo de {d} · confirme': 'pre-filled from the record of {d} · please confirm',
   'Copiar de {d}': 'Copy from {d}',
   'Copiar do dia anterior': 'Copy from previous day',
   'Corrija antes de publicar:': 'Fix before publishing:',

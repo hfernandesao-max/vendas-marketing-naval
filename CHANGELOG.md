@@ -2,6 +2,18 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 31-10-2026
+
+### Plano de cargas
+- **Pré-preenchimento automático dos cartões das rotas:** num dia novo, cada rota vem preenchida com o seu último
+  registo — primeiro a última versão publicada do plano em que a rota saiu, e em reserva o histórico importado dos
+  Excel de transportes (`reports/data/cargas.json`). Preenche motorista, telefone, matrícula, viatura e
+  transportadora (actualizados pela ficha do motorista nas Listas), zonas de descarga, quantidades por artigo,
+  armazém e viagens; o número de factura e as observações nunca se copiam. Nunca escreve por cima do que já foi
+  preenchido nem altera planos publicados. Ao marcar uma rota vazia como «sai», preenche-se da mesma forma. Cada
+  cartão mostra «pré-preenchido com o registo de dd-mm · confirme». A API devolve as sugestões só a quem gere o
+  plano (`sugestoes` em `GET v1/plano`).
+
 ## 27-10-2026
 
 ### Arquitectura

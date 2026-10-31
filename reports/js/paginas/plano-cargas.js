@@ -68,7 +68,32 @@ function montarRotasPlano(d, base) {
       if (r.quantidades[a.id] == null) r.quantidades[a.id] = 0;
     });
   });
+  // Pré-preenchimento automático com o último registo de cada rota (só em planos ainda não publicados
+  // e nunca por cima do que já foi escrito). Num dia novo, as rotas com registo ficam marcadas a sair.
+  if (!base && !(d.plano && d.plano.publicado)) {
+    const novo = !d.plano;
+    lista.forEach((r) => {
+      if (novo || r.sai) preencherRota(r, d, novo);
+    });
+  }
   return lista;
+}
+const rotaVazia = (r) => !r.motorista.trim() && !r.matricula.trim() && !r.zonas.length && somaQ(r) <= 0;
+// Preenche uma rota vazia com a sugestão do servidor (último registo publicado ou histórico de transportes)
+function preencherRota(r, d, marcarSai = false) {
+  const s = (d.sugestoes || []).find((x) => x.rota === r.rota);
+  if (!s || !rotaVazia(r)) return false;
+  ['motorista', 'telefone', 'matricula', 'viatura', 'transportadora', 'armazem'].forEach((k) => {
+    if (s[k]) r[k] = s[k];
+  });
+  r.viagens = +s.viagens || 1;
+  r.zonas = [...(s.zonas || [])];
+  d.listas.artigos.forEach((a) => {
+    r.quantidades[a.id] = Math.max(0, Math.round(+((s.quantidades || {})[a.id] || 0)));
+  });
+  if (marcarSai) r.sai = true;
+  r._pre = s.origem;
+  return true;
 }
 const estadoPlano = () => {
   const p = PC.resp && PC.resp.plano;
@@ -692,8 +717,12 @@ function actualizarPlanoUI() {
     c.total.textContent = r.sai ? t('{n} cx', { n: n0(somaQ(r)) }) : t('Não sai');
     const e = v.erros.filter((x) => x.rota === rota).map((x) => x.msg),
       a = v.avisos.filter((x) => x.rota === rota).map((x) => x.msg);
-    c.av.replaceChildren(...e.map((m) => el('span', 'pc-err', m)), ...a.map((m) => el('span', 'pc-av', m)));
-    c.av.hidden = !r.sai || !(e.length + a.length);
+    const pre =
+      r._pre && d.gere && !(p && p.publicado)
+        ? [el('span', 'pc-info', t('pré-preenchido com o registo de {d} · confirme', { d: dl(r._pre).slice(0, 5) }))]
+        : [];
+    c.av.replaceChildren(...pre, ...e.map((m) => el('span', 'pc-err', m)), ...a.map((m) => el('span', 'pc-av', m)));
+    c.av.hidden = !r.sai || !(pre.length + e.length + a.length);
   });
 }
 function cartaoRota(r, d, dls) {
@@ -711,6 +740,11 @@ function cartaoRota(r, d, dls) {
     av = el('div', 'pc-avs');
   sai.addEventListener('change', () => {
     r.sai = sai.checked;
+    if (r.sai && preencherRota(r, d)) {
+      marcarSujo();
+      draw();
+      return;
+    }
     marcarSujo();
   });
   const inp = (k, rot, attrs, lista) => {

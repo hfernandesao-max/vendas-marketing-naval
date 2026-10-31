@@ -293,6 +293,55 @@ function naval_plano_historico(bool $gere): array
     return $out;
 }
 
+/**
+ * Pré-preenchimento automático: para cada rota, o último registo oficial antes de $data em que a rota saiu.
+ * Fonte principal: versões publicadas do plano (dados-privados/plano-cargas); reserva: histórico
+ * importado dos Excel de transportes (reports/data/cargas.json). O telefone, a matrícula, a viatura e a
+ * transportadora vêm da ficha do motorista (listas), mais actual do que o registo antigo.
+ * Devolve {rota: {..campos.., origem: AAAA-MM-DD}}. O número de factura e as observações nunca se copiam.
+ */
+function naval_plano_sugestoes(string $data, array $listas): array
+{
+    $out = [];
+    foreach (naval_plano_dias(120) as $p) {
+        if (($p['data'] ?? '') >= $data || empty($p['publicado']['rotas'])) continue;
+        foreach ($p['publicado']['rotas'] as $r) {
+            $rt = (string) ($r['rota'] ?? '');
+            if ($rt === '' || isset($out[$rt]) || empty($r['sai'])) continue;
+            $out[$rt] = [
+                'armazem' => $r['armazem'] ?? '', 'viagens' => (int) ($r['viagens'] ?? 1), 'zonas' => array_values((array) ($r['zonas'] ?? [])),
+                'quantidades' => (array) ($r['quantidades'] ?? []), 'motorista' => $r['motorista'] ?? '', 'telefone' => $r['telefone'] ?? '',
+                'matricula' => $r['matricula'] ?? '', 'viatura' => $r['viatura'] ?? '', 'transportadora' => $r['transportadora'] ?? '',
+                'origem' => $p['data'],
+            ];
+        }
+    }
+    $hist = naval_json_ler(naval_raiz() . '/reports/data/cargas.json');
+    usort($hist, function ($a, $b) { return strcmp($b['data'] ?? '', $a['data'] ?? ''); });
+    foreach ($hist as $c) {
+        $rt = (string) ($c['rota'] ?? '');
+        if ($rt === '' || isset($out[$rt]) || ($c['data'] ?? '') >= $data) continue;
+        $q = [];
+        foreach ($listas['artigos'] as $a) $q[$a['id']] = (int) round((float) ($c['carga_' . $a['id']] ?? 0));
+        $out[$rt] = [
+            'armazem' => '', 'viagens' => 1, 'zonas' => array_values(array_filter(array_map('trim', explode(',', (string) ($c['zonas'] ?? ''))))),
+            'quantidades' => $q, 'motorista' => $c['motorista'] ?? '', 'telefone' => '', 'matricula' => $c['matricula'] ?? '',
+            'viatura' => $c['viatura'] ?? '', 'transportadora' => $c['transportadora'] ?? '', 'origem' => $c['data'],
+        ];
+    }
+    foreach ($out as &$s) {
+        foreach ($listas['motoristas'] as $m) {
+            if (naval_chave_texto((string) ($m['nome'] ?? '')) !== naval_chave_texto((string) $s['motorista'])) continue;
+            $s['motorista'] = $m['nome'];
+            foreach (['telefone', 'matricula', 'viatura', 'transportadora'] as $k) if (!empty($m[$k])) $s[$k] = $m[$k];
+            break;
+        }
+        if ($s['armazem'] === '' && !empty($listas['armazens'])) $s['armazem'] = $listas['armazens'][0];
+    }
+    unset($s);
+    return naval_filtrar_rotas(array_map(function ($rt, $s) { return ['rota' => (string) $rt] + $s; }, array_keys($out), $out));
+}
+
 /** Plano mais recente antes de $data (para «Copiar do dia anterior»). */
 function naval_plano_anterior(string $data, bool $gere): ?string
 {
