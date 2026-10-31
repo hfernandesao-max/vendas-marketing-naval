@@ -34,3 +34,8 @@
 .toast {
   color: var(--c-tip-fg);
 }
+
+/* Botões secundários (ghost): texto no token forte (branco no escuro, como antes; azul-marinho no claro) */
+.btn.ghost {
+  color: var(--c-forte);
+}
