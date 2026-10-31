@@ -3,7 +3,7 @@ import { draw } from '../app.js';
 import { LIM, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, confirmarAccao, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, n0 } from '../formatos.js';
-import { t } from '../i18n/i18n.js';
+import { IDIOMAS, NOMES_IDIOMA, siglaNivel, t } from '../i18n/i18n.js';
 import { nomeRecurso } from './catalogo.js';
 import { exportarEstrutura } from '../estrutura.js';
 import { R } from './registo.js';
@@ -42,9 +42,78 @@ const NOMES_ACCAO = {
   perfil_criado: 'Perfil criado',
   perfil_apagado: 'Perfil apagado',
   rotas_alteradas: 'Rotas alteradas',
-  email_alterado: 'Email alterado',
+  email_alterado: 'Correio electrónico alterado',
   conta_activada: 'Conta activada',
   conta_desactivada: 'Conta desactivada',
+  email_teste: 'Mensagem de teste',
+  plano_publicado: 'Plano de cargas publicado',
+  plano_enviado: 'Plano de cargas enviado',
+  plano_listas: 'Listas do plano de cargas alteradas',
+  sap_config: 'Correspondência com o SAP alterada',
+  sap_lote: 'Ficheiro para o SAP emitido',
+  sap_lote_recusado: 'Ficheiro para o SAP recusado',
+  sap_lote_carregado: 'Ficheiro carregado no SAP',
+  sap_lote_anulado: 'Ficheiro para o SAP anulado',
+  sap_segunda_via: 'Segunda via do ficheiro para o SAP',
+  sap_segunda_via_recusada: 'Segunda via recusada',
+  sap_ficheiro_alterado: 'Ficheiro para o SAP alterado',
+};
+// Campos e valores técnicos do detalhe dos registos, mostrados na língua escolhida
+const NOMES_DETALHE = {
+  accao: 'Acção',
+  alteracoes: 'Alterações',
+  aprovado_por: 'Aprovado por',
+  completo: 'Completo',
+  conta: 'Conta',
+  contas: 'Contas',
+  copiado_de: 'Copiado de',
+  data: 'Data',
+  destinatarios: 'Destinatários',
+  documentos: 'Documentos',
+  dois_passos: 'Dois passos',
+  email: 'Correio electrónico',
+  estado: 'Estado',
+  linhas: 'Linhas',
+  lote: 'Lote',
+  motivo: 'Motivo',
+  motoristas: 'Motoristas',
+  ok: 'Resultado',
+  pagina: 'Página',
+  para: 'Para',
+  perfil: 'Perfil',
+  periodo: 'Período',
+  por: 'Por',
+  recursos: 'Recursos',
+  referencia: 'Referência',
+  rotas: 'Rotas',
+  super_administrador: 'Super administrador',
+  idioma: 'Idioma',
+  tabela: 'Tabela',
+  tentativas: 'Tentativas',
+  total: 'Total',
+  versao: 'Versão',
+  zonas: 'Zonas',
+};
+const VALORES_DETALHE = {
+  codigo: 'código errado',
+  senha: 'palavra-passe errada',
+  sem_email: 'conta sem correio electrónico',
+  conta_inactiva: 'conta inactiva',
+  perfil: 'perfil sem permissão',
+  confirmacao: 'confirmação falhada',
+  documentos_ja_emitidos: 'documentos já emitidos',
+  enviado: 'enviado',
+  falhou: 'falhou',
+  rascunho: 'rascunho',
+};
+const valorDetalhe = (k, v) => {
+  if (Array.isArray(v)) return v.map((x) => (k === 'recursos' || k === 'pagina' ? nomeRecurso(x) : x)).join(', ');
+  if (typeof v === 'boolean') return v ? t('Sim') : t('Não');
+  if (k === 'pagina') return nomeRecurso(v);
+  if (k === 'accao') return t(NOMES_ACCAO[v] || v);
+  if (k === 'tabela') return t(v);
+  if (k === 'idioma') return NOMES_IDIOMA[v] || v;
+  return VALORES_DETALHE[v] ? t(VALORES_DETALHE[v]) : v;
 };
 let GESTAO = null,
   MPEND = {};
@@ -63,7 +132,6 @@ const recarregarGestao = () => {
   MPEND = {};
   draw();
 };
-const NIVEL_SIG = { '': '—', V: 'V', Vr: 'V·r', E: 'E', Er: 'E·r', G: 'G', A: 'A' };
 
 function confirmarIdentidade(metodo, erro) {
   return new Promise((ok) => {
@@ -119,7 +187,8 @@ function pedirGestao(corpo, confirmacao) {
       }, 1800);
       return { ok: false, cancelado: true };
     }
-    if (d.confirmar) return confirmarIdentidade(d.confirmar, d.erro).then((c) => (c == null ? { ok: false, cancelado: true } : pedirGestao(corpo, c)));
+    if (d.confirmar)
+      return confirmarIdentidade(d.confirmar, d.erro && t(d.erro)).then((c) => (c == null ? { ok: false, cancelado: true } : pedirGestao(corpo, c)));
     return d;
   });
 }
@@ -172,7 +241,7 @@ function mostrarDoisPassos(login, segredo, uri) {
 function janelaConta(u) {
   const G = GESTAO,
     novo = !u;
-  u = u || { login: '', nome: '', email: '', perfil: 'COM', rotas: [], ligada: true, valido_ate: null };
+  u = u || { login: '', nome: '', email: '', perfil: 'COM', rotas: [], ligada: true, valido_ate: null, idioma: '' };
   janela(
     novo ? t('Nova conta') : u.nome,
     novo ? t('A palavra-passe temporária aparece no fim. A pessoa escolhe a sua na primeira entrada.') : u.login + ' · ' + u.perfil + ' · ' + t(u.perfil_nome),
@@ -188,6 +257,21 @@ function janelaConta(u) {
         sPerfil.append(o);
       });
       sPerfil.value = u.perfil;
+      // idioma do portal (obrigatório): o portal abre neste idioma sempre que a pessoa entra.
+      // Os nomes das línguas aparecem na própria língua, como é norma nos selectores de idioma.
+      const sIdioma = el('select');
+      sIdioma.required = true;
+      const o0 = el('option', null, t('— Escolha o idioma —'));
+      o0.value = '';
+      o0.disabled = true;
+      sIdioma.append(o0);
+      Object.entries(NOMES_IDIOMA).forEach(([k, v]) => {
+        const o = el('option', null, v);
+        o.value = k;
+        o.lang = IDIOMAS[k];
+        sIdioma.append(o);
+      });
+      sIdioma.value = u.idioma || '';
       const iAte = entrada('date', u.valido_ate || '');
       const cAct = entrada('checkbox');
       cAct.checked = !!u.ligada;
@@ -226,10 +310,10 @@ function janelaConta(u) {
       sPerfil.addEventListener('change', actualizar);
       cAct.addEventListener('change', actualizar);
       const l2 = el('div', 'campos2');
-      l2.append(campo(t('Utilizador'), iLogin), campo(t('Email (obrigatório)'), iEmail));
+      l2.append(campo(t('Utilizador'), iLogin), campo(t('Correio electrónico (obrigatório)'), iEmail));
       const l3 = el('div', 'campos2');
-      l3.append(campo(t('Perfil'), sPerfil), campo(t('Válida até (opcional)'), iAte));
-      b.append(campo(t('Nome'), iNome), l2, l3, caixaRotas, lAct, notaAprov, caixaAprov);
+      l3.append(campo(t('Perfil'), sPerfil), campo(t('Idioma do portal (obrigatório)'), sIdioma));
+      b.append(campo(t('Nome'), iNome), l2, l3, campo(t('Válida até (opcional)'), iAte), caixaRotas, lAct, notaAprov, caixaAprov);
       if (!novo) {
         const acc = el('div', 'dlg-accoes');
         acc.append(
@@ -316,6 +400,12 @@ function janelaConta(u) {
               .filter(Boolean),
           );
         const login = novo ? iLogin.value.trim() : u.login;
+        if (!sIdioma.value) {
+          erro.textContent = t('Indique o idioma do portal.');
+          erro.hidden = false;
+          sIdioma.focus();
+          return;
+        }
         guardar.disabled = true;
         erro.hidden = true;
         pedirGestao({
@@ -328,6 +418,7 @@ function janelaConta(u) {
           rotas,
           valido_ate: iAte.value,
           activo: cAct.checked,
+          idioma: sIdioma.value,
           aprovado_por: caixaAprov.hidden ? [] : [iA1.value, iA2.value],
         }).then((d) => {
           guardar.disabled = false;
@@ -358,7 +449,7 @@ R.acessos = (pg) => {
     return;
   }
   if (GESTAO.erro) {
-    pg.append(secBox(t('Acessos'), '', el('p', null, GESTAO.erro)));
+    pg.append(secBox(t('Acessos'), '', el('p', null, t(GESTAO.erro))));
     return;
   }
   const U = GESTAO.utilizadores,
@@ -374,7 +465,7 @@ R.acessos = (pg) => {
     acc.append(b);
     pg.append(acc);
   }
-  const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem email' : u.activo ? 'Activa' : 'Inactiva');
+  const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem correio electrónico' : u.activo ? 'Activa' : 'Inactiva');
   pg.append(
     tiles([
       { l: t('Contas activas'), v: n0(U.filter((u) => u.activo && !u.bloqueado).length), s: t('{n} contas no total', { n: U.length }) },
@@ -384,7 +475,7 @@ R.acessos = (pg) => {
         s: t('desbloqueio pelo super administrador'),
         tone: U.some((u) => u.bloqueado) ? 'bad' : null,
       },
-      { l: t('Sem email associado'), v: n0(U.filter((u) => !u.email_ok).length), tone: U.some((u) => !u.email_ok) ? 'warn' : null },
+      { l: t('Sem correio electrónico associado'), v: n0(U.filter((u) => !u.email_ok).length), tone: U.some((u) => !u.email_ok) ? 'warn' : null },
       {
         l: t('Sem verificação em dois passos'),
         v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos).length),
@@ -396,8 +487,13 @@ R.acessos = (pg) => {
   const cols = [
     { key: 'nome', label: t('Nome'), p: 0 },
     { key: 'login', label: t('Utilizador') },
-    { key: 'email', label: t('Email') },
-    { key: 'perfil', label: t('Perfil'), render: (v, r) => document.createTextNode(v + ' · ' + t(r.perfil_nome)) },
+    { key: 'email', label: t('Correio electrónico') },
+    {
+      key: 'perfil',
+      label: t('Perfil'),
+      render: (v, r) => document.createTextNode(v + ' · ' + t(r.perfil_nome)),
+      xl: (r) => r.perfil + ' · ' + t(r.perfil_nome),
+    },
     { key: 'rotas_txt', label: t('Rotas') },
     { key: 'mfa', label: t('Dois passos') },
     {
@@ -427,6 +523,7 @@ R.acessos = (pg) => {
       },
       xl: (r) => t(r.estado),
     },
+    { key: 'idioma', label: t('Idioma'), render: (v) => document.createTextNode(NOMES_IDIOMA[v] || '—'), xl: (r) => NOMES_IDIOMA[r.idioma] || '' },
     { key: 'ultima_entrada', label: t('Última entrada'), render: (v) => document.createTextNode(v ? dl(v) + ' ' + v.slice(11, 16) : '—') },
   ];
   if (gerir)
@@ -447,7 +544,7 @@ R.acessos = (pg) => {
     id: 'ac-u',
     titulo: t('Utilizadores'),
     nota: gerir
-      ? t('Contas e perfis. Em Gerir altera o perfil, as rotas, o email e a palavra-passe de cada conta.')
+      ? t('Contas e perfis. Em Gerir altera o perfil, as rotas, o correio electrónico e a palavra-passe de cada conta.')
       : t('Contas e perfis. Só o super administrador cria e altera contas.'),
     sort: 'nome',
     dir: 1,
@@ -485,10 +582,10 @@ R.acessos = (pg) => {
   const celula = (rec, p) => {
     const atual = M[rec][p] || '',
       opts = GESTAO.niveis[rec] || [];
-    if (!gerir || p === 'SADM' || !opts.length) return document.createTextNode(NIVEL_SIG[atual]);
+    if (!gerir || p === 'SADM' || !opts.length) return document.createTextNode(siglaNivel(atual));
     const s = el('select', 'nivel');
     opts.forEach((n) => {
-      const o = el('option', null, NIVEL_SIG[n]);
+      const o = el('option', null, siglaNivel(n));
       o.value = n;
       s.append(o);
     });
@@ -502,7 +599,7 @@ R.acessos = (pg) => {
         s.value !== atual
           ? t('Por guardar')
           : atual !== (BASE[rec][p] || '')
-            ? t('Diferente da matriz original ({v})', { v: NIVEL_SIG[BASE[rec][p] || ''] })
+            ? t('Diferente da matriz original ({v})', { v: siglaNivel(BASE[rec][p] || '') })
             : '';
     };
     s.addEventListener('change', () => {
@@ -532,7 +629,7 @@ R.acessos = (pg) => {
     rows: Object.keys(M).map((rec, i) => {
       const o = { chave: rec, ordem: i, recurso: nomeRecurso(rec) };
       perfis.forEach((p) => {
-        o[p] = NIVEL_SIG[M[rec][p] || ''];
+        o[p] = siglaNivel(M[rec][p] || '');
       });
       return o;
     }),
@@ -549,10 +646,10 @@ R.acessos = (pg) => {
       ...perfis.map((p) => ({
         key: p,
         label: p,
-        title: GESTAO.perfis[p],
+        title: t(GESTAO.perfis[p]),
         p: 0,
         render: (v, r) => celula(r.chave, p),
-        xl: (r) => NIVEL_SIG[M[r.chave][p] || ''],
+        xl: (r) => siglaNivel(M[r.chave][p] || ''),
       })),
     ],
   });
@@ -625,7 +722,7 @@ R.acessos = (pg) => {
           perfil: r.perfil,
           accao: t(NOMES_ACCAO[r.accao] || r.accao),
           detalhe: Object.entries(r.detalhe || {})
-            .map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : typeof v === 'boolean' ? (v ? t('Sim') : t('Não')) : v))
+            .map(([k, v]) => t(NOMES_DETALHE[k] || k) + ': ' + valorDetalhe(k, v))
             .join(' · '),
           ip: r.ip,
           local: textoLocal(r.local),
@@ -657,7 +754,7 @@ function cartaoActivar() {
       null,
       G.pode_activar
         ? t(
-            'As contas vêm ainda da lista antiga e não podem ser criadas nem alteradas aqui. Ao activar, cada conta passa para a lista nova com email obrigatório, perfil e rotas, e a sua conta fica super administrador. As palavras-passe actuais mantêm-se. Faz-se uma só vez.',
+            'As contas vêm ainda da lista antiga e não podem ser criadas nem alteradas aqui. Ao activar, cada conta passa para a lista nova com correio electrónico obrigatório, perfil e rotas, e a sua conta fica super administrador. As palavras-passe actuais mantêm-se. Faz-se uma só vez.',
           )
         : t(
             'As contas vêm ainda da lista antiga e não podem ser criadas nem alteradas aqui. Peça ao administrador da plataforma (conta admin) para activar a gestão de contas.',
@@ -673,13 +770,13 @@ function janelaActivar() {
   janela(
     t('Activar a gestão de contas'),
     t(
-      'Reveja cada conta. O email é obrigatório para as contas activas (serve para recuperar a palavra-passe e para os avisos). Contas que já não são usadas: desactive-as.',
+      'Reveja cada conta. O correio electrónico é obrigatório para as contas activas (serve para recuperar a palavra-passe e para os avisos). Contas que já não são usadas: desactive-as.',
     ),
     (b, ft, fechar) => {
       const linhas = G.utilizadores.map((u) => {
         const eu = u.login === G.eu;
         const iEmail = entrada('email', u.email || '', { autocomplete: 'off', placeholder: 'nome@naval.co.ao' });
-        iEmail.setAttribute('aria-label', t('Email') + ' · ' + u.login);
+        iEmail.setAttribute('aria-label', t('Correio electrónico') + ' · ' + u.login);
         const sPerfil = el('select');
         Object.entries(G.perfis).forEach(([k, v]) => {
           const o = el('option', null, k + ' · ' + t(v));
@@ -720,7 +817,7 @@ function janelaActivar() {
       const tb = el('table', 'ac-mig'),
         th = el('thead'),
         hr = el('tr');
-      [t('Conta'), t('Email (obrigatório)'), t('Perfil'), t('Rotas'), t('Activa')].forEach((x) => hr.append(el('th', null, x)));
+      [t('Conta'), t('Correio electrónico (obrigatório)'), t('Perfil'), t('Rotas'), t('Activa')].forEach((x) => hr.append(el('th', null, x)));
       th.append(hr);
       const tbd = el('tbody');
       linhas.forEach((l) => tbd.append(l.tr));
@@ -788,6 +885,7 @@ function seccaoPerfis(gerir) {
       ...p,
       chave: p.codigo,
       ordem: i,
+      nome: t(p.nome),
       tipo: p.sistema ? t('Sistema') : t('Criado no portal'),
       ambito: p.por_rota ? t('Só as suas rotas') : t('Todas as rotas'),
       mfa: p.dois_passos ? t('Obrigatória') : t('Opcional'),

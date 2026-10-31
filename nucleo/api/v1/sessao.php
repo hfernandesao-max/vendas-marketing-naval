@@ -19,6 +19,9 @@ naval_json([
     'nif' => naval_ve_nif(),
     'permissoes' => $perm,
     'email' => $u['email'] ?? '',
+    // idioma da ficha da conta e momento da entrada: o portal abre nesse idioma a cada nova entrada
+    'idioma' => naval_idioma_conta($u),
+    'entrada' => (int) ($_SESSION['login_time'] ?? 0),
     'csrf' => naval_csrf(),
     'dois_passos' => !empty($u['mfa']),
     'compatibilidade' => !empty($u['compatibilidade']),

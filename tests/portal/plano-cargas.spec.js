@@ -86,7 +86,7 @@ test('rascunho: exportar Excel identificado como não publicado; publicar sem en
   await page.click('#pc-publicar');
   const dlg = page.locator('dialog[open]');
   await expect(dlg.getByRole('group', { name: 'Destinatários' })).toBeVisible();
-  await dlg.getByText('Enviar por email agora').click();
+  await dlg.getByText('Enviar por correio electrónico agora').click();
   await expect(dlg.getByRole('group', { name: 'Destinatários' })).toBeHidden();
   await dlg.getByRole('button', { name: 'Publicar sem enviar' }).click();
   await expect.poll(() => pedidos.find((p) => p.accao === 'publicar')).toMatchObject({ enviar: false, para: [] });

@@ -30,8 +30,11 @@ test('actualiza sozinho com o período aberto e pelo botão «Actualizar»', asy
   });
   await abrir(page, '#inicio', { periodo: null });
   const antes = pedidos;
-  await page.locator('#actual button').click();
+  // «Actualizar» recarrega o portal (refresh completo) e fica na mesma página
+  await Promise.all([page.waitForEvent('load'), page.locator('#actual button').click()]);
+  await page.waitForSelector('#page > *');
   await expect.poll(() => pedidos).toBeGreaterThan(antes);
+  expect(page.url()).toContain('#inicio');
   const depois = pedidos;
   await page.clock.install({ time: new Date('2026-10-26T12:00:00+01:00') });
   await page.reload();

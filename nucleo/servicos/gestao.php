@@ -58,15 +58,16 @@ function naval_gestao_activar(array $p, array $eu): array
         $rotas = naval_gestao_aprovacoes($x['rotas'] ?? []);
         if (!isset(naval_perfis()[$perfil])) naval_gestao_recusar('Perfil inválido na conta ' . $login . '.', $accao);
         if ($activo || $email !== '') {
-            if (!naval_email_valido($email)) naval_gestao_recusar('Indique um email válido para a conta ' . $login . ' (ou desactive-a).', $accao);
+            if (!naval_email_valido($email)) naval_gestao_recusar('Indique um correio electrónico válido para a conta ' . $login . ' (ou desactive-a).', $accao);
             $k = strtolower($email);
-            if (isset($emails[$k])) naval_gestao_recusar('O email ' . $email . ' está repetido nas contas ' . $emails[$k] . ' e ' . $login . '.', $accao);
+            if (isset($emails[$k])) naval_gestao_recusar('O correio electrónico ' . $email . ' está repetido nas contas ' . $emails[$k] . ' e ' . $login . '.', $accao);
             $emails[$k] = $login;
         }
         if ($activo && in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) naval_gestao_recusar('A conta ' . $login . ' tem um perfil por rota: indique pelo menos uma rota.', $accao);
         $nova[$login] = [
             'nome' => $u['nome'] ?? $login, 'email' => $email, 'senha' => $u['senha'] ?? '', 'perfil' => $perfil,
             'rotas' => in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [], 'activo' => $activo,
+            'idioma' => isset(NAVAL_IDIOMAS[$x['idioma'] ?? '']) ? $x['idioma'] : naval_idioma_conta($u),
             'criado' => date('Y-m-d'), 'criado_por' => $eu['login'],
         ];
     }
@@ -140,11 +141,13 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $rotas = array_values(array_unique(array_filter(array_map(function ($x) { return trim((string) $x); }, (array) ($p['rotas'] ?? [])))));
     $ate = trim((string) ($p['valido_ate'] ?? ''));
     $activo = !empty($p['activo']);
+    $idioma = strtolower(trim((string) ($p['idioma'] ?? '')));
 
     if ($nome === '') naval_gestao_recusar('Indique o nome.', $accao);
-    if (!naval_email_valido($email)) naval_gestao_recusar('O email é obrigatório e tem de ser válido.', $accao);
+    if (!isset(NAVAL_IDIOMAS[$idioma])) naval_gestao_recusar('Indique o idioma do portal.', $accao);
+    if (!naval_email_valido($email)) naval_gestao_recusar('O correio electrónico é obrigatório e tem de ser válido.', $accao);
     foreach ($d as $l => $x) {
-        if ($l !== $login && strcasecmp(trim((string) ($x['email'] ?? '')), $email) === 0) naval_gestao_recusar('Este email já está associado à conta ' . $l . '.', $accao);
+        if ($l !== $login && strcasecmp(trim((string) ($x['email'] ?? '')), $email) === 0) naval_gestao_recusar('Este correio electrónico já está associado à conta ' . $l . '.', $accao);
     }
     if (!isset(naval_perfis()[$perfil])) naval_gestao_recusar('Perfil inválido.', $accao);
     if (in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) naval_gestao_recusar('Este perfil só vê as suas rotas: indique pelo menos uma rota.', $accao);
@@ -165,6 +168,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $u['perfil'] = $perfil;
     $u['rotas'] = in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [];
     $u['activo'] = $activo;
+    $u['idioma'] = $idioma;
     if ($ate === '') unset($u['valido_ate']); else $u['valido_ate'] = $ate;
     $senha = null;
     if ($novo) {
@@ -180,7 +184,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
 
     // Registo: o que mudou
     $mud = [];
-    foreach (['nome', 'email', 'perfil', 'rotas', 'activo', 'valido_ate'] as $k) {
+    foreach (['nome', 'email', 'perfil', 'rotas', 'activo', 'valido_ate', 'idioma'] as $k) {
         $a = $antes[$k] ?? null;
         $b = $u[$k] ?? null;
         if ($a != $b) $mud[$k] = is_array($b) ? implode(', ', $b) : (is_bool($b) ? ($b ? 'sim' : 'não') : (string) $b);
@@ -262,6 +266,7 @@ function naval_gestao_vista(): array
             'perfil_nome' => naval_perfil_nome((string) ($u['perfil'] ?? '')),
             'rotas' => in_array($u['perfil'] ?? '', naval_perfis_por_rota(), true) ? array_values($u['rotas'] ?? []) : null,
             'activo' => naval_conta_valida($u), 'ligada' => !empty($u['activo']), 'valido_ate' => $u['valido_ate'] ?? null,
+            'idioma' => naval_idioma_conta($u),
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
             'senha_temporaria' => !empty($u['trocar_senha']),
             'ultima_entrada' => $ultimas[$login] ?? null,

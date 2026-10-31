@@ -1,15 +1,14 @@
-// Terreno: sincronização dos smartphones RTM com o Pinguim BO («último contacto» de cada dispositivo),
-// com estado por limites de tempo, histórico de 14 dias e actualização automática a cada minuto.
+// Terreno: sincronização dos smartphones RTM com o Pinguim BO. Uma só consulta (última sincronização de cada
+// rota); a página mostra, por esta ordem: rota, data da última sincronização e distribuição das horas desde
+// essa sincronização (barra com a cor do estado). Actualiza sozinha a cada minuto.
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
-import { REG, aguardar, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
-import { legenda } from '../componentes/graficos.js';
+import { aguardar, tabela, tiles } from '../componentes/blocos.js';
 import { FV, filtroAtivo } from '../filtros.js';
-import { diaCurto, dl, ds, n0 } from '../formatos.js';
+import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { atual } from '../perfil.js';
-import { addD } from '../periodo.js';
 import { el } from '../util.js';
 
 import { ESTADO_SYNC, SY, aoActualizar, haQuanto, lerSync } from '../smartphones.js';
@@ -77,109 +76,78 @@ R.sincronizacao = (pg) => {
     el(
       'p',
       'note',
-      t('Estado pelo tempo desde a última sincronização terminada de cada smartphone (hora do servidor: {h}). Actualiza sozinho a cada minuto.', {
+      t('Estado pelo tempo desde a última sincronização terminada de cada telemóvel (hora do servidor: {h}). Actualiza sozinho a cada minuto.', {
         h: dl(agora) + ' ' + agora.slice(11, 16),
       }),
     ),
   );
+  // Distribuição das horas: barra proporcional às horas desde a última sincronização, na escala da rota mais
+  // atrasada (no mínimo o limite crítico), com as marcas dos limites de atenção e crítico
+  const escala = Math.max(lim.critico_horas, ...rotas.map((r) => r.horas || 0));
+  const pct = (h) => Math.max(0, Math.min(100, (h / escala) * 100));
+  const barra = (r) => {
+    const w = el('div', 'sy-dist');
+    w.title = t('{h} h desde a última sincronização', { h: r.horas == null ? '—' : String(r.horas).replace('.', ',') });
+    const pista = el('div', 'sy-dist-pista');
+    const b = el('div', 'sy-dist-b ' + r.estado);
+    b.style.width = (r.horas == null ? 100 : Math.max(pct(r.horas), 1.5)) + '%';
+    [lim.alerta_horas, lim.critico_horas].forEach((h) => {
+      const m = el('i', 'sy-dist-m');
+      m.style.left = pct(h) + '%';
+      pista.append(m);
+    });
+    pista.prepend(b);
+    w.append(pista, el('span', 'sy-dist-v', r.minutos == null ? t('sem registo') : haQuanto(r.minutos)));
+    return w;
+  };
   const secs = el('div', 'secs');
   secs.append(
     tabela({
       id: 'sy-estado',
-      titulo: t('Estado por smartphone'),
-      nota: t('Do mais grave para o mais recente. Sem registo: rota do portal sem nenhuma sincronização na base de dados.'),
-      sort: 'gravidade',
+      titulo: t('Última sincronização por rota'),
+      nota: t('Da sincronização mais recente para a mais antiga. Barra: horas desde a última sincronização; marcas nos limites de {a} h e {b} h.', {
+        a: lim.alerta_horas,
+        b: lim.critico_horas,
+      }),
+      sort: 'ultima',
       dir: -1,
       total: false,
       rows: rotas.map((r) => ({
         ...r,
         chave: r.rota,
-        promotor_t: promotorRota(r.rota, r.promotor),
-        gravidade: ESTADOS[r.estado][2] * 1e7 + (r.minutos == null ? 9e6 : r.minutos),
+        rota_t: r.descricao || promotorRota(r.rota, r.promotor),
+        promotor_t: r.promotor || '',
         estado_t: t(ESTADOS[r.estado][0]),
-        ha: haQuanto(r.minutos),
       })),
       cols: [
-        { key: 'promotor_t', label: t('Rota / promotor'), p: 0 },
-        { key: 'gravidade', label: t('Estado'), p: 0, render: (v, r) => pill(r.estado_t, ESTADOS[r.estado][1]), xl: (r) => r.estado_t },
+        {
+          key: 'rota_t',
+          label: t('Rota'),
+          p: 0,
+          render: (v, r) => {
+            const c = el('span', 'sy-rota');
+            c.append(el('b', null, v));
+            if (r.promotor_t) c.append(el('small', null, r.promotor_t));
+            return c;
+          },
+        },
         {
           key: 'ultima',
-          label: t('Última sincronização'),
+          label: t('Data última sincronização'),
+          p: 0,
           render: (v) => document.createTextNode(v ? dl(v) + ' ' + String(v).slice(11, 16) : '—'),
           xl: (r) => r.ultima || '',
         },
-        { key: 'minutos', label: t('Há quanto tempo'), type: 'n', render: (v, r) => document.createTextNode(r.ha), xl: (r) => r.ha },
-        { key: 'hoje', label: t('Sincronizações hoje'), type: 'n', sum: true },
-        { key: 'sete_dias', label: t('Últimos 7 dias'), type: 'n', sum: true },
+        {
+          key: 'minutos',
+          label: t('Distribuição das horas'),
+          type: 'n',
+          p: 0,
+          render: (v, r) => barra(r),
+          xl: (r) => (r.horas == null ? '' : r.horas),
+        },
       ],
     }),
   );
-  // Histórico: sincronizações por dia (14 dias), escala de uma só cor (mais escuro = mais sincronizações)
-  const dias = [];
-  for (let i = 13; i >= 0; i--) dias.push(addD(agora.slice(0, 10), -i));
-  const mat = el('div', 'hm-wrap'),
-    tb = el('table', 'hm'),
-    hr = el('tr'),
-    th = el('thead'),
-    tbd = el('tbody');
-  hr.append(el('th', 'hm-r', t('Rota')));
-  dias.forEach((d) => {
-    const h = el('th', null, diaCurto(d));
-    h.title = ds(d);
-    hr.append(h);
-  });
-  th.append(hr);
-  tb.append(th);
-  const nivel = (n) => (!n ? 'hs-0' : n <= 2 ? 'hs-1' : n <= 5 ? 'hs-2' : 'hs-3');
-  [...rotas]
-    .sort((a, b) => String(a.rota).localeCompare(String(b.rota)))
-    .forEach((r) => {
-      const tr = el('tr');
-      tr.append(el('td', 'hm-r', promotorRota(r.rota, r.promotor)));
-      dias.forEach((d) => {
-        const n = (r.dias || {})[d] || 0,
-          td = el('td'),
-          c = el('span', 'hm-c ' + nivel(n), n ? String(n) : '');
-        c.title = `${promotorRota(r.rota, r.promotor)} · ${dl(d)}: ${t('{n} sincronizações', { n })}`;
-        td.append(c);
-        tr.append(td);
-      });
-      tbd.append(tr);
-    });
-  tb.append(tbd);
-  mat.append(tb);
-  requestAnimationFrame(() => {
-    mat.scrollLeft = mat.scrollWidth;
-  });
-  // A matriz rota × dia também vai para o Excel da página (uma coluna por dia)
-  REG.tabelas.push({
-    id: 'sy-dias',
-    titulo: t('Sincronizações por dia'),
-    nota: t('Últimos 14 dias. Número de sincronizações terminadas por rota e dia.'),
-    total: true,
-    cols: [
-      { key: 'rota_t', label: t('Rota / promotor') },
-      ...dias.map((d) => ({ key: 'd_' + d, label: dl(d), type: 'n', sum: true })),
-      { key: 'total', label: t('Total'), type: 'n', sum: true },
-    ],
-    rows: [...rotas]
-      .sort((a, b) => String(a.rota).localeCompare(String(b.rota)))
-      .map((r) => ({
-        chave: r.rota,
-        rota_t: promotorRota(r.rota, r.promotor),
-        ...Object.fromEntries(dias.map((d) => ['d_' + d, (r.dias || {})[d] || 0])),
-        total: dias.reduce((s, d) => s + ((r.dias || {})[d] || 0), 0),
-      })),
-  });
-  const secH = secBox(t('Sincronizações por dia'), t('Últimos 14 dias. Dias sem nenhuma sincronização ficam vazios.'), mat);
-  secH.querySelector('.sec-h').append(
-    legenda([
-      ['hs-0', t('Nenhuma')],
-      ['hs-1', '1–2'],
-      ['hs-2', '3–5'],
-      ['hs-3', '6+'],
-    ]),
-  );
-  secs.append(secH);
   pg.append(secs);
 };

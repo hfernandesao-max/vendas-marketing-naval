@@ -162,7 +162,7 @@ function naval_origem_calcular(array $principais, int $dias): array
     if ($r) return $r;
     $stock = null;
     if (function_exists('naval_stock')) $stock = naval_stock(date('Y-m-d'));
-    if (!$stock) $stock = naval_json_ler(naval_raiz() . '/reports/data/stock.json') ?: null;   // projecto sem o serviço de stock
+    if (!$stock) $stock = naval_json_ler(naval_raiz() . '/reports/data/stock.php') ?: null;   // projecto sem o serviço de stock
     $r = naval_origem_saldos($principais, $stock);
     return $r ?: ['fonte' => '', 'periodo' => '', 'principais' => $principais, 'rotas' => [], 'artigos' => []];
 }

@@ -1,5 +1,19 @@
 // Início: indicadores e painel de gráficos.
-import { META_ROTA, isCF, pendenteDe, porPromotor, recebidoDe, temCad, temMeio, valorCat, vendasR } from '../calculos.js';
+import {
+  META_ROTA,
+  clientesDe,
+  docsVenda,
+  isCF,
+  notasCredito,
+  pendenteDe,
+  pendentesDe,
+  porPromotor,
+  recebidoDe,
+  temCad,
+  temMeio,
+  valorCat,
+  vendasR,
+} from '../calculos.js';
 import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
@@ -23,7 +37,7 @@ function painelInicio(pg) {
   if (pode('vendas-dia') && V.length) {
     const dias = Object.values(group(V, 'data'))
       .sort((a, b) => (a[0].data < b[0].data ? -1 : 1))
-      .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: sum(rs, recebidoDe), n: rs.length }));
+      .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: sum(rs, recebidoDe), n: docsVenda(rs).length }));
     cards.push(
       cartaoGrafico({
         titulo: t('Vendas por dia'),
@@ -83,7 +97,8 @@ function painelInicio(pg) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
       outros = Math.max(0, liq - din - mc),
-      pend = Math.max(0, tot - liq);
+      pend = pendentesDe(V),
+      base = liq + pend; // valor facturado: recebido + por receber (as notas de crédito não se cobram)
     const partes = [
       { nome: t('Numerário'), valor: din, cor: COR.s1 },
       { nome: t('Multicaixa'), valor: mc, cor: COR.s2 },
@@ -93,11 +108,11 @@ function painelInicio(pg) {
     cards.push(
       cartaoGrafico({
         titulo: t('Como foi cobrado'),
-        sub: t('{p} das vendas já recebido', { p: pct(tot ? liq / tot : 0) }),
+        sub: t('{p} das vendas já recebido', { p: pct(base ? liq / base : 0) }),
         destino: 'pagamentos',
         desenhar: (w) => grafParte(w, { partes }),
         colunas: [[t('Meio')], [t('Valor'), 1], [t('Parte'), 1]],
-        linhas: partes.map((p) => [p.nome, kz(p.valor), pct(tot ? p.valor / tot : 0)]),
+        linhas: partes.map((p) => [p.nome, kz(p.valor), pct(base ? p.valor / base : 0)]),
       }),
     );
   }
@@ -145,7 +160,7 @@ function painelInicio(pg) {
         'nif',
       ),
     )
-      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, 'total'), n: rs.length, nif: rs[0].nif }))
+      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, 'total'), n: docsVenda(rs).length, nif: rs[0].nif }))
       .sort((a, b) => b.v - a.v)
       .slice(0, 8);
     if (C.length)
@@ -374,8 +389,8 @@ const metricas = (V) => {
     liq,
     din: valorCat(V, 'dinheiro'),
     mc: valorCat(V, 'multicaixa'),
-    pend: tot - liq,
-    cli: new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+    pend: pendentesDe(V),
+    cli: clientesDe(docsVenda(V)),
   };
 };
 /** Variação para o quadro: ▲/▼ e a percentagem; azul quando favorável, vermelho quando desfavorável. */
@@ -387,7 +402,7 @@ function variacao(actual, anterior, nome, fmt, menosEMelhor) {
   if (Math.abs(d) < 0.0005) return { txt: '= 0%', cls: 'neutro', title: titulo };
   const sobe = d > 0,
     bom = menosEMelhor ? !sobe : sobe;
-  return { txt: (sobe ? '▲ ' : '▼ ') + pct(Math.abs(d)), cls: bom ? 'bom' : 'mau', title: titulo + ' · ' + t('vs {p}', { p: nome }) };
+  return { txt: (sobe ? '▲ ' : '▼ ') + pct(Math.abs(d)), cls: bom ? 'bom' : 'mau', title: titulo + ' · ' + t('face a {p}', { p: nome }) };
 }
 /** Série para a mini-linha: por dia no período; num só dia, acumulado por hora até agora. */
 function serie(V, f) {
@@ -433,7 +448,9 @@ R.inicio = (pg) => {
         {
           l: t('Vendas RTM'),
           v: kz2(tot),
-          s: t('{n} documentos', { n: n0(V.length) }),
+          s: notasCredito(V)
+            ? t('{n} documentos', { n: n0(docsVenda(V).length) }) + ' · ' + t('notas de crédito: −{v}', { v: kz2(notasCredito(V)) })
+            : t('{n} documentos', { n: n0(docsVenda(V).length) }),
           cls: 'full-value',
           var: vr('tot', kz2),
           ...sp((rs) => sum(rs, 'total'), t('vendas')),
@@ -464,17 +481,17 @@ R.inicio = (pg) => {
         },
         {
           l: t('Facturas pendentes'),
-          v: kz2(tot - liq),
-          tone: tot - liq > 0 ? 'warn' : null,
+          v: kz2(cur.pend),
+          tone: cur.pend > 0 ? 'warn' : null,
           cls: 'full-value',
           var: vr('pend', kz2, true),
-          ...sp((rs) => sum(rs, 'total') - sum(rs, recebidoDe), t('pendentes')),
+          ...sp((rs) => pendentesDe(rs), t('pendentes')),
         },
         {
           l: t('Clientes com compras'),
           v: n0(cur.cli),
           var: vr('cli', n0),
-          ...sp((rs) => new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size, t('clientes')),
+          ...sp((rs) => clientesDe(docsVenda(rs)), t('clientes')),
         },
       ]),
     );

@@ -33,12 +33,12 @@ test('SAP location preenchida pela origem do stock de cada viatura, sem erros ne
     artigos: {},
   };
   const erros = await abrirSap(page, origens);
-  await expect(page.locator('#page')).not.toContainText('Sem SAP location');
-  for (const r of rotas) await expect(page.getByLabel(r + ' local')).not.toHaveClass(/falta/);
-  await expect(page.getByLabel('1001 local')).toHaveAttribute('placeholder', 'RTM2 · automático');
-  await expect(page.getByLabel('1004 local')).toHaveAttribute('placeholder', 'RTM1 · automático');
-  await expect(page.locator('.sap-arm')).toContainText('saldos de stock dos armazéns principais e das viaturas (20-10-2026 a 24-10-2026)');
-  await expect(page.getByLabel('1151 SAP location')).toHaveValue('RTM2');
+  await expect(page.locator('#page')).not.toContainText('Sem depósito SAP');
+  for (const r of rotas) await expect(page.getByLabel('Depósito SAP da rota ' + r)).not.toHaveClass(/falta/);
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveAttribute('placeholder', 'RTM2 · automático');
+  await expect(page.getByLabel('Depósito SAP da rota 1004')).toHaveAttribute('placeholder', 'RTM1 · automático');
+  await expect(page.locator('.sap-arm')).toContainText('saldos de stock dos armazéns principais e das viaturas (20-10-2026 – 24-10-2026)');
+  await expect(page.getByLabel('Depósito SAP do armazém 1151')).toHaveValue('RTM2');
   await expect(page.locator('.sap-map-arm')).toContainText('1001, 1002, 1003');
   // linhas do ficheiro com a localização da rota
   const loc = await page.locator('#s-sap-l tbody tr').evaluateAll((trs) => trs.map((tr) => tr.textContent));
@@ -48,23 +48,23 @@ test('SAP location preenchida pela origem do stock de cada viatura, sem erros ne
 
 test('viatura sem abastecimento (avariada, em manutenção): segue com a location por omissão, assinalada, sem bloquear', async ({ page }) => {
   await abrirSap(page, { fonte: '', periodo: '', rotas: {}, artigos: {} }, { local_omissao: 'RTM2' });
-  await expect(page.locator('#page')).not.toContainText('Sem SAP location');
+  await expect(page.locator('#page')).not.toContainText('Sem depósito SAP');
   await expect(page.locator('#page')).toContainText('sem abastecimento registado no período');
-  await expect(page.getByLabel('1001 local')).toHaveAttribute('placeholder', 'RTM2 · por omissão (sem abastecimento)');
-  await expect(page.getByLabel('1001 local')).toHaveClass(/omissao/);
-  await expect(page.getByLabel('1001 local')).not.toHaveClass(/falta/);
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveAttribute('placeholder', 'RTM2 · por omissão (sem abastecimento)');
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveClass(/omissao/);
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).not.toHaveClass(/falta/);
   await expect(page.locator('#s-sap-l tbody tr').first()).toContainText('Por omissão (sem abastecimento)');
   await expect(page.locator('.sap-barra button:has-text("Gerar ficheiro")')).toBeEnabled();
 });
 
 test('sem location por omissão configurada: a rota fica a vermelho e o erro explica o que indicar', async ({ page }) => {
   await abrirSap(page, { fonte: '', periodo: '', rotas: {}, artigos: {} });
-  await expect(page.locator('#page')).toContainText('indique a SAP location por omissão');
-  await expect(page.getByLabel('1001 local')).toHaveClass(/falta/);
+  await expect(page.locator('#page')).toContainText('indique o depósito SAP por omissão');
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveClass(/falta/);
 });
 
 test('a SAP location indicada na rota substitui a automática', async ({ page }) => {
   const origens = { fonte: 'x', periodo: '', rotas: { 1001: { local: 'RTM2', locais: {}, armazens: { 1151: 1 }, artigos: {} } }, artigos: {} };
   await abrirSap(page, origens, { rotas: { 1001: { local: 'RTM9' } } });
-  await expect(page.getByLabel('1001 local')).toHaveValue('RTM9');
+  await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveValue('RTM9');
 });

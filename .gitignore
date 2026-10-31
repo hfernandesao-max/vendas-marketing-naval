@@ -20,3 +20,6 @@ tests/servidor/ambiente-mfa/
 # Ferramentas PHP de desenvolvimento (composer install); reports/vendor/ é do portal e fica
 /vendor/
 composer.lock
+
+# exportações com dados pessoais deixadas na raiz do site (nunca no repositório)
+/*.csv

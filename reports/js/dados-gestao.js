@@ -6,14 +6,14 @@ import { download } from './componentes/blocos.js';
 import { GREY, NAVY2, acrescentarDados, carregarExcelJS, conjuntosDados, nomeFolha } from './excel.js';
 import { dadosCompletos } from './filtros.js';
 import { dl } from './formatos.js';
-import { t } from './i18n/i18n.js';
+import { t, tv } from './i18n/i18n.js';
 import { SESSAO, podeExportar } from './perfil.js';
 import { INICIO_PINGUIM, hoje } from './periodo.js';
 import { $, toast } from './util.js';
 import { apiFetch } from './api.js';
 
 export const NOME_DADOS = 'RTM - Dados de Gestão';
-export const nomeDados = () => NOME_DADOS + '-' + dl(hoje()) + '.xlsx';
+export const nomeDados = () => t(NOME_DADOS) + '-' + dl(hoje()) + '.xlsx';
 
 /** Confirma no servidor que o perfil pode exportar os dados e regista a exportação; sem PHP (testes locais) segue. */
 async function autorizar(linhas, periodo) {
@@ -75,7 +75,7 @@ function gerar(conjuntos, de, ate) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Portal RTM · Grupo Naval';
   wb.created = new Date();
-  wb.title = NOME_DADOS;
+  wb.title = t(NOME_DADOS);
   const F = (o) => Object.assign({ name: 'Arial', size: 10 }, o || {});
   const usados = new Set();
   const periodo = dl(de) + ' – ' + dl(ate);
@@ -83,7 +83,7 @@ function gerar(conjuntos, de, ate) {
   capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 34 }, { width: 12 }];
   capa.getCell('B2').value = 'Grupo Naval Angola';
   capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
-  capa.getCell('B3').value = NOME_DADOS;
+  capa.getCell('B3').value = t(NOME_DADOS);
   capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
   const rotas = SESSAO && Array.isArray(SESSAO.rotas) && SESSAO.rotas.length ? SESSAO.rotas.join(', ') : t('Todas as rotas do perfil');
   [
@@ -91,8 +91,8 @@ function gerar(conjuntos, de, ate) {
     ['Período', periodo + ' · ' + t('desde o arranque do Pinguim BO até hoje')],
     ['Âmbito', t('Sem os filtros das páginas. Rotas: {r}.', { r: rotas })],
     ['Gerado em', dl(hoje()) + ' ' + new Date().toTimeString().slice(0, 5)],
-    ['Gerado por', SESSAO ? SESSAO.nome + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
-    ['Classificação', t('Confidencial. Contém dados de clientes e de vendas: não partilhar fora do Grupo Naval.')],
+    ['Gerado por', SESSAO ? tv(SESSAO.nome) + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
+    ['Confidencialidade', t('Confidencial. Contém dados de clientes e de vendas: não partilhar fora do Grupo Naval.')],
     ['Nota', t('Valores em kwanzas (Kz). Fontes: Pinguim BO (vendas, cobranças, artigos, clientes, stock), plano de cargas e cadastros RTM.')],
   ].forEach(([k, v], i) => {
     const r = 5 + i;

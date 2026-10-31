@@ -83,7 +83,7 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
   const botaoTexto = () => {
     let txt, n;
     if (nenhum()) {
-      txt = t('Nenhum selecionado');
+      txt = t('Nenhum seleccionado');
       n = '0';
     } else if (!sel.length || (multipla && sel.length === total)) {
       txt = t('Todos');
@@ -93,7 +93,7 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
       txt = o ? o.titulo : sel[0];
       n = multipla ? '1' : '';
     } else {
-      txt = t('{n} selecionados', { n: sel.length });
+      txt = t('{n} seleccionados', { n: sel.length });
       n = String(sel.length);
     }
     b.innerHTML = svg(icone); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)

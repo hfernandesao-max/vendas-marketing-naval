@@ -1,0 +1,157 @@
+/*
+ * Cores do portal por tema (tokens semânticos). Carregado antes dos outros estilos.
+ * Escuro: os valores de sempre (o aspecto escuro não muda).
+ * Claro: derivado dos mesmos azuis Naval, com contraste WCAG 2.2 AA (texto ≥ 4,5:1).
+ * O tema activo vem de <html data-theme="light|dark">, definido no arranque (ver tema.js) a partir da escolha
+ * Sistema / Claro / Escuro. Os componentes usam só estes tokens: nenhuma cor de um único tema nos componentes.
+ * Tokens «-rgb» são triplos para transparências: rgb(var(--veu-rgb) / 0.05).
+ */
+:root {
+  /* véus e sombras */
+  --veu-rgb: 255 255 255;
+  --sombra-rgb: 0 0 0;
+  --sombra-k: 1;
+  --modal-rgb: 2 6 16;
+  --tip-rgb: 44 44 46;
+  --c-tip-fg: var(--fg);
+  /* azuis da marca e destaques */
+  --az1-rgb: 10 132 255;
+  --az2-rgb: 63 140 255;
+  --az3-rgb: 42 111 224;
+  --az4-rgb: 100 160 255;
+  --az5-rgb: 30 79 176;
+  --ceu-rgb: 110 195 255;
+  --roxo-rgb: 94 92 230;
+  /* linhas */
+  --lin1-rgb: 140 170 230;
+  --lin2-rgb: 143 163 200;
+  --cz-rgb: 118 118 128;
+  /* estados */
+  --av1-rgb: 245 181 71;
+  --av2-rgb: 255 159 10;
+  --ok1-rgb: 61 214 140;
+  --ok2-rgb: 48 209 88;
+  --er1-rgb: 255 107 107;
+  --er2-rgb: 255 69 58;
+  --er3-rgb: 252 165 165;
+  /* superfícies sobrepostas (janelas, listas, menus) */
+  --p1-rgb: 20 36 80;
+  --p2-rgb: 11 23 53;
+  --p3-rgb: 12 16 30;
+  --p4-rgb: 26 32 52;
+  /* cores com papel definido */
+  --c-forte: #fff;
+  --c-brilho: #13285c;
+  --c-nav-fg: #dce4f5;
+  --c-nav-fg2: #e5e5ea;
+  --c-nav-ico: #bfd0ee;
+  --c-nav-ico2: #a1a1aa;
+  --c-nav-ico3: #8d97ad;
+  --c-nav-ico-h: #e8eefb;
+  --c-etiq-fg: #d6e6ff;
+  --c-hs1-fg: #dbe8ff;
+  --c-sair: #fca5a5;
+  --c-sair-h: #fecaca;
+  --c-sair2: #ff6961;
+  --c-rodape-t: #132654;
+  --c-th-bg: #12224c;
+  --c-scroll: #2a3c6e;
+  --c-prev: #4a5878;
+  --c-prev2: #48484a;
+  --c-hm-r: #0e1d44;
+  --c-hm-r2: #171a26;
+  --c-hm-ok: #cff7e3;
+  --c-hm-ok2: #d4f8dd;
+  --c-hm-bx: #ffd9d9;
+  --c-hm-bx2: #ffdad7;
+  --c-seg-on: #636366;
+  --c-var-bom: #8cc2ff;
+  --c-var-mau: #ff9b9b;
+  --c-ld1: #0a1124;
+  --c-ld2: #05070d;
+}
+
+/* ---------- Modo claro ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  /* superfícies: fundo azul-acinzentado suave, menu lateral e cartões brancos, linhas discretas em azul-marinho */
+  --bg: #eef2f8;
+  --bg2: #f5f8fc;
+  --side: rgba(255, 255, 255, 0.86);
+  --side2: rgba(246, 249, 253, 0.9);
+  --card: #ffffff;
+  --card2: #f7f9fc;
+  --line: rgba(10, 42, 82, 0.11);
+  --line2: rgba(10, 42, 82, 0.19);
+  /* texto: tinta azul-marinho Naval; secundário e discreto com contraste AA sobre branco e sobre o fundo */
+  --fg: #0b1f3a;
+  --muted: #44546d;
+  --dim: #52617a;
+  /* marca: azul Naval (texto branco sobre ele 6,3:1) */
+  --accent: #0057b8;
+  --accent2: #004a9e;
+  --sky: #1a73c9;
+  --navy: #0a2a52;
+  /* estados, em tons legíveis sobre branco */
+  --ok: #157347;
+  --warn: #a15c07;
+  --bad: #c0262d;
+
+  --veu-rgb: 10 42 82;
+  --sombra-rgb: 10 30 60;
+  --sombra-k: 0.32;
+  --modal-rgb: 10 22 44;
+  --tip-rgb: 22 34 54;
+  --c-tip-fg: #f5f8fc;
+  --az1-rgb: 0 87 184;
+  --az2-rgb: 0 87 184;
+  --az3-rgb: 0 74 158;
+  --az4-rgb: 0 87 184;
+  --az5-rgb: 0 87 184;
+  --ceu-rgb: 26 115 201;
+  --roxo-rgb: 70 80 200;
+  --lin1-rgb: 10 42 82;
+  --lin2-rgb: 10 42 82;
+  --cz-rgb: 150 166 192;
+  --av1-rgb: 180 98 6;
+  --av2-rgb: 180 98 6;
+  --ok1-rgb: 21 128 74;
+  --ok2-rgb: 21 128 74;
+  --er1-rgb: 192 38 45;
+  --er2-rgb: 192 38 45;
+  --er3-rgb: 192 38 45;
+  --p1-rgb: 255 255 255;
+  --p2-rgb: 255 255 255;
+  --p3-rgb: 250 252 255;
+  --p4-rgb: 255 255 255;
+
+  --c-forte: #0b1f3a;
+  --c-brilho: #dfe9f7;
+  --c-nav-fg: #22344d;
+  --c-nav-fg2: #22344d;
+  --c-nav-ico: #5d6d86;
+  --c-nav-ico2: #5d6d86;
+  --c-nav-ico3: #5d6d86;
+  --c-nav-ico-h: #0b1f3a;
+  --c-etiq-fg: #0b4a94;
+  --c-hs1-fg: #0b3a75;
+  --c-sair: #b42318;
+  --c-sair-h: #8f1d14;
+  --c-sair2: #b42318;
+  --c-rodape-t: #eef3fa;
+  --c-th-bg: #f2f5fa;
+  --c-scroll: #c3cede;
+  --c-prev: #a9b5c8;
+  --c-prev2: #a9b5c8;
+  --c-hm-r: #f3f6fb;
+  --c-hm-r2: #f3f6fb;
+  --c-hm-ok: #0f6a3d;
+  --c-hm-ok2: #0f6a3d;
+  --c-hm-bx: #a3242a;
+  --c-hm-bx2: #a3242a;
+  --c-seg-on: #ffffff;
+  --c-var-bom: #0b4a94;
+  --c-var-mau: #b42318;
+  --c-ld1: #f5f8fc;
+  --c-ld2: #e7edf6;
+}

@@ -32,6 +32,7 @@ test('criar perfil a partir de outro, criar uma conta com ele e ajustar a matriz
     email: 'tes@naval.co.ao',
     perfil: 'TES',
     activo: true,
+    idioma: 'pt',
   });
   expect(conta.ok).toBe(true);
   expect(await (await entrar('tes.teste', conta.senha)).resposta.text()).toContain('id="nova_senha"');

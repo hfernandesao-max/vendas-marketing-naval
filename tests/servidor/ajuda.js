@@ -66,7 +66,7 @@ export async function csrf(ctx) {
 /** Texto da mensagem de erro mostrada na página de entrada. */
 export async function erroEntrada(resposta) {
   const html = await resposta.text();
-  const m = html.match(/class="error-alert">[\s\S]*?<span>([^<]*)<\/span>/);
+  const m = html.match(/class="error-alert">[\s\S]*?<span[^>]*>([^<]*)<\/span>/);
   return m ? m[1].trim() : '';
 }
 

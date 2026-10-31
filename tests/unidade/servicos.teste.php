@@ -29,10 +29,10 @@ XML
     );
 }
 
-teste('vendas: só FR/FT não anulados, cliente, NIF da entidade, troco e nomes dos meios', function () {
+teste('vendas: FR/FT e notas de crédito não anuladas, cliente, NIF da entidade, troco e nomes dos meios', function () {
     $d = naval_vendas_do_xml(xml_vendas(), ['1001' => 'Ana'], true);
-    igual(['FR 1/1', 'FT 1/1'], array_column($d['vendas'], 'documento'));
-    [$fr, $ft] = $d['vendas'];
+    igual(['FR 1/1', 'FT 1/1', 'NC 1/1'], array_column($d['vendas'], 'documento'));   // FR 1/2 anulada fica de fora
+    [$fr, $ft, $nc] = $d['vendas'];
     igual('Ana', $fr['promotor']);
     igual('1002', $ft['promotor']);               // sem promotor conhecido fica a rota
     igual('Loja Avô', $fr['cliente']);
@@ -47,6 +47,28 @@ teste('vendas: só FR/FT não anulados, cliente, NIF da entidade, troco e nomes 
     igual(1, count($d['artigos']));
     igual(1000.0, $d['artigos'][0]['total']);
     igual([], naval_vendas_do_xml(xml_vendas(), [], false)['artigos']);
+    // Nota de crédito: desconta às vendas, sem pagamentos nem valor por receber
+    verdade($nc['nc'] && !$fr['nc'] && !$ft['nc']);
+    igual('Nota de crédito', $nc['tipo']);
+    igual(-50.0, $nc['total']);
+    igual([], $nc['pagamentos']);
+    igual(0.0, $nc['valor_pago']);
+    verdade($nc['liquidado']);
+    igual(1450.0, array_sum(array_column($d['vendas'], 'total')));   // 1000 + 500 − 50
+});
+
+teste('vendas: nota de crédito desconta sempre, venha a exportação com sinal positivo ou negativo', function () {
+    foreach (['50', '-50'] as $v) {
+        $x = simplexml_load_string('<export><transactions><transaction><document_type>NC</document_type><document_nr>NC 9/1</document_nr>'
+            . "<store_code>1001</store_code><total>$v</total><deleted>0</deleted><transaction_date>2026-10-24</transaction_date>"
+            . '<detail><line><product_code>A1</product_code><quantity>1</quantity><total>40</total><discount_amount>0</discount_amount><tax_amount>10</tax_amount></line></detail>'
+            . '</transaction></transactions></export>');
+        $d = naval_vendas_do_xml($x, [], true);
+        igual(-50.0, $d['vendas'][0]['total']);
+        igual(-1.0, $d['artigos'][0]['quantidade']);
+        igual(-50.0, $d['artigos'][0]['total']);
+        verdade($d['artigos'][0]['nc']);
+    }
 });
 
 teste('vendas: âmbito por rota, NIF e perfil sem vendas', function () {

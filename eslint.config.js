@@ -18,6 +18,12 @@ export default [
     },
   },
   {
+    // conversores de exportações do Pinguim BO (Node, CommonJS), corridos na linha de comandos
+    files: ['scripts/**/*.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: { 'no-empty': ['error', { allowEmptyCatch: true }], 'no-unused-vars': ['error', { caughtErrors: 'none' }] },
+  },
+  {
     files: ['tests/**/*.js', '*.config.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
     rules: { 'no-empty': ['error', { allowEmptyCatch: true }], 'no-unused-vars': ['error', { caughtErrors: 'none' }] },

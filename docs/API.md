@@ -44,9 +44,11 @@ Gerar a chave (uma vez, no servidor): `php -r "echo bin2hex(random_bytes(32)), P
 | GET/POST | `gestao`                                        | `gestao.php`               | `acessos` (alterações: SADM)            |
 | POST     | `exportacoes`                                   | `exportacoes.php`          | nível E da página                       |
 | GET      | `estrutura-dados`                               | `estrutura-dados.php`      | `estrutura-dados`                       |
+| GET      | `stock?data&armazem`                            | `stock.php`                | stock por carrinha / armazém, Início    |
+| GET      | `agt?start_date&end_date`                       | `agt.php`                  | `agt` (Comunicação AGT)                 |
 | POST     | `csp-relatorio`                                 | `csp.php`                  | público (relatórios da CSP, limitados)  |
 
-No projecto com o stock do SQL Server há também `GET stock` e `GET stock/estado`.
+O stock (`GET stock`) e a Comunicação AGT (`GET agt`) lêem o SQL Server do Pinguim BO, só com SELECT.
 
 ## Protecções em cada pedido
 

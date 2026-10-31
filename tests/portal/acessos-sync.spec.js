@@ -56,10 +56,10 @@ test('Acessos: separadores e activação da gestão de contas com email, perfil 
   const dlg = page.locator('dialog[open]');
   await expect(dlg.locator('tbody tr')).toHaveCount(2);
   // espera o foco inicial da janela (primeiro campo) antes de preencher
-  await expect(dlg.getByLabel('Email · admin', { exact: true })).toBeFocused();
-  await dlg.getByLabel('Email · admin', { exact: true }).fill('admin@naval.co.ao');
-  await dlg.getByLabel('Email · michael.samson', { exact: true }).fill('michael.samson@naval.co.ao');
-  await expect(dlg.getByLabel('Email · admin', { exact: true })).toHaveValue('admin@naval.co.ao');
+  await expect(dlg.getByLabel('Correio electrónico · admin', { exact: true })).toBeFocused();
+  await dlg.getByLabel('Correio electrónico · admin', { exact: true }).fill('admin@naval.co.ao');
+  await dlg.getByLabel('Correio electrónico · michael.samson', { exact: true }).fill('michael.samson@naval.co.ao');
+  await expect(dlg.getByLabel('Correio electrónico · admin', { exact: true })).toHaveValue('admin@naval.co.ao');
   await expect(dlg.getByLabel('Perfil · admin')).toBeDisabled();
   await dlg.getByPlaceholder('Nome', { exact: true }).nth(0).fill('Pessoa A');
   await dlg.getByPlaceholder('Nome', { exact: true }).nth(1).fill('Pessoa B');
@@ -71,7 +71,7 @@ test('Acessos: separadores e activação da gestão de contas com email, perfil 
   expect(erros).toEqual([]);
 });
 
-test('Sincronização dos smartphones: estado por limites, ordem por gravidade e histórico de 14 dias', async ({ page }) => {
+test('Sincronização dos smartphones: rota, data da última sincronização e distribuição das horas, pela ordem da consulta', async ({ page }) => {
   await page.route('**/v1/sincronizacao*', (r) =>
     r.fulfill({
       json: {
@@ -79,9 +79,9 @@ test('Sincronização dos smartphones: estado por limites, ordem por gravidade e
         agora: '2026-10-26 12:00:00',
         limites: { alerta_horas: 2, critico_horas: 24 },
         rotas: [
-          { rota: '1001', promotor: 'Ana', ultima: '2026-10-26 11:30:00', minutos: 30, hoje: 4, sete_dias: 20, dias: { '2026-10-26': 4 }, estado: 'em_dia' },
-          { rota: '1002', promotor: 'Rui', ultima: '2026-10-26 07:00:00', minutos: 300, hoje: 1, sete_dias: 9, dias: { '2026-10-26': 1 }, estado: 'atencao' },
-          { rota: '1003', promotor: 'Eva', ultima: '2026-10-21 16:07:00', minutos: 6953, hoje: 0, sete_dias: 2, dias: { '2026-10-21': 2 }, estado: 'critico' },
+          { rota: '1001', descricao: '1001 - FHR PIV', promotor: 'Ana', ultima: '2026-10-26 11:30:00', minutos: 30, horas: 0.5, estado: 'em_dia' },
+          { rota: '1002', descricao: '1002 - FHR PIV', promotor: 'Rui', ultima: '2026-10-26 07:00:00', minutos: 300, horas: 5, estado: 'atencao' },
+          { rota: '1003', descricao: '1003 - FHR PIV', promotor: 'Eva', ultima: '2026-10-21 16:07:00', minutos: 6953, horas: 115.9, estado: 'critico' },
         ],
       },
     }),
@@ -90,12 +90,15 @@ test('Sincronização dos smartphones: estado por limites, ordem por gravidade e
   const tiles = page.locator('#page .tile');
   await expect(tiles.nth(0)).toContainText('1 / 3');
   await expect(tiles.nth(2)).toContainText('1');
-  const linhas = page.locator('#page table:not(.hm) tbody tr');
-  await expect(linhas.first()).toContainText('Crítico');
-  await expect(linhas.first()).toContainText('21-10-2026 16:07');
-  await expect(linhas.first()).toContainText('há 4 dias');
-  await expect(page.locator('table.hm thead th')).toHaveCount(15);
-  await expect(page.locator('table.hm .hs-3')).toHaveCount(0);
-  await expect(page.locator('table.hm .hs-2')).toHaveCount(1);
+  // colunas por esta ordem
+  await expect(page.locator('#s-sy-estado thead th')).toHaveText([/Rota/, /Data última sincronização/, /Distribuição das horas/]);
+  const linhas = page.locator('#s-sy-estado tbody tr');
+  await expect(linhas).toHaveCount(3);
+  await expect(linhas.nth(0)).toContainText('1001 - FHR PIV');
+  await expect(linhas.nth(0)).toContainText('26-10-2026 11:30');
+  await expect(linhas.nth(2)).toContainText('1003 - FHR PIV');
+  await expect(linhas.nth(2)).toContainText('há 4 dias');
+  await expect(linhas.nth(2).locator('.sy-dist-b.critico')).toHaveCount(1);
+  await expect(page.locator('table.hm')).toHaveCount(0); // sem histórico: a página usa só a consulta da última sincronização
   expect(erros).toEqual([]);
 });

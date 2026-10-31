@@ -332,12 +332,12 @@ function enviarPlano() {
     return;
   }
   janela(
-    t('Enviar por email'),
+    t('Enviar por correio electrónico'),
     t('Vai a versão {v} do plano de {d}, publicada às {h}, com o Excel em anexo.', { v: p.publicado.versao, d: dl(PC.data), h: p.publicado.em.slice(11, 16) }),
     (b, ft, fechar) => {
       if (estadoPlano() === 'alterado')
-        b.append(el('p', 'aviso', t('Há alterações por publicar e não vão neste email. Para as enviar, publique uma rectificação.')));
-      if (!d.email_configurado) b.append(el('p', 'aviso', t('O envio de email ainda não está configurado no servidor.')));
+        b.append(el('p', 'aviso', t('Há alterações por publicar e não vão nesta mensagem. Para as enviar, publique uma rectificação.')));
+      if (!d.email_configurado) b.append(el('p', 'aviso', t('O envio por correio electrónico ainda não está configurado no servidor.')));
       const esc = escolhaDestinatarios(dest);
       b.append(esc.el);
       const erro = msgErro();
@@ -400,17 +400,21 @@ function publicarPlano() {
       cEnv.checked = dest.length > 0;
       cEnv.disabled = !dest.length;
       const lEnv = el('label', 'interruptor');
-      lEnv.append(cEnv, document.createTextNode(t('Enviar por email agora, com o Excel em anexo')));
+      lEnv.append(cEnv, document.createTextNode(t('Enviar por correio electrónico agora, com o Excel em anexo')));
       b.append(lEnv);
       if (!dest.length) b.append(el('p', 'aviso', t('A lista de destinatários está vazia (Listas → Destinatários): o plano fica publicado sem envio.')));
       else if (!d.email_configurado)
         b.append(
-          el('p', 'aviso', t('O envio de email ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode enviar depois.')),
+          el(
+            'p',
+            'aviso',
+            t('O envio por correio electrónico ainda não está configurado no servidor: o plano fica publicado e o Excel disponível, e pode enviar depois.'),
+          ),
         );
       const esc = escolhaDestinatarios(dest);
       const cDest = esc.el;
       if (dest.length) b.append(cDest);
-      const nota = entrada('text', '', { maxLength: 300, placeholder: versao > 1 ? t('O que mudou (aparece no email)') : t('Opcional') });
+      const nota = entrada('text', '', { maxLength: 300, placeholder: versao > 1 ? t('O que mudou (aparece na mensagem)') : t('Opcional') });
       const cNota = campo(versao > 1 ? t('Nota da rectificação') : t('Nota para os destinatários'), nota);
       b.append(cNota);
       const erro = msgErro();
@@ -456,10 +460,10 @@ function publicarPlano() {
             draw();
             toast(
               !r.email
-                ? t('Plano publicado (versão {v}). Não foi enviado por email.', { v: versao })
+                ? t('Plano publicado (versão {v}). Não foi enviado por correio electrónico.', { v: versao })
                 : r.email.ok
                   ? t('Plano publicado e enviado a {n} destinatários.', { n: r.email.para.length })
-                  : t('Plano publicado, mas o email não seguiu: {e}', { e: r.email.erro || '' }),
+                  : t('Plano publicado, mas a mensagem não seguiu: {e}', { e: t(r.email.erro || '') }),
               9000,
             );
           })
@@ -542,7 +546,7 @@ function janelaListas() {
           () => {
             const w = el('div');
             w.append(
-              el('p', 'nota-dlg', t('Recebem o plano por email sempre que é publicado ou rectificado.')),
+              el('p', 'nota-dlg', t('Recebem o plano por correio electrónico sempre que é publicado ou rectificado.')),
               linhas(
                 L.destinatarios,
                 [
@@ -552,11 +556,11 @@ function janelaListas() {
                 () => ({ nome: '', email: '' }),
               ),
             );
-            const te = botao(t('Enviar email de teste para mim'), 'ghost sm', () => {
+            const te = botao(t('Enviar mensagem de teste para mim'), 'ghost sm', () => {
               te.disabled = true;
               postPlano({ accao: 'teste_email' }).then((r) => {
                 te.disabled = false;
-                toast(r.ok ? t('Email de teste enviado para {e}.', { e: r.para }) : t(r.erro || 'Não foi possível enviar.'), 9000);
+                toast(r.ok ? t('Mensagem de teste enviada para {e}.', { e: r.para }) : t(r.erro || 'Não foi possível enviar.'), 9000);
               });
             });
             w.append(te);
@@ -873,7 +877,7 @@ R['plano-cargas'] = (pg) => {
     return;
   }
   if (PC.erro) {
-    pg.append(secBox(t('Plano de cargas'), '', el('p', null, PC.erro)));
+    pg.append(secBox(t('Plano de cargas'), '', el('p', null, t(PC.erro))));
     PC.erro = null;
     return;
   }
@@ -944,7 +948,7 @@ R['plano-cargas'] = (pg) => {
     acc.append(a);
   }
   if (gere && p && p.publicado) {
-    const be = botao(t('Enviar por email'), 'ghost sm', enviarPlano);
+    const be = botao(t('Enviar por correio electrónico'), 'ghost sm', enviarPlano);
     be.id = 'pc-enviar';
     acc.append(be);
   }
@@ -959,13 +963,13 @@ R['plano-cargas'] = (pg) => {
   const env = gere && p && p.envios && p.envios.length ? p.envios[p.envios.length - 1] : null;
   if (env && !env.ok) {
     const box = el('div', 'glass sec pc-alerta fixo');
-    box.append(el('p', null, t('O email da versão {v} não seguiu: {e}', { v: env.versao, e: env.erro })));
+    box.append(el('p', null, t('A mensagem da versão {v} não seguiu: {e}', { v: env.versao, e: t(env.erro || '') })));
     const rb = botao(t('Reenviar'), 'sm', () => {
       rb.disabled = true;
       postPlano({ accao: 'reenviar', data: PC.data }).then((r) => {
         rb.disabled = false;
         if (r.plano) PC.resp.plano = r.plano;
-        toast(r.ok ? t('Email reenviado.') : t(r.erro || 'Não foi possível enviar.'), 8000);
+        toast(r.ok ? t('Mensagem reenviada.') : t(r.erro || 'Não foi possível enviar.'), 8000);
         draw();
       });
     });
@@ -977,7 +981,7 @@ R['plano-cargas'] = (pg) => {
         'p',
         'note',
         t(
-          'O envio de email ainda não está configurado no servidor. Pode preencher e publicar; o email segue quando a configuração estiver feita (botão Reenviar).',
+          'O envio por correio electrónico ainda não está configurado no servidor. Pode preencher e publicar; a mensagem segue quando a configuração estiver feita (botão Reenviar).',
         ),
       ),
     );
@@ -1104,7 +1108,7 @@ function historicoPlano() {
         label: t('Publicado por'),
         render: (v, r) => document.createTextNode(v ? v + ' · ' + dl(r.publicado_em) + ' ' + r.publicado_em.slice(11, 16) : '—'),
       },
-      { key: 'email_t', label: t('Email') },
+      { key: 'email_t', label: t('Correio electrónico') },
     ],
   });
 }

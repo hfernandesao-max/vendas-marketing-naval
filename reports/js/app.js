@@ -6,19 +6,34 @@ import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados
 import { mostrarActualizacao } from './actualizacao.js';
 import { fetchVendas, mostrarFontes } from './fontes.js';
 import { dl, ds, setFmt } from './formatos.js';
-import { LANG, definirIdioma, t } from './i18n/i18n.js';
+import { IDIOMAS, LANG, definirIdioma, t, tv } from './i18n/i18n.js';
 import { REL_ATUAL, definirRelPedido, nav, organizarRelatorios } from './navegacao.js';
 import { PAGES } from './paginas/catalogo.js';
 import { R } from './paginas/registo.js';
+import { mostrarIndicador } from './smartphones.js';
 import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeVer } from './perfil.js';
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
 
 function textos() {
-  document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
+  document.documentElement.lang = IDIOMAS[LANG];
   $('#brand-sub').textContent = t('Portal RTM');
   $('#voltar-t').textContent = t('Página principal');
   $('#menu-t').textContent = t('Menu');
+  $('#side').setAttribute('aria-label', t('Menu'));
+  $('#filtros2').setAttribute('aria-label', t('Filtros'));
+  $('#lang').setAttribute('aria-label', t('Idioma'));
+  // Tema: Sistema / Claro / Escuro (o estado vem de tema-arranque.js)
+  const TEMAS = { sistema: 'Tema do sistema', claro: 'Tema claro', escuro: 'Tema escuro' };
+  const temaAct = window.vmTema ? window.vmTema.escolha() : 'sistema';
+  $('#tema').setAttribute('aria-label', t('Tema'));
+  document.querySelectorAll('#tema button').forEach((b) => {
+    const on = b.dataset.t === temaAct;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-label', t(TEMAS[b.dataset.t]));
+    b.title = t(TEMAS[b.dataset.t]);
+  });
   $('#l-de').textContent = t('De');
   $('#l-ate').textContent = t('Até');
   $('#xl-page span').textContent = t('Excel desta página');
@@ -29,6 +44,12 @@ function textos() {
   $('#xl-dados span').textContent = t('Exportar dados');
   $('#xl-dados').setAttribute('aria-label', t('Exportar dados'));
   $('#xl-dados').title = t('Todos os dados de gestão do negócio num só Excel, desde o arranque do Pinguim BO: tabelas de dados e dicionário de dados');
+  document.querySelectorAll('#tema button').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (window.vmTema) window.vmTema.definir(b.dataset.t);
+      draw();
+    }),
+  );
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
@@ -38,6 +59,7 @@ export function draw() {
   definirFits([]);
   textos();
   mostrarFontes();
+  mostrarIndicador(); // cartão dos telemóveis no menu: sempre na língua escolhida
   document.querySelector('.filters').style.display = p.id === 'plano-cargas' ? 'none' : '';
   $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
   $('#xl-all').hidden = !podeExportar('excel-completo');
@@ -45,7 +67,7 @@ export function draw() {
   if (SESSAO) {
     $('#quem').hidden = false;
     $('#quem').replaceChildren(
-      el('b', null, SESSAO.nome),
+      el('b', null, tv(SESSAO.nome)), // nome genérico da conta traduz-se; nomes de pessoas não
       el('span', null, t(SESSAO.perfil_nome) + (SESSAO.rotas ? ' · ' + (SESSAO.rotas.length ? SESSAO.rotas.join(', ') : t('sem rotas atribuídas')) : '')),
     );
   }

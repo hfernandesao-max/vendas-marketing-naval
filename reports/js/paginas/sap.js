@@ -1,11 +1,11 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
-import { nomeRota } from '../calculos.js';
+import { nomeRota, tipoDoc, eNC } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { dl, kz, kz2, n0 } from '../formatos.js';
-import { t } from '../i18n/i18n.js';
+import { t, tv } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { SESSAO, atual } from '../perfil.js';
 import { inR, st } from '../periodo.js';
@@ -25,7 +25,6 @@ function carregarSap() {
     });
 }
 const postSap = (corpo) => postJson('sap', corpo);
-const codigoTipo = (tp) => (tp === 'Factura' ? 'FT' : 'FR');
 const r2 = (v) => Math.round((+v || 0) * 100) / 100;
 const rotasPortal = () => [...new Set([...Object.keys(DB.mapRota || {}), ...(DB.vendas || []).map((v) => v.rota)])].filter(Boolean).sort();
 // Loja, SAP location e empregado de cada rota: o que estiver configurado ou, por omissão, o padrão do modelo
@@ -55,10 +54,13 @@ const localLinha = (rota, codigo) => {
   if (auto) return { local: auto, como: 'origem' };
   return localOmissao() ? { local: localOmissao(), como: 'omissao' } : { local: '', como: '' };
 };
+const ROTULO_CAMPO = { loja: 'Loja SAP da rota {r}', local: 'Depósito SAP da rota {r}', empregado: 'Empregado de vendas SAP da rota {r}' };
 const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Por omissão (sem abastecimento)' };
 function linhasSap() {
   const c = SAPD.config;
-  const V = (DB.vendas || []).filter((v) => inR(v.data)); // rota e tipo de documento vêm da barra de filtros
+  // Rota e tipo de documento vêm da barra de filtros. Só facturas: as notas de crédito não entram no ficheiro
+  // do SAP (o modelo RTM_Sales_SAP_Upload_Format é de vendas; decisão de 30-10-2026)
+  const V = (DB.vendas || []).filter((v) => inR(v.data) && !eNC(v));
   const porDoc = {};
   (DB.artigos || []).forEach((a) => {
     (porDoc[a.documento] = porDoc[a.documento] || []).push(a);
@@ -80,7 +82,7 @@ function linhasSap() {
       }
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
-        docTxt = codigoTipo(v.tipo) + ' ' + v.documento;
+        docTxt = tipoDoc(v) + ' ' + v.documento;
       const pg = v.pagamentos || [];
       const cash = r2(
           sum(
@@ -100,12 +102,31 @@ function linhasSap() {
         erros.push(t('{d}: o documento não tem linhas de artigo.', { d: docTxt }));
         return;
       }
-      const soma = r2(sum(ls, (a) => r2(a.valor_sem_iva) + r2(a.iva)));
+      // GROSSSALES = DOCMOVDETAIL.GROSS_TOTAL (exportação REST sem esta coluna: NETSALES + TAXAMOUNT)
+      const bruto = (a) => (a.gross_total != null ? r2(a.gross_total) : r2(r2(a.valor_sem_iva) + r2(a.iva)));
+      const invoice = r2(sum(ls, bruto)); // Invoice Total = soma do GROSSSALES das linhas do documento
+      ls.forEach((a) => {
+        const dif = r2(bruto(a) - r2(a.valor_sem_iva) - r2(a.iva));
+        if (Math.abs(dif) > 1)
+          avisos.push(
+            t('{d}, artigo {a}: NETSALES + TAXAMOUNT ({x}) difere do GROSS_TOTAL ({g}).', {
+              d: docTxt,
+              a: a.codigo,
+              x: kz(r2(a.valor_sem_iva) + r2(a.iva)),
+              g: kz(bruto(a)),
+            }),
+          );
+      });
+      const soma = invoice;
       if (Math.abs(soma - r2(v.total)) > 1)
         avisos.push(t('{d}: a soma das linhas ({a}) não bate com o total do documento ({b}).', { d: docTxt, a: kz(soma), b: kz(v.total) }));
       if (outros.length)
         avisos.push(
-          t('{d}: {v} pagos por {m}; o modelo só tem Cash e MULTICAIXA.', { d: docTxt, v: kz(sum(outros, 'valor')), m: outros.map((p) => p.meio).join(', ') }),
+          t('{d}: {v} pagos por {m}; o modelo só tem numerário e Multicaixa.', {
+            d: docTxt,
+            v: kz(sum(outros, 'valor')),
+            m: outros.map((p) => tv(p.meio)).join(', '),
+          }),
         );
       ls.forEach((a) => {
         const lc = localLinha(v.rota, a.codigo);
@@ -113,7 +134,8 @@ function linhasSap() {
         if (lc.como === 'omissao') porOmissao.add(v.rota);
         if (!a.codigo) erros.push(t('{d}: linha «{a}» sem código de artigo.', { d: docTxt, a: a.artigo }));
         const net = r2(a.valor_sem_iva),
-          tax = r2(a.iva);
+          tax = r2(a.iva),
+          gross = bruto(a);
         linhas.push({
           chave: a.chave,
           doc: docTxt,
@@ -129,9 +151,9 @@ function linhasSap() {
           local_como: t(COMO[lc.como] || '—'),
           net,
           tax,
-          gross: r2(net + tax),
+          gross,
           moeda: c.moeda,
-          inv: r2(v.total),
+          inv: invoice,
           cash: cash || null,
           card: card || null,
           cliente: v.cliente || '',
@@ -143,137 +165,142 @@ function linhasSap() {
     });
   if (semLocal.size)
     erros.unshift(
-      t('Sem SAP location para as rotas {r}: indique a SAP location por omissão em Correspondência com o SAP.', { r: [...semLocal].sort().join(', ') }),
+      t('Sem depósito SAP para as rotas {r}: indique o depósito SAP por omissão em Correspondência com o SAP.', { r: [...semLocal].sort().join(', ') }),
     );
   // Excepção que não bloqueia: vendas de viaturas sem abastecimento registado seguem com a SAP location por omissão
   if (porOmissao.size)
     avisos.unshift(
-      t('Rotas {r} sem abastecimento registado no período: as linhas seguem com a SAP location por omissão ({l}). Confirme no SAP.', {
+      t('Rotas {r} sem abastecimento registado no período: as linhas seguem com o depósito SAP por omissão ({l}). Confirme no SAP.', {
         r: [...porOmissao].sort().join(', '),
         l: localOmissao(),
       }),
     );
   return { docs, linhas, erros, avisos, repetidos };
 }
-// Gera o ficheiro a partir do pacote do próprio modelo do SAP (RTM_Sales_SAP_Upload_Format.xlsx):
-// estilos, tema, larguras, folha e as linhas 1 e 2 ficam intactos; só as linhas de dados são escritas,
-// cada célula com o mesmo estilo da coluna na primeira linha de exemplo do modelo.
+// Ficheiro para o SAP (formato de carregamento): um livro simples com UMA folha («Upload Format»), UMA linha de
+// cabeçalho com os nomes exactos das colunas e as linhas de dados. Sem estilos (sem cores, negrito, contornos, larguras
+// nem títulos); só o formato de apresentação dos valores, como no ficheiro de referência: DOCUMENT_DATE em data
+// dd/mm/aaaa e os valores em número com separador de milhares e 2 casas decimais (ex.: 394 736,84).
+export const CAB_SAP = [
+  'INVOICENO',
+  'DOCUMENT_DATE',
+  'LOJA',
+  'PRODUCT',
+  'QUANTITY',
+  'UNIT',
+  'DOCUMENT_TYPE',
+  'STORAGELOCATION',
+  'NETSALES',
+  'TAXAMOUNT',
+  'GROSSSALES',
+  'CURRENCY',
+  'Invoice Total',
+  'CASH AMOUNT',
+  'CARD AMOUNT',
+  'CUSTOMER',
+  'SALES EMPLOYEE',
+];
 const carregarJSZip = () =>
   carregarScript('jszip.min.js', 'JSZip').catch(() => {
-    throw new Error(t('Não foi possível abrir o modelo do SAP.'));
+    throw new Error(t('Não foi possível gerar o ficheiro para o SAP.'));
   });
-const xmlEsc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const xmlEsc = (v) =>
+  String(v)
+    // eslint-disable-next-line no-control-regex -- remove caracteres de controlo inválidos em XML
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+const COL_SAP = 'ABCDEFGHIJKLMNOPQ'.split('');
+// AAAA-MM-DD → número de série de data do Excel (dias desde 30-12-1899)
+const dataSap = (d) => Math.round((Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - Date.UTC(1899, 11, 30)) / 86400000);
+// formato de apresentação por coluna: 1 = data dd/mm/aaaa; 2 = #,##0.00 (NETSALES, TAXAMOUNT, GROSSSALES, Invoice Total, CASH, CARD)
+const FMT_SAP = { B: 1, I: 2, J: 2, K: 2, M: 2, N: 2, O: 2 };
+// só formatos de número: fonte, preenchimento e contorno são os de omissão do Excel
+const ESTILOS_SAP =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+  '<numFmts count="1"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/></numFmts>' +
+  '<fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts>' +
+  '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+  '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+  '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+  '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
+  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+  '</styleSheet>';
+function celula(ref, v, fmt) {
+  if (v == null || v === '') return '';
+  if (typeof v === 'number' && Number.isFinite(v)) return `<c r="${ref}"${fmt ? ` s="${fmt}"` : ''}><v>${v}</v></c>`;
+  const s = String(v);
+  return `<c r="${ref}" t="inlineStr"><is><t${/^\s|\s$/.test(s) ? ' xml:space="preserve"' : ''}>${xmlEsc(s)}</t></is></c>`;
+}
 function gerarExcelSap(linhas) {
-  let zip;
-  return carregarJSZip()
-    .then(() => apiFetch('sap/modelo'))
-    .then((r) => {
-      if (!r.ok) throw new Error(t('Não foi possível abrir o modelo do SAP.'));
-      return r.arrayBuffer();
-    })
-    .then((buf) => JSZip.loadAsync(buf))
-    .then((z) => {
-      zip = z;
-      return Promise.all(
-        ['xl/worksheets/sheet1.xml', 'xl/sharedStrings.xml', '[Content_Types].xml', 'xl/_rels/workbook.xml.rels'].map((f) => zip.file(f).async('string')),
-      );
-    })
-    .then(([folha, sst, tipos, rels]) => {
-      const dom = new DOMParser();
-      // textos partilhados: ficam os das linhas 1 e 2 do modelo, pela mesma ordem; os dos dados vêm a seguir
-      const fs = dom.parseFromString(folha, 'application/xml'),
-        NS = fs.documentElement.namespaceURI;
-      const linhasXml = [...fs.getElementsByTagNameNS(NS, 'row')];
-      const cab = linhasXml.filter((r) => +r.getAttribute('r') <= 2),
-        ex = linhasXml.find((r) => r.getAttribute('r') === '3');
-      let maxIdx = -1;
-      cab.forEach((r) =>
-        [...r.getElementsByTagNameNS(NS, 'c')].forEach((c) => {
-          if (c.getAttribute('t') === 's') maxIdx = Math.max(maxIdx, +c.textContent);
-        }),
-      );
-      const sis = (sst.match(/<si>[\s\S]*?<\/si>/g) || []).slice(0, maxIdx + 1);
-      const idx = new Map();
-      const texto = (v) => {
-        if (!idx.has(v)) {
-          const sp = /^\s|\s$/.test(v) ? ' xml:space="preserve"' : '';
-          idx.set(v, sis.length);
-          sis.push(`<si><t${sp}>${xmlEsc(v)}</t></si>`);
-        }
-        return idx.get(v);
-      };
-      // estilo de cada coluna na linha de exemplo (linha 3 do modelo)
-      const estilo = {};
-      [...ex.getElementsByTagNameNS(NS, 'c')].forEach((c) => {
-        estilo[c.getAttribute('r').replace(/\d+/g, '')] = c.getAttribute('s');
-      });
-      const COL = 'ABCDEFGHIJKLMNOPQ'.split('');
-      const dyd = ex.getAttribute('x14ac:dyDescent');
-      let usos = 0;
-      const corpo = linhas
-        .map((l, i) => {
-          const n = 3 + i,
-            [y, m, d] = l.data.split('-').map(Number);
-          const serial = Date.UTC(y, m - 1, d) / 86400000 + 25569;
-          const vals = [
-            l.doc,
-            serial,
-            l.loja,
-            /^\d+$/.test(l.codigo) ? +l.codigo : l.codigo,
-            l.quantidade,
-            l.uom,
-            l.tipo,
-            l.local,
-            l.net,
-            l.tax,
-            l.gross,
-            l.moeda,
-            l.inv,
-            l.cash,
-            l.card,
-            l.cliente,
-            l.empregado,
-          ];
-          const cels = vals
-            .map((v, k) => {
-              const ref = COL[k] + n,
-                s = estilo[COL[k]] != null ? ` s="${estilo[COL[k]]}"` : '';
-              if (v == null || v === '') return `<c r="${ref}"${s}/>`;
-              if (typeof v === 'number') return `<c r="${ref}"${s}><v>${v}</v></c>`;
-              usos++;
-              return `<c r="${ref}"${s} t="s"><v>${texto(String(v))}</v></c>`;
-            })
-            .join('');
-          return `<row r="${n}" spans="1:17"${dyd ? ` x14ac:dyDescent="${dyd}"` : ''}>${cels}</row>`;
-        })
-        .join('');
-      // folha: linhas 1 e 2 exactamente como no modelo, seguidas dos dados; sem as linhas de exemplo
-      const cabXml = ['1', '2'].map((n) => (folha.match(new RegExp('<row r="' + n + '"[\\s\\S]*?<\\/row>')) || [''])[0]).join('');
-      const ultima = 2 + linhas.length;
-      const nova = folha
-        .replace(/<sheetData>[\s\S]*<\/sheetData>|<sheetData\/>/, () => `<sheetData>${cabXml}${corpo}</sheetData>`)
-        .replace(/<dimension ref="[^"]*"\/>/, `<dimension ref="A1:Q${ultima}"/>`);
-      let totalUsos = usos;
-      cab.forEach((r) =>
-        [...r.getElementsByTagNameNS(NS, 'c')].forEach((c) => {
-          if (c.getAttribute('t') === 's') totalUsos++;
-        }),
-      );
-      const sstNovo = sst.replace(
-        /<sst([^>]*)>[\s\S]*<\/sst>/,
-        (m0, attrs) =>
-          `<sst${attrs.replace(/ count="\d+"/, ` count="${totalUsos}"`).replace(/ uniqueCount="\d+"/, ` uniqueCount="${sis.length}"`)}>${sis.join('')}</sst>`,
-      );
-      zip.file('xl/worksheets/sheet1.xml', nova);
-      zip.file('xl/sharedStrings.xml', sstNovo);
-      // sem fórmulas, a cadeia de cálculo do exemplo deixa de existir
-      if (zip.file('xl/calcChain.xml')) {
-        zip.remove('xl/calcChain.xml');
-        zip.file('[Content_Types].xml', tipos.replace(/<Override[^>]*calcChain[^>]*\/>/, ''));
-        zip.file('xl/_rels/workbook.xml.rels', rels.replace(/<Relationship[^>]*calcChain[^>]*\/>/, ''));
-      }
-      return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    });
+  return carregarJSZip().then(() => {
+    const valores = (l) => [
+      l.doc,
+      dataSap(l.data),
+      l.loja,
+      /^\d+$/.test(l.codigo) ? +l.codigo : l.codigo,
+      l.quantidade,
+      l.uom,
+      l.tipo,
+      l.local,
+      l.net,
+      l.tax,
+      l.gross,
+      l.moeda,
+      l.inv,
+      l.cash,
+      l.card,
+      l.cliente,
+      l.empregado,
+    ];
+    const linha = (n, vals, fmt) => `<row r="${n}">${vals.map((v, k) => celula(COL_SAP[k] + n, v, fmt && FMT_SAP[COL_SAP[k]])).join('')}</row>`;
+    const dados = [linha(1, CAB_SAP, false), ...linhas.map((l, i) => linha(i + 2, valores(l), true))].join('');
+    const folha =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      `<dimension ref="A1:Q${linhas.length + 1}"/><sheetData>${dados}</sheetData></worksheet>`;
+    const zip = new JSZip();
+    zip.file(
+      '[Content_Types].xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        '</Types>',
+    );
+    zip.file(
+      '_rels/.rels',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        '</Relationships>',
+    );
+    zip.file(
+      'xl/workbook.xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheets><sheet name="Upload Format" sheetId="1" r:id="rId1"/></sheets></workbook>',
+    );
+    zip.file(
+      'xl/_rels/workbook.xml.rels',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        '</Relationships>',
+    );
+    zip.file('xl/worksheets/sheet1.xml', folha);
+    zip.file('xl/styles.xml', ESTILOS_SAP);
+    return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  });
 }
 function gerarFicheiroSap() {
   const L = linhasSap();
@@ -376,7 +403,7 @@ R['sap-exportar'] = (pg) => {
     return;
   }
   if (SAPD.erro) {
-    pg.append(secBox(t('Vendas para o SAP'), '', el('p', null, SAPD.erro)));
+    pg.append(secBox(t('Vendas para o SAP'), '', el('p', null, t(SAPD.erro))));
     return;
   }
   const gera = SAPD.pode_gerar,
@@ -407,7 +434,7 @@ R['sap-exportar'] = (pg) => {
     tiles([
       { l: t('Documentos a incluir'), v: n0(L.docs.length), s: t('{n} linhas de artigo', { n: n0(L.linhas.length) }) },
       { l: t('Total facturado'), v: kz2(sum(L.docs, 'total')), cls: 'full-value' },
-      { l: t('Cash'), v: kz2(cash), cls: 'full-value' },
+      { l: t('Numerário'), v: kz2(cash), cls: 'full-value' },
       { l: t('Multicaixa'), v: kz2(card), cls: 'full-value' },
       {
         l: t('Já enviados ao SAP'),
@@ -437,21 +464,25 @@ R['sap-exportar'] = (pg) => {
     tabela({
       id: 'sap-l',
       titulo: t('Pré-visualização do ficheiro'),
-      nota: t('Uma linha por artigo, como no modelo RTM_Sales_SAP_Upload_Format. O total, o Cash e o MULTICAIXA são do documento e repetem-se em cada linha.'),
+      nota: t(
+        'Uma linha por artigo, como no modelo de carregamento de vendas do SAP. O total, o numerário e o Multicaixa são do documento e repetem-se em cada linha.',
+      ),
       sort: 'doc',
       dir: 1,
       total: true,
       rows: L.linhas,
+      // Nomes das colunas fixos em todas as línguas (iguais aos do modelo do SAP): são os que a integração entre os
+      // dois sistemas reconhece. Não traduzir.
       cols: [
         { key: 'doc', label: 'INVOICENO', p: 0 },
         { key: 'data', label: 'DOCUMENT_DATE', type: 'date' },
         { key: 'loja', label: 'LOJA' },
         { key: 'codigo', label: 'PRODUCT' },
-        { key: 'artigo', label: t('Artigo'), wrap: true },
+        { key: 'artigo', label: 'Artigo', wrap: true },
         { key: 'quantidade', label: 'QUANTITY', type: 'n', sum: true },
         { key: 'uom', label: 'UNIT' },
         { key: 'local', label: 'STORAGELOCATION' },
-        { key: 'local_como', label: t('Determinação da location'), p: 4 },
+        { key: 'local_como', label: 'Determinação da location', p: 4 },
         { key: 'net', label: 'NETSALES', type: 'kz', sum: true },
         { key: 'tax', label: 'TAXAMOUNT', type: 'kz', sum: true },
         { key: 'gross', label: 'GROSSSALES', type: 'kz', sum: true },
@@ -474,7 +505,7 @@ R['sap-exportar'] = (pg) => {
       'p',
       null,
       t(
-        'Para cada rota: Loja, SAP location e empregado de vendas como existem no SAP. Em branco fica o padrão mostrado. A SAP location é determinada pela origem do stock de cada viatura; só se indica na rota para a substituir.',
+        'Para cada rota: loja, depósito e empregado de vendas como existem no SAP. Em branco fica o padrão mostrado. O depósito SAP é determinado pela origem do stock de cada viatura; só se indica na rota para o substituir.',
       ),
     ),
   );
@@ -494,30 +525,30 @@ R['sap-exportar'] = (pg) => {
   // Armazéns principais (origem do stock) → SAP location
   if (!cfg.armazens) cfg.armazens = {};
   const ap = el('div', 'sap-arm');
-  ap.append(el('h3', null, t('Armazéns principais e SAP location')));
+  ap.append(el('h3', null, t('Armazéns principais e depósito SAP')));
   const O = origens();
   ap.append(
     el(
       'p',
       'note',
       O.fonte
-        ? t('Determinação automática por {f} ({p}).', { f: t(O.fonte), p: O.periodo })
-        : t('Ainda sem transferências de stock dos armazéns principais para as viaturas: indique a SAP location em cada rota.'),
+        ? t('Determinação automática por {f} ({p}).', { f: t(O.fonte), p: String(O.periodo || '').replace(' a ', ' – ') })
+        : t('Ainda sem transferências de stock dos armazéns principais para as viaturas: indique o depósito SAP em cada rota.'),
     ),
   );
   const ta = el('div', 'sap-map sap-map-arm');
   const cabA = el('div', 'sap-map-l sap-map-h');
-  [t('Código'), t('Armazém principal (Pinguim BO)'), 'SAP LOCATION', t('Rotas abastecidas')].forEach((x) => cabA.append(el('span', null, x)));
+  [t('Código'), t('Armazém principal (Pinguim BO)'), t('Depósito SAP'), t('Rotas abastecidas')].forEach((x) => cabA.append(el('span', null, x)));
   ta.append(cabA);
   Object.entries(cfg.armazens).forEach(([cod, a]) => {
     const l = el('div', 'sap-map-l');
     const nome = entrada('text', a.nome || '');
     nome.disabled = !gera;
-    nome.setAttribute('aria-label', cod + ' nome');
+    nome.setAttribute('aria-label', t('Nome do armazém {c}', { c: cod }));
     nome.addEventListener('input', () => (a.nome = nome.value.trim()));
     const loc = entrada('text', a.local || '');
     loc.disabled = !gera;
-    loc.setAttribute('aria-label', cod + ' SAP location');
+    loc.setAttribute('aria-label', t('Depósito SAP do armazém {c}', { c: cod }));
     loc.addEventListener('input', () => (a.local = loc.value.trim().toUpperCase()));
     const abastecidas = Object.entries(O.rotas || {})
       .filter(([, x]) => x.armazens && x.armazens[cod])
@@ -529,9 +560,9 @@ R['sap-exportar'] = (pg) => {
   // SAP location por omissão: para viaturas sem abastecimento registado (nunca bloqueia o envio)
   const om = entrada('text', cfg.local_omissao || '');
   om.disabled = !gera;
-  om.setAttribute('aria-label', t('SAP location por omissão'));
+  om.setAttribute('aria-label', t('Depósito SAP por omissão'));
   om.addEventListener('input', () => (cfg.local_omissao = om.value.trim().toUpperCase()));
-  const cOm = campo(t('SAP location por omissão'), om);
+  const cOm = campo(t('Depósito SAP por omissão'), om);
   cOm.classList.add('sap-omissao');
   ap.append(
     cOm,
@@ -539,14 +570,14 @@ R['sap-exportar'] = (pg) => {
       'p',
       'note',
       t(
-        'Usada quando a viatura não teve abastecimento registado (avariada, em manutenção, sem carga). As vendas seguem para o SAP com esta location e ficam assinaladas na pré-visualização, nos avisos e no registo do lote, para confirmação.',
+        'Usado quando a viatura não teve abastecimento registado (avariada, em manutenção, sem carga). As vendas seguem para o SAP com este depósito e ficam assinaladas na pré-visualização, nos avisos e no registo do lote, para confirmação.',
       ),
     ),
   );
   sec.append(ap);
   const tb = el('div', 'sap-map');
   const cab = el('div', 'sap-map-l sap-map-h');
-  [t('Rota'), 'LOJA', 'STORAGELOCATION', 'SALES EMPLOYEE'].forEach((x) => cab.append(el('span', null, x)));
+  [t('Rota'), t('Loja SAP'), t('Depósito SAP'), t('Empregado de vendas SAP')].forEach((x) => cab.append(el('span', null, x)));
   tb.append(cab);
   rotas.forEach((r) => {
     const l = el('div', 'sap-map-l'),
@@ -555,7 +586,7 @@ R['sap-exportar'] = (pg) => {
     const c = (k, ph) => {
       const i = entrada('text', m[k] || '', { placeholder: ph });
       i.disabled = !gera;
-      i.setAttribute('aria-label', r + ' ' + k);
+      i.setAttribute('aria-label', t(ROTULO_CAMPO[k], { r }));
       i.addEventListener('input', () => {
         m[k] = i.value.trim();
       });
@@ -580,7 +611,7 @@ R['sap-exportar'] = (pg) => {
     if (!m.local && auto) loc.classList.add('auto');
     if (!m.local && !auto && localOmissao()) {
       loc.classList.add('omissao');
-      loc.title = t('Sem abastecimento registado desta viatura no período: usa a SAP location por omissão.');
+      loc.title = t('Sem abastecimento registado desta viatura no período: usa o depósito SAP por omissão.');
     }
     l.append(rt, c('loja', pad.loja), loc, c('empregado', pad.empregado));
     tb.append(l);
@@ -636,7 +667,7 @@ function registoLotes(gera) {
             : '') +
         (x.omissao
           ? (x.estado === 'emitido' ? '' : ' · ') +
-            t('{n} linhas com a location por omissão {l} (rotas {r})', { n: x.omissao.linhas, l: x.omissao.local, r: x.omissao.rotas.join(', ') })
+            t('{n} linhas com o depósito por omissão {l} (rotas {r})', { n: x.omissao.linhas, l: x.omissao.local, r: x.omissao.rotas.join(', ') })
           : ''),
       hash: x.sha256 ? x.sha256.slice(0, 12) + '…' : '—',
     })),

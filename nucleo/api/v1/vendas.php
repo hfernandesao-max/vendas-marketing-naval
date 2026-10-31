@@ -6,10 +6,13 @@
  * GET v1/vendas/estado                       estado da ligação ao Pinguim BO (indicador do portal)
  * GET v1/vendas/diagnostico                  diagnóstico do servidor (super administrador)
  * GET v1/vendas/estrutura?start_date=AAAAMMDD secções e campos da exportação, sem dados pessoais (super administrador)
+ * Fonte: primeiro a base de dados do Pinguim BO (SQL Server, só SELECT); se não responder, a
+ * exportação REST do Pinguim BO (XML).
  *
  * Em caso de falha devolve sempre JSON {ok:false, erro, detalhe} com o código HTTP adequado.
  */
 defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
+naval_servico('bd');
 naval_servico('pinguim');
 naval_servico('vendas');
 naval_servico('rotas');
@@ -19,7 +22,17 @@ naval_servico('rotas');
 @ini_set('memory_limit', '512M');
 naval_pinguim_requisitos();
 
-if (($_GET['ping'] ?? '') === '1') naval_json(naval_pinguim_estado());
+// Estado da ligação: primeiro o SQL Server; se falhar, a exportação REST
+if (($_GET['ping'] ?? '') === '1') {
+    if (naval_bd_configurada()) {
+        try {
+            naval_json(naval_bd_estado() + ['erro' => null, 'hora' => date('Y-m-d H:i:s')]);
+        } catch (Throwable $e) {
+            if (!naval_pinguim_configurado()) naval_json(['ok' => false, 'erro' => 'Sem ligação ao SQL Server: ' . $e->getMessage()]);
+        }
+    }
+    naval_json(naval_pinguim_estado());
+}
 
 naval_exigir(array_merge(['inicio', 'vendas-artigo'], NAVAL_PAGINAS_VENDAS));
 $dataAaaammdd = function (string $param, string $omissao) {
@@ -30,13 +43,27 @@ if (($_GET['estrutura'] ?? '') === '1') {
     naval_exigir(['admin-config']);
     $de = $dataAaaammdd('start_date', date('Ymd'));
     $ate = $dataAaaammdd('end_date', $de);
+    if (naval_bd_configurada()) {
+        naval_servico('estrutura');
+        try {
+            naval_json(naval_bd_estrutura($de, $ate));
+        } catch (Throwable $e) {
+            error_log('[estrutura SQL] ' . $e->getMessage());   // sem base de dados: estrutura da exportação REST
+        }
+    }
     $bytes = 0;
     $xml = naval_pinguim_xml($de, $ate, 120, $bytes);
     naval_json(['periodo' => "$de a $ate"] + naval_pinguim_estrutura($xml, $bytes));
 }
 if (($_GET['diag'] ?? '') === '1') {
     naval_exigir(['admin-config']);
-    naval_json(naval_pinguim_diagnostico());
+    $bd = ['configurada' => naval_bd_configurada(), 'drivers_pdo' => class_exists('PDO') ? PDO::getAvailableDrivers() : []];
+    try {
+        if ($bd['configurada']) $bd += naval_bd_estado();
+    } catch (Throwable $e) {
+        $bd += ['ok' => false, 'erro' => $e->getMessage()];
+    }
+    naval_json(['base_de_dados' => $bd] + naval_pinguim_diagnostico());
 }
 
 $de = (string) ($_GET['start_date'] ?? '');
@@ -52,7 +79,9 @@ naval_validar_periodo($de, $ate);
 // (rotas, NIF) aplica-se depois, a cada pedido.
 $chave = 'vendas|' . $de . '|' . $ate . '|' . ($itens ? 1 : 0) . '|' . hash('sha256', (string) json_encode(naval_promotores()));
 $d = naval_cache($chave, naval_cache_periodo($ate), function () use ($de, $ate, $itens) {
-    $d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
+    // Prioridade 1: base de dados do Pinguim BO; prioridade 2: exportação REST
+    $d = naval_vendas_sql($de, $ate, naval_promotores(), $itens);
+    if ($d === null) $d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
     return $d;
 }, ($_GET['fresco'] ?? '') === '1');
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());

@@ -1,0 +1,36 @@
+/*
+ * Ajustes de componentes que dependem do tema (carregado em último lugar).
+ * As cores vêm de cores.css; aqui fica o selector de tema (Sistema / Claro / Escuro),
+ * no rodapé do menu lateral para estar disponível em todas as páginas sem ocupar a barra de filtros.
+ */
+.tema-lado {
+  display: flex;
+  margin: 8px 12px 4px;
+  align-self: flex-start;
+}
+.tema-lado button {
+  flex: 1 1 0;
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 30px;
+  padding-inline: 10px;
+}
+.tema-lado svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tema-lado button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Avisos breves (toast): fundo escuro nos dois temas, texto com o token próprio */
+.toast {
+  color: var(--c-tip-fg);
+}

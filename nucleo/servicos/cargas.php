@@ -439,7 +439,7 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
         foreach ((array) $n['destinatarios'] as $d) {
             $e = trim((string) ($d['email'] ?? ''));
             if ($e === '') continue;
-            if (!naval_email_valido($e)) throw new NavalErro('Email inválido: ' . $e);
+            if (!naval_email_valido($e)) throw new NavalErro('Correio electrónico inválido: ' . $e);
             foreach ($l['destinatarios'] as $x) if (strcasecmp($x['email'], $e) === 0) continue 2;
             $l['destinatarios'][] = ['nome' => naval_texto($d['nome'] ?? ''), 'email' => $e];
         }

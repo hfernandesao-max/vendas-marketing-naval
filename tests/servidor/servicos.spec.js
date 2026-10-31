@@ -7,7 +7,7 @@ test.describe.configure({ mode: 'serial' });
 
 test('sem token, todos os serviços respondem 401 em JSON', async () => {
   const anon = await request.newContext({ baseURL: BASE });
-  for (const s of ['vendas?' + DIA, 'sessao', 'dados/rotas', 'cadastros', 'gestao', 'plano', 'sap', 'sincronizacao', 'estrutura-dados']) {
+  for (const s of ['vendas?' + DIA, 'sessao', 'dados/rotas', 'cadastros', 'gestao', 'plano', 'sap', 'sincronizacao', 'estrutura-dados', 'stock', 'agt']) {
     const r = await anon.get('/api/index.php/v1/' + s);
     expect(r.status(), s).toBe(401);
     expect(r.headers()['content-type'], s).toContain('application/json');

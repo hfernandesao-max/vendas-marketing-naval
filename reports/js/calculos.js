@@ -3,7 +3,16 @@ import { LANG, t } from './i18n/i18n.js';
 import { INICIO_PINGUIM, addD, hoje, inR, st } from './periodo.js';
 import { DB, group, sum } from './util.js';
 
+// Código do tipo de documento: o da base de dados (DOCCONFIG) quando existe; na exportação REST, FR ou FT
+export const tipoDoc = (v) => v.tipo_codigo || (v.tipo === 'Factura' ? 'FT' : 'FR');
+
 export const vendasR = () => DB.vendas.filter((x) => inR(x.data));
+// Notas de crédito: vêm do servidor com o total em negativo ('nc'), por isso qualquer soma de 'total' já dá
+// as vendas líquidas (facturas − notas de crédito). Não são documentos de venda: não contam nos documentos,
+// clientes com compras, visitas, recebimentos nem pendentes (estes são os das facturas).
+export const eNC = (x) => x.nc === true;
+export const docsVenda = (V) => V.filter((x) => !eNC(x));
+export const notasCredito = (V) => -sum(V.filter(eNC), 'total');
 // Estados da carteira vêm do Pinguim BO com a grafia nova; no ecrã mostram-se com a grafia antiga
 export const ESTADO_PT = { Ativo: 'Activo', Inativo: 'Inactivo' };
 export const nomeRota = (r) => (DB.mapRota[r] || {}).promotor || r;
@@ -13,6 +22,8 @@ export const promotorRota = (r, nome) => {
   return r && n && String(n) !== String(r) ? r + ' · ' + n : String(n || r || '—');
 };
 export const isCF = (nif) => !nif || /^9{9,}$/.test(String(nif));
+// Clientes distintos (Consumidor Final pelo nome, os restantes pelo NIF)
+export const clientesDe = (V) => new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size;
 const DIAS = ['DOMINGO', '2ª FEIRA', '3ª FEIRA', '4ª FEIRA', '5ª FEIRA', '6ª FEIRA', 'SÁBADO'];
 export const diaSemana = (d) => DIAS[new Date(d + 'T12:00:00Z').getUTCDay()];
 const DIA_EN = {
@@ -24,7 +35,8 @@ const DIA_EN = {
   '6ª FEIRA': 'Friday',
   SÁBADO: 'Saturday',
 };
-export const nomeDia = (d) => (LANG === 'en' ? DIA_EN[d] || d : d);
+const DIA_TI = { DOMINGO: 'ሰንበት', '2ª FEIRA': 'ሰኑይ', '3ª FEIRA': 'ሰሉስ', '4ª FEIRA': 'ረቡዕ', '5ª FEIRA': 'ሓሙስ', '6ª FEIRA': 'ዓርቢ', SÁBADO: 'ቀዳም' };
+export const nomeDia = (d) => (LANG === 'en' ? DIA_EN[d] || d : LANG === 'ti' ? DIA_TI[d] || d : d);
 // Pagamentos reais de cada documento, como vêm da API do Pinguim BO: [{codigo, meio, valor}].
 // Um documento pode ser pago com vários meios; o recebido é a soma dos valores (já sem troco).
 export function pagosDe(x) {
@@ -32,8 +44,11 @@ export function pagosDe(x) {
   if (!x.liquidado) return [];
   return [{ codigo: x.meio_pagamento ? '' : '?', meio: x.meio_pagamento || 'Sem meio indicado', valor: +x.total || 0 }];
 }
-export const recebidoDe = (x) => (x.valor_pago != null ? +x.valor_pago || 0 : x.liquidado ? +x.total || 0 : 0);
-export const pendenteDe = (x) => Math.max(0, (+x.total || 0) - recebidoDe(x));
+export const recebidoDe = (x) => (eNC(x) ? 0 : x.valor_pago != null ? +x.valor_pago || 0 : x.liquidado ? +x.total || 0 : 0);
+export const pendenteDe = (x) => (eNC(x) ? 0 : Math.max(0, (+x.total || 0) - recebidoDe(x)));
+// Facturas pendentes de um conjunto: soma do que falta receber em cada factura (não total − recebido,
+// que com notas de crédito no total deixaria de ser o valor em dívida)
+export const pendentesDe = (V) => sum(V, pendenteDe);
 export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
 // Agrupa cada meio em dinheiro, Multicaixa, transferência ou outro, pelo código e depois pelo nome
 function catMeio(p) {
@@ -66,19 +81,21 @@ export function porPromotor(V) {
     if (!rotas.has(x.rota)) rotas.set(x.rota, promotorRota(x.rota));
   });
   return [...rotas.entries()].map(([rota, promotor]) => {
-    const rs = vendasPorRota[rota] || [];
+    const rs = vendasPorRota[rota] || [],
+      fs = docsVenda(rs);
     const tot = sum(rs, 'total'),
       liq = sum(rs, recebidoDe);
     return {
       rota,
       promotor,
-      docs: rs.length,
-      clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
-      dias: new Set(rs.map((x) => x.data)).size,
+      docs: fs.length,
+      clientes: clientesDe(fs),
+      dias: new Set(fs.map((x) => x.data)).size,
       total: tot,
+      notas_credito: notasCredito(rs),
       recebido: liq,
-      por_liquidar: tot - liq,
-      medio: rs.length ? tot / rs.length : 0,
+      por_liquidar: pendentesDe(rs),
+      medio: fs.length ? tot / fs.length : 0,
     };
   });
 }
@@ -94,7 +111,7 @@ export function visitasPlaneadas() {
   if (ini > fim) return out;
   const act = DB.clientes.filter((x) => x.estado === 'Ativo' && !isCF(x.nif));
   const porDiaRota = group(
-    DB.vendas.filter((x) => x.data >= ini && x.data <= fim),
+    DB.vendas.filter((x) => !eNC(x) && x.data >= ini && x.data <= fim),
     (x) => x.data + '|' + x.rota,
   );
   for (let d = ini; d <= fim; d = addD(d, 1)) {
@@ -116,8 +133,9 @@ export function visitasPlaneadas() {
 }
 
 // Histórico de auditoria: verificações automáticas a cada documento do Pinguim BO, por dia
-export function ocorrencias(V) {
-  const hj = hoje(),
+export function ocorrencias(todos) {
+  const V = docsVenda(todos),
+    hj = hoje(),
     lim = addD(hj, -3),
     out = [];
   // Possível duplicado: mesma rota, mesmo cliente com NIF, mesmo dia e mesmo valor

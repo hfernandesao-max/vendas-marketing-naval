@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             $u = $usuarios[$usuario];
             if (empty($u['compatibilidade']) && !naval_email_valido($u['email'] ?? null)) {
                 naval_registar('entrada_recusada', ['motivo' => 'sem_email'], $usuario);
-                $erro = 'Esta conta não tem email associado. Peça ao administrador da plataforma para o associar.';
+                $erro = 'Esta conta não tem correio electrónico associado. Peça ao administrador da plataforma para o associar.';
             } elseif (!naval_conta_valida($u)) {
                 naval_registar('entrada_recusada', ['motivo' => 'conta_inactiva'], $usuario);
                 $erro = 'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.';
@@ -222,6 +222,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="theme.css" />
+  <!-- Tema (Sistema / Claro / Escuro): o mesmo do portal, aplicado antes de desenhar -->
+  <script src="../reports/js/tema-arranque.js"></script>
   <script src="vendor/lucide-1.62.0.min.js"></script>
   <style>
     body {
@@ -517,6 +519,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     }
     .error-alert { border-color: rgba(255, 113, 113, .48); background: rgba(130, 29, 45, .3); }
 
+    /* Selector de idioma (PT/EN/TI), no canto do cartão; o tigrínia usa o tipo de letra ge'ez do portal */
+    @font-face { font-family: 'Noto Sans Ethiopic'; font-style: normal; font-weight: 400; font-display: swap;
+      src: url('../reports/css/fontes/noto-sans-ethiopic-ethiopic-400-normal.woff2') format('woff2'); unicode-range: U+1200-1399, U+2D80-2DDE, U+AB01-AB2E; }
+    @font-face { font-family: 'Noto Sans Ethiopic'; font-style: normal; font-weight: 700; font-display: swap;
+      src: url('../reports/css/fontes/noto-sans-ethiopic-ethiopic-700-normal.woff2') format('woff2'); unicode-range: U+1200-1399, U+2D80-2DDE, U+AB01-AB2E; }
+    body, input, button { font-family: 'Noto Sans Ethiopic', 'Poppins', 'Segoe UI', Arial, sans-serif; }
+    .login-container { position: relative; }
+    .idioma {
+      position: absolute; top: 14px; right: 14px; display: flex; gap: 2px; padding: 3px;
+      border: 1px solid rgba(126, 151, 204, .24); border-radius: 10px; background: rgba(6, 14, 34, .5);
+    }
+    .idioma button {
+      min-width: 34px; height: 26px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent;
+      color: #9da9c3; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; cursor: pointer;
+    }
+    .idioma button:hover, .idioma button:focus-visible { color: #fff; outline: none; background: rgba(255, 255, 255, .07); }
+    .idioma button.on { color: #fff; background: #2469ec; }
+
+    /* Nota de passo (palavra-passe nova, código de verificação) */
+    .nota-passo { margin: 0 2px 16px; font-size: 13px; line-height: 1.5; color: #c9d0e0; }
+
+    /* Selector de tema (Sistema / Claro / Escuro), no canto esquerdo do cartão */
+    .tema-login {
+      position: absolute; top: 14px; left: 14px; display: flex; gap: 2px; padding: 3px;
+      border: 1px solid rgba(126, 151, 204, .24); border-radius: 10px; background: rgba(6, 14, 34, .5);
+    }
+    .tema-login button {
+      display: grid; place-items: center; width: 30px; height: 26px; padding: 0; border: 0; border-radius: 7px;
+      background: transparent; color: #9da9c3; cursor: pointer;
+    }
+    .tema-login button:hover, .tema-login button:focus-visible { color: #fff; outline: none; background: rgba(255, 255, 255, .07); }
+    .tema-login button.on { color: #fff; background: #2469ec; }
+    .tema-login svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .idioma button:focus-visible, .tema-login button:focus-visible { box-shadow: 0 0 0 2px #45adf0; }
+
+    /* ===================== Modo claro =====================
+       Só com <html data-theme="light">; o modo escuro acima fica igual. Azuis Naval, contraste WCAG 2.2 AA. */
+    :root[data-theme='light'] { color-scheme: light; }
+    :root[data-theme='light'] body {
+      background:
+        radial-gradient(circle at 50% -20%, rgba(0, 87, 184, .14), transparent 38rem),
+        radial-gradient(circle at 8% 0%, rgba(26, 115, 201, .10), transparent 30rem),
+        #eef2f8;
+      color: #0b1f3a;
+    }
+    :root[data-theme='light'] body::before { background: #9cc3f0; opacity: .35; }
+    :root[data-theme='light'] body::after { background: #b9cde8; opacity: .35; }
+    :root[data-theme='light'] .login-container {
+      border-color: rgba(10, 42, 82, .12);
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 1px 2px rgba(10, 30, 60, .06), 0 28px 60px -28px rgba(10, 30, 60, .35);
+    }
+    :root[data-theme='light'] .brand-emblem {
+      border-color: rgba(0, 87, 184, .45);
+      background:
+        repeating-radial-gradient(ellipse at center 64%, transparent 0 7px, rgba(0, 87, 184, .9) 8px 12px, transparent 13px 18px),
+        linear-gradient(135deg, #e8f0fb, #dbe7f7);
+      box-shadow: inset 0 0 14px rgba(0, 87, 184, .15), 0 8px 20px rgba(10, 30, 60, .15);
+    }
+    :root[data-theme='light'] .brand-emblem span { border-color: rgba(0, 87, 184, .6); }
+    :root[data-theme='light'] .brand-name,
+    :root[data-theme='light'] .login-header h1 { color: #0b1f3a; }
+    :root[data-theme='light'] .login-header h1 span { color: #44546d; }
+    :root[data-theme='light'] .module-label { color: #0057b8; }
+    :root[data-theme='light'] .form-group label { color: #22344d; }
+    :root[data-theme='light'] .nota-passo { color: #44546d; }
+    :root[data-theme='light'] .input-wrapper input {
+      border-color: rgba(10, 42, 82, .22);
+      background: #f7f9fc;
+      color: #0b1f3a;
+      box-shadow: none;
+    }
+    :root[data-theme='light'] .input-wrapper input::placeholder { color: #6a7890; }
+    :root[data-theme='light'] .input-wrapper input:focus { border-color: #0057b8; box-shadow: 0 0 0 3px rgba(0, 87, 184, .18); }
+    :root[data-theme='light'] .input-wrapper > i { color: #52617a; }
+    :root[data-theme='light'] .password-toggle { color: #52617a; }
+    :root[data-theme='light'] .password-toggle:hover,
+    :root[data-theme='light'] .password-toggle:focus-visible { color: #0b1f3a; background: rgba(10, 42, 82, .07); }
+    :root[data-theme='light'] .btn-submit {
+      border-color: #004a9e;
+      background: #0057b8;
+      box-shadow: 0 10px 22px -10px rgba(0, 87, 184, .55);
+    }
+    :root[data-theme='light'] .btn-submit:hover { background: #004a9e; box-shadow: 0 14px 26px -12px rgba(0, 87, 184, .6); }
+    :root[data-theme='light'] .return-link { color: #22344d; }
+    :root[data-theme='light'] .return-link:hover { color: #0057b8; }
+    :root[data-theme='light'] .login-footer { border-top-color: rgba(10, 42, 82, .12); color: #52617a; }
+    :root[data-theme='light'] .error-alert { border-color: rgba(192, 38, 45, .4); background: #fdecec; color: #a3242a; }
+    :root[data-theme='light'] .idioma,
+    :root[data-theme='light'] .tema-login { border-color: rgba(10, 42, 82, .14); background: #eef2f8; }
+    :root[data-theme='light'] .idioma button,
+    :root[data-theme='light'] .tema-login button { color: #44546d; }
+    :root[data-theme='light'] .idioma button:hover,
+    :root[data-theme='light'] .tema-login button:hover { color: #0b1f3a; background: rgba(10, 42, 82, .07); }
+    :root[data-theme='light'] .idioma button.on,
+    :root[data-theme='light'] .tema-login button.on { color: #fff; background: #0057b8; }
+
     @media (max-width: 480px) {
       body { padding: 18px; overflow: auto; }
       .login-container { padding: 32px 22px 24px; border-radius: 18px; }
@@ -526,17 +625,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 <body>
 
   <div class="login-container">
+    <div class="tema-login" id="tema" role="group" aria-label="Tema" data-t-aria>
+      <button type="button" data-tm="sistema"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg></button>
+      <button type="button" data-tm="claro"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg></button>
+      <button type="button" data-tm="escuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg></button>
+    </div>
+    <div class="idioma" id="idioma" role="group" aria-label="Idioma / Language / ቋንቋ">
+      <button type="button" data-l="pt" lang="pt-PT" title="Português">PT</button>
+      <button type="button" data-l="en" lang="en" title="English">EN</button>
+      <button type="button" data-l="ti" lang="ti" title="ትግርኛ">TI</button>
+    </div>
     <div class="login-header">
       <div class="brand-emblem" aria-hidden="true"><span></span></div>
       <p class="brand-name">NAVAL</p>
       <h1><strong>GeoMobilidade</strong><span>Naval</span></h1>
-      <p class="module-label">Módulo operacional</p>
+      <p class="module-label" data-t>Módulo operacional</p>
     </div>
 
     <?php if (!empty($erro)): ?>
       <div class="error-alert">
         <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
-        <span><?= htmlspecialchars($erro) ?></span>
+        <span data-t><?= htmlspecialchars($erro) ?></span>
       </div>
     <?php endif; ?>
 
@@ -544,16 +653,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>" />
       <input type="hidden" name="csrf" value="<?= htmlspecialchars(naval_csrf()) ?>" />
 <?php if ($passo === 'nova'): ?>
-      <p style="margin:0 2px 16px;font-size:13px;line-height:1.5;color:#c9d0e0">Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum.</p>
+      <p data-t class="nota-passo">Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum.</p>
       <div class="form-group">
-        <label for="nova_senha">Nova palavra-passe</label>
+        <label for="nova_senha" data-t>Nova palavra-passe</label>
         <div class="input-wrapper">
           <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
           <input type="password" id="nova_senha" name="nova_senha" minlength="12" maxlength="64" autocomplete="new-password" required autofocus />
         </div>
       </div>
       <div class="form-group">
-        <label for="confirmar_senha">Confirmar a nova palavra-passe</label>
+        <label for="confirmar_senha" data-t>Confirmar a nova palavra-passe</label>
         <div class="input-wrapper">
           <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
           <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="12" maxlength="64" autocomplete="new-password" required />
@@ -562,40 +671,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 <?php elseif ($passo === 'inscrever' && !empty($_SESSION['inscricao_pendente'])):
     $ins = $_SESSION['inscricao_pendente'];
     $uri = naval_otpauth($ins['segredo'], (string) (($usuarios[$ins['login']]['email'] ?? '') ?: $ins['login'])); ?>
-      <p style="margin:0 2px 12px;font-size:13px;line-height:1.5;color:#c9d0e0">O seu perfil exige a verificação em dois passos. Leia o código QR com uma aplicação de autenticação (Microsoft Authenticator, Google Authenticator…) e insira o código de 6 dígitos que aparece.</p>
+      <p data-t class="nota-passo" style="margin-bottom:12px">O seu perfil exige a verificação em dois passos. Leia o código QR com uma aplicação de autenticação (Microsoft Authenticator, Google Authenticator…) e insira o código de 6 dígitos que aparece.</p>
       <div id="qr-inscricao" data-uri="<?= htmlspecialchars($uri, ENT_QUOTES, 'UTF-8') ?>" style="background:#fff;border-radius:8px;width:max-content;margin:0 auto 10px;padding:8px;line-height:0"></div>
-      <p style="margin:0 2px 14px;font-size:12px;color:#c9d0e0;text-align:center;word-break:break-all">Ou escreva a chave: <code id="chave-inscricao"><?= htmlspecialchars(trim(chunk_split($ins['segredo'], 4, ' '))) ?></code></p>
+      <p class="nota-passo" style="margin-bottom:14px;font-size:12px;text-align:center;word-break:break-all"><span data-t>Ou escreva a chave:</span> <code id="chave-inscricao"><?= htmlspecialchars(trim(chunk_split($ins['segredo'], 4, ' '))) ?></code></p>
       <div class="form-group">
-        <label for="codigo_inscricao">Código da aplicação</label>
+        <label for="codigo_inscricao" data-t>Código da aplicação</label>
         <div class="input-wrapper">
           <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
-          <input type="text" id="codigo_inscricao" name="codigo_inscricao" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="Código de 6 dígitos" autocomplete="one-time-code" required autofocus />
+          <input type="text" id="codigo_inscricao" name="codigo_inscricao" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="Código de 6 dígitos" data-t-ph autocomplete="one-time-code" required autofocus />
         </div>
       </div>
 <?php elseif ($passo === 'mfa'): ?>
       <div class="form-group">
-        <label for="codigo">Código de verificação</label>
+        <label for="codigo" data-t>Código de verificação</label>
         <div class="input-wrapper">
           <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
-          <input type="text" id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="Código de 6 dígitos" autocomplete="one-time-code" required autofocus />
+          <input type="text" id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="Código de 6 dígitos" data-t-ph autocomplete="one-time-code" required autofocus />
         </div>
-        <p style="margin:8px 2px 0;font-size:12.5px;opacity:.75">Abra a aplicação de autenticação no telemóvel e insira o código de GeoMobilidade Naval.</p>
+        <p data-t style="margin:8px 2px 0;font-size:12.5px;opacity:.75">Abra a aplicação de autenticação no telemóvel e insira o código de GeoMobilidade Naval.</p>
       </div>
 <?php else: ?>
       <div class="form-group">
-        <label for="usuario">Utilizador ou email</label>
+        <label for="usuario" data-t>Utilizador ou correio electrónico</label>
         <div class="input-wrapper">
           <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-          <input type="text" id="usuario" name="usuario" placeholder="Utilizador ou email" autocomplete="username" required autofocus />
+          <input type="text" id="usuario" name="usuario" placeholder="Utilizador ou correio electrónico" data-t-ph autocomplete="username" required autofocus />
         </div>
       </div>
 
       <div class="form-group">
-        <label for="senha">Palavra-passe</label>
+        <label for="senha" data-t>Palavra-passe</label>
         <div class="input-wrapper">
           <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
-          <input type="password" id="senha" name="senha" placeholder="Insira a sua palavra-passe" autocomplete="current-password" required />
-          <button class="password-toggle" type="button" id="toggle-password" aria-label="Mostrar palavra-passe">
+          <input type="password" id="senha" name="senha" placeholder="Insira a sua palavra-passe" data-t-ph autocomplete="current-password" required />
+          <button class="password-toggle" type="button" id="toggle-password" aria-label="Mostrar palavra-passe" data-t-aria>
             <i data-lucide="eye" style="width: 17px; height: 17px;"></i>
           </button>
         </div>
@@ -603,20 +712,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 
 <?php endif; ?>
       <button type="submit" class="btn-submit">
-        <span>Entrar</span>
+        <span data-t>Entrar</span>
         <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
       </button>
 
       <div style="text-align: center;">
         <a href="../" class="return-link">
           <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
-          <span>Voltar à página inicial</span>
+          <span data-t>Voltar à página inicial</span>
         </a>
       </div>
     </form>
 
     <div class="login-footer">
-      &copy; <?= date('Y') ?> GeoMobilidade Naval &bull; Todos os direitos reservados.
+      &copy; <?= date('Y') ?> GeoMobilidade Naval &bull; <span data-t>Todos os direitos reservados.</span>
     </div>
   </div>
 
@@ -635,10 +744,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     if (togglePassword) togglePassword.addEventListener('click', () => {
       const reveal = password.type === 'password';
       password.type = reveal ? 'text' : 'password';
-      togglePassword.setAttribute('aria-label', reveal ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe');
+      togglePassword.setAttribute('aria-label', window.loginT(reveal ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'));
       togglePassword.innerHTML = `<i data-lucide="${reveal ? 'eye-off' : 'eye'}" style="width: 17px; height: 17px;"></i>`;
       lucide.createIcons();
     });
   </script>
+  <script src="login-idioma.js"></script>
 </body>
 </html>

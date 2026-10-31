@@ -1,8 +1,8 @@
 // Barra de filtros comum: estado, aplicação aos dados de cada página, endereço partilhável e controlos.
 import { draw } from './app.js';
-import { pendenteDe, promotorRota } from './calculos.js';
+import { ESTADO_PT, pendenteDe, promotorRota, tipoDoc } from './calculos.js';
 import { escolha, etiquetas, fecharAberto, pesquisa } from './componentes/barra-filtros.js';
-import { t } from './i18n/i18n.js';
+import { t, tv } from './i18n/i18n.js';
 import { SESSAO } from './perfil.js';
 import { $, DB, el } from './util.js';
 
@@ -21,6 +21,7 @@ const FILTROS_PAGINA = {
   pagamentos: ['rota', 'cliente', 'tipo', 'meio'],
   pendentes: ['rota', 'cliente', 'tipo'],
   'sap-exportar': ['rota', 'tipo'],
+  agt: ['rota'],
   clientes: ['rota', 'cliente', 'tipocli', 'estadocli'],
   cadastros: ['rota'],
   'cadastros-analise': ['rota'],
@@ -28,13 +29,16 @@ const FILTROS_PAGINA = {
   'plano-visitas': ['rota', 'cliente'],
   auditoria: ['rota', 'cliente', 'tipo'],
   'registo-cargas': ['rota'],
-  'stock-carrinha': ['rota'],
-  'stock-armazem': ['rota'],
+  // stock: data = fim do período; rotas/armazéns e artigo pelos filtros gerais (sem filtros próprios na página)
+  'stock-carrinha': ['rota', 'artigo'],
+  'stock-armazem': ['armazem', 'artigo'],
   'plano-cargas': [],
   acessos: [],
   '*': ['rota', 'cliente', 'tipo', 'meio', 'estado', 'artigo', 'municipio', 'tipocli', 'estadocli'],
 };
-const FV0 = { rota: [], cliente: '', tipo: '', meio: '', estado: '', artigo: '', municipio: '', tipocli: '', estadocli: '' };
+const FV0 = { rota: [], armazem: [], cliente: '', tipo: '', meio: '', estado: '', artigo: '', municipio: '', tipocli: '', estadocli: '' };
+// Filtros de escolha múltipla (lista de valores); os outros são um só valor ou texto
+const LISTA = ['rota', 'armazem'];
 export const FV = JSON.parse(JSON.stringify(FV0));
 try {
   const x = JSON.parse(localStorage.getItem('vm-filtros') || '{}');
@@ -42,7 +46,9 @@ try {
     if (x[k] != null) FV[k] = x[k];
   });
 } catch (e) {}
-if (!Array.isArray(FV.rota)) FV.rota = [];
+LISTA.forEach((k) => {
+  if (!Array.isArray(FV[k])) FV[k] = [];
+});
 const guardarFiltros = () => {
   try {
     localStorage.setItem('vm-filtros', JSON.stringify(FV));
@@ -55,25 +61,24 @@ export const normTxt = (s) =>
     .toLowerCase()
     .trim();
 const filtrosDe = (pagina) => FILTROS_PAGINA[pagina] || [];
-export const filtroAtivo = (pagina, k) => filtrosDe(pagina).includes(k) && (k === 'rota' ? FV.rota.length > 0 : !!FV[k]);
+export const filtroAtivo = (pagina, k) => filtrosDe(pagina).includes(k) && (LISTA.includes(k) ? FV[k].length > 0 : !!FV[k]);
 // endereço: #pagina?rota=1001,1002&cliente=...
 export const filtrosURL = (pagina) =>
   filtrosDe(pagina)
     .filter((k) => filtroAtivo(pagina, k))
-    .map((k) => k + '=' + encodeURIComponent(k === 'rota' ? FV.rota.join(',') : FV[k]).replace(/%2C/g, ','))
+    .map((k) => k + '=' + encodeURIComponent(LISTA.includes(k) ? FV[k].join(',') : FV[k]).replace(/%2C/g, ','))
     .join('&');
 export function lerFiltrosURL(qs) {
   const p = new URLSearchParams(qs);
   Object.keys(FV0).forEach((k) => {
     if (p.has(k))
-      FV[k] =
-        k === 'rota'
-          ? p
-              .get(k)
-              .split(',')
-              .map((x) => x.trim())
-              .filter(Boolean)
-          : p.get(k);
+      FV[k] = LISTA.includes(k)
+        ? p
+            .get(k)
+            .split(',')
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : p.get(k);
   });
   guardarFiltros();
 }
@@ -108,7 +113,7 @@ export function prepararDados(pagina) {
   const okVenda = (v) =>
     okRota(v) &&
     (!qc || normTxt([v.cliente, v.nif, v.cliente_codigo].join(' ')).includes(qc)) &&
-    (!tp || (v.tipo === 'Factura' ? 'FT' : 'FR') === tp) &&
+    (!tp || tipoDoc(v) === tp) &&
     (!me || (me === '-' ? !(v.pagamentos || []).length : (v.pagamentos || []).some((x) => x.codigo === me))) &&
     (!es || (es === 'pendente') === pendenteDe(v) > 0.005) &&
     (!docsArtigo || docsArtigo.has(v.documento));
@@ -133,20 +138,26 @@ export function prepararDados(pagina) {
     DB[k] = VISTA[k];
   });
 }
-// Tipos de documento: FR e FT
-function tiposPresentes() {
-  return [
+// Tipos de documento presentes nos dados (base de dados: códigos do DOCCONFIG; exportação REST: FR, FT e NC)
+function tiposPresentes(vendas) {
+  const m = new Map([
     ['FR', t('Factura-recibo')],
     ['FT', t('Factura')],
-  ];
+  ]);
+  if ((vendas || []).some((v) => v.tipo_codigo)) {
+    m.clear();
+    vendas.forEach((v) => m.set(tipoDoc(v), t(v.tipo || tipoDoc(v))));
+  }
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 // Descrição dos filtros activos (capa do Excel, nota das páginas)
 export function descreverFiltros(pagina) {
-  const NOMES = { tipo: { FR: 'Factura-recibo', FT: 'Factura' }, estado: { pago: 'Pagos', pendente: 'Pendentes' } };
+  const NOMES = { tipo: { FR: 'Factura-recibo', FT: 'Factura', NC: 'Nota de crédito' }, estado: { pago: 'Pagos', pendente: 'Pendentes' } };
   return filtrosDe(pagina)
     .filter((k) => filtroAtivo(pagina, k))
     .map((k) => {
       if (k === 'rota') return (FV.rota.length > 1 ? t('Rotas') : t('Rota')) + ': ' + FV.rota.join(', ');
+      if (k === 'armazem') return (FV.armazem.length > 1 ? t('Armazéns') : t('Armazém')) + ': ' + FV.armazem.map(nomeArmazem).join(', ');
       if (k === 'meio') return t('Meio de cobrança') + ': ' + (FV.meio === '-' ? t('Sem meio indicado') : nomeMeio(FV.meio));
       const rot = {
         cliente: 'Cliente',
@@ -161,6 +172,16 @@ export function descreverFiltros(pagina) {
     })
     .join(' · ');
 }
+// Armazéns centrais do stock carregado: [{id, titulo, subtitulo}]
+const armazensStock = () => {
+  const m = new Map();
+  ((DB.stock && DB.stock.armazens) || []).forEach((a) => {
+    const id = String(a.cod_armazem || a.armazem);
+    if (!m.has(id)) m.set(id, { id, titulo: a.armazem || id, subtitulo: (a.cod_armazem ? t('Código') + ' ' + a.cod_armazem + ' · ' : '') + (a.centro || '') });
+  });
+  return [...m.values()].sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt', { numeric: true }));
+};
+const nomeArmazem = (id) => (armazensStock().find((a) => a.id === id) || { titulo: id }).titulo;
 const nomeMeio = (cod) => {
   for (const v of DADOS_COMPLETOS.vendas || DB.vendas || []) for (const x of v.pagamentos || []) if (x.codigo === cod) return x.meio;
   return cod;
@@ -169,7 +190,7 @@ const nomeMeio = (cod) => {
 export const filtroAberto = (aplica) => {
   if (fecharAberto && aplica !== false) fecharAberto();
 };
-const ICONE_FILTRO = { rota: 'route', tipo: 'file', meio: 'card', estado: 'clock', municipio: 'ware', tipocli: 'users', estadocli: 'shield' };
+const ICONE_FILTRO = { rota: 'route', armazem: 'ware', tipo: 'file', meio: 'card', estado: 'clock', municipio: 'ware', tipocli: 'users', estadocli: 'shield' };
 export function desenharFiltros(pagina) {
   const box = $('#filtros2'),
     lista = filtrosDe(pagina),
@@ -235,7 +256,12 @@ export function desenharFiltros(pagina) {
   };
   const rotasDisp = () => {
     const minhas = SESSAO && Array.isArray(SESSAO.rotas) ? SESSAO.rotas.map(String) : null;
-    let rs = opcoes([...Object.keys(DB.mapRota || {}), ...(C.vendas || []).map((x) => x.rota), ...(C.clientes || []).map((x) => x.rota)]);
+    let rs = opcoes([
+      ...Object.keys(DB.mapRota || {}),
+      ...(C.vendas || []).map((x) => x.rota),
+      ...(C.clientes || []).map((x) => x.rota),
+      ...((DB.stock && DB.stock.carrinhas) || []).map((x) => x.rota),
+    ]);
     if (minhas) rs = rs.filter((r) => minhas.includes(r));
     return rs;
   };
@@ -245,7 +271,10 @@ export function desenharFiltros(pagina) {
     .forEach((k) => {
       if (k === 'cliente')
         texto('cliente', t('Cliente (nome ou NIF)'), opcoes([...(C.vendas || []).map((x) => x.cliente), ...(C.clientes || []).map((x) => x.nome)]));
-      else texto('artigo', t('Artigo (nome ou código)'), opcoes((C.artigos || []).map((x) => x.artigo)));
+      else {
+        const stk = DB.stock ? [...(DB.stock.linhas_carrinhas || []), ...(DB.stock.linhas_armazens || [])].map((x) => x.produto || x.artigo) : [];
+        texto('artigo', t('Artigo (nome ou código)'), opcoes([...(C.artigos || []).map((x) => x.artigo), ...stk]));
+      }
     });
   lista.forEach((k) => {
     if (k === 'rota') {
@@ -270,6 +299,32 @@ export function desenharFiltros(pagina) {
           txt: promotorRota(r),
           remover: () => {
             FV.rota = FV.rota.filter((x) => x !== r);
+            aplicar();
+          },
+        }),
+      );
+    } else if (k === 'armazem') {
+      const as = armazensStock();
+      if (!as.length && !FV.armazem.length) return;
+      linha.append(
+        escolha({
+          titulo: t('Armazéns'),
+          icone: ICONE_FILTRO.armazem,
+          opcoes: as,
+          selecionados: FV.armazem.slice(),
+          multipla: true,
+          procurar: t('Procurar armazém…'),
+          aoMudar: (sel) => {
+            FV.armazem = sel.filter((x) => as.some((a) => a.id === x));
+            aplicar();
+          },
+        }),
+      );
+      FV.armazem.forEach((a) =>
+        etiq.push({
+          txt: nomeArmazem(a),
+          remover: () => {
+            FV.armazem = FV.armazem.filter((x) => x !== a);
             aplicar();
           },
         }),
@@ -301,7 +356,7 @@ export function desenharFiltros(pagina) {
         unica(
           'tipocli',
           t('Tipo de cliente'),
-          ts.map((x) => [x, t(x)]),
+          ts.map((x) => [x, tv(x)]),
         );
     } else if (k === 'estadocli') {
       const es = opcoes((C.clientes || []).map((x) => x.estado));
@@ -309,7 +364,7 @@ export function desenharFiltros(pagina) {
         unica(
           'estadocli',
           t('Estado do cliente'),
-          es.map((x) => [x, t(x)]),
+          es.map((x) => [x, tv(ESTADO_PT[x] || x)]),
         );
     }
   });

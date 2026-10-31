@@ -14,11 +14,20 @@ test('mostra um relatório de cada vez e muda pelos separadores', async ({ page 
   await expect(page.locator('.nav-sub a.on')).toHaveText('Promotor × dia');
 });
 
-test('lembra o último relatório aberto em cada página', async ({ page }) => {
+test('escolher uma página no menu abre o primeiro relatório; abrir uma área abre a primeira página', async ({ page }) => {
   await abrir(page, '#documentos/dc');
   await page.click('#nav a[href="#vendas-promotor"]');
   await page.click('#nav a[href="#documentos"]');
-  await expect(page.locator('.rel-tab.on')).toHaveText('Documentos Pinguim');
+  const primeiro = await page.locator('.rel-tab').first().textContent();
+  await expect(page.locator('.rel-tab.on')).toHaveText(primeiro);
+  await expect(page.locator('.nav-sub a.on')).toHaveText(primeiro);
+  // abrir a área Recebimentos selecciona a primeira página dela (Cobranças)
+  await page.locator('.navg', { hasText: 'Recebimentos' }).click();
+  await expect(page).toHaveURL(/#pagamentos/);
+  await expect(page.locator('#nav a[href="#pagamentos"]')).toHaveClass(/on/);
+  // o Início continua a fechar as áreas sem seleccionar nada
+  await page.click('#nav a[href="#inicio"]');
+  await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(0);
 });
 
 test('menu em acordeão: áreas fechadas, só uma aberta de cada vez, a da página actual abre sozinha', async ({ page }) => {

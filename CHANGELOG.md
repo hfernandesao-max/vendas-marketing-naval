@@ -4,6 +4,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 01-11-2026
 
+### Junção (servidor + GitHub)
+- **Uma só versão do código:** junta o que estava no servidor (pacotes de 28 a 30-10: stock e vendas pela base de dados,
+  sincronização, tigrínia e idioma por conta, modo claro, notas de crédito, Comunicação AGT) com o que estava no GitHub
+  (API central v1 com JWT, segurança ASVS, pré-preenchimento do plano de cargas, localização das entradas, plano sem
+  Excel). Ponto comum: commit ca0b85a (27-10, 11:37).
+- Serviços do servidor passados para a API v1 (`reports/data/` não serve PHP): `v1/stock` e `v1/agt`; a página de
+  escolha pede o perfil e o idioma da conta pela API (`v1/auth/token` + `v1/sessao`).
+- Ficheiro SAP: fica o formato que estava em produção (uma folha, um cabeçalho, sem estilos).
+- Página de entrada e «Mudar a palavra-passe»: regras novas de palavra-passe (12 caracteres, sem palavras-passe comuns),
+  verificação em dois passos na entrada, tema claro/escuro e PT/EN/TI.
+- Retirado do repositório: `Clientes (59).csv` (dados pessoais de clientes); o diagnóstico SQL do stock passa a
+  ferramenta de linha de comandos, sem valores de ligação predefinidos.
+
 ### Segurança
 - **Localização das entradas nos Registos de actividade:** país, região e cidade aproximados de cada IP (com o raio de
   precisão e ligação ao mapa), calculados no servidor com uma base de dados local no formato MaxMind DB
@@ -27,6 +40,136 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   preenchido nem altera planos publicados. Ao marcar uma rota vazia como «sai», preenche-se da mesma forma. Cada
   cartão mostra «pré-preenchido com o registo de dd-mm · confirme». A API devolve as sugestões só a quem gere o
   plano (`sugestoes` em `GET v1/plano`).
+
+## 30-10-2026
+
+### Adicionado (Integrações)
+- **Comunicação AGT** (`#agt`, menu Integrações): cada documento de vendas do período com rota, tipo de documento,
+  documento, total, data do documento, data fiscal, estado AGT (número do pedido de comunicação), estado do documento
+  (activo / anulado, com o motivo de cancelamento), nome da entidade e estado (comunicado / por comunicar).
+  Fonte: `DOCHEADEREXTRA` ligada ao `DOCHEADER` por `DOCHEADER_ID`, campos extra 26046 «request_number» e 26003
+  «Motivo de cancelamento» (tabela `DOCEXTRA`; mudam-se no .env com `AGT_PEDIDO_ID` e `AGT_ANULACAO_ID`), só SELECT.
+  O Pinguim BO guarda o pedido, não a resposta da AGT. Nova linha «agt» na matriz de acessos (TI, DIR e BO ver;
+  FIN e AUD exportar), editável no portal.
+
+### Corrigido (cálculo)
+- **Total de vendas líquido de notas de crédito**: Total de Vendas Líquidas = Facturas − Notas de Crédito. Antes, as
+  consultas ao Pinguim BO só traziam documentos com total positivo (e a exportação REST só FR/FT), pelo que as notas
+  de crédito ficavam de fora e o total de vendas era o bruto facturado.
+  - Origem (`nucleo/servicos/vendas.php`, só SELECT): as notas de crédito não anuladas (sinal de vendas negativo no
+    `DOCHEADER`; `NC` na exportação REST) passam a vir com o total e as linhas em negativo e `nc: true`, sem pagamentos.
+  - Portal (`reports/js/calculos.js` e páginas): qualquer total de vendas é líquido (Início, Vendas por promotor, dia,
+    cliente e artigo, Classificação, Documentos, Auditoria, Plano de visitas). As notas de crédito não contam como
+    documentos, clientes com compras, visitas, recebido nem pendentes; «Facturas pendentes» passa a somar o que falta em
+    cada factura; a taxa de cobrança mede-se sobre o facturado. Quando há notas de crédito, o quadro das vendas mostra
+    o valor descontado.
+  - Ficheiro SAP: continua só com facturas (as notas de crédito não entram; decisão de 30-10-2026).
+  - Testes: cenários sem, com uma, com várias e com nota de crédito parcial, sem vendas, fora do período e anuladas.
+
+### Adicionado
+- **Modo claro** no Portal RTM, na página de escolha (`index.html`) e na página de entrada (`geo/login.php`), com o
+  selector **Sistema / Claro / Escuro** (por omissão segue o sistema operativo). A escolha fica no navegador (`vm-tema`)
+  e vale nas três páginas; aplica-se antes do primeiro desenho (`reports/js/tema-arranque.js`), sem clarão.
+  Só visual: regras de negócio, serviços, consultas e base de dados não mudam.
+- **Cores centralizadas em tokens** (`reports/css/cores.css`): as cores fixas dos estilos do portal passaram a tokens
+  semânticos com valores para cada tema; o modo escuro mantém exactamente os valores anteriores. Azuis Naval no modo
+  claro, textos com contraste WCAG 2.2 AA (≥ 4,5:1).
+- Testes do tema (`tests/portal/tema.spec.js`, `tests/servidor/tema.spec.js`): selector, persistência, seguir o
+  sistema, partilha entre páginas e contraste AA no modo claro.
+
+### Corrigido
+- **Cartão da conta no menu lateral**: o nome da conta, quando é genérico (ex.: «Administrador»), passa a aparecer na
+  língua escolhida, como o nome do perfil; nomes de pessoas ficam como estão registados. O mesmo no «Gerado por» dos Excel.
+- **Cartão dos telemóveis no menu lateral**: passa a mudar de língua com o resto do portal (antes só mudava na leitura
+  seguinte da sincronização, ao fim de um minuto). Só visual e idioma.
+- **Página de escolha (Reports / GEO)** (`index.html`): passa a ter o tigrínia (botão TI, textos e tipo de letra ge'ez);
+  antes só conhecia PT e EN e, com o tigrínia escolhido, ficava em português. A cada nova entrada abre no idioma da
+  ficha da conta, como o portal. Só visual e idioma.
+
+## 29-10-2026 (página de entrada)
+
+### Adicionado
+- **Selector de idioma (PT/EN/TI) na página de entrada** (`geo/login.php` e `geo/login-idioma.js`): textos, campos,
+  passos de verificação e de nova palavra-passe e mensagens de erro na língua escolhida, com o tipo de letra ge'ez do
+  portal. Só visual e idioma: a entrada, as validações e os dados não mudam. Depois de entrar, o portal abre no idioma
+  da ficha da conta.
+
+## 29-10-2026 (idioma por conta e menu)
+
+### Adicionado
+- **Idioma do portal na ficha de cada conta** (Português, English, ትግርኛ), campo obrigatório ao criar e alterar contas
+  (validado também no servidor) e coluna «Idioma» na lista de utilizadores. Sempre que a pessoa entra, o portal abre
+  nesse idioma; a escolha no topo (PT/EN/TI) vale até à entrada seguinte. Contas antigas sem idioma abrem em português
+  até serem alteradas. A alteração do idioma fica no registo de actividade.
+
+### Alterado
+- **Menu**: abrir uma área selecciona logo a primeira página dessa área, e escolher uma página abre sempre o primeiro
+  relatório (o que está imediatamente a seguir). O «Início» mantém o comportamento: fecha as áreas.
+- **Pré-visualização do ficheiro para o SAP**: os nomes das colunas ficam iguais em todas as línguas (INVOICENO,
+  DOCUMENT_DATE, Artigo, QUANTITY, Determinação da location, NETSALES, TAXAMOUNT, GROSSSALES, Invoice Total, CASH AMOUNT,
+  CARD AMOUNT, CUSTOMER, SALES EMPLOYEE, e as colunas ocultas LOJA, PRODUCT, UNIT, STORAGELOCATION), porque são os que
+  a integração entre os dois sistemas reconhece.
+
+## 29-10-2026 (revisão das três línguas)
+
+### Corrigido
+- **Tigrínia e inglês sem textos em português**: nomes das páginas e funções da matriz de acessos, nomes dos perfis,
+  registos de actividade (acção, campos e valores), mensagens do servidor (com partes variáveis, como «Lote 12 não
+  encontrado»), tipos e estados de cliente, meios de cobrança, folhas e colunas dos Excel (relatório consolidado,
+  «Exportar dados» e dicionário técnico), etiquetas de acessibilidade e nomes dos ficheiros transferidos.
+- Siglas portuguesas em tigrínia: IVA → ግ.ወ.ዋ (ግብሪ ወሰኽ ዋጋ), NIF → መ.ቁ.ግ (መለለዪ ቁጽሪ ግብሪ); símbolos dos níveis de
+  acesso pela inicial do verbo em cada língua (PT V/E/G/A · EN V/E/M/A · TI ር/ው/ሕ/ም).
+- **Português sem anglicismos**: «depósito SAP» (SAP location), «Classificação» (Ranking), «telemóveis» (smartphones),
+  «correio electrónico» / «mensagem» (email), «Apoio administrativo RTM» (Back-office), «numerário» (Cash), «face a» (vs).
+  Mantém-se «stock», como no SAP em português de Portugal.
+- Pré-visualização do ficheiro para o SAP com os nomes das colunas na língua escolhida (o código do SAP aparece na dica);
+  o ficheiro gerado continua igual ao modelo do SAP.
+- O registo de auditoria das exportações guarda sempre o nome em português, seja qual for a língua do ecrã.
+
+### Adicionado
+- Controlo de qualidade da tradução: `t()` regista os textos pedidos sem tradução; o teste `idiomas.spec.js` percorre
+  todas as páginas em tigrínia e em inglês e falha se aparecer algum, e verifica que não há português nas traduções
+  inglesas.
+
+## 29-10-2026
+
+### Adicionado
+- **Tigrínia (ትግርኛ)** como terceira língua do portal de vendas, ao lado de PT e EN (botão «TI» no topo; a escolha
+  fica guardada no navegador). Todos os textos da interface traduzidos (1186), com ortografia da Eritreia e a
+  terminologia da tradução tigrínia do MediaWiki; glossário em `docs/GLOSSARIO-TIGRINIA.md`.
+- Atributo `lang="ti"` na página (BCP 47), meses e dias da semana em ge'ez (CLDR), números e moeda sem alteração.
+- Tipo de letra Noto Sans Ethiopic (licença OFL) servido pelo próprio portal, só para caracteres ge'ez
+  (`unicode-range`), sem depender da internet nem do Windows ter o tipo de letra instalado.
+- Teste `tests/portal/idiomas.spec.js`: nenhum texto sem tradução, marcadores `{x}` iguais, sem palavras em português ou
+  inglês fora de siglas e nomes de sistemas, e todas as páginas sem erros em tigrínia.
+
+## 28-10-2026
+
+### Alterado
+- **Sincronização dos smartphones**: uma única consulta à base de dados, a definida pela gestão (última
+  sincronização por rota em `SYNC_PHSE_HISTORY`, sem a loja de formação, da mais recente para a mais antiga). A página
+  mostra, por esta ordem: Rota, Data última sincronização e Distribuição das horas (barra com as horas desde a última
+  sincronização, cor do estado e marcas nos limites). Sai o histórico de 14 dias, que precisava de outra consulta.
+- **Botão «Actualizar»**: recarrega o portal (como F5), mantendo a página, o período e os filtros.
+- Texto das consultas e parâmetros enviado pelo ODBC em Windows-1252 (comparações com acentos, como «FORMAÇÃO»).
+- **Filtros consolidados nas páginas de stock**: deixam de ter filtros próprios (data, armazém, botão «Consultar» e
+  barra de pesquisa separada). Usam só os filtros gerais do portal, como as restantes páginas: a data do stock é o fim
+  do período escolhido no topo; «Rotas» e «Artigo» no stock por carrinha; «Armazéns» (novo filtro geral) e «Artigo» no
+  stock por armazém. Um só pedido à base de dados por data; mudar rotas, armazéns ou artigo não repete a consulta; os
+  dados renovam-se ao fim de 5 minutos, como o resto do portal.
+- **Cálculo do stock** (`dbo.GET_STOCK`): artigos de cada armazém a partir dos movimentos, das contagens de inventário e
+  dos saldos registados; só armazéns reais e registos não apagados; a consulta só usa colunas que existem na base de
+  dados (lidas em `INFORMATION_SCHEMA`); data no formato canónico do ODBC.
+- O diagnóstico do stock usa exactamente a consulta do portal (desde 01-11-2026 na linha de comandos: `php ferramentas/teste-stock-sql.php AAAAMMDD [armazém]`).
+
+### Corrigido
+- Acentos vindos da base de dados pelo driver ODBC (Windows-1252) passam a UTF-8 («Armazém», «SABÃO», «BEBÉ»).
+- Quando o cálculo do stock falha, o portal mostra o motivo (tempo excedido, permissão, estrutura, ligação) e
+  «Tentar de novo», em vez de mostrar sem aviso dados antigos de um ficheiro.
+
+### Removido
+- Cópias antigas sem uso: `stockold*.php`, `vendasold*.php`, `stockold2.php`, `teste_vendas_sqlold.php`,
+  `fontesold.js`, `logisticaold.js`, `sapold*.js`. O ficheiro de stock para testes sem base de dados é `reports/data/stock.json`.
 
 ## 27-10-2026
 

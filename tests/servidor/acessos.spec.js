@@ -65,6 +65,7 @@ test('alterar contas exige o super administrador, o código da sessão e a confi
     perfil: 'COM',
     rotas: [],
     activo: true,
+    idioma: 'ti',
   };
   expect((await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: 'x' } })).status()).toBe(403);
   const c = await csrf(sadm);
@@ -75,6 +76,19 @@ test('alterar contas exige o super administrador, o código da sessão e a confi
   // email repetido é recusado
   const rep = await (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, conta: 'outro.teste', csrf: c } })).json();
   expect(rep.erro).toContain('já está associado');
+  // o idioma do portal é obrigatório e só aceita PT, EN ou TI
+  const semIdioma = await (
+    await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, conta: 'outro.teste', email: 'outro@naval.co.ao', idioma: '', csrf: c } })
+  ).json();
+  expect(semIdioma.erro).toBe('Indique o idioma do portal.');
+  const vista = await (await sadm.get('/api/index.php/v1/gestao')).json();
+  expect(vista.utilizadores.find((u) => u.login === 'novo.teste').idioma).toBe('ti');
+});
+
+test('a sessão indica o idioma da ficha da conta e o momento da entrada', async () => {
+  const s = await (await (await entrar('sadm')).ctx.get('/api/index.php/v1/sessao')).json();
+  expect(s.idioma).toBe('pt'); // conta sem idioma definido abre em português
+  expect(s.entrada).toBeGreaterThan(0);
 });
 
 test('páginas do GEO respeitam a matriz', async () => {

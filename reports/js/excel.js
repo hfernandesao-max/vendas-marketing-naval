@@ -2,7 +2,7 @@
 import { FITS, REG, definirFits, definirReg, download, fname, numType, rawVal } from './componentes/blocos.js';
 import { dadosCompletos, descreverFiltros, prepararDados } from './filtros.js';
 import { dl } from './formatos.js';
-import { t } from './i18n/i18n.js';
+import { t, tv } from './i18n/i18n.js';
 import { R } from './paginas/registo.js';
 import { SESSAO, atual, podeExportar } from './perfil.js';
 import { hoje, inR, st } from './periodo.js';
@@ -55,7 +55,7 @@ async function autorizarExportacao(completo, tabela, linhas) {
     const d = await r.json().catch(() => null);
     if (!d) return !SESSAO; // resposta que não é JSON: teste local sem PHP
     if (!d.ok) {
-      toast(d.erro || t('O seu perfil não permite exportar esta informação.'), 7000);
+      toast(t(d.erro || 'O seu perfil não permite exportar esta informação.'), 7000);
       return false;
     }
     return true;
@@ -65,7 +65,7 @@ async function autorizarExportacao(completo, tabela, linhas) {
 }
 // Nome do Excel completo: «RTM - Controlo de Gestão Consolidado-DD-MM-AAAA», com a data do dia em que é retirado
 export const NOME_CONSOLIDADO = 'RTM - Controlo de Gestão Consolidado';
-export const nomeConsolidado = () => NOME_CONSOLIDADO + '-' + dl(hoje()) + '.xlsx';
+export const nomeConsolidado = () => t(NOME_CONSOLIDADO) + '-' + dl(hoje()) + '.xlsx';
 export async function exportarExcel(paginas, nomeFicheiro) {
   const completo = paginas.length > 1,
     linhas = paginas.reduce((s, p) => s + (p.tabelas || []).reduce((a, tb) => a + (tb.rows || []).length, 0), 0);
@@ -73,7 +73,8 @@ export async function exportarExcel(paginas, nomeFicheiro) {
     toast(t('O seu perfil não permite exportar esta informação.'), 6000);
     return;
   }
-  if (!(await autorizarExportacao(completo, nomeFicheiro, linhas))) return;
+  // o registo de auditoria guarda o nome em português (língua do sistema), seja qual for a língua do ecrã
+  if (!(await autorizarExportacao(completo, completo ? NOME_CONSOLIDADO : paginas[0].pagina || nomeFicheiro, linhas))) return;
   return gerarExcel(paginas, nomeFicheiro);
 }
 async function gerarExcel(paginas, nomeFicheiro) {
@@ -95,13 +96,13 @@ async function gerarExcel(paginas, nomeFicheiro) {
     capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 34 }, { width: 10 }];
     capa.getCell('B2').value = 'Grupo Naval Angola';
     capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
-    capa.getCell('B3').value = paginas.length === 1 ? t('Portal RTM') + ' · ' + t(paginas[0].pagina) : NOME_CONSOLIDADO;
+    capa.getCell('B3').value = paginas.length === 1 ? t('Portal RTM') + ' · ' + t(paginas[0].pagina) : t(NOME_CONSOLIDADO);
     capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
     [
       ['Período', periodo],
       ['Filtros', descreverFiltros(paginas.length === 1 ? atual : '*') || t('Sem filtros')],
       ['Gerado em', dl(hoje()) + ' ' + new Date().toTimeString().slice(0, 5)],
-      ['Gerado por', SESSAO ? SESSAO.nome + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
+      ['Gerado por', SESSAO ? tv(SESSAO.nome) + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
       ...(paginas.length > 1
         ? [
             [
@@ -110,7 +111,7 @@ async function gerarExcel(paginas, nomeFicheiro) {
             ],
           ]
         : []),
-      ['Nota', t('Valores em kwanzas (Kz). Os totais usam SUBTOTAL e acompanham os filtros.')],
+      ['Nota', t('Valores em kwanzas (Kz). Os totais acompanham os filtros.')],
       ['', t('Fontes: Pinguim BO (vendas e carteira de clientes) e plano de cargas.')],
     ].forEach(([k, v], i) => {
       const r = 5 + i;
@@ -293,6 +294,7 @@ export function recolher(id) {
 // Boas práticas de exportação de dados: uma tabela por folha, cabeçalho numa só linha, sem células unidas,
 // tipos reais (datas como datas, valores como números), tabelas do Excel com nome e filtros, painéis
 // fixos e um dicionário de dados com a descrição de cada coluna.
+const CATEGORIAS = new Set(['tipo', 'tipo_cliente', 'meio', 'meio_pagamento', 'estado', 'situacao', 'liquidado', 'dia', 'dias', 'com_gps']);
 const TIPO_FMT = { data: FMT.date, kz: '#,##0.00', n: '#,##0', q: '#,##0.##' };
 /** Conjuntos de dados de base. D: dados (por omissão os do período, sem filtros); dentro: datas incluídas. */
 export function conjuntosDados(D = dadosCompletos(), dentro = inR) {
@@ -304,18 +306,18 @@ export function conjuntosDados(D = dadosCompletos(), dentro = inR) {
     {
       folha: 'Dados · Documentos',
       tabela: 'Documentos',
-      desc: 'Documentos de venda do período (um por linha)',
+      desc: 'Documentos de venda e notas de crédito do período (um por linha)',
       cols: [
         ['data', 'Data', 'data', 'Data do documento'],
         ['hora', 'Hora', 'texto', 'Hora do documento'],
         ['rota', 'Rota', 'texto', 'Código da rota (loja no Pinguim BO)'],
         ['promotor', 'Promotor', 'texto', 'Promotor da rota'],
-        ['tipo', 'Tipo de documento', 'texto', 'Factura-recibo ou factura'],
+        ['tipo', 'Tipo de documento', 'texto', 'Factura-recibo, factura ou nota de crédito'],
         ['documento', 'Documento', 'texto', 'Número do documento'],
         ['cliente_codigo', 'Código do cliente', 'texto', 'Código do cliente no Pinguim BO'],
         ['cliente', 'Cliente', 'texto', 'Nome do cliente'],
         ...nif,
-        ['total', 'Total (Kz)', 'kz', 'Valor do documento com IVA'],
+        ['total', 'Total (Kz)', 'kz', 'Valor do documento com IVA (negativo nas notas de crédito)'],
         ['valor_pago', 'Valor cobrado (Kz)', 'kz', 'Valor recebido no documento, já sem o troco'],
         ['por_receber', 'Por receber (Kz)', 'kz', 'Total menos o valor cobrado'],
         ['liquidado', 'Liquidado', 'texto', 'Sim se o documento está totalmente pago'],
@@ -463,7 +465,9 @@ export function acrescentarDados(wb, F, usados, capa, linhaIndice, conjuntos = c
       if (v == null || v === '') return null;
       if (c[2] === 'data') return toDate(String(v).slice(0, 10));
       if (c[2] !== 'texto') return isNaN(+v) ? null : +v;
-      return String(v);
+      // categorias (tipo de documento, meio de cobrança, estado, situação…) na língua escolhida; nomes ficam como estão
+      if (v === 'Sim' || v === 'Não') return t(v);
+      return CATEGORIAS.has(c[0]) ? String(v).split(', ').map(tv).join(', ') : String(v);
     };
     ws.addTable({
       name: 'tbl' + ds.tabela,

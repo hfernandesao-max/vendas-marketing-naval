@@ -7,7 +7,7 @@ import { $, el, svg } from './util.js';
 
 // Cada secção de uma página passa a ser um relatório: mostra-se um de cada vez (separadores no topo e
 // sub-itens no menu), com os indicadores e os filtros da página sempre visíveis.
-const SEM_DIVISAO = ['plano-cargas', 'inicio', 'cadastros']; // painéis que se lêem de uma vez
+const SEM_DIVISAO = ['plano-cargas', 'inicio', 'cadastros', 'stock-carrinha']; // painéis que se lêem de uma vez (o stock mostra todas as carrinhas seguidas)
 export let RELS = [],
   REL_ATUAL = '',
   REL_PEDIDO = '';
@@ -84,6 +84,13 @@ let grupoAberto = null,
 try {
   grupoAberto = localStorage.getItem('vm-grupo-aberto') || null;
 } catch (e) {}
+// Ao escolher uma página no menu abre-se sempre o primeiro relatório (o que está logo a seguir); a memória do
+// relatório só serve para manter o que está aberto quando a mesma página se volta a desenhar.
+const esquecerRelatorio = (pagina) => {
+  try {
+    localStorage.removeItem('vm-rel-' + pagina);
+  } catch (e) {}
+};
 const guardarGrupo = () => {
   try {
     if (grupoAberto) localStorage.setItem('vm-grupo-aberto', grupoAberto);
@@ -132,11 +139,18 @@ export function nav() {
       lista.inert = !aberto;
       const dentro = el('div', 'navl-in');
       lista.append(dentro);
+      // Abrir uma área selecciona logo a primeira página dessa área (a que está imediatamente a seguir)
+      const primeira = visiveis.find((x) => x.grupo === p.grupo);
       b.addEventListener('click', () => {
         const abre = b.getAttribute('aria-expanded') !== 'true';
         abrirGrupo(n, abre ? b : null);
         grupoAberto = abre ? p.grupo : null;
         guardarGrupo();
+        if (abre && primeira) {
+          esquecerRelatorio(primeira.id);
+          const qp = filtrosURL(primeira.id);
+          location.hash = '#' + primeira.id + (qp ? '?' + qp : '');
+        }
       });
       n.append(b, lista);
       caixa = dentro;
@@ -150,7 +164,10 @@ export function nav() {
       a.className = 'on';
       a.setAttribute('aria-current', 'page');
     }
-    a.addEventListener('click', () => $('#app').classList.remove('open'));
+    a.addEventListener('click', () => {
+      $('#app').classList.remove('open');
+      esquecerRelatorio(p.id);
+    });
     // Início: fecha todas as áreas do menu (mesmo já estando no Início) e volta ao topo
     if (p.id === 'inicio')
       a.addEventListener('click', () => {

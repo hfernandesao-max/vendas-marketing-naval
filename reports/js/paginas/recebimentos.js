@@ -1,5 +1,5 @@
 // Recebimentos: cobranças (dinheiro recebido das vendas, por meio de cobrança) e facturas pendentes.
-import { isCF, pagosDe, pendenteDe, porMeio, promotorRota, recebidoDe, temMeio, valorCat, vendasR } from '../calculos.js';
+import { docsVenda, isCF, pagosDe, pendenteDe, pendentesDe, porMeio, promotorRota, recebidoDe, temMeio, valorCat, vendasR } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { kz2, mkz, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -146,16 +146,16 @@ R.pendentes = (pg) => {
 };
 R.pagamentos = (pg) => {
   const V = vendasR(),
-    tot = sum(V, 'total'),
+    facturado = sum(docsVenda(V), 'total'), // a taxa de cobrança mede-se sobre as facturas (as notas de crédito não se cobram)
     liq = sum(V, recebidoDe),
-    pend = tot - liq,
+    pend = pendentesDe(V),
     meio = temMeio();
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa'),
     pp0 = (v) => t('{p} do recebido', { p: pct(liq ? v / liq : null) });
   pg.append(
     tiles([
-      { l: t('Valor recebido'), v: mkz(liq), s: t('Taxa de cobrança: {p}', { p: pct(tot ? liq / tot : null) }) },
+      { l: t('Valor recebido'), v: mkz(liq), s: t('Taxa de cobrança: {p}', { p: pct(facturado ? liq / facturado : null) }) },
       { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de cobrança') },
       { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de cobrança') },
       {
