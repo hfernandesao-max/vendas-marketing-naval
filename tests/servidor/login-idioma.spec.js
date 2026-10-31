@@ -1,7 +1,7 @@
 // Página de entrada: selector PT/EN/TI (só visual e idioma; a entrada e as validações não mudam).
 import { test, expect } from '@playwright/test';
 
-test('selector de idioma na entrada: textos, marcadores de campo e mensagens do servidor na língua escolhida', async ({ page }) => {
+test('selector de idioma na entrada: textos, marcadores de campo e mensagens do servidor na língua escolhida @navegador', async ({ page }) => {
   await page.goto('/geo/login.php');
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
   await expect(page.locator('label[for="usuario"]')).toHaveText('Utilizador ou correio electrónico');
@@ -22,7 +22,7 @@ test('selector de idioma na entrada: textos, marcadores de campo e mensagens do 
   await expect(page.locator('.error-alert span')).toContainText('Utilizador ou palavra-passe incorrectos.');
 });
 
-test('página de escolha (Reports / GEO): PT, EN e TI, com o idioma da ficha da conta a cada entrada', async ({ page }) => {
+test('página de escolha (Reports / GEO): PT, EN e TI, com o idioma da ficha da conta a cada entrada @navegador', async ({ page }) => {
   await page.goto('/geo/login.php');
   await page.fill('#usuario', 'sadm');
   await page.fill('#senha', 'Teste-12345!');

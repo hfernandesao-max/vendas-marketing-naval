@@ -49,8 +49,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Só os pedidos aos serviços (sem navegador nesta máquina); os testes marcados @navegador correm no trabalho «testes»
       - name: Testes dos serviços nesta versão do PHP
-        run: npm ci && npx playwright test --project=servidor
+        run: npm ci && npx playwright test --project=servidor --grep-invert @navegador
 
   analise:
     runs-on: ubuntu-latest

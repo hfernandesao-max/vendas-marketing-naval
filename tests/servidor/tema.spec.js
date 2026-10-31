@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { BASE, SENHA } from './ajuda.js';
 
-test('a página de entrada e a de escolha partilham o tema com o portal', async ({ page }) => {
+test('a página de entrada e a de escolha partilham o tema com o portal @navegador', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto(BASE + '/geo/login.php');
   const html = page.locator('html');
