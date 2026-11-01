@@ -150,7 +150,7 @@ function naval_pdf_imagem(array &$p, string $jpeg, float $largura, float $x = NA
  * Objectos das imagens, dos conteúdos e das páginas, numerados a partir de $prox (as fontes são os objectos 3 e 4,
  * o nó das páginas é o 2). $primeira e $total servem o «Página n de N» do rodapé.
  */
-function naval_pdf_objectos(array $p, int &$prox, int $primeira, int $total): array
+function naval_pdf_objectos(array $p, int &$prox, int $primeira, int $total, string $rotulo = 'Página'): array
 {
     $obj = [];
     $imgRef = [];
@@ -167,7 +167,7 @@ function naval_pdf_objectos(array $p, int &$prox, int $primeira, int $total): ar
         // rodapé de cada página: texto fixo do documento e «Página n de N»
         $rod = '';
         if ($p['rodape'] !== '') $rod .= sprintf('BT /F1 7.5 Tf 0.35 0.4 0.5 rg %.2F 30 Td %s Tj ET', NAVAL_PDF_MARGEM, naval_pdf_str($p['rodape'])) . "\n";
-        $rod .= sprintf('BT /F1 7.5 Tf 0.35 0.4 0.5 rg %.2F 30 Td %s Tj ET', NAVAL_PDF_L - NAVAL_PDF_MARGEM - 60, naval_pdf_str('Página ' . ($primeira + $i) . ' de ' . $total)) . "\n";
+        $rod .= sprintf('BT /F1 7.5 Tf 0.35 0.4 0.5 rg %.2F 30 Td %s Tj ET', NAVAL_PDF_L - NAVAL_PDF_MARGEM - 60, naval_pdf_str($rotulo . ' ' . ($primeira + $i) . ' de ' . $total)) . "\n";
         $stream = $conteudo . $rod;
         $c = $prox++;
         $obj[$c] = ['<< /Length ' . strlen($stream) . ' >>', $stream];
@@ -222,7 +222,7 @@ function naval_pdf_gerar(array $p): string
 function naval_pdf_acrescentar(string $original, array $p): string
 {
     if (!preg_match_all('/startxref\s+(\d+)/', $original, $sx) || !preg_match_all('/\/Size (\d+)/', $original, $sz)
-        || !preg_match_all('/\/Type \/Pages \/Kids \[([^\]]*)\] \/Count (\d+)/', $original, $pg) || !preg_match('/\/Info (\d+) 0 R/', $original, $inf)) {
+        || !preg_match_all('/\/Type \/Pages \/Kids \[([^\]]*)\] \/Count (\d+)/', $original, $pg) ) {
         throw new NavalErro('O PDF original não tem a estrutura esperada.', 500);
     }
     $prev = (int) end($sx[1]);
@@ -230,7 +230,11 @@ function naval_pdf_acrescentar(string $original, array $p): string
     $kidsAntes = trim((string) end($pg[1]));
     $nAntes = (int) end($pg[2]);
     $inicio = $prox;
-    list($obj, $kids) = naval_pdf_objectos($p, $prox, $nAntes + 1, $nAntes + count($p['paginas']));
+    // as páginas do original mantêm a numeração própria (os bytes não mudam); as acrescentadas numeram-se à parte
+    list($obj, $kids) = naval_pdf_objectos($p, $prox, 1, count($p['paginas']), 'Página de assinaturas');
+    $info = $prox++;
+    $obj[$info] = '<< /Title ' . naval_pdf_str((string) ($p['meta']['titulo'] ?? 'Documento')) . ' /Author ' . naval_pdf_str('Grupo Naval · Portal RTM')
+        . ' /Producer ' . naval_pdf_str('Portal RTM') . ' /ModDate (D:' . date('YmdHis') . ') >>';
     $out = $original;
     if (substr($out, -1) !== "\n") $out .= "\n";
     $pos = [];
@@ -243,6 +247,6 @@ function naval_pdf_acrescentar(string $original, array $p): string
     $xref = strlen($out);
     $out .= "xref\n2 1\n" . sprintf("%010d 00000 n \n", $pos[2]) . $inicio . ' ' . ($prox - $inicio) . "\n";
     for ($i = $inicio; $i < $prox; $i++) $out .= sprintf("%010d 00000 n \n", $pos[$i]);
-    $out .= "trailer\n<< /Size " . $prox . ' /Root 1 0 R /Info ' . $inf[1] . " 0 R /Prev $prev >>\nstartxref\n$xref\n%%EOF\n";
+    $out .= "trailer\n<< /Size " . $prox . ' /Root 1 0 R /Info ' . $info . " 0 R /Prev $prev >>\nstartxref\n$xref\n%%EOF\n";
     return $out;
 }

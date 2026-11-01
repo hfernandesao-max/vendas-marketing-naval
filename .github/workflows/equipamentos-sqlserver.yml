@@ -42,14 +42,21 @@ jobs:
           extensions: pdo_sqlsrv, sqlsrv, gd, mbstring, pdo_sqlite
           coverage: none
 
+      - name: Driver ODBC da Microsoft (necessário ao pdo_sqlsrv)
+        run: |
+          if ! dpkg -s msodbcsql18 >/dev/null 2>&1; then
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            sudo apt-get update -q
+            sudo ACCEPT_EULA=Y apt-get install -y -q msodbcsql18
+          fi
+
       - name: SQL Server em contentor (palavra-passe gerada nesta execução)
         run: |
           SA="Aa1!$(openssl rand -hex 12)"
           echo "::add-mask::$SA"
           echo "SA=$SA" >> "$GITHUB_ENV"
           docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$SA" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
-          php -m | grep -iE 'sqlsrv|odbc' || true
-          odbcinst -q -d || true
           for i in $(seq 1 40); do
             if php -r 'try { new PDO("sqlsrv:Server=127.0.0.1,1433;Encrypt=true;TrustServerCertificate=true", "sa", getenv("SA")); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . PHP_EOL); exit(1); }'; then echo pronto; exit 0; fi
             sleep 3

@@ -1,5 +1,8 @@
 -- Portal RTM - Modulo de Gestao de Activos (v2: documentos e assinatura electronica)
 -- SQL Server 2016+ | Executar uma vez, numa base de dados sem as tabelas ATV_*
+-- No SSMS: abrir e executar (F5). No sqlcmd: sqlcmd -I -f 65001 -i equipamentos-sqlserver.sql (QUOTED_IDENTIFIER e UTF-8)
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 SET XACT_ABORT ON;
 GO
 

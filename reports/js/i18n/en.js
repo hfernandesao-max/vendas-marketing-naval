@@ -1738,4 +1738,6 @@ export const EN = {
   'O módulo Equipamentos precisa do servidor da plataforma e da sua base de dados.': 'The Equipment module needs the platform server and its database.',
   'A base de dados do módulo Equipamentos ainda não está configurada no servidor (.env: ATV_DB_NAME ou ATV_DB_DSN).':
     'The Equipment module database is not yet configured on the server (.env: ATV_DB_NAME or ATV_DB_DSN).',
+  'Falta a assinatura do responsável do Grupo Naval: tem de ser outra pessoa.':
+    "The Grupo Naval manager's signature is still missing: it must be another person.",
 };
