@@ -37,11 +37,11 @@ test('menu lateral: um ponto por smartphone com a cor do estado, resumo em texto
   await expect(ind.locator('.sync-p.critico')).toHaveCount(3);
   await expect(ind.locator('.sync-p.sem_registo')).toHaveCount(1);
   await expect(ind).toContainText('1/6 em dia');
-  await expect(ind).toHaveAttribute('aria-label', /Smartphones: 1 de 6 em dia · 4 sem comunicar/);
+  await expect(ind).toHaveAttribute('aria-label', /Telemóveis: 1 de 6 em dia · 4 sem comunicar/);
   await expect(ind.locator('.sync-p').first()).toHaveAttribute('title', /1001 .* Em dia · 27-10-2026 10:20 · há 23 min/);
   await expect(ind.locator('.sync-p').last()).toHaveAttribute('title', /Sem registo · nunca sincronizou/);
   await ind.click();
-  await expect(page.locator('#titulo')).toHaveText('Sincronização dos smartphones');
+  await expect(page.locator('#titulo')).toHaveText('Sincronização dos telemóveis');
   expect(erros).toEqual([]);
 });
 
@@ -49,4 +49,29 @@ test('sem acesso à página de sincronização: o indicador não aparece', async
   await page.route('**/v1/sincronizacao*', (r) => r.fulfill({ status: 403, json: { erro: 'sem acesso' } }));
   await abrir(page, '#inicio');
   await expect(page.locator('#sync-mini')).toBeHidden();
+});
+
+test('cartão dos telemóveis no menu muda de língua com o resto do portal', async ({ page }) => {
+  await page.route('**/v1/sincronizacao*', (r) =>
+    r.fulfill({
+      json: {
+        disponivel: true,
+        agora: '2026-10-26 12:00:00',
+        limites: { alerta_horas: 2, critico_horas: 24 },
+        rotas: [
+          { rota: '1001', descricao: '1001', promotor: 'Ana', ultima: '2026-10-26 11:30:00', minutos: 30, horas: 0.5, estado: 'em_dia' },
+          { rota: '1002', descricao: '1002', promotor: 'Rui', ultima: null, minutos: null, horas: null, estado: 'sem_registo' },
+        ],
+      },
+    }),
+  );
+  await abrir(page, '#inicio');
+  const ind = page.locator('#sync-mini');
+  await expect(ind).toContainText('Telemóveis');
+  await expect(ind).toContainText('1/2 em dia');
+  await page.click('#lang button[data-l="ti"]');
+  await expect(ind).toContainText('ስማርትፎናት');
+  await expect(ind).toContainText('1/2 ብግዜኦም');
+  await page.click('#lang button[data-l="en"]');
+  await expect(ind).toContainText('1/2 up to date');
 });

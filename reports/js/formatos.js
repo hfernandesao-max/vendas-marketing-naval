@@ -1,9 +1,9 @@
 // Formatação de números, valores em kwanzas, percentagens e datas (dd-mm-aaaa).
-import { LANG } from './i18n/i18n.js';
+import { IDIOMAS, LANG } from './i18n/i18n.js';
 
 export let nf, nf1, nf2;
 export const setFmt = () => {
-  const loc = LANG === 'en' ? 'en-GB' : 'pt-PT';
+  const loc = LANG === 'en' ? 'en-GB' : IDIOMAS[LANG];
   nf = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
   nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   nf2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -19,8 +19,13 @@ export const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.f
 const MES = {
   pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
   en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  ti: ['ጥሪ', 'ለካ', 'መጋ', 'ሚያ', 'ግን', 'ሰነ', 'ሓም', 'ነሓ', 'መስ', 'ጥቅ', 'ሕዳ', 'ታሕ'], // CLDR (ti)
 };
-const SEM = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+const SEM = {
+  pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  ti: ['ሰን', 'ሰኑ', 'ሰሉ', 'ረቡ', 'ሓሙ', 'ዓር', 'ቀዳ'], // CLDR (ti)
+};
 // Datas sempre no formato dia-mês-ano (dd-mm-aaaa)
 export const dl = (s) => {
   if (!s) return '—';

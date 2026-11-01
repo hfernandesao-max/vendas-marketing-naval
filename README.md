@@ -2,10 +2,10 @@
 
 Sistema Integrado de Operações. A página principal (`index.html`) dá acesso a dois módulos:
 
-| Módulo      | Endereço                                   | Estado                                   |
-| ----------- | ------------------------------------------ | ---------------------------------------- |
-| **REPORTS** | `reports/`                                 | Portal RTM (abaixo)                      |
-| **GEO**     | por configurar (`GEO_URL` em `index.html`) | Rotas, zonas de entrega e distribuidores |
+| Módulo | Endereço | Estado |
+|---|---|---|
+| **REPORTS** | `reports/` | Portal RTM (abaixo) |
+| **GEO** | por configurar (`GEO_URL` em `index.html`) | Rotas, zonas de entrega e distribuidores |
 
 ## REPORTS · Portal RTM
 
@@ -23,7 +23,7 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 | **Clientes**      | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados                                                       |
 | **Terreno**       | Plano de visitas · Histórico de auditoria · Sincronização dos smartphones                                                                         |
 | **Logística**     | Plano de cargas · Registo de cargas · Stock por promotor / carrinha · Stock por armazém                                                           |
-| **Integrações**   | Vendas para o SAP (interface de vendas para a contabilidade: ficheiro, lotes e controlo de ficheiros emitidos)                                    |
+| **Integrações**   | Vendas para o SAP (interface de vendas para a contabilidade: ficheiro, lotes e controlo de ficheiros emitidos) · Comunicação AGT (pedido de comunicação de cada documento)                                    |
 | **Administração** | Acessos                                                                                                                                           |
 
 O menu só mostra as páginas que o perfil pode abrir (matriz de acessos).
@@ -39,16 +39,16 @@ Uma barra de filtros única, por baixo do período, igual em todas as páginas. 
 - **Tipo de documento** (Factura-recibo, Factura), **Meio de cobrança**, **Estado** (pagos / pendentes)
 - **Município**, **Tipo de cliente** e **Estado do cliente** (páginas de clientes)
 
-Os filtros aplicam-se a quadros, tabelas e Excel (a capa do Excel indica os filtros usados), mantêm-se ao mudar de página, ficam guardados no navegador e no endereço — por exemplo `reports/#documentos?rota=1001,1003&estado=pendente` abre já filtrado. _Limpar filtros_ repõe tudo.
+Os filtros aplicam-se a quadros, tabelas e Excel (a capa do Excel indica os filtros usados), mantêm-se ao mudar de página, ficam guardados no navegador e no endereço — por exemplo `reports/#documentos?rota=1001,1003&estado=pendente` abre já filtrado. *Limpar filtros* repõe tudo.
 
 ## Dados (`reports/data/`)
 
-| Ficheiro        | Origem                        | Conteúdo                                                                                                                      |
-| --------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `vendas.json`   | Pinguim BO, vendas            | Um documento por linha: data, hora, rota, promotor, tipo, documento, cliente, NIF, liquidado, total, meio de pagamento        |
-| `clientes.json` | Pinguim BO, clientes          | Rota, promotor, código, nome, NIF, tipo de estabelecimento, dia de visita, estado (sem contactos, telefones, GPS nem moradas) |
-| `cargas.json`   | Plano de cargas (transportes) | Carrinha, motorista, zonas e caixas carregadas por categoria                                                                  |
-| `rotas.json`    | Pinguim BO                    | Rota → promotor                                                                                                               |
+| Ficheiro | Origem | Conteúdo |
+|---|---|---|
+| `vendas.json` | Pinguim BO, vendas | Um documento por linha: data, hora, rota, promotor, tipo, documento, cliente, NIF, liquidado, total, meio de pagamento |
+| `clientes.json` | Pinguim BO, clientes | Rota, promotor, código, nome, NIF, tipo de estabelecimento, dia de visita, estado (sem contactos, telefones, GPS nem moradas) |
+| `cargas.json` | Plano de cargas (transportes) | Carrinha, motorista, zonas e caixas carregadas por categoria |
+| `rotas.json` | Pinguim BO | Rota → promotor |
 
 Ainda por receber do Pinguim BO: meio de pagamento de cada documento, linhas de venda por artigo (com IVA e desconto) e stock por armazém/carrinha. As páginas correspondentes mostram os campos necessários.
 
@@ -109,8 +109,8 @@ Regras:
 
 O super administrador faz tudo na página **Acessos** do portal:
 
-- **Utilizadores**: botão _Nova conta_ e, em cada linha, _Gerir_ — nome, email, perfil, rotas, data de fim, activar ou desactivar, repor a palavra-passe, activar os dois passos (mostra o código QR para ler no telemóvel da pessoa) e desbloquear.
-- **Matriz de acessos**: cada célula é uma lista com os níveis permitidos para essa página ou função. _Guardar alterações_ aplica-as de imediato nos dados; cada pessoa vê o menu novo quando actualizar a página. _Repor matriz original_ volta à matriz aprovada. A coluna SADM e as funções de administração não se alteram. A linha «Ver o NIF dos clientes» decide quem vê o NIF.
+- **Utilizadores**: botão *Nova conta* e, em cada linha, *Gerir* — nome, email, perfil, rotas, data de fim, activar ou desactivar, repor a palavra-passe, activar os dois passos (mostra o código QR para ler no telemóvel da pessoa) e desbloquear.
+- **Matriz de acessos**: cada célula é uma lista com os níveis permitidos para essa página ou função. *Guardar alterações* aplica-as de imediato nos dados; cada pessoa vê o menu novo quando actualizar a página. *Repor matriz original* volta à matriz aprovada. A coluna SADM e as funções de administração não se alteram. A linha «Ver o NIF dos clientes» decide quem vê o NIF.
 - Antes de cada alteração o portal pede a palavra-passe (ou o código de dois passos) do super administrador; a confirmação dura 10 minutos. Três confirmações falhadas terminam a sessão.
 - Tudo fica nos registos de actividade, na mesma página.
 
@@ -124,7 +124,6 @@ As contas ficam em `dados-privados/utilizadores.json` e as alterações à matri
    Em alternativa, pela linha de comandos — passar as contas antigas para a lista nova:
    `php ferramentas\utilizadores.php importar-antigo`
    A partir daqui, cada conta antiga só volta a entrar depois de ter email associado (passo 4). Convém fazer os passos 2 a 4 seguidos.
-
 3. Criar o primeiro super administrador e activá-lo:
    `php ferramentas\utilizadores.php criar <utilizador> --nome "Nome" --email nome@naval.co.ao --perfil SADM --aprovado-por "Nome1,Nome2"`
    `php ferramentas\utilizadores.php activar <utilizador> --aprovado-por "Nome1,Nome2"`
@@ -175,9 +174,9 @@ Substitui o Excel «REPORT DRIVER MARKETING TRANSPORTES» preparado à mão e en
 O Microsoft 365 deixou de aceitar SMTP com palavra-passe em 2026, por isso a plataforma envia pelo Microsoft Graph com uma aplicação registada:
 
 1. Criar a caixa que envia, por exemplo `noreply@naval.co.ao` (caixa partilhada, sem licença).
-2. Em **Microsoft Entra** → _Registos de aplicações_ → _Novo registo_: «Portal RTM – envio de email».
-3. _Permissões de API_ → _Microsoft Graph_ → _Permissões de aplicação_ → **Mail.Send** → _Conceder consentimento de administrador_.
-4. _Certificados e segredos_ → _Novo segredo do cliente_ (anotar o valor e a data de expiração, para o renovar a tempo).
+2. Em **Microsoft Entra** → *Registos de aplicações* → *Novo registo*: «Portal RTM – envio de email».
+3. *Permissões de API* → *Microsoft Graph* → *Permissões de aplicação* → **Mail.Send** → *Conceder consentimento de administrador*.
+4. *Certificados e segredos* → *Novo segredo do cliente* (anotar o valor e a data de expiração, para o renovar a tempo).
 5. Recomendado: limitar a aplicação à caixa `noreply` no Exchange Online (política de acesso da aplicação / RBAC para aplicações), para não poder enviar em nome de outras caixas.
 6. No `.env` do servidor:
    ```
@@ -188,9 +187,9 @@ O Microsoft 365 deixou de aceitar SMTP com palavra-passe em 2026, por isso a pla
    PORTAL_URL=https://geo.naval.co.ao:2051
    ```
 7. No `php.ini`, a extensão `openssl` tem de estar activa (o cURL é opcional).
-8. Testar no portal: _Plano de cargas_ → _Listas_ → _Destinatários_ → **Enviar email de teste para mim**.
+8. Testar no portal: *Plano de cargas* → *Listas* → *Destinatários* → **Enviar email de teste para mim**.
 
-Enquanto o email não estiver configurado, o plano publica-se na mesma e o botão _Reenviar_ envia-o depois.
+Enquanto o email não estiver configurado, o plano publica-se na mesma e o botão *Reenviar* envia-o depois.
 
 ## Ficheiro de vendas para o SAP (`reports/#sap-exportar`)
 

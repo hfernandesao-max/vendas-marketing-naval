@@ -1,5 +1,5 @@
 // Terreno: plano de visitas e histórico de auditoria.
-import { diaSemana, isCF, nomeDia, ocorrencias, pendenteDe, promotorRota, recebidoDe, vendasR, visitasPlaneadas } from '../calculos.js';
+import { diaSemana, docsVenda, isCF, nomeDia, ocorrencias, pendenteDe, promotorRota, recebidoDe, vendasR, visitasPlaneadas } from '../calculos.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { mkz, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -8,6 +8,7 @@ import { inR } from '../periodo.js';
 import { DB, group, sum } from '../util.js';
 
 R.auditoria = (pg) => {
+  // Verificam-se os documentos de venda (as notas de crédito não são vendas nem cobranças); o total é líquido
   const V = vendasR(),
     O = ocorrencias(V),
     docsCom = new Set(O.map((o) => o.x.chave || o.x.documento));
@@ -19,7 +20,7 @@ R.auditoria = (pg) => {
     falt = VP.filter((v) => !v.visitado);
   pg.append(
     tiles([
-      { l: t('Documentos verificados'), v: n0(V.length), s: t('{n} com ocorrências', { n: n0(docsCom.size) }), tone: docsCom.size ? 'warn' : null },
+      { l: t('Documentos verificados'), v: n0(docsVenda(V).length), s: t('{n} com ocorrências', { n: n0(docsCom.size) }), tone: docsCom.size ? 'warn' : null },
       { l: t('Possíveis duplicados'), v: n0(dup.length), s: mkz(sum(dup, (o) => o.x.total)), tone: dup.length ? 'warn' : null },
       { l: t('Pendentes há mais de 3 dias'), v: n0(pend.length), s: mkz(sum(pend, (o) => pendenteDe(o.x))), tone: pend.length ? 'warn' : null },
       { l: t('Cobrados sem meio indicado'), v: n0(meio.length), s: mkz(sum(meio, (o) => recebidoDe(o.x))), tone: meio.length ? 'warn' : null },
@@ -43,7 +44,7 @@ R.auditoria = (pg) => {
     return {
       chave: d,
       data: d,
-      docs: rs.length,
+      docs: docsVenda(rs).length,
       total: sum(rs, 'total'),
       dup: n('dup'),
       pend: n('pend'),
@@ -163,7 +164,8 @@ R['plano-visitas'] = (pg) => {
     Object.keys(DB.mapRota).forEach((r) => {
       const plan = new Set(act.filter((x) => x.rota === r && x.dia === ds3).map((x) => x.nif));
       const vr = V.filter((x) => x.rota === r),
-        comp = new Set(vr.filter((x) => !isCF(x.nif)).map((x) => x.nif));
+        fs = docsVenda(vr), // visita = documento de venda; o total é líquido das notas de crédito
+        comp = new Set(fs.filter((x) => !isCF(x.nif)).map((x) => x.nif));
       const ok = [...comp].filter((n) => plan.has(n)).length;
       if (!plan.size && !vr.length) return;
       rows.push({
@@ -175,7 +177,7 @@ R['plano-visitas'] = (pg) => {
         planeados: plan.size,
         compraram: ok,
         fora: comp.size - ok,
-        docs: vr.length,
+        docs: fs.length,
         total: sum(vr, 'total'),
         cumprimento: plan.size ? ok / plan.size : null,
       });

@@ -1,10 +1,10 @@
 // Clientes: carteira e cadastros (visão geral, análise e clientes registados).
 import { draw } from '../app.js';
-import { DATA_META, ESTADO_PT, META_ROTA, META_TOTAL, cadDiario, cadReais, diaUtil, isCF, nomeDia, promotorRota, temCad } from '../calculos.js';
+import { DATA_META, ESTADO_PT, META_ROTA, META_TOTAL, cadDiario, cadReais, diaUtil, isCF, nomeDia, promotorRota, temCad, eNC } from '../calculos.js';
 import { REG, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { barras, legenda } from '../componentes/graficos.js';
 import { diaCurto, dl, ds, n0, n1, pct } from '../formatos.js';
-import { t } from '../i18n/i18n.js';
+import { t, tv } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
@@ -15,7 +15,7 @@ R.clientes = (pg) => {
     ...rs[0],
     dias: [...new Set(rs.map((x) => nomeDia(x.dia)))].join(', '),
   }));
-  const comprou = new Set(DB.vendas.filter((x) => inR(x.data)).map((x) => x.rota + '|' + x.nif));
+  const comprou = new Set(DB.vendas.filter((x) => inR(x.data) && !eNC(x)).map((x) => x.rota + '|' + x.nif));
   const rows = uni.map((x) => ({
     rota: x.rota,
     promotor: promotorRota(x.rota),
@@ -71,13 +71,13 @@ R.clientes = (pg) => {
         { key: 'codigo', label: t('Código') },
         { key: 'nome', label: t('Cliente'), wrap: true },
         { key: 'nif', label: t('NIF') },
-        { key: 'tipo', label: t('Tipo') },
+        { key: 'tipo', label: t('Tipo'), render: (v) => tv(v), xl: (r) => tv(r.tipo) },
         { key: 'dias', label: t('Dias de visita') },
         {
           key: 'estado',
           label: t('Estado'),
-          xl: (r) => t(ESTADO_PT[r.estado] || r.estado),
-          render: (v) => pill(t(ESTADO_PT[v] || v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'),
+          xl: (r) => tv(ESTADO_PT[r.estado] || r.estado),
+          render: (v) => pill(tv(ESTADO_PT[v] || v), v === 'Ativo' ? 'p-ok' : v === 'Erro' ? 'p-bad' : 'p-warn'),
         },
         {
           key: 'gps',
@@ -132,7 +132,7 @@ function cadSemDados(pg) {
       'p',
       null,
       t(
-        'Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» do backoffice do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.',
+        'Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» da gestão do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.',
       ),
     ),
   );
@@ -284,7 +284,7 @@ R.cadastros = (pg) => {
   if (ult) {
     const cats = [...rotas].sort((a, b) => v(b, ult) - v(a, ult)).map((r) => ({ txt: r, titulo: promotorRota(r) }));
     const sec = secBox(
-      t('{a} vs {b}', { a: ds(ult), b: ant ? ds(ant) : '—' }),
+      t('{a} face a {b}', { a: ds(ult), b: ant ? ds(ant) : '—' }),
       t('Novos clientes por rota no último dia e no dia anterior.'),
       barras({
         cats,
@@ -522,10 +522,15 @@ R['cadastros-clientes'] = (pg) => {
       cols: [
         { key: 'cliente', label: t('Cliente'), wrap: true },
         { key: 'promotor', label: t('Promotor'), p: 0 },
-        { key: 'tipo', label: t('Tipo') },
+        { key: 'tipo', label: t('Tipo'), render: (v) => tv(v), xl: (r) => tv(r.tipo) },
         { key: 'nif', label: t('NIF') },
         { key: 'municipio', label: t('Município') },
-        { key: 'estado', label: t('Estado'), render: (x) => pill(t(x), x === 'Activo' ? 'p-ok' : 'p-warn'), xl: (r) => t(r.estado) },
+        {
+          key: 'estado',
+          label: t('Estado'),
+          render: (x) => pill(tv(ESTADO_PT[x] || x), x === 'Activo' ? 'p-ok' : 'p-warn'),
+          xl: (r) => tv(ESTADO_PT[r.estado] || r.estado),
+        },
         { key: 'dia_registo', label: t('Data de registo'), type: 'date' },
         { key: 'hora', label: t('Hora'), p: 5 },
         { key: 'situacao', label: t('Situação'), render: (x) => pill(t(x), sitCls(x)), xl: (r) => t(r.situacao) },

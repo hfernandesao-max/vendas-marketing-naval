@@ -78,8 +78,8 @@ function naval_enviar_email(array $para, string $assunto, string $html, array $a
         $dest[] = ['emailAddress' => ['address' => $e, 'name' => str_replace(["\r", "\n"], ' ', (string) ($p['nome'] ?? ''))]];
     }
     if ($recusados) naval_registar('email_destinatario_recusado', ['enderecos' => $recusados]);
-    if (!$dest) return ['ok' => false, 'erro' => $recusados ? 'Os destinatários não são de domínios autorizados para envio (' . implode(', ', $dominios) . ').' : 'Não há destinatários com email válido.'];
-    if (!naval_email_configurado()) return ['ok' => false, 'erro' => 'O envio de email ainda não está configurado no servidor (.env: EMAIL_TENANT_ID, EMAIL_CLIENT_ID, EMAIL_CLIENT_SECRET, EMAIL_REMETENTE).'];
+    if (!$dest) return ['ok' => false, 'erro' => $recusados ? 'Os destinatários não são de domínios autorizados para envio (' . implode(', ', $dominios) . ').' : 'Não há destinatários com correio electrónico válido.'];
+    if (!naval_email_configurado()) return ['ok' => false, 'erro' => 'O envio por correio electrónico ainda não está configurado no servidor (.env: EMAIL_TENANT_ID, EMAIL_CLIENT_ID, EMAIL_CLIENT_SECRET, EMAIL_REMETENTE).'];
 
     $msg = [
         'subject' => $assunto,

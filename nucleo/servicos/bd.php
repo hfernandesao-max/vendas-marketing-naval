@@ -88,13 +88,57 @@ function naval_bd_so_leitura(string $sql): void
     if (preg_match('/\b(xp_|sp_)\w*/i', $limpo, $m)) throw new RuntimeException('Consulta recusada: procedimentos do sistema não são permitidos.');
 }
 
-/** SELECT com parâmetros; devolve as linhas (arrays associativos). */
+/**
+ * Texto vindo da base de dados em UTF-8. O driver ODBC devolve os campos de texto na página de código do
+ * Windows (Windows-1252), por isso «Armazém» chegava como bytes inválidos em UTF-8 e aparecia «Armaz�m».
+ * Texto que já é UTF-8 válido (driver sqlsrv, MySQL) fica como está.
+ */
+function naval_bd_utf8(string $v): string
+{
+    if ($v === '' || preg_match('//u', $v)) return $v;
+    if (function_exists('mb_convert_encoding')) return (string) mb_convert_encoding($v, 'UTF-8', 'Windows-1252');
+    if (function_exists('iconv')) {
+        $r = @iconv('Windows-1252', 'UTF-8//IGNORE', $v);
+        if ($r !== false) return $r;
+    }
+    return (string) preg_replace('/[\x80-\xFF]/', '?', $v);
+}
+
+/**
+ * Texto enviado para a base de dados pelo driver ODBC: na página de código do Windows (Windows-1252), a mesma
+ * em que o ODBC devolve o texto. Sem isto, «FORMAÇÃO» numa consulta ou num parâmetro chegava ao SQL Server
+ * como «FORMAÃ‡ÃƒO» e as comparações com acentos falhavam.
+ */
+function naval_bd_para_odbc(string $v): string
+{
+    if ($v === '' || !preg_match('/[\x80-\xFF]/', $v)) return $v;
+    if (function_exists('mb_convert_encoding')) return (string) mb_convert_encoding($v, 'Windows-1252', 'UTF-8');
+    if (function_exists('iconv')) {
+        $r = @iconv('UTF-8', 'Windows-1252//TRANSLIT', $v);
+        if ($r !== false) return $r;
+    }
+    return $v;
+}
+
+/** SELECT com parâmetros; devolve as linhas (arrays associativos), com o texto em UTF-8. */
 function naval_bd_consultar(string $sql, array $parametros = []): array
 {
     naval_bd_so_leitura($sql);
-    $st = naval_bd()->prepare($sql);
+    $pdo = naval_bd();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'odbc') {
+        $sql = naval_bd_para_odbc($sql);
+        foreach ($parametros as $k => $v) if (is_string($v)) $parametros[$k] = naval_bd_para_odbc($v);
+    }
+    $st = $pdo->prepare($sql);
     $st->execute($parametros);
-    return $st->fetchAll(PDO::FETCH_ASSOC);
+    $linhas = $st->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($linhas as &$l) {
+        foreach ($l as $k => $v) {
+            if (is_string($v)) $l[$k] = naval_bd_utf8($v);
+        }
+    }
+    unset($l);
+    return $linhas;
 }
 
 /** Estado da ligação: SELECT 1 e o tempo de resposta. */

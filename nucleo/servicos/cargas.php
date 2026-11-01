@@ -18,20 +18,12 @@ function naval_plano_pasta(): string
 
 const NAVAL_ARTIGOS_PADRAO = [['id' => 'fraldas', 'nome' => 'Fraldas'], ['id' => 'sabao', 'nome' => 'Sabão'], ['id' => 'sabonete', 'nome' => 'Sabonete']];
 
-/** Listas do plano. Na primeira utilização, preenchidas a partir do histórico do plano de cargas (cargas.json). */
+/** Listas do plano (motoristas, zonas, viaturas...): aprendidas com os planos publicados no portal, nunca com ficheiros Excel. */
 function naval_plano_listas(): array
 {
     $l = naval_json_ler(naval_plano_pasta() . '/listas.json');
     if (!$l) {
         $l = ['armazens' => ['HIGITEC'], 'artigos' => NAVAL_ARTIGOS_PADRAO, 'motoristas' => [], 'zonas' => [], 'viaturas' => [], 'transportadoras' => [], 'destinatarios' => []];
-        $hist = naval_json_ler(naval_raiz() . '/reports/data/cargas.json');
-        usort($hist, function ($a, $b) { return strcmp($a['data'] ?? '', $b['data'] ?? ''); });
-        foreach ($hist as $c) {
-            naval_plano_aprender($l, [[
-                'motorista' => $c['motorista'] ?? '', 'telefone' => '', 'matricula' => $c['matricula'] ?? '', 'viatura' => $c['viatura'] ?? '',
-                'transportadora' => $c['transportadora'] ?? '', 'armazem' => '', 'zonas' => array_filter(array_map('trim', explode(',', (string) ($c['zonas'] ?? '')))),
-            ]]);
-        }
     }
     foreach (['armazens', 'motoristas', 'zonas', 'viaturas', 'transportadoras', 'destinatarios'] as $k) if (!isset($l[$k]) || !is_array($l[$k])) $l[$k] = [];
     if (empty($l['artigos'])) $l['artigos'] = NAVAL_ARTIGOS_PADRAO;
@@ -295,8 +287,7 @@ function naval_plano_historico(bool $gere): array
 
 /**
  * Pré-preenchimento automático: para cada rota, o último registo oficial antes de $data em que a rota saiu.
- * Fonte principal: versões publicadas do plano (dados-privados/plano-cargas); reserva: histórico
- * importado dos Excel de transportes (reports/data/cargas.json). O telefone, a matrícula, a viatura e a
+ * Fonte: só as versões publicadas do plano no portal (nunca ficheiros Excel). O telefone, a matrícula, a viatura e a
  * transportadora vêm da ficha do motorista (listas), mais actual do que o registo antigo.
  * Devolve {rota: {..campos.., origem: AAAA-MM-DD}}. O número de factura e as observações nunca se copiam.
  */
@@ -315,19 +306,6 @@ function naval_plano_sugestoes(string $data, array $listas): array
                 'origem' => $p['data'],
             ];
         }
-    }
-    $hist = naval_json_ler(naval_raiz() . '/reports/data/cargas.json');
-    usort($hist, function ($a, $b) { return strcmp($b['data'] ?? '', $a['data'] ?? ''); });
-    foreach ($hist as $c) {
-        $rt = (string) ($c['rota'] ?? '');
-        if ($rt === '' || isset($out[$rt]) || ($c['data'] ?? '') >= $data) continue;
-        $q = [];
-        foreach ($listas['artigos'] as $a) $q[$a['id']] = (int) round((float) ($c['carga_' . $a['id']] ?? 0));
-        $out[$rt] = [
-            'armazem' => '', 'viagens' => 1, 'zonas' => array_values(array_filter(array_map('trim', explode(',', (string) ($c['zonas'] ?? ''))))),
-            'quantidades' => $q, 'motorista' => $c['motorista'] ?? '', 'telefone' => '', 'matricula' => $c['matricula'] ?? '',
-            'viatura' => $c['viatura'] ?? '', 'transportadora' => $c['transportadora'] ?? '', 'origem' => $c['data'],
-        ];
     }
     foreach ($out as &$s) {
         foreach ($listas['motoristas'] as $m) {
@@ -461,7 +439,7 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
         foreach ((array) $n['destinatarios'] as $d) {
             $e = trim((string) ($d['email'] ?? ''));
             if ($e === '') continue;
-            if (!naval_email_valido($e)) throw new NavalErro('Email inválido: ' . $e);
+            if (!naval_email_valido($e)) throw new NavalErro('Correio electrónico inválido: ' . $e);
             foreach ($l['destinatarios'] as $x) if (strcasecmp($x['email'], $e) === 0) continue 2;
             $l['destinatarios'][] = ['nome' => naval_texto($d['nome'] ?? ''), 'email' => $e];
         }

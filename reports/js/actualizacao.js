@@ -1,6 +1,6 @@
 // Informação sempre actual: com um período que inclui hoje, as vendas voltam a ser lidas a cada 5 minutos
 // (e quando o separador volta a ficar visível); à meia-noite os períodos relativos (Hoje, 7 dias, Mês)
-// passam para o novo dia. O topo mostra a hora da última actualização e permite actualizar à mão.
+// passam para o novo dia. O topo mostra a hora da última actualização; o botão «Actualizar» recarrega o portal.
 import { draw } from './app.js';
 import { fecharAberto } from './componentes/barra-filtros.js';
 import { fetchVendas, pedirFresco } from './fontes.js';
@@ -73,9 +73,11 @@ export function mostrarActualizacao() {
   b.type = 'button';
   b.innerHTML = svg('actualizar'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
   b.append(el('span', null, t('Actualizar')));
+  b.title = t('Recarrega o portal: volta a ler todos os dados (vendas, stock, sincronização), mantendo a página, o período e os filtros.');
+  // Refresh completo do portal (como F5): a página, o período e os filtros mantêm-se (endereço e armazenamento da sessão)
   b.addEventListener('click', () => {
     b.disabled = true;
-    actualizar(true);
+    location.reload();
   });
   box.append(b);
 }

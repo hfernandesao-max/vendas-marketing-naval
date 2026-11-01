@@ -38,16 +38,14 @@ test('página sem dados: o botão fica inactivo e explica porquê', async ({ pag
   await expect(page.locator('#xl-page')).toHaveAttribute('title', 'Esta página ainda não tem dados para exportar.');
 });
 
-test('sincronização dos smartphones: o Excel inclui o estado e o histórico de 14 dias', async ({ page }) => {
+test('sincronização dos smartphones: o Excel inclui a última sincronização por rota', async ({ page }) => {
   await page.route('**/v1/sincronizacao*', (r) =>
     r.fulfill({
       json: {
         disponivel: true,
         agora: '2026-10-26 12:00:00',
         limites: { alerta_horas: 2, critico_horas: 24 },
-        rotas: [
-          { rota: '1001', promotor: 'Ana', ultima: '2026-10-26 11:30:00', minutos: 30, hoje: 4, sete_dias: 20, dias: { '2026-10-26': 4 }, estado: 'em_dia' },
-        ],
+        rotas: [{ rota: '1001', descricao: '1001 - FHR PIV', promotor: 'Ana', ultima: '2026-10-26 11:30:00', minutos: 30, horas: 0.5, estado: 'em_dia' }],
       },
     }),
   );
@@ -57,6 +55,6 @@ test('sincronização dos smartphones: o Excel inclui o estado e o histórico de
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(await d.path());
   const nomes = wb.worksheets.map((w) => w.name);
-  expect(nomes).toContain('Estado por smartphone');
-  expect(nomes).toContain('Sincronizações por dia');
+  expect(nomes.some((n) => n.startsWith('Última sincronização por'))).toBe(true); // nome da folha limitado pelo Excel
+  expect(nomes).not.toContain('Sincronizações por dia');
 });

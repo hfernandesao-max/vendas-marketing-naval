@@ -174,7 +174,7 @@ function naval_sap_gravar_config(array $c): array
     $nova = ['prefixo' => naval_texto($c['prefixo'] ?? 'FHR PIV', 40), 'moeda' => strtoupper(naval_texto($c['moeda'] ?? 'AOA', 5)), 'unidade' => strtoupper(naval_texto($c['unidade'] ?? 'CAR', 10)),
         'armazens' => [], 'local_omissao' => strtoupper(naval_texto($c['local_omissao'] ?? NAVAL_SAP_OMISSAO['local_omissao'], 20)), 'rotas' => []];
     if ($nova['local_omissao'] === '' || in_array($nova['local_omissao'], ['N/A', 'NA', '-'], true)) {
-        throw new NavalErro('Indique uma SAP location por omissão válida no SAP (por exemplo RTM2): «N/A» seria recusado no carregamento.');
+        throw new NavalErro('Indique um depósito SAP por omissão válido no SAP (por exemplo RTM2): «N/A» seria recusado no carregamento.');
     }
     // Armazéns principais → SAP location (código do armazém no Pinguim BO, nome e localização no SAP)
     foreach ((array) ($c['armazens'] ?? NAVAL_ARMAZENS_PRINCIPAIS) as $cod => $a) {
@@ -183,7 +183,7 @@ function naval_sap_gravar_config(array $c): array
         if ($cod === '' || $local === '') continue;
         $nova['armazens'][$cod] = ['nome' => naval_texto($a['nome'] ?? '', 80), 'local' => $local];
     }
-    if (!$nova['armazens']) throw new NavalErro('Indique pelo menos um armazém principal com a SAP location.');
+    if (!$nova['armazens']) throw new NavalErro('Indique pelo menos um armazém principal com o depósito SAP.');
     foreach ((array) ($c['rotas'] ?? []) as $rota => $m) {
         $rota = naval_texto($rota, 20);
         if ($rota === '') continue;

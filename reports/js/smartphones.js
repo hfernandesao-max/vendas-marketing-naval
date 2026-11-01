@@ -73,12 +73,12 @@ export function mostrarIndicador() {
     problema = n('critico') + n('sem_registo');
   const resumo =
     emDia === rotas.length
-      ? t('Smartphones: todos em dia')
-      : t('Smartphones: {a} de {b} em dia', { a: emDia, b: rotas.length }) + (problema ? ' · ' + t('{n} sem comunicar', { n: problema }) : '');
+      ? t('Telemóveis: todos em dia')
+      : t('Telemóveis: {a} de {b} em dia', { a: emDia, b: rotas.length }) + (problema ? ' · ' + t('{n} sem comunicar', { n: problema }) : '');
   // Uma linha curta (o resumo completo vai no rótulo acessível e na dica) e os pontos por baixo
   const cab = el('span', 'sync-t');
   cab.append(
-    el('span', null, t('Smartphones')),
+    el('span', null, t('Telemóveis')),
     el('b', problema ? 'mau' : emDia === rotas.length ? 'bom' : null, t('{a}/{b} em dia', { a: emDia, b: rotas.length })),
   );
   box.replaceChildren(cab, pontos);
@@ -87,7 +87,7 @@ export function mostrarIndicador() {
     resumo + '. ' + t('Em dia: até {a} h; atenção: até {b} h; crítico: mais de {b} h.', { a: d.limites.alerta_horas, b: d.limites.critico_horas }),
   );
   box.title = t(
-    'Comunicação dos smartphones com o servidor (verde: até {a} h · âmbar: até {b} h · vermelho: mais de {b} h ou nunca). Clique para ver o detalhe.',
+    'Comunicação dos telemóveis com o servidor (verde: até {a} h · âmbar: até {b} h · vermelho: mais de {b} h ou nunca). Clique para ver o detalhe.',
     {
       a: d.limites.alerta_horas,
       b: d.limites.critico_horas,

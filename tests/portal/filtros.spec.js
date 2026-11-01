@@ -10,7 +10,7 @@ test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', as
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1001' }).click();
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1003' }).click();
   await page.keyboard.press('Escape');
-  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 selecionados');
+  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 seleccionados');
   await expect(page.locator('#filtros2 .fb-etiqueta')).toHaveCount(2);
   expect(await linhas(page, 'dc')).toBe(12);
   await expect(page).toHaveURL(/#documentos\/dc\?rota=1001,1003$/);
@@ -20,7 +20,7 @@ test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', as
   expect(await linhas(page, 'dc')).toBe(4);
 
   await page.click('#nav a[href="#vendas-dia"]');
-  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 selecionados');
+  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 seleccionados');
   await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Estado' })).toContainText('Pendentes');
   await expect(page).toHaveURL(/rota=1001,1003&estado=pendente/);
 
@@ -36,8 +36,22 @@ test('uma ligação com filtros abre a página já filtrada', async ({ page }) =
 });
 
 test('cada página só mostra os filtros que se aplicam', async ({ page }) => {
+  // stock: só os filtros gerais que se aplicam (artigo e rotas), sem data ou armazém próprios na página
+  await page.route('**/v1/stock**', (r) =>
+    r.fulfill({
+      json: {
+        data: '2026-10-26',
+        carrinhas: [{ data: '2026-10-26', rota: '1001', itens: [{ codigo: 'A', produto: 'Fraldas', quantidade: 3 }] }],
+        armazens: [],
+      },
+    }),
+  );
   await abrir(page, '#stock-carrinha');
-  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Estado' })).toHaveCount(0);
+  await expect(page.locator('#filtros2 .fb-pesq input')).toHaveCount(1);
+  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toHaveCount(1);
+  await expect(page.locator('#stock-inp-data, #stock-sel-armazem')).toHaveCount(0);
+  await abrir(page, '#pendentes');
+  await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Município' })).toHaveCount(0);
   await abrir(page, '#vendas-artigo');
   await expect(page.locator('#filtros2 .fb-pesq input')).toHaveCount(2);
 });

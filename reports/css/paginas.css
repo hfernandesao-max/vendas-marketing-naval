@@ -25,7 +25,7 @@
   height: 32px;
   border-radius: 9px;
   border: 1px solid var(--line2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--veu-rgb) / 0.05);
   color: var(--fg);
   padding: 0 8px;
   font: inherit;
@@ -53,7 +53,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-color: rgba(255, 159, 10, 0.45);
+  border-color: rgb(var(--av2-rgb) / 0.45);
 }
 .pc-alerta p {
   margin: 0;
@@ -141,12 +141,12 @@
   padding: 6px;
   border-radius: 11px;
   border: 1px solid var(--line2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--veu-rgb) / 0.05);
   min-height: 40px;
 }
 .pc-zonas:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.22);
+  box-shadow: 0 0 0 3px rgb(var(--az1-rgb) / 0.22);
 }
 .pc-chips {
   display: contents;
@@ -157,8 +157,8 @@
   gap: 4px;
   padding: 3px 4px 3px 10px;
   border-radius: 999px;
-  background: rgba(10, 132, 255, 0.18);
-  border: 1px solid rgba(10, 132, 255, 0.4);
+  background: rgb(var(--az1-rgb) / 0.18);
+  border: 1px solid rgb(var(--az1-rgb) / 0.4);
   font-size: 12.5px;
 }
 .pc-chip button {
@@ -173,7 +173,7 @@
   cursor: pointer;
 }
 .pc-chip button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--veu-rgb) / 0.1);
   color: var(--fg);
 }
 .campo .pc-zonas input {
@@ -197,11 +197,11 @@
   border-radius: 999px;
 }
 .pc-err {
-  background: rgba(255, 69, 58, 0.14);
+  background: rgb(var(--er2-rgb) / 0.14);
   color: var(--bad);
 }
 .pc-av {
-  background: rgba(255, 159, 10, 0.12);
+  background: rgb(var(--av2-rgb) / 0.12);
   color: var(--warn);
 }
 .pc-info {
@@ -240,7 +240,7 @@ dialog.dlg.largo {
   height: 36px;
   border-radius: 10px;
   border: 1px solid var(--line2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--veu-rgb) / 0.05);
   color: var(--fg);
   padding: 0 10px;
   font: inherit;
@@ -287,7 +287,7 @@ dialog.dlg.largo {
 }
 .sap-chip {
   border: 1px solid var(--line2);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--veu-rgb) / 0.04);
   color: var(--fg);
   border-radius: 999px;
   padding: 5px 12px;
@@ -296,7 +296,7 @@ dialog.dlg.largo {
   cursor: pointer;
 }
 .sap-chip.on {
-  background: rgba(10, 132, 255, 0.2);
+  background: rgb(var(--az1-rgb) / 0.2);
   border-color: var(--accent);
 }
 .sap-barra .pc-acc {
@@ -343,7 +343,7 @@ dialog.dlg.largo {
   height: 34px;
   border-radius: 9px;
   border: 1px solid var(--line2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--veu-rgb) / 0.05);
   color: var(--fg);
   padding: 0 10px;
   font: inherit;
@@ -404,7 +404,7 @@ dialog.dlg.largo {
   padding: 8px 10px;
   border: 1px solid var(--line2);
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(var(--veu-rgb) / 0.03);
 }
 .pc-dest-i {
   display: flex;
@@ -446,4 +446,73 @@ dialog.dlg.largo {
 .sap-omissao {
   max-width: 260px;
   margin-top: 12px;
+}
+
+/* Registos de actividade: localização aproximada do IP */
+.ac-local {
+  white-space: normal;
+}
+.ac-band {
+  font-size: 15px;
+  line-height: 1;
+}
+.ac-mapa {
+  font-size: 12px;
+}
+/* Sincronização dos smartphones: rota e distribuição das horas desde a última sincronização */
+.sy-rota {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sy-rota small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.sy-dist {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+}
+.sy-dist-pista {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.sy-dist-b {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dim);
+}
+.sy-dist-b.em_dia {
+  background: var(--accent);
+}
+.sy-dist-b.atencao {
+  background: var(--warn);
+}
+.sy-dist-b.critico {
+  background: var(--bad);
+}
+.sy-dist-b.sem_registo {
+  background: repeating-linear-gradient(45deg, var(--bad) 0 4px, transparent 4px 8px);
+  opacity: 0.6;
+}
+.sy-dist-m {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--fg);
+  opacity: 0.45;
+}
+.sy-dist-v {
+  min-width: 92px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 12.5px;
 }

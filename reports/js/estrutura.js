@@ -5,7 +5,7 @@
 import { download } from './componentes/blocos.js';
 import { NAVY2, GREY, carregarExcelJS, conjuntosDados, nomeFolha } from './excel.js';
 import { dl } from './formatos.js';
-import { t } from './i18n/i18n.js';
+import { siglaNivel, t, tv } from './i18n/i18n.js';
 import { nomeRecurso } from './paginas/catalogo.js';
 import { SESSAO, podeExportar } from './perfil.js';
 import { hoje } from './periodo.js';
@@ -13,8 +13,7 @@ import { toast } from './util.js';
 import { apiFetch } from './api.js';
 
 export const NOME_ESTRUTURA = 'RTM - Dicionário Técnico da Base de Dados';
-export const nomeEstrutura = () => NOME_ESTRUTURA + '-' + dl(hoje()) + '.xlsx';
-const NIVEIS = { '': '—', Vr: 'V·r', V: 'V', Er: 'E·r', E: 'E', G: 'G', A: 'A' };
+export const nomeEstrutura = () => t(NOME_ESTRUTURA) + '-' + dl(hoje()) + '.xlsx';
 const TIPOS_PORTAL = { texto: 'Texto', data: 'Data', kz: 'Valor (Kz)', n: 'Número', q: 'Quantidade' };
 const simNao = (v) => t(v ? 'Sim' : 'Não');
 const dataHora = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
@@ -58,7 +57,7 @@ function gerar(E) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Portal RTM · Grupo Naval';
   wb.created = new Date();
-  wb.title = NOME_ESTRUTURA;
+  wb.title = t(NOME_ESTRUTURA);
   wb.subject = t('Dicionário de dados');
   const F = (o) => Object.assign({ name: 'Arial', size: 10 }, o || {});
   const usados = new Set();
@@ -69,7 +68,7 @@ function gerar(E) {
   capa.columns = [{ width: 3 }, { width: 26 }, { width: 44 }, { width: 44 }, { width: 12 }];
   capa.getCell('B2').value = 'Grupo Naval Angola';
   capa.getCell('B2').font = F({ size: 11, color: { argb: GREY } });
-  capa.getCell('B3').value = NOME_ESTRUTURA;
+  capa.getCell('B3').value = t(NOME_ESTRUTURA);
   capa.getCell('B3').font = F({ size: 20, bold: true, color: { argb: NAVY2 } });
   const meta = [
     ['Conteúdo', t('Dicionário de dados: estrutura da base de dados do Pinguim BO, modelo de dados do portal, matriz de acessos e fontes de dados.')],
@@ -87,8 +86,8 @@ function gerar(E) {
         : '—',
     ],
     ['Gerado em', dl(hoje()) + ' ' + new Date().toTimeString().slice(0, 5)],
-    ['Gerado por', SESSAO ? SESSAO.nome + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
-    ['Classificação', t('Uso interno. Contém só metadados (estrutura); não contém dados de clientes nem de vendas.')],
+    ['Gerado por', SESSAO ? tv(SESSAO.nome) + ' (' + t(SESSAO.perfil_nome) + ')' : '—'],
+    ['Confidencialidade', t('Uso interno. Contém só metadados (estrutura); não contém dados de clientes nem de vendas.')],
     ['Método', t('Leitura do catálogo da base de dados só com SELECT (sys.* / INFORMATION_SCHEMA). Linhas: número aproximado.')],
   ];
   meta.forEach(([k, v], i) => {
@@ -247,7 +246,7 @@ function gerar(E) {
       'Nível de cada perfil em cada página ou função (matriz em vigor).',
       'Matriz',
       ['Recurso', 'Nome', ...perfis],
-      Object.entries(E.matriz).map(([rec, col]) => [rec, nomeRecurso(rec), ...perfis.map((p) => NIVEIS[col[p] || ''])]),
+      Object.entries(E.matriz).map(([rec, col]) => [rec, nomeRecurso(rec), ...perfis.map((p) => siglaNivel(col[p] || ''))]),
       [24, 46, ...perfis.map(() => 8)],
       'TableStyleLight9',
     );
@@ -273,7 +272,7 @@ function gerar(E) {
         'Pinguim BO',
         'SQL Server' + (BD.disponivel ? ' (' + BD.base + ')' : ''),
         t('Só leitura (SELECT)'),
-        t('Vendas, linhas de artigos, cobranças, clientes, stock, sincronização dos smartphones'),
+        t('Vendas, linhas de artigos, cobranças, clientes, stock, sincronização dos telemóveis'),
       ],
       ['Pinguim BO', 'API REST (XML)', t('Só leitura'), t('Exportação de vendas (alternativa à ligação directa)')],
       [

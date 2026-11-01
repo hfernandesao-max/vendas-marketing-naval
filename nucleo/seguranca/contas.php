@@ -13,6 +13,15 @@ const NAVAL_SESSAO_INACTIVA = 1800;   // 30 minutos sem actividade
 const NAVAL_SESSAO_MAXIMA = 36000;    // 10 horas
 // Bloqueio: à 3.ª tentativa falhada a conta fica bloqueada até o super administrador a desbloquear
 const NAVAL_MAX_TENTATIVAS = 3;
+// Idioma do portal de cada conta (etiquetas BCP 47 simplificadas): campo obrigatório na ficha; é o idioma em que o
+// portal abre sempre que a pessoa entra. Contas antigas sem idioma abrem em português.
+const NAVAL_IDIOMAS = ['pt' => 'Português', 'en' => 'English', 'ti' => 'ትግርኛ'];
+
+function naval_idioma_conta(?array $u): string
+{
+    $i = (string) ($u['idioma'] ?? '');
+    return isset(NAVAL_IDIOMAS[$i]) ? $i : 'pt';
+}
 
 function naval_ficheiro_utilizadores(): string
 {

@@ -8,7 +8,7 @@ export const PAGES = [
   { id: 'vendas-cliente', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por cliente' },
   { id: 'vendas-artigo', grupo: 'Vendas', icon: 'box', nome: 'Vendas por artigo' },
   { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
-  { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Ranking' },
+  { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação' },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
   { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Cobranças' },
   { id: 'pendentes', grupo: 'Recebimentos', icon: 'clock', nome: 'Facturas pendentes' },
@@ -18,13 +18,14 @@ export const PAGES = [
   { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'file', nome: 'Clientes registados' },
   { id: 'plano-visitas', grupo: 'Terreno', icon: 'scale', nome: 'Plano de visitas' },
   { id: 'auditoria', grupo: 'Terreno', icon: 'shield', nome: 'Histórico de auditoria' },
-  { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos smartphones' },
+  { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos telemóveis' },
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Plano de cargas' },
   { id: 'registo-cargas', grupo: 'Logística', icon: 'box', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
   // Interfaces com outros sistemas (separadas da análise; segregação de funções e controlo de interfaces)
   { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
+  { id: 'agt', grupo: 'Integrações', icon: 'shield', nome: 'Comunicação AGT' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
 ];
 

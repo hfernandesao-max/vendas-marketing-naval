@@ -1,5 +1,5 @@
 // Vendas: por promotor, dia, cliente, artigo, marca, ranking e documentos.
-import { isCF, pendenteDe, porPromotor, promotorRota, recebidoDe, vendasR } from '../calculos.js';
+import { clientesDe, docsVenda, eNC, isCF, notasCredito, pendenteDe, pendentesDe, porPromotor, promotorRota, recebidoDe, vendasR } from '../calculos.js';
 import { aguardar, pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV } from '../filtros.js';
 import { dl, mkz, n0, pct } from '../formatos.js';
@@ -10,13 +10,14 @@ import { DB, el, group, sum } from '../util.js';
 
 R['vendas-promotor'] = (pg) => {
   const V = vendasR(),
+    F = docsVenda(V),
     P = porPromotor(V),
     tot = sum(V, 'total');
   pg.append(
     tiles([
-      { l: t('Vendas RTM'), v: mkz(tot), s: t('{n} documentos', { n: n0(V.length) }) },
+      { l: t('Vendas RTM'), v: mkz(tot), s: subVendas(V) },
       { l: t('Promotores com vendas'), v: n0(P.filter((x) => x.docs > 0).length) },
-      { l: t('Venda média por documento'), v: mkz(V.length ? tot / V.length : null) },
+      { l: t('Venda média por documento'), v: mkz(F.length ? tot / F.length : null) },
       { l: t('Facturas pendentes'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
     ]),
   );
@@ -24,7 +25,7 @@ R['vendas-promotor'] = (pg) => {
     tabela({
       id: 'vp',
       titulo: t('Vendas por promotor'),
-      nota: t('Documentos emitidos no Pinguim BO no período.'),
+      nota: t('Documentos emitidos no Pinguim BO no período. Total: vendas líquidas (facturas − notas de crédito).'),
       rows: P,
       sort: 'total',
       total: true,
@@ -35,6 +36,7 @@ R['vendas-promotor'] = (pg) => {
         { key: 'clientes', label: t('Clientes'), type: 'n' },
         { key: 'dias', label: t('Dias com vendas'), type: 'n' },
         { key: 'total', label: t('Total'), type: 'bar', sum: true },
+        ...(sum(P, 'notas_credito') ? [{ key: 'notas_credito', label: t('Notas de crédito'), type: 'kz', sum: true }] : []),
         { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
         { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true },
         { key: 'medio', label: t('Média por documento'), type: 'kz' },
@@ -43,12 +45,19 @@ R['vendas-promotor'] = (pg) => {
   );
 };
 
+// Subtítulo do total de vendas: documentos de venda e, se houver, o valor das notas de crédito já descontado
+function subVendas(V) {
+  const nc = notasCredito(V),
+    s = t('{n} documentos', { n: n0(docsVenda(V).length) });
+  return nc ? s + ' · ' + t('notas de crédito: −{v}', { v: mkz(nc) }) : s;
+}
+
 R['vendas-dia'] = (pg) => {
   const V = vendasR();
   const dias = Object.values(group(V, 'data')).map((rs) => ({
     data: rs[0].data,
-    docs: rs.length,
-    promotores: new Set(rs.map((x) => x.rota)).size,
+    docs: docsVenda(rs).length,
+    promotores: new Set(docsVenda(rs).map((x) => x.rota)).size,
     total: sum(rs, 'total'),
     recebido: sum(rs, recebidoDe),
   }));
@@ -105,17 +114,18 @@ R['vendas-cliente'] = (pg) => {
     nif: rs[0].nif,
     rota: [...new Set(rs.map((x) => x.rota))].join(', '),
     promotor: [...new Set(rs.map((x) => promotorRota(x.rota)))].join(', '),
-    docs: rs.length,
+    docs: docsVenda(rs).length,
     total: sum(rs, 'total'),
-    ultima: rs
+    ultima: docsVenda(rs)
       .map((x) => x.data)
       .sort()
       .pop(),
   }));
+  const comCompras = rows.filter((x) => x.docs > 0).length;
   pg.append(
     tiles([
-      { l: t('Clientes com compras'), v: n0(rows.length) },
-      { l: t('Venda média por cliente'), v: mkz(rows.length ? sum(rows, 'total') / rows.length : null) },
+      { l: t('Clientes com compras'), v: n0(comCompras) },
+      { l: t('Venda média por cliente'), v: mkz(comCompras ? sum(rows, 'total') / comCompras : null) },
       { l: t('Clientes com mais de uma compra'), v: n0(rows.filter((x) => x.docs > 1).length) },
     ]),
   );
@@ -156,10 +166,10 @@ R.ranking = (pg) => {
       cliente: rs[0].cliente,
       nif: rs[0].nif,
       promotor: [...new Set(rs.map((x) => promotorRota(x.rota)))].join(', '),
-      docs: rs.length,
+      docs: docsVenda(rs).length,
       total: sum(rs, 'total'),
-      medio: sum(rs, 'total') / rs.length,
-      ultima: rs
+      medio: docsVenda(rs).length ? sum(rs, 'total') / docsVenda(rs).length : null,
+      ultima: docsVenda(rs)
         .map((x) => x.data)
         .sort()
         .pop(),
@@ -169,10 +179,10 @@ R.ranking = (pg) => {
     Object.values(group(V, 'rota')).map((rs) => ({
       chave: rs[0].rota,
       promotor: promotorRota(rs[0].rota),
-      docs: rs.length,
-      clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+      docs: docsVenda(rs).length,
+      clientes: clientesDe(docsVenda(rs)),
       total: sum(rs, 'total'),
-      medio: sum(rs, 'total') / rs.length,
+      medio: docsVenda(rs).length ? sum(rs, 'total') / docsVenda(rs).length : null,
       recebido: sum(rs, 'total') ? sum(rs, recebidoDe) / sum(rs, 'total') : null,
     })),
   );
@@ -194,7 +204,7 @@ R.ranking = (pg) => {
   pg.append(
     tabela({
       id: 'rk-prom',
-      titulo: t('Ranking de promotores'),
+      titulo: t('Classificação dos promotores'),
       nota: t('Ordenado pelo valor vendido no período, com IVA.'),
       rows: PR,
       sort: 'total',
@@ -215,7 +225,7 @@ R.ranking = (pg) => {
   pg.append(
     tabela({
       id: 'rk-cli',
-      titulo: t('Ranking de clientes'),
+      titulo: t('Classificação dos clientes'),
       nota: t('Clientes identificados por NIF, sem Consumidor Final. Ordenado pelo valor comprado no período, com IVA.'),
       rows: CL,
       sort: 'total',
@@ -243,23 +253,27 @@ R.documentos = (pg) => {
   const rotas = [...new Set(todos.map((x) => x.rota))].filter(Boolean).sort((a, b) => String(a).localeCompare(String(b), 'pt', { numeric: true }));
   const porRota = group(todos, 'rota');
   const rotulo = (r) => promotorRota(r);
-  const V = todos;
+  const V = todos,
+    F = docsVenda(V),
+    nc = notasCredito(V);
   const tot = sum(V, 'total'),
     liq = sum(V, recebidoDe),
-    cli = new Set(V.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size;
+    pend = pendentesDe(V),
+    cli = clientesDe(F);
+  const sRotas = rotaDoc ? promotorRota(rotaDoc) : t('{n} rotas', { n: rotas.length });
   pg.append(
     tiles([
-      { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: rotaDoc ? promotorRota(rotaDoc) : t('{n} rotas', { n: rotas.length }) },
-      { l: t('Documentos'), v: n0(V.length), s: t('{n} dias com vendas', { n: new Set(V.map((x) => x.data)).size }) },
+      { l: rotaDoc ? t('Vendas da rota') : t('Vendas RTM'), v: mkz(tot), s: nc ? sRotas + ' · ' + t('notas de crédito: −{v}', { v: mkz(nc) }) : sRotas },
+      { l: t('Documentos'), v: n0(F.length), s: t('{n} dias com vendas', { n: new Set(F.map((x) => x.data)).size }) },
       { l: t('Recebido'), v: mkz(liq), s: t('{p} do total', { p: pct(tot ? liq / tot : null) }) },
       {
         l: t('Facturas pendentes'),
-        v: mkz(tot - liq),
-        tone: tot - liq > 0.005 ? 'warn' : null,
+        v: mkz(pend),
+        tone: pend > 0.005 ? 'warn' : null,
         s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }),
       },
       { l: t('Clientes com compras'), v: n0(cli) },
-      { l: t('Média por documento'), v: mkz(V.length ? tot / V.length : 0) },
+      { l: t('Média por documento'), v: mkz(F.length ? tot / F.length : 0) },
     ]),
   );
 
@@ -274,18 +288,19 @@ R.documentos = (pg) => {
         total: true,
         rows: rotas.map((r) => {
           const rs = porRota[r] || [],
+            fs = docsVenda(rs),
             tt = sum(rs, 'total'),
             rc = sum(rs, recebidoDe);
           return {
             chave: r,
             rota: r,
             promotor: promotorRota(r),
-            docs: rs.length,
-            clientes: new Set(rs.map((x) => (isCF(x.nif) ? x.cliente : x.nif))).size,
+            docs: fs.length,
+            clientes: clientesDe(fs),
             total: tt,
             recebido: rc,
-            pendente: tt - rc,
-            medio: rs.length ? tt / rs.length : 0,
+            pendente: pendentesDe(rs),
+            medio: fs.length ? tt / fs.length : 0,
           };
         }),
         cols: [
@@ -323,25 +338,28 @@ R.documentos = (pg) => {
           key: 'liquidado',
           label: t('Pago'),
           p: 2,
-          get: (r) => t(r.liquidado && pendenteDe(r) <= 0.005 ? 'Pago' : 'Pendente'),
+          get: (r) => t(estadoDoc(r)),
           render: (v, r) => {
-            const pago = r ? r.liquidado && pendenteDe(r) <= 0.005 : !!v;
-            return pill(t(pago ? 'Pago' : 'Pendente'), pago ? 'p-ok' : 'p-warn');
+            const e = r ? estadoDoc(r) : v ? 'Pago' : 'Pendente';
+            return pill(t(e), e === 'Pago' ? 'p-ok' : e === 'Pendente' ? 'p-warn' : 'p-mut');
           },
-          xl: (r) => t(r.liquidado && pendenteDe(r) <= 0.005 ? 'Pago' : 'Pendente'),
+          xl: (r) => t(estadoDoc(r)),
         },
         { key: 'total', label: t('Total'), type: 'kz', sum: true },
       ],
     }),
   );
 };
+// Estado do documento: as notas de crédito não se pagam nem ficam pendentes
+const estadoDoc = (r) => (eNC(r) ? 'Nota de crédito' : r.liquidado && pendenteDe(r) <= 0.005 ? 'Pago' : 'Pendente');
+
 R['vendas-artigo'] = (pg) => {
   const A = (DB.artigos || []).filter((x) => inR(x.data));
   const rows = Object.values(group(A, (x) => x.codigo + '|' + x.artigo)).map((ls) => ({
     codigo: ls[0].codigo,
     artigo: ls[0].artigo,
     unidade: [...new Set(ls.map((x) => x.unidade).filter(Boolean))].join(', '),
-    docs: new Set(ls.map((x) => x.documento)).size,
+    docs: new Set(docsVenda(ls).map((x) => x.documento)).size,
     quantidade: sum(ls, 'quantidade'),
     valor_sem_iva: sum(ls, 'valor_sem_iva'),
     desconto: sum(ls, 'desconto'),
@@ -378,7 +396,9 @@ R['vendas-artigo'] = (pg) => {
     tabela({
       id: 'va',
       titulo: t('Vendas por artigo'),
-      nota: t('Linhas de venda do Pinguim BO no período. Preço unit. s/ IVA: preço médio ponderado (valor s/ IVA ÷ quantidade), já com os descontos.'),
+      nota: t(
+        'Linhas de venda do Pinguim BO no período, já descontadas as notas de crédito. Preço unit. s/ IVA: preço médio ponderado (valor s/ IVA ÷ quantidade), já com os descontos.',
+      ),
       rows,
       sort: 'total',
       total: true,

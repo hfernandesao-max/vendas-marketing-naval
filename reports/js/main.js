@@ -2,7 +2,7 @@
 import { route } from './app.js';
 import { LIGACOES, avaliarFontes, fetchVendas } from './fontes.js';
 import { n0 } from './formatos.js';
-import { t } from './i18n/i18n.js';
+import { IDIOMAS, LANG, definirIdioma, t } from './i18n/i18n.js';
 import { definirSessao } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
@@ -11,6 +11,7 @@ import './paginas/inicio.js';
 import './paginas/vendas.js';
 import './paginas/terreno.js';
 import './paginas/sincronizacao.js';
+import './paginas/agt.js';
 import './paginas/recebimentos.js';
 import './paginas/logistica.js';
 import './paginas/cargas.js';
@@ -88,6 +89,7 @@ const lerSessao = () =>
       try {
         const d = JSON.parse(tx);
         definirSessao(d && d.permissoes ? d : null);
+        if (d && d.permissoes) idiomaDaConta(d);
       } catch (e) {
         definirSessao(null);
       }
@@ -95,6 +97,26 @@ const lerSessao = () =>
     .catch((e) => {
       if (e.message === 'sessao') throw e;
     });
+// Idioma da ficha da conta: a cada nova entrada o portal abre no idioma definido para a pessoa. Durante a sessão
+// pode mudar-se no topo (PT/EN/TI); a escolha vale até sair, e na entrada seguinte volta o da ficha.
+function idiomaDaConta(d) {
+  if (!(d.idioma in IDIOMAS) || !d.entrada) return;
+  let marca = '';
+  try {
+    marca = localStorage.getItem('vm-lang-entrada') || '';
+  } catch (e) {}
+  const esta = d.login + '|' + d.entrada;
+  if (marca === esta) return;
+  try {
+    localStorage.setItem('vm-lang-entrada', esta);
+    localStorage.setItem('vm-lang', d.idioma);
+  } catch (e) {}
+  if (d.idioma !== LANG) {
+    definirIdioma(d.idioma);
+    document.documentElement.lang = IDIOMAS[LANG];
+    LD.iniciar();
+  }
+}
 // Ficheiros de dados: pelo serviço PHP (filtrado pelo perfil); sem PHP (teste local), o .json directo
 const lerDados = (id) =>
   apiFetch('dados/' + id)

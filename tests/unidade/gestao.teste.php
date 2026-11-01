@@ -42,7 +42,7 @@ teste('activar a gestão: contas antigas passam para a lista nova; quem activa f
     unlink($f);
 });
 
-teste('sincronização: estado pelos limites, código da rota e montagem com as rotas do portal', function () {
+teste('sincronização: estado pelos limites, código da rota e horas desde a última sincronização', function () {
     $lim = ['alerta_horas' => 2, 'critico_horas' => 24];
     igual('em_dia', naval_sync_estado(30, $lim));
     igual('atencao', naval_sync_estado(180, $lim));
@@ -50,22 +50,26 @@ teste('sincronização: estado pelos limites, código da rota e montagem com as 
     igual('sem_registo', naval_sync_estado(null, $lim));
     igual('1004', naval_sync_rota('', '1004 - FHR PIV'));
     $agora = strtotime('2026-10-26 10:00:00');
-    $m = naval_sync_montar(
-        [['CODIGO' => '', 'LOJA' => '1004 - FHR PIV', 'ULTIMA' => '2026-10-26 09:30:00', 'HOJE' => 3, 'SETE_DIAS' => 20]],
-        [['CODIGO' => '', 'LOJA' => '1004 - FHR PIV', 'DIA' => '2026-10-26', 'N' => 3]],
-        $agora, $lim);
-    $r = array_values(array_filter($m['rotas'], function ($x) { return $x['rota'] === '1004'; }))[0];
-    igual(30, $r['minutos']);
-    igual('em_dia', $r['estado']);
-    igual(['2026-10-26' => 3], $r['dias']);
-    foreach ($m['rotas'] as $x) if ($x['rota'] !== '1004') igual('sem_registo', $x['estado']);
+    $m = naval_sync_montar([
+        ['ROTA' => '1004 - FHR PIV', 'ULTIMA_SINCRONIZACAO' => '2026-10-26 09:30:00'],
+        ['ROTA' => '1001 - FHR PIV', 'ULTIMA_SINCRONIZACAO' => '2026-10-25 06:00:00'],
+    ], $agora, $lim);
+    igual(['1004', '1001'], array_column($m['rotas'], 'rota'));   // ordem da consulta (mais recente primeiro)
+    igual('1004 - FHR PIV', $m['rotas'][0]['descricao']);
+    igual(30, $m['rotas'][0]['minutos']);
+    igual(0.5, $m['rotas'][0]['horas']);
+    igual('em_dia', $m['rotas'][0]['estado']);
+    igual(28.0, $m['rotas'][1]['horas']);
+    igual('critico', $m['rotas'][1]['estado']);
 });
 
-teste('sincronização: as consultas passam a guarda de só leitura (só SELECT)', function () {
+teste('sincronização: uma única consulta, a definida pela gestão, só de leitura', function () {
     $src = (string) file_get_contents(dirname(__DIR__, 2) . '/nucleo/servicos/sincronizacao.php');
-    preg_match_all('/naval_bd_consultar\("(.*?)"/s', $src, $m);
-    igual(2, count($m[1]));
-    foreach ($m[1] as $sql) naval_bd_so_leitura($sql);
+    igual(1, substr_count($src, 'naval_bd_consultar('));
+    naval_bd_so_leitura(NAVAL_SYNC_SQL);
+    foreach (['S.DESCRIPTION AS ROTA', 'MAX(SPH.END_TIMESTAMP)', 'FROM SYNC_PHSE_HISTORY AS SPH', 'LEFT JOIN STORE AS S', "S.DESCRIPTION <> '9999-GRUPO NAVAL FORMAÇÃO'", 'SPH.STORE_ID,', 'DESC'] as $x) {
+        verdade(strpos(NAVAL_SYNC_SQL, $x) !== false, 'falta ' . $x);
+    }
     $recusou = false;
     try {
         naval_bd_so_leitura('UPDATE SYNC_PHSE_HISTORY SET END_TIMESTAMP = NULL');

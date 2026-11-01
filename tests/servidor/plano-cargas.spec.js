@@ -118,15 +118,15 @@ test('publicar sem enviar; enviar depois só aos destinatários escolhidos da li
   expect((await sup.post('/api/index.php/v1/plano', { data: { accao: 'enviar', csrf: await csrf(sup), data: DIA } })).status()).toBe(403);
 });
 
-test('dia novo: sugestões por rota a partir do último plano publicado e do histórico de transportes', async () => {
+test('dia novo: sugestões por rota só a partir do último plano publicado', async () => {
   const log = (await entrar('log')).ctx;
   const d = await (await log.get('/api/index.php/v1/plano?data=2026-10-21')).json();
   const s = Object.fromEntries(d.sugestoes.map((x) => [x.rota, x]));
   // 1002 vem do plano publicado a 20-10 (fonte principal), com a ficha do motorista
   expect(s['1002']).toMatchObject({ origem: DATA, motorista: 'Domingos Filipe', matricula: 'LD-51-12-IJ', quantidades: { fraldas: 90, sabao: 10 } });
   expect(s['1002'].factura).toBeUndefined();
-  // 1011 não está no plano publicado: vem do histórico importado dos Excel de transportes (20-10)
-  expect(s['1011']).toMatchObject({ origem: '2026-10-20', motorista: 'Bernardo Lourenço', armazem: 'HIGITEC' });
+  // 1011 não está em nenhum plano publicado: sem sugestão (o histórico importado de Excel nunca é usado)
+  expect(s['1011']).toBeUndefined();
   // a mesma data ou datas anteriores ao primeiro registo não sugerem o próprio dia
   const antes = await (await log.get(`/api/index.php/v1/plano?data=${DATA}`)).json();
   expect(antes.sugestoes.every((x) => x.origem < DATA)).toBe(true);

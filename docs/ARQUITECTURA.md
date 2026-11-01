@@ -59,6 +59,25 @@ Camadas, de baixo para cima. Um módulo só importa das camadas iguais ou inferi
 
 Os módulos ES não permitem alterar uma variável importada. O estado partilhado é exportado como `let` e alterado só pela função `definir…` do próprio módulo (`definirIdioma`, `definirSessao`, `definirAtual`, `definirReg`, …). Objectos partilhados (`DB`, `R`, `FV`) são alterados nas propriedades.
 
+## Base de dados do Pinguim BO: só leitura
+
+As vendas, as linhas de artigos, o stock e a estrutura são lidos directamente do SQL Server do Pinguim BO.
+Todas as consultas passam por `naval_bd_consultar()` (`nucleo/servicos/bd.php`), que só aceita **uma**
+instrução a começar por `SELECT` ou `WITH` e recusa qualquer palavra de escrita ou execução (`INSERT`,
+`UPDATE`, `DELETE`, `MERGE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `EXEC`, `INTO`, `DECLARE`, `SET`,
+procedimentos `xp_`/`sp_`, …). Os testes verificam todas as consultas do código. Recomendação: o
+utilizador do `.env` só com a função `db_datareader` no SQL Server.
+
+| Dados                                | Fonte principal                                                                     | Alternativa                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Vendas e artigos (`api.php`)         | `DOCHEADER`, `DOCCONFIG`, `STORE`, `DOCFOOTER`, `PAYMETHOD`, `DOCMOVDETAIL`, `UNIT` | exportação REST (XML)                                    |
+| Stock (`stock.php`)                  | `WAREHOUSE`, `ENTITY`, `PRODUCT`, `dbo.GET_STOCK`                                   | `reports/data/stock.json` (`scripts/converter_stock.js`) |
+| Estrutura (`api.php?estrutura=1`)    | `DOCCONFIG`, `PAYMETHOD`, `STORE`, `sys.tables`                                     | estrutura da exportação REST                             |
+| Estado da ligação (`api.php?ping=1`) | `SELECT 1`                                                                          | pedido curto à exportação REST                           |
+
+Os dados próprios do portal (contas, matriz, plano de cargas, lotes do SAP, registos) ficam em ficheiros na
+pasta privada: o portal nunca escreve na base de dados do Pinguim BO.
+
 ## Back-end PHP em camadas (`nucleo/`)
 
 ```
@@ -67,7 +86,10 @@ nucleo/api/v1/*.php     Serviços da API: lêem o pedido, verificam o acesso, ch
         │               Não têm regras de negócio nem acesso directo a ficheiros.
         ▼
 nucleo/servicos/        Serviços de negócio (casos de uso), sem HTTP: devolvem dados ou lançam NavalErro.
-  pinguim.php           ligação ao Pinguim BO (endereços alternativos, estado, diagnóstico, estrutura)
+  bd.php                base de dados do Pinguim BO (SQL Server): ligação e guarda «só SELECT»
+  pinguim.php           exportação REST do Pinguim BO (alternativa quando a base de dados não responde)
+  stock.php             stock por carrinha e armazém (dbo.GET_STOCK; sem ligação, stock.json)
+  estrutura.php         tipos de documento, meios, lojas e tabelas da base de dados (super administrador)
   vendas.php            documentos FR/FT, pagamentos e troco, linhas de artigos, âmbito por perfil
   cargas.php            plano de cargas: rascunho, conflito de versões, publicação, listas, email
   sap.php               correspondência de rotas e lotes do ficheiro para o SAP
@@ -105,7 +127,7 @@ Regras:
 | `USERNAME`, `PASSWORD`                                                                                                     | credenciais do Pinguim BO                                                      | —                                                  |
 | `PINGUIM_URL`                                                                                                              | endereços do Pinguim BO, por ordem, separados por vírgula                      | — (obrigatória)                                    |
 | `PINGUIM_VERIFICAR_SSL`                                                                                                    | verificação do certificado HTTPS do Pinguim BO                                 | `1` (ligada)                                       |
-| `DB_HOST`, `DB_NAME` (ou `DB_DSN`), `DB_USER`, `DB_PASS`, `DB_PORT`                                                        | base de dados do Pinguim BO (só leitura)                                       | — (obrigatórias); porta `1433`                     |
+| `DB_DRIVER`, `DB_HOST`, `DB_PORT`, `DB_NAME` (ou `DB_DSN`), `DB_USER`, `DB_PASS`, `DB_ODBC_DRIVER`, `DB_TIMEOUT` | base de dados do Pinguim BO (SQL Server), só leitura: vendas, stock, sincronização, Comunicação AGT | — (obrigatórias); porta `1433` |
 | `GOOGLE_MAPS_API_KEY`                                                                                                      | chave de navegador do Google Maps (GEO), com restrições                        | — (obrigatória para os mapas)                      |
 | `LOGIN_MAX_FALHAS_IP`                                                                                                      | entradas falhadas por IP em 15 min antes de suspender                          | `20`                                               |
 | `PROXY_HTTPS`, `CSP_APLICAR`, `APP_DEBUG`                                                                                  | proxy HTTPS de confiança; CSP aplicada; diagnóstico                            | `0` (nunca `APP_DEBUG=1` em produção)              |
@@ -117,6 +139,8 @@ Regras:
 | `EMAIL_MODO`                                                                                                               | `ficheiro` grava os emails em vez de os enviar (testes)                        | `graph`                                            |
 | `PORTAL_URL`                                                                                                               | endereço do portal nas ligações dos emails                                     | —                                                  |
 | `FUSO_HORARIO`                                                                                                             | fuso das datas e horas                                                         | `Africa/Luanda`                                    |
+| `AGT_PEDIDO_ID`, `AGT_ANULACAO_ID` | campos extra (DOCEXTRA) do pedido à AGT e do motivo de cancelamento | `26046` e `26003` |
+| `GEOIP_BD` | base de dados de localização de IP (MaxMind DB) | `<DADOS_PRIVADOS>/geoip/cidades.mmdb` |
 
 | `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
 
