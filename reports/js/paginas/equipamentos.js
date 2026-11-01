@@ -18,8 +18,8 @@ import { R } from './registo.js';
 const VALIDADE = 2 * 60000;
 let lista = { estado: '', dados: null, erro: '', em: 0 };
 let docs = { estado: '', dados: null, erro: '', em: 0 };
-const fichas = {}; // id → {estado, dados, erro}
-const documentos = {}; // número → {estado, dados, erro}
+const fichas = new Map(); // id → {estado, dados, erro} (Map: as chaves vêm do endereço)
+const documentos = new Map(); // número → {estado, dados, erro}
 let fichaId = '',
   docNum = '';
 // Área de assinatura em curso: o mesmo elemento (com o desenho, mesmo a meio de um traço) volta à página quando
@@ -102,22 +102,24 @@ function pedir(alvo, rota, aoChegar) {
     });
   return 'a-carregar';
 }
+/** Entrada da cache de um pedido (criada na primeira vez). */
+const lerCache = (m, k) => {
+  if (!m.has(k)) m.set(k, { estado: '', em: 0 });
+  return m.get(k);
+};
 const garantirLista = () => pedir(lista, 'equipamentos');
 const garantirDocs = () => pedir(docs, 'equipamentos/documentos');
 const garantirFicha = (id) =>
-  pedir(
-    (fichas[id] = fichas[id] || { estado: '', em: 0 }),
-    'equipamentos/ficha?id=' + encodeURIComponent(id) + (paramHash('origem') === 'qr' ? '&origem=qr' : ''),
-  );
-const garantirDoc = (n) => pedir((documentos[n] = documentos[n] || { estado: '', em: 0 }), 'equipamentos/documentos?numero=' + encodeURIComponent(n));
+  pedir(lerCache(fichas, id), 'equipamentos/ficha?id=' + encodeURIComponent(id) + (paramHash('origem') === 'qr' ? '&origem=qr' : ''));
+const garantirDoc = (n) => pedir(lerCache(documentos, n), 'equipamentos/documentos?numero=' + encodeURIComponent(n));
 
 /** Depois de uma alteração: esquece o que está em memória e volta a desenhar. */
 function renovar() {
   emCurso = { chave: '', el: null };
   lista = { estado: '', dados: null, erro: '', em: 0 };
   docs = { estado: '', dados: null, erro: '', em: 0 };
-  Object.keys(fichas).forEach((k) => delete fichas[k]);
-  Object.keys(documentos).forEach((k) => delete documentos[k]);
+  fichas.clear();
+  documentos.clear();
   draw();
 }
 
@@ -257,7 +259,7 @@ function desenharLista(pg) {
 // ───────────────────────────── Ficha ─────────────────────────────
 
 function desenharFicha(pg, id) {
-  const f = fichas[id] || {};
+  const f = fichas.get(id) || {};
   const est = garantirFicha(id);
   garantirLista();
   if (est !== 'ok') {
@@ -693,7 +695,7 @@ function proximaOrdem(doc) {
 }
 
 function desenharDocumento(pg, num) {
-  const x = documentos[num] || {};
+  const x = documentos.get(num) || {};
   const est = garantirDoc(num);
   if (est !== 'ok') {
     const s = caixa(null);

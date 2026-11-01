@@ -42,7 +42,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
 <meta name="theme-color" content="#273777">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
-<title><?= $valido ? $h($id) . ' · ' : '' ?>Grupo Naval</title>
+<title><?= $valido ? htmlentities($id, ENT_QUOTES, 'UTF-8') . ' · ' : '' ?>Grupo Naval</title>
 <style>
   :root { --azul: #273777; --fundo: #f3f5fa; --cartao: #fff; --texto: #1c2340; --suave: #5b6478; --linha: #dfe4ef; --ceu: #9fd0ff; }
   @media (prefers-color-scheme: dark) { :root { --fundo: #08122b; --cartao: #13224a; --texto: #f2f5fc; --suave: #a9b7d3; --linha: #263a6b; } }
@@ -68,7 +68,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
   <img src="../assets/naval-emblema.png" width="72" height="72" alt="Grupo Naval">
   <?php if ($valido): ?>
   <p class="s">ID do activo</p>
-  <h1><?= $h($id) ?></h1>
+  <h1><?= htmlentities($id, ENT_QUOTES, 'UTF-8') ?></h1>
   <?php else: ?>
   <h1 style="font-family: inherit; font-size: 24px; margin-top: 12px;"><?= http_response_code() === 429 ? 'Demasiadas leituras' : 'Código não reconhecido' ?></h1>
   <?php endif; ?>
@@ -79,7 +79,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
     <h2>Este equipamento é propriedade do Grupo Naval</h2>
     <p>Se o encontrou, por favor devolva-o ao Grupo Naval ou contacte-nos. O equipamento está inscrito na gestão de equipamentos da empresa e pode ser bloqueado à distância.</p>
     <?php if ($tel !== ''): ?><a class="lig" href="tel:<?= $h(preg_replace('/[^0-9+]/', '', $tel)) ?>"><?= $h($tel) ?></a><?php endif; ?>
-    <?php if ($email !== ''): ?><a class="lig" href="mailto:<?= $h($email) ?>?subject=<?= rawurlencode('Equipamento ' . $id) ?>"><?= $h($email) ?></a><?php endif; ?>
+    <?php if ($email !== ''): ?><a class="lig" href="mailto:<?= $h($email) ?>?subject=<?= htmlentities(rawurlencode('Equipamento ' . $id), ENT_QUOTES, 'UTF-8') ?>"><?= $h($email) ?></a><?php endif; ?>
   </section>
   <?php if ($entrou): ?>
   <section class="c"><p>A sua conta não tem acesso à gestão de equipamentos. Peça o acesso ao administrador da plataforma.</p></section>
