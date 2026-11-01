@@ -47,8 +47,9 @@ function naval_bd_criar(string $p, bool $herdar = false): PDO
     $host = $cfg('HOST');
     $port = $cfg('PORT', '1433');
     $nome = $cfg('NAME');
-    $user = $cfg('USER');   // vazio = autenticação integrada do Windows
-    $pass = $cfg('PASS');
+    // vazio = autenticação integrada do Windows: o PDO recebe null (com «» o ODBC acrescentaria UID= e PWD= vazios)
+    $user = $cfg('USER') !== '' ? $cfg('USER') : null;
+    $pass = $cfg('PASS') !== '' ? $cfg('PASS') : null;
     $dsnEnv = naval_config($p . '_DSN');
     $drivers = PDO::getAvailableDrivers();
     $opcoes = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_TIMEOUT => 10];

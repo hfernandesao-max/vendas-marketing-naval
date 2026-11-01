@@ -10,14 +10,20 @@ if (!$amb || !$fase) exit(2);
 
 if ($fase === 'preparar') {
     @mkdir($amb . '/privado', 0770, true);
-    $bd = $amb . '/equipamentos.sqlite';
-    @unlink($bd);
-    $pdo = new PDO('sqlite:' . $bd);
-    $pdo->exec((string) file_get_contents(dirname(__DIR__, 2) . '/dados/equipamentos-sqlite.sql'));
-    file_put_contents($amb . '/.env', implode("\n", [
+    // Base de dados: SQLite de teste ou, na CI do SQL Server, a indicada em ATV_TESTE_DSN (já com a carga de teste)
+    $dsn = (string) getenv('ATV_TESTE_DSN');
+    $bdLinhas = ['ATV_DB_DSN=' . $dsn, 'ATV_DB_USER=' . getenv('ATV_TESTE_USER'), 'ATV_DB_PASS=' . getenv('ATV_TESTE_PASS')];
+    if ($dsn === '') {
+        $bd = $amb . '/equipamentos.sqlite';
+        @unlink($bd);
+        $pdo = new PDO('sqlite:' . $bd);
+        $pdo->exec((string) file_get_contents(dirname(__DIR__, 2) . '/dados/equipamentos-sqlite.sql'));
+        $bdLinhas = ['ATV_DB_DSN=sqlite:' . $bd];
+    }
+    file_put_contents($amb . '/.env', implode("\n", array_merge([
         'DADOS_PRIVADOS=' . $amb . '/privado', 'EMAIL_MODO=ficheiro', 'FUSO_HORARIO=Africa/Luanda', 'PORTAL_URL=https://portal.teste',
-        'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'MDM_URL_EQUIPAMENTO=https://mdm.teste/dispositivo/{id}',
-    ]) . "\n");
+        'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'MDM_URL_EQUIPAMENTO=https://mdm.teste/dispositivo/{id}',
+    ], $bdLinhas)) . "\n");
     $contas = ['log' => ['LOG', []], 'pro' => ['PRO', ['1002']], 'sup' => ['SUP', ['1001']]];
     $d = [];
     foreach ($contas as $login => [$perfil, $rotas]) {
