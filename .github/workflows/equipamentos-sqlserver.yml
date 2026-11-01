@@ -48,11 +48,13 @@ jobs:
           echo "::add-mask::$SA"
           echo "SA=$SA" >> "$GITHUB_ENV"
           docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$SA" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
-          for i in $(seq 1 60); do
-            if php -r 'try { new PDO("sqlsrv:Server=127.0.0.1,1433;Encrypt=true;TrustServerCertificate=true", "sa", getenv("SA")); exit(0); } catch (Throwable $e) { exit(1); }'; then echo pronto; exit 0; fi
+          php -m | grep -iE 'sqlsrv|odbc' || true
+          odbcinst -q -d || true
+          for i in $(seq 1 40); do
+            if php -r 'try { new PDO("sqlsrv:Server=127.0.0.1,1433;Encrypt=true;TrustServerCertificate=true", "sa", getenv("SA")); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . PHP_EOL); exit(1); }'; then echo pronto; exit 0; fi
             sleep 3
           done
-          docker logs mssql | tail -30
+          docker logs mssql | tail -15
           exit 1
 
       - name: Bases de dados (oficial com a carga inicial; teste com a carga de teste)
