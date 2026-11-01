@@ -34,9 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.3'
           extensions: pdo_sqlsrv, sqlsrv, gd, mbstring, pdo_sqlite
@@ -53,7 +53,7 @@ jobs:
 
       - name: SQL Server em contentor (palavra-passe gerada nesta execução)
         run: |
-          SA="Aa1!$(openssl rand -hex 12)"
+          export SA="Aa1!$(openssl rand -hex 12)"
           echo "::add-mask::$SA"
           echo "SA=$SA" >> "$GITHUB_ENV"
           docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$SA" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
@@ -91,9 +91,9 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.1'
           extensions: pdo_odbc, gd, mbstring, pdo_sqlite

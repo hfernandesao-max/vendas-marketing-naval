@@ -22,7 +22,8 @@ if (!function_exists('curl_init') || !function_exists('proc_open')) return;
 $mdmAmb = sys_get_temp_dir() . '/naval-mdm-' . getmypid();
 @mkdir($mdmAmb . '/privado', 0770, true);
 $mdmPorta = 18000 + getmypid() % 1000;
-$mdmSrv = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $mdmPorta, dirname(__DIR__) . '/dados/mdm-simulado.php'], [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $mdmTubos);
+// comando em texto (o proc_open com lista só existe a partir do PHP 7.4); exec para o processo ser o próprio servidor
+$mdmSrv = proc_open('exec ' . escapeshellarg(PHP_BINARY) . ' -S 127.0.0.1:' . $mdmPorta . ' ' . escapeshellarg(dirname(__DIR__) . '/dados/mdm-simulado.php'), [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $mdmTubos);
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $mdmPorta); $i++) usleep(100000);
 $bdMdm = $mdmAmb . '/atv.sqlite';
 (new PDO('sqlite:' . $bdMdm))->exec((string) file_get_contents(dirname(__DIR__) . '/dados/equipamentos-sqlite.sql'));

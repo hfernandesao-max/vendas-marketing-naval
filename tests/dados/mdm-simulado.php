@@ -20,7 +20,8 @@ if ($c === '/api/v1/mdm/devices') {
     ];
     $limite = max(1, (int) ($_GET['limit'] ?? 50));
     $offset = (int) ($_GET['offset'] ?? 0);
-    echo json_encode(['devices' => array_slice($todos, $offset, $limite), 'total_record_count' => count($todos)]);
+    $resposta = json_encode(['devices' => array_slice($todos, $offset, $limite), 'total_record_count' => count($todos)]);
+    echo $resposta; // nosemgrep: php.lang.security.injection.echoed-request.echoed-request (JSON de teste; limit e offset são inteiros)
     exit;
 }
 http_response_code(404);
