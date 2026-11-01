@@ -94,6 +94,23 @@ CP="$(curl -s -b "$CJ" "$URL/reports/" | grep -o 'csrf-token" content="[^"]*' | 
 TK="$(curl -s -b "$CJ" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CP" -d '{}' "$URL/api/index.php/v1/auth/token" | php -r 'echo json_decode(stream_get_contents(STDIN), true)["access_token"] ?? "";')"
 r="$(curl -s -o /dev/null -w '%{http_code}' -b "$CJ" -H "Authorization: Bearer $TK" "$URL/api/v1/sessao")"
 if [ -n "$TK" ] && [ "$r" = 200 ]; then echo "  ok    200 sessão → token JWT → API com Bearer (Authorization chega ao PHP)"; else echo "  FALHA fluxo do token pelo Apache (token: ${#TK} caracteres, HTTP $r)"; FALHAS=$((FALHAS+1)); fi
+echo "Equipamentos e app:"
+espera 403 /ferramentas/verificar-equipamentos.php /ferramentas/verificar-mdm.php /ferramentas/sql/equipamentos-sqlserver.sql \
+  /nucleo/servicos/equipamentos.php /nucleo/servicos/mdm.php /nucleo/recursos/naval-logo.jpg /tests/dados/mdm-simulado.php \
+  /tests/servidor/ambiente/equipamentos.sqlite /tests/sqlserver/executar.php
+espera 200 "/equipamentos/ficha.php?id=NAV-SMT-0001" "/equipamentos/ficha.php?id=nav-smt-0001" /manifest.webmanifest /sw.js \
+  /app/offline.html /app/offline.js /app/registar.js /app/icones/icone-192.png /app/icones/apple-touch-icon-180.png
+espera 404 "/equipamentos/ficha.php?id=x%27or1"
+espera 302 /equipamentos/
+P="$(curl -s "$URL/equipamentos/ficha.php?id=NAV-SMT-0001")"
+if echo "$P" | grep -q "propriedade do Grupo Naval" && ! echo "$P" | grep -qE "Andrea|BV6200|353326"; then echo "  ok    página pública do QR sem dados internos"; else echo "  FALHA página pública do QR"; FALHAS=$((FALHAS+1)); fi
+H="$(curl -s -D - -o /dev/null "$URL/manifest.webmanifest")"
+if echo "$H" | grep -qi "^Content-Type: application/manifest+json"; then echo "  ok    manifesto com o tipo application/manifest+json"; else echo "  FALHA tipo do manifesto"; FALHAS=$((FALHAS+1)); fi
+H="$(curl -s -D - -o /dev/null "$URL/sw.js")"
+if echo "$H" | grep -qi "^Cache-Control: no-cache"; then echo "  ok    sw.js sem cache no navegador"; else echo "  FALHA cache do sw.js"; FALHAS=$((FALHAS+1)); fi
+# com sessão e permissão, o QR abre a ficha no portal (conta DIR: Equipamentos «ver»)
+r="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -b "$CJ" "$URL/equipamentos/ficha.php?id=NAV-SMT-0001")"
+case "$r" in 302*reports/#equipamentos?id=NAV-SMT-0001*) echo "  ok    QR com sessão → ficha no portal";; *) echo "  FALHA QR com sessão: $r"; FALHAS=$((FALHAS+1));; esac
 echo "Cabeçalhos:"
 H="$(curl -s -D - -o /dev/null "$URL/reports/js/app.js")"
 for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referrer-Policy: strict-origin-when-cross-origin" "Permissions-Policy:"; do
