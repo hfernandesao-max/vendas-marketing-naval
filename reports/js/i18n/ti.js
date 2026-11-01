@@ -1713,4 +1713,5 @@ export const TI = {
   'O módulo Equipamentos precisa do servidor da plataforma e da sua base de dados.': 'ሞጁል መሳርሒታት ሰርቨር ናይቲ መድረኽን ናቱ ዳታቤዝን የድልዮ።',
   'A base de dados do módulo Equipamentos ainda não está configurada no servidor (.env: ATV_DB_NAME ou ATV_DB_DSN).':
     'ዳታቤዝ ሞጁል መሳርሒታት ገና ኣብ ሰርቨር ኣይተዳለወን (.env: ATV_DB_NAME ወይ ATV_DB_DSN)።',
+  'Falta a assinatura do responsável do Grupo Naval: tem de ser outra pessoa.': 'ፊርማ ሓላፊ Grupo Naval ይጎድል ኣሎ፡ ካልእ ሰብ ክኸውን ኣለዎ።',
 };

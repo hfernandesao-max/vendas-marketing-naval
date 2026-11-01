@@ -10,14 +10,20 @@ if (!$amb || !$fase) exit(2);
 
 if ($fase === 'preparar') {
     @mkdir($amb . '/privado', 0770, true);
-    $bd = $amb . '/equipamentos.sqlite';
-    @unlink($bd);
-    $pdo = new PDO('sqlite:' . $bd);
-    $pdo->exec((string) file_get_contents(dirname(__DIR__, 2) . '/dados/equipamentos-sqlite.sql'));
-    file_put_contents($amb . '/.env', implode("\n", [
+    // Base de dados: SQLite de teste ou, na CI do SQL Server, a indicada em ATV_TESTE_DSN (já com a carga de teste)
+    $dsn = (string) getenv('ATV_TESTE_DSN');
+    $bdLinhas = ['ATV_DB_DSN=' . $dsn, 'ATV_DB_USER=' . getenv('ATV_TESTE_USER'), 'ATV_DB_PASS=' . getenv('ATV_TESTE_PASS')];
+    if ($dsn === '') {
+        $bd = $amb . '/equipamentos.sqlite';
+        @unlink($bd);
+        $pdo = new PDO('sqlite:' . $bd);
+        $pdo->exec((string) file_get_contents(dirname(__DIR__, 2) . '/dados/equipamentos-sqlite.sql'));
+        $bdLinhas = ['ATV_DB_DSN=sqlite:' . $bd];
+    }
+    file_put_contents($amb . '/.env', implode("\n", array_merge([
         'DADOS_PRIVADOS=' . $amb . '/privado', 'EMAIL_MODO=ficheiro', 'FUSO_HORARIO=Africa/Luanda', 'PORTAL_URL=https://portal.teste',
-        'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'MDM_URL_EQUIPAMENTO=https://mdm.teste/dispositivo/{id}',
-    ]) . "\n");
+        'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'MDM_URL_EQUIPAMENTO=https://mdm.teste/dispositivo/{id}',
+    ], $bdLinhas)) . "\n");
     $contas = ['log' => ['LOG', []], 'pro' => ['PRO', ['1002']], 'sup' => ['SUP', ['1001']]];
     $d = [];
     foreach ($contas as $login => [$perfil, $rotas]) {
@@ -228,12 +234,39 @@ if ($fase === 'log') {
         igual(1, $novo['id_colaborador']);
         igual('NAV-IMP-0004', $novo['associado']);
     });
+    caso('auto de substituição: se um equipamento mudou de estado, a última assinatura é recusada e nada muda', function () {
+        $n = naval_atv_registar(['tipo' => 'SMT', 'num_serie' => 'SERIE-T7'])['id'];
+        $d = naval_atv_emitir(['tipo' => 'AUTO_SUBSTITUICAO', 'id_colaborador' => 1,
+            'equipamentos' => [['id' => 'NAV-SMT-0005', 'papel' => 'DEVOLVIDO'], ['id' => $n, 'papel' => 'ENTREGUE']]]);
+        naval_atv_assinar($d['numero'], assinatura());
+        naval_atv_registar_evento($n, ['tipo' => 'ABATE', 'observacoes' => 'Avariado antes da entrega']);
+        lanca(409, function () use ($d) { naval_atv_assinar($d['numero'], assinatura()); }, 'mudou de estado');
+        $doc = naval_atv_documento($d['numero']);
+        igual('A_ASSINAR', $doc['documento']['estado']);
+        igual(1, count($doc['assinaturas']), 'a segunda assinatura não ficou');
+        igual('ABATIDO', estado($n));
+        igual('ATRIBUIDO', estado('NAV-SMT-0005'));
+        verdade(!is_file(naval_pasta('equipamentos/assinaturas') . '/' . $d['numero'] . '-2.png'), 'evidências da assinatura recusada apagadas');
+        verdade(!is_file(naval_pasta('equipamentos/documentos') . '/' . $d['numero'] . '-assinado.pdf'), 'sem PDF assinado');
+        igual('ANULADO', naval_atv_x("UPDATE ATV_DOCUMENTO SET Estado = 'ANULADO', MotivoAnulacao = 'teste' WHERE NumDocumento = :n", [':n' => $d['numero']]) === 1 ? 'ANULADO' : '');
+    });
+    caso('assinatura: coordenadas fora dos limites ignoradas; válidas com 6 casas', function () {
+        $d = naval_atv_emitir(['tipo' => 'AUTO_DEVOLUCAO', 'id_colaborador' => 1, 'equipamentos' => [['id' => 'NAV-IMP-0004']]]);
+        naval_atv_assinar($d['numero'], ['lat' => 5000, 'lon' => 13.2] + assinatura());
+        $r = naval_atv_assinar($d['numero'], ['lat' => -8.838333, 'lon' => 0.00001] + assinatura());
+        $l = naval_atv_q('SELECT Ordem, Latitude, Longitude FROM ATV_ASSINATURA WHERE IdDocumento = :d ORDER BY Ordem', [':d' => $r['documento']['id']]);
+        igual(null, $l[0]['Latitude']);
+        verdade(abs((float) $l[1]['Latitude'] + 8.838333) < 1e-6 && abs((float) $l[1]['Longitude'] - 0.00001) < 1e-6, 'coordenadas gravadas');
+        $pdf = (string) file_get_contents(naval_atv_ficheiro($d['numero'])['caminho']);
+        verdade(strpos($pdf, '\\(assinado\\)') !== false, 'título «(assinado)» nas propriedades do PDF assinado');
+        verdade(strpos($pdf, mb_convert_encoding('Página de assinaturas 1 de 1', 'Windows-1252', 'UTF-8')) !== false, 'página de assinaturas numerada à parte');
+    });
     caso('abate: só pela permissão Administrar; o ID não se reutiliza', function () {
         naval_atv_registar_evento('NAV-SMT-0004', ['tipo' => 'ABATE', 'observacoes' => 'Sem reparação']);
         igual('ABATIDO', estado('NAV-SMT-0004'));
         lanca(409, function () { naval_atv_registar_evento('NAV-SMT-0004', ['tipo' => 'ASSOCIACAO', 'outro' => 'NAV-IMP-0002']); });
         $n = naval_atv_registar(['tipo' => 'SMT', 'num_serie' => 'SERIE-T6']);
-        igual('NAV-SMT-0006', $n['id']);
+        igual('NAV-SMT-0007', $n['id'], 'a seguir ao 0006 (abatido no caso anterior): nunca reutiliza');
     });
     caso('ficha: ligação ao MDM e leitura do QR registada', function () {
         $f = naval_atv_ficha('NAV-SMT-0001', true);
@@ -275,6 +308,11 @@ if ($fase === 'sup') {
         $docs = naval_atv_documentos();
         verdade(count($docs) >= 1, 'vê os documentos da rota 1001');
         foreach ($docs as $d) verdade($d['rota'] === '1001' || $d['rota'] === null, 'rota ' . var_export($d['rota'], true));
+    });
+    caso('supervisor: não associa nem desassocia equipamentos de outras rotas', function () {
+        lanca(403, function () { naval_atv_registar_evento('NAV-SMT-0001', ['tipo' => 'ASSOCIACAO', 'outro' => 'NAV-IMP-0002']); });
+        lanca(403, function () { naval_atv_registar_evento('NAV-SMT-0003', ['tipo' => 'DESASSOCIACAO']); });
+        igual('NAV-IMP-0002', naval_atv_obter('NAV-SMT-0002')['associado'], 'nada mudou');
     });
     caso('abate exige Administrar', function () {
         lanca(403, function () { naval_atv_registar_evento('NAV-SMT-0005', ['tipo' => 'ABATE']); });

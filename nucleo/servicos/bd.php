@@ -47,8 +47,9 @@ function naval_bd_criar(string $p, bool $herdar = false): PDO
     $host = $cfg('HOST');
     $port = $cfg('PORT', '1433');
     $nome = $cfg('NAME');
-    $user = $cfg('USER');   // vazio = autenticação integrada do Windows
-    $pass = $cfg('PASS');
+    // vazio = autenticação integrada do Windows: o PDO recebe null (com «» o ODBC acrescentaria UID= e PWD= vazios)
+    $user = $cfg('USER') !== '' ? $cfg('USER') : null;
+    $pass = $cfg('PASS') !== '' ? $cfg('PASS') : null;
     $dsnEnv = naval_config($p . '_DSN');
     $drivers = PDO::getAvailableDrivers();
     $opcoes = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_TIMEOUT => 10];
@@ -59,9 +60,12 @@ function naval_bd_criar(string $p, bool $herdar = false): PDO
     $confiar = $cfg('CONFIAR_CERTIFICADO', '1') !== '0';
     $tls = ';Encrypt=' . ($cifrar ? 'yes' : 'no') . ';TrustServerCertificate=' . ($confiar ? 'yes' : 'no');   // ODBC
     $tlsSqlsrv = ';Encrypt=' . ($cifrar ? 'true' : 'false') . ';TrustServerCertificate=' . ($confiar ? 'true' : 'false');   // pdo_sqlsrv
-    if ($dsnEnv !== '') return new PDO($dsnEnv, $user, $pass, $opcoes);
+    // o pdo_sqlsrv recusa PDO::ATTR_TIMEOUT no construtor («unsupported attribute»): o tempo de ligação vai no DSN
+    $opcoesSqlsrv = $opcoes;
+    unset($opcoesSqlsrv[PDO::ATTR_TIMEOUT]);
+    if ($dsnEnv !== '') return new PDO($dsnEnv, $user, $pass, stripos($dsnEnv, 'sqlsrv:') === 0 ? $opcoesSqlsrv : $opcoes);
     if ($driver === 'sqlsrv' && in_array('sqlsrv', $drivers, true)) {
-        return new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . $tlsSqlsrv, $user, $pass, $opcoes);
+        return new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . $tlsSqlsrv . ';LoginTimeout=' . (int) $cfg('TIMEOUT', '10'), $user, $pass, $opcoesSqlsrv);
     }
     if (in_array('odbc', $drivers, true)) {
         $odbc = $cfg('ODBC_DRIVER', 'ODBC Driver 17 for SQL Server');

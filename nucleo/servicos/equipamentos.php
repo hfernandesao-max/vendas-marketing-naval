@@ -157,6 +157,8 @@ function naval_atv_erro(PDOException $e): Throwable
         'PK_ATV_ACTIVO' => 'Este ID de activo já existe.',
         'ATV_ACTIVO.IdActivo' => 'Este ID de activo já existe.',
         'UQ_ATV_DOC_NUM' => 'Número de documento repetido. Tente de novo.',
+        'UQ_ATV_ASS_ORDEM' => 'Esta assinatura acabou de ser registada por outra pessoa. Actualize a página.',
+        'ATV_ASSINATURA.IdDocumento' => 'Esta assinatura acabou de ser registada por outra pessoa. Actualize a página.',
         'ATV_DOCUMENTO.NumDocumento' => 'Número de documento repetido. Tente de novo.',
         'ATV_EVENTO e um registo de auditoria' => 'O histórico não pode ser alterado nem apagado.',
         'ATV_ASSINATURA e um registo' => 'As assinaturas não podem ser alteradas nem apagadas.',
@@ -400,6 +402,18 @@ function naval_atv_registar_evento(string $id, array $d): array
 {
     $id = naval_atv_id($id);
     $tipo = strtoupper((string) ($d['tipo'] ?? ''));
+    // âmbito: um perfil por rota só mexe em equipamentos das suas rotas (ou em stock, sem rota)
+    $noAmbito = function (string $x) {
+        $e = naval_atv_obter($x);
+        if (!$e) throw new NavalErro('Equipamento não registado: ' . $x . '.', 404);
+        if (!naval_atv_no_ambito($e) && $e['rota'] !== null) throw new NavalErro('O equipamento ' . $x . ' não pertence às suas rotas.', 403);
+        return $e;
+    };
+    if ($tipo === 'ASSOCIACAO' || $tipo === 'DESASSOCIACAO') {
+        $e = $noAmbito($id);
+        if ($tipo === 'ASSOCIACAO') $noAmbito(naval_atv_id((string) ($d['outro'] ?? '')));
+        elseif ($e['associado']) $noAmbito($e['associado']);
+    }
     if ($tipo === 'ASSOCIACAO') {
         naval_atv_transacao(function () use ($id, $d) { naval_atv_associar($id, (string) ($d['outro'] ?? ''), (string) naval_atv_txt($d['observacoes'] ?? '', 1000)); });
         return naval_atv_ficha($id);
@@ -423,6 +437,7 @@ function naval_atv_registar_evento(string $id, array $d): array
         $alvos = [$e];
         if (!empty($d['incluir_associado']) && $e['associado'] && in_array($tipo, ['ATRIBUICAO', 'DEVOLUCAO', 'REPARACAO_ENVIO', 'PERDA_ROUBO'], true)) {
             $o = naval_atv_obter($e['associado']);
+            if ($o && !naval_atv_no_ambito($o) && $o['rota'] !== null) throw new NavalErro('O equipamento associado ' . $o['id'] . ' não pertence às suas rotas.', 403);
             if ($o) $alvos[] = $o;
         }
         if ($de === null) {

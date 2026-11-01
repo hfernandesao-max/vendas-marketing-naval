@@ -14,7 +14,16 @@
  */
 defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('equipamentos');
-naval_exigir(['equipamentos']);
+// O colaborador com conta no portal vê e assina, com a sua conta, os documentos em seu nome, mesmo sem acesso ao resto
+// do módulo na matriz (ex.: perfil PRO). Só estas operações: ler esse documento, o PDF, assinar e verificar.
+$soProprio = false;
+if (!naval_pode('equipamentos')) {
+    $numPedido = naval_e_post() ? (string) (naval_pedido()['numero'] ?? '') : (string) ($_GET['numero'] ?? '');
+    $accaoPedido = naval_e_post() ? (string) (naval_pedido()['accao'] ?? '') : (isset($_GET['pdf']) ? 'pdf' : (isset($_GET['documentos']) ? 'documento' : ''));
+    $soProprio = $numPedido !== '' && in_array($accaoPedido, ['documento', 'pdf', 'assinar', 'verificar'], true)
+        && naval_atv_configurada() && naval_atv_e_do_colaborador($numPedido);
+    if (!$soProprio) naval_exigir(['equipamentos']);
+}
 
 if (!naval_atv_configurada()) {
     naval_json(['disponivel' => false, 'erro' => 'A base de dados do módulo Equipamentos ainda não está configurada no servidor (.env: ATV_DB_NAME ou ATV_DB_DSN).']);

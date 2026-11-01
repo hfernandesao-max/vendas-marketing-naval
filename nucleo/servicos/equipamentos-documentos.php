@@ -80,7 +80,9 @@ function naval_atv_documento(string $num): array
     $act = naval_atv_q('SELECT da.*, a.Tipo, a.Marca, a.Modelo, a.NumSerie, a.Imei1, a.MacBluetooth, a.RotaActual
         FROM ATV_DOCUMENTO_ACTIVO da JOIN ATV_ACTIVO a ON a.IdActivo = da.IdActivo WHERE da.IdDocumento = :d ORDER BY da.IdActivo', [':d' => $d['IdDocumento']]);
     $rotas = naval_rotas();
-    if ($rotas !== null) {
+    $u = naval_utilizador();
+    $proprio = $u && trim((string) $d['ColabUtilizador']) !== '' && strcasecmp(trim((string) $d['ColabUtilizador']), (string) $u['login']) === 0;
+    if ($rotas !== null && !$proprio) {
         $ok = in_array((string) $d['ColabRota'], $rotas, true);
         foreach ($act as $a) $ok = $ok || in_array((string) $a['RotaActual'], $rotas, true);
         if (!$ok) throw new NavalErro('Este documento não pertence às suas rotas.', 403);
@@ -99,6 +101,16 @@ function naval_atv_documento(string $num): array
                 'testemunha' => $s['UtilizadorTestemunha'], 'data' => $s['DataHora'], 'ip' => $s['EnderecoIp']];
         }, $ass),
     ];
+}
+
+/** O documento está em nome do utilizador actual (colaborador com conta no portal)? */
+function naval_atv_e_do_colaborador(string $num): bool
+{
+    $u = naval_utilizador();
+    $num = strtoupper(trim($num));
+    if (!$u || !preg_match('/^[A-Z]{3}-\d{4}-\d{6}$/', $num)) return false;
+    $l = naval_atv_q('SELECT c.UtilizadorPortal FROM ATV_DOCUMENTO d JOIN ATV_COLABORADOR c ON c.IdColaborador = d.IdColaborador WHERE d.NumDocumento = :n', [':n' => $num]);
+    return $l && trim((string) $l[0]['UtilizadorPortal']) !== '' && strcasecmp(trim((string) $l[0]['UtilizadorPortal']), (string) $u['login']) === 0;
 }
 
 function naval_atv_documentos(?string $estado = null): array
@@ -202,6 +214,7 @@ function naval_atv_emitir(array $d): array
     $colabId = (int) ($d['id_colaborador'] ?? 0);
     $colab = $colabId ? naval_atv_colaborador($colabId) : null;
     if (!$colab && $tipo !== 'AUTO_ABATE') throw new NavalErro('Escolha o colaborador.', 400);
+    if ($colab && !naval_rota_permitida((string) $colab['RotaActual']) && naval_rotas() !== null) throw new NavalErro('Este colaborador não pertence às suas rotas.', 403);
     if (in_array($tipo, ['TERMO_ENTREGA', 'AUTO_SUBSTITUICAO'], true) && empty($colab['IdDocConvencao'])) {
         throw new NavalErro('Este colaborador ainda não assinou a Convenção de Prova Electrónica: emita-a e assine-a primeiro.', 409, ['codigo' => 'atv_sem_convencao']);
     }
@@ -228,7 +241,17 @@ function naval_atv_emitir(array $d): array
         }
     }
     $obs = (string) naval_atv_txt($d['observacoes'] ?? '', 1000);
-    return naval_atv_transacao(function () use ($tipo, $colab, $equip, $obs) {
+    // um pedido de cada vez: o número seguinte e o ficheiro nunca colidem com outra emissão em simultâneo
+    return naval_exclusivo('atv-emissao', function () use ($tipo, $colab, $equip, $obs) {
+        return naval_atv_emitir_bloqueado($tipo, $colab, $equip, $obs);
+    });
+}
+
+function naval_atv_emitir_bloqueado(string $tipo, ?array $colab, array $equip, string $obs): array
+{
+    $ficheiroCriado = null;
+    try {
+        return naval_atv_transacao(function () use ($tipo, $colab, $equip, $obs, &$ficheiroCriado) {
         $num = naval_atv_doc_numero($tipo);
         $data = naval_atv_agora();
         $linhas = [];
@@ -238,7 +261,9 @@ function naval_atv_emitir(array $d): array
         }
         $pdf = naval_atv_pdf_documento($tipo, $num, $data, naval_atv_quem(), $colab, $linhas, $obs);
         $ficheiro = $num . '.pdf';
+        if (is_file(naval_atv_doc_pasta() . '/' . $ficheiro)) throw new NavalErro('Número de documento repetido. Tente de novo.', 409);
         if (file_put_contents(naval_atv_doc_pasta() . '/' . $ficheiro, $pdf, LOCK_EX) === false) throw new NavalErro('Não foi possível guardar o documento.', 500);
+        $ficheiroCriado = naval_atv_doc_pasta() . '/' . $ficheiro;
         $idDoc = (int) naval_atv_inserir('ATV_DOCUMENTO', [
             'NumDocumento' => $num, 'TipoDocumento' => $tipo, 'Estado' => 'A_ASSINAR', 'IdColaborador' => $colab ? (int) $colab['IdColaborador'] : null,
             'DataEmissao' => $data, 'EmitidoPor' => naval_atv_quem(), 'HashOriginal' => hash('sha256', $pdf), 'FicheiroPdf' => $ficheiro,
@@ -249,7 +274,11 @@ function naval_atv_emitir(array $d): array
         }
         naval_registar('equipamentos_documento_emitido', ['numero' => $num, 'tipo' => $tipo]);
         return naval_atv_documento($num)['documento'];
-    });
+        });
+    } catch (Throwable $e) {
+        if ($ficheiroCriado !== null) @unlink($ficheiroCriado);   // a emissão não ficou gravada: o ficheiro também não
+        throw $e;
+    }
 }
 
 function naval_atv_anular(string $num, string $motivo): array
@@ -283,6 +312,15 @@ function naval_atv_imagem(string $dataUrl, string $tipo, int $max = 600000): str
  */
 function naval_atv_assinar(string $num, array $d, bool $podeMovimentar = true): array
 {
+    // uma assinatura de cada vez por documento: a ordem lê-se e grava-se sem outra assinatura pelo meio
+    $chave = 'atv-ass-' . preg_replace('/[^A-Z0-9-]/', '', strtoupper($num));
+    return naval_exclusivo($chave, function () use ($num, $d, $podeMovimentar) {
+        return naval_atv_assinar_bloqueado($num, $d, $podeMovimentar);
+    });
+}
+
+function naval_atv_assinar_bloqueado(string $num, array $d, bool $podeMovimentar): array
+{
     $doc = naval_atv_documento($num);
     $linha = $doc['linha'];
     if ($linha['Estado'] !== 'A_ASSINAR') throw new NavalErro('Este documento já não está por assinar.', 409);
@@ -300,9 +338,10 @@ function naval_atv_assinar(string $num, array $d, bool $podeMovimentar = true): 
     if (!$podeMovimentar && !($ordem === 1 && $eColaborador)) throw new NavalErro('Sem permissão para assinar este documento.', 403);
     $base = ['IdDocumento' => (int) $linha['IdDocumento'], 'Ordem' => $ordem, 'DataHora' => naval_atv_agora(),
         'EnderecoIp' => naval_ip_cliente(), 'Navegador' => naval_atv_txt($_SERVER['HTTP_USER_AGENT'] ?? '', 300)];
-    if (isset($d['lat'], $d['lon']) && is_numeric($d['lat']) && is_numeric($d['lon'])) {
-        $base['Latitude'] = round((float) $d['lat'], 6);
-        $base['Longitude'] = round((float) $d['lon'], 6);
+    if (isset($d['lat'], $d['lon']) && is_numeric($d['lat']) && is_numeric($d['lon']) && abs((float) $d['lat']) <= 90 && abs((float) $d['lon']) <= 180) {
+        // texto com 6 casas e ponto decimal: o SQL Server converte-o para DECIMAL(9,6) sem notação científica
+        $base['Latitude'] = sprintf('%.6F', (float) $d['lat']);
+        $base['Longitude'] = sprintf('%.6F', (float) $d['lon']);
     }
     if ($ordem === 1) {
         $propria = $eColaborador;
@@ -323,25 +362,38 @@ function naval_atv_assinar(string $num, array $d, bool $podeMovimentar = true): 
     if ($original === '' || !hash_equals((string) $linha['HashOriginal'], hash('sha256', $original))) {
         throw new NavalErro('O ficheiro do documento foi alterado ou não existe: não é possível assinar.', 409, ['codigo' => 'atv_integridade']);
     }
-    $r = naval_atv_transacao(function () use ($base, $pasta, $nome, $png, $jpg, $tracos, $original, $doc) {
-        file_put_contents($pasta . '/' . $nome . '.png', $png, LOCK_EX);
-        file_put_contents($pasta . '/' . $nome . '.jpg', $jpg, LOCK_EX);
-        file_put_contents($pasta . '/' . $nome . '.json', json_encode($tracos), LOCK_EX);
-        naval_atv_inserir('ATV_ASSINATURA', $base + ['HashDocumento' => hash('sha256', $original), 'ImagemAssinatura' => $nome . '.png']);
-        $todas = naval_atv_q('SELECT Ordem FROM ATV_ASSINATURA WHERE IdDocumento = :d', [':d' => $base['IdDocumento']]);
-        $precisa = $doc['linha']['IdColaborador'] === null ? 1 : 2;
-        if (count($todas) >= $precisa) naval_atv_concluir($doc['documento']['numero']);
-        return true;
-    });
+    $tracosJson = json_encode($tracos);
+    if ($tracosJson === false || strlen($tracosJson) > 2000000) throw new NavalErro('Assinatura inválida.', 400);
+    $criados = [];
+    try {
+        $r = naval_atv_transacao(function () use ($base, $pasta, $nome, $png, $jpg, $tracosJson, $original, $doc, &$criados) {
+            foreach (['.png' => $png, '.jpg' => $jpg, '.json' => $tracosJson] as $ext => $conteudo) {
+                if (file_put_contents($pasta . '/' . $nome . $ext, $conteudo, LOCK_EX) === false) throw new NavalErro('Não foi possível guardar a assinatura.', 500);
+                $criados[] = $pasta . '/' . $nome . $ext;
+            }
+            naval_atv_inserir('ATV_ASSINATURA', $base + ['HashDocumento' => hash('sha256', $original), 'ImagemAssinatura' => $nome . '.png']);
+            $todas = naval_atv_q('SELECT Ordem FROM ATV_ASSINATURA WHERE IdDocumento = :d', [':d' => $base['IdDocumento']]);
+            $precisa = $doc['linha']['IdColaborador'] === null ? 1 : 2;
+            if (count($todas) >= $precisa) $criados[] = naval_atv_concluir($doc['documento']['numero']);
+            return true;
+        });
+    } catch (Throwable $e) {
+        foreach ($criados as $f) @unlink($f);   // a assinatura não ficou gravada: as evidências e o PDF também não
+        throw $e;
+    }
     naval_registar('equipamentos_assinatura', ['numero' => $linha['NumDocumento'], 'ordem' => $ordem, 'metodo' => $base['MetodoAutenticacao']]);
     return naval_atv_documento($num) + ['assinou' => $r];
 }
 
-/** PDF final: o original seguido da página de assinaturas (evidências) — guardado com o SHA-256 em HashFinal. */
-function naval_atv_concluir(string $num): void
+/**
+ * PDF final: o original seguido da página de assinaturas (evidências) — guardado com o SHA-256 em HashFinal.
+ * Devolve o caminho do ficheiro assinado (para ser apagado se a transacção não chegar ao fim).
+ */
+function naval_atv_concluir(string $num): string
 {
     $doc = naval_atv_documento($num);
     $l = $doc['linha'];
+    if ($l['TipoDocumento'] === 'AUTO_SUBSTITUICAO') naval_atv_validar_substituicao($doc);
     $ass = naval_atv_q('SELECT * FROM ATV_ASSINATURA WHERE IdDocumento = :d ORDER BY Ordem', [':d' => $l['IdDocumento']]);
     $titulo = NAVAL_ATV_DOCS[$l['TipoDocumento']][1];
     $p = naval_pdf_novo(['titulo' => $titulo . ' ' . $l['NumDocumento'] . ' (assinado)', 'rodape' => $l['NumDocumento'] . ' · Página de assinaturas · Grupo Naval']);
@@ -368,7 +420,8 @@ function naval_atv_concluir(string $num): void
     // documento assinado = o original, intacto, com a página de assinaturas acrescentada (actualização incremental)
     $original = (string) file_get_contents(naval_atv_doc_pasta() . '/' . $l['FicheiroPdf']);
     $assinado = naval_pdf_acrescentar($original, $p);
-    if (file_put_contents(naval_atv_doc_pasta() . '/' . naval_atv_nome_assinado($l), $assinado, LOCK_EX) === false) {
+    $caminho = naval_atv_doc_pasta() . '/' . naval_atv_nome_assinado($l);
+    if (file_put_contents($caminho, $assinado, LOCK_EX) === false) {
         throw new NavalErro('Não foi possível guardar o documento assinado.', 500);
     }
     $hashFinal = hash('sha256', $assinado);
@@ -382,6 +435,25 @@ function naval_atv_concluir(string $num): void
         naval_atv_x('UPDATE ATV_COLABORADOR SET IdDocConvencao = :d WHERE IdColaborador = :c', [':d' => $l['IdDocumento'], ':c' => $l['IdColaborador']]);
     }
     if ($l['TipoDocumento'] === 'AUTO_SUBSTITUICAO') naval_atv_aplicar_substituicao($doc);
+    return $caminho;
+}
+
+/**
+ * O Auto de Substituição só se conclui se os equipamentos ainda estiverem como na emissão: o devolvido atribuído ao
+ * colaborador do auto e o entregue em stock. Se algum mudou entretanto (abate, perda, outra atribuição), a última
+ * assinatura é recusada e nada muda; o auto deve ser anulado e emitido de novo.
+ */
+function naval_atv_validar_substituicao(array $doc): void
+{
+    foreach ($doc['equipamentos'] as $e) {
+        $a = naval_atv_obter($e['id']);
+        $colab = $doc['linha']['IdColaborador'] !== null ? (int) $doc['linha']['IdColaborador'] : null;
+        $ok = $a && ($e['papel'] === 'ENTREGUE' ? $a['estado'] === 'EM_STOCK' : ($a['estado'] === 'ATRIBUIDO' && $a['id_colaborador'] === $colab));
+        if (!$ok) {
+            throw new NavalErro('O equipamento ' . $e['id'] . ' mudou de estado desde a emissão do auto (' . ($a ? $a['estado'] : 'sem registo')
+                . '): a substituição não pode ser concluída. Anule este auto e emita outro.', 409, ['codigo' => 'atv_substituicao_estado']);
+        }
+    }
 }
 
 /** Auto de Substituição assinado: o devolvido vai para reparação, o entregue fica atribuído e herda a associação. */

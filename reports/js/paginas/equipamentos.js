@@ -115,6 +115,7 @@ const garantirDoc = (n) => pedir(lerCache(documentos, n), 'equipamentos/document
 
 /** Depois de uma alteração: esquece o que está em memória e volta a desenhar. */
 function renovar() {
+  if (emCurso.pad) emCurso.pad.destruir();
   emCurso = { chave: '', el: null };
   lista = { estado: '', dados: null, erro: '', em: 0 };
   docs = { estado: '', dados: null, erro: '', em: 0 };
@@ -735,7 +736,8 @@ function desenharDocumento(pg, num) {
 
   const ord = doc.estado === 'A_ASSINAR' ? proximaOrdem(d) : 0;
   const eColab = SESSAO && doc.colaborador_utilizador && String(SESSAO.login || '').toLowerCase() === String(doc.colaborador_utilizador).toLowerCase();
-  if (ord && (p.movimentar || (ord === 1 && eColab))) pg.append(areaAssinar(d, ord, eColab));
+  if (ord === 2 && eColab) pg.append(el('div', 'glass empty', t('Falta a assinatura do responsável do Grupo Naval: tem de ser outra pessoa.')));
+  else if (ord && (p.movimentar || (ord === 1 && eColab))) pg.append(areaAssinar(d, ord, eColab));
   else if (doc.estado === 'A_ASSINAR') pg.append(el('div', 'glass empty', t('A aguardar a assinatura de quem tem permissão para assinar este documento.')));
 
   const ass = caixa(t('Assinaturas'));
@@ -856,7 +858,10 @@ function areaAssinar(d, ordem, eColab) {
     });
   });
   estadoBotao();
-  emCurso = { chave, el: s };
+  emCurso = { chave, el: s, pad: null };
+  requestAnimationFrame(() => {
+    if (emCurso.el === s) emCurso.pad = pad;
+  });
   return s;
 }
 

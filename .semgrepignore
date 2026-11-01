@@ -8,3 +8,5 @@ tests/servidor/ambiente/
 tests/servidor/ambiente-mfa/
 reports/data/*.json
 nucleo/seguranca/senhas-comuns.txt
+# API do MDM simulada para os testes (devolve JSON de teste)
+tests/dados/mdm-simulado.php
