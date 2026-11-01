@@ -327,7 +327,7 @@ function naval_atv_assinar(string $num, array $d, bool $podeMovimentar = true): 
         file_put_contents($pasta . '/' . $nome . '.png', $png, LOCK_EX);
         file_put_contents($pasta . '/' . $nome . '.jpg', $jpg, LOCK_EX);
         file_put_contents($pasta . '/' . $nome . '.json', json_encode($tracos), LOCK_EX);
-        naval_atv_inserir('ATV_ASSINATURA', $base + ['HashDocumento' => hash('sha256', $original), 'ImagemAssinatura' => $nome . '.png'], 'IdAssinatura');
+        naval_atv_inserir('ATV_ASSINATURA', $base + ['HashDocumento' => hash('sha256', $original), 'ImagemAssinatura' => $nome . '.png']);
         $todas = naval_atv_q('SELECT Ordem FROM ATV_ASSINATURA WHERE IdDocumento = :d', [':d' => $base['IdDocumento']]);
         $precisa = $doc['linha']['IdColaborador'] === null ? 1 : 2;
         if (count($todas) >= $precisa) naval_atv_concluir($doc['documento']['numero']);
