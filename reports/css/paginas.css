@@ -516,3 +516,262 @@ dialog.dlg.largo {
   color: var(--muted);
   font-size: 12.5px;
 }
+
+/* ── Equipamentos: lista, ficha, documentos e assinatura no ecrã ── */
+.atv-accoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.atv-accoes .btn {
+  text-decoration: none;
+}
+a.lnk,
+button.lnk {
+  color: var(--sky);
+  font-weight: 600;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+a.lnk:hover,
+button.lnk:hover {
+  text-decoration: underline;
+}
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.01em;
+}
+.atv-cab {
+  display: grid;
+  gap: 6px;
+}
+#page > .atv-caixa,
+#page > .atv-cab {
+  margin-bottom: 14px;
+}
+.atv-sobre {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sky);
+}
+.atv-cab h2 {
+  margin: 0;
+  font-size: clamp(22px, 5vw, 30px);
+  line-height: 1.2;
+}
+.atv-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.atv-grelha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.atv-grelha > .sec {
+  margin: 0;
+}
+.atv-rot {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.atv-nome {
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--fg);
+}
+.atv-caixa p {
+  margin: 4px 0 0;
+}
+.atv-pendente {
+  border-color: rgb(var(--av1-rgb) / 0.45);
+  background: rgb(var(--av1-rgb) / 0.08);
+}
+.atv-pendente h3 {
+  margin: 0;
+  color: var(--warn);
+  font-size: 16px;
+}
+.atv-pendente .btn {
+  margin-top: 10px;
+  display: inline-flex;
+  text-decoration: none;
+}
+.atv-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 18px;
+}
+.atv-dado {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.atv-dado span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.atv-dado b {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.atv-hist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.atv-hist li {
+  position: relative;
+  padding-left: 22px;
+  display: grid;
+  gap: 2px;
+}
+.atv-hist li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--navy);
+  box-shadow: 0 0 0 2px var(--line);
+}
+.atv-hist li.atv-qr::before {
+  background: var(--sky);
+}
+.atv-hist li span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.atv-doc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.atv-doc:first-of-type {
+  border-top: 0;
+}
+.atv-caixa > .btn {
+  margin-top: 10px;
+}
+.atv-ass {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.atv-hash {
+  overflow-wrap: anywhere;
+}
+.atv-hash code {
+  font-size: 11.5px;
+}
+.atv-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.atv-aceito {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.atv-aceito > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.atv-check input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  accent-color: var(--accent);
+}
+.atv-escolha {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--line2);
+  border-radius: 11px;
+}
+.atv-escolha .atv-check {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.atv-escolha .atv-check:last-child {
+  border-bottom: 0;
+}
+.atv-escolha input[type='text'],
+.atv-escolha select,
+.dlg textarea {
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgb(var(--veu-rgb) / 0.05);
+  color: var(--fg);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13.5px;
+}
+.atv-escolha input[type='text'] {
+  flex: 1 1 180px;
+}
+.dlg textarea {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 12px;
+  resize: vertical;
+}
+.atv-assinar {
+  display: grid;
+  gap: 10px;
+}
+/* A assinatura desenha-se sempre em fundo claro (fica igual no PDF), nos dois temas */
+.atv-tela {
+  width: 100%;
+  height: 200px;
+  border: 1.5px dashed var(--line2);
+  border-radius: 14px;
+  background: #fbfcff;
+  cursor: crosshair;
+}
+.atv-barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.btn.atv-largo {
+  width: 100%;
+  min-height: 52px;
+  justify-content: center;
+  font-size: 16px;
+}
+p.aviso {
+  color: var(--warn);
+  margin: 4px 0;
+}

@@ -26,42 +26,56 @@ function naval_bd(): PDO
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
     if (!naval_bd_configurada()) throw new RuntimeException('A base de dados não está configurada no .env (DB_HOST, DB_NAME, DB_USER, DB_PASS).');
-
-    $driver = strtolower(naval_config('DB_DRIVER', 'sqlsrv'));
     // sem valores predefinidos para o servidor e o utilizador (nunca «sa»): vêm só do .env
     if (naval_config('DB_DSN') === '') naval_exigir_config(['DB_HOST', 'DB_NAME'], 'a base de dados do Pinguim BO');
-    $host = naval_config('DB_HOST');
-    $port = naval_config('DB_PORT', '1433');
-    $nome = naval_config('DB_NAME');
-    $user = naval_config('DB_USER');   // vazio = autenticação integrada do Windows
-    $pass = naval_config('DB_PASS');
-    $dsnEnv = naval_config('DB_DSN');
+    return $pdo = naval_bd_criar('DB');
+}
+
+/**
+ * Cria uma ligação PDO a partir das chaves do .env com o prefixo indicado (DB_HOST, DB_NAME, …; ou, por
+ * exemplo, ATV_DB_HOST, ATV_DB_NAME, …). Com $herdar, as chaves em falta vêm das do Pinguim BO (DB_*):
+ * servidor, porta, driver e cifra — útil para uma base de dados própria no mesmo SQL Server.
+ */
+function naval_bd_criar(string $p, bool $herdar = false): PDO
+{
+    $cfg = function (string $k, string $omissao = '') use ($p, $herdar) {
+        $v = naval_config($p . '_' . $k);
+        if ($v === '' && $herdar && $p !== 'DB') $v = naval_config('DB_' . $k);
+        return $v !== '' ? $v : $omissao;
+    };
+    $driver = strtolower($cfg('DRIVER', 'sqlsrv'));
+    $host = $cfg('HOST');
+    $port = $cfg('PORT', '1433');
+    $nome = $cfg('NAME');
+    $user = $cfg('USER');   // vazio = autenticação integrada do Windows
+    $pass = $cfg('PASS');
+    $dsnEnv = naval_config($p . '_DSN');
     $drivers = PDO::getAvailableDrivers();
     $opcoes = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_TIMEOUT => 10];
 
     // Ligação cifrada (ASVS 9.2.2): DB_ENCRYPT=1 por omissão; DB_CONFIAR_CERTIFICADO=0 exige um certificado
     // válido no SQL Server (recomendado); =1 aceita o certificado próprio do SQL Server (cifra sem validar).
-    $cifrar = naval_config('DB_ENCRYPT', '1') !== '0';
-    $confiar = naval_config('DB_CONFIAR_CERTIFICADO', '1') !== '0';
+    $cifrar = $cfg('ENCRYPT', '1') !== '0';
+    $confiar = $cfg('CONFIAR_CERTIFICADO', '1') !== '0';
     $tls = ';Encrypt=' . ($cifrar ? 'yes' : 'no') . ';TrustServerCertificate=' . ($confiar ? 'yes' : 'no');   // ODBC
     $tlsSqlsrv = ';Encrypt=' . ($cifrar ? 'true' : 'false') . ';TrustServerCertificate=' . ($confiar ? 'true' : 'false');   // pdo_sqlsrv
-    if ($dsnEnv !== '') return $pdo = new PDO($dsnEnv, $user, $pass, $opcoes);
+    if ($dsnEnv !== '') return new PDO($dsnEnv, $user, $pass, $opcoes);
     if ($driver === 'sqlsrv' && in_array('sqlsrv', $drivers, true)) {
-        return $pdo = new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . $tlsSqlsrv, $user, $pass, $opcoes);
+        return new PDO('sqlsrv:Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . $tlsSqlsrv, $user, $pass, $opcoes);
     }
     if (in_array('odbc', $drivers, true)) {
-        $odbc = naval_config('DB_ODBC_DRIVER', 'ODBC Driver 17 for SQL Server');
-        $tempo = (int) naval_config('DB_TIMEOUT', '5');
+        $odbc = $cfg('ODBC_DRIVER', 'ODBC Driver 17 for SQL Server');
+        $tempo = (int) $cfg('TIMEOUT', '5');
         $servidor = 'Server=' . $host . ($port !== '' ? ',' . $port : '') . ';Database=' . $nome . ';';
         try {
-            return $pdo = new PDO('odbc:Driver={' . $odbc . '};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
+            return new PDO('odbc:Driver={' . $odbc . '};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
         } catch (PDOException $e) {
             if ($odbc === 'SQL Server') throw $e;
-            return $pdo = new PDO('odbc:Driver={SQL Server};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
+            return new PDO('odbc:Driver={SQL Server};' . $servidor . ltrim($tls, ';') . ';LoginTimeout=' . $tempo . ';', $user, $pass, $opcoes);
         }
     }
     if ($driver === 'mysql' && in_array('mysql', $drivers, true)) {
-        return $pdo = new PDO('mysql:host=' . $host . ($port !== '' ? ';port=' . $port : '') . ';dbname=' . $nome . ';charset=utf8mb4', $user, $pass, $opcoes);
+        return new PDO('mysql:host=' . $host . ($port !== '' ? ';port=' . $port : '') . ';dbname=' . $nome . ';charset=utf8mb4', $user, $pass, $opcoes);
     }
     throw new RuntimeException('Nenhum driver PDO compatível no PHP para ligar ao SQL Server. Disponíveis: ' . implode(', ', $drivers));
 }

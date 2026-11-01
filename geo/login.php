@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
 
-$allowedRedirects = ['geo.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../'];
+$allowedRedirects = ['geo.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../'];
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../';
 if (!in_array($redirect, $allowedRedirects, true)) {
     $redirect = 'geo.php';
@@ -215,7 +215,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- App instalável (iPhone: Safari › Partilhar › Adicionar ao ecrã principal; Android: Instalar) -->
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#273777">
+  <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Equipamentos">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <script src="../app/registar.js" defer></script>
   <title>Iniciar sessão · GeoMobilidade Naval</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

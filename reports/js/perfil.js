@@ -6,7 +6,9 @@ import { DB } from './util.js';
 // SESSAO vem da API (v1/sessao). Sem servidor PHP (teste local) fica null e tudo é visível;
 // no servidor os dados são sempre filtrados pelos serviços PHP, seja o que for que o ecrã mostre.
 export let SESSAO = null;
-const nivelDe = (id) => (SESSAO ? (SESSAO.permissoes || {})[id] || '' : 'A');
+// Páginas que seguem a linha de outra página na matriz de acessos (não têm linha própria)
+const LINHA_DA_MATRIZ = { 'equipamentos-documentos': 'equipamentos' };
+const nivelDe = (id) => (SESSAO ? (SESSAO.permissoes || {})[LINHA_DA_MATRIZ[id] || id] || '' : 'A');
 export const podeVer = (id) => nivelDe(id) !== '';
 export const podeExportar = (id) => ['E', 'Er', 'G', 'A'].includes(nivelDe(id));
 export const paginasVisiveis = () => PAGES.filter((p) => podeVer(p.id));

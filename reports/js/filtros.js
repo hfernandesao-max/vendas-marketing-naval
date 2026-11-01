@@ -22,6 +22,8 @@ const FILTROS_PAGINA = {
   pendentes: ['rota', 'cliente', 'tipo'],
   'sap-exportar': ['rota', 'tipo'],
   agt: ['rota'],
+  equipamentos: ['rota'],
+  'equipamentos-documentos': ['rota'],
   clientes: ['rota', 'cliente', 'tipocli', 'estadocli'],
   cadastros: ['rota'],
   'cadastros-analise': ['rota'],

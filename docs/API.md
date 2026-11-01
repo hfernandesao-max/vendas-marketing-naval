@@ -29,26 +29,32 @@ Gerar a chave (uma vez, no servidor): `php -r "echo bin2hex(random_bytes(32)), P
 
 ## Recursos
 
-| Método   | Rota                                            | Serviço (`nucleo/api/v1/`) | Acesso (matriz)                         |
-| -------- | ----------------------------------------------- | -------------------------- | --------------------------------------- |
-| POST     | `auth/token`                                    | `token.php`                | sessão + `X-CSRF-Token`                 |
-| GET      | `sessao`                                        | `sessao.php`               | conta (perfil, rotas, permissões, CSRF) |
-| GET      | `vendas?start_date&end_date&include_items`      | `vendas.php`               | páginas de vendas                       |
-| GET      | `vendas/estado`                                 | `vendas.php`               | conta (indicador das fontes)            |
-| GET      | `vendas/diagnostico`, `vendas/estrutura`        | `vendas.php`               | `admin-config` (SADM)                   |
-| GET      | `dados/rotas`, `dados/cargas`, `dados/clientes` | `dados.php`                | conforme o ficheiro                     |
-| GET      | `cadastros`                                     | `cadastros.php`            | cadastros, carteira, auditoria          |
-| GET      | `sincronizacao`                                 | `sincronizacao.php`        | `sincronizacao`                         |
-| GET/POST | `plano`, `plano/historico`, `plano/excel?data`  | `plano.php`                | `plano-cargas`                          |
-| GET/POST | `sap`, `sap/modelo`, `sap/excel?numero`         | `sap.php`                  | `sap-exportar`                          |
-| GET/POST | `gestao`                                        | `gestao.php`               | `acessos` (alterações: SADM)            |
-| POST     | `exportacoes`                                   | `exportacoes.php`          | nível E da página                       |
-| GET      | `estrutura-dados`                               | `estrutura-dados.php`      | `estrutura-dados`                       |
-| GET      | `stock?data&armazem`                            | `stock.php`                | stock por carrinha / armazém, Início    |
-| GET      | `agt?start_date&end_date`                       | `agt.php`                  | `agt` (Comunicação AGT)                 |
-| POST     | `csp-relatorio`                                 | `csp.php`                  | público (relatórios da CSP, limitados)  |
+| Método   | Rota                                                                                                   | Serviço (`nucleo/api/v1/`) | Acesso (matriz)                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------------------------------------------- |
+| POST     | `auth/token`                                                                                           | `token.php`                | sessão + `X-CSRF-Token`                                                            |
+| GET      | `sessao`                                                                                               | `sessao.php`               | conta (perfil, rotas, permissões, CSRF)                                            |
+| GET      | `vendas?start_date&end_date&include_items`                                                             | `vendas.php`               | páginas de vendas                                                                  |
+| GET      | `vendas/estado`                                                                                        | `vendas.php`               | conta (indicador das fontes)                                                       |
+| GET      | `vendas/diagnostico`, `vendas/estrutura`                                                               | `vendas.php`               | `admin-config` (SADM)                                                              |
+| GET      | `dados/rotas`, `dados/cargas`, `dados/clientes`                                                        | `dados.php`                | conforme o ficheiro                                                                |
+| GET      | `cadastros`                                                                                            | `cadastros.php`            | cadastros, carteira, auditoria                                                     |
+| GET      | `sincronizacao`                                                                                        | `sincronizacao.php`        | `sincronizacao`                                                                    |
+| GET/POST | `plano`, `plano/historico`, `plano/excel?data`                                                         | `plano.php`                | `plano-cargas`                                                                     |
+| GET/POST | `sap`, `sap/modelo`, `sap/excel?numero`                                                                | `sap.php`                  | `sap-exportar`                                                                     |
+| GET/POST | `gestao`                                                                                               | `gestao.php`               | `acessos` (alterações: SADM)                                                       |
+| POST     | `exportacoes`                                                                                          | `exportacoes.php`          | nível E da página                                                                  |
+| GET      | `estrutura-dados`                                                                                      | `estrutura-dados.php`      | `estrutura-dados`                                                                  |
+| GET      | `stock?data&armazem`                                                                                   | `stock.php`                | stock por carrinha / armazém, Início                                               |
+| GET      | `agt?start_date&end_date`                                                                              | `agt.php`                  | `agt` (Comunicação AGT)                                                            |
+| GET/POST | `equipamentos`, `equipamentos/ficha?id`, `equipamentos/documentos[?numero]`, `equipamentos/pdf?numero` | `equipamentos.php`         | `equipamentos` (alterações: `equipamentos-movimentar`, `equipamentos-administrar`) |
+| POST     | `csp-relatorio`                                                                                        | `csp.php`                  | público (relatórios da CSP, limitados)                                             |
 
 O stock (`GET stock`) e a Comunicação AGT (`GET agt`) lêem o SQL Server do Pinguim BO, só com SELECT.
+
+Os Equipamentos usam uma base de dados própria, com escrita (`ATV_DB_*` no `.env`). `POST equipamentos` recebe
+`{accao, csrf, …}`: `registar` e `colaborador` (Administrar), `evento`, `emitir` e `anular` (Movimentar; o abate exige
+Administrar), `assinar` (Movimentar, ou o próprio colaborador com a sua conta) e `verificar`. A página pública do
+código QR (`equipamentos/ficha.php`) não consulta a base de dados.
 
 ## Protecções em cada pedido
 

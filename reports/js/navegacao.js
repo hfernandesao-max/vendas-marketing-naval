@@ -76,6 +76,7 @@ const ICONE_GRUPO = {
   Clientes: 'users',
   Terreno: 'route',
   Logística: 'truck',
+  Equipamentos: 'phone',
   Integrações: 'upload',
   Administração: 'lock',
 };

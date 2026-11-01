@@ -4,6 +4,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 01-11-2026
 
+### Equipamentos (fase 1)
+- **Novo módulo «Equipamentos»** no menu, entre Logística e Integrações: lista dos smartphones e impressoras móveis
+  do terreno, ficha de cada equipamento (estado, rota, responsável, equipamento associado, identificação técnica,
+  histórico e documentos), registo de equipamentos e de colaboradores, eventos (atribuição, devolução, reparação,
+  perda ou roubo, recuperação, abate, etiquetagem, inventário) e associação smartphone ↔ impressora.
+- **Documentos com assinatura no ecrã:** Termo de Entrega e Responsabilidade, Autos de Devolução, Substituição e
+  Abate, Participação de Perda ou Roubo e Convenção de Prova Electrónica (exigida antes do primeiro termo). PDF com
+  o logótipo, numeração XXX-AAAA-000001, impressão digital SHA-256 na emissão, assinatura do colaborador (presencial,
+  com testemunha, ou com a sua conta) e do responsável, e página de assinaturas acrescentada ao original sem o
+  alterar. As cláusulas são modelos provisórios, a validar pelo departamento jurídico.
+- **Código QR das etiquetas:** `equipamentos/ficha.php?id=` abre a ficha a quem tem sessão e permissão; sem
+  sessão mostra só a página pública «propriedade do Grupo Naval» com o contacto de devolução.
+- **App para iPhone e Android (PWA):** manifesto, ícones, página «Sem ligação» e service worker que nunca guarda
+  fichas, documentos nem assinaturas no telefone.
+- **Matriz de acessos:** `equipamentos` (consultar), `equipamentos-movimentar` e `equipamentos-administrar`.
+- Base de dados própria do módulo (`ATV_DB_*`; script em `ferramentas/sql/equipamentos-sqlserver.sql`), separada do
+  Pinguim BO, que continua só de leitura. Testes do módulo numa base SQLite.
+- Fase 2: selagem PAdES com selo temporal, ordens ao MDM Plus, etiquetas, inventário e reconciliação com o MDM.
+
 ### Junção (servidor + GitHub)
 - **Uma só versão do código:** junta o que estava no servidor (pacotes de 28 a 30-10: stock e vendas pela base de dados,
   sincronização, tigrínia e idioma por conta, modo claro, notas de crédito, Comunicação AGT) com o que estava no GitHub

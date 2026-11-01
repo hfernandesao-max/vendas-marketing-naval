@@ -37,3 +37,12 @@ ServerSignature Off
     # HSTS só quando o site estiver em HTTPS (o navegador ignora-o em HTTP)
     Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on'"
 </IfModule>
+
+# ── App instalável (PWA «Equipamentos») ─────────────────────────────────────────────────────
+AddType application/manifest+json .webmanifest
+<IfModule mod_headers.c>
+    # O service worker e o manifesto nunca ficam em cache no navegador: as actualizações chegam logo
+    <FilesMatch "^(sw\.js|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

@@ -53,6 +53,8 @@ function textos() {
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
+// Páginas que não dependem do período (sem a barra De / Até)
+const SEM_PERIODO = ['plano-cargas', 'equipamentos', 'equipamentos-documentos'];
 export function draw() {
   const p = paginaAtual();
   definirReg({ tabelas: [], kpis: [] });
@@ -60,7 +62,7 @@ export function draw() {
   textos();
   mostrarFontes();
   mostrarIndicador(); // cartão dos telemóveis no menu: sempre na língua escolhida
-  document.querySelector('.filters').style.display = p.id === 'plano-cargas' ? 'none' : '';
+  document.querySelector('.filters').style.display = SEM_PERIODO.includes(p.id) ? 'none' : '';
   $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
   $('#xl-all').hidden = !podeExportar('excel-completo');
   $('#xl-dados').hidden = !podeExportar('exportar-dados');
@@ -85,7 +87,7 @@ export function draw() {
     seg.append(b);
   });
   $('#eyebrow').textContent =
-    t(p.grupo || 'Portal RTM') + (!st.de || p.id === 'plano-cargas' ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
+    t(p.grupo || 'Portal RTM') + (!st.de || SEM_PERIODO.includes(p.id) ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
   $('#titulo').textContent = p.id === 'inicio' ? t('Visão geral') : t(p.nome);
   // Na página principal em ecrã de computador o espaço vai para os gráficos (painel num só ecrã)
   $('#lead').textContent =
@@ -106,7 +108,8 @@ export function draw() {
   }
   organizarRelatorios(pg, p.id);
   {
-    const q = filtrosURL(p.id);
+    // estado próprio da página no endereço (ex.: a ficha aberta, #equipamentos?id=NAV-SMT-0001)
+    const q = [filtrosURL(p.id), R[p.id] && R[p.id].estadoURL ? R[p.id].estadoURL() : ''].filter(Boolean).join('&');
     const novo = '#' + p.id + (REL_ATUAL ? '/' + REL_ATUAL : '') + (q ? '?' + q : '');
     if (location.hash !== novo && location.hash.split('?')[0].split('/')[0] === '#' + p.id) history.replaceState(null, '', novo);
   }
