@@ -400,27 +400,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 
     .login-header { margin-bottom: 30px; }
 
+    /* Logótipo oficial do Grupo Naval (globo); o nome NAVAL fica em texto por baixo */
     .brand-emblem {
-      width: 72px;
-      height: 72px;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 10px;
-      border: 2px solid rgba(96, 151, 255, .55);
-      border-radius: 50%;
-      background:
-        repeating-radial-gradient(ellipse at center 64%, transparent 0 7px, rgba(57, 137, 239, .95) 8px 12px, transparent 13px 18px),
-        linear-gradient(135deg, #172755, #10214c);
-      box-shadow: inset 0 0 18px rgba(57, 137, 239, .3), 0 8px 23px rgba(0, 0, 0, .3);
-      overflow: hidden;
-    }
-
-    .brand-emblem span {
-      width: 54px;
-      height: 54px;
-      border: 2px solid rgba(116, 161, 255, .72);
-      border-radius: 50%;
-      opacity: .8;
+      display: block;
+      width: 84px;
+      height: 84px;
+      margin: 14px auto 8px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .35));
     }
 
     .brand-name {
@@ -571,14 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       background: rgba(255, 255, 255, .94);
       box-shadow: 0 1px 2px rgba(10, 30, 60, .06), 0 28px 60px -28px rgba(10, 30, 60, .35);
     }
-    :root[data-theme='light'] .brand-emblem {
-      border-color: rgba(0, 87, 184, .45);
-      background:
-        repeating-radial-gradient(ellipse at center 64%, transparent 0 7px, rgba(0, 87, 184, .9) 8px 12px, transparent 13px 18px),
-        linear-gradient(135deg, #e8f0fb, #dbe7f7);
-      box-shadow: inset 0 0 14px rgba(0, 87, 184, .15), 0 8px 20px rgba(10, 30, 60, .15);
-    }
-    :root[data-theme='light'] .brand-emblem span { border-color: rgba(0, 87, 184, .6); }
+    :root[data-theme='light'] .brand-emblem { filter: drop-shadow(0 6px 12px rgba(10, 30, 60, .18)); }
     :root[data-theme='light'] .brand-name,
     :root[data-theme='light'] .login-header h1 { color: #0b1f3a; }
     :root[data-theme='light'] .login-header h1 span { color: #44546d; }
@@ -636,7 +616,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       <button type="button" data-l="ti" lang="ti" title="ትግርኛ">TI</button>
     </div>
     <div class="login-header">
-      <div class="brand-emblem" aria-hidden="true"><span></span></div>
+      <img class="brand-emblem" src="../assets/naval-emblema.png" alt="" width="84" height="84" />
       <p class="brand-name">NAVAL</p>
       <h1><strong>GeoMobilidade</strong><span>Naval</span></h1>
       <p class="module-label" data-t>Módulo operacional</p>

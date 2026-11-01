@@ -69,6 +69,7 @@ header('Cache-Control: no-store');
       background: linear-gradient(135deg, var(--gray-900) 0%, #111a2e 50%, var(--gray-900) 100%); }
     .caixa { width: 100%; max-width: 420px; background: var(--sidebar-bg); border: 1px solid var(--gray-600);
       border-radius: 12px; padding: 2rem; color: #fff; }
+    .logo { display: block; width: 56px; height: 56px; margin: 0 auto 12px; object-fit: contain; }
     h1 { font-size: 1.35rem; margin-bottom: .4rem; }
     p.nota { color: var(--gray-300); font-size: .82rem; line-height: 1.5; margin-bottom: 1.2rem; }
     label { display: block; font-size: .82rem; color: var(--gray-300); margin: .9rem 0 .35rem; }
@@ -98,6 +99,7 @@ header('Cache-Control: no-store');
 </head>
 <body>
   <div class="caixa">
+    <img class="logo" src="../assets/naval-emblema.png" alt="Grupo Naval" width="56" height="56" />
     <h1 data-t>Mudar a palavra-passe</h1>
     <p class="nota" data-t>Pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum. As outras sessões abertas com esta conta terminam.</p>
 <?php if ($erro !== ''): ?>
