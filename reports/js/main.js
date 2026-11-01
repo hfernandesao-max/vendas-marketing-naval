@@ -19,6 +19,7 @@ import './paginas/clientes.js';
 import './paginas/plano-cargas.js';
 import './paginas/sap.js';
 import './paginas/acessos.js';
+import './paginas/equipamentos.js';
 import { apiFetch } from './api.js';
 
 const LD = {

@@ -36,8 +36,13 @@ function preparar_ambiente(string $amb, int $porta, array $extra): string
 }
 
 $base = __DIR__;
+// Equipamentos: base de dados SQLite de teste com os equipamentos de exemplo (tests/dados/equipamentos-sqlite.sql)
+$bdAtv = $base . '/ambiente/equipamentos.sqlite';
+if (!is_dir($base . '/ambiente')) mkdir($base . '/ambiente', 0770, true);
+@unlink($bdAtv);
+(new PDO('sqlite:' . $bdAtv))->exec((string) file_get_contents(__DIR__ . '/../dados/equipamentos-sqlite.sql'));
 $ambientes = [
-    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0']),
+    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0', 'ATV_DB_DSN=sqlite:' . $bdAtv, 'ATV_CONTACTO_DEVOLUCAO_TEL=+244 900 000 000']),
     $base . '/ambiente-mfa' => preparar_ambiente($base . '/ambiente-mfa', 8811, ['MFA_OBRIGATORIA=1']),
 ];
 

@@ -23,6 +23,9 @@ export const PAGES = [
   { id: 'registo-cargas', grupo: 'Logística', icon: 'box', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
+  // Smartphones e impressoras do terreno: ficha, eventos, documentos e assinatura no ecrã
+  { id: 'equipamentos', grupo: 'Equipamentos', icon: 'phone', nome: 'Equipamentos' },
+  { id: 'equipamentos-documentos', grupo: 'Equipamentos', icon: 'file', nome: 'Documentos dos equipamentos' },
   // Interfaces com outros sistemas (separadas da análise; segregação de funções e controlo de interfaces)
   { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
   { id: 'agt', grupo: 'Integrações', icon: 'shield', nome: 'Comunicação AGT' },
@@ -41,6 +44,8 @@ export const NOMES_RECURSO = {
   'geo-zonas': 'GEO · delimitação de zonas (ver)',
   'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas',
   'geo-distribuidores': 'GEO · gestão de distribuidores',
+  'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
+  'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   nif: 'Ver o NIF dos clientes',
   acessos: 'Página Acessos',
   'admin-utilizadores': 'Utilizadores e perfis',
