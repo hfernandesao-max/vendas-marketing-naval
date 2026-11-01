@@ -96,7 +96,9 @@ function naval_atv_x(string $sql, array $p = []): int
 
 /**
  * INSERT numa tabela do módulo (nomes de tabela e colunas fixos no código, nunca do pedido); com $id, devolve o
- * valor da coluna de identidade (SQL Server: OUTPUT INSERTED; SQLite dos testes: RETURNING).
+ * valor da coluna de identidade. SQL Server: @@IDENTITY logo a seguir, na mesma ligação (as tabelas com triggers não
+ * aceitam OUTPUT directo, e os triggers do módulo não inserem noutras tabelas com identidade); SQLite dos testes:
+ * RETURNING.
  */
 function naval_atv_inserir(string $tabela, array $dados, ?string $id = null)
 {
@@ -106,15 +108,18 @@ function naval_atv_inserir(string $tabela, array $dados, ?string $id = null)
     }
     $marcas = array_map(function ($c) { return ':' . $c; }, $cols);
     $par = array_combine($marcas, array_values($dados));
-    $lista = '(' . implode(', ', $cols) . ')';
-    $valores = 'VALUES (' . implode(', ', $marcas) . ')';
+    $sql = "INSERT INTO $tabela (" . implode(', ', $cols) . ') VALUES (' . implode(', ', $marcas) . ')';
     if ($id === null) {
-        naval_atv_x("INSERT INTO $tabela $lista $valores", $par);
+        naval_atv_x($sql, $par);
         return null;
     }
-    $sql = naval_atv_driver() === 'sqlite' ? "INSERT INTO $tabela $lista $valores RETURNING $id" : "INSERT INTO $tabela $lista OUTPUT INSERTED.$id $valores";
-    $r = naval_atv_preparar($sql, $par)->fetchAll(PDO::FETCH_NUM);
-    return $r ? $r[0][0] : null;
+    if (naval_atv_driver() === 'sqlite') {
+        $r = naval_atv_preparar("$sql RETURNING $id", $par)->fetchAll(PDO::FETCH_NUM);
+        return $r ? $r[0][0] : null;
+    }
+    naval_atv_x($sql, $par);
+    $r = naval_atv_q('SELECT CAST(@@IDENTITY AS BIGINT) AS V');
+    return $r ? $r[0]['V'] : null;
 }
 
 /** Transacção: tudo ou nada (eventos, estado e associações de uma acção). */
@@ -127,7 +132,11 @@ function naval_atv_transacao(callable $f)
         $pdo->commit();
         return $r;
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
+        try {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+        } catch (Throwable $x) {
+            // no SQL Server o erro de um trigger já desfez a transacção: fica o erro original
+        }
         throw $e;
     }
 }

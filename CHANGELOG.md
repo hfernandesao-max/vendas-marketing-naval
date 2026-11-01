@@ -21,6 +21,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Matriz de acessos:** `equipamentos` (consultar), `equipamentos-movimentar` e `equipamentos-administrar`.
 - Base de dados própria do módulo (`ATV_DB_*`; script em `ferramentas/sql/equipamentos-sqlserver.sql`), separada do
   Pinguim BO, que continua só de leitura. Testes do módulo numa base SQLite.
+- Preparação para o SQL Server: número gerado lido com `@@IDENTITY` (as tabelas com triggers não aceitam `OUTPUT`
+  directo) e verificação da instalação com `php ferramentas/verificar-equipamentos.php` (escrita de ensaio desfeita).
 - Fase 2: selagem PAdES com selo temporal, ordens ao MDM Plus, etiquetas, inventário e reconciliação com o MDM.
 
 ### Junção (servidor + GitHub)
