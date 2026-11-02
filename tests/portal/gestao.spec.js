@@ -150,19 +150,57 @@ test('pedidos dos clientes: encomenda com linha fora do habitual e acções de v
   expect(erros).toEqual([]);
 });
 
-test('painel de gestão: indicadores, nove gráficos com tabela e legendas nas séries múltiplas', async ({ page }) => {
+for (const [w, h] of [
+  [1920, 1080],
+  [1366, 768],
+]) {
+  test(`Início com os gráficos de gestão ${w}×${h}: grelha 4 × 3 num só ecrã, recebimentos mantidos, tabelas e legendas`, async ({ page }) => {
+    const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
+    await page.setViewportSize({ width: w, height: h });
+    await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
+    const erros = await abrir(page, '#inicio');
+    await expect(page.locator('.viz-grid.ecra-unico .viz-card')).toHaveCount(11);
+    await expect(page.locator('.viz-card.dupla')).toHaveCount(1);
+    for (const titulo of ['Tendência diária e previsão', 'Como foi cobrado', 'Antiguidade da dívida', 'Distribuição numérica', 'Carteira de clientes por mês'])
+      await expect(page.locator('.viz-card h3', { hasText: titulo })).toHaveCount(1);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(1);
+    for (const c of await page.locator('.viz-card').all()) {
+      const b = await c.boundingBox();
+      expect(b.y + b.height).toBeLessThanOrEqual(h);
+    }
+    const abc = page.locator('.viz-card', { hasText: 'Curva ABC de clientes' });
+    await abc.getByRole('button', { name: /Tabela/ }).click();
+    await expect(abc.locator('table')).toContainText('A (80% do valor)');
+    expect(erros).toEqual([]);
+  });
+}
+
+test('painel principal: arrastar um quadro muda a ordem só nesta sessão; «Guardar vista» grava; «Desfazer» repõe', async ({ page }) => {
   const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  let gravado = null;
   await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
-  const erros = await abrir(page, '#painel-gestao');
-  await expect(page.locator('.tile')).toHaveCount(5);
-  await expect(page.locator('.gst-painel .viz-card')).toHaveCount(9);
-  await expect(page.locator('.gst-painel svg.vx').first()).toBeVisible();
-  await expect(page.locator('.gst-painel .glegenda')).toHaveCount(2);
-  await page
-    .locator('.gst-painel .viz-card')
-    .nth(3)
-    .getByRole('button', { name: /Tabela/ })
-    .click();
-  await expect(page.locator('.gst-painel .viz-card').nth(3).locator('table')).toContainText('A (80% do valor)');
+  await page.route('**/v1/vistas', (r) => {
+    if (r.request().method() === 'POST') {
+      gravado = JSON.parse(r.request().postData());
+      return r.fulfill({ json: { ok: true, vistas: { inicio: gravado.ordem } } });
+    }
+    return r.fulfill({ json: { ok: true, vistas: {} } });
+  });
+  const erros = await abrir(page, '#inicio');
+  const titulos = () => page.locator('.viz-grid .viz-card h3').allTextContents();
+  await expect(page.locator('.viz-grid .viz-card')).toHaveCount(11);
+  const antes = await titulos();
+  const cobrado = page.locator('.viz-card', { hasText: 'Como foi cobrado' }).locator('.viz-h');
+  await cobrado.focus();
+  await page.keyboard.press('Alt+ArrowLeft');
+  const depois = await titulos();
+  expect(depois).not.toEqual(antes);
+  expect(depois.indexOf('Como foi cobrado')).toBe(antes.indexOf('Como foi cobrado') - 1);
+  await expect(page.locator('#barra-vista')).toContainText('só até sair');
+  await page.getByRole('button', { name: 'Guardar vista' }).click();
+  await expect.poll(() => gravado && gravado.pagina).toBe('inicio');
+  expect(gravado.ordem.indexOf('cobrado')).toBe(antes.indexOf('Como foi cobrado') - 1);
   expect(erros).toEqual([]);
 });

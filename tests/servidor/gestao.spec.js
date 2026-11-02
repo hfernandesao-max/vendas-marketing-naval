@@ -106,6 +106,13 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
   expect(Object.keys(j.rotas[0] || { rota: 1 })).not.toContain('clientes');
   expect(JSON.stringify(j)).not.toMatch(/nif|5000000002|Loja B/i);
   expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': 'f'.repeat(64) } })).status()).toBe(403);
+  // ecrãs e ordem escolhidos no portal (arrastados), devolvidos ao ecrã
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'configurar', id: r.id, ecras: ['xpto'], csrf: c } })).status()).toBe(400);
+  await ctx.post(API + 'sala/ligacoes', { data: { accao: 'configurar', id: r.id, ecras: ['destaques', 'hoje'], segundos: 30, csrf: c } });
+  expect((await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).json()).config).toEqual({
+    ecras: ['destaques', 'hoje'],
+    segundos: 30,
+  });
   await ctx.post(API + 'sala/ligacoes', { data: { accao: 'revogar', id: r.id, csrf: c } });
   expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(403);
   // quem não gere o painel: 403
@@ -187,4 +194,17 @@ test('cartaz QR do cliente: código aleatório, pedidos pendentes, armadilha par
   // código substituído: o antigo deixa de funcionar
   await ctx.post(API + 'clientes-qr', { data: { rota: '1002', clientes: [{ cliente: 'X2' }], novo: true, csrf: c } });
   expect((await pub.get(API + 'cliente?k=' + codigo)).status()).toBe(404);
+});
+
+test('vistas guardadas: por pessoa, com CSRF, só chaves válidas; null repõe a origem', async () => {
+  const a = await entrar('dir');
+  const c = await csrf(a.ctx);
+  expect((await a.ctx.post(API + 'vistas', { data: { pagina: 'inicio', ordem: ['cobrado'] } })).status()).toBe(403);
+  expect((await a.ctx.post(API + 'vistas', { data: { pagina: 'outra', ordem: [], csrf: c } })).status()).toBe(400);
+  const g = await (await a.ctx.post(API + 'vistas', { data: { pagina: 'inicio', ordem: ['cobrado', 'tendencia', '<script>', 'cobrado'], csrf: c } })).json();
+  expect(g.vistas.inicio).toEqual(['cobrado', 'tendencia']);
+  const b = await entrar('com');
+  expect((await (await b.ctx.get(API + 'vistas')).json()).vistas).toEqual({});
+  await a.ctx.post(API + 'vistas', { data: { pagina: 'inicio', ordem: null, csrf: c } });
+  expect((await (await a.ctx.get(API + 'vistas')).json()).vistas).toEqual({});
 });

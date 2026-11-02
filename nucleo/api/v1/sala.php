@@ -6,13 +6,17 @@
  * GET v1/sala (cabeçalho X-Painel-Codigo) indicadores agregados (sem clientes, NIF nem documentos); o código vai no
  *                               fragmento do endereço da página (#t=…), que não chega aos registos do Apache nem a intermediários
  * GET v1/sala/ligacoes          ligações criadas (sem o código) — recurso «painel-sala» (G)
- * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id), csrf}   o código só se mostra uma vez, ao criar
+ * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id) | configurar (id, ecras, segundos), csrf}   o código só se mostra
+ *                               uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no portal) e o tempo de cada um
  *
  * O código guarda-se só como SHA-256 (como uma palavra-passe); cada acesso fica registado na ligação (última hora e IP).
  */
 defined('NAVAL_API') || exit;
 naval_servico('analise');
 naval_servico('previsao');
+
+/** Ecrãs do painel da TV, pela ordem de origem. */
+const NAVAL_SALA_ECRAS = ['hoje', 'rank-hoje', 'rank-mes', 'destaques'];
 
 function naval_sala_ficheiro(): string
 {
@@ -44,6 +48,17 @@ if (($_GET['gerir'] ?? '') === '1') {
             naval_registar('sala_ligacao_criada', ['id' => $id, 'nome' => $nome]);
             return ['id' => $id, 'codigo' => $codigo];
         }
+        if ($accao === 'configurar') {
+            $id = (string) ($p['id'] ?? '');
+            if (!isset($lig[$id]) || !empty($lig[$id]['revogado'])) throw new NavalErro('Ligação desconhecida.', 404);
+            $ecras = array_values(array_unique(array_filter((array) ($p['ecras'] ?? []), function ($e) { return in_array($e, NAVAL_SALA_ECRAS, true); })));
+            if (!$ecras) throw new NavalErro('Escolha pelo menos um ecrã.', 400);
+            $seg = (int) ($p['segundos'] ?? 20);
+            $lig[$id]['config'] = ['ecras' => $ecras, 'segundos' => in_array($seg, [10, 20, 30, 60], true) ? $seg : 20];
+            naval_json_gravar(naval_sala_ficheiro(), $lig);
+            naval_registar('sala_ligacao_configurada', ['id' => $id, 'ecras' => $ecras]);
+            return ['id' => $id];
+        }
         if ($accao === 'revogar') {
             $id = (string) ($p['id'] ?? '');
             if (!isset($lig[$id])) throw new NavalErro('Ligação desconhecida.', 404);
@@ -63,8 +78,12 @@ $GLOBALS['naval_api_sensivel'] = true;   // o código vai no endereço: a respos
 $codigo = (string) ($_SERVER['HTTP_X_PAINEL_CODIGO'] ?? '');
 $hash = preg_match('/^[a-f0-9]{64}$/', $codigo) ? hash('sha256', $codigo) : '';
 $id = null;
+$config = null;
 foreach (naval_json_ler(naval_sala_ficheiro()) as $k => $x) {
-    if ($hash !== '' && empty($x['revogado']) && hash_equals((string) $x['hash'], $hash)) $id = $k;
+    if ($hash !== '' && empty($x['revogado']) && hash_equals((string) $x['hash'], $hash)) {
+        $id = $k;
+        $config = $x['config'] ?? null;
+    }
 }
 if ($id === null) {
     // no máximo um registo por minuto e por IP (o ritmo da API já limita as tentativas)
@@ -88,7 +107,7 @@ $r = naval_cache('sala|' . date('Y-m-d H') . floor((int) date('i') / 2), 120, fu
     return naval_indicadores(time(), null);
 });
 // só totais por rota e o nome do promotor (sem clientes, documentos nem NIF)
-naval_json(['ok' => true, 'hora' => $r['hora'], 'hoje' => $r['hoje'], 'ontem' => $r['ontem'], 'semana' => $r['semana'], 'mes' => $r['mes'], 'compras' => $r['compras'] ?? null,
+naval_json(['ok' => true, 'config' => $config ?: ['ecras' => NAVAL_SALA_ECRAS, 'segundos' => 20], 'hora' => $r['hora'], 'hoje' => $r['hoje'], 'ontem' => $r['ontem'], 'semana' => $r['semana'], 'mes' => $r['mes'], 'compras' => $r['compras'] ?? null,
     'rotas' => array_map(function ($x) {
         return array_intersect_key($x, array_flip(['rota', 'promotor', 'hoje', 'previsto_hoje', 'ontem', 'habitual_ontem', 'mes', 'mes_anterior', 'variacao_mes', 'sequencia']));
     }, $r['rotas'])]);

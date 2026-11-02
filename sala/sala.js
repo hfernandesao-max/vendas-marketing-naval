@@ -165,20 +165,27 @@
     return out;
   }
 
-  var ECRAS = [
-    ecraHoje,
-    function () {
-      return ecraRanking('Classificação de hoje', 'Vendas de hoje até agora', 'hoje', function (r) {
-        return r.previsto_hoje ? Math.round((r.hoje / r.previsto_hoje) * 100) + '% do previsto' : '';
+  var ECRAS = {
+    hoje: ecraHoje,
+    'rank-hoje': function () {
+      return ecraRanking('Classificação de hoje', 'Vendas de hoje até agora · % da previsão de cada rota', 'hoje', function (r) {
+        return r.previsto_hoje ? Math.round((r.hoje / r.previsto_hoje) * 100) + '%' : '';
       });
     },
-    function () {
+    'rank-mes': function () {
       return ecraRanking('Classificação do mês', MESES[new Date().getMonth()] + ' até hoje', 'mes', function (r) {
         return r.variacao_mes != null && r.variacao_mes > 0 ? pct(r.variacao_mes) : '';
       });
     },
-    ecraDestaques,
-  ];
+    destaques: ecraDestaques,
+  };
+  // ecrãs e ordem escolhidos no portal (Gestão › Painel da sala comercial); omissão: os quatro
+  function lista() {
+    var c = (D && D.config && D.config.ecras) || ['hoje', 'rank-hoje', 'rank-mes', 'destaques'];
+    return c.filter(function (k) {
+      return ECRAS[k];
+    });
+  }
 
   function desenhar() {
     var m = $('s-ecra');
@@ -186,14 +193,14 @@
     if (erro) novo.appendChild(el('p', 's-msg', erro));
     else if (!D) novo.appendChild(el('p', 's-msg', 'A carregar…'));
     else
-      ECRAS[ecra % ECRAS.length]().forEach(function (x) {
+      ECRAS[lista()[ecra % lista().length]]().forEach(function (x) {
         novo.appendChild(x);
       });
     m.parentNode.replaceChild(novo, m);
     var p = $('s-pontos');
     p.textContent = '';
-    ECRAS.forEach(function (x, i) {
-      p.appendChild(el('i', i === ecra % ECRAS.length ? 'on' : ''));
+    lista().forEach(function (x, i) {
+      p.appendChild(el('i', i === ecra % lista().length ? 'on' : ''));
     });
   }
   function carregar() {
@@ -221,10 +228,17 @@
   setInterval(relogio, 10000);
   carregar();
   setInterval(carregar, 120000);
-  setInterval(function () {
-    ecra++;
-    desenhar();
-  }, 20000);
+  // rotação ao ritmo escolhido no portal (lido em cada volta)
+  (function rodar() {
+    setTimeout(
+      function () {
+        ecra++;
+        desenhar();
+        rodar();
+      },
+      ((D && D.config && D.config.segundos) || 20) * 1000,
+    );
+  })();
   // um ecrã ligado dias seguidos: recarrega a página de madrugada (versões novas do painel)
   setInterval(function () {
     if (new Date().getHours() === 4 && performance.now() > 3600000) location.reload();

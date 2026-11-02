@@ -4,6 +4,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Painel por perfil, arrastar e largar, vistas guardadas
+- **Início conforme o perfil** (prática internacional: cada função vê primeiro os indicadores que gere):
+  Direcção (e TI, Auditoria, Administração) — resultado, tendência, ponte, cobrança e dívida; Comercial — crescimento,
+  cobertura (distribuição numérica), valor por compra, carteira de clientes; Supervisão — execução das rotas, clientes
+  visitados, novos e perdidos; Financeiro — cobrança, antiguidade da dívida, rotas e promotores. Os perfis operacionais
+  mantêm o Início de sempre.
+- **Arrastar e largar os gráficos** no Início (rato pelo título, ou teclado: Alt + ← / →). A nova ordem vale só até sair;
+  **Guardar vista** grava-a para a pessoa (em qualquer computador); **Desfazer** e **Repor origem** voltam atrás.
+- **Ecrã de TV configurável**: em Gestão › Painel da sala › Ecrãs escolhem-se os ecrãs, a ordem (arrastar) e os
+  segundos de cada um; o ecrã recebe a configuração na actualização seguinte.
+- API: `v1/vistas` (GET/POST, com CSRF) e `configurar` em `v1/sala/ligacoes`.
+
 ### Gestão com inteligência artificial
 - **Alertas** (Gestão › Alertas): rotas sem vendas ou muito abaixo do habitual (comparação com o mesmo dia da semana
   nas últimas 6 semanas, por mediana), semanas em queda ou em subida, clientes regulares que deixaram de comprar,
@@ -11,7 +23,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Previsão de vendas** (próximos 7 dias, por rota): média ponderada do mesmo dia da semana × tendência, com intervalo
   de 80 % e a precisão medida todos os dias; as quantidades sugeridas no **plano de cargas** passam a usar a média das
   últimas cargas × a tendência das vendas da rota (a Logística confirma sempre).
-- **Painel de gestão RTM** (Gestão › Painel de gestão), com os gráficos de referência da distribuição porta-a-porta:
+- **Início com o painel de gestão RTM** (num só ecrã, sem deslocação, grelha 4 × 3), com os gráficos de referência da
+  distribuição porta-a-porta, mantendo os de recebimentos («Como foi cobrado» e «Antiguidade da dívida»):
   tendência diária com média móvel de 7 dias e previsão; mês até hoje por rota (balas) e ponte da variação do mês;
   curvas ABC de clientes e de artigos; distribuição numérica por artigo; valor médio e artigos por compra por rota;
   mapa de calor rota × dia da semana; clientes activos, novos e perdidos por mês. Cada gráfico tem a vista em tabela.

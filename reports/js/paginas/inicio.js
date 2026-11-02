@@ -19,18 +19,138 @@ import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
-import { atual, podeVer } from '../perfil.js';
+import { SESSAO, atual, podeVer } from '../perfil.js';
+import { arrastavel, ordenar } from '../componentes/arrastar.js';
+import { postJson } from '../servidor.js';
 import { draw } from '../app.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { addD, hoje, inR, st } from '../periodo.js';
-import { DB, el, group, sum } from '../util.js';
-import { apiFetch } from '../api.js';
+import { DB, el, group, sum, toast } from '../util.js';
+import { apiFetch, apiJson } from '../api.js';
+
+// Gráficos de gestão (v1/painel, perfis com «painel-gestao» na matriz): lidos e desenhados a pedido; enquanto não chegam,
+// ou sem acesso, o Início mostra a grelha de sempre.
+const GESTAO = { estado: null, d: null, mod: null };
+function lerGestao() {
+  if (GESTAO.estado) return;
+  GESTAO.estado = 'a ler';
+  Promise.all([apiJson('painel'), import('./gestao.js')])
+    .then(([d, mod]) => {
+      GESTAO.estado = d && d.ok ? 'pronto' : 'falhou';
+      GESTAO.d = d;
+      GESTAO.mod = mod;
+      if (GESTAO.estado === 'pronto' && atual === 'inicio') draw();
+    })
+    .catch(() => (GESTAO.estado = 'falhou'));
+}
+// Painel principal por perfil (prática internacional: cada função vê primeiro os indicadores que gere). Grelha de 4 × 3
+// (12 lugares; a tendência ocupa 2). Os gráficos de gestão substituem os que mostram a mesma informação com menos detalhe
+// (vendas por dia → tendência com previsão; por promotor → mês por rota com comparação; melhores clientes → curva ABC;
+// artigos mais vendidos → distribuição numérica; novos clientes → carteira); os de recebimentos mantêm-se. Cada pessoa pode
+// arrastar os quadros e guardar a sua vista.
+const PAINEL_PERFIL = {
+  // Direcção, administração da plataforma e auditoria: visão global
+  DIR: ['tendencia', 'balas', 'ponte', 'cobrado', 'divida', 'abcClientes', 'distribuicao', 'dispersao', 'calor', 'carteira', 'caixas'],
+  // Direcção comercial: crescimento, cobertura e rendimento das visitas
+  COM: ['tendencia', 'balas', 'ponte', 'distribuicao', 'dispersao', 'calor', 'abcClientes', 'carteira', 'artigos', 'cobrado', 'novos'],
+  // Supervisor: as suas rotas, execução no terreno e cobrança
+  SUP: ['tendencia', 'balas', 'dispersao', 'distribuicao', 'calor', 'clientes', 'carteira', 'cobrado', 'divida', 'novos', 'artigos'],
+  // Financeiro: recebimentos e dívida primeiro, depois as vendas que os originam
+  FIN: ['cobrado', 'divida', 'tendencia', 'balas', 'ponte', 'promotor', 'carteira', 'abcClientes', 'dia', 'clientes', 'dispersao'],
+};
+PAINEL_PERFIL.TI = PAINEL_PERFIL.DIR;
+PAINEL_PERFIL.AUD = PAINEL_PERFIL.DIR;
+PAINEL_PERFIL.SADM = PAINEL_PERFIL.DIR;
+function grelhaGestao(O) {
+  const G = GESTAO.mod.cartoesGestao(GESTAO.d);
+  const perfil = (SESSAO && SESSAO.perfil) || 'DIR';
+  const chaves = PAINEL_PERFIL[perfil] || PAINEL_PERFIL.DIR;
+  const usados = new Set();
+  const lista = chaves.map((k) => G[k] || O[k]).filter((c) => c && !usados.has(c) && usados.add(c));
+  // lugares por preencher (gráfico sem dados ou sem acesso): completa com os restantes disponíveis
+  const lugares = () => lista.reduce((n, c) => n + (c.classList.contains('dupla') ? 2 : 1), 0);
+  for (const c of [...Object.values(G), ...Object.values(O)])
+    if (lugares() < 12 && !usados.has(c) && !c.classList.contains('dupla')) (lista.push(c), usados.add(c));
+  return lista;
+}
+
+// Vista do painel (ordem dos quadros arrastados): guardada no servidor por pessoa (v1/vistas) ou, sem guardar, só nesta
+// sessão (no navegador, presa ao momento da entrada: depois de sair e voltar a entrar, repõe-se a ordem guardada ou a de origem).
+const VISTA = { estado: null, guardada: null, temp: null };
+const chaveTemp = () => 'vm-vista-inicio|' + ((SESSAO && SESSAO.entrada) || 0);
+function guardarTemp(ordem) {
+  try {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith('vm-vista-inicio|'))
+      .forEach((k) => sessionStorage.removeItem(k));
+    if (ordem) sessionStorage.setItem(chaveTemp(), JSON.stringify(ordem));
+  } catch (e) {}
+}
+function lerVista() {
+  if (VISTA.estado) return;
+  VISTA.estado = 'a ler';
+  try {
+    const x = JSON.parse(sessionStorage.getItem(chaveTemp()) || 'null');
+    if (Array.isArray(x)) VISTA.temp = x;
+  } catch (e) {}
+  apiJson('vistas').then((d) => {
+    VISTA.estado = 'pronto';
+    VISTA.guardada = (d && d.vistas && d.vistas.inicio) || null;
+    if (VISTA.guardada && !VISTA.temp && atual === 'inicio') draw();
+  });
+}
+function gravarVista(ordem) {
+  return postJson('vistas', { pagina: 'inicio', ordem }).then((r) => {
+    if (!r.ok) return toast(t(r.erro || 'Não foi possível guardar a vista.'), 6000);
+    VISTA.guardada = ordem;
+    VISTA.temp = null;
+    guardarTemp(null);
+    toast(ordem ? t('Vista guardada: fica assim sempre que entrar.') : t('Reposta a vista de origem.'));
+    draw();
+  });
+}
+/** Barra discreta (canto inferior direito, sem ocupar a grelha): vista alterada nesta sessão ou personalizada. */
+function barraVista(pg) {
+  const velha = document.getElementById('barra-vista');
+  if (velha) velha.remove();
+  if (!VISTA.temp && !VISTA.guardada) return;
+  const b = el('div', 'barra-vista glass');
+  b.id = 'barra-vista';
+  const botao = (txt, fn, cls) => {
+    const x = el('button', 'btn' + (cls ? ' ' + cls : ''), txt);
+    x.type = 'button';
+    x.addEventListener('click', fn);
+    return x;
+  };
+  if (VISTA.temp) {
+    b.append(
+      el('span', null, t('Vista alterada (só até sair)')),
+      botao(t('Guardar vista'), () => gravarVista(VISTA.temp)),
+      botao(
+        t('Desfazer'),
+        () => {
+          VISTA.temp = null;
+          guardarTemp(null);
+          draw();
+        },
+        'sec',
+      ),
+    );
+  } else
+    b.append(
+      el('span', null, t('Vista personalizada')),
+      botao(t('Repor origem'), () => gravarVista(null), 'sec'),
+    );
+  pg.append(b);
+}
 
 function painelInicio(pg) {
   const V = vendasR(),
     tot = sum(V, 'total'),
     liq = sum(V, recebidoDe),
-    cards = [];
+    cards = [],
+    O = {};
+  const nomear = (k, c) => ((O[k] = c), (c.dataset.grafico = k), c);
   const pode = (id) => podeVer(id);
   const nomeCli = (x) => (isCF(x.nif) ? t('Consumidor final') : x.cliente);
   // 1. Vendas por dia
@@ -39,27 +159,30 @@ function painelInicio(pg) {
       .sort((a, b) => (a[0].data < b[0].data ? -1 : 1))
       .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: sum(rs, recebidoDe), n: docsVenda(rs).length }));
     cards.push(
-      cartaoGrafico({
-        titulo: t('Vendas por dia'),
-        sub: t('{v} em {n} dias · média {m} por dia', { v: kzc(tot) + ' Kz', n: dias.length, m: kzc(tot / dias.length) + ' Kz' }),
-        destino: 'vendas-dia',
-        desenhar: (w, h) =>
-          grafColunas(w, {
-            altura: h,
-            itens: dias.map((x) => ({
-              valor: x.v,
-              rot: diaCurto(x.d),
-              titulo: ds(x.d),
-              linhas: [
-                [kz(x.v), t('vendido')],
-                [kz(x.r), t('recebido')],
-                [n0(x.n), t('documentos')],
-              ],
-            })),
-          }),
-        colunas: [[t('Dia')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
-        linhas: dias.map((x) => [dl(x.d), kz(x.v), kz(x.r), n0(x.n)]),
-      }),
+      nomear(
+        'dia',
+        cartaoGrafico({
+          titulo: t('Vendas por dia'),
+          sub: t('{v} em {n} dias · média {m} por dia', { v: kzc(tot) + ' Kz', n: dias.length, m: kzc(tot / dias.length) + ' Kz' }),
+          destino: 'vendas-dia',
+          desenhar: (w, h) =>
+            grafColunas(w, {
+              altura: h,
+              itens: dias.map((x) => ({
+                valor: x.v,
+                rot: diaCurto(x.d),
+                titulo: ds(x.d),
+                linhas: [
+                  [kz(x.v), t('vendido')],
+                  [kz(x.r), t('recebido')],
+                  [n0(x.n), t('documentos')],
+                ],
+              })),
+            }),
+          colunas: [[t('Dia')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
+          linhas: dias.map((x) => [dl(x.d), kz(x.v), kz(x.r), n0(x.n)]),
+        }),
+      ),
     );
   }
   // 2. Vendas por promotor (clicar abre os documentos da rota)
@@ -69,27 +192,30 @@ function painelInicio(pg) {
       .sort((a, b) => b.total - a.total);
     const top = P[0];
     cards.push(
-      cartaoGrafico({
-        titulo: t('Vendas por promotor'),
-        sub: top ? t('Maior venda: {p} ({q} do total)', { p: top.promotor, q: pct(tot ? top.total / tot : 0) }) : '',
-        destino: 'vendas-promotor',
-        desenhar: (w, h) =>
-          grafBarras(w, {
-            altura: h,
-            itens: P.map((x) => ({
-              valor: x.total,
-              rot: x.promotor,
-              linhas: [
-                [kz(x.total), t('vendido')],
-                [kz(x.recebido), t('recebido')],
-                [n0(x.docs), t('documentos')],
-              ],
-              href: podeVer('documentos') ? `documentos/dc?rota=${x.rota}` : null,
-            })),
-          }),
-        colunas: [[t('Promotor')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
-        linhas: P.map((x) => [x.promotor, kz(x.total), kz(x.recebido), n0(x.docs)]),
-      }),
+      nomear(
+        'promotor',
+        cartaoGrafico({
+          titulo: t('Vendas por promotor'),
+          sub: top ? t('Maior venda: {p} ({q} do total)', { p: top.promotor, q: pct(tot ? top.total / tot : 0) }) : '',
+          destino: 'vendas-promotor',
+          desenhar: (w, h) =>
+            grafBarras(w, {
+              altura: h,
+              itens: P.map((x) => ({
+                valor: x.total,
+                rot: x.promotor,
+                linhas: [
+                  [kz(x.total), t('vendido')],
+                  [kz(x.recebido), t('recebido')],
+                  [n0(x.docs), t('documentos')],
+                ],
+                href: podeVer('documentos') ? `documentos/dc?rota=${x.rota}` : null,
+              })),
+            }),
+          colunas: [[t('Promotor')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
+          linhas: P.map((x) => [x.promotor, kz(x.total), kz(x.recebido), n0(x.docs)]),
+        }),
+      ),
     );
   }
   // 3. Como foi cobrado (parte do todo)
@@ -106,14 +232,17 @@ function painelInicio(pg) {
       { nome: t('Por receber'), valor: pend, cor: COR.neutro, href: podeVer('pendentes') ? 'pendentes' : null },
     ].filter((p) => p.valor > 0.005 || p.cor === COR.s1);
     cards.push(
-      cartaoGrafico({
-        titulo: t('Como foi cobrado'),
-        sub: t('{p} das vendas já recebido', { p: pct(base ? liq / base : 0) }),
-        destino: 'pagamentos',
-        desenhar: (w) => grafParte(w, { partes }),
-        colunas: [[t('Meio')], [t('Valor'), 1], [t('Parte'), 1]],
-        linhas: partes.map((p) => [p.nome, kz(p.valor), pct(base ? p.valor / base : 0)]),
-      }),
+      nomear(
+        'cobrado',
+        cartaoGrafico({
+          titulo: t('Como foi cobrado'),
+          sub: t('{p} das vendas já recebido', { p: pct(base ? liq / base : 0) }),
+          destino: 'pagamentos',
+          desenhar: (w) => grafParte(w, { partes }),
+          colunas: [[t('Meio')], [t('Valor'), 1], [t('Parte'), 1]],
+          linhas: partes.map((p) => [p.nome, kz(p.valor), pct(base ? p.valor / base : 0)]),
+        }),
+      ),
     );
   }
   // 4. Antiguidade da dívida (cores de risco, sempre com o rótulo)
@@ -130,25 +259,28 @@ function painelInicio(pg) {
         return { rot: n, valor: sum(rs, 'v'), n: rs.length, cor };
       });
       cards.push(
-        cartaoGrafico({
-          titulo: t('Antiguidade da dívida'),
-          sub: t('{v} por receber em {n} facturas', { v: kzc(sum(P, 'v')) + ' Kz', n: n0(P.length) }),
-          destino: 'pendentes',
-          desenhar: (w, h) =>
-            grafBarras(w, {
-              altura: h,
-              itens: fx.map((x) => ({
-                ...x,
-                linhas: [
-                  [kz(x.valor), t('por receber')],
-                  [n0(x.n), t('facturas')],
-                ],
-                href: 'pendentes/pd-d',
-              })),
-            }),
-          colunas: [[t('Antiguidade')], [t('Por receber'), 1], [t('Facturas'), 1]],
-          linhas: fx.map((x) => [x.rot, kz(x.valor), n0(x.n)]),
-        }),
+        nomear(
+          'divida',
+          cartaoGrafico({
+            titulo: t('Antiguidade da dívida'),
+            sub: t('{v} por receber em {n} facturas', { v: kzc(sum(P, 'v')) + ' Kz', n: n0(P.length) }),
+            destino: 'pendentes',
+            desenhar: (w, h) =>
+              grafBarras(w, {
+                altura: h,
+                itens: fx.map((x) => ({
+                  ...x,
+                  linhas: [
+                    [kz(x.valor), t('por receber')],
+                    [n0(x.n), t('facturas')],
+                  ],
+                  href: 'pendentes/pd-d',
+                })),
+              }),
+            colunas: [[t('Antiguidade')], [t('Por receber'), 1], [t('Facturas'), 1]],
+            linhas: fx.map((x) => [x.rot, kz(x.valor), n0(x.n)]),
+          }),
+        ),
       );
     }
   }
@@ -165,26 +297,29 @@ function painelInicio(pg) {
       .slice(0, 8);
     if (C.length)
       cards.push(
-        cartaoGrafico({
-          titulo: t('Melhores clientes'),
-          sub: t('Clientes com mais compras no período (sem consumidor final)'),
-          destino: 'vendas-cliente',
-          desenhar: (w, h) =>
-            grafBarras(w, {
-              altura: h,
-              itens: C.map((x) => ({
-                valor: x.v,
-                rot: x.nome,
-                linhas: [
-                  [kz(x.v), t('comprado')],
-                  [n0(x.n), t('documentos')],
-                ],
-                href: podeVer('documentos') ? 'documentos/dc?cliente=' + encodeURIComponent(x.nif || x.nome) : null,
-              })),
-            }),
-          colunas: [[t('Cliente')], [t('Comprado'), 1], [t('Documentos'), 1]],
-          linhas: C.map((x) => [x.nome, kz(x.v), n0(x.n)]),
-        }),
+        nomear(
+          'clientes',
+          cartaoGrafico({
+            titulo: t('Melhores clientes'),
+            sub: t('Clientes com mais compras no período (sem consumidor final)'),
+            destino: 'vendas-cliente',
+            desenhar: (w, h) =>
+              grafBarras(w, {
+                altura: h,
+                itens: C.map((x) => ({
+                  valor: x.v,
+                  rot: x.nome,
+                  linhas: [
+                    [kz(x.v), t('comprado')],
+                    [n0(x.n), t('documentos')],
+                  ],
+                  href: podeVer('documentos') ? 'documentos/dc?cliente=' + encodeURIComponent(x.nif || x.nome) : null,
+                })),
+              }),
+            colunas: [[t('Cliente')], [t('Comprado'), 1], [t('Documentos'), 1]],
+            linhas: C.map((x) => [x.nome, kz(x.v), n0(x.n)]),
+          }),
+        ),
       );
   }
   // 6. Artigos mais vendidos (valor; quantidades para quem não vê valores)
@@ -197,27 +332,30 @@ function painelInicio(pg) {
       .slice(0, 8);
     if (rows.length)
       cards.push(
-        cartaoGrafico({
-          titulo: t('Artigos mais vendidos'),
-          sub: comValor ? t('Por valor vendido, com IVA') : t('Por quantidade vendida'),
-          destino: 'vendas-artigo',
-          desenhar: (w, h) =>
-            grafBarras(w, {
-              altura: h,
-              fmt: comValor ? kzc : n0,
-              itens: rows.map((x) => ({
-                valor: comValor ? x.v : x.q,
-                rot: x.nome,
-                linhas: [
-                  [comValor ? kz(x.v) : n0(x.q), comValor ? t('vendido') : t('quantidade')],
-                  [n0(x.q), t('quantidade')],
-                  [x.cod, t('código')],
-                ],
-              })),
-            }),
-          colunas: [[t('Artigo')], [t('Código')], [t('Quantidade'), 1], ...(comValor ? [[t('Vendido'), 1]] : [])],
-          linhas: rows.map((x) => [x.nome, x.cod, n0(x.q), ...(comValor ? [kz(x.v)] : [])]),
-        }),
+        nomear(
+          'artigos',
+          cartaoGrafico({
+            titulo: t('Artigos mais vendidos'),
+            sub: comValor ? t('Por valor vendido, com IVA') : t('Por quantidade vendida'),
+            destino: 'vendas-artigo',
+            desenhar: (w, h) =>
+              grafBarras(w, {
+                altura: h,
+                fmt: comValor ? kzc : n0,
+                itens: rows.map((x) => ({
+                  valor: comValor ? x.v : x.q,
+                  rot: x.nome,
+                  linhas: [
+                    [comValor ? kz(x.v) : n0(x.q), comValor ? t('vendido') : t('quantidade')],
+                    [n0(x.q), t('quantidade')],
+                    [x.cod, t('código')],
+                  ],
+                })),
+              }),
+            colunas: [[t('Artigo')], [t('Código')], [t('Quantidade'), 1], ...(comValor ? [[t('Vendido'), 1]] : [])],
+            linhas: rows.map((x) => [x.nome, x.cod, n0(x.q), ...(comValor ? [kz(x.v)] : [])]),
+          }),
+        ),
       );
   }
   // 7. Caixas carregadas por dia (plano de cargas)
@@ -231,27 +369,30 @@ function painelInicio(pg) {
       .sort((a, b) => (a[0].data < b[0].data ? -1 : 1))
       .map((rs) => ({ d: rs[0].data, c: sum(rs, 'carga'), n: rs.length }));
     cards.push(
-      cartaoGrafico({
-        titulo: t('Caixas carregadas por dia'),
-        sub: t('{c} caixas em {n} dias, segundo o plano de cargas', { c: n0(sum(dias, 'c')), n: dias.length }),
-        destino: 'registo-cargas',
-        desenhar: (w, h) =>
-          grafColunas(w, {
-            altura: h,
-            fmt: n0,
-            itens: dias.map((x) => ({
-              valor: x.c,
-              rot: diaCurto(x.d),
-              titulo: ds(x.d),
-              linhas: [
-                [n0(x.c), t('caixas')],
-                [n0(x.n), t('carrinhas')],
-              ],
-            })),
-          }),
-        colunas: [[t('Dia')], [t('Caixas'), 1], [t('Carrinhas'), 1]],
-        linhas: dias.map((x) => [dl(x.d), n0(x.c), n0(x.n)]),
-      }),
+      nomear(
+        'caixas',
+        cartaoGrafico({
+          titulo: t('Caixas carregadas por dia'),
+          sub: t('{c} caixas em {n} dias, segundo o plano de cargas', { c: n0(sum(dias, 'c')), n: dias.length }),
+          destino: 'registo-cargas',
+          desenhar: (w, h) =>
+            grafColunas(w, {
+              altura: h,
+              fmt: n0,
+              itens: dias.map((x) => ({
+                valor: x.c,
+                rot: diaCurto(x.d),
+                titulo: ds(x.d),
+                linhas: [
+                  [n0(x.c), t('caixas')],
+                  [n0(x.n), t('carrinhas')],
+                ],
+              })),
+            }),
+          colunas: [[t('Dia')], [t('Caixas'), 1], [t('Carrinhas'), 1]],
+          linhas: dias.map((x) => [dl(x.d), n0(x.c), n0(x.n)]),
+        }),
+      ),
     );
   }
   // 8. Novos clientes por dia (cadastros) com a meta da rede
@@ -268,39 +409,50 @@ function painelInicio(pg) {
       const rotasN = new Set((DB.cad.cadastros_diarios || []).map((x) => x.rota)).size,
         meta = META_ROTA() * rotasN;
       cards.push(
-        cartaoGrafico({
-          titulo: t('Novos clientes por dia'),
-          sub: t('{n} cadastros no período · meta diária da rede {m}', { n: n0(sum(D, 'n')), m: n0(meta) }),
-          destino: 'cadastros-analise',
-          desenhar: (w, h) =>
-            grafColunas(w, {
-              altura: h,
-              fmt: n0,
-              ref: { valor: meta, rot: t('Meta {m}', { m: n0(meta) }) },
-              itens: D.map((x) => ({
-                valor: x.n,
-                rot: diaCurto(x.d),
-                titulo: ds(x.d),
-                linhas: [
-                  [n0(x.n), t('novos clientes')],
-                  [n0(x.r), t('rotas com cadastros')],
-                ],
-              })),
-            }),
-          colunas: [[t('Dia')], [t('Novos clientes'), 1]],
-          linhas: D.map((x) => [dl(x.d), n0(x.n)]),
-        }),
+        nomear(
+          'novos',
+          cartaoGrafico({
+            titulo: t('Novos clientes por dia'),
+            sub: t('{n} cadastros no período · meta diária da rede {m}', { n: n0(sum(D, 'n')), m: n0(meta) }),
+            destino: 'cadastros-analise',
+            desenhar: (w, h) =>
+              grafColunas(w, {
+                altura: h,
+                fmt: n0,
+                ref: { valor: meta, rot: t('Meta {m}', { m: n0(meta) }) },
+                itens: D.map((x) => ({
+                  valor: x.n,
+                  rot: diaCurto(x.d),
+                  titulo: ds(x.d),
+                  linhas: [
+                    [n0(x.n), t('novos clientes')],
+                    [n0(x.r), t('rotas com cadastros')],
+                  ],
+                })),
+              }),
+            colunas: [[t('Dia')], [t('Novos clientes'), 1]],
+            linhas: D.map((x) => [dl(x.d), n0(x.n)]),
+          }),
+        ),
       );
     }
   }
-  if (!cards.length) {
+  if (podeVer('painel-gestao')) lerGestao();
+  if (!cards.length && GESTAO.estado !== 'pronto') {
     pg.append(el('div', 'glass empty', t('Sem dados para mostrar no período escolhido.')));
     return;
   }
   const grelha = el('div', 'viz-grid');
-  grelha.append(...cards);
+  lerVista();
+  grelha.append(...ordenar(GESTAO.estado === 'pronto' ? grelhaGestao(O) : cards, VISTA.temp || VISTA.guardada));
   pg.append(grelha);
   ecraUnico(pg, grelha);
+  arrastavel(grelha, (ordem) => {
+    VISTA.temp = ordem;
+    guardarTemp(ordem);
+    barraVista(pg);
+  });
+  barraVista(pg);
 }
 
 // Painel num só ecrã (boas práticas de dashboards: visão geral sem deslocação, «regra dos 5 segundos»):
@@ -314,16 +466,21 @@ function ecraUnico(pg, grelha) {
     grelha.classList.toggle('ecra-unico', ok);
     pg.classList.toggle('inicio-ecra', ok);
     if (!ok) return;
-    const filas = Math.ceil(grelha.children.length / 4),
+    // quadros de largura dupla (tendência) ocupam dois lugares da grelha
+    const lugares = [...grelha.children].reduce((n, c) => n + (c.classList.contains('dupla') ? 2 : 1), 0);
+    const filas = Math.ceil(lugares / 4),
       topo = grelha.getBoundingClientRect().top + scrollY,
       gap = 12,
       fundo = 16;
-    let h = Math.max(170, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
+    const minimo = filas > 2 ? 120 : 170;
+    let h = Math.max(minimo, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
+    // quadros baixos (ecrãs de 768 px): sem o subtítulo, para o gráfico ter mais espaço
+    grelha.classList.toggle('compacto', h < 200);
     grelha.style.setProperty('--viz-h', h + 'px');
     // o que ainda sobrar (margens da página, rodapé) sai da altura dos quadros: nada de barra de deslocação
     const excesso = document.documentElement.scrollHeight - innerHeight;
-    if (excesso > 0 && h > 170) {
-      h = Math.max(170, h - Math.ceil(excesso / filas));
+    if (excesso > 0 && h > minimo) {
+      h = Math.max(minimo, h - Math.ceil(excesso / filas));
       grelha.style.setProperty('--viz-h', h + 'px');
     }
   };

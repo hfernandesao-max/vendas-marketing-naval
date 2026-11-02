@@ -6,6 +6,7 @@ import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { cartaoGrafico, grafBarras, grafColunas, kzc } from '../componentes/graficos.js';
 import { comLegenda, grafAbc, grafAgrupadas, grafBalas, grafCalor, grafCascata, grafDispersao, grafTendencia } from '../componentes/graficos-gestao.js';
+import { arrastavel } from '../componentes/arrastar.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0, n1 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
@@ -410,6 +411,7 @@ R['painel-sala'] = (pg) => {
           : t('criada em {d} · último acesso: {u}', { d: dl(l.criado), u: l.ultimo_acesso ? dl(l.ultimo_acesso) + ' ' + l.ultimo_acesso.slice(11, 16) : '—' }),
       ),
     );
+    if (!l.revogado) linha.append(botao(t('Ecrãs'), 'sec', () => configurarEcras(l)));
     if (!l.revogado)
       linha.append(
         botao(t('Revogar'), 'sec', () =>
@@ -425,6 +427,57 @@ R['painel-sala'] = (pg) => {
   c.append(lista, botao(t('Criar ligação para um ecrã'), null, criarLigacao));
   pg.append(secBox(t('Painel da sala comercial'), t('Ecrã de TV com as vendas do dia, actualizado a cada 2 minutos.'), c));
 };
+const ECRAS_SALA = [
+  ['hoje', 'Vendas de hoje'],
+  ['rank-hoje', 'Classificação de hoje'],
+  ['rank-mes', 'Classificação do mês'],
+  ['destaques', 'Destaques'],
+];
+/** Ecrãs do painel da TV: escolher e arrastar para mudar a ordem; tempo de cada ecrã. Grava na ligação (servidor). */
+function configurarEcras(l) {
+  janela(t('Ecrãs do painel'), t('Escolha os ecrãs e arraste-os para mudar a ordem.'), (b, ft, fechar) => {
+    const cfg = l.config || { ecras: ECRAS_SALA.map((e) => e[0]), segundos: 20 };
+    const ul = el('ul', 'sala-ecras');
+    const ordem = [...cfg.ecras, ...ECRAS_SALA.map((e) => e[0]).filter((k) => !cfg.ecras.includes(k))];
+    ordem.forEach((k) => {
+      const li = el('li');
+      li.dataset.grafico = k;
+      const cb = entrada('checkbox');
+      cb.checked = cfg.ecras.includes(k);
+      const lb = el('label');
+      lb.append(cb, document.createTextNode(' ' + t((ECRAS_SALA.find((e) => e[0] === k) || [k, k])[1])));
+      li.append(el('span', 'sala-pega', '⋮⋮'), lb);
+      ul.append(li);
+    });
+    arrastavel(ul, () => {});
+    const seg = el('select');
+    [10, 20, 30, 60].forEach((s) => {
+      const o = el('option', null, String(s));
+      o.value = s;
+      if (s === cfg.segundos) o.selected = true;
+      seg.append(o);
+    });
+    const erro = msgErro();
+    b.append(ul, campo(t('Segundos por ecrã'), seg), erro);
+    ft.append(
+      botao(t('Cancelar'), 'sec', fechar),
+      botao(t('Guardar'), null, () => {
+        const ecras = [...ul.children].filter((li) => li.querySelector('input').checked).map((li) => li.dataset.grafico);
+        postJson('sala/ligacoes', { accao: 'configurar', id: l.id, ecras, segundos: +seg.value }).then((r) => {
+          if (!r.ok) {
+            erro.hidden = false;
+            erro.textContent = t(r.erro || 'Não foi possível gravar.');
+            return;
+          }
+          DADOS.sala = { ok: true, ligacoes: r.ligacoes };
+          fechar();
+          toast(t('Ecrãs guardados: o ecrã muda na próxima actualização (até 2 minutos).'), 6000);
+          draw();
+        });
+      }),
+    );
+  });
+}
 function criarLigacao() {
   janela(t('Criar ligação para um ecrã'), t('Indique onde fica o ecrã.'), (b, ft, fechar) => {
     const nome = entrada('text', '', { maxLength: 60, placeholder: t('Sala comercial · Viana') });
@@ -464,32 +517,19 @@ const DIAS_CURTOS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const nomeRota = (r) => r.rota + (r.promotor ? ' · ' + r.promotor : '');
 
-R['painel-gestao'] = (pg) => {
-  const d = esperar(pg, 'painel', 'painel', 'painel-gestao');
-  if (!d) return;
-  const k = d.kpis;
-  pg.append(
-    tiles([
-      {
-        l: t('Vendas do mês até hoje'),
-        v: kz(k.vendas_mes),
-        s: t('{p} face aos mesmos dias do mês anterior', { p: sinal(k.variacao_mes) }),
-        tone: tomVar(k.variacao_mes),
-      },
-      { l: t('Clientes activos (30 dias)'), v: n0(k.clientes_activos_30), s: t('{n} compras', { n: n0(k.compras_30) }) },
-      { l: t('Valor médio por compra'), v: kz(k.valor_medio_compra), s: t('vendas ÷ compras (30 dias)') },
-      { l: t('Artigos por compra'), v: k.artigos_por_compra == null ? '—' : n1(k.artigos_por_compra), s: t('artigos diferentes em cada compra') },
-      { l: t('Concentração'), v: n0(k.clientes_80), s: t('clientes fazem 80% das vendas (de {n})', { n: n0(k.clientes_90) }) },
-    ]),
-  );
-  const grid = el('div', 'viz-grid gst-painel');
+/**
+ * Gráficos do painel de gestão RTM (dados de v1/painel), para a grelha do Início: {tendencia, balas, ponte, abcClientes,
+ * abcArtigos, distribuicao, dispersao, calor, carteira}. Cada cartão traz a vista em tabela e desenha-se à altura do quadro.
+ */
+export function cartoesGestao(d) {
+  const grid = el('div');
   const tend = d.tendencia;
   grid.append(
     cartaoGrafico({
       titulo: t('Tendência diária e previsão'),
       sub: t('últimos 90 dias, média móvel de 7 dias e previsão com intervalo de 80%'),
-      desenhar: (w) =>
-        comLegenda(grafTendencia(w, { dias: tend.dias, previsao: tend.previsao, rot: (x) => dl(x).slice(0, 5) }), [
+      desenhar: (w, h) =>
+        comLegenda(grafTendencia(w, { dias: tend.dias, previsao: tend.previsao, rot: (x) => dl(x).slice(0, 5), altura: h && h - 20 }), [
           ['#8fb4ff', t('vendas do dia')],
           ['#3987e5', t('média móvel de 7 dias')],
           ['#3987e5', t('previsão'), true],
@@ -507,7 +547,11 @@ R['painel-gestao'] = (pg) => {
     cartaoGrafico({
       titulo: t('Mês até hoje por rota'),
       sub: t('barra: este mês; traço: mesmos dias do mês anterior'),
-      desenhar: (w) => grafBalas(w, { itens: mesRotas.map((r) => ({ rotulo: nomeRota(r), actual: r.actual, anterior: r.anterior, variacao: r.variacao })) }),
+      desenhar: (w, h) =>
+        grafBalas(w, {
+          altura: h,
+          itens: mesRotas.map((r) => ({ rotulo: w < 520 ? r.rota : nomeRota(r), actual: r.actual, anterior: r.anterior, variacao: r.variacao })),
+        }),
       colunas: [
         [t('Rota'), 0],
         [t('Mês até hoje'), 1],
@@ -519,8 +563,9 @@ R['painel-gestao'] = (pg) => {
     cartaoGrafico({
       titulo: t('De onde vem a variação do mês'),
       sub: t('contributo de cada rota, dos mesmos dias do mês anterior até hoje'),
-      desenhar: (w) =>
+      desenhar: (w, h) =>
         grafCascata(w, {
+          altura: h,
           inicio: d.mes.total.anterior,
           fim: d.mes.total.actual,
           passos: [...mesRotas].sort((a, b) => b.contributo - a.contributo).map((r) => ({ rot: r.rota, valor: r.contributo })),
@@ -538,7 +583,7 @@ R['painel-gestao'] = (pg) => {
     cartaoGrafico({
       titulo,
       sub,
-      desenhar: (w) => grafAbc(w, { curva: x.curva, ate80: x.ate80, n: x.n, nome }),
+      desenhar: (w, h) => grafAbc(w, { curva: x.curva, ate80: x.ate80, n: x.n, nome, altura: h }),
       colunas: [
         [t('Classe'), 0],
         [t('Quantidade'), 1],
@@ -557,7 +602,7 @@ R['painel-gestao'] = (pg) => {
       sub: t('% dos clientes activos (30 dias) que compraram cada artigo; os 15 artigos de maior venda'),
       desenhar: (w, h) =>
         grafBarras(w, {
-          itens: d.distribuicao.map((a) => ({
+          itens: d.distribuicao.slice(0, h ? Math.max(1, Math.floor((h - 8) / (w < 480 ? 32 : 22))) : 15).map((a) => ({
             rot: a.nome,
             valor: (a.distribuicao || 0) * 100,
             titulo: a.nome,
@@ -579,8 +624,9 @@ R['painel-gestao'] = (pg) => {
     cartaoGrafico({
       titulo: t('Valor médio e artigos por compra'),
       sub: t('por rota, últimos 30 dias; tamanho: vendas; linhas tracejadas: médias'),
-      desenhar: (w) =>
+      desenhar: (w, h) =>
         grafDispersao(w, {
+          altura: h,
           itens: d.por_rota
             .filter((r) => r.artigos_por_compra != null)
             .map((r) => ({ x: r.valor_medio, y: r.artigos_por_compra, tamanho: r.vendas, rot: r.rota, titulo: nomeRota(r) })),
@@ -600,16 +646,18 @@ R['painel-gestao'] = (pg) => {
     cartaoGrafico({
       titulo: t('Vendas por rota e dia da semana'),
       sub: t('média por dia nas últimas 8 semanas'),
-      desenhar: (w) => grafCalor(w, { linhas: d.calor.map((l) => ({ rot: l.rota, valores: l.dias })), colunas: DIAS_CURTOS.map((x) => t(x)), fmt: kzc }),
+      desenhar: (w, h) =>
+        grafCalor(w, { altura: h, linhas: d.calor.map((l) => ({ rot: l.rota, valores: l.dias })), colunas: DIAS_CURTOS.map((x) => t(x)), fmt: kzc }),
       colunas: [[t('Rota'), 0], ...DIAS_CURTOS.map((x) => [t(x), 1])],
       linhas: d.calor.map((l) => [nomeRota(l), ...l.dias.map(kz)]),
     }),
     cartaoGrafico({
       titulo: t('Carteira de clientes por mês'),
       sub: t('activos, novos (sem compras nos 3 meses anteriores) e perdidos (compraram no mês anterior)'),
-      desenhar: (w) =>
+      desenhar: (w, h) =>
         comLegenda(
           grafAgrupadas(w, {
+            altura: h && h - 20,
             cats: d.carteira.map((m) => t(MESES_CURTOS[+m.mes.slice(5) - 1]) + (m.incompleto ? '*' : '')),
             series: [
               { nome: t('activos'), cor: '#3987e5', valores: d.carteira.map((m) => m.activos) },
@@ -632,15 +680,12 @@ R['painel-gestao'] = (pg) => {
       linhas: d.carteira.map((m) => [m.mes, n0(m.activos), n0(m.novos), m.perdidos == null ? '—' : n0(m.perdidos)]),
     }),
   );
-  pg.append(grid);
-  pg.append(
-    el(
-      'p',
-      'note gst-nota',
-      t(
-        '«Compra» é um cliente com vendas num dia (visita produtiva). Indicadores de referência na distribuição porta-a-porta: cobertura e distribuição numérica dizem onde há espaço para vender; valor médio e artigos por compra dizem quanto rende cada visita. * mês em curso.',
-      ),
-    ),
-    actualizarBtn('painel', 'painel', 'painel-gestao'),
-  );
-};
+  const chaves = ['tendencia', 'balas', 'ponte', 'abcClientes', 'abcArtigos', 'distribuicao', 'dispersao', 'calor', 'carteira'];
+  const m = {};
+  [...grid.children].forEach((c, i) => {
+    c.dataset.grafico = chaves[i];
+    m[chaves[i]] = c;
+  });
+  m.tendencia.classList.add('dupla');
+  return m;
+}
