@@ -18,24 +18,11 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
-// No Windows, o ficheiro em execução fica bloqueado e não pode ser substituído: para aplicar uma versão, o
-// actualizador corre a partir de uma cópia de si próprio na pasta privada (NAVAL_ACT_RAIZ indica o portal).
-$raizPortal = (string) getenv('NAVAL_ACT_RAIZ') ?: dirname(__DIR__);
-require_once $raizPortal . '/nucleo/arranque.php';
+require_once dirname(__DIR__) . '/nucleo/arranque.php';
 naval_servico('actualizacao');
 
 $args = array_slice($argv, 1);
 $comando = $args[0] ?? 'estado';
-if (in_array($comando, ['aplicar', 'automatico', 'reverter'], true) && (string) getenv('NAVAL_ACT_RAIZ') === '') {
-    $copia = naval_act_pasta() . '/executor.php';
-    if (!@copy(__FILE__, $copia)) {
-        fwrite(STDERR, "  FALHA  Não foi possível preparar a cópia do actualizador na pasta privada.\n");
-        exit(1);
-    }
-    putenv('NAVAL_ACT_RAIZ=' . $raizPortal);
-    passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($copia) . ' ' . implode(' ', array_map('escapeshellarg', $args)), $r);
-    exit((int) $r);
-}
 $opcao = function (string $nome) use ($args) {
     foreach ($args as $a) {
         if ($a === '--' . $nome) return true;

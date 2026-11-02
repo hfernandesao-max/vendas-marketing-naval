@@ -312,8 +312,11 @@ function naval_act_escrever(string $origem, string $destino): void
     $tmp = $destino . '.actualizacao-' . getmypid();
     if (!@copy($origem, $tmp)) throw new NavalActualizacaoErro('Não foi possível escrever ' . $destino . ' (permissões?).');
     if (!@rename($tmp, $destino)) {
+        // No Windows não se pode trocar um ficheiro aberto (ex.: o próprio actualizador em execução), mas pode
+        // escrever-se por cima: o PHP já o leu e compilou. Confirma-se o conteúdo escrito.
+        $ok = DIRECTORY_SEPARATOR === '\\' && @copy($tmp, $destino) && hash_file('sha256', $destino) === hash_file('sha256', $tmp);
         @unlink($tmp);
-        throw new NavalActualizacaoErro('Não foi possível substituir ' . $destino . ' (ficheiro em uso?).');
+        if (!$ok) throw new NavalActualizacaoErro('Não foi possível substituir ' . $destino . ' (ficheiro em uso?).');
     }
 }
 
