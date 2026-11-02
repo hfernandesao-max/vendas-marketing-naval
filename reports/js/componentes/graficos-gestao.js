@@ -17,8 +17,8 @@ const eixoY = (sv, L, R, w, y, max, passo, fmt) => {
 };
 
 /** Tendência: colunas finas com as vendas do dia, linha da média móvel de 7 dias e previsão tracejada com o intervalo de 80%. */
-export function grafTendencia(w, { dias, previsao, rot }) {
-  const H = 260,
+export function grafTendencia(w, { dias, previsao, rot, altura }) {
+  const H = Math.max(110, Math.round(altura || 260)),
     T = 16,
     B = 26,
     R = 8;
@@ -75,9 +75,11 @@ export function grafTendencia(w, { dias, previsao, rot }) {
 }
 
 /** Balas (bullet chart): barra do período actual e traço do período comparável, por linha, numa escala comum. */
-export function grafBalas(w, { itens }) {
-  const linha = 30,
-    T = 4,
+export function grafBalas(w, { itens, altura }) {
+  // quadro baixo: só as linhas que cabem com 12 px cada (as maiores; o resto fica na tabela)
+  if (altura) itens = itens.slice(0, Math.max(1, Math.floor((altura - 26) / 12)));
+  const T = 4,
+    linha = altura ? Math.max(6, Math.min(30, Math.floor((altura - T - 22) / Math.max(1, itens.length)))) : 30,
     H = T + itens.length * linha + 22,
     Lr = Math.min(170, Math.max(90, w * 0.28)),
     R = 70;
@@ -95,7 +97,8 @@ export function grafBalas(w, { itens }) {
     g.append(svgEl('rect', { x: 0, y: y0, width: w, height: linha, class: 'vx-hit' }));
     g.append(svgEl('text', { x: Lr - 8, y: y0 + linha / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, x.rotulo));
     const cor = x.anterior > 0 && x.actual < x.anterior ? QUEDA : AZUL;
-    g.append(svgEl('path', { d: pathBarra(Lr, y0 + 8, Math.max(1, sx(x.actual) - Lr), linha - 16, false), fill: cor, class: 'vx-bar' }));
+    const fol = Math.max(2, Math.round(linha * 0.27));
+    g.append(svgEl('path', { d: pathBarra(Lr, y0 + fol, Math.max(1, sx(x.actual) - Lr), linha - 2 * fol, false), fill: cor, class: 'vx-bar' }));
     if (x.anterior > 0)
       g.append(
         svgEl('line', {
@@ -119,10 +122,10 @@ export function grafBalas(w, { itens }) {
 }
 
 /** Ponte (cascata): do total anterior ao actual, com o contributo de cada linha (subidas a azul, quedas a vermelho). */
-export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim }) {
-  const H = 260,
+export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim, altura }) {
+  const H = Math.max(110, Math.round(altura || 260)),
     T = 18,
-    B = 40,
+    B = 24,
     R = 8;
   let acc = inicio;
   const barras = [{ rot: rotInicio, de: 0, ate: inicio, tipo: 'total' }];
@@ -157,7 +160,7 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim }) {
     );
     if (i < barras.length - 1)
       sv.append(svgEl('line', { x1: cx + bw / 2, x2: cx + banda - bw / 2, y1: y(b.ate), y2: y(b.ate), class: 'vx-grid', 'stroke-dasharray': '3 3' }));
-    g.append(svgEl('text', { x: cx, y: H - B + 14, class: 'vx-ax', 'text-anchor': 'middle' }, b.rot));
+    g.append(svgEl('text', { x: cx, y: H - 8, class: 'vx-ax', 'text-anchor': 'middle' }, b.rot));
     interactivo(g, b.rot, [[b.tipo === 'total' ? kzc(b.ate) : (b.valor > 0 ? '+' : '') + kzc(b.valor), b.tipo === 'total' ? t('total') : t('contributo')]]);
     sv.append(g);
   });
@@ -165,8 +168,8 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim }) {
 }
 
 /** Curva ABC (Pareto): % acumulada do valor face à % de itens, com a referência dos 80%. */
-export function grafAbc(w, { curva, ate80, n, nome }) {
-  const H = 240,
+export function grafAbc(w, { curva, ate80, n, nome, altura }) {
+  const H = Math.max(110, Math.round(altura || 240)),
     T = 12,
     B = 28,
     L = 40,
@@ -193,8 +196,8 @@ export function grafAbc(w, { curva, ate80, n, nome }) {
   g.append(
     svgEl(
       'text',
-      { x: Math.min(sx(x80) + 8, w - R - 150), y: sy(0.8) + 18, class: 'vx-val' },
-      t('{n} {o} ({p}) fazem 80%', { n: n0(ate80), o: nome, p: pct(x80) }),
+      { x: sx(x80) > w / 2 ? sx(x80) - 8 : sx(x80) + 8, y: sy(0.8) + 18, class: 'vx-val', 'text-anchor': sx(x80) > w / 2 ? 'end' : 'start' },
+      w < 380 ? pct(x80) + ' → 80%' : t('{n} {o} ({p}) fazem 80%', { n: n0(ate80), o: nome, p: pct(x80) }),
     ),
   );
   interactivo(g, t('80% do valor'), [
@@ -206,8 +209,8 @@ export function grafAbc(w, { curva, ate80, n, nome }) {
 }
 
 /** Dispersão (bolhas): x e y por linha, área proporcional ao tamanho; linhas da média para os quatro quadrantes. */
-export function grafDispersao(w, { itens, fx, fy, rx, ry }) {
-  const H = 280,
+export function grafDispersao(w, { itens, fx, fy, rx, ry, altura }) {
+  const H = Math.max(120, Math.round(altura || 280)),
     T = 14,
     B = 34,
     R = 16;
@@ -242,7 +245,7 @@ export function grafDispersao(w, { itens, fx, fy, rx, ry }) {
   );
   itens.forEach((p) => {
     const g = svgEl('g');
-    const r = 4 + 14 * Math.sqrt(p.tamanho / maxT);
+    const r = (H < 200 ? 3 : 4) + (H < 200 ? 9 : 14) * Math.sqrt(p.tamanho / maxT);
     g.append(svgEl('circle', { cx: sx(p.x), cy: sy(p.y), r, fill: AZUL, opacity: 0.55, stroke: 'var(--bg)', 'stroke-width': 2, class: 'vx-bar' }));
     g.append(svgEl('text', { x: sx(p.x), y: sy(p.y) + 4, class: 'vx-ax', 'text-anchor': 'middle' }, p.rot));
     interactivo(g, p.titulo, [
@@ -256,10 +259,10 @@ export function grafDispersao(w, { itens, fx, fy, rx, ry }) {
 }
 
 /** Mapa de calor: linhas × colunas, uma só cor (azul) do claro ao escuro; valor no quadrado quando cabe. */
-export function grafCalor(w, { linhas, colunas, fmt }) {
-  const Lr = Math.min(150, Math.max(70, w * 0.22)),
-    T = 22,
-    alt = 26;
+export function grafCalor(w, { linhas, colunas, fmt, altura }) {
+  const Lr = Math.min(150, Math.max(46, w * 0.12)),
+    T = 18,
+    alt = altura ? Math.max(10, Math.min(26, Math.floor((altura - T - 4) / Math.max(1, linhas.length)))) : 26;
   const H = T + linhas.length * alt + 4;
   const cw = (w - Lr - 4) / colunas.length;
   const max = Math.max(...linhas.flatMap((l) => l.valores), 1);
@@ -283,7 +286,7 @@ export function grafCalor(w, { linhas, colunas, fmt }) {
           class: 'vx-bar',
         }),
       );
-      if (cw > 54 && v > 0)
+      if (cw > 54 && alt >= 18 && v > 0)
         g.append(
           svgEl('text', { x: Lr + cw * j + cw / 2, y: y0 + alt / 2 + 4, class: f > 0.55 ? 'vx-val vx-claro' : 'vx-ax', 'text-anchor': 'middle' }, fmt(v)),
         );
@@ -295,8 +298,8 @@ export function grafCalor(w, { linhas, colunas, fmt }) {
 }
 
 /** Colunas agrupadas (poucas séries, mesma unidade), com legenda à parte. */
-export function grafAgrupadas(w, { cats, series, fmt = n0 }) {
-  const H = 230,
+export function grafAgrupadas(w, { cats, series, fmt = n0, altura }) {
+  const H = Math.max(110, Math.round(altura || 230)),
     T = 16,
     B = 26,
     R = 8;

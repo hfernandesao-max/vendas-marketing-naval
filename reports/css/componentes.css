@@ -1962,33 +1962,16 @@ table.ac-mig tr.ac-off td:not(:last-child) {
     margin: 0;
   }
 }
-.gst-painel {
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  margin-bottom: 12px;
+/* Início com os gráficos de gestão: a tendência ocupa dois lugares da grelha; em ecrãs baixos, sem subtítulos */
+.ecra-unico.compacto .viz-h p {
+  display: none;
 }
-.gst-painel > .viz-card:first-child {
-  grid-column: 1 / -1;
+.ecra-unico.compacto .viz-card {
+  padding: 8px 12px 6px;
+  gap: 4px;
 }
-.gst-nota {
-  text-align: justify;
-}
-.vx-marca {
-  color: var(--fg);
-}
-.vx-claro {
-  fill: #fff;
-}
-@media (max-width: 520px) {
-  .gst-painel {
-    grid-template-columns: 1fr;
-  }
-}
-.gst-painel {
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  margin-bottom: 12px;
-}
-.gst-painel > .viz-card:first-child {
-  grid-column: 1 / -1;
+.viz-grid .viz-card.dupla {
+  grid-column: span 2;
 }
 .gst-nota {
   text-align: justify;
@@ -1999,8 +1982,12 @@ table.ac-mig tr.ac-off td:not(:last-child) {
 .vx-claro {
   fill: #fff;
 }
-@media (max-width: 520px) {
-  .gst-painel {
-    grid-template-columns: 1fr;
-  }
+.gst-nota {
+  text-align: justify;
+}
+.vx-marca {
+  color: var(--fg);
+}
+.vx-claro {
+  fill: #fff;
 }

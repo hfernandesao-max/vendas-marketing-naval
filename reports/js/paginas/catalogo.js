@@ -4,7 +4,6 @@ import { t } from '../i18n/i18n.js';
 export const PAGES = [
   { id: 'inicio', grupo: null, icon: 'home', nome: 'Início' },
   // Gestão: análise e inteligência artificial (alertas, previsão, assistente, painel da sala comercial)
-  { id: 'painel-gestao', grupo: 'Gestão', icon: 'chart', nome: 'Painel de gestão' },
   { id: 'alertas', grupo: 'Gestão', icon: 'sino', nome: 'Alertas' },
   { id: 'previsao', grupo: 'Gestão', icon: 'grow', nome: 'Previsão de vendas' },
   { id: 'assistente', grupo: 'Gestão', icon: 'ia', nome: 'Assistente IA' },
@@ -55,6 +54,7 @@ export const NOMES_RECURSO = {
   'geo-distribuidores': 'GEO · gestão de distribuidores',
   'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
+  'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',
   'resumo-diario': 'Resumo diário por correio electrónico (07:00)',
   'app-gestao': 'App de gestão (telemóvel)',
   nif: 'Ver o NIF dos clientes',

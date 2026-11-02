@@ -60,7 +60,6 @@ const SEM_PERIODO = [
   'equipamentos',
   'equipamentos-documentos',
   'actualizacoes',
-  'painel-gestao',
   'alertas',
   'previsao',
   'assistente',
