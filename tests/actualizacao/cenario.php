@@ -68,7 +68,7 @@ $portaGh = $portaWeb + 500;
 $env = $tmp . '/.env';
 file_put_contents($env, implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'EMAIL_MODO=ficheiro',
-    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
+    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
 ]) . "\n");
@@ -282,6 +282,87 @@ caso('reverter: repõe a versão anterior e recusa a revertida', function () use
     [$r, $t] = act('reverter');
     confirma($r === 0 && h('reports/js/util.js') === hash('sha256', $util . "\n// v8\n"), $t);
     confirma((estado()['versao'] ?? '') === 'v8' && (estado()['recusada'] ?? '') === 'v10', 'estado depois de reverter');
+});
+
+/** Publica versões no GitHub simulado: [tag => [conteúdos a mudar]] (da mais antiga para a mais recente). */
+function publicar(array $versoes): void
+{
+    global $gh;
+    $lista = [];
+    foreach ($versoes as $tag => $mudar) {
+        $f = pacote($tag, $mudar);
+        copy($f, $gh . '/' . basename($f));
+        copy($f . '.sha256', $gh . '/' . basename($f) . '.sha256');
+        $lista[] = ['tag' => $tag, 'notas' => "## 03-11-2026\n\n### Novidade $tag\n- **Ponto:** descrição da $tag.\n"];
+    }
+    @unlink($gh . '/versao.txt');
+    file_put_contents($gh . '/versoes.json', json_encode($lista));
+}
+/** Corre código PHP com o núcleo do servidor (o que o portal faz quando o super administrador decide). */
+function svc(string $codigo): array
+{
+    global $srv, $tmp;
+    $o = [];
+    // ficheiro temporário (no Windows, as aspas de um «php -r» não sobrevivem à linha de comandos)
+    $f = $tmp . '/svc-' . mt_rand() . '.php';
+    file_put_contents($f, '<?php require ' . var_export($srv . '/nucleo/arranque.php', true) . '; naval_servico("actualizacao"); try { $r = ' . $codigo . '; echo json_encode(["ok" => true, "r" => $r]); } catch (Throwable $e) { echo json_encode(["ok" => false, "erro" => $e->getMessage()]); }');
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
+    @unlink($f);
+    return json_decode(implode("\n", $o), true) ?: ['ok' => false, 'erro' => implode("\n", $o)];
+}
+
+caso('aprovação: sem aprovação nada é instalado; aviso por correio uma só vez', function () use ($env, $util, $texto) {
+    file_put_contents($env, str_replace('ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_EXIGE_APROVACAO=1', (string) file_get_contents($env)));
+    publicar(['v11' => ['reports/js/util.js' => $util . "\n// v11\n", 'nucleo/texto.php' => $texto], 'v12' => ['reports/js/util.js' => $util . "\n// v12\n", 'nucleo/texto.php' => $texto]]);
+    $antes = count(emails());
+    [$r, $t] = act('automatico');
+    confirma($r === 0 && strpos($t, '2 versão(ões) publicada(s) à espera de aprovação') !== false, $t);
+    confirma(h('reports/js/util.js') === hash('sha256', $util . "\n// v8\n"), 'instalou sem aprovação');
+    confirma(in_array('Portal RTM · versão nova à espera de aprovação', emails(), true) && count(emails()) === $antes + 1, 'sem aviso de versão à espera');
+    act('automatico');
+    confirma(count(emails()) === $antes + 1, 'avisou duas vezes');
+    $v = svc('naval_act_vista_portal()');
+    confirma($v['ok'] && array_column($v['r']['pendentes'], 'versao') === ['v12', 'v11'], 'vista do portal: ' . json_encode($v));
+    confirma($v['r']['pendentes'][0]['seccoes'][0]['titulo'] === 'Novidade v12', 'resumo da versão');
+});
+
+caso('aprovação: instala a aprovada (não a mais recente por aprovar); reprovar exige motivo', function () use ($util) {
+    $d = svc('naval_act_decidir("v11", "aprovar", "henrique")');
+    confirma($d['ok'] && $d['r']['decisao'] === 'aprovada' && strlen($d['r']['sha256']) === 64, json_encode($d));
+    confirma(!svc('naval_act_decidir("v12", "reprovar", "henrique", "mau")')['ok'], 'reprovou sem motivo válido');
+    confirma(svc('naval_act_decidir("v12", "reprovar", "henrique", "Falta validar com a Logística")')['ok'], 'não reprovou');
+    [$r, $t] = act('automatico');
+    confirma($r === 0 && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), $t);
+    [$r, $t] = act('automatico');
+    confirma($r === 0 && strpos($t, 'Sem versões aprovadas por instalar') !== false && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), 'instalou a reprovada: ' . $t);
+    $v = svc('naval_act_vista_portal()')['r'];
+    $h = array_column($v['historico'], null, 'versao');
+    confirma(($h['v11']['resultado']['accao'] ?? '') === 'actualizada' && ($h['v11']['decisao']['por'] ?? '') === 'henrique' && !isset($h['v11']['decisao']['sha256']), 'histórico: ' . json_encode($v['historico']));
+});
+
+caso('aprovação presa ao pacote: se mudar depois de aprovado, não é instalado', function () use ($util, $gh) {
+    publicar(['v11' => ['reports/js/util.js' => $util . "\n// v11\n"], 'v12' => ['reports/js/util.js' => $util . "\n// v12\n"], 'v13' => ['reports/js/util.js' => $util . "\n// v13\n"]]);
+    confirma(svc('naval_act_decidir("v13", "aprovar", "henrique")')['ok'], 'não aprovou');
+    $f = pacote('v13', ['reports/js/util.js' => $util . "\n// v13 trocado\n"]);
+    copy($f, $gh . '/' . basename($f));
+    copy($f . '.sha256', $gh . '/' . basename($f) . '.sha256');
+    [$r, $t] = act('automatico');
+    confirma($r === 1 && strpos($t, 'mudou depois de aprovado') !== false && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), $t);
+});
+
+caso('«instalar já» pela tarefa de 5 em 5 minutos; reposição pedida no portal', function () use ($util) {
+    publicar(['v11' => ['reports/js/util.js' => $util . "\n// v11\n"], 'v12' => ['reports/js/util.js' => $util . "\n// v12\n"], 'v13' => ['reports/js/util.js' => $util . "\n// v13\n"], 'v14' => ['reports/js/util.js' => $util . "\n// v14\n"]]);
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && trim($t) === '', 'sem pedidos devia ficar calada: ' . $t);
+    confirma(svc('naval_act_decidir("v14", "aprovar", "henrique", "", true)')['ok'], 'não aprovou');
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && h('reports/js/util.js') === hash('sha256', $util . "\n// v14\n"), $t);
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && trim($t) === '', 'repetiu a instalação: ' . $t);
+    confirma(svc('naval_act_pedir_reversao("henrique")')['ok'] !== false, 'pedido de reposição');
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && strpos($t, 'reposta a pedido do portal') !== false && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), $t);
+    confirma((estado()['recusada'] ?? '') === 'v14', 'versão reposta devia ficar recusada');
 });
 
 caso('desligado: a tarefa agendada não faz nada', function () use ($env) {

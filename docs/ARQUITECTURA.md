@@ -143,7 +143,7 @@ Regras:
 | `GEOIP_BD` | base de dados de localização de IP (MaxMind DB) | `<DADOS_PRIVADOS>/geoip/cidades.mmdb` |
 
 | `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
-| `ACTUALIZACAO_GITHUB_TOKEN`, `ACTUALIZACAO_AUTOMATICA`, `ACTUALIZACAO_EMAIL`, `ACTUALIZACAO_URL_VERIFICACAO`, `ACTUALIZACAO_APACHE_SERVICO`, `ACTUALIZACAO_REINICIAR_APACHE`, `ATV_DB_MIGRACAO_USER`, `ATV_DB_MIGRACAO_PASS` | actualizações automáticas (ver «Actualizações automáticas») | —, `0`, —, `PORTAL_URL`, —, `0`, `ATV_DB_USER` |
+| `ACTUALIZACAO_GITHUB_TOKEN`, `ACTUALIZACAO_AUTOMATICA`, `ACTUALIZACAO_EXIGE_APROVACAO`, `ACTUALIZACAO_EMAIL`, `ACTUALIZACAO_URL_VERIFICACAO`, `ACTUALIZACAO_APACHE_SERVICO`, `ACTUALIZACAO_REINICIAR_APACHE`, `ATV_DB_MIGRACAO_USER`, `ATV_DB_MIGRACAO_PASS` | actualizações automáticas (ver «Actualizações automáticas») | —, `0`, `1`, —, `PORTAL_URL`, —, `0`, `ATV_DB_USER` |
 
 A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos). Não há valores de ligação
 predefinidos no código: sem as chaves obrigatórias, o serviço responde com os **nomes** das chaves em falta (nunca
@@ -174,7 +174,15 @@ No servidor, a tarefa agendada «Portal RTM - Actualizacao» (todos os dias às 
    versão anterior sozinho e não volta a aplicar essa versão;
 7. regista em `<DADOS_PRIVADOS>/actualizacoes/` e no registo de auditoria e avisa por correio (`ACTUALIZACAO_EMAIL`).
 
-Comandos: `configurar`, `tarefa`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`. Nunca apaga ficheiros do
+**Aprovação (gestão de alterações):** com `ACTUALIZACAO_EXIGE_APROVACAO=1` (omissão) só se instalam as versões
+aprovadas pelo super administrador na página **Administração › Actualizações** do portal (`v1/actualizacoes`): aprovar
+(instala nessa noite), aprovar e instalar já (tarefa «Portal RTM - Actualizacao urgente», de 5 em 5 minutos, comando
+`urgente`), reprovar com motivo, anular uma decisão por instalar e pedir a reposição da versão anterior. Cada decisão
+pede a confirmação da identidade, fica no registo de auditoria e a aprovação fica presa ao SHA-256 do pacote. As notas
+de cada versão são as secções novas do `CHANGELOG.md` (`scripts/notas-versao.php`). Versões novas à espera de decisão
+são avisadas por correio uma vez.
+
+Comandos: `configurar`, `tarefa` (cria as duas tarefas), `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
 servidor (só os que a própria actualização criou, ao repor) e guarda as 5 últimas cópias de segurança.
 
 ## Testes e qualidade

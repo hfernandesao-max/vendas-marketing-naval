@@ -8,7 +8,7 @@ import { postJson } from './servidor.js';
 import { el } from './util.js';
 
 /** Texto do registo de alterações com **negrito** e `código`, montado sem HTML vindo do servidor. */
-function textoFormatado(pai, txt) {
+export function textoFormatado(pai, txt) {
   for (const parte of String(txt).split(/(\*\*[^*]+\*\*|`[^`]+`)/)) {
     if (!parte) continue;
     if (parte.startsWith('**') && parte.endsWith('**')) pai.append(el('strong', null, parte.slice(2, -2)));

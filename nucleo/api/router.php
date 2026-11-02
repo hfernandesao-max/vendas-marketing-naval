@@ -53,6 +53,7 @@ function naval_api_rotas(): array
         'v1/equipamentos/documentos' => [['GET'], 'jwt', 'equipamentos.php', ['documentos' => '1']],
         'v1/equipamentos/pdf' => [['GET'], 'jwt', 'equipamentos.php', ['pdf' => '1']],
         'v1/novidades' => [['GET', 'POST'], 'jwt', 'novidades.php', []],
+        'v1/actualizacoes' => [['GET', 'POST'], 'jwt', 'actualizacoes.php', []],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)
     if (is_file(__DIR__ . '/v1/stock.php')) {
@@ -140,7 +141,8 @@ function naval_api_executar(): void
         // Velocidade: o PHP bloqueia a sessão até ao fim do pedido, e os outros pedidos da mesma pessoa esperavam
         // (ex.: as vendas do mês ainda a ler o SQL Server). A sessão fecha-se já para escrita; continua legível em
         // $_SESSION. Excepção: a gestão de contas, que grava o reforço da autenticação na sessão.
-        if ($rota !== 'v1/gestao') {
+        // a confirmação da identidade (gestão de contas e aprovação das actualizações) grava na sessão
+        if (!in_array($rota, ['v1/gestao', 'v1/actualizacoes'], true)) {
             naval_csrf();   // garante o código CSRF gravado antes de fechar
             session_write_close();
         }

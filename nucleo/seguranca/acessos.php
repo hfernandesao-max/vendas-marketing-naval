@@ -73,6 +73,8 @@ const NAVAL_MATRIZ_TXT = [
     'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -',
     'admin-config'         => '-  -  -  -  -  -  -  -  -  -',
     'registos'             => 'V  -  -  -  -  -  -  -  -  V',
+    // aprovação das versões do portal: só o super administrador (não editável na matriz)
+    'actualizacoes'        => '-  -  -  -  -  -  -  -  -  -',
 ];
 // Quem vê o NIF dos clientes: linha «nif» da matriz (editável no portal)
 // Perfis em que o âmbito é sempre limitado às rotas atribuídas
@@ -131,6 +133,7 @@ function naval_niveis_recurso(string $rec): array
     switch ($rec) {
         case 'admin-utilizadores':
         case 'admin-config':
+        case 'actualizacoes':
             return [];
         case 'acessos':
             return ['', 'V', 'E'];   // exportar contas, perfis, matriz e registos (revisão de acessos / auditoria)

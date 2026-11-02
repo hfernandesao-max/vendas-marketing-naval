@@ -19,6 +19,7 @@ const MODULOS = {
   sap: () => import('./sap.js'),
   agt: () => import('./agt.js'),
   acessos: () => import('./acessos.js'),
+  actualizacoes: () => import('./actualizacoes.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -49,6 +50,7 @@ export const MODULO_DA_PAGINA = {
   'sap-exportar': 'sap',
   agt: 'agt',
   acessos: 'acessos',
+  actualizacoes: 'actualizacoes',
 };
 
 const pedidos = new Map();

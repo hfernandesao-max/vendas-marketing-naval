@@ -3,13 +3,18 @@
  * Actualizações automáticas do portal (na pasta do portal, no servidor):
  *
  *   php ferramentas/actualizar.php configurar        token do GitHub (só leitura) e correio para os avisos; uma vez
- *   php ferramentas/actualizar.php tarefa [HH:MM]    cria a tarefa agendada do Windows (todos os dias, 02:15 por omissão)
+ *   php ferramentas/actualizar.php tarefa [HH:MM]    cria as tarefas agendadas do Windows: a nocturna (02:15 por omissão)
+ *                                                     e a de 5 em 5 minutos («instalar já» e reposições pedidas no portal)
  *   php ferramentas/actualizar.php estado            versão instalada e versão mais recente publicada
  *   php ferramentas/actualizar.php verificar         mostra o que mudaria, sem alterar nada
  *   php ferramentas/actualizar.php aplicar           aplica já a versão mais recente
  *         [--pacote=ficheiro.zip] [--forcar] [--sem-http]
  *   php ferramentas/actualizar.php reverter          repõe a versão anterior (última cópia de segurança)
- *   php ferramentas/actualizar.php automatico        o que a tarefa agendada corre (respeita ACTUALIZACAO_AUTOMATICA)
+ *   php ferramentas/actualizar.php automatico        o que a tarefa nocturna corre (respeita ACTUALIZACAO_AUTOMATICA)
+ *   php ferramentas/actualizar.php urgente           o que a tarefa de 5 em 5 minutos corre (só age com pedidos do portal)
+ *
+ * Com ACTUALIZACAO_EXIGE_APROVACAO=1 (omissão) só se instalam versões aprovadas pelo super administrador na página
+ * «Actualizações» do portal; «aplicar --pacote=» (instalação manual de um pacote) não depende da aprovação.
  *
  * Como funciona e o que nunca toca: nucleo/servicos/actualizacao.php. Os segredos nunca são mostrados no ecrã.
  * Saída: 0 = bem; 1 = falha ou versão revertida; 2 = parado por ficheiros alterados no servidor.
@@ -75,10 +80,13 @@ try {
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $falha('Hora inválida (HH:MM).');
             if (DIRECTORY_SEPARATOR !== '\\') $falha('A tarefa agendada é do Windows; noutro sistema use o cron com «php ' . __FILE__ . ' automatico».');
             // aspas interiores do /TR com \" (o escapeshellarg do Windows troca as aspas por espaços)
-            $cmd = 'schtasks /Create /F /TN "Portal RTM - Actualizacao" /SC DAILY /ST ' . $hora . ' /RU SYSTEM /RL HIGHEST /TR "\\"' . PHP_BINARY . '\\" \\"' . __FILE__ . '\\" automatico"';
-            passthru($cmd, $r);
-            if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
-            echo "  ok     tarefa «Portal RTM - Actualizacao» todos os dias às $hora (conta SYSTEM)\n";
+            $tr = '/TR "\\"' . PHP_BINARY . '\\" \\"' . __FILE__ . '\\" ';
+            foreach ([['Portal RTM - Actualizacao', '/SC DAILY /ST ' . $hora, 'automatico', 'todos os dias às ' . $hora],
+                      ['Portal RTM - Actualizacao urgente', '/SC MINUTE /MO 5', 'urgente', 'de 5 em 5 minutos (pedidos do portal)']] as [$nome, $quando, $cmdAct, $texto]) {
+                passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $tr . $cmdAct . '"', $r);
+                if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
+                echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
+            }
             exit(0);
 
         case 'estado':
@@ -95,18 +103,34 @@ try {
         case 'verificar':
         case 'aplicar':
         case 'automatico':
-            $auto = $comando === 'automatico';
+        case 'urgente':
+            $auto = in_array($comando, ['automatico', 'urgente'], true);
             if ($auto && naval_config('ACTUALIZACAO_AUTOMATICA') !== '1') {
                 echo "Actualizações automáticas desligadas (ACTUALIZACAO_AUTOMATICA).\n";
                 exit(0);
             }
+            if ($comando === 'urgente') {
+                $r = naval_act_urgente();
+                if ($r === null) exit(0);   // sem pedidos do portal
+                if ($r['resultado'] === 'revertida_pedido') {
+                    echo '  ok     versão anterior reposta a pedido do portal' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . "\n";
+                    naval_act_avisar('versão anterior reposta', ['A pedido feito no portal, foi reposta a versão anterior' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . '.']);
+                    exit(0);
+                }
+                if ($r['resultado'] === 'erro') {
+                    naval_act_avisar('reposição com erros', ['A reposição pedida no portal teve erros: ' . implode('; ', $r['erros'])]);
+                    $falha('reposição com erros: ' . implode('; ', $r['erros']));
+                }
+            } else {
             $r = naval_act_aplicar([
                 'pacote' => is_string($opcao('pacote')) ? $opcao('pacote') : null,
                 'ensaio' => $comando === 'verificar',
                 'forcar' => $opcao('forcar') === true,
                 'sem_http' => $opcao('sem-http') === true,
                 'sem_ziparchive' => $opcao('sem-ziparchive') === true,
+                'avisar_pendentes' => $comando === 'automatico',
             ]);
+            }
             foreach ($r['avisos'] ?? [] as $a) echo '  aviso  ' . $a . "\n";
             switch ($r['resultado']) {
                 case 'actualizada':

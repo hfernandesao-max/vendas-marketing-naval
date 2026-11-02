@@ -30,6 +30,7 @@ export const PAGES = [
   { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
   { id: 'agt', grupo: 'Integrações', icon: 'shield', nome: 'Comunicação AGT' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
+  { id: 'actualizacoes', grupo: 'Administração', icon: 'upload', nome: 'Actualizações' },
 ];
 
 // Nomes das funções da matriz de acessos que não são páginas
@@ -48,6 +49,7 @@ export const NOMES_RECURSO = {
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   nif: 'Ver o NIF dos clientes',
   acessos: 'Página Acessos',
+  actualizacoes: 'Actualizações do portal (aprovação; só o super administrador)',
   'admin-utilizadores': 'Utilizadores e perfis',
   'admin-config': 'Configuração e ligações',
   registos: 'Registos de acesso e exportações',
