@@ -7,7 +7,7 @@
  * Onde se procura, por esta ordem:
  *   1. RTM_CLIENTES_JSON no .env (caminho completo);
  *   2. reports/data/cadastros.json (cópia manual);
- *   3. ../rtm-clientes/saida/portal_rtm.json ao lado da pasta do site (clone do repositório rtm-clientes).
+ *   3. ../rtm-clientes/saida/portal_rtm.json ao lado da pasta do portal (clone do repositório rtm-clientes).
  */
 defined('NAVAL_NUCLEO') || exit;
 
