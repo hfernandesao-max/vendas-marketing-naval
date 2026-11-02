@@ -118,3 +118,37 @@ test('outros perfis: a página não aparece no menu', async ({ page }) => {
   await abrir(page);
   await expect(page.locator('a[href="#actualizacoes"]')).toHaveCount(0);
 });
+
+test('ficheiros alterados à mão: lista e «Aplicar mesmo assim»; certificados HTTPS com aviso', async ({ page }) => {
+  const vista = structuredClone(VISTA);
+  vista.pendentes[0].decisao = { decisao: 'aprovada', por: 'henrique', em: '2026-11-04 11:00:00', urgente: false };
+  vista.pendentes[0].resultado = { accao: 'conflito', data: '2026-11-05 02:15:04', ficheiros: ['nucleo/texto.php', 'geo/login.php'] };
+  vista.certificados = {
+    verificado_em: '2026-11-05 02:15:00',
+    lista: [
+      { endereco: 'geo.naval.co.ao:2051', dias: 21, expira: '2026-11-26 10:00', emitente: "Let's Encrypt", erro: '' },
+      { endereco: 'id.naval.co.ao:443', dias: 80, expira: '2027-01-24 10:00', emitente: "Let's Encrypt", erro: '' },
+    ],
+  };
+  const pedidos = await preparar(page);
+  await page.route('**/v1/actualizacoes*', (r) => {
+    if (r.request().method() !== 'POST') return r.fulfill({ json: vista });
+    const corpo = r.request().postDataJSON();
+    pedidos.push(corpo);
+    return r.fulfill({ json: corpo.confirmacao ? { ok: true, decisao: {} } : { ok: false, confirmar: 'senha' } });
+  });
+  await abrir(page, '#actualizacoes');
+  const c = page.locator('.act-cartao').first();
+  await expect(c.locator('.act-conflito li')).toHaveText(['nucleo/texto.php', 'geo/login.php']);
+  await c.getByRole('button', { name: 'Aplicar mesmo assim' }).click();
+  await expect(page.locator('dialog[open] .dlg-h p')).toContainText('ficam guardados na cópia de segurança');
+  await page.locator('dialog[open]').getByRole('button', { name: 'Aplicar mesmo assim' }).click();
+  await page.locator('dialog input[type=password]').fill('segredo');
+  await page.locator('dialog[open]').last().getByRole('button', { name: 'Confirmar' }).click();
+  await expect.poll(() => pedidos.length).toBe(2);
+  expect(pedidos[1]).toMatchObject({ accao: 'forcar', versao: 'v2026.11.04.7', urgente: true });
+  // quadro: o primeiro a expirar, com aviso abaixo de 30 dias
+  const tile = page.locator('.tile', { hasText: 'Certificados HTTPS' });
+  await expect(tile).toContainText('21 dias');
+  await expect(tile).toContainText('geo.naval.co.ao:2051');
+});

@@ -119,7 +119,7 @@ jobs:
           $segredo = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
           @("DADOS_PRIVADOS=$t\privado", "JWT_SEGREDO=$segredo", "ACTUALIZACAO_GITHUB_TOKEN=$env:TOKEN",
             "ACTUALIZACAO_REPOSITORIO=$env:GITHUB_REPOSITORY", "ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:8099", "ACTUALIZACAO_AUTOMATICA=1",
-            "ACTUALIZACAO_EXIGE_APROVACAO=0") |
+            "ACTUALIZACAO_EXIGE_APROVACAO=0", "ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd") |
             Out-File (Join-Path $t '.env') -Encoding ascii
           $env:NAVAL_ENV = Join-Path $t '.env'
           $web = Start-Process php -ArgumentList '-d', 'display_errors=0', '-S', '127.0.0.1:8099', '-t', $srv -PassThru -WindowStyle Hidden

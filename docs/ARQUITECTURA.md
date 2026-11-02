@@ -182,7 +182,14 @@ pede a confirmação da identidade, fica no registo de auditoria e a aprovação
 de cada versão são as secções novas do `CHANGELOG.md` (`scripts/notas-versao.php`). Versões novas à espera de decisão
 são avisadas por correio uma vez.
 
-Comandos: `configurar`, `tarefa` (cria as duas tarefas), `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
+**Credencial:** GitHub App (recomendada; credencial de instalação de 1 hora gerada em cada execução a partir da chave
+da App, que não expira) ou código de acesso pessoal. **Servidor como código:** `ferramentas/apache/portal-rtm.conf`
+(incluído uma vez no `httpd.conf`; validado com `httpd -t` e Apache reiniciado quando muda) e `ferramentas/requisitos.json`
+(versão mínima do PHP; extensões activadas no `php.ini` com cópia). **Certificados:** vigiados todas as noites, avisos a
+30, 14, 7, 3 e 1 dias; a renovação é automática no servidor (ACME). Conflitos com ficheiros alterados à mão resolvem-se
+no portal («Aplicar mesmo assim»).
+
+Comandos: `configurar`, `tarefa` (cria as duas tarefas), `apache`, `certificados`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
 servidor (só os que a própria actualização criou, ao repor) e guarda as 5 últimas cópias de segurança.
 
 ## Testes e qualidade

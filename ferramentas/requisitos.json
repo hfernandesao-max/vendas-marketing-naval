@@ -1,0 +1,5 @@
+{
+  "_nota": "Requisitos do servidor desta versão do portal. O actualizador confere-os antes de instalar: activa no php.ini as extensões em falta (com cópia) e pára se a versão do PHP for inferior. «a|b» = uma das duas.",
+  "php_minimo": "7.1.0",
+  "extensoes": ["curl", "mbstring", "openssl", "gd", "pdo_odbc|pdo_sqlsrv"]
+}

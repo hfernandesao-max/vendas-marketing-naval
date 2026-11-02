@@ -52,6 +52,8 @@ SetEnv NAVAL_ENV "$RAIZ/tests/servidor/ambiente/.env"
     Require all granted
 </Directory>
 CONF
+# configuração do Apache gerida pelo portal (ferramentas/apache/portal-rtm.conf), incluída como no servidor
+echo "Include \"$RAIZ/ferramentas/apache/portal-rtm.conf\"" >> "$TMP/httpd.conf"
 # endereço curto dos códigos QR (ferramentas/apache/id-naval-regras.conf), numa segunda porta
 PORTA_ID=$((PORTA + 1))
 mkdir -p "$TMP/id-vazio"
@@ -151,6 +153,7 @@ for c in "/" "/a/" "/a/NAV-SMT-1" "/a/NAV-SMT-0001/x" "/a/..%2Fetc" "/equipament
   if [ "$e" = 404 ]; then echo "  ok    404 $c"; else echo "  FALHA $c → $e (esperado 404)"; FALHAS=$((FALHAS+1)); fi
 done
 verifica "endereço curto sem cache e fora dos motores de busca" "$(curl -s -D - -o /dev/null "$ID/a/NAV-SMT-0001" | tr -d '\r')" "^X-Robots-Tag: noindex"
+verifica "Apache sem versão no cabeçalho Server (ServerTokens Prod)" "$(curl -s -D - -o /dev/null "$URL/geo/style.css" | tr -d '\r')" "^Server: Apache$"
 echo "Cabeçalhos:"
 H="$(curl -s -D - -o /dev/null "$URL/reports/js/app.js")"
 for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referrer-Policy: strict-origin-when-cross-origin" "Permissions-Policy:"; do

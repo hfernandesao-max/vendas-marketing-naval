@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Automatização completa do servidor
+- **GitHub App** em vez do código de acesso pessoal: o servidor assina um pedido (JWT RS256) com a chave da App e recebe
+  uma credencial de instalação que dura 1 hora; a chave não expira (sem renovação anual); só leitura e só no
+  repositório do portal.
+- **Certificados HTTPS:** renovação automática no servidor (ACME, win-acme); o portal confere todas as noites a
+  validade de cada endereço, mostra-a na página «Actualizações» e avisa por correio electrónico a 30, 14, 7, 3 e 1 dias.
+- **Apache como código:** configuração do portal em `ferramentas/apache/portal-rtm.conf`, incluída uma vez no
+  `httpd.conf` (`php ferramentas/actualizar.php apache`); quando muda, o actualizador valida (`httpd -t`), reinicia o
+  Apache e repõe a anterior se falhar. Apache sem versão no cabeçalho `Server`.
+- **Requisitos do PHP:** cada versão declara a versão mínima e as extensões (`ferramentas/requisitos.json`); as
+  extensões em falta são activadas no `php.ini` (com cópia e verificação) antes da instalação.
+- **Ficheiros alterados à mão:** a página «Actualizações» mostra-os e permite «Aplicar mesmo assim» (ficam na cópia
+  de segurança), sem ir ao servidor.
+- **Migrações:** conta própria só para alterar a estrutura da base de dados do módulo Equipamentos.
+
 ### Aprovação das actualizações
 - **Página «Actualizações»** (Administração, só o super administrador): versões publicadas e testadas à espera de
   decisão, com o resumo do que muda; **Aprovar** (instala nessa noite às 02:15), **Aprovar e instalar já** (em

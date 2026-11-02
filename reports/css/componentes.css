@@ -1703,3 +1703,20 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   border: 1px solid var(--bad);
   background: transparent;
 }
+
+.act-conflito {
+  border: 1px solid var(--warn);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.act-conflito p {
+  margin: 0 0 6px;
+  text-align: justify;
+}
+.act-conflito ul {
+  margin: 0;
+  padding-left: 18px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
