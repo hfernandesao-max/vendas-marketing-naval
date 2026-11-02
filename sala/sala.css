@@ -122,7 +122,7 @@ h1 {
 }
 .s-rank {
   display: grid;
-  gap: 1.1vh;
+  gap: 0.8vh;
 }
 .s-linha {
   display: grid;

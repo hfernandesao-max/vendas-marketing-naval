@@ -6,6 +6,7 @@ import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { cartaoGrafico, grafBarras, grafColunas, kzc } from '../componentes/graficos.js';
 import { comLegenda, grafAbc, grafAgrupadas, grafBalas, grafCalor, grafCascata, grafDispersao, grafTendencia } from '../componentes/graficos-gestao.js';
+import { arrastavel } from '../componentes/arrastar.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0, n1 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
@@ -410,6 +411,7 @@ R['painel-sala'] = (pg) => {
           : t('criada em {d} · último acesso: {u}', { d: dl(l.criado), u: l.ultimo_acesso ? dl(l.ultimo_acesso) + ' ' + l.ultimo_acesso.slice(11, 16) : '—' }),
       ),
     );
+    if (!l.revogado) linha.append(botao(t('Ecrãs'), 'sec', () => configurarEcras(l)));
     if (!l.revogado)
       linha.append(
         botao(t('Revogar'), 'sec', () =>
@@ -425,6 +427,57 @@ R['painel-sala'] = (pg) => {
   c.append(lista, botao(t('Criar ligação para um ecrã'), null, criarLigacao));
   pg.append(secBox(t('Painel da sala comercial'), t('Ecrã de TV com as vendas do dia, actualizado a cada 2 minutos.'), c));
 };
+const ECRAS_SALA = [
+  ['hoje', 'Vendas de hoje'],
+  ['rank-hoje', 'Classificação de hoje'],
+  ['rank-mes', 'Classificação do mês'],
+  ['destaques', 'Destaques'],
+];
+/** Ecrãs do painel da TV: escolher e arrastar para mudar a ordem; tempo de cada ecrã. Grava na ligação (servidor). */
+function configurarEcras(l) {
+  janela(t('Ecrãs do painel'), t('Escolha os ecrãs e arraste-os para mudar a ordem.'), (b, ft, fechar) => {
+    const cfg = l.config || { ecras: ECRAS_SALA.map((e) => e[0]), segundos: 20 };
+    const ul = el('ul', 'sala-ecras');
+    const ordem = [...cfg.ecras, ...ECRAS_SALA.map((e) => e[0]).filter((k) => !cfg.ecras.includes(k))];
+    ordem.forEach((k) => {
+      const li = el('li');
+      li.dataset.grafico = k;
+      const cb = entrada('checkbox');
+      cb.checked = cfg.ecras.includes(k);
+      const lb = el('label');
+      lb.append(cb, document.createTextNode(' ' + t((ECRAS_SALA.find((e) => e[0] === k) || [k, k])[1])));
+      li.append(el('span', 'sala-pega', '⋮⋮'), lb);
+      ul.append(li);
+    });
+    arrastavel(ul, () => {});
+    const seg = el('select');
+    [10, 20, 30, 60].forEach((s) => {
+      const o = el('option', null, String(s));
+      o.value = s;
+      if (s === cfg.segundos) o.selected = true;
+      seg.append(o);
+    });
+    const erro = msgErro();
+    b.append(ul, campo(t('Segundos por ecrã'), seg), erro);
+    ft.append(
+      botao(t('Cancelar'), 'sec', fechar),
+      botao(t('Guardar'), null, () => {
+        const ecras = [...ul.children].filter((li) => li.querySelector('input').checked).map((li) => li.dataset.grafico);
+        postJson('sala/ligacoes', { accao: 'configurar', id: l.id, ecras, segundos: +seg.value }).then((r) => {
+          if (!r.ok) {
+            erro.hidden = false;
+            erro.textContent = t(r.erro || 'Não foi possível gravar.');
+            return;
+          }
+          DADOS.sala = { ok: true, ligacoes: r.ligacoes };
+          fechar();
+          toast(t('Ecrãs guardados: o ecrã muda na próxima actualização (até 2 minutos).'), 6000);
+          draw();
+        });
+      }),
+    );
+  });
+}
 function criarLigacao() {
   janela(t('Criar ligação para um ecrã'), t('Indique onde fica o ecrã.'), (b, ft, fechar) => {
     const nome = entrada('text', '', { maxLength: 60, placeholder: t('Sala comercial · Viana') });

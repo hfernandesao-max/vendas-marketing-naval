@@ -19,11 +19,13 @@ import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
-import { atual, podeVer } from '../perfil.js';
+import { SESSAO, atual, podeVer } from '../perfil.js';
+import { arrastavel, ordenar } from '../componentes/arrastar.js';
+import { postJson } from '../servidor.js';
 import { draw } from '../app.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { addD, hoje, inR, st } from '../periodo.js';
-import { DB, el, group, sum } from '../util.js';
+import { DB, el, group, sum, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
 
 // Gráficos de gestão (v1/painel, perfis com «painel-gestao» na matriz): lidos e desenhados a pedido; enquanto não chegam,
@@ -41,13 +43,105 @@ function lerGestao() {
     })
     .catch(() => (GESTAO.estado = 'falhou'));
 }
-// Grelha de 4 × 3 do painel principal: os gráficos de gestão substituem os que mostram a mesma informação com menos
-// detalhe (vendas por dia → tendência com previsão; por promotor → mês por rota com comparação; melhores clientes → curva
-// ABC; artigos mais vendidos → distribuição numérica; novos clientes → carteira); os de recebimentos mantêm-se.
+// Painel principal por perfil (prática internacional: cada função vê primeiro os indicadores que gere). Grelha de 4 × 3
+// (12 lugares; a tendência ocupa 2). Os gráficos de gestão substituem os que mostram a mesma informação com menos detalhe
+// (vendas por dia → tendência com previsão; por promotor → mês por rota com comparação; melhores clientes → curva ABC;
+// artigos mais vendidos → distribuição numérica; novos clientes → carteira); os de recebimentos mantêm-se. Cada pessoa pode
+// arrastar os quadros e guardar a sua vista.
+const PAINEL_PERFIL = {
+  // Direcção, administração da plataforma e auditoria: visão global
+  DIR: ['tendencia', 'balas', 'ponte', 'cobrado', 'divida', 'abcClientes', 'distribuicao', 'dispersao', 'calor', 'carteira', 'caixas'],
+  // Direcção comercial: crescimento, cobertura e rendimento das visitas
+  COM: ['tendencia', 'balas', 'ponte', 'distribuicao', 'dispersao', 'calor', 'abcClientes', 'carteira', 'artigos', 'cobrado', 'novos'],
+  // Supervisor: as suas rotas, execução no terreno e cobrança
+  SUP: ['tendencia', 'balas', 'dispersao', 'distribuicao', 'calor', 'clientes', 'carteira', 'cobrado', 'divida', 'novos', 'artigos'],
+  // Financeiro: recebimentos e dívida primeiro, depois as vendas que os originam
+  FIN: ['cobrado', 'divida', 'tendencia', 'balas', 'ponte', 'promotor', 'carteira', 'abcClientes', 'dia', 'clientes', 'dispersao'],
+};
+PAINEL_PERFIL.TI = PAINEL_PERFIL.DIR;
+PAINEL_PERFIL.AUD = PAINEL_PERFIL.DIR;
+PAINEL_PERFIL.SADM = PAINEL_PERFIL.DIR;
 function grelhaGestao(O) {
   const G = GESTAO.mod.cartoesGestao(GESTAO.d);
-  const lista = [G.tendencia, G.balas, G.ponte, O.cobrado, O.divida, G.abcClientes, G.distribuicao, G.dispersao, G.calor, G.carteira, O.caixas || G.abcArtigos];
-  return lista.filter(Boolean);
+  const perfil = (SESSAO && SESSAO.perfil) || 'DIR';
+  const chaves = PAINEL_PERFIL[perfil] || PAINEL_PERFIL.DIR;
+  const usados = new Set();
+  const lista = chaves.map((k) => G[k] || O[k]).filter((c) => c && !usados.has(c) && usados.add(c));
+  // lugares por preencher (gráfico sem dados ou sem acesso): completa com os restantes disponíveis
+  const lugares = () => lista.reduce((n, c) => n + (c.classList.contains('dupla') ? 2 : 1), 0);
+  for (const c of [...Object.values(G), ...Object.values(O)])
+    if (lugares() < 12 && !usados.has(c) && !c.classList.contains('dupla')) (lista.push(c), usados.add(c));
+  return lista;
+}
+
+// Vista do painel (ordem dos quadros arrastados): guardada no servidor por pessoa (v1/vistas) ou, sem guardar, só nesta
+// sessão (no navegador, presa ao momento da entrada: depois de sair e voltar a entrar, repõe-se a ordem guardada ou a de origem).
+const VISTA = { estado: null, guardada: null, temp: null };
+const chaveTemp = () => 'vm-vista-inicio|' + ((SESSAO && SESSAO.entrada) || 0);
+function guardarTemp(ordem) {
+  try {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith('vm-vista-inicio|'))
+      .forEach((k) => sessionStorage.removeItem(k));
+    if (ordem) sessionStorage.setItem(chaveTemp(), JSON.stringify(ordem));
+  } catch (e) {}
+}
+function lerVista() {
+  if (VISTA.estado) return;
+  VISTA.estado = 'a ler';
+  try {
+    const x = JSON.parse(sessionStorage.getItem(chaveTemp()) || 'null');
+    if (Array.isArray(x)) VISTA.temp = x;
+  } catch (e) {}
+  apiJson('vistas').then((d) => {
+    VISTA.estado = 'pronto';
+    VISTA.guardada = (d && d.vistas && d.vistas.inicio) || null;
+    if (VISTA.guardada && !VISTA.temp && atual === 'inicio') draw();
+  });
+}
+function gravarVista(ordem) {
+  return postJson('vistas', { pagina: 'inicio', ordem }).then((r) => {
+    if (!r.ok) return toast(t(r.erro || 'Não foi possível guardar a vista.'), 6000);
+    VISTA.guardada = ordem;
+    VISTA.temp = null;
+    guardarTemp(null);
+    toast(ordem ? t('Vista guardada: fica assim sempre que entrar.') : t('Reposta a vista de origem.'));
+    draw();
+  });
+}
+/** Barra discreta (canto inferior direito, sem ocupar a grelha): vista alterada nesta sessão ou personalizada. */
+function barraVista(pg) {
+  const velha = document.getElementById('barra-vista');
+  if (velha) velha.remove();
+  if (!VISTA.temp && !VISTA.guardada) return;
+  const b = el('div', 'barra-vista glass');
+  b.id = 'barra-vista';
+  const botao = (txt, fn, cls) => {
+    const x = el('button', 'btn' + (cls ? ' ' + cls : ''), txt);
+    x.type = 'button';
+    x.addEventListener('click', fn);
+    return x;
+  };
+  if (VISTA.temp) {
+    b.append(
+      el('span', null, t('Vista alterada (só até sair)')),
+      botao(t('Guardar vista'), () => gravarVista(VISTA.temp)),
+      botao(
+        t('Desfazer'),
+        () => {
+          VISTA.temp = null;
+          guardarTemp(null);
+          draw();
+        },
+        'sec',
+      ),
+    );
+  } else
+    b.append(
+      el('span', null, t('Vista personalizada')),
+      botao(t('Repor origem'), () => gravarVista(null), 'sec'),
+    );
+  pg.append(b);
 }
 
 function painelInicio(pg) {
@@ -56,7 +150,7 @@ function painelInicio(pg) {
     liq = sum(V, recebidoDe),
     cards = [],
     O = {};
-  const nomear = (k, c) => ((O[k] = c), c);
+  const nomear = (k, c) => ((O[k] = c), (c.dataset.grafico = k), c);
   const pode = (id) => podeVer(id);
   const nomeCli = (x) => (isCF(x.nif) ? t('Consumidor final') : x.cliente);
   // 1. Vendas por dia
@@ -349,9 +443,16 @@ function painelInicio(pg) {
     return;
   }
   const grelha = el('div', 'viz-grid');
-  grelha.append(...(GESTAO.estado === 'pronto' ? grelhaGestao(O) : cards));
+  lerVista();
+  grelha.append(...ordenar(GESTAO.estado === 'pronto' ? grelhaGestao(O) : cards, VISTA.temp || VISTA.guardada));
   pg.append(grelha);
   ecraUnico(pg, grelha);
+  arrastavel(grelha, (ordem) => {
+    VISTA.temp = ordem;
+    guardarTemp(ordem);
+    barraVista(pg);
+  });
+  barraVista(pg);
 }
 
 // Painel num só ecrã (boas práticas de dashboards: visão geral sem deslocação, «regra dos 5 segundos»):

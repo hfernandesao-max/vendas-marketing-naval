@@ -1991,3 +1991,58 @@ table.ac-mig tr.ac-off td:not(:last-child) {
 .vx-claro {
   fill: #fff;
 }
+/* Arrastar e largar os quadros do painel: título como pega, marca do lugar de destino e barra da vista */
+.viz-h.pega {
+  cursor: grab;
+}
+.viz-card.a-arrastar {
+  opacity: 0.45;
+}
+.viz-card.alvo-antes {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+.viz-card.alvo-depois {
+  box-shadow: inset -4px 0 0 var(--accent);
+}
+.barra-vista {
+  position: fixed;
+  right: 18px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px 8px 14px;
+  font-size: 13px;
+  border-radius: 14px;
+}
+@media print {
+  .barra-vista {
+    display: none;
+  }
+}
+.sala-ecras {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 6px;
+}
+.sala-ecras li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+}
+.sala-ecras li.alvo-antes {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+.sala-ecras li.alvo-depois {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.sala-pega {
+  color: var(--muted);
+  cursor: grab;
+}

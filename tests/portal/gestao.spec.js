@@ -175,3 +175,32 @@ for (const [w, h] of [
     expect(erros).toEqual([]);
   });
 }
+
+test('painel principal: arrastar um quadro muda a ordem só nesta sessão; «Guardar vista» grava; «Desfazer» repõe', async ({ page }) => {
+  const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  let gravado = null;
+  await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
+  await page.route('**/v1/vistas', (r) => {
+    if (r.request().method() === 'POST') {
+      gravado = JSON.parse(r.request().postData());
+      return r.fulfill({ json: { ok: true, vistas: { inicio: gravado.ordem } } });
+    }
+    return r.fulfill({ json: { ok: true, vistas: {} } });
+  });
+  const erros = await abrir(page, '#inicio');
+  const titulos = () => page.locator('.viz-grid .viz-card h3').allTextContents();
+  await expect(page.locator('.viz-grid .viz-card')).toHaveCount(11);
+  const antes = await titulos();
+  const cobrado = page.locator('.viz-card', { hasText: 'Como foi cobrado' }).locator('.viz-h');
+  await cobrado.focus();
+  await page.keyboard.press('Alt+ArrowLeft');
+  const depois = await titulos();
+  expect(depois).not.toEqual(antes);
+  expect(depois.indexOf('Como foi cobrado')).toBe(antes.indexOf('Como foi cobrado') - 1);
+  await expect(page.locator('#barra-vista')).toContainText('só até sair');
+  await page.getByRole('button', { name: 'Guardar vista' }).click();
+  await expect.poll(() => gravado && gravado.pagina).toBe('inicio');
+  expect(gravado.ordem.indexOf('cobrado')).toBe(antes.indexOf('Como foi cobrado') - 1);
+  expect(erros).toEqual([]);
+});
