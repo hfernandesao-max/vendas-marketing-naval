@@ -3,6 +3,12 @@ import { t } from '../i18n/i18n.js';
 
 export const PAGES = [
   { id: 'inicio', grupo: null, icon: 'home', nome: 'Início' },
+  // Gestão: análise e inteligência artificial (alertas, previsão, assistente, painel da sala comercial)
+  { id: 'painel-gestao', grupo: 'Gestão', icon: 'chart', nome: 'Painel de gestão' },
+  { id: 'alertas', grupo: 'Gestão', icon: 'sino', nome: 'Alertas' },
+  { id: 'previsao', grupo: 'Gestão', icon: 'grow', nome: 'Previsão de vendas' },
+  { id: 'assistente', grupo: 'Gestão', icon: 'ia', nome: 'Assistente IA' },
+  { id: 'painel-sala', grupo: 'Gestão', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'vendas-promotor', grupo: 'Vendas', icon: 'chart', nome: 'Vendas por promotor' },
   { id: 'vendas-dia', grupo: 'Vendas', icon: 'route', nome: 'Vendas por dia' },
   { id: 'vendas-cliente', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por cliente' },
@@ -16,6 +22,8 @@ export const PAGES = [
   { id: 'cadastros', grupo: 'Clientes', icon: 'users', nome: 'Cadastros · visão geral' },
   { id: 'cadastros-analise', grupo: 'Clientes', icon: 'grow', nome: 'Análise de cadastros' },
   { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'file', nome: 'Clientes registados' },
+  { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'clip', nome: 'Pedidos dos clientes' },
+  { id: 'clientes-qr', grupo: 'Clientes', icon: 'tag', nome: 'Cartazes QR dos clientes' },
   { id: 'plano-visitas', grupo: 'Terreno', icon: 'scale', nome: 'Plano de visitas' },
   { id: 'auditoria', grupo: 'Terreno', icon: 'shield', nome: 'Histórico de auditoria' },
   { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos telemóveis' },
@@ -47,6 +55,8 @@ export const NOMES_RECURSO = {
   'geo-distribuidores': 'GEO · gestão de distribuidores',
   'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
+  'resumo-diario': 'Resumo diário por correio electrónico (07:00)',
+  'app-gestao': 'App de gestão (telemóvel)',
   nif: 'Ver o NIF dos clientes',
   acessos: 'Página Acessos',
   actualizacoes: 'Actualizações do portal (aprovação; só o super administrador)',

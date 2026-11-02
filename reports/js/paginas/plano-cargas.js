@@ -93,6 +93,7 @@ function preencherRota(r, d, marcarSai = false) {
   });
   if (marcarSai) r.sai = true;
   r._pre = s.origem;
+  r._prev = s.previsao || null;
   return true;
 }
 const estadoPlano = () => {
@@ -723,7 +724,21 @@ function actualizarPlanoUI() {
       a = v.avisos.filter((x) => x.rota === rota).map((x) => x.msg);
     const pre =
       r._pre && d.gere && !(p && p.publicado)
-        ? [el('span', 'pc-info', t('pré-preenchido com o registo de {d} · confirme', { d: dl(r._pre).slice(0, 5) }))]
+        ? [
+            el('span', 'pc-info', t('pré-preenchido com o registo de {d} · confirme', { d: dl(r._pre).slice(0, 5) })),
+            ...(r._prev
+              ? [
+                  el(
+                    'span',
+                    'pc-info pc-prev',
+                    t('quantidades sugeridas pela previsão: média das últimas {n} cargas × tendência das vendas da rota ({p})', {
+                      n: r._prev.cargas,
+                      p: (r._prev.tendencia >= 1 ? '+' : '−') + Math.abs(Math.round((r._prev.tendencia - 1) * 100)) + '%',
+                    }),
+                  ),
+                ]
+              : []),
+          ]
         : [];
     c.av.replaceChildren(...pre, ...e.map((m) => el('span', 'pc-err', m)), ...a.map((m) => el('span', 'pc-av', m)));
     c.av.hidden = !r.sai || !(pre.length + e.length + a.length);

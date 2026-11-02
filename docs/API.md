@@ -49,7 +49,17 @@ Gerar a chave (uma vez, no servidor): `php -r "echo bin2hex(random_bytes(32)), P
 | GET      | `stock?data&armazem`                                                                                   | `stock.php`                | stock por carrinha / armazém, Início                                               |
 | GET      | `agt?start_date&end_date`                                                                              | `agt.php`                  | `agt` (Comunicação AGT)                                                            |
 | GET/POST | `equipamentos`, `equipamentos/ficha?id`, `equipamentos/documentos[?numero]`, `equipamentos/pdf?numero` | `equipamentos.php`         | `equipamentos` (alterações: `equipamentos-movimentar`, `equipamentos-administrar`) |
+| GET      | `alertas[?dia]`, `previsao`, `indicadores`                                                           | `analise.php`              | `alertas`, `previsao`, `app-gestao` (âmbito por rota)                              |
+| GET/POST | `assistente`, `resumo`                                                                                 | `assistente.php`           | `assistente`, `resumo-diario` (com CSRF)                                           |
+| GET/POST | `sala/ligacoes`                                                                                        | `sala.php`                 | `painel-sala` (G)                                                                  |
+| GET      | `sala` (cabeçalho `X-Painel-Codigo`)                                                                   | `sala.php`                 | público, com a ligação do ecrã (só totais por rota)                                |
+| GET/POST | `pedidos-clientes`, `clientes-qr?rota`                                                                 | `pedidos-clientes.php`     | `pedidos-clientes` (validar: G), `clientes-qr` (G)                                 |
+| GET/POST | `cliente?k=<código>`                                                                                   | `cliente.php`              | público, com o código do cartaz (pedidos ficam pendentes; limites por cliente e IP) |
 | POST     | `csp-relatorio`                                                                                        | `csp.php`                  | público (relatórios da CSP, limitados)                                             |
+
+As rotas públicas são só três, numa lista fechada verificada pelos testes: `csp-relatorio`, `sala` (ligação de 256 bits
+criada e revogada no portal, guardada só como SHA-256) e `cliente` (código de 128 bits do cartaz). O assistente nunca
+acede à base de dados: chama ferramentas só de leitura que aplicam a matriz de acessos e o âmbito de quem pergunta.
 
 O stock (`GET stock`) e a Comunicação AGT (`GET agt`) lêem o SQL Server do Pinguim BO, só com SELECT.
 

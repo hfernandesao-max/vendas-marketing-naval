@@ -1,0 +1,207 @@
+/* Painel da sala comercial (ecrã de TV, 16:9): letra grande, azuis Naval, legível a 5 metros. */
+:root {
+  --fundo: #071330;
+  --cartao: #0f1f47;
+  --linha: rgba(140, 170, 230, 0.25);
+  --texto: #eef3ff;
+  --suave: #a9bce0;
+  --azul: #6ec3ff;
+  --azul2: #3f8cff;
+  --ouro: #f5c84c;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(ellipse at top, #10265a 0%, var(--fundo) 60%);
+  color: var(--texto);
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  cursor: none;
+}
+body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  font-size: clamp(16px, 1.6vw, 34px);
+}
+.s-topo {
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  padding: 1.6vh 3vw;
+  border-bottom: 1px solid var(--linha);
+}
+.s-marca {
+  flex: 1;
+  display: grid;
+}
+.s-marca strong {
+  font-size: 1.3em;
+}
+.s-marca span,
+.s-relogio span {
+  color: var(--suave);
+}
+.s-relogio {
+  display: grid;
+  text-align: right;
+}
+.s-relogio strong {
+  font-size: 2em;
+  font-variant-numeric: tabular-nums;
+}
+.s-ecra {
+  padding: 3vh 3vw;
+  display: grid;
+  gap: 2.5vh;
+  align-content: center;
+  animation: entrar 0.6s ease-out;
+}
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(1.5vh);
+  }
+}
+.s-msg {
+  text-align: center;
+  color: var(--suave);
+  font-size: 1.4em;
+}
+h1 {
+  margin: 0;
+  font-size: 1.9em;
+  color: var(--azul);
+}
+.s-sub {
+  color: var(--suave);
+  margin: 0;
+}
+.s-gigante {
+  font-size: 5.5em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.s-barra {
+  height: 3.2vh;
+  border-radius: 2vh;
+  background: rgba(110, 195, 255, 0.15);
+  overflow: hidden;
+}
+.s-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 2vh;
+  background: linear-gradient(90deg, var(--azul2), var(--azul));
+  transition: width 1.2s ease-out;
+}
+.s-grelha {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2vw;
+}
+.s-cartao {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 1.2vw;
+  padding: 2.2vh 1.6vw;
+}
+.s-cartao .v {
+  font-size: 2em;
+  font-weight: 700;
+  color: var(--azul);
+  font-variant-numeric: tabular-nums;
+}
+.s-cartao .r {
+  color: var(--suave);
+}
+.s-rank {
+  display: grid;
+  gap: 1.1vh;
+}
+.s-linha {
+  display: grid;
+  grid-template-columns: 3vw 22vw 1fr 14vw 9vw;
+  align-items: center;
+  gap: 1vw;
+}
+.s-pos {
+  font-size: 1.4em;
+  font-weight: 800;
+  text-align: center;
+  color: var(--suave);
+}
+.s-linha:nth-child(1) .s-pos {
+  color: var(--ouro);
+}
+.s-nome strong {
+  font-size: 1.1em;
+}
+.s-nome span {
+  display: block;
+  color: var(--suave);
+  font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.s-linha .s-barra {
+  height: 2.2vh;
+}
+.s-valor {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.s-var {
+  text-align: right;
+  color: var(--azul);
+  font-weight: 600;
+}
+.s-destaques {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2vw;
+}
+.s-destaque {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-left: 0.5vw solid var(--ouro);
+  border-radius: 1.2vw;
+  padding: 2.4vh 1.8vw;
+}
+.s-destaque .t {
+  color: var(--suave);
+}
+.s-destaque .n {
+  font-size: 1.8em;
+  font-weight: 800;
+  margin: 0.6vh 0;
+}
+.s-destaque .d {
+  color: var(--azul);
+  font-size: 1.1em;
+}
+.s-rodape {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.2vh 3vw 2vh;
+  color: var(--suave);
+  font-size: 0.7em;
+}
+#s-pontos i {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.5em;
+  border-radius: 50%;
+  background: var(--linha);
+}
+#s-pontos i.on {
+  background: var(--azul);
+}

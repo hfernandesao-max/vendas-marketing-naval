@@ -54,6 +54,17 @@ function naval_api_rotas(): array
         'v1/equipamentos/pdf' => [['GET'], 'jwt', 'equipamentos.php', ['pdf' => '1']],
         'v1/novidades' => [['GET', 'POST'], 'jwt', 'novidades.php', []],
         'v1/actualizacoes' => [['GET', 'POST'], 'jwt', 'actualizacoes.php', []],
+        'v1/alertas' => [['GET'], 'jwt', 'analise.php', ['f' => 'alertas']],
+        'v1/previsao' => [['GET'], 'jwt', 'analise.php', ['f' => 'previsao']],
+        'v1/indicadores' => [['GET'], 'jwt', 'analise.php', ['f' => 'indicadores']],
+        'v1/painel' => [['GET'], 'jwt', 'analise.php', ['f' => 'painel']],
+        'v1/assistente' => [['GET', 'POST'], 'jwt', 'assistente.php', []],
+        'v1/resumo' => [['GET', 'POST'], 'jwt', 'assistente.php', ['resumo' => '1']],
+        'v1/sala' => [['GET'], 'publico', 'sala.php', []],
+        'v1/sala/ligacoes' => [['GET', 'POST'], 'jwt', 'sala.php', ['gerir' => '1']],
+        'v1/cliente' => [['GET', 'POST'], 'publico', 'cliente.php', []],
+        'v1/pedidos-clientes' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', []],
+        'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)
     if (is_file(__DIR__ . '/v1/stock.php')) {
@@ -109,7 +120,10 @@ function naval_api_ritmo(string $quem, int $max = 0): void
 function naval_api_corpo(string $rota): void
 {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') return;
-    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > NAVAL_API_CORPO_MAX) throw new NavalErro('Pedido demasiado grande.', 413);
+    // rotas públicas (sem conta): corpo pequeno, lido no máximo até ao limite (naval_pedido)
+    $max = in_array($rota, ['v1/cliente', 'v1/csp-relatorio'], true) ? 16384 : NAVAL_API_CORPO_MAX;
+    $GLOBALS['naval_corpo_max'] = $max;
+    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $max) throw new NavalErro('Pedido demasiado grande.', 413);
     $tipo = strtolower(trim(explode(';', (string) ($_SERVER['CONTENT_TYPE'] ?? ''))[0]));
     $aceites = $rota === 'v1/csp-relatorio' ? ['application/csp-report', 'application/reports+json', 'application/json'] : ['application/json'];
     if (!in_array($tipo, $aceites, true)) throw new NavalErro('Tipo de conteúdo não suportado (use application/json).', 415);
@@ -149,7 +163,9 @@ function naval_api_executar(): void
         naval_api_ritmo('conta|' . $c['sub']);
     } else {
         // por IP (vários utilizadores podem partilhar o mesmo IP na rede da empresa)
-        naval_api_ritmo('ip|' . naval_ip_cliente(), $acesso === 'publico' ? 120 : 1200);
+        // rotas públicas: limite próprio por rota (o painel da sala, o cartaz do cliente e os relatórios da CSP não se esgotam
+        // uns aos outros quando partilham o IP da rede da empresa)
+        naval_api_ritmo('ip|' . ($acesso === 'publico' ? $rota . '|' : '') . naval_ip_cliente(), $acesso === 'publico' ? 120 : 1200);
     }
     // parâmetros fixos da rota (ex.: v1/sap/excel?numero=5 → xlsx=5)
     foreach ($fixos as $k => $v) {

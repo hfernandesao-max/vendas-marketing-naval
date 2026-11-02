@@ -53,6 +53,7 @@ test('menu em acordeão: áreas fechadas, só uma aberta de cada vez, a da pági
 test('menu organizado por áreas de negócio', async ({ page }) => {
   await abrir(page, '#inicio');
   await expect(page.locator('#nav .navg .navg-t')).toHaveText([
+    'Gestão',
     'Vendas',
     'Recebimentos',
     'Clientes',

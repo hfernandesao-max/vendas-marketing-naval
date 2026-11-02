@@ -36,7 +36,7 @@ if (!naval_e_post()) {
         'data' => $data,
         'plano' => naval_plano_vista(naval_plano_ler($data), $gere),
         'anterior' => naval_plano_anterior($data, $gere),
-        'sugestoes' => $gere ? naval_plano_sugestoes($data, $listas) : [],
+        'sugestoes' => $gere ? naval_plano_com_previsao($data, naval_plano_sugestoes($data, $listas)) : [],
         'rotas' => naval_filtrar_rotas(naval_rotas_portal()),
         'listas' => $listas,
         'gere' => $gere,

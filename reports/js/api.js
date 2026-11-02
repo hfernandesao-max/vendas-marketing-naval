@@ -7,7 +7,6 @@
 //    (<meta name="csrf-token">), e renova-se sozinho 1 minuto antes de expirar ou depois de um 401;
 //  - os pedidos vão só para a própria origem (same-origin), com «Authorization: Bearer».
 // Sem servidor PHP (testes locais com ficheiros estáticos) os pedidos seguem sem token.
-import { download } from './componentes/blocos.js';
 
 export const API = '../api/index.php/v1/';
 
@@ -112,6 +111,8 @@ export const apiJson = (rota) =>
 
 /** Transfere um ficheiro da API (Excel do plano de cargas, segunda via do SAP) com o token. */
 export async function apiDescarregar(rota, nomeOmissao) {
+  // carregado só aqui: o cliente da API não arrasta o resto do portal (a app de gestão usa este módulo sozinho)
+  const { download } = await import('./componentes/blocos.js');
   const r = await apiFetch(rota);
   if (!r.ok) {
     const d = await r.json().catch(() => null);

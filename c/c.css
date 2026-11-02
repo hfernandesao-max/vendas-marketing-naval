@@ -1,0 +1,185 @@
+/* Página pública do cartaz do cliente: telemóvel, letra grande, azuis Naval. */
+:root {
+  --fundo: #f4f6fb;
+  --cartao: #fff;
+  --linha: #d9e1f0;
+  --texto: #1c2340;
+  --suave: #4a5568;
+  --azul: #1e3a8a;
+  --azul2: #0057b8;
+  --ceu: #e8f0fb;
+  --mau: #b42318;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family:
+    Inter,
+    -apple-system,
+    system-ui,
+    'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+.c-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background: var(--azul);
+  color: #fff;
+}
+.c-topo div {
+  display: grid;
+}
+.c-topo span {
+  opacity: 0.9;
+  font-size: 14px;
+}
+.c-sep {
+  display: flex;
+  background: var(--cartao);
+  border-bottom: 1px solid var(--linha);
+}
+.c-sep button {
+  flex: 1;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  padding: 14px 4px;
+  color: var(--suave);
+  border-bottom: 3px solid transparent;
+}
+.c-sep button[aria-current='page'] {
+  color: var(--azul2);
+  font-weight: 600;
+  border-bottom-color: var(--azul2);
+}
+.c-conteudo {
+  padding: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+.c-cartao {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+.c-cartao p,
+.c-nota {
+  margin: 0;
+  color: var(--suave);
+  text-align: justify;
+}
+h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--azul);
+}
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--suave);
+}
+input,
+textarea {
+  font: inherit;
+  font-size: 16px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--linha);
+  background: #fff;
+  color: var(--texto);
+  width: 100%;
+}
+.c-artigo {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linha);
+}
+.c-artigo:last-child {
+  border-bottom: 0;
+}
+.c-artigo small {
+  display: block;
+  color: var(--suave);
+}
+.c-artigo input {
+  text-align: center;
+}
+.c-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--texto);
+  text-align: justify;
+}
+.c-check input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-top: 2px;
+}
+.c-botao {
+  border: 0;
+  border-radius: 12px;
+  min-height: 52px;
+  background: var(--azul2);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 17px;
+}
+.c-botao.sec {
+  background: var(--ceu);
+  color: var(--azul2);
+  min-height: 44px;
+  font-size: 15px;
+}
+.c-botao:disabled {
+  opacity: 0.6;
+}
+.c-erro {
+  color: var(--mau);
+  margin: 0;
+}
+.c-ok {
+  text-align: center;
+  padding: 24px 8px;
+}
+.c-ok strong {
+  display: block;
+  font-size: 20px;
+  color: var(--azul);
+  margin-bottom: 8px;
+}
+.c-armadilha {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.c-rodape {
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+  font-size: 12px;
+  color: var(--suave);
+  text-align: justify;
+  max-width: 560px;
+  margin: 0 auto;
+}

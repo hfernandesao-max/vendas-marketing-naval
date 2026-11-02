@@ -36,6 +36,13 @@ export default defineConfig({
       stderr: 'ignore',
     },
     {
+      // API de mensagens da Anthropic simulada (assistente IA e resumo diário)
+      command: 'php -S 127.0.0.1:8802 tests/dados/anthropic-simulado.php',
+      url: 'http://127.0.0.1:8802/',
+      reuseExistingServer: !process.env.CI,
+      stderr: 'ignore',
+    },
+    {
       command: 'php tests/servidor/preparar.php && php -S 127.0.0.1:8810',
       url: 'http://127.0.0.1:8810/geo/login.php',
       reuseExistingServer: !process.env.CI,

@@ -175,7 +175,11 @@ function naval_pedido(): array
 {
     static $q = null;
     if ($q === null) {
-        $q = json_decode((string) file_get_contents('php://input'), true);
+        // leitura limitada (também quando o pedido não indica o tamanho): nunca mais do que o máximo da rota
+        $max = (int) ($GLOBALS['naval_corpo_max'] ?? 0);
+        $corpo = $max > 0 ? (string) stream_get_contents(fopen('php://input', 'rb'), $max + 1) : (string) file_get_contents('php://input');
+        if ($max > 0 && strlen($corpo) > $max) throw new NavalErro('Pedido demasiado grande.', 413);
+        $q = json_decode($corpo, true);
         if (!is_array($q)) $q = [];
     }
     return $q;

@@ -4,6 +4,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Gestão com inteligência artificial
+- **Alertas** (Gestão › Alertas): rotas sem vendas ou muito abaixo do habitual (comparação com o mesmo dia da semana
+  nas últimas 6 semanas, por mediana), semanas em queda ou em subida, clientes regulares que deixaram de comprar,
+  documentos por comunicar à AGT e equipamentos sem contacto com o MDM; cada alerta diz o valor, o esperado e porquê.
+- **Previsão de vendas** (próximos 7 dias, por rota): média ponderada do mesmo dia da semana × tendência, com intervalo
+  de 80 % e a precisão medida todos os dias; as quantidades sugeridas no **plano de cargas** passam a usar a média das
+  últimas cargas × a tendência das vendas da rota (a Logística confirma sempre).
+- **Painel de gestão RTM** (Gestão › Painel de gestão), com os gráficos de referência da distribuição porta-a-porta:
+  tendência diária com média móvel de 7 dias e previsão; mês até hoje por rota (balas) e ponte da variação do mês;
+  curvas ABC de clientes e de artigos; distribuição numérica por artigo; valor médio e artigos por compra por rota;
+  mapa de calor rota × dia da semana; clientes activos, novos e perdidos por mês. Cada gráfico tem a vista em tabela.
+- **Assistente IA** (perfis com «Assistente IA» na matriz): perguntas em linguagem natural sobre vendas, rotas,
+  clientes, alertas, previsão, plano de cargas e AGT; só leitura, com o âmbito de quem pergunta; os números vêm sempre
+  do portal e cada resposta indica as fontes; limite mensal e diário; tudo registado. Configuração: `php
+  ferramentas/configurar-ia.php`.
+- **Resumo diário** por correio electrónico às 07:00 (perfis com «Resumo diário» na matriz): vendas de ontem face ao
+  habitual, semana, mês, rotas, alertas e previsão do dia, com um parágrafo escrito pela IA.
+- **App de gestão** («Naval Gestão», instalável no iPhone e no Android): vendas de hoje face à previsão, ontem, semana,
+  mês, classificação das rotas, alertas e assistente.
+- **Painel da sala comercial** (ecrã de TV): vendas do dia ao vivo, classificação do dia e do mês, destaques e
+  sequências; só reconhecimento positivo; ligação própria revogável, sem conta e sem dados de clientes.
+
+### Cartaz QR do cliente
+- **Cartazes A4** (Clientes › Cartazes QR dos clientes): um código aleatório por cliente, impresso em A4 para colar no
+  estabelecimento; pode substituir-se a qualquer momento.
+- **Página do cliente** (sem conta): encomenda já sugerida pelas compras habituais do cliente e por artigos que outros
+  clientes da zona levam, actualização dos dados da empresa (com localização) e consentimento para mensagens por
+  WhatsApp.
+- **Validação no back-office** (Clientes › Pedidos dos clientes): nada muda sem aprovação; cada linha da encomenda vem
+  marcada como dentro ou fora do habitual; encomendas aprovadas avisam o promotor da rota; dados aprovados ficam na
+  lista para lançar no Pinguim BO.
+
 ### Automatização completa do servidor
 - **GitHub App** em vez do código de acesso pessoal: o servidor assina um pedido (JWT RS256) com a chave da App e recebe
   uma credencial de instalação que dura 1 hora; a chave não expira (sem renovação anual); só leitura e só no
