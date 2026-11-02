@@ -114,11 +114,12 @@ jobs:
             Copy-Item $f (Join-Path $srv $f) -Force
           }
           New-Item -ItemType Directory -Force (Join-Path $srv 'reports/data') | Out-Null
+          # servidor de ensaio sem aprovação (o circuito de aprovação é testado em tests/actualizacao)
           '{"real":true}' | Out-File (Join-Path $srv 'reports/data/vendas.json') -Encoding ascii
           $segredo = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
           @("DADOS_PRIVADOS=$t\privado", "JWT_SEGREDO=$segredo", "ACTUALIZACAO_GITHUB_TOKEN=$env:TOKEN",
             "ACTUALIZACAO_REPOSITORIO=$env:GITHUB_REPOSITORY", "ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:8099", "ACTUALIZACAO_AUTOMATICA=1",
-            "ACTUALIZACAO_EXIGE_APROVACAO=0")   # servidor de ensaio: sem aprovação (o circuito de aprovação é testado em tests/actualizacao) |
+            "ACTUALIZACAO_EXIGE_APROVACAO=0") |
             Out-File (Join-Path $t '.env') -Encoding ascii
           $env:NAVAL_ENV = Join-Path $t '.env'
           $web = Start-Process php -ArgumentList '-d', 'display_errors=0', '-S', '127.0.0.1:8099', '-t', $srv -PassThru -WindowStyle Hidden
