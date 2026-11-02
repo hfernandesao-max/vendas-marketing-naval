@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Aprovação das actualizações
+- **Página «Actualizações»** (Administração, só o super administrador): versões publicadas e testadas à espera de
+  decisão, com o resumo do que muda; **Aprovar** (instala nessa noite às 02:15), **Aprovar e instalar já** (em
+  5 minutos) ou **Reprovar** (com motivo); anular uma decisão ainda não instalada; repor a versão anterior; histórico
+  com quem decidiu, quando e o resultado da instalação.
+- **Controlo:** cada decisão pede a confirmação da identidade (palavra-passe ou código de dois passos) e fica no registo
+  de auditoria; a aprovação fica presa ao SHA-256 do pacote aprovado.
+- **Servidor:** o actualizador só instala versões aprovadas (`ACTUALIZACAO_EXIGE_APROVACAO=1`); tarefa de 5 em 5 minutos
+  para «instalar já» e reposições; aviso por correio de cada versão nova à espera de aprovação.
+
 ### Resumo das actualizações
 - **Super administrador:** na primeira entrada depois de cada actualização (manual ou automática), o portal mostra
   uma janela com o resumo do que mudou, tirado deste registo de alterações; fechada, não volta a aparecer.

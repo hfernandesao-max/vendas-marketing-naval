@@ -55,7 +55,7 @@ function textos() {
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
 // Páginas que não dependem do período (sem a barra De / Até)
-const SEM_PERIODO = ['plano-cargas', 'equipamentos', 'equipamentos-documentos'];
+const SEM_PERIODO = ['plano-cargas', 'equipamentos', 'equipamentos-documentos', 'actualizacoes'];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'sap-exportar']);
 const precisaArtigos = (id) => COM_ARTIGOS.has(id) || (filtroAtivo(id, 'artigo') && !!FV.artigo);

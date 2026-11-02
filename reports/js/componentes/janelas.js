@@ -77,3 +77,49 @@ export const copiar = (txt) => {
     /* sem área de transferência */
   }
 };
+
+/** Confirmação da identidade pedida pelo servidor antes de uma alteração sensível (palavra-passe ou código de dois passos). */
+export function confirmarIdentidade(metodo, erro) {
+  return new Promise((ok) => {
+    let feito = false;
+    janela(
+      t('Confirme a sua identidade'),
+      metodo === 'codigo'
+        ? t('Insira o código de 6 dígitos da aplicação de autenticação. Fica confirmado durante 10 minutos.')
+        : t('Insira a sua palavra-passe. Fica confirmado durante 10 minutos.'),
+      (b, ft, fechar, d) => {
+        const i =
+          metodo === 'codigo'
+            ? entrada('text', '', { inputMode: 'numeric', maxLength: 7, autocomplete: 'one-time-code' })
+            : entrada('password', '', { autocomplete: 'current-password' });
+        b.append(campo(metodo === 'codigo' ? t('Código') : t('Palavra-passe'), i));
+        if (erro) {
+          const p = msgErro();
+          p.textContent = t(erro);
+          p.hidden = false;
+          b.append(p);
+        }
+        const ir = () => {
+          if (!i.value.trim()) {
+            i.focus();
+            return;
+          }
+          feito = true;
+          ok(i.value.trim());
+          fechar();
+        };
+        i.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            ir();
+          }
+        });
+        ft.append(botao(t('Cancelar'), 'ghost', fechar), botao(t('Confirmar'), '', ir));
+        d.addEventListener('close', () => {
+          if (!feito) ok(null);
+        });
+        setTimeout(() => i.focus(), 50);
+      },
+    );
+  });
+}

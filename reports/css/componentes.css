@@ -1616,3 +1616,90 @@ table.ac-mig tr.ac-off td:not(:last-child) {
     animation: none;
   }
 }
+
+/* Administração › Actualizações (aprovação das versões do portal) */
+.act-lista,
+.act-hist {
+  display: grid;
+  gap: 12px;
+}
+.act-cartao {
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+}
+.act-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.act-cab h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.act-cab p,
+.act-motivo {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: justify;
+}
+.act-det summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 14px;
+}
+.act-resumo h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.act-resumo ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.act-resumo li {
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: justify;
+  hyphens: auto;
+}
+.act-accoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.act-hist-l {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.act-aviso {
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  color: var(--warn);
+  text-align: justify;
+}
+/* Botão de uma acção que não se desfaz sozinha (reprovar, repor) */
+.btn.perigo {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+.btn.perigo:not(.ghost) {
+  background: var(--bad);
+  color: #fff;
+}
+.btn.ghost.perigo {
+  color: var(--bad);
+  border: 1px solid var(--bad);
+  background: transparent;
+}

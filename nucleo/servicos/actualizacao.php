@@ -173,19 +173,40 @@ function naval_act_dias_token(array $cab): ?int
     return (int) floor(($t - time()) / 86400);
 }
 
-/** Versão mais recente publicada: [versao, commit, url do zip, url do sha256, dias do token]. */
-function naval_act_ultima_versao(): array
+/** Versão publicada no formato do actualizador (null se não tiver o pacote e o SHA-256). */
+function naval_act_release(array $r, array $cab = []): ?array
 {
-    [$r, $cab] = naval_act_api('releases/latest');
     $zip = $sha = null;
     foreach ($r['assets'] ?? [] as $a) {
         $n = (string) ($a['name'] ?? '');
         if (preg_match('/^portal-rtm-[\w.\-]+\.zip$/', $n)) $zip = (string) $a['url'];
         if (preg_match('/^portal-rtm-[\w.\-]+\.zip\.sha256$/', $n)) $sha = (string) $a['url'];
     }
-    if (!$zip || !$sha) throw new NavalActualizacaoErro('A versão ' . ($r['tag_name'] ?? '?') . ' não tem o pacote e o SHA-256 publicados.');
+    if (!$zip || !$sha || !empty($r['draft']) || !empty($r['prerelease'])) return null;
     return ['versao' => (string) ($r['tag_name'] ?? ''), 'commit' => (string) ($r['target_commitish'] ?? ''), 'zip' => $zip, 'sha' => $sha,
-        'dias_token' => naval_act_dias_token($cab), 'publicada_em' => (string) ($r['published_at'] ?? '')];
+        'dias_token' => naval_act_dias_token($cab), 'publicada_em' => (string) ($r['published_at'] ?? ''), 'notas' => (string) ($r['body'] ?? '')];
+}
+
+/** Versão mais recente publicada: [versao, commit, url do zip, url do sha256, dias do token]. */
+function naval_act_ultima_versao(): array
+{
+    [$r, $cab] = naval_act_api('releases/latest');
+    $v = naval_act_release($r, $cab);
+    if ($v === null) throw new NavalActualizacaoErro('A versão ' . ($r['tag_name'] ?? '?') . ' não tem o pacote e o SHA-256 publicados.');
+    return $v;
+}
+
+/** Versões publicadas (as 30 mais recentes), da mais recente para a mais antiga. */
+function naval_act_versoes(): array
+{
+    [$l, $cab] = naval_act_api('releases?per_page=30');
+    $out = [];
+    foreach ($l as $r) {
+        $v = is_array($r) ? naval_act_release($r, $cab) : null;
+        if ($v !== null) $out[] = $v;
+    }
+    usort($out, function ($a, $b) { return strcmp($b['publicada_em'], $a['publicada_em']); });
+    return $out;
 }
 
 /** Descarrega um ficheiro de uma versão (API → endereço temporário, pedido sem o token). */
@@ -570,7 +591,20 @@ function naval_act_aplicar(array $o = []): array
             }
             $origem = 'ficheiro ' . basename($zip);
         } else {
-            $u = naval_act_ultima_versao();
+            if (naval_act_exige_aprovacao()) {
+                // só versões aprovadas no portal (página «Actualizações»), presas ao SHA-256 aprovado
+                $versoes = naval_act_versoes();
+                if (!empty($o['avisar_pendentes'])) naval_act_avisar_pendentes($versoes, $estado);
+                $u = naval_act_alvo_aprovado($versoes, $estado, naval_act_aprovacoes());
+                if ($u === null) {
+                    $n = 0;
+                    foreach (naval_act_mais_recentes($versoes, $estado) as $x) if (!isset(naval_act_aprovacoes()[$x['versao']])) $n++;
+                    $diz($n ? $n . ' versão(ões) publicada(s) à espera de aprovação no portal (Administração › Actualizações).' : 'Sem versões aprovadas por instalar.');
+                    return ['resultado' => 'sem_aprovacao', 'versao' => (string) ($estado['versao'] ?? ''), 'pendentes' => $n, 'avisos' => $avisos];
+                }
+            } else {
+                $u = naval_act_ultima_versao();
+            }
             if ($u['dias_token'] !== null && $u['dias_token'] <= 30) {
                 $avisos[] = 'O token do GitHub expira dentro de ' . $u['dias_token'] . ' dia(s): criar outro e correr «php ferramentas/actualizar.php configurar».';
             }
@@ -588,6 +622,9 @@ function naval_act_aplicar(array $o = []): array
             naval_act_descarregar($u['sha'], $zip . '.sha256');
             $esperado = strtolower(substr(trim((string) file_get_contents($zip . '.sha256')), 0, 64));
             if (!hash_equals($esperado, (string) hash_file('sha256', $zip))) throw new NavalActualizacaoErro('O SHA-256 do pacote descarregado não confere: actualização cancelada.');
+            if (isset($u['sha256_aprovado']) && !hash_equals($u['sha256_aprovado'], $esperado)) {
+                throw new NavalActualizacaoErro('O pacote da versão ' . $u['versao'] . ' mudou depois de aprovado: não é instalado. Volte a aprová-lo no portal se for o caso.');
+            }
             $origem = 'GitHub ' . $u['versao'];
         }
 
@@ -695,4 +732,229 @@ function naval_act_reverter(string $raiz): array
     naval_act_limpar_pasta($copia);
     naval_act_registar('reversao_manual', ['para' => $e['versao'], 'erros' => $erros]);
     return ['versao' => $e['versao'], 'erros' => $erros];
+}
+
+// ── Aprovação das versões (página «Actualizações» do portal, só o super administrador) ──────────────
+//
+// Gestão de alterações (ITIL): o GitHub publica versões já testadas; nenhuma é instalada sem ser aprovada no portal
+// (ACTUALIZACAO_EXIGE_APROVACAO=1, por omissão). A aprovação fica presa ao SHA-256 exacto do pacote: se o pacote
+// publicado mudar depois de aprovado, não é instalado. Cada versão inclui as anteriores; aprovar uma instala também o
+// que vinha antes dela. «Instalar já» e «Repor a versão anterior» são tratados pela tarefa agendada de 5 em 5 minutos
+// (o servidor web nunca altera os ficheiros do portal).
+
+function naval_act_exige_aprovacao(): bool
+{
+    return naval_config('ACTUALIZACAO_EXIGE_APROVACAO', '1') !== '0';
+}
+
+/** Decisões: {versao: {decisao: aprovada|reprovada, por, em, motivo, sha256, urgente, publicada_em, tentada_em}}. */
+function naval_act_aprovacoes(): array
+{
+    return naval_json_ler(naval_act_pasta() . '/aprovacoes.json');
+}
+
+function naval_act_gravar_aprovacoes(array $a): void
+{
+    naval_json_gravar(naval_act_pasta() . '/aprovacoes.json', $a);
+}
+
+/** Data de publicação da versão instalada (vazia se não estiver na lista). */
+function naval_act_publicada_instalada(array $versoes, array $estado): string
+{
+    foreach ($versoes as $v) if ($v['versao'] === ($estado['versao'] ?? '')) return $v['publicada_em'];
+    return '';
+}
+
+/** Versões mais recentes do que a instalada. */
+function naval_act_mais_recentes(array $versoes, array $estado): array
+{
+    $instalada = (string) ($estado['versao'] ?? '');
+    $desde = naval_act_publicada_instalada($versoes, $estado);
+    return array_values(array_filter($versoes, function ($v) use ($instalada, $desde) {
+        return $v['versao'] !== $instalada && ($desde === '' || strcmp($v['publicada_em'], $desde) > 0);
+    }));
+}
+
+/** Versão a instalar: a mais recente aprovada (e não recusada) acima da instalada; null se não houver. */
+function naval_act_alvo_aprovado(array $versoes, array $estado, array $aprov): ?array
+{
+    foreach (naval_act_mais_recentes($versoes, $estado) as $v) {
+        $a = $aprov[$v['versao']] ?? null;
+        if ($a && ($a['decisao'] ?? '') === 'aprovada' && $v['versao'] !== ($estado['recusada'] ?? '')) return $v + ['sha256_aprovado' => (string) ($a['sha256'] ?? '')];
+    }
+    return null;
+}
+
+/** SHA-256 publicado de uma versão (o ficheiro .sha256 do pacote). */
+function naval_act_sha_publicado(array $v): string
+{
+    $tmp = naval_act_pasta('transferencias') . '/sha-' . getmypid() . '.txt';
+    try {
+        naval_act_descarregar($v['sha'], $tmp);
+        $h = strtolower(substr(trim((string) file_get_contents($tmp)), 0, 64));
+    } finally {
+        @unlink($tmp);
+    }
+    if (!preg_match('/^[0-9a-f]{64}$/', $h)) throw new NavalActualizacaoErro('A versão ' . $v['versao'] . ' não tem um SHA-256 válido publicado.');
+    return $h;
+}
+
+/**
+ * Regista a decisão do super administrador sobre uma versão publicada: aprovar (opcionalmente «instalar já»),
+ * reprovar (com motivo) ou cancelar uma aprovação ainda não instalada. Devolve a decisão gravada.
+ */
+function naval_act_decidir(string $versao, string $accao, string $login, string $motivo = '', bool $urgente = false, ?array $versoes = null): array
+{
+    return naval_exclusivo('actualizacoes-aprovacoes', function () use ($versao, $accao, $login, $motivo, $urgente, $versoes) {
+        $versoes = $versoes ?? naval_act_versoes();
+        $v = null;
+        foreach ($versoes as $x) if ($x['versao'] === $versao) $v = $x;
+        if ($v === null) throw new NavalErro('Versão desconhecida: ' . $versao, 404);
+        $estado = naval_act_estado();
+        $aprov = naval_act_aprovacoes();
+        $pendente = in_array($versao, array_column(naval_act_mais_recentes($versoes, $estado), 'versao'), true);
+        if ($accao !== 'cancelar' && !$pendente) throw new NavalErro('Esta versão já está instalada ou é anterior à instalada.', 409);
+        $motivo = trim(preg_replace('/\s+/', ' ', $motivo));
+        switch ($accao) {
+            case 'aprovar':
+                $aprov[$versao] = ['decisao' => 'aprovada', 'por' => $login, 'em' => date('Y-m-d H:i:s'), 'motivo' => mb_substr($motivo, 0, 500),
+                    'sha256' => naval_act_sha_publicado($v), 'urgente' => $urgente, 'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']];
+                break;
+            case 'reprovar':
+                if (mb_strlen($motivo) < 5) throw new NavalErro('Indique o motivo da reprovação.', 400);
+                $aprov[$versao] = ['decisao' => 'reprovada', 'por' => $login, 'em' => date('Y-m-d H:i:s'), 'motivo' => mb_substr($motivo, 0, 500),
+                    'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']];
+                break;
+            case 'cancelar':
+                if (($aprov[$versao]['decisao'] ?? '') === '' || !$pendente) throw new NavalErro('Não há decisão por instalar para anular nesta versão.', 409);
+                unset($aprov[$versao]);
+                break;
+            default:
+                throw new NavalErro('Acção desconhecida.', 400);
+        }
+        naval_act_gravar_aprovacoes($aprov);
+        naval_registar('actualizacao_' . ($accao === 'aprovar' ? 'aprovada' : ($accao === 'reprovar' ? 'reprovada' : 'decisao_anulada')),
+            ['versao' => $versao, 'urgente' => $urgente, 'motivo' => $motivo], $login);
+        naval_act_registar('decisao', ['versao' => $versao, 'accao' => $accao, 'por' => $login, 'urgente' => $urgente]);
+        return $aprov[$versao] ?? [];
+    });
+}
+
+/** Pedido de reposição da versão anterior (feito no portal; executado pela tarefa de 5 em 5 minutos). */
+function naval_act_pedir_reversao(string $login): void
+{
+    if (!naval_act_ultima_copia()) throw new NavalErro('Não há nenhuma actualização automática para desfazer.', 409);
+    naval_json_gravar(naval_act_pasta() . '/pedido-reversao.json', ['por' => $login, 'em' => date('Y-m-d H:i:s')]);
+    naval_registar('actualizacao_reversao_pedida', [], $login);
+}
+
+/** Resultado mais recente de cada versão no registo das actualizações (actualizada, revertida, conflito, erro…). */
+function naval_act_resultados(): array
+{
+    $f = naval_act_pasta() . '/registo.jsonl';
+    $out = [];
+    if (!is_file($f)) return $out;
+    $linhas = array_slice(file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -2000);
+    foreach ($linhas as $l) {
+        $j = json_decode($l, true);
+        if (!is_array($j) || empty($j['versao']) || in_array($j['accao'] ?? '', ['decisao', 'aviso_falhou'], true)) continue;
+        $out[(string) $j['versao']] = ['accao' => (string) $j['accao'], 'data' => (string) ($j['data'] ?? '')];
+    }
+    return $out;
+}
+
+/** Última execução do actualizador (para o portal). */
+function naval_act_ultima_execucao(): ?array
+{
+    $f = naval_act_pasta() . '/registo.jsonl';
+    if (!is_file($f)) return null;
+    $linhas = array_reverse(array_slice(file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -200));
+    foreach ($linhas as $l) {
+        $j = json_decode($l, true);
+        if (is_array($j) && !in_array($j['accao'] ?? '', ['decisao', 'aviso_falhou'], true)) return $j;
+    }
+    return null;
+}
+
+/**
+ * Tarefa de 5 em 5 minutos (comando «urgente»): executa um pedido de reposição feito no portal ou instala uma versão
+ * aprovada com «instalar já». Sem pedidos, não faz nada (nem contacta o GitHub). Devolve o resultado ou null.
+ */
+function naval_act_urgente(array $o = []): ?array
+{
+    $pedido = naval_act_pasta() . '/pedido-reversao.json';
+    if (is_file($pedido)) {
+        $p = naval_json_ler($pedido);
+        @unlink($pedido);
+        $r = naval_act_reverter((string) ($o['raiz'] ?? naval_raiz()));
+        naval_act_registar('reversao_portal', ['versao' => $r['versao'], 'por' => $p['por'] ?? '', 'erros' => $r['erros']]);
+        return ['resultado' => $r['erros'] ? 'erro' : 'revertida_pedido', 'versao' => $r['versao'], 'erros' => $r['erros']];
+    }
+    $aprov = naval_act_aprovacoes();
+    $urgente = '';
+    foreach ($aprov as $versao => $a) {
+        if (($a['decisao'] ?? '') === 'aprovada' && !empty($a['urgente']) && empty($a['tentada_em'])) $urgente = (string) $versao;
+    }
+    if ($urgente === '') return null;
+    $aprov[$urgente]['tentada_em'] = date('Y-m-d H:i:s');
+    naval_act_gravar_aprovacoes($aprov);
+    return naval_act_aplicar($o);
+}
+
+/** Avisa por correio, uma vez por versão, as versões novas à espera de aprovação. */
+function naval_act_avisar_pendentes(array $versoes, array $estado): void
+{
+    $aprov = naval_act_aprovacoes();
+    $f = naval_act_pasta() . '/avisadas.json';
+    $avisadas = naval_json_ler($f);
+    $novas = [];
+    foreach (naval_act_mais_recentes($versoes, $estado) as $v) {
+        if (!isset($aprov[$v['versao']]) && !in_array($v['versao'], $avisadas, true)) $novas[] = $v['versao'];
+    }
+    if (!$novas) return;
+    naval_json_gravar($f, array_slice(array_merge($avisadas, $novas), -100));
+    $url = rtrim(naval_config('PORTAL_URL'), '/');
+    naval_act_avisar('versão nova à espera de aprovação', [
+        'Versões publicadas e testadas à espera da sua decisão: ' . implode(', ', $novas) . '.',
+        'Aprovar ou reprovar no Portal RTM › Administração › Actualizações' . ($url !== '' ? ' (' . $url . '/reports/#actualizacoes)' : '') . '.',
+    ]);
+}
+
+/** Dados da página «Actualizações» do portal. */
+function naval_act_vista_portal(): array
+{
+    naval_servico('novidades');
+    $estado = naval_act_estado();
+    $aprov = naval_act_aprovacoes();
+    $res = naval_act_resultados();
+    $v = [
+        'instalada' => ['versao' => (string) $estado['versao'], 'commit' => (string) $estado['commit'], 'aplicada_em' => (string) $estado['aplicada_em'],
+            'recusada' => (string) ($estado['recusada'] ?? '')],
+        'configurada' => naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '',
+        'automatica' => naval_config('ACTUALIZACAO_AUTOMATICA') === '1',
+        'exige_aprovacao' => naval_act_exige_aprovacao(),
+        'reversao_pedida' => is_file(naval_act_pasta() . '/pedido-reversao.json'),
+        'pode_reverter' => naval_act_ultima_copia() !== null,
+        'ultima_execucao' => naval_act_ultima_execucao(),
+        'pendentes' => [],
+        'historico' => [],
+        'erro' => '',
+    ];
+    try {
+        $versoes = naval_cache('actualizacoes-versoes', 120, function () { return naval_act_versoes(); });
+    } catch (Throwable $e) {
+        $v['erro'] = $e->getMessage();
+        $versoes = [];
+    }
+    $novas = array_column(naval_act_mais_recentes($versoes, $estado), 'versao');
+    foreach ($versoes as $x) {
+        $item = ['versao' => $x['versao'], 'publicada_em' => $x['publicada_em'], 'commit' => substr($x['commit'], 0, 7),
+            'seccoes' => naval_nov_seccoes($x['notas']), 'notas' => mb_substr($x['notas'], 0, 4000),
+            'decisao' => $aprov[$x['versao']] ?? null, 'resultado' => $res[$x['versao']] ?? null];
+        if (is_array($item['decisao'])) unset($item['decisao']['sha256']);
+        if (in_array($x['versao'], $novas, true)) $v['pendentes'][] = $item;
+        else $v['historico'][] = $item;
+    }
+    $v['historico'] = array_slice($v['historico'], 0, 15);
+    return $v;
 }
