@@ -21,6 +21,7 @@ const MODULOS = {
   acessos: () => import('./acessos.js'),
   actualizacoes: () => import('./actualizacoes.js'),
   gestao: () => import('./gestao.js'),
+  'pedidos-clientes': () => import('./pedidos-clientes.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -56,6 +57,8 @@ export const MODULO_DA_PAGINA = {
   previsao: 'gestao',
   assistente: 'gestao',
   'painel-sala': 'gestao',
+  'pedidos-clientes': 'pedidos-clientes',
+  'clientes-qr': 'pedidos-clientes',
 };
 
 const pedidos = new Map();

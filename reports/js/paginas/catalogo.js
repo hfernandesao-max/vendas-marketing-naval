@@ -21,6 +21,8 @@ export const PAGES = [
   { id: 'cadastros', grupo: 'Clientes', icon: 'users', nome: 'Cadastros · visão geral' },
   { id: 'cadastros-analise', grupo: 'Clientes', icon: 'grow', nome: 'Análise de cadastros' },
   { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'file', nome: 'Clientes registados' },
+  { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'clip', nome: 'Pedidos dos clientes' },
+  { id: 'clientes-qr', grupo: 'Clientes', icon: 'tag', nome: 'Cartazes QR dos clientes' },
   { id: 'plano-visitas', grupo: 'Terreno', icon: 'scale', nome: 'Plano de visitas' },
   { id: 'auditoria', grupo: 'Terreno', icon: 'shield', nome: 'Histórico de auditoria' },
   { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos telemóveis' },

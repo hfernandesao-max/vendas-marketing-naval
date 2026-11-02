@@ -50,6 +50,8 @@ const NAVAL_MATRIZ_TXT = [
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
     'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V',
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
+    'pedidos-clientes'     => 'V  V  V  Vr -  -  G  -  -  V',
+    'clientes-qr'          => 'G  -  G  -  -  -  G  -  -  -',
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
     'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E',
@@ -153,7 +155,10 @@ function naval_niveis_recurso(string $rec): array
         case 'app-gestao':
             return ['', 'Vr', 'V'];
         case 'painel-sala':
+        case 'clientes-qr':
             return ['', 'G'];
+        case 'pedidos-clientes':
+            return ['', 'Vr', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':
         case 'exportar-dados':

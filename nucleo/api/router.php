@@ -61,6 +61,9 @@ function naval_api_rotas(): array
         'v1/resumo' => [['GET', 'POST'], 'jwt', 'assistente.php', ['resumo' => '1']],
         'v1/sala' => [['GET'], 'publico', 'sala.php', []],
         'v1/sala/ligacoes' => [['GET', 'POST'], 'jwt', 'sala.php', ['gerir' => '1']],
+        'v1/cliente' => [['GET', 'POST'], 'publico', 'cliente.php', []],
+        'v1/pedidos-clientes' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', []],
+        'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)
     if (is_file(__DIR__ . '/v1/stock.php')) {

@@ -18,6 +18,12 @@ export default [
     },
   },
   {
+    // páginas públicas sem módulos: cartaz do cliente (c/) e painel da sala comercial (sala/)
+    files: ['c/**/*.js', 'sala/**/*.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: { ...globals.browser } },
+    rules: { 'no-unused-vars': ['error', { caughtErrors: 'none' }], eqeqeq: ['error', 'smart'] },
+  },
+  {
     // conversores de exportações do Pinguim BO (Node, CommonJS), corridos na linha de comandos
     files: ['scripts/**/*.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'commonjs', globals: { ...globals.node } },

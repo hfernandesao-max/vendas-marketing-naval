@@ -16,7 +16,7 @@ require_once __DIR__ . '/rotas.php';
 
 const NAVAL_ANALISE_DIAS_ABERTOS = 3;    // dias recentes que ainda podem mudar (notas de crédito, sincronização tardia)
 const NAVAL_ANALISE_HISTORICO = 120;     // dias de histórico usados nos alertas e na previsão
-const NAVAL_ANALISE_VERSAO = 1;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
+const NAVAL_ANALISE_VERSAO = 2;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
 
 function naval_analise_pasta(): string
 {
@@ -26,12 +26,15 @@ function naval_analise_pasta(): string
 /**
  * Resumo de um dia a partir das vendas e das linhas de artigos (formato de v1/vendas, sem âmbito aplicado).
  * {rotas: {rota: {t: total, d: documentos, nc: notas de crédito}}, clientes: {código: {n, r, t, d}},
- *  artigos: {rota: {código: {n, u, q, t}}}}. Totais líquidos (as notas de crédito já vêm em negativo).
+ *  artigos: {rota: {código: {n, u, q, t}}}, ca: {cliente: {código: quantidade}}} (ca: compras de cada cliente por artigo,
+ *  base das sugestões de encomenda do cartaz QR). Totais líquidos (as notas de crédito já vêm em negativo).
  */
 function naval_analise_resumir(array $vendas, array $artigos): array
 {
-    $r = ['rotas' => [], 'clientes' => [], 'artigos' => []];
+    $r = ['rotas' => [], 'clientes' => [], 'artigos' => [], 'ca' => []];
+    $docCliente = [];
     foreach ($vendas as $v) {
+        if (empty($v['nc']) && (string) ($v['cliente_codigo'] ?? '') !== '') $docCliente[(string) ($v['documento'] ?? '')] = (string) $v['cliente_codigo'];
         $rota = (string) ($v['rota'] ?? '');
         if ($rota === '') continue;
         if (!isset($r['rotas'][$rota])) $r['rotas'][$rota] = ['t' => 0.0, 'd' => 0, 'nc' => 0];
@@ -53,6 +56,8 @@ function naval_analise_resumir(array $vendas, array $artigos): array
         }
         $r['artigos'][$rota][$cod]['q'] += (float) ($a['quantidade'] ?? 0);
         $r['artigos'][$rota][$cod]['t'] += (float) ($a['total'] ?? 0);
+        $cl = $docCliente[(string) ($a['documento'] ?? '')] ?? '';
+        if ($cl !== '' && empty($a['nc'])) $r['ca'][$cl][$cod] = round(($r['ca'][$cl][$cod] ?? 0) + (float) ($a['quantidade'] ?? 0), 3);
     }
     foreach ($r['rotas'] as $k => $x) $r['rotas'][$k]['t'] = round($x['t'], 2);
     foreach ($r['clientes'] as $k => $x) $r['clientes'][$k]['t'] = round($x['t'], 2);
@@ -138,10 +143,12 @@ function naval_analise_ambito(array $agregados, ?array $rotas, bool $veValores):
             $x['rotas'] = array_intersect_key($x['rotas'] ?? [], array_flip($rotas));
             $x['artigos'] = array_intersect_key($x['artigos'] ?? [], array_flip($rotas));
             $x['clientes'] = array_filter($x['clientes'] ?? [], function ($c) use ($rotas) { return in_array((string) $c['r'], $rotas, true); });
+            $x['ca'] = array_intersect_key($x['ca'] ?? [], $x['clientes']);
         }
         if (!$veValores) {
             foreach ($x['rotas'] as $k => $r) $x['rotas'][$k]['t'] = null;
             $x['clientes'] = [];
+            $x['ca'] = [];
             foreach ($x['artigos'] as $rt => $arts) foreach ($arts as $c => $a) $x['artigos'][$rt][$c]['t'] = null;
         }
         $agregados[$dia] = $x;

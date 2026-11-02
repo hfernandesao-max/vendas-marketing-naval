@@ -52,7 +52,9 @@
     out.push(el('div', 's-gigante', kz(h.total)));
     if (h.previsto) {
       out.push(barra(Math.min(1, h.total / h.previsto)));
-      out.push(el('p', 's-sub', Math.round((h.total / h.previsto) * 100) + '% da previsão do dia (' + kz(h.previsto) + ') · ' + nf.format(h.documentos) + ' vendas'));
+      out.push(
+        el('p', 's-sub', Math.round((h.total / h.previsto) * 100) + '% da previsão do dia (' + kz(h.previsto) + ') · ' + nf.format(h.documentos) + ' vendas'),
+      );
     } else out.push(el('p', 's-sub', nf.format(h.documentos) + ' vendas'));
     var g = el('div', 's-grelha');
     [
@@ -114,7 +116,8 @@
       .sort(function (a, b) {
         return b.variacao_mes - a.variacao_mes;
       })[0];
-    if (sobe) destaque('Maior subida do mês', 'Rota ' + sobe.rota + (sobe.promotor ? ' · ' + sobe.promotor : ''), pct(sobe.variacao_mes) + ' face ao mês passado');
+    if (sobe)
+      destaque('Maior subida do mês', 'Rota ' + sobe.rota + (sobe.promotor ? ' · ' + sobe.promotor : ''), pct(sobe.variacao_mes) + ' face ao mês passado');
     var hoje = D.rotas.slice().sort(function (a, b) {
       return b.hoje - a.hoje;
     })[0];

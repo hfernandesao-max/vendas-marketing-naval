@@ -1895,3 +1895,70 @@ table.ac-mig tr.ac-off td:not(:last-child) {
     align-items: stretch;
   }
 }
+/* Cartazes QR dos clientes: um A4 por cliente, só os cartazes na impressão */
+.cqr-impressao {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+  body.a-imprimir > *:not(.cqr-impressao) {
+    display: none !important;
+  }
+  body.a-imprimir {
+    background: #fff !important;
+  }
+  body.a-imprimir .cqr-impressao {
+    display: block;
+  }
+  .cqr-folha {
+    page-break-after: always;
+    break-after: page;
+    height: 270mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #1c2340;
+    font-family: Inter, 'Segoe UI', Arial, sans-serif;
+    border: 3mm solid #1e3a8a;
+    border-radius: 6mm;
+    padding: 10mm;
+    box-sizing: border-box;
+  }
+  .cqr-folha img {
+    width: 28mm;
+    height: auto;
+  }
+  .cqr-folha h1 {
+    font-size: 44pt;
+    color: #1e3a8a;
+    margin: 4mm 0 0;
+  }
+  .cqr-sub {
+    font-size: 20pt;
+    margin: 1mm 0 6mm;
+    color: #0057b8;
+  }
+  .cqr-qr svg {
+    width: 120mm;
+    height: 120mm;
+  }
+  .cqr-folha ol {
+    text-align: left;
+    font-size: 15pt;
+    margin: 6mm 0 0;
+  }
+  .cqr-cliente {
+    font-size: 18pt;
+    font-weight: 700;
+    margin: auto 0 1mm;
+  }
+  .cqr-rodape {
+    font-size: 11pt;
+    color: #4a5568;
+    margin: 0;
+  }
+}
