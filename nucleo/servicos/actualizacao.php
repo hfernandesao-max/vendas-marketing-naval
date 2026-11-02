@@ -591,8 +591,8 @@ function naval_act_aplicar(array $o = []): array
             }
             $origem = 'ficheiro ' . basename($zip);
         } else {
-            if (naval_act_exige_aprovacao()) {
-                // só versões aprovadas no portal (página «Actualizações»), presas ao SHA-256 aprovado
+            if (naval_act_exige_aprovacao() && !$o['ensaio']) {
+                // só versões aprovadas no portal (o ensaio «verificar» compara sempre com a mais recente publicada) (página «Actualizações»), presas ao SHA-256 aprovado
                 $versoes = naval_act_versoes();
                 if (!empty($o['avisar_pendentes'])) naval_act_avisar_pendentes($versoes, $estado);
                 $u = naval_act_alvo_aprovado($versoes, $estado, naval_act_aprovacoes());
