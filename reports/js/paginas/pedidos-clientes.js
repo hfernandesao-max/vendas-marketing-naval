@@ -218,7 +218,7 @@ function imprimir(codigos) {
 function gerar(novo) {
   const sel = QR.clientes.filter((c) => escolhidos.has(c.cliente));
   if (!sel.length) return toast(t('Escolha pelo menos um cliente.'));
-  postJson('clientes-qr', { clientes: sel.map((c) => ({ cliente: c.cliente, nome: c.nome, rota: c.rota })), novo }).then((r) => {
+  postJson('clientes-qr', { rota: rotaQr, clientes: sel.map((c) => ({ cliente: c.cliente })), novo }).then((r) => {
     if (!r.ok) return toast(t(r.erro || 'Não foi possível gerar os códigos.'), 6000);
     imprimir(r.codigos);
     lerQr(rotaQr);

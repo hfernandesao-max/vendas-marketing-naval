@@ -14,6 +14,7 @@ require_once __DIR__ . '/analise.php';
 require_once __DIR__ . '/alertas.php';
 require_once __DIR__ . '/previsao.php';
 require_once __DIR__ . '/email.php';
+require_once __DIR__ . '/vendas.php';
 
 /** Contas que recebem o resumo: [{login, nome, email, perfil, rotas (null = todas)}]. */
 function naval_resumo_destinatarios(): array
@@ -25,9 +26,16 @@ function naval_resumo_destinatarios(): array
         if (!naval_conta_valida($u) || !naval_email_valido($u['email'] ?? null)) continue;
         $nivel = $m['resumo-diario'][$u['perfil']] ?? '';
         if ($nivel === '') continue;
+        // o resumo segue as permissões de quem o recebe: sem páginas de vendas não recebe; AGT e equipamentos só com acesso
+        $nivel = function (string $rec) use ($m, $u) { return (string) ($m[$rec][$u['perfil']] ?? ''); };
+        if (!array_filter(NAVAL_PAGINAS_VENDAS, function ($p) use ($nivel) { return $nivel($p) !== ''; })) continue;
+        $fontes = ['vendas'];
+        if ($nivel('vendas-cliente') !== '') $fontes[] = 'clientes';
+        if ($nivel('agt') !== '') $fontes[] = 'agt';
+        if ($nivel('equipamentos') !== '') $fontes[] = 'mdm';
         $porRota = in_array($u['perfil'], naval_perfis_por_rota(), true);
         $out[] = ['login' => $login, 'nome' => (string) ($u['nome'] ?? $login), 'email' => trim((string) $u['email']), 'perfil' => $u['perfil'],
-            'rotas' => $porRota ? array_values(array_map('strval', (array) ($u['rotas'] ?? []))) : null];
+            'rotas' => $porRota ? array_values(array_map('strval', (array) ($u['rotas'] ?? []))) : null, 'fontes' => $fontes];
     }
     return $out;
 }
@@ -165,7 +173,7 @@ function naval_resumo_enviar(?string $dia = null, ?string $apenas = null): array
     $ag = naval_analise_agregados(date('Y-m-d', strtotime($dia . ' 12:00') - NAVAL_ANALISE_HISTORICO * 86400), $dia);
     $promotores = naval_promotores();
     $grupos = [];
-    foreach ($dest as $d) $grupos[json_encode($d['rotas'])][] = $d;
+    foreach ($dest as $d) $grupos[json_encode([$d['rotas'], $d['fontes']])][] = $d;
     $enviados = 0;
     $falhas = [];
     $ligacao = rtrim(naval_config('PORTAL_URL', 'https://geo.naval.co.ao:2051'), '/') . '/reports/#alertas';
@@ -173,7 +181,7 @@ function naval_resumo_enviar(?string $dia = null, ?string $apenas = null): array
         $rotas = $g[0]['rotas'];
         $alertas = [];
         try {
-            $alertas = naval_alertas($dia, $rotas, true, $rotas === null ? ['vendas', 'clientes', 'agt', 'mdm'] : ['vendas', 'clientes'])['alertas'];
+            $alertas = naval_alertas($dia, $rotas, true, $g[0]['fontes'])['alertas'];
         } catch (Throwable $e) {
             error_log('[resumo alertas] ' . $e->getMessage());
         }

@@ -3,7 +3,8 @@
  * Painel da sala comercial (ecrã de TV): indicadores do dia por rota, sem conta nem palavra-passe, por uma ligação
  * própria (código aleatório de 256 bits) que o super administrador ou quem gere o painel cria e revoga no portal.
  *
- * GET v1/sala?t=<código>        indicadores agregados (sem clientes, NIF nem documentos)
+ * GET v1/sala (cabeçalho X-Painel-Codigo) indicadores agregados (sem clientes, NIF nem documentos); o código vai no
+ *                               fragmento do endereço da página (#t=…), que não chega aos registos do Apache nem a intermediários
  * GET v1/sala/ligacoes          ligações criadas (sem o código) — recurso «painel-sala» (G)
  * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id), csrf}   o código só se mostra uma vez, ao criar
  *
@@ -59,14 +60,20 @@ if (($_GET['gerir'] ?? '') === '1') {
 
 // ── Ecrã da sala: só com uma ligação válida ──
 $GLOBALS['naval_api_sensivel'] = true;   // o código vai no endereço: a resposta nunca fica em caches intermédias
-$codigo = (string) ($_GET['t'] ?? '');
+$codigo = (string) ($_SERVER['HTTP_X_PAINEL_CODIGO'] ?? '');
 $hash = preg_match('/^[a-f0-9]{64}$/', $codigo) ? hash('sha256', $codigo) : '';
 $id = null;
 foreach (naval_json_ler(naval_sala_ficheiro()) as $k => $x) {
     if ($hash !== '' && empty($x['revogado']) && hash_equals((string) $x['hash'], $hash)) $id = $k;
 }
 if ($id === null) {
-    naval_registar('sala_acesso_recusado', [], 'painel-sala');
+    // no máximo um registo por minuto e por IP (o ritmo da API já limita as tentativas)
+    $ip = naval_ip_cliente();
+    $marca = naval_pasta('limites') . '/sala-recusa-' . substr(hash('sha256', $ip), 0, 16);
+    if (!is_file($marca) || filemtime($marca) < time() - 60) {
+        @touch($marca);
+        naval_registar('sala_acesso_recusado', [], 'painel-sala');
+    }
     throw new NavalErro('Ligação do painel inválida ou revogada.', 403);
 }
 // último acesso (no máximo um registo por minuto)

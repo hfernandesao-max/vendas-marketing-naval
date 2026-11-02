@@ -34,6 +34,11 @@ if (!naval_e_post()) {
             return ['habituais' => [], 'cruzada' => []];
         }
     });
+    // página pública (o cartaz está à vista de todos): só a quantidade sugerida e se está na altura de repor; nunca o número
+    // de compras nem o intervalo entre compras (padrões do negócio do cliente). QR_SUGESTAO=0 desliga a sugestão.
+    $sug = naval_config('QR_SUGESTAO', '1') === '0' ? ['habituais' => [], 'cruzada' => []] : [
+        'habituais' => array_map(function ($h) { return ['codigo' => $h['codigo'], 'quantidade' => $h['quantidade'], 'repor' => $h['repor']]; }, $sug['habituais']),
+        'cruzada' => $sug['cruzada']];
     naval_json(['ok' => true, 'nome' => $cl['nome'], 'rota' => $cl['rota'], 'artigos' => $artigos($cl), 'sugestao' => $sug, 'consentimento' => NAVAL_CQR_TEXTO_CONSENTIMENTO]);
 }
 $p = naval_pedido();

@@ -3,8 +3,10 @@
 // melhores e quem mais subiu face a si próprio; nunca o último lugar.
 (function () {
   'use strict';
-  var codigo = new URLSearchParams(location.search).get('t') || '';
-  var API = '../api/index.php/v1/sala?t=' + encodeURIComponent(codigo);
+  // o código vai no fragmento (#t=…): não chega aos registos do servidor; segue para a API num cabeçalho
+  var codigo = new URLSearchParams(location.hash.slice(1)).get('t') || new URLSearchParams(location.search).get('t') || '';
+  if (location.search.indexOf('t=') >= 0 && history.replaceState) history.replaceState(null, '', location.pathname + '#t=' + codigo);
+  var API = '../api/index.php/v1/sala';
   var D = null;
   var ecra = 0;
   var erro = '';
@@ -195,7 +197,7 @@
     });
   }
   function carregar() {
-    fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' })
+    fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'X-Painel-Codigo': codigo } })
       .then(function (r) {
         return r.json().then(function (j) {
           if (!r.ok || !j.ok) throw new Error(j.erro || 'HTTP ' + r.status);

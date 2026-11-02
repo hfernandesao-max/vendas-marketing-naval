@@ -440,7 +440,7 @@ function criarLigacao() {
             return;
           }
           DADOS.sala = { ok: true, ligacoes: r.ligacoes };
-          const url = new URL('../sala/?t=' + r.codigo, location.href).href;
+          const url = new URL('../sala/#t=' + r.codigo, location.href).href;
           b.replaceChildren(
             el('p', null, t('Abra este endereço no navegador do ecrã (em ecrã inteiro). Por segurança, só é mostrado agora: copie-o já.')),
             el('code', 'gst-url', url),

@@ -5,7 +5,8 @@
  * GET  v1/pedidos-clientes                       pendentes e decididos nos últimos 30 dias — recurso «pedidos-clientes»
  * POST v1/pedidos-clientes {id, accao: aprovar | recusar, motivo, correccoes, csrf}   só nível G
  * GET  v1/clientes-qr?rota=1001                  clientes da rota e estado do cartaz — recurso «clientes-qr»
- * POST v1/clientes-qr {clientes: [{cliente, nome, rota}], novo, csrf}   códigos para imprimir (novo: substitui os anteriores)
+ * POST v1/clientes-qr {rota, clientes: [{cliente}], novo, csrf}   códigos para imprimir (novo: substitui os anteriores); só clientes
+ *                                              com vendas na rota (nome e rota lidos no servidor)
  */
 defined('NAVAL_API') || exit;
 naval_servico('clientes-qr');
@@ -22,8 +23,13 @@ if (($_GET['qr'] ?? '') === '1') {
     }
     $p = naval_pedido();
     naval_exigir_csrf($p);
-    $cl = array_values(array_filter(array_slice((array) ($p['clientes'] ?? []), 0, 500), function ($c) { return is_array($c) && naval_rota_permitida($c['rota'] ?? ''); }));
-    if (!$cl) throw new NavalErro('Escolha pelo menos um cliente.', 400);
+    // cliente, nome e rota vêm sempre do servidor (vendas da rota), nunca do navegador
+    $rota = (string) ($p['rota'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || !naval_rota_permitida($rota)) throw new NavalErro('Rota inválida.', 400);
+    $pedidos = array_flip(array_map('strval', array_column(array_filter(array_slice((array) ($p['clientes'] ?? []), 0, 500), 'is_array'), 'cliente')));
+    $ag = naval_analise_agregados(date('Y-m-d', time() - NAVAL_ANALISE_HISTORICO * 86400), date('Y-m-d', time() - 86400));
+    $cl = array_values(array_filter(naval_cqr_clientes_rota($ag, $rota), function ($c) use ($pedidos) { return isset($pedidos[$c['cliente']]); }));
+    if (!$cl) throw new NavalErro('Escolha pelo menos um cliente da rota.', 400);
     naval_json(['ok' => true, 'codigos' => naval_cqr_codigos($cl, (string) $eu['login'], !empty($p['novo']))]);
 }
 
@@ -43,13 +49,19 @@ if (!naval_e_post()) {
             error_log('[pedidos verificação] ' . $e->getMessage());
         }
     }
+    // IP e navegador de quem fez o pedido: só para a administração da plataforma (minimização de dados)
+    if (!in_array((string) ($eu['perfil'] ?? ''), ['SADM', 'TI'], true)) {
+        foreach ($pedidos as &$p) unset($p['ip'], $p['navegador']);
+        unset($p);
+    }
     naval_json(['ok' => true, 'pedidos' => $pedidos, 'gere' => naval_pode('pedidos-clientes', 'G')]);
 }
 $p = naval_pedido();
 naval_exigir_csrf($p);
 if (!naval_pode('pedidos-clientes', 'G')) throw new NavalErro('O seu perfil não permite validar pedidos dos clientes.', 403);
 $id = (string) ($p['id'] ?? '');
-$antes = naval_json_ler(naval_cqr_pasta('pedidos') . '/' . basename($id) . '.json');
+if (!preg_match('/^\d{12}-[a-f0-9]{6}$/', $id)) throw new NavalErro('Pedido desconhecido.', 404);
+$antes = naval_json_ler(naval_cqr_pasta('pedidos') . '/' . $id . '.json');
 if ($antes && !naval_rota_permitida($antes['rota'] ?? '')) throw new NavalErro('Pedido desconhecido.', 404);
 naval_json(['ok' => true, 'pedido' => naval_cqr_decidir($id, (string) ($p['accao'] ?? ''), (string) ($p['motivo'] ?? ''),
     is_array($p['correccoes'] ?? null) ? $p['correccoes'] : [], $eu)]);

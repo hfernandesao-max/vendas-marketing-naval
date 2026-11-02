@@ -17,8 +17,9 @@ defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/analise.php';
 
 const NAVAL_CQR_TIPOS = ['encomenda', 'dados', 'consentimento'];
-const NAVAL_CQR_LIMITE_DIA_CLIENTE = 6;
-const NAVAL_CQR_LIMITE_DIA_IP = 30;
+const NAVAL_CQR_LIMITE_DIA_CLIENTE = 10;
+const NAVAL_CQR_LIMITE_DIA_TELEFONE = 5;
+const NAVAL_CQR_LIMITE_DIA_IP = 60;   // vários clientes podem sair pelo mesmo IP da operadora móvel
 const NAVAL_CQR_TEXTO_CONSENTIMENTO = 'Aceito receber do Grupo Naval, por WhatsApp, promoções, novidades e avisos de visita. Posso deixar de receber '
     . 'a qualquer momento, respondendo «SAIR». Os meus dados são tratados nos termos da Lei n.º 22/11 (protecção de dados pessoais).';
 
@@ -174,11 +175,14 @@ function naval_cqr_pedir(string $codigo, string $tipo, array $dados, string $ip,
         $n = naval_json_ler($lim);
         $kc = 'c|' . $cl['cliente'];
         $ki = 'i|' . hash('sha256', $ip);
-        if (($n[$kc] ?? 0) >= NAVAL_CQR_LIMITE_DIA_CLIENTE || ($n[$ki] ?? 0) >= NAVAL_CQR_LIMITE_DIA_IP) {
+        $tel = preg_replace('/\D/', '', (string) ($conteudo['contacto_telefone'] ?? ''));
+        $kt = $tel !== '' ? 't|' . hash('sha256', $tel) : null;
+        if (($n[$kc] ?? 0) >= NAVAL_CQR_LIMITE_DIA_CLIENTE || ($n[$ki] ?? 0) >= NAVAL_CQR_LIMITE_DIA_IP || ($kt && ($n[$kt] ?? 0) >= NAVAL_CQR_LIMITE_DIA_TELEFONE)) {
             throw new NavalErro('Já recebemos vários pedidos hoje. Se for urgente, contacte o seu promotor.', 429);
         }
         $n[$kc] = ($n[$kc] ?? 0) + 1;
         $n[$ki] = ($n[$ki] ?? 0) + 1;
+        if ($kt) $n[$kt] = ($n[$kt] ?? 0) + 1;
         naval_json_gravar($lim, $n, false);
         foreach (glob(naval_cqr_pasta() . '/limites-*.json') ?: [] as $f) if (basename($f) < 'limites-' . date('Y-m-d', time() - 3 * 86400)) @unlink($f);
         $id = date('ymdHis') . '-' . bin2hex(random_bytes(3));
@@ -250,7 +254,10 @@ function naval_cqr_aplicar(array $p): void
             $f = naval_cqr_pasta() . '/consentimentos.json';
             $c = naval_json_ler($f);
             $c[$p['cliente']] = ['whatsapp' => true, 'telefone' => $p['conteudo']['contacto_telefone'], 'nome' => $p['conteudo']['contacto_nome'], 'rota' => $p['rota'],
-                'texto' => $p['conteudo']['texto'], 'pedido' => $p['id'], 'data' => $p['criado'], 'validado' => $p['decidido'], 'validado_por' => $p['decidido_por'], 'saida' => null];
+                'texto' => $p['conteudo']['texto'], 'pedido' => $p['id'], 'data' => $p['criado'], 'validado' => $p['decidido'], 'validado_por' => $p['decidido_por'], 'saida' => null,
+                // dupla confirmação (prova de que o número é de quem aceitou): só depois da resposta à mensagem de confirmação
+                // enviada para esse número se pode enviar comunicações; até lá, nenhum envio
+                'confirmado' => false];
             naval_json_gravar($f, $c);
         });
         return;

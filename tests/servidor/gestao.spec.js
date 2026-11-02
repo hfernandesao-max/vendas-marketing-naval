@@ -1,7 +1,7 @@
 // Gestão (análise e IA): alertas, previsão, indicadores, assistente (com a API da Anthropic simulada), resumo diário,
 // painel da sala comercial e cartaz QR do cliente (página pública, pedidos pendentes e validação no back-office).
 import { test, expect, request } from '@playwright/test';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { entrar, API, BASE, csrf } from './ajuda.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -100,14 +100,14 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
   expect(r.codigo).toMatch(/^[a-f0-9]{64}$/);
   expect(JSON.stringify(r.ligacoes)).not.toContain(r.codigo);
   const tv = await request.newContext({ baseURL: BASE });
-  const s = await tv.get(API + 'sala?t=' + r.codigo);
+  const s = await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } });
   expect(s.status()).toBe(200);
   const j = await s.json();
   expect(Object.keys(j.rotas[0] || { rota: 1 })).not.toContain('clientes');
   expect(JSON.stringify(j)).not.toMatch(/nif|5000000002|Loja B/i);
-  expect((await tv.get(API + 'sala?t=' + 'f'.repeat(64))).status()).toBe(403);
+  expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': 'f'.repeat(64) } })).status()).toBe(403);
   await ctx.post(API + 'sala/ligacoes', { data: { accao: 'revogar', id: r.id, csrf: c } });
-  expect((await tv.get(API + 'sala?t=' + r.codigo)).status()).toBe(403);
+  expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(403);
   // quem não gere o painel: 403
   const dir = await entrar('dir');
   expect((await dir.ctx.get(API + 'sala/ligacoes')).status()).toBe(403);
@@ -115,13 +115,28 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
 
 test('cartaz QR do cliente: código aleatório, pedidos pendentes, armadilha para robôs, validação e limites', async () => {
   rmSync(PRIV + '/clientes-qr', { recursive: true, force: true });
+  // agregado de ontem com o cliente X2 na rota 1002 (os cartazes só se criam para clientes com vendas na rota)
+  const ontem = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE', { timeZone: 'Africa/Luanda' });
+  mkdirSync(PRIV + '/analise', { recursive: true });
+  writeFileSync(
+    `${PRIV}/analise/${ontem}.json`,
+    JSON.stringify({
+      v: 2,
+      dia: ontem,
+      fixo: false,
+      rotas: { 1002: { t: 1000, d: 1, nc: 0 } },
+      clientes: { X2: { n: 'Loja B', r: '1002', t: 1000, d: 1 } },
+      artigos: {},
+      ca: {},
+    }),
+  );
   const { ctx } = await entrar('bo');
   const c = await csrf(ctx);
-  const g = await (await ctx.post(API + 'clientes-qr', { data: { clientes: [{ cliente: 'X2', nome: 'Loja B', rota: '1002' }], csrf: c } })).json();
+  const g = await (await ctx.post(API + 'clientes-qr', { data: { rota: '1002', clientes: [{ cliente: 'X2' }], csrf: c } })).json();
   const codigo = g.codigos[0].codigo;
   expect(codigo).toMatch(/^[A-Za-z0-9_-]{22}$/);
   // voltar a imprimir mantém o código; «novo» substitui-o e o anterior deixa de funcionar
-  const g2 = await (await ctx.post(API + 'clientes-qr', { data: { clientes: [{ cliente: 'X2', nome: 'Loja B', rota: '1002' }], csrf: c } })).json();
+  const g2 = await (await ctx.post(API + 'clientes-qr', { data: { rota: '1002', clientes: [{ cliente: 'X2' }], csrf: c } })).json();
   expect(g2.codigos[0].codigo).toBe(codigo);
 
   const pub = await request.newContext({ baseURL: BASE });
@@ -159,11 +174,17 @@ test('cartaz QR do cliente: código aleatório, pedidos pendentes, armadilha par
   const dir = await entrar('dir');
   const pc = lista.find((p) => p.tipo === 'consentimento');
   expect((await dir.ctx.post(API + 'pedidos-clientes', { data: { id: pc.id, accao: 'aprovar', csrf: await csrf(dir.ctx) } })).status()).toBe(403);
-  // limite diário por cliente (6 pedidos)
+  // cliente de outra rota ou inexistente: recusado (nome e rota vêm do servidor)
+  expect((await ctx.post(API + 'clientes-qr', { data: { rota: '1002', clientes: [{ cliente: 'NAO-EXISTE' }], csrf: c } })).status()).toBe(400);
+  // corpo demasiado grande na rota pública: 413
+  expect((await pub.post(API + 'cliente', { data: { k: codigo, tipo: 'dados', dados: { observacoes: 'x'.repeat(20000) } } })).status()).toBe(413);
+  // o back-office não vê o IP nem o navegador de quem fez o pedido
+  expect(JSON.stringify(lista)).not.toMatch(/"ip"|navegador/);
+  // limite diário por cliente (10 pedidos)
   let ultimo = 0;
-  for (let k = 0; k < 6; k++) ultimo = (await pub.post(API + 'cliente', { data: { k: codigo, tipo: 'dados', dados: { horario: 'h' + k } } })).status();
+  for (let k = 0; k < 9; k++) ultimo = (await pub.post(API + 'cliente', { data: { k: codigo, tipo: 'dados', dados: { horario: 'h' + k } } })).status();
   expect(ultimo).toBe(429);
   // código substituído: o antigo deixa de funcionar
-  await ctx.post(API + 'clientes-qr', { data: { clientes: [{ cliente: 'X2', nome: 'Loja B', rota: '1002' }], novo: true, csrf: c } });
+  await ctx.post(API + 'clientes-qr', { data: { rota: '1002', clientes: [{ cliente: 'X2' }], novo: true, csrf: c } });
   expect((await pub.get(API + 'cliente?k=' + codigo)).status()).toBe(404);
 });

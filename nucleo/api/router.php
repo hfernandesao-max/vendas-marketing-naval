@@ -120,7 +120,10 @@ function naval_api_ritmo(string $quem, int $max = 0): void
 function naval_api_corpo(string $rota): void
 {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') return;
-    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > NAVAL_API_CORPO_MAX) throw new NavalErro('Pedido demasiado grande.', 413);
+    // rotas públicas (sem conta): corpo pequeno, lido no máximo até ao limite (naval_pedido)
+    $max = in_array($rota, ['v1/cliente', 'v1/csp-relatorio'], true) ? 16384 : NAVAL_API_CORPO_MAX;
+    $GLOBALS['naval_corpo_max'] = $max;
+    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $max) throw new NavalErro('Pedido demasiado grande.', 413);
     $tipo = strtolower(trim(explode(';', (string) ($_SERVER['CONTENT_TYPE'] ?? ''))[0]));
     $aceites = $rota === 'v1/csp-relatorio' ? ['application/csp-report', 'application/reports+json', 'application/json'] : ['application/json'];
     if (!in_array($tipo, $aceites, true)) throw new NavalErro('Tipo de conteúdo não suportado (use application/json).', 415);

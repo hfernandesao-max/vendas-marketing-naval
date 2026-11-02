@@ -17,6 +17,7 @@ if (($_GET['resumo'] ?? '') === '1') {
     naval_exigir(['resumo-diario']);
     naval_servico('vendas');
     naval_servico('resumo');
+    if (!naval_ve_vendas()) throw new NavalErro('O resumo diário precisa de acesso às páginas de vendas.', 403);
     if (!naval_e_post()) {
         $dia = date('Y-m-d', time() - 86400);
         $ultimo = null;

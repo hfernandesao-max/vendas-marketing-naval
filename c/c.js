@@ -102,19 +102,7 @@
       usados[a.codigo] = true;
       var l = el('div', 'c-artigo');
       var n = el('div', null, a.nome);
-      if (hab)
-        n.appendChild(
-          el(
-            'small',
-            null,
-            'Costuma levar ' +
-              hab.quantidade +
-              ' ' +
-              (a.unidade || '') +
-              (hab.intervalo > 1 ? ' a cada ' + hab.intervalo + ' dias' : '') +
-              (hab.repor ? ' · está na altura de repor' : ''),
-          ),
-        );
+      if (hab) n.appendChild(el('small', null, 'Sugestão: ' + hab.quantidade + ' ' + (a.unidade || '') + (hab.repor ? ' · está na altura de repor' : '')));
       else if (a.unidade) n.appendChild(el('small', null, a.unidade));
       var i = el('input');
       i.type = 'number';
