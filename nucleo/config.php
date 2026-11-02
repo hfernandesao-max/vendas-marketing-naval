@@ -82,6 +82,35 @@ function naval_pasta(string $sub): string
     return $d;
 }
 
+/**
+ * Grava (ou substitui) chaves no .env pelas ferramentas da linha de comandos, mantendo o resto do ficheiro e as
+ * quebras de linha, depois de uma cópia de segurança (.env.antes-<etiqueta>-<data>). Devolve o nome da cópia.
+ */
+function naval_env_gravar(array $chaves, string $etiqueta): string
+{
+    $ficheiro = naval_ficheiro_env();
+    $antes = is_file($ficheiro) ? (string) file_get_contents($ficheiro) : '';
+    $copia = $ficheiro . '.antes-' . $etiqueta . '-' . date('Ymd-His');
+    if ($antes !== '' && file_put_contents($copia, $antes, LOCK_EX) === false) throw new RuntimeException('Não foi possível fazer a cópia de segurança do .env.');
+    $linhas = $antes === '' ? [] : (preg_split('/\r\n|\n|\r/', rtrim($antes, "\r\n")) ?: []);
+    $fim = strpos($antes, "\r\n") !== false ? "\r\n" : "\n";
+    foreach ($chaves as $k => $v) {
+        $v = (string) $v;
+        if (preg_match('/[\r\n]/', $v)) throw new RuntimeException('Valor inválido para ' . $k . '.');
+        $feito = false;
+        foreach ($linhas as $i => $l) {
+            if (preg_match('/^\s*#?\s*' . preg_quote((string) $k, '/') . '\s*=/', $l)) {
+                if (!$feito) $linhas[$i] = $k . '=' . $v;
+                else unset($linhas[$i]);
+                $feito = true;
+            }
+        }
+        if (!$feito) $linhas[] = $k . '=' . $v;
+    }
+    if (file_put_contents($ficheiro, implode($fim, $linhas) . $fim, LOCK_EX) === false) throw new RuntimeException('Não foi possível gravar o .env.');
+    return basename($copia);
+}
+
 /** Chaves obrigatórias que faltam no .env (só os nomes, nunca os valores). */
 function naval_config_em_falta(array $chaves): array
 {

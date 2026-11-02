@@ -28,30 +28,6 @@ function mdm_pergunta(string $texto, string $variavel): string
     return trim((string) fgets(STDIN));
 }
 
-/** Grava (ou substitui) chaves no .env, mantendo o resto do ficheiro e fazendo antes uma cópia de segurança. */
-function mdm_gravar_env(string $ficheiro, array $chaves): string
-{
-    $antes = is_file($ficheiro) ? (string) file_get_contents($ficheiro) : '';
-    $copia = $ficheiro . '.antes-mdm-' . date('Ymd-His');
-    if ($antes !== '' && file_put_contents($copia, $antes, LOCK_EX) === false) throw new RuntimeException('Não foi possível fazer a cópia de segurança do .env.');
-    $linhas = $antes === '' ? [] : preg_split('/\r\n|\n|\r/', rtrim($antes, "\r\n"));
-    $fim = strpos($antes, "\r\n") !== false ? "\r\n" : "\n";
-    foreach ($chaves as $k => $v) {
-        if (preg_match('/[\r\n]/', $v)) throw new RuntimeException('Valor inválido para ' . $k . '.');
-        $feito = false;
-        foreach ($linhas as $i => $l) {
-            if (preg_match('/^\s*#?\s*' . preg_quote($k, '/') . '\s*=/', $l)) {
-                if (!$feito) $linhas[$i] = $k . '=' . $v;
-                else unset($linhas[$i]);
-                $feito = true;
-            }
-        }
-        if (!$feito) $linhas[] = $k . '=' . $v;
-    }
-    if (file_put_contents($ficheiro, implode($fim, $linhas) . $fim, LOCK_EX) === false) throw new RuntimeException('Não foi possível gravar o .env.');
-    return $copia;
-}
-
 echo "MDM Plus: configurar a ligação (Self Client da Zoho)\n\n";
 $id = mdm_pergunta('Client ID', 'MDM_CONFIG_CLIENT_ID');
 $segredo = mdm_pergunta('Client Secret', 'MDM_CONFIG_CLIENT_SECRET');
@@ -85,9 +61,9 @@ if ($refresh === '') {
 }
 
 try {
-    $copia = mdm_gravar_env(naval_ficheiro_env(), ['MDM_OAUTH_CLIENT_ID' => $id, 'MDM_OAUTH_CLIENT_SECRET' => $segredo, 'MDM_OAUTH_REFRESH_TOKEN' => $refresh]);
+    $copia = naval_env_gravar(['MDM_OAUTH_CLIENT_ID' => $id, 'MDM_OAUTH_CLIENT_SECRET' => $segredo, 'MDM_OAUTH_REFRESH_TOKEN' => $refresh], 'mdm');
     @unlink(naval_mdm_ficheiro_token());   // token de acesso antigo, de outras credenciais
-    echo "  ok     chaves MDM_OAUTH_* gravadas no .env (cópia do anterior: " . basename($copia) . ")\n\n";
+    echo "  ok     chaves MDM_OAUTH_* gravadas no .env (cópia do anterior: " . $copia . ")\n\n";
 } catch (Throwable $e) {
     fwrite(STDERR, '  FALHA  ' . $e->getMessage() . "\n");
     exit(1);

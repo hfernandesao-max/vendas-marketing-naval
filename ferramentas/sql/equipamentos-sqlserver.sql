@@ -257,6 +257,19 @@ WHERE a.Estado = 'ATRIBUIDO'
                     AND d.IdColaborador = a.IdColaboradorActual);
 GO
 
+/* ===================== Versao do esquema (actualizacoes automaticas) ===================== */
+-- Cada alteracao futura a estas tabelas vem em ferramentas/sql/migracoes/NNNN-*.sql e e aplicada pelo
+-- actualizador do portal (ferramentas/actualizar.php), que regista aqui a versao. Este script e a versao 1.
+CREATE TABLE dbo.ATV_MIGRACAO (
+    Versao      INT            NOT NULL CONSTRAINT PK_ATV_MIGRACAO PRIMARY KEY,
+    Nome        NVARCHAR(200)  NOT NULL,
+    AplicadaEm  DATETIME2(0)   NOT NULL CONSTRAINT DF_ATV_MIGRACAO_DATA DEFAULT (SYSDATETIME()),
+    Hash        CHAR(64)       NULL
+);
+GO
+INSERT INTO dbo.ATV_MIGRACAO (Versao, Nome) VALUES (1, N'equipamentos-sqlserver.sql');
+GO
+
 /* ===================== Carga inicial (31-10-2026) ===================== */
 BEGIN TRANSACTION;
 

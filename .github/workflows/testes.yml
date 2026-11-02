@@ -2,7 +2,8 @@
 #  - php:      sintaxe, testes unitários e testes dos serviços em cada versão do PHP suportada (7.1 a 8.3);
 #  - analise:  análise estática do back-end (PHPStan);
 #  - testes:   normas do front-end e testes do portal e do servidor (Playwright);
-#  - apache:   regras dos .htaccess num Apache 2.4 real (ficheiros internos recusados, cabeçalhos).
+#  - apache:   regras dos .htaccess num Apache 2.4 real (ficheiros internos recusados, cabeçalhos);
+#  - actualizador-windows: o actualizador do servidor (ferramentas/actualizar.php) num Windows com PHP, como em produção.
 name: Testes
 
 on:
@@ -35,7 +36,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, simplexml, openssl, pdo_sqlite, gd, mbstring
+          extensions: curl, simplexml, openssl, pdo_sqlite, gd, mbstring, zip
           coverage: none
 
       - name: Sintaxe do PHP
@@ -43,6 +44,9 @@ jobs:
 
       - name: Testes unitários do back-end
         run: php tests/unidade/correr.php
+
+      - name: Actualizador do servidor (cenário completo)
+        run: php tests/actualizacao/cenario.php
 
       - uses: actions/setup-node@v5
         with:
@@ -110,6 +114,22 @@ jobs:
           name: relatorio-testes
           path: playwright-report/
           retention-days: 14
+
+  actualizador-windows:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    name: Actualizador (Windows)
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: curl, mbstring, pdo_sqlite, openssl, zip
+          coverage: none
+
+      - name: Actualizador do servidor (cenário completo)
+        run: php tests/actualizacao/cenario.php
 
   apache:
     runs-on: ubuntu-latest

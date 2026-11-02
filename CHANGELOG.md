@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Actualizações automáticas
+- **Publicação:** cada alteração no main que passa nos testes dá uma versão no GitHub com o pacote do servidor, o
+  SHA-256 e a proveniência assinada; um Windows com PHP ensaia a actualização a partir da versão publicada.
+- **Actualizador do servidor** (`ferramentas/actualizar.php`, tarefa agendada às 02:15): descarrega e confere a versão,
+  pára se houver ficheiros alterados à mão, aplica as migrações da base de dados do módulo Equipamentos, guarda cópia,
+  copia só o que mudou, verifica o portal (linha de comandos e HTTP) e repõe a versão anterior sozinho se falhar.
+  Nunca escreve o `.env` nem os dados. Avisos por correio electrónico.
+- **Migrações:** tabela `ATV_MIGRACAO` no script do módulo Equipamentos e pasta `ferramentas/sql/migracoes`.
+
 ### Velocidade
 - **Pedidos à API em paralelo:** a sessão PHP fecha-se para escrita logo a seguir à autenticação; os outros pedidos
   da mesma pessoa deixam de esperar pelas consultas lentas (medido: 1,8 s → 6 ms enquanto as vendas são lidas).

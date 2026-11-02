@@ -143,6 +143,7 @@ Regras:
 | `GEOIP_BD` | base de dados de localização de IP (MaxMind DB) | `<DADOS_PRIVADOS>/geoip/cidades.mmdb` |
 
 | `SYNC_ALERTA_HORAS`, `SYNC_CRITICO_HORAS` | limites da comunicação dos smartphones (em dia / atenção / crítico) | `2` e `24` horas |
+| `ACTUALIZACAO_GITHUB_TOKEN`, `ACTUALIZACAO_AUTOMATICA`, `ACTUALIZACAO_EMAIL`, `ACTUALIZACAO_URL_VERIFICACAO`, `ACTUALIZACAO_APACHE_SERVICO`, `ACTUALIZACAO_REINICIAR_APACHE`, `ATV_DB_MIGRACAO_USER`, `ATV_DB_MIGRACAO_PASS` | actualizações automáticas (ver «Actualizações automáticas») | —, `0`, —, `PORTAL_URL`, —, `0`, `ATV_DB_USER` |
 
 A variável de ambiente `NAVAL_ENV` aponta para outro `.env` (testes automáticos). Não há valores de ligação
 predefinidos no código: sem as chaves obrigatórias, o serviço responde com os **nomes** das chaves em falta (nunca
@@ -150,6 +151,31 @@ com valores nem caminhos). Segurança da plataforma e instruções para o servid
 
 Configuração guardada no portal (pasta privada, não no `.env`): correspondência com o SAP em `sap/config.json`
 (armazéns principais 1150 → RTM1 e 1151 → RTM2, SAP location por omissão RTM2), perfis criados e alterações à matriz.
+
+## Actualizações automáticas
+
+Cada alteração aprovada no `main` que passa nos «Testes» é publicada como versão no GitHub
+(`.github/workflows/publicar.yml`): pacote ZIP com os ficheiros do portal (`scripts/construir-pacote.php`; sem testes,
+documentação, `.env` nem `reports/data/*.json`), manifesto com o SHA-256 de cada ficheiro e proveniência assinada. Um
+Windows com PHP ensaia a actualização de um servidor com a versão anterior a partir da versão publicada.
+
+No servidor, a tarefa agendada «Portal RTM - Actualizacao» (todos os dias às 02:15, conta SYSTEM) corre
+`php ferramentas/actualizar.php automatico` (`nucleo/servicos/actualizacao.php`):
+
+1. descarrega a versão mais recente pela API do GitHub (token só de leitura; o endereço temporário do ficheiro é
+   pedido sem o token) e confere o SHA-256 do pacote e de cada ficheiro;
+2. recusa pacotes com caminhos inválidos, ficheiros fora do manifesto ou ficheiros protegidos (`.env`, dados);
+3. compara com o servidor e pára, sem alterar nada, se um ficheiro foi alterado à mão desde a última actualização;
+4. confere a sintaxe do PHP novo e aplica as migrações pendentes da base de dados do módulo Equipamentos
+   (`ferramentas/sql/migracoes`, tabela `ATV_MIGRACAO`), antes de copiar o código;
+5. guarda cópia dos ficheiros a substituir e copia só o que mudou (cada ficheiro escrito ao lado e trocado de uma
+   vez; os pontos de entrada no fim); espera pela renovação do OPcache ou reinicia o Apache, se configurado;
+6. confirma que o código novo arranca e liga às bases de dados e que o portal responde por HTTP; se não, repõe a
+   versão anterior sozinho e não volta a aplicar essa versão;
+7. regista em `<DADOS_PRIVADOS>/actualizacoes/` e no registo de auditoria e avisa por correio (`ACTUALIZACAO_EMAIL`).
+
+Comandos: `configurar`, `tarefa`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`. Nunca apaga ficheiros do
+servidor (só os que a própria actualização criou, ao repor) e guarda as 5 últimas cópias de segurança.
 
 ## Testes e qualidade
 
