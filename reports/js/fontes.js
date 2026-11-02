@@ -168,6 +168,49 @@ export function fetchStock(dataOuDe, armazemOuAte = 'todos') {
     });
 }
 
+// Dias com dados (vendas, cargas e stock): limites dos calendários e dos períodos
+export function recalcularDias() {
+  definirDiasSap([...new Set((DB.vendas || []).map((x) => x.data))].sort());
+  definirDiasTodos([...new Set([...diasSap, ...(DB.cargas || []).map((x) => x.data), ...((DB.stock && DB.stock.datas_disponiveis) || [])])].sort());
+}
+
+// Linhas de artigos: os documentos chegam primeiro (o portal abre logo) e as linhas pedem-se à parte, só quando uma
+// página, o filtro de artigo ou uma exportação precisa delas (include_items=only). Ficam para o período carregado.
+let periodoVendas = '';
+let vendasFrescas = false;
+let artigosDe = null;
+let artigosPedido = null;
+/** As linhas de artigos do período carregado já chegaram? */
+export const artigosProntos = () => artigosDe === periodoVendas;
+/** Garante as linhas de artigos do período carregado (um só pedido de cada vez). */
+export function garantirArtigos() {
+  if (artigosProntos()) return Promise.resolve();
+  const chave = periodoVendas;
+  if (artigosPedido && artigosPedido.chave === chave) return artigosPedido.p;
+  const [sd, ed] = chave.split('|');
+  const p = apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + '&include_items=only' + (vendasFrescas ? '&fresco=1' : ''))
+    .then((r) =>
+      r
+        .json()
+        .catch(() => null)
+        .then((d) => ({ ok: r.ok, d })),
+    )
+    .catch(() => ({ ok: false, d: null }))
+    .then(({ ok, d }) => {
+      if (chave !== periodoVendas) return; // o período mudou entretanto: estas linhas já não servem
+      const lista = d && Array.isArray(d.artigos) ? d.artigos : Array.isArray(d) ? [] : null;
+      if (!ok || !lista)
+        toast((d && d.erro ? t(d.erro) : t('Não foi possível obter dados da base de dados.')) + (d && d.detalhe ? ' ' + t(d.detalhe) : ''), 8000);
+      DB.artigos = lista || [];
+      artigosDe = chave;
+    })
+    .finally(() => {
+      if (artigosPedido && artigosPedido.p === p) artigosPedido = null;
+    });
+  artigosPedido = { chave, p };
+  return p;
+}
+
 export function fetchVendas(de, ate) {
   return fetchVendasPinguim(de, ate);
 }
@@ -175,7 +218,8 @@ function fetchVendasPinguim(de, ate) {
   document.body.classList.add('a-carregar');
   const sd = de.replace(/-/g, ''),
     ed = ate.replace(/-/g, '');
-  return apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + '&include_items=1' + (frescoPedido() ? '&fresco=1' : ''))
+  const fresco = frescoPedido();
+  return apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + (fresco ? '&fresco=1' : ''))
     .then((r) =>
       r
         .json()
@@ -207,9 +251,12 @@ function fetchVendasPinguim(de, ate) {
     })
     .then((d) => {
       DB.vendas = Array.isArray(d) ? d : Array.isArray(d.vendas) ? d.vendas : [];
-      DB.artigos = Array.isArray(d.artigos) ? d.artigos : [];
-      definirDiasSap([...new Set(DB.vendas.map((x) => x.data))].sort());
-      definirDiasTodos([...new Set([...diasSap, ...DB.cargas.map((x) => x.data), ...((DB.stock && DB.stock.datas_disponiveis) || [])])].sort());
+      periodoVendas = sd + '|' + ed;
+      vendasFrescas = fresco;
+      // Linhas que vieram já com os documentos (resposta com include_items, ex.: testes): ficam prontas
+      DB.artigos = d && Array.isArray(d.artigos) ? d.artigos : [];
+      artigosDe = d && Array.isArray(d.artigos) ? periodoVendas : null;
+      recalcularDias();
       document.body.classList.remove('a-carregar');
     });
 }

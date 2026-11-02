@@ -14,13 +14,20 @@ defined('NAVAL_NUCLEO') || exit;
 /** Dados dos cadastros, ou null se nenhum ficheiro existir. */
 function naval_cadastros_ler(): ?array
 {
+    $f = naval_cadastros_ficheiro();
+    return $f === null ? null : (naval_json_ler($f) ?: null);
+}
+
+/** Ficheiro de onde vêm os cadastros (o primeiro que existe; null = nenhum). */
+function naval_cadastros_ficheiro(): ?string
+{
     $candidatos = array_filter([
         naval_config('RTM_CLIENTES_JSON'),
         naval_raiz() . '/reports/data/cadastros.json',
         dirname(naval_raiz()) . '/rtm-clientes/saida/portal_rtm.json',
     ]);
     foreach ($candidatos as $f) {
-        if (is_file($f)) return naval_json_ler($f) ?: null;
+        if (is_file($f)) return $f;
     }
     return null;
 }

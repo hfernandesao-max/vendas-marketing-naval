@@ -251,61 +251,81 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             ];
         }
 
-        // 3. Linhas de artigos
+        // 3. Linhas de artigos (consulta própria: o portal pede-as só quando uma página precisa delas)
         $artigos = [];
         if ($itens && $docs) {
-            foreach (naval_bd_consultar("
-                SELECT
-                    RTRIM(LTRIM(COALESCE(DH.DOC_PREFIX, '') + ' ' + CAST(DH.DOC_NUMBER AS VARCHAR(20)))) AS DOCUMENTO,
-                    CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA,
-                    COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4)) AS ROTA,
-                    DMD.LINE_NUMBER AS LINHA,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN 1 ELSE 0 END AS INT) AS NC,
-                    DMD.PRODUCT_CODE AS CODIGO,
-                    DMD.DESCRIPTION AS ARTIGO,
-                    COALESCE(U.SHORTNAME, 'UN') AS UNIDADE,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.QNT) ELSE DMD.QNT END AS FLOAT) AS QUANTIDADE,
-                    CAST(DMD.PRICE AS FLOAT) AS PRECO_UNITARIO,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.TOTAL) ELSE DMD.TOTAL END AS FLOAT) AS VALOR_SEM_IVA,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.DISCOUNT_VALUE) ELSE DMD.DISCOUNT_VALUE END AS FLOAT) AS DESCONTO,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.CALC_TOTAL_TAX_VALUE) ELSE DMD.CALC_TOTAL_TAX_VALUE END AS FLOAT) AS IVA,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.CALC_TOTAL_W_TAX) ELSE DMD.CALC_TOTAL_W_TAX END AS FLOAT) AS TOTAL,
-                    CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.GROSS_TOTAL) ELSE DMD.GROSS_TOTAL END AS FLOAT) AS GROSS_TOTAL
-                FROM DOCMOVDETAIL DMD
-                INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
-                LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
-                LEFT JOIN UNIT U ON U.ID = DMD.UNIT_ID
-                WHERE DMD.DELETED = 0
-                  AND DH.DELETED = 0
-                  AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
-                  AND DH.DOC_DATE >= :de
-                  AND DH.DOC_DATE <= :ate
-                ORDER BY DH.DOC_DATE DESC, DH.ID DESC, DMD.LINE_NUMBER ASC", $p) as $a) {
-                $r = trim((string) $a['ROTA']);
-                $artigos[] = [
-                    'chave' => $a['DOCUMENTO'] . '|' . $a['LINHA'],
-                    'data' => $a['DATA'],
-                    'rota' => $r,
-                    'promotor' => $promotores[$r] ?? $r,
-                    'documento' => $a['DOCUMENTO'],
-                    'codigo' => $a['CODIGO'],
-                    'artigo' => $a['ARTIGO'],
-                    'unidade' => $a['UNIDADE'],
-                    'quantidade' => (float) $a['QUANTIDADE'],
-                    'preco_unitario' => (float) $a['PRECO_UNITARIO'],
-                    'valor_sem_iva' => (float) $a['VALOR_SEM_IVA'],
-                    'desconto' => (float) $a['DESCONTO'],
-                    'iva' => (float) $a['IVA'],
-                    'total' => (float) $a['TOTAL'],
-                    // GROSSSALES do ficheiro para o SAP: DOCMOVDETAIL.GROSS_TOTAL (null se a coluna vier vazia)
-                    'gross_total' => $a['GROSS_TOTAL'] === null ? null : (float) $a['GROSS_TOTAL'],
-                    'nc' => (int) $a['NC'] === 1,
-                ];
-            }
+            $artigos = naval_vendas_artigos_sql($inicio, $fim, $promotores);
+            if ($artigos === null) return null;
         }
         return ['vendas' => $vendas, 'artigos' => $artigos];
     } catch (Throwable $e) {
         error_log('[vendas SQL] ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Linhas de artigos das vendas do período (datas AAAAMMDD), lidas do SQL Server (DOCMOVDETAIL + UNIT), no formato
+ * de naval_vendas_sql(). Consulta separada dos documentos: o portal abre com os documentos e pede as linhas só
+ * quando uma página (ou uma exportação) precisa delas. null se a base de dados não responder.
+ */
+function naval_vendas_artigos_sql(string $inicio, string $fim, array $promotores): ?array
+{
+    if (!naval_bd_configurada()) return null;
+    try {
+        $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
+        $artigos = [];
+        foreach (naval_bd_consultar("
+            SELECT
+                RTRIM(LTRIM(COALESCE(DH.DOC_PREFIX, '') + ' ' + CAST(DH.DOC_NUMBER AS VARCHAR(20)))) AS DOCUMENTO,
+                CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA,
+                COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4)) AS ROTA,
+                DMD.LINE_NUMBER AS LINHA,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN 1 ELSE 0 END AS INT) AS NC,
+                DMD.PRODUCT_CODE AS CODIGO,
+                DMD.DESCRIPTION AS ARTIGO,
+                COALESCE(U.SHORTNAME, 'UN') AS UNIDADE,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.QNT) ELSE DMD.QNT END AS FLOAT) AS QUANTIDADE,
+                CAST(DMD.PRICE AS FLOAT) AS PRECO_UNITARIO,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.TOTAL) ELSE DMD.TOTAL END AS FLOAT) AS VALOR_SEM_IVA,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.DISCOUNT_VALUE) ELSE DMD.DISCOUNT_VALUE END AS FLOAT) AS DESCONTO,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.CALC_TOTAL_TAX_VALUE) ELSE DMD.CALC_TOTAL_TAX_VALUE END AS FLOAT) AS IVA,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.CALC_TOTAL_W_TAX) ELSE DMD.CALC_TOTAL_W_TAX END AS FLOAT) AS TOTAL,
+                CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.GROSS_TOTAL) ELSE DMD.GROSS_TOTAL END AS FLOAT) AS GROSS_TOTAL
+            FROM DOCMOVDETAIL DMD
+            INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+            LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
+            LEFT JOIN UNIT U ON U.ID = DMD.UNIT_ID
+            WHERE DMD.DELETED = 0
+              AND DH.DELETED = 0
+              AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
+              AND DH.DOC_DATE >= :de
+              AND DH.DOC_DATE <= :ate
+            ORDER BY DH.DOC_DATE DESC, DH.ID DESC, DMD.LINE_NUMBER ASC", $p) as $a) {
+            $r = trim((string) $a['ROTA']);
+            $artigos[] = [
+                'chave' => $a['DOCUMENTO'] . '|' . $a['LINHA'],
+                'data' => $a['DATA'],
+                'rota' => $r,
+                'promotor' => $promotores[$r] ?? $r,
+                'documento' => $a['DOCUMENTO'],
+                'codigo' => $a['CODIGO'],
+                'artigo' => $a['ARTIGO'],
+                'unidade' => $a['UNIDADE'],
+                'quantidade' => (float) $a['QUANTIDADE'],
+                'preco_unitario' => (float) $a['PRECO_UNITARIO'],
+                'valor_sem_iva' => (float) $a['VALOR_SEM_IVA'],
+                'desconto' => (float) $a['DESCONTO'],
+                'iva' => (float) $a['IVA'],
+                'total' => (float) $a['TOTAL'],
+                // GROSSSALES do ficheiro para o SAP: DOCMOVDETAIL.GROSS_TOTAL (null se a coluna vier vazia)
+                'gross_total' => $a['GROSS_TOTAL'] === null ? null : (float) $a['GROSS_TOTAL'],
+                'nc' => (int) $a['NC'] === 1,
+            ];
+        }
+        return $artigos;
+    } catch (Throwable $e) {
+        error_log('[artigos SQL] ' . $e->getMessage());
         return null;
     }
 }

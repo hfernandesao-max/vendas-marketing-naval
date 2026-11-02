@@ -3,6 +3,8 @@
  * Vendas do Pinguim BO → JSON (formato de vendas.json), com o âmbito do perfil.
  *
  * GET v1/vendas?start_date=AAAAMMDD&end_date=AAAAMMDD[&include_items=1]   vendas (e linhas de artigos)
+ * GET v1/vendas?start_date=AAAAMMDD&end_date=AAAAMMDD&include_items=only   só as linhas de artigos ({artigos: [...]}):
+ *                                            o portal abre com os documentos e pede as linhas quando são precisas
  * GET v1/vendas/estado                       estado da ligação ao Pinguim BO (indicador do portal)
  * GET v1/vendas/diagnostico                  diagnóstico do servidor (super administrador)
  * GET v1/vendas/estrutura?start_date=AAAAMMDD secções e campos da exportação, sem dados pessoais (super administrador)
@@ -68,21 +70,56 @@ if (($_GET['diag'] ?? '') === '1') {
 
 $de = (string) ($_GET['start_date'] ?? '');
 $ate = (string) ($_GET['end_date'] ?? '');
-$itens = ($_GET['include_items'] ?? '') === '1';
+$modo = (string) ($_GET['include_items'] ?? '');
+$soArtigos = $modo === 'only';
+$itens = $modo === '1';
 if (!preg_match('/^\d{8}$/', $de) || !preg_match('/^\d{8}$/', $ate)) {
     throw new NavalErro('Datas inválidas.', 400, ['detalhe' => 'Use start_date e end_date no formato AAAAMMDD.']);
 }
 naval_validar_periodo($de, $ate);
 
 // Cache no servidor (fase 4): o mesmo período não volta a ser consultado durante 2 min (se inclui hoje)
-// ou 30 min (período fechado); «fresco=1» (botão Actualizar) consulta de novo. O âmbito do perfil
-// (rotas, NIF) aplica-se depois, a cada pedido.
-$chave = 'vendas|' . $de . '|' . $ate . '|' . ($itens ? 1 : 0) . '|' . hash('sha256', (string) json_encode(naval_promotores()));
-$d = naval_cache($chave, naval_cache_periodo($ate), function () use ($de, $ate, $itens) {
-    // Prioridade 1: base de dados do Pinguim BO; prioridade 2: exportação REST
-    $d = naval_vendas_sql($de, $ate, naval_promotores(), $itens);
-    if ($d === null) $d = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), naval_promotores(), $itens);
-    return $d;
-}, ($_GET['fresco'] ?? '') === '1');
+// ou 30 min (período fechado); «fresco=1» (botão Actualizar) consulta de novo. Documentos e linhas de artigos têm
+// entradas próprias (as linhas só se consultam quando pedidas). O âmbito do perfil (rotas, NIF) aplica-se depois,
+// a cada pedido.
+$prom = naval_promotores();
+$base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom));
+$chaves = [];
+if (!$soArtigos) $chaves['vendas'] = 'vendas2|' . $base;
+if ($itens || $soArtigos) $chaves['artigos'] = 'artigos|' . $base;
+$tempo = naval_cache_periodo($ate);
+$fresco = ($_GET['fresco'] ?? '') === '1';
+$codigo = [__FILE__, dirname(__DIR__, 2) . '/servicos/vendas.php'];
+$metas = function () use ($chaves, $tempo) {
+    $m = [];
+    foreach ($chaves as $k) {
+        $x = naval_cache_meta($k, $tempo);
+        if ($x === null) return null;
+        $m[] = $x;
+    }
+    return $m;
+};
+// Pedido condicional: se as entradas da cache não mudaram, 304 sem ler nem converter os dados
+if (!$fresco) naval_etag_antecipado($metas(), $codigo);
+
+$d = ['vendas' => [], 'artigos' => []];
+if (isset($chaves['vendas'])) {
+    $d['vendas'] = naval_cache($chaves['vendas'], $tempo, function () use ($de, $ate, $prom) {
+        // Prioridade 1: base de dados do Pinguim BO; prioridade 2: exportação REST
+        $x = naval_vendas_sql($de, $ate, $prom, false);
+        if ($x === null) $x = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), $prom, false);
+        return $x['vendas'];
+    }, $fresco);
+}
+if (isset($chaves['artigos'])) {
+    $d['artigos'] = naval_cache($chaves['artigos'], $tempo, function () use ($de, $ate, $prom) {
+        $x = naval_vendas_artigos_sql($de, $ate, $prom);
+        if ($x === null) $x = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), $prom, true)['artigos'];
+        return $x;
+    }, $fresco);
+}
+// ETag da resposta a partir das entradas agora gravadas: o pedido seguinte pode acabar logo no 304
+naval_etag_antecipado($metas(), $codigo);
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());
+if ($soArtigos) naval_json(['artigos' => $d['artigos']]);
 naval_json($itens ? $d : $d['vendas']);

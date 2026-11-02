@@ -33,7 +33,7 @@ Gerar a chave (uma vez, no servidor): `php -r "echo bin2hex(random_bytes(32)), P
 | -------- | ------------------------------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------------------------------------------- |
 | POST     | `auth/token`                                                                                           | `token.php`                | sessão + `X-CSRF-Token`                                                            |
 | GET      | `sessao`                                                                                               | `sessao.php`               | conta (perfil, rotas, permissões, CSRF)                                            |
-| GET      | `vendas?start_date&end_date&include_items`                                                             | `vendas.php`               | páginas de vendas                                                                  |
+| GET      | `vendas?start_date&end_date[&include_items=1\|only]`                                                 | `vendas.php`               | páginas de vendas                                                                  |
 | GET      | `vendas/estado`                                                                                        | `vendas.php`               | conta (indicador das fontes)                                                       |
 | GET      | `vendas/diagnostico`, `vendas/estrutura`                                                               | `vendas.php`               | `admin-config` (SADM)                                                              |
 | GET      | `dados/rotas`, `dados/cargas`, `dados/clientes`                                                        | `dados.php`                | conforme o ficheiro                                                                |
@@ -70,7 +70,11 @@ código QR (`equipamentos/ficha.php`) não consulta a base de dados.
   fechado), sincronização 1 min, stock 5 min / 1 h; um só pedido consulta a fonte de cada vez; o botão «Actualizar»
   pede dados frescos (`fresco=1`). O âmbito do perfil aplica-se depois da cache, a cada pedido.
 - **ETag / 304:** as respostas GET levam `ETag` e `Cache-Control: private, no-cache`; o navegador confirma com
-  `If-None-Match` e recebe 304 sem corpo quando nada mudou.
+  `If-None-Match` e recebe 304 sem corpo quando nada mudou. Nas vendas, nos dados de base e nos cadastros o ETag
+  calcula-se antes de ler os dados (`naval_etag_antecipado`: data e tamanho da origem + conta, perfil, rotas, NIF e
+  níveis da matriz + versão do código), e o 304 sai sem ler nem converter os dados.
+- **Linhas de artigos à parte:** `vendas` sem `include_items` devolve só os documentos; `include_items=only` só as
+  linhas (`{artigos}`), com cache própria; `include_items=1` as duas (exportação de todos os dados).
 - **Compressão gzip** das respostas grandes (nunca nas que têm o token ou o código CSRF).
 - **Carregamento por página:** bibliotecas pesadas (Excel, ZIP, QR) e, no projecto com stock, os dados de stock só são
   pedidos quando uma página precisa deles.

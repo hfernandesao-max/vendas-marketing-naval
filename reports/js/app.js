@@ -2,14 +2,15 @@
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
 import { exportarDados } from './dados-gestao.js';
-import { desenharFiltros, filtroAberto, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
+import { FV, desenharFiltros, filtroAberto, filtroAtivo, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
 import { mostrarActualizacao } from './actualizacao.js';
-import { fetchVendas, mostrarFontes } from './fontes.js';
+import { artigosProntos, fetchVendas, garantirArtigos, mostrarFontes } from './fontes.js';
 import { dl, ds, setFmt } from './formatos.js';
-import { IDIOMAS, LANG, definirIdioma, t, tv } from './i18n/i18n.js';
+import { IDIOMAS, LANG, mudarIdioma, t, tv } from './i18n/i18n.js';
 import { REL_ATUAL, definirRelPedido, nav, organizarRelatorios } from './navegacao.js';
 import { PAGES } from './paginas/catalogo.js';
 import { R } from './paginas/registo.js';
+import { carregarPagina, carregarPaginas, paginaPronta } from './paginas/modulos.js';
 import { mostrarIndicador } from './smartphones.js';
 import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeVer } from './perfil.js';
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
@@ -55,8 +56,51 @@ function textos() {
 }
 // Páginas que não dependem do período (sem a barra De / Até)
 const SEM_PERIODO = ['plano-cargas', 'equipamentos', 'equipamentos-documentos'];
+// Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
+const COM_ARTIGOS = new Set(['vendas-artigo', 'sap-exportar']);
+const precisaArtigos = (id) => COM_ARTIGOS.has(id) || (filtroAtivo(id, 'artigo') && !!FV.artigo);
+/**
+ * O que falta para desenhar a página: o seu módulo (carregado a pedido) e, se precisa delas, as linhas de artigos.
+ * Devolve null se já está tudo, ou a promessa do que falta.
+ */
+function emFalta(id) {
+  const falta = [];
+  if (!paginaPronta(id)) falta.push(carregarPagina(id));
+  if (precisaArtigos(id) && !artigosProntos()) falta.push(garantirArtigos());
+  return falta.length ? Promise.all(falta) : null;
+}
+let aEsperar = null;
 export function draw() {
   const p = paginaAtual();
+  const falta = emFalta(p.id);
+  if (falta) {
+    // Enquanto chega o que falta, a página mostra que está a carregar; depois desenha-se (se ainda for a actual)
+    if (aEsperar !== p.id) {
+      aEsperar = p.id;
+      document.body.classList.add('a-carregar');
+      $('#page').replaceChildren(el('div', 'glass empty', t('A carregar…')));
+      nav();
+    }
+    falta
+      .catch((e) => {
+        console.error(e);
+        toast(t('Sem ligação ao servidor do portal.'), 6000);
+      })
+      .then(() => {
+        if (aEsperar !== p.id) return;
+        aEsperar = null;
+        document.body.classList.remove('a-carregar');
+        if (paginaAtual().id !== p.id) return;
+        if (paginaPronta(p.id)) draw();
+      });
+    return;
+  }
+  aEsperar = null;
+  // Página principal: o gráfico de artigos aparece quando as linhas chegam (pedidas em segundo plano)
+  if (p.id === 'inicio' && podeVer('vendas-artigo') && !artigosProntos())
+    garantirArtigos().then(() => {
+      if (paginaAtual().id === 'inicio' && artigosProntos()) draw();
+    });
   definirReg({ tabelas: [], kpis: [] });
   definirFits([]);
   textos();
@@ -190,6 +234,19 @@ $('#xl-page').addEventListener('click', () => {
   exportarExcel([{ pagina: p.nome, grupo: p.grupo, kpis: REG.kpis, tabelas: REG.tabelas }], t(p.nome));
 });
 $('#xl-all').addEventListener('click', () => {
+  // O relatório consolidado desenha todas as páginas do perfil: carrega antes as que faltam e as linhas de artigos
+  const b = $('#xl-all');
+  b.disabled = true;
+  Promise.all([carregarPaginas(paginasVisiveis().map((p) => p.id)), garantirArtigos()])
+    .then(consolidado, (e) => {
+      console.error(e);
+      toast(t('Não foi possível gerar o Excel.'), 4000);
+    })
+    .finally(() => {
+      b.disabled = false;
+    });
+});
+function consolidado() {
   const pags = paginasVisiveis()
     .filter((p) => p.id !== 'inicio' && p.id !== 'acessos')
     .map((p) => {
@@ -198,17 +255,20 @@ $('#xl-all').addEventListener('click', () => {
     });
   const ini = recolher('inicio');
   pags.unshift({ pagina: 'Início', grupo: null, kpis: ini.kpis, tabelas: [] });
-  exportarExcel(pags, NOME_CONSOLIDADO);
-});
+  return exportarExcel(pags, NOME_CONSOLIDADO);
+}
 $('#xl-dados').addEventListener('click', () => exportarDados());
 document.querySelectorAll('#lang button').forEach((b) =>
   b.addEventListener('click', () => {
-    definirIdioma(b.dataset.l);
+    const l = b.dataset.l in IDIOMAS ? b.dataset.l : 'pt';
+    // a escolha guarda-se logo; o dicionário do idioma descarrega-se na primeira vez que é escolhido
     try {
-      localStorage.setItem('vm-lang', LANG);
+      localStorage.setItem('vm-lang', l);
     } catch (e) {}
-    setFmt();
-    draw();
+    mudarIdioma(l).then(() => {
+      setFmt();
+      draw();
+    });
   }),
 );
 const onDate = () => {

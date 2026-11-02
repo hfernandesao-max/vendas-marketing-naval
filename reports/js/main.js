@@ -1,25 +1,16 @@
 // Arranque: ecrã de carregamento, sessão, dados e primeiro desenho.
+// Velocidade: os pedidos do arranque (sessão, dados de base, cadastros, vendas, dicionário do idioma e módulo da
+// primeira página) partem todos em paralelo; o portal desenha-se quando chegam todos. As páginas e os idiomas
+// carregam-se a pedido (paginas/modulos.js, i18n/i18n.js); as linhas de artigos, quando uma página precisa delas.
 import { route } from './app.js';
-import { LIGACOES, avaliarFontes, fetchVendas } from './fontes.js';
+import { LIGACOES, avaliarFontes, fetchVendas, recalcularDias } from './fontes.js';
 import { n0 } from './formatos.js';
-import { IDIOMAS, LANG, definirIdioma, t } from './i18n/i18n.js';
-import { definirSessao } from './perfil.js';
+import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
+import { definirSessao, paginasVisiveis, podeVer } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
 import { iniciarSync } from './smartphones.js';
-import './paginas/inicio.js';
-import './paginas/vendas.js';
-import './paginas/terreno.js';
-import './paginas/sincronizacao.js';
-import './paginas/agt.js';
-import './paginas/recebimentos.js';
-import './paginas/logistica.js';
-import './paginas/cargas.js';
-import './paginas/clientes.js';
-import './paginas/plano-cargas.js';
-import './paginas/sap.js';
-import './paginas/acessos.js';
-import './paginas/equipamentos.js';
+import { MODULO_DA_PAGINA, carregarPagina } from './paginas/modulos.js';
 import { apiFetch } from './api.js';
 
 const LD = {
@@ -30,6 +21,8 @@ const LD = {
     ['pronto', 'A montar os relatórios'],
   ],
   estado: {},
+  det: {},
+  // Desenha a lista (de novo quando muda o idioma), mantendo o estado de cada passo
   iniciar() {
     const ul = $('#ld-passos');
     ul.replaceChildren();
@@ -40,14 +33,21 @@ const LD = {
       ul.append(li);
     });
     $('#ld-titulo').textContent = t('Portal RTM');
-    this.marcar('base', 'activo');
+    const antes = this.estado;
+    this.estado = {};
+    if (!Object.keys(antes).length)
+      ['base', 'cad', 'vendas'].forEach((k) => this.marcar(k, 'activo')); // em paralelo
+    else this.passos.forEach(([k]) => antes[k] && this.marcar(k, antes[k], this.det[k]));
   },
   marcar(id, est, det) {
     const li = $('#ld-' + id);
     if (!li) return;
     li.className = est;
     li.querySelector('.st').textContent = est === 'feito' ? '✓' : est === 'aviso' ? '!' : '';
-    if (det != null) li.querySelector('.det').textContent = det;
+    if (det != null) {
+      li.querySelector('.det').textContent = det;
+      this.det[id] = det;
+    }
     this.estado[id] = est;
     const feitos = this.passos.filter(([k]) => ['feito', 'aviso'].includes(this.estado[k])).length;
     $('#ld-barra').style.width = Math.max(8, Math.round((feitos / this.passos.length) * 100)) + '%';
@@ -88,13 +88,14 @@ const lerSessao = () =>
       return r.text();
     })
     .then((tx) => {
+      let d = null;
       try {
-        const d = JSON.parse(tx);
-        definirSessao(d && d.permissoes ? d : null);
-        if (d && d.permissoes) idiomaDaConta(d);
+        d = JSON.parse(tx);
       } catch (e) {
-        definirSessao(null);
+        d = null;
       }
+      definirSessao(d && d.permissoes ? d : null);
+      return d && d.permissoes ? idiomaDaConta(d) : null;
     })
     .catch((e) => {
       if (e.message === 'sessao') throw e;
@@ -102,22 +103,22 @@ const lerSessao = () =>
 // Idioma da ficha da conta: a cada nova entrada o portal abre no idioma definido para a pessoa. Durante a sessão
 // pode mudar-se no topo (PT/EN/TI); a escolha vale até sair, e na entrada seguinte volta o da ficha.
 function idiomaDaConta(d) {
-  if (!(d.idioma in IDIOMAS) || !d.entrada) return;
+  if (!(d.idioma in IDIOMAS) || !d.entrada) return null;
   let marca = '';
   try {
     marca = localStorage.getItem('vm-lang-entrada') || '';
   } catch (e) {}
   const esta = d.login + '|' + d.entrada;
-  if (marca === esta) return;
+  if (marca === esta) return null;
   try {
     localStorage.setItem('vm-lang-entrada', esta);
     localStorage.setItem('vm-lang', d.idioma);
   } catch (e) {}
-  if (d.idioma !== LANG) {
-    definirIdioma(d.idioma);
+  if (d.idioma === LANG) return null;
+  return mudarIdioma(d.idioma).then(() => {
     document.documentElement.lang = IDIOMAS[LANG];
     LD.iniciar();
-  }
+  });
 }
 // Ficheiros de dados: pelo serviço PHP (filtrado pelo perfil); sem PHP (teste local), o .json directo
 const lerDados = (id) =>
@@ -134,52 +135,66 @@ const lerDados = (id) =>
       }
     })
     .catch(() => []);
-lerSessao()
-  .then(() =>
-    Promise.all(
-      ['rotas', 'clientes', 'cargas'].map((id) =>
-        lerDados(id).then((d) => {
-          DB[id] = d;
-        }),
-      ),
-    ),
-  )
+// Cadastros (rtm-clientes): no servidor, só pelo serviço PHP (com o âmbito do perfil). O ficheiro JSON
+// directo só serve nos testes locais sem PHP (no servidor está bloqueado, e bem, pelo .htaccess: 403).
+const lerCadastros = () => {
+  const ler = (u, api) =>
+    (api ? apiFetch(u) : fetch(u, { cache: 'no-store' }))
+      .then((r) => {
+        const json = (r.headers.get('content-type') || '').includes('application/json');
+        if (api && json) return r.json().then((d) => ({ php: true, d: r.ok ? d : null }));
+        return r.ok ? r.json().then((d) => ({ php: false, d })) : { php: false, d: null };
+      })
+      .catch(() => ({ php: false, d: null }));
+  return ler('cadastros', true).then((x) => (x.php ? x.d : ler('data/cadastros.json').then((y) => y.d)));
+};
+
+// Página pedida no endereço (#página/…) ou a última deste separador (ao actualizar com F5): o seu módulo começa
+// logo a descarregar, em paralelo com os dados
+let ultima = '';
+try {
+  ultima = (sessionStorage.getItem('vm-ultima-pagina') || '').slice(1);
+} catch (e) {
+  /* sem armazenamento */
+}
+const pedida = (location.hash.slice(1) || ultima).split('?')[0].split('/')[0];
+carregarPagina(MODULO_DA_PAGINA[pedida] ? pedida : 'inicio').catch(() => {});
+
+carregarFiltro();
+DB.cargas = [];
+DB.vendas = [];
+const idioma = carregarIdioma(LANG).then(() => LD.iniciar()); // dicionário do idioma guardado (se não é o português)
+const sessao = lerSessao();
+const base = Promise.all(
+  ['rotas', 'clientes', 'cargas'].map((id) =>
+    lerDados(id).then((d) => {
+      DB[id] = Array.isArray(d) ? d : [];
+    }),
+  ),
+).then(() => {
+  DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
+  LD.marcar('base', DB.rotas.length ? 'feito' : 'aviso', t('{n} rotas', { n: DB.rotas.length }));
+});
+const cadastros = lerCadastros().then((d) => {
+  DB.cad = d && Array.isArray(d.cadastros) ? d : null;
+  LD.marcar('cad', DB.cad ? 'feito' : 'aviso', DB.cad ? n0(DB.cad.cadastros.length) + ' ' + t('clientes') : t('sem ligação'));
+});
+const vendas = (st.preset || !st.de || !st.ate ? aplicarPreset(st.preset || 'mes') : fetchVendas(st.de, st.ate)).then(() =>
+  LD.marcar(
+    'vendas',
+    LIGACOES.pinguim.estado === 'ok' ? 'feito' : 'aviso',
+    LIGACOES.pinguim.estado === 'ok' ? t('{n} documentos', { n: n0(DB.vendas.length) }) : t('sem ligação'),
+  ),
+);
+Promise.all([idioma, sessao, base, cadastros, vendas])
   .then(() => {
-    ['rotas', 'clientes', 'cargas'].forEach((k) => {
-      if (!Array.isArray(DB[k])) DB[k] = [];
-    });
-    LD.marcar('base', DB.rotas.length ? 'feito' : 'aviso', t('{n} rotas', { n: DB.rotas.length }));
-    DB.vendas = [];
-    DB.mapRota = Object.fromEntries(DB.rotas.map((x) => [x.rota, x]));
-    // Cadastros (rtm-clientes): no servidor, só pelo serviço PHP (com o âmbito do perfil). O ficheiro JSON
-    // directo só serve nos testes locais sem PHP (no servidor está bloqueado, e bem, pelo .htaccess: 403).
-    const ler = (u, api) =>
-      (api ? apiFetch(u) : fetch(u, { cache: 'no-store' }))
-        .then((r) => {
-          const json = (r.headers.get('content-type') || '').includes('application/json');
-          if (api && json) return r.json().then((d) => ({ php: true, d: r.ok ? d : null }));
-          return r.ok ? r.json().then((d) => ({ php: false, d })) : { php: false, d: null };
-        })
-        .catch(() => ({ php: false, d: null }));
-    return ler('cadastros', true)
-      .then((x) => (x.php ? x.d : ler('data/cadastros.json').then((y) => y.d)))
-      .then((d) => {
-        DB.cad = d && Array.isArray(d.cadastros) ? d : null;
-        // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
-        if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
-        avaliarFontes();
-        LD.marcar('cad', DB.cad ? 'feito' : 'aviso', DB.cad ? n0(DB.cad.cadastros.length) + ' ' + t('clientes') : t('sem ligação'));
-      });
-  })
-  .then(() => {
-    carregarFiltro();
-    return (st.preset || !st.de || !st.ate ? aplicarPreset(st.preset || 'mes') : fetchVendas(st.de, st.ate)).then(() =>
-      LD.marcar(
-        'vendas',
-        LIGACOES.pinguim.estado === 'ok' ? 'feito' : 'aviso',
-        LIGACOES.pinguim.estado === 'ok' ? t('{n} documentos', { n: n0(DB.vendas.length) }) : t('sem ligação'),
-      ),
-    );
+    // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
+    if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
+    recalcularDias(); // vendas e cargas chegaram por ordem qualquer
+    avaliarFontes();
+    // Módulo da página que vai abrir (a pedida, se o perfil a vê; senão a primeira do perfil)
+    const abre = podeVer(pedida) && MODULO_DA_PAGINA[pedida] ? pedida : (paginasVisiveis()[0] || {}).id;
+    return abre ? carregarPagina(abre).catch((e) => console.error(e)) : null;
   })
   .then(() => {
     // Abre sempre, mesmo sem vendas ainda no dia de hoje: cada página mostra o seu estado vazio

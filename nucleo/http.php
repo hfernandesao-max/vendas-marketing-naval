@@ -64,14 +64,10 @@ function naval_json(array $dados, int $estado = 200): void
 function naval_json_optimizar(string &$json): void
 {
     if (headers_sent() || !empty($GLOBALS['naval_api_sensivel']) || ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
-    $etag = 'W/"' . substr(hash('sha256', $json), 0, 32) . '"';
-    header('Cache-Control: private, no-cache');
-    header_remove('Pragma');
-    header_remove('Expires');
-    header('ETag: ' . $etag);
-    header('Vary: Authorization, Accept-Encoding');
-    $pedido = array_map('trim', explode(',', (string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')));
-    if (in_array($etag, $pedido, true)) {
+    // ETag antecipado (naval_etag_antecipado), quando o serviço o calculou; senão, o resumo do próprio corpo
+    $etag = (string) ($GLOBALS['naval_etag'] ?? ('W/"' . substr(hash('sha256', $json), 0, 32) . '"'));
+    naval_cabecalhos_validacao($etag);
+    if (naval_etag_pedido($etag)) {
         http_response_code(304);
         header_remove('Content-Type');
         $json = '';
@@ -86,6 +82,74 @@ function naval_json_optimizar(string &$json): void
             $json = $gz;
         }
     }
+}
+
+/** Cabeçalhos de validação das respostas da API: confirmar sempre com o servidor (304 quando não mudou). */
+function naval_cabecalhos_validacao(string $etag): void
+{
+    header('Cache-Control: private, no-cache');
+    header_remove('Pragma');
+    header_remove('Expires');
+    header('ETag: ' . $etag);
+    header('Vary: Authorization, Accept-Encoding');
+}
+
+/** O navegador já tem esta versão (If-None-Match com este ETag, ou «*»)? */
+function naval_etag_pedido(string $etag): bool
+{
+    $pedido = array_map('trim', explode(',', (string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')));
+    return in_array($etag, $pedido, true) || in_array('*', $pedido, true);
+}
+
+/**
+ * Pedido condicional resolvido cedo (RFC 9110, 13.1.2): o ETag calcula-se a partir de metadados baratos da origem
+ * dos dados (data e tamanho dos ficheiros, entradas da cache) e do âmbito de quem pede, ANTES de ler, filtrar e
+ * converter os dados. Se o navegador já tem esta versão, responde 304 sem corpo e termina; senão, guarda o ETag
+ * para a resposta completa (naval_json_optimizar), para que o pedido seguinte possa acabar logo aqui.
+ *
+ * O âmbito entra sempre no ETag (conta, perfil, rotas, NIF e níveis da matriz): pessoas ou perfis diferentes no
+ * mesmo navegador nunca partilham uma versão. Entram também a rota, os parâmetros do pedido e a data dos ficheiros
+ * PHP que montam a resposta (uma actualização do portal muda o ETag). $origem: metadados da origem dos dados;
+ * null = sem metadados fiáveis (não valida cedo; a resposta leva o ETag do corpo).
+ */
+function naval_etag_antecipado(?array $origem, array $codigo = []): void
+{
+    unset($GLOBALS['naval_etag']);
+    if ($origem === null || headers_sent() || !empty($GLOBALS['naval_api_sensivel']) || ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
+    $u = naval_utilizador();
+    $niveis = [];
+    foreach (array_keys(naval_matriz()) as $rec) $niveis[$rec] = naval_nivel($rec);
+    $q = $_GET;
+    ksort($q);
+    $ficheiros = [__FILE__];
+    foreach ($codigo as $f) $ficheiros[] = $f;
+    $versao = [];
+    foreach ($ficheiros as $f) $versao[] = @filemtime($f) . ':' . @filesize($f);
+    $chave = [
+        'rota' => (string) ($GLOBALS['naval_api_rota'] ?? ''),
+        'q' => $q,
+        'conta' => [$u['login'] ?? '', $u['perfil'] ?? '', naval_rotas(), naval_ve_nif(), $niveis],
+        'codigo' => $versao,
+        'origem' => $origem,
+    ];
+    $etag = 'W/"a' . substr(hash('sha256', (string) json_encode($chave)), 0, 31) . '"';
+    $GLOBALS['naval_etag'] = $etag;
+    if (!naval_etag_pedido($etag)) return;
+    while (ob_get_level() > 0) ob_end_clean();
+    http_response_code(304);
+    naval_cabecalhos_validacao($etag);
+    exit;
+}
+
+/** Metadados (data e tamanho) de ficheiros, para naval_etag_antecipado; ficheiro em falta = «-». */
+function naval_meta_ficheiros(array $ficheiros): array
+{
+    $out = [];
+    foreach ($ficheiros as $f) {
+        $st = is_string($f) && $f !== '' ? @stat($f) : false;
+        $out[] = basename((string) $f) . '|' . ($st ? $st['mtime'] . '|' . $st['size'] : '-');
+    }
+    return $out;
 }
 
 /** Envia um ficheiro guardado (Excel) e termina o pedido. */
