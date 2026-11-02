@@ -1740,4 +1740,9 @@ export const EN = {
     'The Equipment module database is not yet configured on the server (.env: ATV_DB_NAME or ATV_DB_DSN).',
   'Falta a assinatura do responsável do Grupo Naval: tem de ser outra pessoa.':
     "The Grupo Naval manager's signature is still missing: it must be another person.",
+  'Actualizações do portal': 'Portal updates',
+  'Resumo do que mudou no portal desde a sua última entrada ({n} secções).': 'Summary of what changed in the portal since your last sign-in ({n} sections).',
+  'Versão {v}': 'Version {v}',
+  Actualização: 'Update',
+  'instalada em {d}': 'installed on {d}',
 };

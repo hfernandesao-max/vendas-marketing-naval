@@ -1714,4 +1714,9 @@ export const TI = {
   'A base de dados do módulo Equipamentos ainda não está configurada no servidor (.env: ATV_DB_NAME ou ATV_DB_DSN).':
     'ዳታቤዝ ሞጁል መሳርሒታት ገና ኣብ ሰርቨር ኣይተዳለወን (.env: ATV_DB_NAME ወይ ATV_DB_DSN)።',
   'Falta a assinatura do responsável do Grupo Naval: tem de ser outra pessoa.': 'ፊርማ ሓላፊ Grupo Naval ይጎድል ኣሎ፡ ካልእ ሰብ ክኸውን ኣለዎ።',
+  'Actualizações do portal': 'ምሕዳሳት ፖርታል',
+  'Resumo do que mudou no portal desde a sua última entrada ({n} secções).': 'ጽማቕ ናይቲ ካብ ናይ መወዳእታ ምእታውኩም ጀሚሩ ኣብ ፖርታል ዝተቐየረ ({n} ክፍልታት)።',
+  'Versão {v}': 'ስሪት {v}',
+  Actualização: 'ምሕዳስ',
+  'instalada em {d}': 'ዝተተኽለሉ {d}',
 };
