@@ -28,7 +28,7 @@ const marcadores = (s) => (s.match(/\{[a-z0-9_]+\}/gi) || []).sort().join(',');
 // ficam iguais em todas as línguas, como manda a prática internacional de localização
 const PROTEGIDAS = new Set(
   (
-    'SAP Alt Excel Multicaixa MULTICAIXA Pinguim BO RTM Kz Microsoft Google WhatsApp Teams Authenticator GeoMobilidade Naval Grupo ' +
+    'SAP Alt PMR Excel Multicaixa MULTICAIXA Pinguim BO RTM Kz Microsoft Google WhatsApp Teams Authenticator GeoMobilidade Naval Grupo ' +
     'Foodtec FOODTEC HIGITEC REFITEC FHR PIV SADM TI DIR COM SUP PRO FIN LOG GEO AUD QR PDF CSV SQL Server HTTP XML PHP SimpleXML ' +
     'SHA env DB_HOST DB_NAME DB_USER DB_PASS EMAIL_TENANT_ID EMAIL_CLIENT_ID EMAIL_CLIENT_SECRET EMAIL_REMETENTE RTM_CLIENTES_JSON ' +
     'rtm clientes geo auth config_users php ferramentas utilizadores importar antigo joao silva admin SYNC_PHSE_HISTORY SELECT sys ' +

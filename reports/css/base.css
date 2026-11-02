@@ -47,6 +47,7 @@
   --ok: #3dd68c;
   --warn: #f5b547;
   --bad: #ff6b6b;
+  --serio: #ff8a3d;
   --r: 18px;
   /* Noto Sans Ethiopic primeiro: com unicode-range só se aplica ao ge'ez; o resto do texto segue para Segoe UI e seguintes */
   --font: 'Noto Sans Ethiopic', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -951,6 +952,11 @@ tfoot td {
 .p-warn {
   color: var(--warn);
   background: rgb(var(--av1-rgb) / 0.13);
+}
+
+.p-serio {
+  color: var(--serio);
+  background: rgb(var(--se1-rgb) / 0.13);
 }
 
 .p-bad {

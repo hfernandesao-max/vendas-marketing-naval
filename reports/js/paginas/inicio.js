@@ -1,8 +1,10 @@
 // Início: indicadores e painel de gráficos.
 import {
+  FAIXAS_DIVIDA,
   META_ROTA,
   clientesDe,
   docsVenda,
+  faixaDivida,
   isCF,
   notasCredito,
   pendenteDe,
@@ -250,13 +252,9 @@ function painelInicio(pg) {
     const hj = Date.parse(hoje()),
       P = V.filter((v) => pendenteDe(v) > 0.005).map((v) => ({ v: pendenteDe(v), d: Math.round((hj - Date.parse(v.data)) / 864e5) }));
     if (P.length) {
-      const fx = [
-        [t('0–7 dias'), (d) => d <= 7, COR.a1],
-        [t('8–30 dias'), (d) => d > 7 && d <= 30, COR.a2],
-        [t('Mais de 30 dias'), (d) => d > 30, COR.a3],
-      ].map(([n, f, cor]) => {
-        const rs = P.filter((x) => f(x.d));
-        return { rot: n, valor: sum(rs, 'v'), n: rs.length, cor };
+      const fx = FAIXAS_DIVIDA.map((f) => {
+        const rs = P.filter((x) => faixaDivida(x.d) === f.rot);
+        return { rot: t(f.rot), valor: sum(rs, 'v'), n: rs.length, cor: COR[f.cor] };
       });
       cards.push(
         nomear(

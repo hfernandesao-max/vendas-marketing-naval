@@ -32,6 +32,7 @@
   --ok1-rgb: 61 214 140;
   --ok2-rgb: 48 209 88;
   --er1-rgb: 255 107 107;
+  --se1-rgb: 255 138 61;
   --er2-rgb: 255 69 58;
   --er3-rgb: 252 165 165;
   /* superfícies sobrepostas (janelas, listas, menus) */
@@ -96,6 +97,7 @@
   --ok: #157347;
   --warn: #a15c07;
   --bad: #c0262d;
+  --serio: #b0410c;
 
   --veu-rgb: 10 42 82;
   --sombra-rgb: 10 30 60;
@@ -118,6 +120,7 @@
   --ok1-rgb: 21 128 74;
   --ok2-rgb: 21 128 74;
   --er1-rgb: 192 38 45;
+  --se1-rgb: 176 65 12;
   --er2-rgb: 192 38 45;
   --er3-rgb: 192 38 45;
   --p1-rgb: 255 255 255;

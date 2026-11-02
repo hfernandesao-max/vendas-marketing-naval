@@ -1,45 +1,63 @@
 // Recebimentos: cobranças (dinheiro recebido das vendas, por meio de cobrança) e facturas pendentes.
-import { docsVenda, isCF, pagosDe, pendenteDe, pendentesDe, porMeio, promotorRota, recebidoDe, temMeio, valorCat, vendasR } from '../calculos.js';
+import {
+  FAIXAS_DIVIDA,
+  docsVenda,
+  faixaDivida,
+  isCF,
+  pagosDe,
+  pendenteDe,
+  pendentesDe,
+  porMeio,
+  promotorRota,
+  recebidoDe,
+  temMeio,
+  valorCat,
+  vendasR,
+} from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { kz2, mkz, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
-import { hoje } from '../periodo.js';
+import { hoje, st } from '../periodo.js';
 import { el, group, sum } from '../util.js';
 
-// Facturas por receber, com a antiguidade da dívida (dias desde a emissão até hoje)
+// Facturas por receber, com a antiguidade da dívida (dias desde a emissão até hoje, em escalões de 30 dias) e o prazo
+// médio de recebimento (PMR, em inglês DSO = dívida por receber ÷ vendas facturadas no período × dias do período)
 R.pendentes = (pg) => {
   const hj = Date.parse(hoje());
-  const faixa = (d) => (d <= 7 ? '0–7 dias' : d <= 30 ? '8–30 dias' : 'Mais de 30 dias');
   const P = vendasR()
     .filter((v) => pendenteDe(v) > 0.005)
     .map((v) => {
       const dias = Math.max(0, Math.round((hj - Date.parse(v.data)) / 864e5));
-      return { ...v, chave: v.documento, promotor: promotorRota(v.rota), pago: recebidoDe(v), pendente: pendenteDe(v), dias, faixa: faixa(dias) };
+      return { ...v, chave: v.documento, promotor: promotorRota(v.rota), pago: recebidoDe(v), pendente: pendenteDe(v), dias, faixa: faixaDivida(dias) };
     });
   const tot = sum(P, 'pendente'),
     f = (n) => P.filter((x) => x.faixa === n);
   const pond = tot ? sum(P, (x) => x.pendente * x.dias) / tot : null;
+  // PMR: só com período fechado em datas (em «Tudo» conta desde a primeira venda)
+  const V = vendasR(),
+    fact = sum(docsVenda(V), 'total'),
+    de = st.de || V.map((x) => x.data).sort()[0],
+    ate = st.ate && st.ate < hoje() ? st.ate : hoje(),
+    nd = de ? Math.max(1, Math.round((Date.parse(ate) - Date.parse(de)) / 864e5) + 1) : 0,
+    pmr = fact > 0 && nd ? (tot / fact) * nd : null;
   const cliKey = (x) => (isCF(x.nif) ? 'CF|' + x.cliente : x.nif || x.cliente);
   pg.append(
     tiles([
       { l: t('Por receber'), v: kz2(tot), s: t('{n} facturas', { n: n0(P.length) }), tone: tot > 0 ? 'warn' : null, cls: 'full-value' },
-      { l: t('0–7 dias'), v: kz2(sum(f('0–7 dias'), 'pendente')), s: t('{n} facturas', { n: n0(f('0–7 dias').length) }), cls: 'full-value' },
-      {
-        l: t('8–30 dias'),
-        v: kz2(sum(f('8–30 dias'), 'pendente')),
-        s: t('{n} facturas', { n: n0(f('8–30 dias').length) }),
-        tone: f('8–30 dias').length ? 'warn' : null,
+      ...FAIXAS_DIVIDA.map((fx, i) => ({
+        l: t(fx.rot),
+        v: kz2(sum(f(fx.rot), 'pendente')),
+        s: t('{n} facturas', { n: n0(f(fx.rot).length) }),
+        tone: f(fx.rot).length ? [null, 'warn', 'serio', 'bad'][i] : null,
         cls: 'full-value',
-      },
-      {
-        l: t('Mais de 30 dias'),
-        v: kz2(sum(f('Mais de 30 dias'), 'pendente')),
-        s: t('{n} facturas', { n: n0(f('Mais de 30 dias').length) }),
-        tone: f('Mais de 30 dias').length ? 'bad' : null,
-        cls: 'full-value',
-      },
+      })),
       { l: t('Clientes com dívida'), v: n0(new Set(P.map(cliKey)).size) },
+      {
+        l: t('Prazo médio de recebimento'),
+        v: pmr == null ? '—' : t('{n} dias', { n: n0(Math.round(pmr)) }),
+        s: t('PMR: por receber ÷ facturado × dias do período'),
+      },
       { l: t('Antiguidade média'), v: pond == null ? '—' : t('{n} dias', { n: n0(Math.round(pond)) }), s: t('ponderada pelo valor') },
     ]),
   );
@@ -52,7 +70,7 @@ R.pendentes = (pg) => {
       ),
     ),
   );
-  const pill2 = (v) => pill(t(v), v === '0–7 dias' ? 'p-ok' : v === '8–30 dias' ? 'p-warn' : 'p-bad');
+  const pill2 = (v) => pill(t(v), FAIXAS_DIVIDA.find((f) => f.rot === v).pill);
   pg.append(
     tabela({
       id: 'pd-r',
@@ -65,26 +83,21 @@ R.pendentes = (pg) => {
         rota: rs[0].rota,
         promotor: promotorRota(rs[0].rota),
         n: rs.length,
-        a: sum(
-          rs.filter((x) => x.dias <= 7),
-          'pendente',
-        ),
-        b: sum(
-          rs.filter((x) => x.dias > 7 && x.dias <= 30),
-          'pendente',
-        ),
-        c: sum(
-          rs.filter((x) => x.dias > 30),
-          'pendente',
+        ...Object.fromEntries(
+          FAIXAS_DIVIDA.map((fx, i) => [
+            'f' + i,
+            sum(
+              rs.filter((x) => x.faixa === fx.rot),
+              'pendente',
+            ),
+          ]),
         ),
         pendente: sum(rs, 'pendente'),
       })),
       cols: [
         { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'n', label: t('Facturas'), type: 'n', sum: true },
-        { key: 'a', label: t('0–7 dias'), type: 'kz', sum: true },
-        { key: 'b', label: t('8–30 dias'), type: 'kz', sum: true },
-        { key: 'c', label: t('Mais de 30 dias'), type: 'kz', sum: true },
+        ...FAIXAS_DIVIDA.map((fx, i) => ({ key: 'f' + i, label: t(fx.rot), type: 'kz', sum: true })),
         { key: 'pendente', label: t('Por receber'), type: 'bar', sum: true },
       ],
     }),
@@ -105,7 +118,7 @@ R.pendentes = (pg) => {
           n: rs.length,
           antiga: rs.map((x) => x.data).sort()[0],
           dias: mx,
-          faixa: faixa(mx),
+          faixa: faixaDivida(mx),
           pendente: sum(rs, 'pendente'),
         };
       }),
