@@ -136,6 +136,13 @@ function naval_api_executar(): void
     if ($acesso === 'jwt') {
         $c = naval_jwt_autenticar();
         $GLOBALS['naval_jwt'] = $c;
+        // Velocidade: o PHP bloqueia a sessão até ao fim do pedido, e os outros pedidos da mesma pessoa esperavam
+        // (ex.: as vendas do mês ainda a ler o SQL Server). A sessão fecha-se já para escrita; continua legível em
+        // $_SESSION. Excepção: a gestão de contas, que grava o reforço da autenticação na sessão.
+        if ($rota !== 'v1/gestao') {
+            naval_csrf();   // garante o código CSRF gravado antes de fechar
+            session_write_close();
+        }
         naval_api_ritmo('conta|' . $c['sub']);
     } else {
         // por IP (vários utilizadores podem partilhar o mesmo IP na rede da empresa)

@@ -227,14 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
   <meta name="format-detection" content="telephone=no">
   <script src="../app/registar.js" defer></script>
   <title>Iniciar sessão · GeoMobilidade Naval</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/fontes/poppins.css" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="theme.css" />
   <!-- Tema (Sistema / Claro / Escuro): o mesmo do portal, aplicado antes de desenhar -->
   <script src="../reports/js/tema-arranque.js"></script>
-  <script src="vendor/lucide-1.62.0.min.js"></script>
+  <script src="icones-entrada.js"></script>
   <style>
     body {
       display: flex;

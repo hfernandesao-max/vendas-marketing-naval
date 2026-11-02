@@ -170,7 +170,8 @@ function naval_detalhe(string $detalhe): array
 {
     if ($detalhe === '') return [];
     $perfil = '';
-    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['usuario_autenticado']) && function_exists('naval_utilizador')) {
+    // a sessão pode já estar fechada para escrita (API: session_write_close); os dados continuam em $_SESSION
+    if (isset($_SESSION) && !empty($_SESSION['usuario_autenticado']) && function_exists('naval_utilizador')) {
         $perfil = (string) (naval_utilizador()['perfil'] ?? '');
     }
     return naval_debug() || in_array($perfil, ['SADM', 'TI'], true) ? ['detalhe' => $detalhe] : [];
