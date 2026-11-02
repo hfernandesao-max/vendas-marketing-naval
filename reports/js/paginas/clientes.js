@@ -132,7 +132,7 @@ function cadSemDados(pg) {
       'p',
       null,
       t(
-        'Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» da gestão do RTM). No servidor, clone esse repositório ao lado da pasta do site ou indique o ficheiro em RTM_CLIENTES_JSON no .env.',
+        'Os cadastros vêm do repositório rtm-clientes (exportação «Clientes» da gestão do RTM). No servidor, clone esse repositório ao lado da pasta do portal ou indique o ficheiro em RTM_CLIENTES_JSON no .env.',
       ),
     ),
   );

@@ -169,7 +169,7 @@ function cartaoPendente(v, maisRecente) {
   const cab = el('div', 'act-cab');
   const tit = el('div');
   tit.append(el('h3', null, t('Versão {v}', { v: v.versao })));
-  tit.append(el('p', null, t('Publicada em {d} · commit {c} · passou em todos os testes automáticos', { d: dataHora(v.publicada_em), c: v.commit })));
+  tit.append(el('p', null, t('Publicada em {d} · revisão {c} · passou em todos os testes automáticos', { d: dataHora(v.publicada_em), c: v.commit })));
   cab.append(tit);
   const dec = v.decisao;
   if (dec && dec.decisao === 'aprovada')

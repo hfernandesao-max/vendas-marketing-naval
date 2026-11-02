@@ -378,7 +378,7 @@ caso('token recusado: mensagem clara', function () use ($env) {
     file_put_contents($env, str_replace('github_pat_teste_0123456789abcdefghij', 'github_pat_errado_0123456789abcdefghij', $antes));
     [$r, $t] = act('estado');
     file_put_contents($env, $antes);
-    confirma($r === 1 && strpos($t, 'recusou o token') !== false && strpos($t, 'github_pat_errado') === false, $t);
+    confirma($r === 1 && strpos($t, 'recusou o código de acesso') !== false && strpos($t, 'github_pat_errado') === false, $t);
 });
 
 foreach ([$web, $api] as $p) {

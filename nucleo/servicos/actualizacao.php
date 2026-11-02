@@ -113,7 +113,7 @@ function naval_act_http(string $url, bool $comToken, string $aceitar = 'applicat
     $cab = ['Accept: ' . $aceitar, 'User-Agent: Portal-RTM-Actualizador', 'X-GitHub-Api-Version: 2022-11-28'];
     if ($comToken) {
         $token = naval_config('ACTUALIZACAO_GITHUB_TOKEN');
-        if ($token === '') throw new NavalActualizacaoErro('Falta ACTUALIZACAO_GITHUB_TOKEN no .env (php ferramentas/actualizar.php configurar).');
+        if ($token === '') throw new NavalActualizacaoErro('Falta o código de acesso do GitHub (ACTUALIZACAO_GITHUB_TOKEN no .env): correr «php ferramentas/actualizar.php configurar».');
         $cab[] = 'Authorization: Bearer ' . $token;
     }
     $cabecalhos = [];
@@ -157,8 +157,8 @@ function naval_act_api(string $caminho): array
     $base = rtrim(naval_config('ACTUALIZACAO_GITHUB_API', 'https://api.github.com'), '/');
     $repo = naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO);
     [$codigo, $corpo, $cab] = naval_act_http($base . '/repos/' . $repo . '/' . ltrim($caminho, '/'), true);
-    if ($codigo === 401) throw new NavalActualizacaoErro('O GitHub recusou o token (expirado ou revogado): criar outro e correr «php ferramentas/actualizar.php configurar».');
-    if ($codigo === 403 || $codigo === 404) throw new NavalActualizacaoErro('O token não dá acesso ao repositório ' . $repo . ' (HTTP ' . $codigo . '): confirmar «Contents: Read-only» nesse repositório.');
+    if ($codigo === 401) throw new NavalActualizacaoErro('O GitHub recusou o código de acesso (expirado ou revogado): criar outro e correr «php ferramentas/actualizar.php configurar».');
+    if ($codigo === 403 || $codigo === 404) throw new NavalActualizacaoErro('O código de acesso não dá acesso ao repositório ' . $repo . ' (HTTP ' . $codigo . '): confirmar «Contents: Read-only» nesse repositório.');
     if ($codigo !== 200) throw new NavalActualizacaoErro('Resposta inesperada do GitHub (HTTP ' . $codigo . ').');
     $j = json_decode($corpo, true);
     if (!is_array($j)) throw new NavalActualizacaoErro('Resposta inválida do GitHub.');
@@ -606,7 +606,7 @@ function naval_act_aplicar(array $o = []): array
                 $u = naval_act_ultima_versao();
             }
             if ($u['dias_token'] !== null && $u['dias_token'] <= 30) {
-                $avisos[] = 'O token do GitHub expira dentro de ' . $u['dias_token'] . ' dia(s): criar outro e correr «php ferramentas/actualizar.php configurar».';
+                $avisos[] = 'O código de acesso do GitHub expira dentro de ' . $u['dias_token'] . ' dia(s): criar outro e correr «php ferramentas/actualizar.php configurar».';
             }
             if ($u['versao'] === ($estado['versao'] ?? '') && !$o['forcar']) {
                 $diz('Já está na versão mais recente (' . $u['versao'] . ').');

@@ -10,7 +10,7 @@
 defined('NAVAL_NUCLEO') || exit;
 
 /** Meios de pagamento sem descrição no XML; os nomes que vêm do Pinguim BO prevalecem. */
-const NAVAL_MEIOS_PAGAMENTO = ['NU' => 'Numerário', 'MC' => 'Multicaixa', 'TB' => 'Transferência Bancária', 'CS' => 'Advance'];
+const NAVAL_MEIOS_PAGAMENTO = ['NU' => 'Numerário', 'MC' => 'Multicaixa', 'TB' => 'Transferência Bancária', 'CS' => 'Adiantamento'];
 
 /** Páginas que mostram vendas: sem nenhuma, o perfil só vê quantidades por artigo. */
 const NAVAL_PAGINAS_VENDAS = ['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes'];

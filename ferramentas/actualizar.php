@@ -62,10 +62,10 @@ try {
 
         case 'configurar':
             echo "Actualizações automáticas: configurar\n\n";
-            echo "Token do GitHub: «Fine-grained token» só com «Contents: Read-only» no repositório "
+            echo "Código de acesso do GitHub (em «Fine-grained tokens»), só com «Contents: Read-only» no repositório "
                 . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO) . " (não é mostrado no ecrã depois de gravado).\n";
-            $token = $pergunta('Token', 'ACTUALIZACAO_CONFIG_TOKEN');
-            if (!preg_match('/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/', $token)) $falha('Isto não parece um token do GitHub (começa por github_pat_).');
+            $token = $pergunta('Código de acesso', 'ACTUALIZACAO_CONFIG_TOKEN');
+            if (!preg_match('/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/', $token)) $falha('Isto não parece um código de acesso do GitHub (começa por github_pat_).');
             $email = $pergunta('Correio electrónico para os avisos (vazio = sem avisos; vários separados por vírgula)', 'ACTUALIZACAO_CONFIG_EMAIL');
             $chaves = ['ACTUALIZACAO_GITHUB_TOKEN' => $token, 'ACTUALIZACAO_AUTOMATICA' => '1'];
             if ($email !== '') $chaves['ACTUALIZACAO_EMAIL'] = $email;
@@ -96,7 +96,7 @@ try {
             echo 'Automática: ' . (naval_config('ACTUALIZACAO_AUTOMATICA') === '1' ? 'ligada' : 'desligada (ACTUALIZACAO_AUTOMATICA=1 para ligar)') . "\n";
             $u = naval_act_ultima_versao();
             echo 'Publicada:  ' . $u['versao'] . ' (' . substr($u['commit'], 0, 7) . ")\n";
-            if ($u['dias_token'] !== null) echo 'Token:      expira dentro de ' . $u['dias_token'] . " dias\n";
+            if ($u['dias_token'] !== null) echo 'Código:     o código de acesso expira dentro de ' . $u['dias_token'] . " dias\n";
             echo "  ok     ligação ao GitHub a funcionar\n";
             exit(0);
 

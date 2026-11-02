@@ -25,7 +25,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   pára se houver ficheiros alterados à mão, aplica as migrações da base de dados do módulo Equipamentos, guarda cópia,
   copia só o que mudou, verifica o portal (linha de comandos e HTTP) e repõe a versão anterior sozinho se falhar.
   Nunca escreve o `.env` nem os dados. Avisos por correio electrónico.
-- **Migrações:** tabela `ATV_MIGRACAO` no script do módulo Equipamentos e pasta `ferramentas/sql/migracoes`.
+- **Migrações:** tabela `ATV_MIGRACAO` no ficheiro SQL do módulo Equipamentos e pasta `ferramentas/sql/migracoes`.
 
 ### Velocidade (2.ª parte)
 - **Páginas a pedido:** o arranque traz só o núcleo do portal e a página que abre; o módulo de cada outra página
@@ -39,7 +39,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   (`include_items=only`), uma vez por período, ao abrir «Vendas por artigo», «Vendas para o SAP», o filtro de artigo
   ou o relatório consolidado. Na página principal o gráfico de artigos aparece quando as linhas chegam.
 - **Pedidos condicionais resolvidos cedo:** o ETag das vendas, dos dados de base e dos cadastros calcula-se da data e
-  do tamanho da origem (ficheiros, entradas da cache) e do âmbito de quem pede, antes de ler e converter os dados;
+  do tamanho da origem (ficheiros, entradas da memória temporária) e do âmbito de quem pede, antes de ler e converter os dados;
   quando nada mudou o servidor responde 304 logo (ex.: carteira de clientes 8,3 ms → 3,2 ms).
 - Medido numa rede móvel simulada (150 ms, 1,5 Mbps), no Apache: portal 3,4 s → 2,4 s na primeira vez (303 KB →
   152 KB, 61 → 46 pedidos) e 1,4 s → 0,9 s nas seguintes. Sem alterações à configuração do Apache.
@@ -48,7 +48,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Pedidos à API em paralelo:** a sessão PHP fecha-se para escrita logo a seguir à autenticação; os outros pedidos
   da mesma pessoa deixam de esperar pelas consultas lentas (medido: 1,8 s → 6 ms enquanto as vendas são lidas).
 - **Compressão** do HTML, CSS, JS e SVG no Apache (mod_deflate): cerca de 3 vezes menos bytes.
-- **Cache longa com versões:** os módulos e estilos do portal levam a versão no endereço (import map) e ficam no
+- **Memória temporária longa com versões:** os módulos e estilos do portal levam a versão no endereço (import map) e ficam no
   navegador um ano; uma actualização muda só a versão dos ficheiros alterados. Pré-carregamento dos módulos.
 - **Sem dependências externas ao abrir:** letras Inter e Poppins servidas pelo portal (sem Google Fonts) e os ícones
   da página de entrada sem a biblioteca de 458 KB.
@@ -73,15 +73,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **App para iPhone e Android (PWA):** manifesto, ícones, página «Sem ligação» e service worker que nunca guarda
   fichas, documentos nem assinaturas no telefone.
 - **Matriz de acessos:** `equipamentos` (consultar), `equipamentos-movimentar` e `equipamentos-administrar`.
-- Base de dados própria do módulo (`ATV_DB_*`; script em `ferramentas/sql/equipamentos-sqlserver.sql`), separada do
+- Base de dados própria do módulo (`ATV_DB_*`; ficheiro SQL `ferramentas/sql/equipamentos-sqlserver.sql`), separada do
   Pinguim BO, que continua só de leitura. Testes do módulo numa base SQLite.
 - Preparação para o SQL Server: número gerado lido com `@@IDENTITY` (as tabelas com triggers não aceitam `OUTPUT`
   directo) e verificação da instalação com `php ferramentas/verificar-equipamentos.php` (escrita de ensaio desfeita).
 - **Segunda validação:** testes num SQL Server real (Windows com o ODBC Driver 17, como em produção, e Linux com
-  pdo_sqlsrv) e verificação da ligação ao MDM Plus, só de leitura (`php ferramentas/verificar-mdm.php`): token OAuth,
+  pdo_sqlsrv) e verificação da ligação ao MDM Plus, só de leitura (`php ferramentas/verificar-mdm.php`): código de acesso OAuth,
   lista dos equipamentos e cruzamento com o portal pelo ID do MDM, IMEI ou n.º de série.
 - **Configuração do MDM num só passo:** `php ferramentas/configurar-mdm.php` pede o Client ID, o Client Secret e o código
-  do Self Client, troca o código pelo refresh token, grava as chaves no `.env` (com cópia do anterior, sem mostrar os
+  do Self Client, troca o código pelo código de renovação (refresh token), grava as chaves no `.env` (com cópia do anterior, sem mostrar os
   segredos) e verifica a ligação.
 - Fase 2: selagem PAdES com selo temporal, ordens ao MDM Plus, etiquetas, inventário e reconciliação com o MDM.
 
@@ -89,7 +89,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Uma só versão do código:** junta o que estava no servidor (pacotes de 28 a 30-10: stock e vendas pela base de dados,
   sincronização, tigrínia e idioma por conta, modo claro, notas de crédito, Comunicação AGT) com o que estava no GitHub
   (API central v1 com JWT, segurança ASVS, pré-preenchimento do plano de cargas, localização das entradas, plano sem
-  Excel). Ponto comum: commit ca0b85a (27-10, 11:37).
+  Excel). Ponto comum: revisão ca0b85a (27-10, 11:37).
 - Serviços do servidor passados para a API v1 (`reports/data/` não serve PHP): `v1/stock` e `v1/agt`; a página de
   escolha pede o perfil e o idioma da conta pela API (`v1/auth/token` + `v1/sessao`).
 - Ficheiro SAP: fica o formato que estava em produção (uma folha, um cabeçalho, sem estilos).
@@ -257,11 +257,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ### Arquitectura
 - **Módulos separados e API central v1 com JWT** (`docs/API.md`): o front-end (`reports/`) fica só com ficheiros
   estáticos e fala com o back-end apenas pela API (`api/index.php/v1/…`, cliente `reports/js/api.js`); os serviços
-  passaram de `reports/data/*.php` para o back-end privado (`nucleo/api/v1/`). Cada pedido leva um token de acesso
+  passaram de `reports/data/*.php` para o back-end privado (`nucleo/api/v1/`). Cada pedido leva um código de acesso
   JWT (HS256, 15 min, só em memória, ligado à sessão e à versão das credenciais), obtido com a sessão da página de
   entrada e o código CSRF; origem própria sem CORS, rotas e métodos fechados, tipo de conteúdo e tamanho verificados,
   ritmo limitado. Nova chave obrigatória no `.env`: `JWT_SEGREDO`.
-- **Fase 4 — optimização:** cache das consultas no servidor (vendas 2 min / 30 min, sincronização 1 min), um só
+- **Fase 4 — optimização:** memória temporária das consultas no servidor (vendas 2 min / 30 min, sincronização 1 min), um só
   pedido à fonte de cada vez, «Actualizar» com dados frescos, ETag/304 e compressão gzip das respostas grandes.
 
 ### Segurança
@@ -275,8 +275,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   - gravações das contas, bloqueios e limites em exclusivo (sem alterações perdidas); lista de contas ilegível →
     ninguém entra; pasta privada protegida com `.htaccess`; registos sem o texto escrito em contas inexistentes;
   - CSRF no registo das exportações; código próprio na ligação «Terminar sessão»; ligação cifrada ao SQL Server;
-    domínios de email autorizados; CSV do GEO sem fórmulas; dependência `uuid` corrigida; `geo/csv.html` retirado;
-  - verificação automática: workflow «Segurança» (gitleaks, npm audit, OSV-Scanner, Semgrep, CodeQL, OWASP ZAP) em cada
+    domínios de correio electrónico autorizados; CSV do GEO sem fórmulas; dependência `uuid` corrigida; `geo/csv.html` retirado;
+  - verificação automática: fluxo «Segurança» (gitleaks, npm audit, OSV-Scanner, Semgrep, CodeQL, OWASP ZAP) em cada
     envio e às segundas-feiras, com _issue_ automático se falhar; Dependabot com integração automática das correcções.
 - **Auditoria de segurança do PHP** (OWASP ASVS 4.0 nível 2; guia em `docs/SEGURANCA.md`):
   - configuração: sem valores de ligação predefinidos no código (Pinguim BO, base de dados, endereço do portal);
@@ -314,7 +314,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   (matrícula, tipo de viatura, motorista, transportadora, caixas por artigo, zonas), por dia e por viatura.
   Recurso `registo-cargas` na matriz de acessos.
 - **Plano de cargas**: *Exportar Excel* a qualquer momento (rascunho marcado «RASCUNHO — NÃO PUBLICADO»,
-  ou versão publicada oficial) e *Enviar por email* a versão publicada aos destinatários escolhidos da lista.
+  ou versão publicada oficial) e *Enviar por correio electrónico* a versão publicada aos destinatários escolhidos da lista.
 - **Exportar dados** (barra de topo): todos os dados de gestão do negócio desde o arranque do Pinguim BO,
   em tabelas do Excel com dicionário de dados (`RTM - Dados de Gestão-DD-MM-AAAA.xlsx`, confidencial).
   Recurso `exportar-dados` (DIR, FIN, AUD; SADM).
@@ -328,7 +328,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - «Ficheiro para o SAP» passa a **Integrações › Vendas para o SAP** (interfaces separadas da análise de recebimentos).
 - Menu lateral com estados claros: página aberta em pílula azul com ícone branco e barra indicadora; área da página com ícone azul; restantes neutros.
 - «Exportar tudo» passa a **Relatório consolidado** (nome do relatório que gera).
-- Plano de cargas: publicar fixa a versão oficial; o envio por email é opcional; o servidor recusa
+- Plano de cargas: publicar fixa a versão oficial; o envio por correio electrónico é opcional; o servidor recusa
   destinatários fora da lista e regista cada envio. Dia do plano sempre em dd-mm-aaaa.
 - «Stock por promotor / carrinha» mostra só stock (as cargas passaram ao Registo de cargas).
 - Barra de topo numa só linha em portáteis; datas nunca partem a linha nas tabelas.
@@ -337,7 +337,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 26-10-2026
 
 ### Adicionado
-- **Acessos**: activação da gestão de contas no portal (passagem da lista antiga com email, perfil e rotas;
+- **Acessos**: activação da gestão de contas no portal (passagem da lista antiga com correio electrónico, perfil e rotas;
   quem activa fica super administrador, com duas aprovações); criação de contas e de perfis; matriz dinâmica.
 - **Terreno › Sincronização dos smartphones**: estado por limites (em dia ≤ 2 h, atenção ≤ 24 h, crítico),
   última sincronização, contagens de hoje e 7 dias, histórico de 14 dias; actualização a cada minuto.
@@ -349,7 +349,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ### Alterado
 - Back-end organizado em camadas (`nucleo/`), configuração lida num único sítio (`.env`).
 - «Método de pagamento» passa a **Cobranças / Meio de cobrança / Taxa de cobrança**.
-- Menus laterais em acordeão (um aberto de cada vez); filtros de todas as páginas com o mesmo design system.
+- Menus laterais em acordeão (um aberto de cada vez); filtros de todas as páginas com o mesmo estilo visual.
 - O portal abre em «Hoje» e actualiza sozinho a cada 5 minutos; stock só com quantidades diferentes de zero.
 - Plano de cargas produzido na plataforma (sem importação do Excel); indicador de fontes só com o Pinguim BO.
 - Gráficos de barras desenhados à largura real, rótulos alinhados à esquerda, sem verde em títulos e etiquetas;
