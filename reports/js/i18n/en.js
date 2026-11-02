@@ -1806,4 +1806,18 @@ export const EN = {
   Actualizações: 'Updates',
   'Actualizações do portal (aprovação; só o super administrador)': 'Portal updates (approval; super administrator only)',
   Adiantamento: 'Advance payment',
+  'Aplicar mesmo assim a versão {v}': 'Apply version {v} anyway',
+  'Os ficheiros alterados à mão no servidor são substituídos pelos da versão e ficam guardados na cópia de segurança. A versão é instalada nos próximos 5 minutos.':
+    "The files changed by hand on the server are replaced by the version's files and kept in the backup. The version is installed within the next 5 minutes.",
+  'Aplicar mesmo assim': 'Apply anyway',
+  'Ficheiros alterados à mão no servidor desde a última actualização (a instalação parou para não os apagar):':
+    'Files changed by hand on the server since the last update (the installation stopped so as not to erase them):',
+  'Ainda sem verificação: corre todas as noites com a actualização automática.': 'Not checked yet: runs every night with the automatic update.',
+  'Sem resposta: {e}': 'No response: {e}',
+  'expira em {d}': 'expires on {d}',
+  'Certificados HTTPS': 'HTTPS certificates',
+  'Renovação automática no servidor (ACME); o portal confere a validade todas as noites e avisa por correio a 30, 14, 7, 3 e 1 dias do fim.':
+    'Automatic renewal on the server (ACME); the portal checks validity every night and warns by email 30, 14, 7, 3 and 1 days before expiry.',
+  'o primeiro a expirar: {e}': 'first to expire: {e}',
+  'ainda sem verificação': 'not checked yet',
 };

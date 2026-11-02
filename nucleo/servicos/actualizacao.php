@@ -107,15 +107,12 @@ function naval_act_registar(string $accao, array $det = []): void
  * o endereço temporário do ficheiro é pedido sem ele. $destino grava o corpo num ficheiro.
  * Devolve [código, corpo, cabeçalhos (minúsculas)].
  */
-function naval_act_http(string $url, bool $comToken, string $aceitar = 'application/vnd.github+json', ?string $destino = null): array
+function naval_act_http(string $url, $comToken, string $aceitar = 'application/vnd.github+json', ?string $destino = null, string $metodo = 'GET'): array
 {
     if (!function_exists('curl_init')) throw new NavalActualizacaoErro('O PHP do servidor não tem a extensão curl (php.ini: extension=curl).');
     $cab = ['Accept: ' . $aceitar, 'User-Agent: Portal-RTM-Actualizador', 'X-GitHub-Api-Version: 2022-11-28'];
-    if ($comToken) {
-        $token = naval_config('ACTUALIZACAO_GITHUB_TOKEN');
-        if ($token === '') throw new NavalActualizacaoErro('Falta o código de acesso do GitHub (ACTUALIZACAO_GITHUB_TOKEN no .env): correr «php ferramentas/actualizar.php configurar».');
-        $cab[] = 'Authorization: Bearer ' . $token;
-    }
+    // $comToken: true = credencial do actualizador (GitHub App ou código de acesso pessoal); texto = essa credencial
+    if ($comToken !== false) $cab[] = 'Authorization: Bearer ' . (is_string($comToken) ? $comToken : naval_act_credencial());
     $cabecalhos = [];
     $ch = curl_init($url);
     $fh = null;
@@ -136,6 +133,10 @@ function naval_act_http(string $url, bool $comToken, string $aceitar = 'applicat
     } else {
         $op[CURLOPT_RETURNTRANSFER] = true;
     }
+    if ($metodo !== 'GET') {
+        $op[CURLOPT_CUSTOMREQUEST] = $metodo;
+        $op[CURLOPT_POSTFIELDS] = '';
+    }
     curl_setopt_array($ch, $op);
     $corpo = curl_exec($ch);
     $codigo = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -152,13 +153,75 @@ function naval_act_http(string $url, bool $comToken, string $aceitar = 'applicat
     return [$codigo, is_string($corpo) ? $corpo : '', $cabecalhos];
 }
 
+// ── Credencial do GitHub ────────────────────────────────────────────────────────────────────────────
+//
+// Recomendado (prática do GitHub para servidores): uma GitHub App instalada só neste repositório, com «Contents:
+// Read-only». O servidor guarda a chave privada da App (pasta privada, só SYSTEM e administradores) e, em cada execução,
+// assina um JWT (RS256, 9 minutos) e troca-o por uma credencial de instalação que dura 1 hora. A chave não expira: não
+// há renovação anual. Alternativa: código de acesso pessoal (ACTUALIZACAO_GITHUB_TOKEN), que expira e tem de ser renovado.
+
+function naval_act_b64url(string $s): string
+{
+    return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
+}
+
+function naval_act_ficheiro_chave_app(): string
+{
+    return naval_config('ACTUALIZACAO_GITHUB_APP_CHAVE', naval_act_pasta() . '/github-app.pem');
+}
+
+function naval_act_usa_app(): bool
+{
+    return naval_config('ACTUALIZACAO_GITHUB_APP_ID') !== '';
+}
+
+/** JWT da GitHub App (RS256), válido 9 minutos (o GitHub aceita até 10). */
+function naval_act_jwt_app(): string
+{
+    if (!function_exists('openssl_sign')) throw new NavalActualizacaoErro('O PHP do servidor não tem a extensão openssl (php.ini: extension=openssl).');
+    $pem = @file_get_contents(naval_act_ficheiro_chave_app());
+    $chave = $pem ? openssl_pkey_get_private($pem) : false;
+    if (!$chave) throw new NavalActualizacaoErro('Chave privada da GitHub App em falta ou inválida (correr «php ferramentas/actualizar.php configurar»).');
+    $agora = time();
+    $dados = naval_act_b64url((string) json_encode(['alg' => 'RS256', 'typ' => 'JWT'])) . '.'
+        . naval_act_b64url((string) json_encode(['iat' => $agora - 60, 'exp' => $agora + 540, 'iss' => naval_config('ACTUALIZACAO_GITHUB_APP_ID')]));
+    if (!openssl_sign($dados, $assinatura, $chave, OPENSSL_ALGO_SHA256)) throw new NavalActualizacaoErro('Não foi possível assinar o pedido à GitHub App.');
+    return $dados . '.' . naval_act_b64url($assinatura);
+}
+
+/** Credencial para a API: de instalação da GitHub App (1 hora, renovada sozinha) ou o código de acesso pessoal. */
+function naval_act_credencial(): string
+{
+    static $cache = null;
+    if (!naval_act_usa_app()) {
+        $token = naval_config('ACTUALIZACAO_GITHUB_TOKEN');
+        if ($token === '') throw new NavalActualizacaoErro('O servidor ainda não está ligado ao GitHub (GitHub App ou ACTUALIZACAO_GITHUB_TOKEN no .env): correr «php ferramentas/actualizar.php configurar».');
+        return $token;
+    }
+    if ($cache !== null && $cache[1] > time() + 300) return $cache[0];
+    $base = rtrim(naval_config('ACTUALIZACAO_GITHUB_API', 'https://api.github.com'), '/');
+    $jwt = naval_act_jwt_app();
+    $inst = naval_config('ACTUALIZACAO_GITHUB_APP_INSTALACAO');
+    if ($inst === '') {
+        [$c, $corpo] = naval_act_http($base . '/repos/' . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO) . '/installation', $jwt);
+        $j = json_decode($corpo, true);
+        if ($c !== 200 || empty($j['id'])) throw new NavalActualizacaoErro('A GitHub App não está instalada no repositório do portal ou o ID da App está errado (HTTP ' . $c . ').');
+        $inst = (string) $j['id'];
+    }
+    [$c, $corpo] = naval_act_http($base . '/app/installations/' . rawurlencode($inst) . '/access_tokens', $jwt, 'application/vnd.github+json', null, 'POST');
+    $j = json_decode($corpo, true);
+    if ($c !== 201 || empty($j['token'])) throw new NavalActualizacaoErro('O GitHub recusou a GitHub App (HTTP ' . $c . '): confirmar o ID da App, a chave privada e a instalação no repositório.');
+    $cache = [(string) $j['token'], strtotime((string) ($j['expires_at'] ?? '')) ?: time() + 3000];
+    return $cache[0];
+}
+
 function naval_act_api(string $caminho): array
 {
     $base = rtrim(naval_config('ACTUALIZACAO_GITHUB_API', 'https://api.github.com'), '/');
     $repo = naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO);
     [$codigo, $corpo, $cab] = naval_act_http($base . '/repos/' . $repo . '/' . ltrim($caminho, '/'), true);
-    if ($codigo === 401) throw new NavalActualizacaoErro('O GitHub recusou o código de acesso (expirado ou revogado): criar outro e correr «php ferramentas/actualizar.php configurar».');
-    if ($codigo === 403 || $codigo === 404) throw new NavalActualizacaoErro('O código de acesso não dá acesso ao repositório ' . $repo . ' (HTTP ' . $codigo . '): confirmar «Contents: Read-only» nesse repositório.');
+    if ($codigo === 401) throw new NavalActualizacaoErro(naval_act_usa_app() ? 'O GitHub recusou a credencial da GitHub App: confirmar a App e a chave («php ferramentas/actualizar.php configurar»).' : 'O GitHub recusou o código de acesso (expirado ou revogado): criar outro e correr «php ferramentas/actualizar.php configurar».');
+    if ($codigo === 403 || $codigo === 404) throw new NavalActualizacaoErro('A credencial do GitHub não dá acesso ao repositório ' . $repo . ' (HTTP ' . $codigo . '): confirmar «Contents: Read-only» nesse repositório.');
     if ($codigo !== 200) throw new NavalActualizacaoErro('Resposta inesperada do GitHub (HTTP ' . $codigo . ').');
     $j = json_decode($corpo, true);
     if (!is_array($j)) throw new NavalActualizacaoErro('Resposta inválida do GitHub.');
@@ -580,6 +643,7 @@ function naval_act_aplicar(array $o = []): array
     try {
         $estado = naval_act_estado();
         $avisos = [];
+        $u = [];
 
         // 1. Pacote
         if ($o['pacote']) {
@@ -641,7 +705,7 @@ function naval_act_aplicar(array $o = []): array
         $migracoes = naval_act_migrar($dir . '/ficheiros/ferramentas/sql/migracoes', true);
         if ($migracoes) $diz('Migrações da base de dados a aplicar: ' . implode(', ', $migracoes));
         if ($o['ensaio']) return ['resultado' => 'ensaio', 'versao' => $m['versao'], 'plano' => $p, 'migracoes' => $migracoes, 'avisos' => $avisos];
-        if ($p['conflitos'] && !$o['forcar']) {
+        if ($p['conflitos'] && !$o['forcar'] && empty($u['forcar_aprovado'])) {
             naval_act_registar('conflito', ['versao' => $m['versao'], 'ficheiros' => $p['conflitos']]);
             return ['resultado' => 'conflito', 'versao' => $m['versao'], 'plano' => $p, 'avisos' => $avisos];
         }
@@ -651,8 +715,18 @@ function naval_act_aplicar(array $o = []): array
         $erros = naval_act_sintaxe($dir . '/ficheiros', $mudar);
         if ($erros) throw new NavalActualizacaoErro('Erros de sintaxe no pacote (nada foi alterado): ' . implode('; ', $erros));
 
-        // 5. Migrações da base de dados (compatíveis com o código em produção: vão antes dos ficheiros)
-        $aplicadas = $migracoes ? naval_act_migrar($dir . '/ficheiros/ferramentas/sql/migracoes', false) : [];
+        // 5. Requisitos do servidor (versão do PHP e extensões, activadas no php.ini com cópia) e migrações da base de
+        //    dados (compatíveis com o código em produção: vão antes dos ficheiros)
+        [$iniAlterado, $iniCopia] = naval_act_requisitos($dir . '/ficheiros', $diz);
+        $reporIni = function () use ($iniAlterado, $iniCopia) {
+            if ($iniAlterado && is_file($iniCopia)) @copy($iniCopia, naval_act_php_ini());
+        };
+        try {
+            $aplicadas = $migracoes ? naval_act_migrar($dir . '/ficheiros/ferramentas/sql/migracoes', false) : [];
+        } catch (Throwable $e) {
+            $reporIni();
+            throw $e;
+        }
 
         $ficheirosNovos = $m['ficheiros'];
         $concluir = function (string $resultado, array $extra = []) use (&$estado, $m, $ficheirosNovos, $origem, $t0, $avisos) {
@@ -662,7 +736,7 @@ function naval_act_aplicar(array $o = []): array
             naval_act_registar($resultado, ['versao' => $m['versao'], 'seg' => round(microtime(true) - $t0, 1)] + $extra);
             return ['resultado' => $resultado, 'versao' => $m['versao'], 'avisos' => $avisos] + $extra;
         };
-        if (!$mudar) {
+        if (!$mudar && !$iniAlterado) {
             $diz('Nenhum ficheiro a alterar.');
             return $concluir('sem_alteracoes', ['migracoes' => $aplicadas]);
         }
@@ -681,10 +755,27 @@ function naval_act_aplicar(array $o = []): array
             throw new NavalActualizacaoErro('Falha a copiar (' . $e->getMessage() . '); versão anterior reposta' . ($erros ? ' com erros: ' . implode('; ', $erros) : '') . '.');
         }
         $diz(count($mudar) . ' ficheiros copiados.');
-        $aviso = naval_act_recarregar_php();
+        // configuração do Apache (ferramentas/apache) ou php.ini alterados: validar (httpd -t) e reiniciar o Apache
+        $reiniciar = $iniAlterado || (bool) array_filter($mudar, function ($c) { return strpos($c, 'ferramentas/apache/portal-rtm') === 0; });
+        if ($reiniciar) {
+            $erroConf = naval_act_apache_testar();
+            if ($erroConf !== '') {
+                $erros = naval_act_repor($raiz, $copia);
+                $reporIni();
+                $estado['recusada'] = $m['versao'];
+                naval_act_gravar_estado($estado);
+                naval_act_registar('revertida', ['versao' => $m['versao'], 'falhas' => ['configuração do Apache: ' . $erroConf], 'erros_reposicao' => $erros]);
+                $diz('FALHA na validação da configuração do Apache (httpd -t): ' . $erroConf . '. Versão anterior reposta; o Apache não foi reiniciado.');
+                return ['resultado' => 'revertida', 'versao' => $m['versao'], 'falhas' => ['configuração do Apache: ' . $erroConf], 'erros_reposicao' => $erros, 'avisos' => $avisos];
+            }
+            $aviso = naval_act_apache_reiniciar();
+            $diz($aviso === '' ? 'Configuração do Apache validada e Apache reiniciado.' : 'Aviso: ' . $aviso);
+        } else {
+            $aviso = naval_act_recarregar_php();
+        }
         if ($aviso !== '') {
             $avisos[] = $aviso;
-            $diz('Aviso: ' . $aviso);
+            if (!$reiniciar) $diz('Aviso: ' . $aviso);
         }
 
         // 7. Confirmar que o portal funciona; senão, repor
@@ -692,7 +783,9 @@ function naval_act_aplicar(array $o = []): array
         if ($base !== '' && !$httpAntes) $falhas = array_merge($falhas, naval_act_verificar_http($base));
         if ($falhas) {
             $erros = naval_act_repor($raiz, $copia);
-            naval_act_recarregar_php();
+            $reporIni();
+            if ($reiniciar) naval_act_apache_reiniciar();
+            else naval_act_recarregar_php();
             $depois = ($base !== '' && !$httpAntes) ? naval_act_verificar_http($base) : [];
             $estado['recusada'] = $m['versao'];   // não volta a ser aplicada sozinha todas as noites
             naval_act_gravar_estado($estado);
@@ -780,7 +873,9 @@ function naval_act_alvo_aprovado(array $versoes, array $estado, array $aprov): ?
 {
     foreach (naval_act_mais_recentes($versoes, $estado) as $v) {
         $a = $aprov[$v['versao']] ?? null;
-        if ($a && ($a['decisao'] ?? '') === 'aprovada' && $v['versao'] !== ($estado['recusada'] ?? '')) return $v + ['sha256_aprovado' => (string) ($a['sha256'] ?? '')];
+        if ($a && ($a['decisao'] ?? '') === 'aprovada' && $v['versao'] !== ($estado['recusada'] ?? '')) {
+            return $v + ['sha256_aprovado' => (string) ($a['sha256'] ?? ''), 'forcar_aprovado' => !empty($a['forcar'])];
+        }
     }
     return null;
 }
@@ -817,8 +912,11 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
         $motivo = trim(preg_replace('/\s+/', ' ', $motivo));
         switch ($accao) {
             case 'aprovar':
+            case 'forcar':
+                // «forcar»: aplicar mesmo com ficheiros alterados à mão no servidor (ficam na cópia de segurança); instala já
                 $aprov[$versao] = ['decisao' => 'aprovada', 'por' => $login, 'em' => date('Y-m-d H:i:s'), 'motivo' => mb_substr($motivo, 0, 500),
-                    'sha256' => naval_act_sha_publicado($v), 'urgente' => $urgente, 'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']];
+                    'sha256' => naval_act_sha_publicado($v), 'urgente' => $urgente || $accao === 'forcar', 'forcar' => $accao === 'forcar',
+                    'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']];
                 break;
             case 'reprovar':
                 if (mb_strlen($motivo) < 5) throw new NavalErro('Indique o motivo da reprovação.', 400);
@@ -833,7 +931,7 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
                 throw new NavalErro('Acção desconhecida.', 400);
         }
         naval_act_gravar_aprovacoes($aprov);
-        naval_registar('actualizacao_' . ($accao === 'aprovar' ? 'aprovada' : ($accao === 'reprovar' ? 'reprovada' : 'decisao_anulada')),
+        naval_registar('actualizacao_' . ($accao === 'aprovar' ? 'aprovada' : ($accao === 'forcar' ? 'aprovada_forcar' : ($accao === 'reprovar' ? 'reprovada' : 'decisao_anulada'))),
             ['versao' => $versao, 'urgente' => $urgente, 'motivo' => $motivo], $login);
         naval_act_registar('decisao', ['versao' => $versao, 'accao' => $accao, 'por' => $login, 'urgente' => $urgente]);
         return $aprov[$versao] ?? [];
@@ -858,7 +956,8 @@ function naval_act_resultados(): array
     foreach ($linhas as $l) {
         $j = json_decode($l, true);
         if (!is_array($j) || empty($j['versao']) || in_array($j['accao'] ?? '', ['decisao', 'aviso_falhou'], true)) continue;
-        $out[(string) $j['versao']] = ['accao' => (string) $j['accao'], 'data' => (string) ($j['data'] ?? '')];
+        $out[(string) $j['versao']] = ['accao' => (string) $j['accao'], 'data' => (string) ($j['data'] ?? '')]
+            + ($j['accao'] === 'conflito' ? ['ficheiros' => array_slice((array) ($j['ficheiros'] ?? []), 0, 50)] : []);
     }
     return $out;
 }
@@ -930,7 +1029,9 @@ function naval_act_vista_portal(): array
     $v = [
         'instalada' => ['versao' => (string) $estado['versao'], 'commit' => (string) $estado['commit'], 'aplicada_em' => (string) $estado['aplicada_em'],
             'recusada' => (string) ($estado['recusada'] ?? '')],
-        'configurada' => naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '',
+        'configurada' => naval_act_usa_app() || naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '',
+        'credencial' => naval_act_usa_app() ? 'app' : (naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '' ? 'pessoal' : ''),
+        'certificados' => naval_json_ler(naval_act_pasta() . '/certificados.json', ['verificado_em' => '', 'lista' => []]),
         'automatica' => naval_config('ACTUALIZACAO_AUTOMATICA') === '1',
         'exige_aprovacao' => naval_act_exige_aprovacao(),
         'reversao_pedida' => is_file(naval_act_pasta() . '/pedido-reversao.json'),
@@ -957,4 +1058,198 @@ function naval_act_vista_portal(): array
     }
     $v['historico'] = array_slice($v['historico'], 0, 15);
     return $v;
+}
+
+// ── Certificados HTTPS ──────────────────────────────────────────────────────────────────────────────
+//
+// A renovação é automática no servidor (protocolo ACME, ex.: win-acme com a Let's Encrypt; as autoridades de
+// certificação estão a encurtar a validade: 200 dias em 2026, 47 dias em 2029). O portal vigia todas as noites a
+// validade de cada endereço (PORTAL_URL, ATV_URL_RESOLVEDOR e ACTUALIZACAO_CERTIFICADOS) e avisa por correio a 30, 14,
+// 7, 3 e 1 dias do fim, uma vez por limite, para nunca expirar sem ninguém saber.
+
+const NAVAL_ACT_CERT_AVISOS = [30, 14, 7, 3, 1];
+
+/** Endereços (anfitrião:porta) cujos certificados se vigiam. */
+function naval_act_enderecos_tls(?array $urls = null): array
+{
+    $l = [];
+    $urls = $urls ?? array_merge([naval_config('PORTAL_URL'), naval_config('ATV_URL_RESOLVEDOR')], explode(',', naval_config('ACTUALIZACAO_CERTIFICADOS')));
+    foreach ($urls as $u) {
+        $u = trim((string) $u);
+        if ($u === '') continue;
+        if (strpos($u, '://') === false) $u = 'https://' . $u;
+        $p = parse_url($u);
+        if (!is_array($p) || empty($p['host']) || ($p['scheme'] ?? '') !== 'https') continue;
+        $l[strtolower($p['host']) . ':' . (int) ($p['port'] ?? 443)] = true;
+    }
+    return array_keys($l);
+}
+
+/** Lê o certificado apresentado por anfitrião:porta: [dias até expirar, data de fim, emitente, nomes, erro]. */
+function naval_act_ler_certificado(string $endereco): array
+{
+    $ctx = stream_context_create(['ssl' => ['capture_peer_cert' => true, 'verify_peer' => false, 'verify_peer_name' => false, 'SNI_enabled' => true,
+        'peer_name' => explode(':', $endereco)[0]]]);
+    $s = @stream_socket_client('ssl://' . $endereco, $errno, $erro, 10, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$s) return ['endereco' => $endereco, 'dias' => null, 'expira' => '', 'emitente' => '', 'erro' => 'sem ligação (' . trim((string) $erro) . ')'];
+    $p = stream_context_get_params($s);
+    fclose($s);
+    $c = isset($p['options']['ssl']['peer_certificate']) ? openssl_x509_parse($p['options']['ssl']['peer_certificate']) : false;
+    if (!$c) return ['endereco' => $endereco, 'dias' => null, 'expira' => '', 'emitente' => '', 'erro' => 'certificado ilegível'];
+    $fim = (int) $c['validTo_time_t'];
+    return ['endereco' => $endereco, 'dias' => (int) floor(($fim - time()) / 86400), 'expira' => date('Y-m-d H:i', $fim),
+        'emitente' => (string) ($c['issuer']['O'] ?? $c['issuer']['CN'] ?? ''), 'erro' => ''];
+}
+
+/** Avisos a enviar agora (um por endereço, certificado e limite ainda não avisado). Actualiza $avisados. */
+function naval_act_avisos_certificados(array $lista, array &$avisados): array
+{
+    $out = [];
+    foreach ($lista as $c) {
+        if ($c['dias'] === null) continue;
+        foreach (NAVAL_ACT_CERT_AVISOS as $limite) {
+            $chave = $c['endereco'] . '|' . $c['expira'] . '|' . $limite;
+            if ($c['dias'] <= $limite && empty($avisados[$chave])) {
+                $avisados[$chave] = date('Y-m-d');
+                $out[] = $c['dias'] < 0
+                    ? 'O certificado de ' . $c['endereco'] . ' EXPIROU em ' . $c['expira'] . '.'
+                    : 'O certificado de ' . $c['endereco'] . ' expira dentro de ' . $c['dias'] . ' dia(s) (' . $c['expira'] . ', ' . $c['emitente'] . '): a renovação automática não o renovou.';
+                break;   // um aviso por certificado de cada vez (o limite mais alto ainda não avisado)
+            }
+        }
+    }
+    return $out;
+}
+
+/** Vigia os certificados (tarefa nocturna): grava o estado para o portal e avisa por correio quando é preciso. */
+function naval_act_vigiar_certificados(): array
+{
+    $lista = array_map('naval_act_ler_certificado', naval_act_enderecos_tls());
+    $f = naval_act_pasta() . '/certificados.json';
+    $antes = naval_json_ler($f);
+    $avisados = (array) ($antes['avisados'] ?? []);
+    $avisos = naval_act_avisos_certificados($lista, $avisados);
+    naval_json_gravar($f, ['verificado_em' => date('Y-m-d H:i:s'), 'lista' => $lista, 'avisados' => $avisados]);
+    if ($avisos) naval_act_avisar('certificado HTTPS a expirar', array_merge($avisos, ['Confirmar a tarefa de renovação automática (win-acme) no servidor.']));
+    return $lista;
+}
+
+// ── Requisitos do servidor e configuração do Apache ─────────────────────────────────────────────────
+
+/** php.ini usado pelo Apache (ACTUALIZACAO_PHP_INI; por omissão o mesmo da linha de comandos). */
+function naval_act_php_ini(): string
+{
+    return naval_config('ACTUALIZACAO_PHP_INI', (string) php_ini_loaded_file());
+}
+
+/** Extensões carregadas pelo PHP com esse php.ini (processo novo, como o Apache as verá). */
+function naval_act_modulos_php(string $ini): array
+{
+    $o = [];
+    exec(escapeshellarg(PHP_BINARY) . ($ini !== '' ? ' -c ' . escapeshellarg($ini) : '') . ' -m 2>&1', $o);
+    return array_map('strtolower', array_filter(array_map('trim', $o), function ($l) { return $l !== '' && $l[0] !== '['; }));
+}
+
+/** Activa uma extensão no texto do php.ini: descomenta «;extension=x» (ou php_x.dll) ou acrescenta «extension=x». */
+function naval_act_ini_activar(string $ini, string $ext): string
+{
+    $padrao = '/^\s*;\s*(extension\s*=\s*"?(?:php_)?' . preg_quote($ext, '/') . '(?:\.dll|\.so)?"?\s*)$/mi';
+    if (preg_match($padrao, $ini)) return (string) preg_replace($padrao, '$1', $ini, 1);
+    $fim = strpos($ini, "\r\n") !== false ? "\r\n" : "\n";
+    return rtrim($ini, "\r\n") . $fim . '; activada pelo actualizador do Portal RTM' . $fim . 'extension=' . $ext . $fim;
+}
+
+/**
+ * Confere os requisitos da versão (ferramentas/requisitos.json do pacote) antes de alterar o servidor: versão mínima do
+ * PHP (não se actualiza sozinha: pára com aviso) e extensões (activadas no php.ini, com cópia e verificação).
+ * Devolve [alterou o php.ini, cópia do php.ini anterior]. ACTUALIZACAO_REQUISITOS_IGNORAR: requisitos a não conferir
+ * (servidores de teste).
+ */
+function naval_act_requisitos(string $dirPacote, callable $diz): array
+{
+    $r = json_decode((string) @file_get_contents($dirPacote . '/ferramentas/requisitos.json'), true);
+    if (!is_array($r)) return [false, ''];
+    $minimo = (string) ($r['php_minimo'] ?? '');
+    if ($minimo !== '' && version_compare(PHP_VERSION, $minimo, '<')) {
+        throw new NavalActualizacaoErro('Esta versão do portal precisa do PHP ' . $minimo . ' ou superior (o servidor tem ' . PHP_VERSION . '): actualizar o PHP antes de a aprovar.');
+    }
+    $ignorar = array_filter(array_map('trim', explode(',', strtolower(naval_config('ACTUALIZACAO_REQUISITOS_IGNORAR')))));
+    $ini = naval_act_php_ini();
+    $carregadas = naval_act_modulos_php($ini);
+    $faltam = [];
+    foreach ((array) ($r['extensoes'] ?? []) as $req) {
+        $req = strtolower((string) $req);
+        if (in_array($req, $ignorar, true)) continue;
+        $alt = array_map('trim', explode('|', $req));
+        if (!array_intersect($alt, $carregadas)) $faltam[] = $alt;
+    }
+    if (!$faltam) return [false, ''];
+    if ($ini === '' || !is_file($ini) || !is_writable($ini)) {
+        throw new NavalActualizacaoErro('Faltam extensões do PHP (' . implode(', ', array_map(function ($a) { return implode(' ou ', $a); }, $faltam)) . ') e o php.ini não pode ser alterado (ACTUALIZACAO_PHP_INI).');
+    }
+    $antes = (string) file_get_contents($ini);
+    $copia = $ini . '.antes-actualizacao-' . date('Ymd-His');
+    file_put_contents($copia, $antes);
+    $texto = $antes;
+    foreach ($faltam as $alt) $texto = naval_act_ini_activar($texto, $alt[0]);
+    file_put_contents($ini, $texto);
+    $agora = naval_act_modulos_php($ini);
+    $ainda = array_filter($faltam, function ($alt) use ($agora) { return !array_intersect($alt, $agora); });
+    if ($ainda) {
+        file_put_contents($ini, $antes);
+        throw new NavalActualizacaoErro('Não foi possível activar no PHP: ' . implode(', ', array_map(function ($a) { return $a[0]; }, $ainda)) . ' (a extensão não está instalada no servidor). Nada foi alterado.');
+    }
+    $diz('Extensões do PHP activadas no php.ini: ' . implode(', ', array_map(function ($a) { return $a[0]; }, $faltam)) . ' (cópia: ' . basename($copia) . ').');
+    return [true, $copia];
+}
+
+/** Comando do Apache (httpd.exe) ou null se não for encontrado. ACTUALIZACAO_APACHE_CMD permite outro (testes). */
+function naval_act_apache_cmd(): ?string
+{
+    $cmd = naval_config('ACTUALIZACAO_APACHE_CMD');
+    if ($cmd !== '') return $cmd;
+    $bin = naval_config('ACTUALIZACAO_APACHE_BIN', DIRECTORY_SEPARATOR === '\\' ? 'C:/Apache24/bin/httpd.exe' : '');
+    return $bin !== '' && is_file($bin) ? escapeshellarg($bin) : null;
+}
+
+/** Valida a configuração do Apache (httpd -t). Devolve a mensagem de erro, ou vazio se estiver correcta. */
+function naval_act_apache_testar(): string
+{
+    $cmd = naval_act_apache_cmd();
+    if ($cmd === null) return '';
+    $o = [];
+    exec($cmd . ' -t 2>&1', $o, $r);
+    return $r === 0 ? '' : trim(implode(' ', array_slice($o, -3)));
+}
+
+/** Reinicia o Apache para carregar a configuração nova e o php.ini. Devolve um aviso, ou vazio. */
+function naval_act_apache_reiniciar(): string
+{
+    $cmd = naval_act_apache_cmd();
+    if ($cmd === null) return 'O Apache não foi encontrado (ACTUALIZACAO_APACHE_BIN): reiniciar o serviço à mão para aplicar a configuração nova.';
+    $servico = naval_config('ACTUALIZACAO_APACHE_SERVICO', DIRECTORY_SEPARATOR === '\\' ? 'Apache2.4' : '');
+    $o = [];
+    exec($cmd . ' -k restart' . ($servico !== '' ? ' -n ' . escapeshellarg($servico) : '') . ' 2>&1', $o, $r);
+    sleep(5);
+    return $r === 0 ? '' : 'O Apache não reiniciou: ' . trim(implode(' ', $o));
+}
+
+/** Inclui a configuração gerida pelo portal no httpd.conf (uma vez), com cópia, validação e reposição se falhar. */
+function naval_act_apache_incluir(string $raiz): string
+{
+    $conf = naval_config('ACTUALIZACAO_APACHE_CONF', 'C:/Apache24/conf/httpd.conf');
+    if (!is_file($conf) || !is_writable($conf)) throw new NavalActualizacaoErro('httpd.conf não encontrado ou sem permissão de escrita: ' . $conf . ' (ACTUALIZACAO_APACHE_CONF).');
+    $linha = 'Include "' . str_replace('\\', '/', $raiz) . '/ferramentas/apache/portal-rtm.conf"';
+    $antes = (string) file_get_contents($conf);
+    if (stripos($antes, 'ferramentas/apache/portal-rtm.conf') !== false) return 'já incluída';
+    $copia = $conf . '.antes-portal-' . date('Ymd-His');
+    file_put_contents($copia, $antes);
+    $fim = strpos($antes, "\r\n") !== false ? "\r\n" : "\n";
+    file_put_contents($conf, rtrim($antes, "\r\n") . $fim . $fim . '# Portal RTM: configuração gerida pelo portal (actualizada com cada versão)' . $fim . $linha . $fim);
+    $erro = naval_act_apache_testar();
+    if ($erro !== '') {
+        file_put_contents($conf, $antes);
+        throw new NavalActualizacaoErro('A configuração do Apache não passou na validação e foi reposta: ' . $erro);
+    }
+    return 'incluída (cópia: ' . basename($copia) . ')';
 }

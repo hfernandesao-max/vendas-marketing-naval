@@ -1778,4 +1778,18 @@ export const TI = {
   Actualizações: 'ምሕዳሳት',
   'Actualizações do portal (aprovação; só o super administrador)': 'ምሕዳሳት ፖርታል (ምጽዳቕ፤ ልዑል ኣመሓዳሪ ጥራይ)',
   Adiantamento: 'ቅድመ ክፍሊት',
+  'Aplicar mesmo assim a versão {v}': 'ስሪት {v} ብዘየገድስ ኣተግብር',
+  'Os ficheiros alterados à mão no servidor são substituídos pelos da versão e ficam guardados na cópia de segurança. A versão é instalada nos próximos 5 minutos.':
+    'ኣብ ሰርቨር ብኢድ ዝተቐየሩ ፋይላት ብናይቲ ስሪት ፋይላት ይትክኡ፡ ኣብ ቕዳሕ ውሕስነት ድማ ይዕቀቡ። እቲ ስሪት ኣብ ዝቕጽል 5 ደቓይቕ ይትከል።',
+  'Aplicar mesmo assim': 'ብዘየገድስ ኣተግብር',
+  'Ficheiros alterados à mão no servidor desde a última actualização (a instalação parou para não os apagar):':
+    'ካብ ናይ መወዳእታ ምሕዳስ ጀሚሮም ኣብ ሰርቨር ብኢድ ዝተቐየሩ ፋይላት (እቲ ምትካል ከይድምሰሱ ደው ኢሉ)፦',
+  'Ainda sem verificação: corre todas as noites com a actualização automática.': 'ገና ኣይተረጋገጸን፦ ኩሉ ለይቲ ምስቲ ኣውቶማቲክ ምሕዳስ ይካየድ።',
+  'Sem resposta: {e}': 'መልሲ የለን፦ {e}',
+  'expira em {d}': 'ዝውድኣሉ {d}',
+  'Certificados HTTPS': 'ሰርቲፊኬታት HTTPS',
+  'Renovação automática no servidor (ACME); o portal confere a validade todas as noites e avisa por correio a 30, 14, 7, 3 e 1 dias do fim.':
+    'ኣውቶማቲክ ምሕዳስ ኣብ ሰርቨር (ACME)፤ ፖርታል ኩሉ ለይቲ ብቑዕነት የረጋግጽ፡ 30፡ 14፡ 7፡ 3ን 1ን መዓልቲ ቅድሚ ምውዳኡ ብኢመይል የጠንቅቕ።',
+  'o primeiro a expirar: {e}': 'ቀዳማይ ዝውድእ፦ {e}',
+  'ainda sem verificação': 'ገና ኣይተረጋገጸን',
 };

@@ -71,6 +71,7 @@ function decidir(v, accao, urgente) {
     aprovar: urgente ? t('Aprovar e instalar já a versão {v}', { v: v.versao }) : t('Aprovar a versão {v}', { v: v.versao }),
     reprovar: t('Reprovar a versão {v}', { v: v.versao }),
     cancelar: t('Anular a decisão sobre a versão {v}', { v: v.versao }),
+    forcar: t('Aplicar mesmo assim a versão {v}', { v: v.versao }),
   };
   const notas = {
     aprovar: urgente
@@ -78,6 +79,9 @@ function decidir(v, accao, urgente) {
       : t('A versão é instalada esta noite às 02:15, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.'),
     reprovar: t('A versão nunca é instalada. O motivo fica registado.'),
     cancelar: t('A versão volta a ficar à espera de decisão.'),
+    forcar: t(
+      'Os ficheiros alterados à mão no servidor são substituídos pelos da versão e ficam guardados na cópia de segurança. A versão é instalada nos próximos 5 minutos.',
+    ),
   };
   janela(titulos[accao], notas[accao], (b, ft, fechar) => {
     const motivo = el('textarea');
@@ -87,7 +91,7 @@ function decidir(v, accao, urgente) {
     const erro = msgErro();
     b.append(erro);
     const go = botao(
-      accao === 'reprovar' ? t('Reprovar') : accao === 'cancelar' ? t('Anular decisão') : t('Aprovar'),
+      accao === 'reprovar' ? t('Reprovar') : accao === 'cancelar' ? t('Anular decisão') : accao === 'forcar' ? t('Aplicar mesmo assim') : t('Aprovar'),
       accao === 'reprovar' ? 'perigo' : '',
       () => {
         if (accao === 'reprovar' && motivo.value.trim().length < 5) {
@@ -179,6 +183,15 @@ function cartaoPendente(v, maisRecente) {
   c.append(cab);
   if (dec && dec.motivo) c.append(el('p', 'act-motivo', (dec.decisao === 'reprovada' ? t('Motivo') : t('Observações')) + ': ' + dec.motivo));
   if (v.resultado) c.append(resultado(v.resultado));
+  const conflito = v.resultado && v.resultado.accao === 'conflito';
+  if (conflito && v.resultado.ficheiros && v.resultado.ficheiros.length) {
+    const box = el('div', 'act-conflito');
+    box.append(el('p', null, t('Ficheiros alterados à mão no servidor desde a última actualização (a instalação parou para não os apagar):')));
+    const ul = el('ul');
+    for (const f of v.resultado.ficheiros) ul.append(el('li', null, f));
+    box.append(ul);
+    c.append(box);
+  }
   const det = el('details', 'act-det');
   det.open = maisRecente;
   det.append(el('summary', null, t('O que muda nesta versão')));
@@ -192,6 +205,7 @@ function cartaoPendente(v, maisRecente) {
       botao(t('Reprovar'), 'ghost perigo', () => decidir(v, 'reprovar', false)),
     );
   } else {
+    if (conflito) acc.append(botao(t('Aplicar mesmo assim'), 'perigo', () => decidir(v, 'forcar', true)));
     acc.append(botao(t('Anular decisão'), 'ghost', () => decidir(v, 'cancelar', false)));
   }
   c.append(acc);
@@ -230,6 +244,7 @@ R.actualizacoes = (pg) => {
         s: E.exige_aprovacao ? t('só versões aprovadas aqui') : t('sem aprovação (todas as versões)'),
         tone: E.automatica ? null : 'warn',
       },
+      certificadosTile(E.certificados),
     ]),
   );
   if (!E.configurada)
@@ -273,4 +288,37 @@ R.actualizacoes = (pg) => {
   accoes.append(botao(t('Actualizar'), 'ghost', recarregar));
   hist.append(accoes);
   pg.append(secBox(t('Histórico'), t('Versões instaladas ou anteriores à instalada, com a decisão e o resultado.'), hist));
+
+  const certs = el('div', 'act-hist');
+  const lc = (E.certificados && E.certificados.lista) || [];
+  if (!lc.length) certs.append(el('p', 'note', t('Ainda sem verificação: corre todas as noites com a actualização automática.')));
+  for (const x of lc) {
+    const l = el('div', 'act-hist-l');
+    l.append(el('strong', null, x.endereco));
+    if (x.dias == null) l.append(pill(t('Sem resposta: {e}', { e: x.erro }), 'p-bad'));
+    else {
+      l.append(el('span', null, t('expira em {d}', { d: dataHora(x.expira) }) + (x.emitente ? ' · ' + x.emitente : '')));
+      l.append(pill(t('{n} dias', { n: x.dias }), x.dias < 7 ? 'p-bad' : x.dias < 30 ? 'p-warn' : 'p-ok'));
+    }
+    certs.append(l);
+  }
+  pg.append(
+    secBox(
+      t('Certificados HTTPS'),
+      t('Renovação automática no servidor (ACME); o portal confere a validade todas as noites e avisa por correio a 30, 14, 7, 3 e 1 dias do fim.'),
+      certs,
+    ),
+  );
 };
+
+/** Quadro do certificado HTTPS que expira mais cedo. */
+function certificadosTile(c) {
+  const lc = ((c && c.lista) || []).filter((x) => x.dias != null);
+  const min = lc.reduce((m, x) => (m == null || x.dias < m.dias ? x : m), null);
+  return {
+    l: t('Certificados HTTPS'),
+    v: min ? t('{n} dias', { n: min.dias }) : '—',
+    s: min ? t('o primeiro a expirar: {e}', { e: min.endereco }) : t('ainda sem verificação'),
+    tone: min && min.dias < 7 ? 'bad' : min && min.dias < 30 ? 'warn' : null,
+  };
+}

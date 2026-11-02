@@ -23,12 +23,38 @@ if (strpos($uri, '/descarga/') === 0) {
     readfile($f);
     return;
 }
-if ($auth !== 'Bearer github_pat_teste_0123456789abcdefghij') {
+// GitHub App: JWT RS256 assinado com a chave da App (verificado com app-publica.pem) → credencial de instalação
+$credencial = substr($auth, 7);
+if (substr_count($credencial, '.') === 2 && is_file($dir . '/app-publica.pem')) {
+    [$h, $p, $sig] = explode('.', $credencial);
+    $dec = function ($x) { return (string) base64_decode(strtr($x, '-_', '+/') . str_repeat('=', (4 - strlen($x) % 4) % 4)); };
+    $dados = json_decode($dec($p), true) ?: [];
+    $valido = openssl_verify($h . '.' . $p, $dec($sig), (string) file_get_contents($dir . '/app-publica.pem'), OPENSSL_ALGO_SHA256) === 1
+        && ($dados['iss'] ?? '') === '12345' && ($dados['exp'] ?? 0) > time() && ($dados['exp'] ?? 0) - ($dados['iat'] ?? 0) <= 660;
+    header('Content-Type: application/json');
+    if (!$valido) {
+        http_response_code(401);
+        echo '{"message":"A JSON web token could not be decoded"}';
+        return;
+    }
+    if (preg_match('#^/repos/[\w.-]+/[\w.-]+/installation$#', $uri)) {
+        echo '{"id":77}';
+        return;
+    }
+    if ($uri === '/app/installations/77/access_tokens' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        http_response_code(201);
+        echo json_encode(['token' => 'instalacao-teste', 'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600)]);
+        return;
+    }
+    http_response_code(404);
+    return;
+}
+if (!in_array($auth, ['Bearer github_pat_teste_0123456789abcdefghij', 'Bearer instalacao-teste'], true)) {
     http_response_code(401);
     echo '{"message":"Bad credentials"}';
     return;
 }
-header('github-authentication-token-expiration: ' . gmdate('Y-m-d H:i:s', time() + 10 * 86400) . ' UTC');
+if ($auth === 'Bearer github_pat_teste_0123456789abcdefghij') header('github-authentication-token-expiration: ' . gmdate('Y-m-d H:i:s', time() + 10 * 86400) . ' UTC');
 $lista = is_file($dir . '/versoes.json') ? (json_decode((string) file_get_contents($dir . '/versoes.json'), true) ?: [])
     : [['tag' => trim((string) @file_get_contents($dir . '/versao.txt')), 'notas' => "Alterações:\n- teste"]];
 $release = function (array $v, int $i) use ($base) {

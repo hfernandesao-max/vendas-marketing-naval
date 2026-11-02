@@ -5,6 +5,8 @@
  *   php ferramentas/actualizar.php configurar        token do GitHub (só leitura) e correio para os avisos; uma vez
  *   php ferramentas/actualizar.php tarefa [HH:MM]    cria as tarefas agendadas do Windows: a nocturna (02:15 por omissão)
  *                                                     e a de 5 em 5 minutos («instalar já» e reposições pedidas no portal)
+ *   php ferramentas/actualizar.php apache            inclui no httpd.conf a configuração gerida pelo portal (uma vez)
+ *   php ferramentas/actualizar.php certificados      validade dos certificados HTTPS do portal (também todas as noites)
  *   php ferramentas/actualizar.php estado            versão instalada e versão mais recente publicada
  *   php ferramentas/actualizar.php verificar         mostra o que mudaria, sem alterar nada
  *   php ferramentas/actualizar.php aplicar           aplica já a versão mais recente
@@ -62,12 +64,28 @@ try {
 
         case 'configurar':
             echo "Actualizações automáticas: configurar\n\n";
-            echo "Código de acesso do GitHub (em «Fine-grained tokens»), só com «Contents: Read-only» no repositório "
-                . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO) . " (não é mostrado no ecrã depois de gravado).\n";
-            $token = $pergunta('Código de acesso', 'ACTUALIZACAO_CONFIG_TOKEN');
-            if (!preg_match('/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/', $token)) $falha('Isto não parece um código de acesso do GitHub (começa por github_pat_).');
+            echo "Recomendado: GitHub App instalada só no repositório " . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO)
+                . " com «Contents: Read-only» (não expira).\nDeixe o ID vazio para usar um código de acesso pessoal (expira).\n";
+            $app = $pergunta('ID da GitHub App («App ID»)', 'ACTUALIZACAO_CONFIG_APP_ID');
+            $chaves = ['ACTUALIZACAO_AUTOMATICA' => '1'];
+            if ($app !== '') {
+                if (!preg_match('/^\d{1,12}$/', $app)) $falha('O «App ID» é um número.');
+                $pem = $pergunta('Caminho do ficheiro .pem da chave privada da App', 'ACTUALIZACAO_CONFIG_APP_CHAVE');
+                $conteudo = is_file($pem) ? (string) file_get_contents($pem) : '';
+                if (!$conteudo || !function_exists('openssl_pkey_get_private') || !openssl_pkey_get_private($conteudo)) $falha('Ficheiro de chave privada inválido: ' . $pem);
+                $destino = naval_act_pasta() . '/github-app.pem';
+                if (file_put_contents($destino, $conteudo, LOCK_EX) === false) $falha('Não foi possível guardar a chave na pasta privada.');
+                // só a conta SYSTEM e os administradores lêem a chave (Windows)
+                if (DIRECTORY_SEPARATOR === '\\') exec('icacls ' . escapeshellarg($destino) . ' /inheritance:r /grant:r *S-1-5-18:R *S-1-5-32-544:F 2>&1');
+                else @chmod($destino, 0600);
+                echo "  ok     chave privada guardada na pasta privada (pode apagar o ficheiro original)\n";
+                $chaves += ['ACTUALIZACAO_GITHUB_APP_ID' => $app, 'ACTUALIZACAO_GITHUB_TOKEN' => ''];
+            } else {
+                $token = $pergunta('Código de acesso pessoal («Fine-grained token», só «Contents: Read-only»)', 'ACTUALIZACAO_CONFIG_TOKEN');
+                if (!preg_match('/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/', $token)) $falha('Isto não parece um código de acesso do GitHub (começa por github_pat_).');
+                $chaves += ['ACTUALIZACAO_GITHUB_TOKEN' => $token, 'ACTUALIZACAO_GITHUB_APP_ID' => ''];
+            }
             $email = $pergunta('Correio electrónico para os avisos (vazio = sem avisos; vários separados por vírgula)', 'ACTUALIZACAO_CONFIG_EMAIL');
-            $chaves = ['ACTUALIZACAO_GITHUB_TOKEN' => $token, 'ACTUALIZACAO_AUTOMATICA' => '1'];
             if ($email !== '') $chaves['ACTUALIZACAO_EMAIL'] = $email;
             $copia = naval_env_gravar($chaves, 'actualizacao');
             echo "  ok     chaves gravadas no .env (cópia do anterior: $copia)\n";
@@ -86,6 +104,22 @@ try {
                 passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $tr . $cmdAct . '"', $r);
                 if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
                 echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
+            }
+            exit(0);
+
+        case 'apache':
+            // uma vez: inclui no httpd.conf a configuração gerida pelo portal (ferramentas/apache/portal-rtm.conf)
+            $r = naval_act_apache_incluir(naval_raiz());
+            echo '  ok     configuração do portal no Apache: ' . $r . "\n";
+            if ($r !== 'já incluída') {
+                $aviso = naval_act_apache_reiniciar();
+                echo $aviso === '' ? "  ok     Apache reiniciado\n" : '  aviso  ' . $aviso . "\n";
+            }
+            exit(0);
+
+        case 'certificados':
+            foreach (naval_act_vigiar_certificados() as $c) {
+                echo '  ' . ($c['dias'] === null ? 'FALHA  ' . $c['endereco'] . ': ' . $c['erro'] : str_pad($c['dias'] < 30 ? 'aviso' : 'ok', 7) . $c['endereco'] . ': expira em ' . $c['expira'] . ' (' . $c['dias'] . ' dias, ' . $c['emitente'] . ')') . "\n";
             }
             exit(0);
 
@@ -108,6 +142,13 @@ try {
             if ($auto && naval_config('ACTUALIZACAO_AUTOMATICA') !== '1') {
                 echo "Actualizações automáticas desligadas (ACTUALIZACAO_AUTOMATICA).\n";
                 exit(0);
+            }
+            if ($comando === 'automatico') {
+                try {
+                    naval_act_vigiar_certificados();   // validade dos certificados HTTPS (avisos a 30, 14, 7, 3 e 1 dias)
+                } catch (Throwable $e) {
+                    naval_act_registar('certificados_erro', ['erro' => $e->getMessage()]);
+                }
             }
             if ($comando === 'urgente') {
                 $r = naval_act_urgente();

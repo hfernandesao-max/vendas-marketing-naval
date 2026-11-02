@@ -68,7 +68,7 @@ $portaGh = $portaWeb + 500;
 $env = $tmp . '/.env';
 file_put_contents($env, implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'EMAIL_MODO=ficheiro',
-    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
+    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
 ]) . "\n");
@@ -297,6 +297,9 @@ function publicar(array $versoes): void
     }
     @unlink($gh . '/versao.txt');
     file_put_contents($gh . '/versoes.json', json_encode($lista));
+    // a página do portal guarda a lista de versões 2 minutos: nova publicação, lista nova
+    global $priv;
+    foreach (glob($priv . '/cache/*') ?: [] as $c) @unlink($c);
 }
 /** Corre código PHP com o núcleo do servidor (o que o portal faz quando o super administrador decide). */
 function svc(string $codigo): array
@@ -363,6 +366,87 @@ caso('«instalar já» pela tarefa de 5 em 5 minutos; reposição pedida no port
     [$r, $t] = act('urgente');
     confirma($r === 0 && strpos($t, 'reposta a pedido do portal') !== false && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), $t);
     confirma((estado()['recusada'] ?? '') === 'v14', 'versão reposta devia ficar recusada');
+});
+
+caso('ficheiros alterados à mão: «Aplicar mesmo assim» decidido no portal', function () use ($util, $texto, $srv) {
+    file_put_contents($srv . '/nucleo/texto.php', (string) file_get_contents($srv . '/nucleo/texto.php') . "\n// mudança feita no servidor\n");
+    publicar(['v11' => ['reports/js/util.js' => $util . "\n// v11\n"], 'v15' => ['reports/js/util.js' => $util . "\n// v15\n", 'nucleo/texto.php' => $texto . "\n// v15\n"]]);
+    confirma(svc('naval_act_decidir("v15", "aprovar", "henrique")')['ok'], 'não aprovou');
+    [$r, $t] = act('automatico');
+    confirma($r === 2 && strpos($t, 'nucleo/texto.php') !== false, 'devia parar: ' . $t);
+    $v = svc('naval_act_vista_portal()')['r'];
+    confirma(($v['pendentes'][0]['resultado']['accao'] ?? '') === 'conflito' && in_array('nucleo/texto.php', $v['pendentes'][0]['resultado']['ficheiros'] ?? [], true), 'vista sem os ficheiros: ' . json_encode($v['pendentes']));
+    confirma(svc('naval_act_decidir("v15", "forcar", "henrique")')['ok'], 'não decidiu aplicar mesmo assim');
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && h('nucleo/texto.php') === hash('sha256', $texto . "\n// v15\n") && h('reports/js/util.js') === hash('sha256', $util . "\n// v15\n"), $t);
+});
+
+caso('GitHub App: credencial de instalação de 1 hora, sem código pessoal nem renovação anual', function () use ($env, $gh, $tmp, $priv) {
+    $k = @openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    if (!$k) {
+        echo "        (sem openssl_pkey_new neste PHP: caso não verificado)\n";
+        return;
+    }
+    openssl_pkey_export($k, $pem);
+    file_put_contents($tmp . '/app.pem', $pem);
+    file_put_contents($gh . '/app-publica.pem', openssl_pkey_get_details($k)['key']);
+    $antes = (string) file_get_contents($env);
+    putenv('ACTUALIZACAO_CONFIG_APP_ID=12345');
+    putenv('ACTUALIZACAO_CONFIG_APP_CHAVE=' . $tmp . '/app.pem');
+    putenv('ACTUALIZACAO_CONFIG_EMAIL=ti@naval.co.ao');
+    [$r, $t] = act('configurar');
+    putenv('ACTUALIZACAO_CONFIG_APP_ID');
+    putenv('ACTUALIZACAO_CONFIG_APP_CHAVE');
+    putenv('ACTUALIZACAO_CONFIG_EMAIL');
+    $depois = (string) file_get_contents($env);
+    confirma($r === 0 && strpos($t, 'ligação ao GitHub a funcionar') !== false && strpos($t, 'expira dentro') === false, $t);
+    confirma(strpos($depois, 'ACTUALIZACAO_GITHUB_APP_ID=12345') !== false && is_file($priv . '/actualizacoes/github-app.pem') && strpos($t, 'BEGIN') === false, 'configuração da App');
+    file_put_contents($env, str_replace('ACTUALIZACAO_GITHUB_APP_ID=12345', 'ACTUALIZACAO_GITHUB_APP_ID=999', $depois));
+    [$r, $t] = act('estado');
+    confirma($r === 1 && strpos($t, 'o ID da App está errado') !== false, 'ID errado: ' . $t);
+    file_put_contents($env, $antes);
+    @unlink($gh . '/app-publica.pem');
+});
+
+caso('requisitos do servidor: PHP mínimo e extensão em falta param antes de alterar o servidor', function () use ($env, $tmp, $util) {
+    $f = pacote('v16', ['reports/js/util.js' => $util . "\n// v16\n", 'ferramentas/requisitos.json' => '{"php_minimo": "99.0", "extensoes": []}']);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    confirma($r === 1 && strpos($t, 'precisa do PHP 99.0') !== false && h('reports/js/util.js') !== hash('sha256', $util . "\n// v16\n"), $t);
+    $ini = $tmp . '/php-teste.ini';
+    file_put_contents($ini, ini_get('extension_dir') ? "extension_dir=\"" . ini_get('extension_dir') . "\"\n" : "\n");
+    $antes = (string) file_get_contents($env);
+    file_put_contents($env, $antes . 'ACTUALIZACAO_PHP_INI=' . $ini . "\n");
+    $f = pacote('v17', ['reports/js/util.js' => $util . "\n// v17\n", 'ferramentas/requisitos.json' => '{"php_minimo": "7.1", "extensoes": ["extensao_inexistente_naval"]}']);
+    $iniAntes = (string) file_get_contents($ini);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    file_put_contents($env, $antes);
+    confirma($r === 1 && strpos($t, 'Não foi possível activar no PHP: extensao_inexistente_naval') !== false, $t);
+    confirma((string) file_get_contents($ini) === $iniAntes && h('reports/js/util.js') !== hash('sha256', $util . "\n// v17\n"), 'alterou o php.ini ou os ficheiros');
+});
+
+caso('configuração do Apache: validada e Apache reiniciado; inválida → reposta, sem reiniciar', function () use ($env, $srv, $repo, $tmp) {
+    putenv('HTTPD_SIMULADO_RAIZ=' . $srv);
+    $antes = (string) file_get_contents($env);
+    // sem aspas: o .env retira as das pontas
+    file_put_contents($env, $antes . 'ACTUALIZACAO_APACHE_CMD=' . PHP_BINARY . ' ' . $repo . '/tests/dados/httpd-simulado.php' . "\n");
+    $conf = (string) file_get_contents($srv . '/ferramentas/apache/portal-rtm.conf');
+    @unlink($tmp . '/httpd-reinicios.log');
+    $f = pacote('v18', ['ferramentas/apache/portal-rtm.conf' => $conf . "\n# v18\n"]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    confirma($r === 0 && strpos($t, 'Apache reiniciado') !== false && substr_count((string) @file_get_contents($tmp . '/httpd-reinicios.log'), 'restart') === 1, $t);
+    $f = pacote('v19', ['ferramentas/apache/portal-rtm.conf' => $conf . "\nERRO_DE_TESTE\n"]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    confirma($r === 1 && strpos($t, 'httpd -t') !== false && strpos((string) file_get_contents($srv . '/ferramentas/apache/portal-rtm.conf'), 'ERRO_DE_TESTE') === false, $t);
+    confirma(substr_count((string) @file_get_contents($tmp . '/httpd-reinicios.log'), 'restart') === 1, 'reiniciou com a configuração inválida');
+    // inclusão no httpd.conf (uma vez), com validação
+    $httpd = $tmp . '/httpd.conf';
+    file_put_contents($httpd, "ServerRoot \"C:/Apache24\"\r\nListen 2051\r\n");
+    file_put_contents($env, (string) file_get_contents($env) . 'ACTUALIZACAO_APACHE_CONF=' . $httpd . "\n");
+    [$r, $t] = act('apache');
+    confirma($r === 0 && strpos((string) file_get_contents($httpd), "/ferramentas/apache/portal-rtm.conf\"\r\n") !== false && glob($httpd . '.antes-portal-*'), $t);
+    [$r, $t] = act('apache');
+    confirma($r === 0 && strpos($t, 'já incluída') !== false && substr_count((string) file_get_contents($httpd), 'portal-rtm.conf') === 1, $t);
+    file_put_contents($env, $antes);
 });
 
 caso('desligado: a tarefa agendada não faz nada', function () use ($env) {
