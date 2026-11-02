@@ -19,7 +19,7 @@ Site: https://hfernandesao-max.github.io/vendas-marketing-naval/
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Início            | Indicadores do período e atalhos                                                                                                                  |
 | **Vendas**        | Vendas por promotor · por dia · por cliente · por artigo · por promotor e marca · Ranking · Documentos                                            |
-| **Recebimentos**  | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–7, 8–30 e mais de 30 dias) |
+| **Recebimentos**  | Cobranças (dinheiro recebido das vendas, por meio de cobrança, e taxa de cobrança) · Facturas pendentes (antiguidade 0–30, 31–60, 61–90 e mais de 90 dias; prazo médio de recebimento) |
 | **Clientes**      | Carteira de clientes · Cadastros (visão geral) · Análise de cadastros · Clientes registados                                                       |
 | **Terreno**       | Plano de visitas · Histórico de auditoria · Sincronização dos smartphones                                                                         |
 | **Logística**     | Plano de cargas · Registo de cargas · Stock por promotor / carrinha · Stock por armazém                                                           |

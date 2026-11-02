@@ -9,7 +9,7 @@ import { el, sum } from '../util.js';
 // o rato (e com o teclado) e vista em tabela. Paleta validada para o fundo escuro (azul, laranja, verde-água;
 // azul, âmbar e vermelho para a antiguidade da dívida); o texto nunca usa a cor das séries.
 const NS_SVG = 'http://www.w3.org/2000/svg';
-export const COR = { s1: '#3987e5', s2: '#d95926', s3: '#199e70', neutro: '#5b6478', a1: '#3987e5', a2: '#c98500', a3: '#d03b3b' };
+export const COR = { s1: '#3987e5', s2: '#d95926', s3: '#199e70', neutro: '#5b6478', a1: '#3987e5', a2: '#c98500', a3: '#e0661c', a4: '#d03b3b' };
 export const kzc = (v) => {
   const a = Math.abs(v || 0);
   if (a >= 1e9) return nf1.format(v / 1e9) + ' ' + t('mM');

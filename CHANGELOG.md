@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Recebimentos: antiguidade da dívida em escalões internacionais
+- A **antiguidade da dívida** passa aos escalões usados internacionalmente nas contas a receber: **0–30, 31–60, 61–90
+  e mais de 90 dias** (contados desde a emissão da factura), no Início, em Recebimentos › Facturas pendentes e nas
+  tabelas por rota e por cliente, com cores de risco crescente e sempre com o rótulo.
+- Novo indicador **Prazo médio de recebimento** (PMR, em inglês DSO): dívida por receber ÷ vendas facturadas no
+  período × dias do período.
+
 ### Painel por perfil, arrastar e largar, vistas guardadas
 - **Início conforme o perfil** (prática internacional: cada função vê primeiro os indicadores que gere):
   Direcção (e TI, Auditoria, Administração) — resultado, tendência, ponte, cobrança e dívida; Comercial — crescimento,

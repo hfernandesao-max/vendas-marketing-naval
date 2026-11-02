@@ -12,6 +12,15 @@ export const vendasR = () => DB.vendas.filter((x) => inR(x.data));
 // clientes com compras, visitas, recebimentos nem pendentes (estes são os das facturas).
 export const eNC = (x) => x.nc === true;
 export const docsVenda = (V) => V.filter((x) => !eNC(x));
+// Antiguidade da dívida em escalões de 30 dias (prática internacional de contas a receber: 0–30, 31–60, 61–90, > 90),
+// contada desde a emissão da factura, porque o prazo de pagamento não vem do Pinguim BO
+export const FAIXAS_DIVIDA = [
+  { rot: '0–30 dias', ate: 30, pill: 'p-ok', cor: 'a1' },
+  { rot: '31–60 dias', ate: 60, pill: 'p-warn', cor: 'a2' },
+  { rot: '61–90 dias', ate: 90, pill: 'p-serio', cor: 'a3' },
+  { rot: 'Mais de 90 dias', ate: Infinity, pill: 'p-bad', cor: 'a4' },
+];
+export const faixaDivida = (d) => FAIXAS_DIVIDA.find((f) => d <= f.ate).rot;
 export const notasCredito = (V) => -sum(V.filter(eNC), 'total');
 // Estados da carteira vêm do Pinguim BO com a grafia nova; no ecrã mostram-se com a grafia antiga
 export const ESTADO_PT = { Ativo: 'Activo', Inativo: 'Inactivo' };
