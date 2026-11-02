@@ -45,6 +45,7 @@ const NAVAL_MATRIZ_TXT = [
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E',
     'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E',
+    'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V',
     'agt'                  => 'V  V  -  -  -  E  V  -  -  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
@@ -159,6 +160,7 @@ function naval_niveis_recurso(string $rec): array
         case 'clientes-qr':
             return ['', 'G'];
         case 'pedidos-clientes':
+        case 'conciliacao-carrinha':
             return ['', 'Vr', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':

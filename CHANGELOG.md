@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Logística: conciliação da carrinha e limite de peso da carga
+- **Conciliação da carrinha** (Logística › Conciliação da carrinha): por rota, dia e artigo, o que estava na carrinha,
+  o que foi carregado, vendido e devolvido, lido do Pinguim BO; o que tem de voltar é calculado sozinho.
+  - **Alertas automáticos**: vendido acima do que estava na carrinha, stock negativo e movimentos sem documento.
+  - **Contagem cega** pelo técnico do armazém no regresso (não vê o esperado antes de gravar), na app no telemóvel.
+  - As **diferenças ficam a aguardar a aprovação do técnico**, com motivo obrigatório (produto danificado, fora de
+    validade, erro na carga, venda não registada, erro de registo, falta sem justificação ou outro, com nota).
+  - Valor das diferenças ao preço médio de venda do dia; histórico de contagens e aprovações; aviso às 19:30 das
+    carrinhas por contar ou por aprovar; aviso à Direcção e ao Financeiro quando a falta aprovada passa o limite.
+  - Nova linha da matriz de acessos «conciliacao-carrinha» (contar e aprovar: Logística).
+- **Limite de peso da carga** no plano de cargas: peso de cada unidade de carga dos artigos e capacidade de cada viatura
+  (pela matrícula) nas listas do plano. O plano não deixa carregar acima do que ainda cabe: capacidade menos o que a
+  carrinha ainda leva (stock actual no Pinguim BO × peso de cada artigo, que baixa à medida que o promotor vende).
+  O servidor recusa também a gravação e a publicação acima do limite.
+
 ### Recebimentos: antiguidade da dívida em escalões internacionais
 - A **antiguidade da dívida** passa aos escalões usados internacionalmente nas contas a receber: **0–30, 31–60, 61–90
   e mais de 90 dias** (contados desde a emissão da factura), no Início, em Recebimentos › Facturas pendentes e nas

@@ -241,5 +241,15 @@ function naval_periodicas(?int $agora = null): array
             error_log('[agregados] ' . $e->getMessage());
         }
     }
+    // conciliação das carrinhas: aviso do fim do dia a quem conta e aprova (CARRINHA_HORA_AVISO, 19:30)
+    if (naval_config('CARRINHA_AVISO_ACTIVO', '1') !== '0' && naval_bd_configurada()) {
+        try {
+            naval_servico('carrinha');
+            $n = naval_carr_aviso_diario($agora);
+            if ($n !== null) $feito['carrinha'] = $n;
+        } catch (Throwable $e) {
+            error_log('[conciliação carrinha] ' . $e->getMessage());
+        }
+    }
     return $feito;
 }

@@ -13,6 +13,30 @@ import { b64, chaveTxt, el, somaDias, toast } from '../util.js';
 import { apiDescarregar, apiFetch } from '../api.js';
 
 const PC = { data: null, resp: null, rotas: null, sujo: false, mud: 0, gravando: false, erro: null, guardadoEm: null, hist: null };
+// Limite de peso: kg planeados (quantidade × kg por unidade de carga do artigo), capacidade da viatura (pela matrícula)
+// e o que ainda está na carrinha (stock actual no Pinguim BO: baixa à medida que o promotor vende)
+function pesoRota(r) {
+  const L = (PC.resp && PC.resp.listas) || {};
+  const peso = Object.fromEntries((L.artigos || []).map((a) => [a.id, +a.peso || 0]));
+  const plan = Object.entries(r.quantidades || {}).reduce((s, [id, q]) => s + (+q || 0) * (peso[id] || 0), 0);
+  const cap = (L.capacidades || {})[
+    String(r.matricula || '')
+      .toUpperCase()
+      .trim()
+  ];
+  const na = +((PC.resp && PC.resp.na_carrinha) || {})[r.rota] || 0;
+  return { plan, cap: cap ? +cap : null, na, disp: cap ? +cap - na : null, peso, excede: !!cap && r.sai && plan + na > +cap + 0.05 };
+}
+function textoPeso(r) {
+  const p = pesoRota(r);
+  if (p.cap == null) return p.plan ? t('Peso planeado: {k} kg (sem capacidade definida para esta matrícula)', { k: n0(p.plan) }) : '';
+  return t('Peso: {k} kg de {d} kg disponíveis (capacidade {c} kg; ainda na carrinha {n} kg)', {
+    k: n0(p.plan),
+    d: n0(Math.max(0, p.disp)),
+    c: n0(p.cap),
+    n: n0(p.na),
+  });
+}
 const somaQ = (r) => Object.values(r.quantidades || {}).reduce((s, v) => s + (+v || 0), 0);
 const postPlano = (corpo) => postJson('plano', corpo);
 
@@ -114,6 +138,7 @@ function validarPlano(rotas) {
     if (!r.matricula.trim()) erros.push({ rota: r.rota, msg: t('falta a matrícula') });
     if (!r.zonas.length) erros.push({ rota: r.rota, msg: t('indique pelo menos uma zona') });
     if (somaQ(r) <= 0) erros.push({ rota: r.rota, msg: t('a carga está a zero') });
+    if (pesoRota(r).excede) erros.push({ rota: r.rota, msg: t('a carga passa o peso máximo da viatura') });
     if (r.motorista.trim() && !r.telefone.trim()) avisos.push({ rota: r.rota, msg: t('sem telefone do motorista') });
     if (!r.factura.trim()) avisos.push({ rota: r.rota, msg: t('sem número de factura') });
     const km = chaveTxt(r.motorista),
@@ -487,6 +512,7 @@ function publicarPlano() {
 // ---- Listas (destinatários, motoristas, zonas, ...) ----
 function janelaListas() {
   const L = JSON.parse(JSON.stringify(PC.resp.listas));
+  const CAP = Object.entries(L.capacidades || {}).map(([matricula, kg]) => ({ matricula, kg }));
   janela(
     t('Listas do plano de cargas'),
     t('Usadas no preenchimento. Motoristas, zonas e viaturas novos entram sozinhos quando o plano é publicado.'),
@@ -612,8 +638,34 @@ function janelaListas() {
           () => {
             const w = el('div');
             w.append(
-              el('p', 'nota-dlg', t('Artigos carregados nas carrinhas, pela ordem do Excel.')),
-              linhas(L.artigos, [['nome', t('Artigo')]], () => ({ id: '', nome: '' })),
+              el('p', 'nota-dlg', t('Artigos carregados nas carrinhas, pela ordem do Excel, com o peso de cada unidade de carga (caixa ou fardo) em kg.')),
+              linhas(
+                L.artigos,
+                [
+                  ['nome', t('Artigo')],
+                  ['peso', t('kg por unidade'), 'number'],
+                ],
+                () => ({ id: '', nome: '', peso: '' }),
+              ),
+            );
+            return w;
+          },
+        ],
+        [
+          'capacidades',
+          t('Capacidade das viaturas'),
+          () => {
+            const w = el('div');
+            w.append(
+              el('p', 'nota-dlg', t('Peso máximo que cada viatura pode levar (kg). O plano não deixa carregar acima do que ainda cabe.')),
+              linhas(
+                CAP,
+                [
+                  ['matricula', t('Matrícula')],
+                  ['kg', t('Capacidade (kg)'), 'number'],
+                ],
+                () => ({ matricula: '', kg: '' }),
+              ),
             );
             return w;
           },
@@ -642,6 +694,7 @@ function janelaListas() {
         L.artigos.forEach((a) => {
           if (!a.id) a.id = chaveTxt(a.nome).toLowerCase().replace(/ /g, '');
         });
+        L.capacidades = Object.fromEntries(CAP.filter((x) => x.matricula && +x.kg > 0).map((x) => [x.matricula.toUpperCase().trim(), +x.kg]));
         postPlano({ accao: 'listas', listas: L }).then((r) => {
           gd.disabled = false;
           if (!r.ok) {
@@ -804,10 +857,25 @@ function cartaoRota(r, d, dls) {
   const [fFac] = inp('factura', t('N.º da factura'));
   const [fObs] = inp('obs', t('Observações'));
   const qs = el('div', 'pc-qs');
+  const pesoEl = el('p', 'pc-peso');
+  const mostrarPeso = () => {
+    pesoEl.textContent = textoPeso(r);
+    pesoEl.classList.toggle('excede', pesoRota(r).excede);
+  };
+  iMat.addEventListener('input', mostrarPeso);
   d.listas.artigos.forEach((a) => {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
     i.addEventListener('input', () => {
       r.quantidades[a.id] = Math.max(0, Math.round(+i.value || 0));
+      // não deixa passar o peso máximo: só pode carregar a diferença entre a capacidade e o que a carrinha já leva
+      const p = pesoRota(r);
+      if (p.cap != null && p.peso[a.id] > 0 && p.plan + p.na > p.cap) {
+        const outros = p.plan - r.quantidades[a.id] * p.peso[a.id];
+        r.quantidades[a.id] = Math.max(0, Math.floor((p.disp - outros) / p.peso[a.id]));
+        i.value = r.quantidades[a.id];
+        toast(t('Atingido o peso máximo da viatura {m}: só cabem mais {q} de {a}.', { m: r.matricula, q: n0(r.quantidades[a.id]), a: t(a.nome) }), 6000);
+      }
+      mostrarPeso();
       marcarSujo();
     });
     qs.append(campo(t(a.nome), i));
@@ -822,7 +890,8 @@ function cartaoRota(r, d, dls) {
   l3.append(fMat, fVia, fTra);
   const zonas = el('div', 'campo');
   zonas.append(el('span', null, t('Zonas de descarga')), editorZonas(r, d, dls.zon));
-  corpo.append(linha(fMot, fTel), l3, zonas, qs, linha(fArm, fFac), fObs);
+  mostrarPeso();
+  corpo.append(linha(fMot, fTel), l3, zonas, qs, pesoEl, linha(fArm, fFac), fObs);
   c.append(corpo, av);
   return { el: c, corpo, total, av };
 }
