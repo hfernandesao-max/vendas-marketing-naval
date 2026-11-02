@@ -320,6 +320,35 @@ function naval_plano_sugestoes(string $data, array $listas): array
     return naval_filtrar_rotas(array_map(function ($rt, $s) { return ['rota' => (string) $rt] + $s; }, array_keys($out), $out));
 }
 
+/**
+ * Quantidades das sugestões pela previsão (nucleo/servicos/previsao.php): média ponderada das últimas cargas da rota ×
+ * tendência das vendas da rota. As quantidades da última carga ficam em «quantidades_ultima» e a explicação em «previsao».
+ * Sem histórico suficiente, a sugestão fica como estava (cópia da última carga). PREVISAO_PLANO=0 no .env desliga.
+ */
+function naval_plano_com_previsao(string $data, array $sugestoes): array
+{
+    if (!$sugestoes || naval_config('PREVISAO_PLANO', '1') === '0') return $sugestoes;
+    naval_servico('previsao');
+    $tend = [];
+    $ult = min(date('Y-m-d', strtotime($data . ' 12:00') - 86400), date('Y-m-d', time() - 86400));
+    try {
+        $ag = naval_analise_agregados(date('Y-m-d', strtotime($ult . ' 12:00') - 55 * 86400), $ult);
+        foreach (naval_analise_rotas($ag) as $r) $tend[$r] = naval_previsao_tendencia(naval_analise_serie($ag, $r), $ult);
+    } catch (Throwable $e) {
+        error_log('[plano previsão] ' . $e->getMessage());   // sem vendas: só a média das cargas
+    }
+    $prev = naval_previsao_cargas(naval_plano_dias(120), $data, $tend);
+    foreach ($sugestoes as &$s) {
+        $p = $prev[$s['rota']] ?? null;
+        if (!$p) continue;
+        $s['quantidades_ultima'] = $s['quantidades'];
+        $s['quantidades'] = $p['quantidades'] + array_map(function () { return 0; }, (array) $s['quantidades']);
+        $s['previsao'] = ['cargas' => $p['cargas'], 'tendencia' => $p['tendencia']];
+    }
+    unset($s);
+    return $sugestoes;
+}
+
 /** Plano mais recente antes de $data (para «Copiar do dia anterior»). */
 function naval_plano_anterior(string $data, bool $gere): ?string
 {

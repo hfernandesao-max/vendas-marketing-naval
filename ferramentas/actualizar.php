@@ -138,6 +138,18 @@ try {
         case 'aplicar':
         case 'automatico':
         case 'urgente':
+            if ($comando === 'urgente') {
+                // tarefas periódicas do portal (resumo diário às 07:00, agregados de análise de madrugada): correm de 5 em 5
+                // minutos com esta tarefa agendada, mesmo com as actualizações automáticas desligadas
+                try {
+                    if (is_file(naval_raiz() . '/nucleo/servicos/resumo.php')) {
+                        naval_servico('resumo');
+                        foreach (naval_periodicas() as $tarefa => $res) echo "  ok     tarefa periódica: $tarefa\n";
+                    }
+                } catch (Throwable $e) {
+                    error_log('[periódicas] ' . $e->getMessage());
+                }
+            }
             $auto = in_array($comando, ['automatico', 'urgente'], true);
             if ($auto && naval_config('ACTUALIZACAO_AUTOMATICA') !== '1') {
                 echo "Actualizações automáticas desligadas (ACTUALIZACAO_AUTOMATICA).\n";

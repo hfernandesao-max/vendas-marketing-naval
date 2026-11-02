@@ -61,6 +61,13 @@ const NAVAL_MATRIZ_TXT = [
     'equipamentos'         => 'V  V  -  Vr -  V  V  E  -  E',
     'equipamentos-movimentar' => '-  -  -  -  -  -  G  G  -  -',
     'equipamentos-administrar' => 'G  -  -  -  -  -  -  G  -  -',
+    // Gestão (análise e IA): alertas, previsão, assistente, resumo diário, app de gestão e painel da sala comercial
+    'alertas'              => 'V  V  V  Vr -  V  -  -  -  V',
+    'previsao'             => 'V  V  V  Vr -  -  -  V  -  V',
+    'assistente'           => '-  V  -  -  -  -  -  -  -  -',
+    'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -',
+    'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -',
+    'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -',
     // GEO
     'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V',
     'geo-rotas-importar'   => 'G  -  -  -  -  -  G  -  G  -',
@@ -140,7 +147,13 @@ function naval_niveis_recurso(string $rec): array
         case 'pagina-principal':
         case 'registos':
         case 'nif':
+        case 'assistente':
+        case 'resumo-diario':
             return ['', 'V'];
+        case 'app-gestao':
+            return ['', 'Vr', 'V'];
+        case 'painel-sala':
+            return ['', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':
         case 'exportar-dados':

@@ -165,3 +165,87 @@ function naval_previsao_cargas(array $planos, string $data, array $tendencias = 
     }
     return $out;
 }
+
+/**
+ * Indicadores do dia (app de gestão e painel da sala comercial), no âmbito $rotas (null = todas):
+ * hoje até agora face à previsão do dia, ontem face ao habitual, semana corrente e mês até hoje face aos mesmos dias do
+ * período anterior, e classificação das rotas (hoje e mês, com a variação de cada rota face a si própria).
+ * $agregados (testes): agregados já lidos; omissão: os últimos 90 dias até hoje.
+ */
+function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, array $promotores = []): array
+{
+    $hoje = date('Y-m-d', $agora);
+    $ontem = date('Y-m-d', $agora - 86400);
+    if ($agregados === null) {
+        $agregados = naval_analise_agregados(date('Y-m-d', $agora - 90 * 86400), $hoje);
+        $promotores = naval_promotores();
+    }
+    $ag = naval_analise_ambito($agregados, $rotas, true);
+    $t = function (string $d, ?string $rota = null) use ($ag) {
+        $s = 0.0;
+        foreach (($ag[$d]['rotas'] ?? []) as $rt => $r) if ($rota === null || (string) $rt === $rota) $s += (float) $r['t'];
+        return $s;
+    };
+    $docs = function (string $d) use ($ag) {
+        $n = 0;
+        foreach (($ag[$d]['rotas'] ?? []) as $r) $n += (int) $r['d'];
+        return $n;
+    };
+    $periodo = function (string $de, string $ate, ?string $rota = null) use ($t) {
+        $s = 0.0;
+        foreach (naval_analise_dias($de, $ate) as $d) $s += $t($d, $rota);
+        return $s;
+    };
+    $var = function (float $a, float $b) { return $b > 0 ? round($a / $b - 1, 3) : null; };
+    // períodos: semana desde segunda-feira e mês desde o dia 1, face aos mesmos dias do período anterior
+    $iniSem = date('Y-m-d', $agora - ((int) date('N', $agora) - 1) * 86400);
+    $iniSemAnt = date('Y-m-d', strtotime($iniSem . ' 12:00') - 7 * 86400);
+    $hojeSemAnt = date('Y-m-d', $agora - 7 * 86400);
+    $iniMes = date('Y-m-01', $agora);
+    $iniMesAnt = date('Y-m-01', strtotime($iniMes . ' 12:00 -1 month'));
+    $fimMesAnt = date('Y-m-d', min(strtotime($iniMesAnt . ' 12:00') + ((int) date('j', $agora) - 1) * 86400, strtotime($iniMes . ' 12:00') - 86400));
+
+    $serieTot = naval_analise_serie(array_filter($ag, function ($d) use ($hoje) { return $d < $hoje; }, ARRAY_FILTER_USE_KEY), null);
+    $prevHoje = naval_previsao_dia($serieTot, $hoje, $ontem);
+    $rank = [];
+    foreach (naval_analise_rotas($ag) as $rt) {
+        $s = naval_analise_serie(array_filter($ag, function ($d) use ($hoje) { return $d < $hoje; }, ARRAY_FILTER_USE_KEY), $rt);
+        $p = naval_previsao_dia($s, $hoje, $ontem);
+        $mes = $periodo($iniMes, $hoje, $rt);
+        $mesAnt = $periodo($iniMesAnt, $fimMesAnt, $rt);
+        $rank[] = ['rota' => $rt, 'promotor' => $promotores[$rt] ?? '', 'hoje' => round($t($hoje, $rt), 2), 'previsto_hoje' => $p ? $p['previsto'] : null,
+            'ontem' => round($t($ontem, $rt), 2), 'habitual_ontem' => round(naval_mediana(naval_mesmos_dias($s, $ontem, 6)), 2),
+            'mes' => round($mes, 2), 'mes_anterior' => round($mesAnt, 2), 'variacao_mes' => $var($mes, $mesAnt),
+            'sequencia' => naval_sequencia_acima($s, $ontem)];
+    }
+    usort($rank, function ($a, $b) { return $b['mes'] <=> $a['mes']; });
+    $hojeT = $t($hoje);
+    $ontemT = $t($ontem);
+    $habOntem = naval_mediana(naval_mesmos_dias($serieTot, $ontem, 6));
+    return [
+        'hora' => date('Y-m-d H:i', $agora),
+        'hoje' => ['dia' => $hoje, 'total' => round($hojeT, 2), 'documentos' => $docs($hoje), 'previsto' => $prevHoje ? $prevHoje['previsto'] : null,
+            'progresso' => $prevHoje && $prevHoje['previsto'] > 0 ? round($hojeT / $prevHoje['previsto'], 3) : null],
+        'ontem' => ['dia' => $ontem, 'total' => round($ontemT, 2), 'documentos' => $docs($ontem), 'habitual' => round($habOntem, 2), 'variacao' => $var($ontemT, $habOntem)],
+        'semana' => ['de' => $iniSem, 'total' => round($periodo($iniSem, $hoje), 2), 'anterior' => round($periodo($iniSemAnt, $hojeSemAnt), 2),
+            'variacao' => $var($periodo($iniSem, $hoje), $periodo($iniSemAnt, $hojeSemAnt))],
+        'mes' => ['de' => $iniMes, 'total' => round($periodo($iniMes, $hoje), 2), 'anterior' => round($periodo($iniMesAnt, $fimMesAnt), 2),
+            'variacao' => $var($periodo($iniMes, $hoje), $periodo($iniMesAnt, $fimMesAnt))],
+        'rotas' => $rank,
+    ];
+}
+
+/** Dias de trabalho seguidos (até $dia) em que a rota vendeu acima do seu habitual (mediana do mesmo dia da semana). */
+function naval_sequencia_acima(array $serie, string $dia): int
+{
+    $n = 0;
+    for ($k = 0; $k < 60; $k++) {
+        $d = date('Y-m-d', strtotime($dia . ' 12:00') - $k * 86400);
+        if (!array_key_exists($d, $serie)) break;
+        $hab = naval_mediana(naval_mesmos_dias($serie, $d, 6));
+        if ($hab <= 0) continue;   // dia sem trabalho habitual (ex.: domingo): não conta nem interrompe
+        if ($serie[$d] > $hab) $n++;
+        else break;
+    }
+    return $n;
+}
