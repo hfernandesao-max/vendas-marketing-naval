@@ -301,10 +301,13 @@ function publicar(array $versoes): void
 /** Corre código PHP com o núcleo do servidor (o que o portal faz quando o super administrador decide). */
 function svc(string $codigo): array
 {
-    global $srv;
+    global $srv, $tmp;
     $o = [];
-    $php = 'require ' . var_export($srv . '/nucleo/arranque.php', true) . '; naval_servico("actualizacao"); try { $r = ' . $codigo . '; echo json_encode(["ok" => true, "r" => $r]); } catch (Throwable $e) { echo json_encode(["ok" => false, "erro" => $e->getMessage()]); }';
-    exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($php) . ' 2>&1', $o);
+    // ficheiro temporário (no Windows, as aspas de um «php -r» não sobrevivem à linha de comandos)
+    $f = $tmp . '/svc-' . mt_rand() . '.php';
+    file_put_contents($f, '<?php require ' . var_export($srv . '/nucleo/arranque.php', true) . '; naval_servico("actualizacao"); try { $r = ' . $codigo . '; echo json_encode(["ok" => true, "r" => $r]); } catch (Throwable $e) { echo json_encode(["ok" => false, "erro" => $e->getMessage()]); }');
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
+    @unlink($f);
     return json_decode(implode("\n", $o), true) ?: ['ok' => false, 'erro' => implode("\n", $o)];
 }
 
