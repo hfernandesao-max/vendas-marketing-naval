@@ -15,9 +15,17 @@ $regras = [
 ];
 if (!isset($regras[$f])) throw new NavalErro('Ficheiro desconhecido.');
 naval_exigir($regras[$f]);
-// Plano de cargas: só os planos publicados no portal (o antigo histórico importado de Excel já não é usado)
+// Pedido condicional resolvido antes de ler e filtrar: data e tamanho dos ficheiros de origem
+$codigo = [__FILE__, dirname(__DIR__, 2) . '/servicos/rotas.php'];
 if ($f === 'cargas') {
     naval_servico('cargas');
+    $codigo[] = dirname(__DIR__, 2) . '/servicos/cargas.php';
+    naval_etag_antecipado(naval_meta_ficheiros(glob(naval_plano_pasta() . '/????-??-??.json') ?: []), $codigo);
+} else {
+    naval_etag_antecipado(naval_meta_ficheiros([naval_raiz() . '/reports/data/' . $f . '.json']), $codigo);
+}
+// Plano de cargas: só os planos publicados no portal (o antigo histórico importado de Excel já não é usado)
+if ($f === 'cargas') {
     $d = naval_plano_para_cargas();
 } else {
     $d = naval_json_ler(naval_raiz() . '/reports/data/' . $f . '.json');

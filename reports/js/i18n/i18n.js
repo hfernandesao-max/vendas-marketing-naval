@@ -1,11 +1,43 @@
 // Idioma do portal (PT/EN/TI) e tradução dos textos. Os textos estão escritos em português no código; cada
 // dicionário (en.js, ti.js) é indexado pelo texto em português. Sem tradução, mostra-se o texto em português.
-import { EN } from './en.js';
-import { TI } from './ti.js';
+// Velocidade: cada dicionário (100 a 150 KB) descarrega-se só quando o idioma é usado (import dinâmico); quem usa o
+// português não descarrega nenhum.
 
 /** Idiomas do portal e respectivas etiquetas BCP 47 (atributo lang, formatação de números e datas). */
 export const IDIOMAS = { pt: 'pt-PT', en: 'en', ti: 'ti' };
-const DIC = { en: EN, ti: TI };
+const DIC = {};
+const DICIONARIOS = {
+  en: () => import('./en.js').then((m) => m.EN),
+  ti: () => import('./ti.js').then((m) => m.TI),
+};
+const aCarregar = {};
+/** Carrega o dicionário do idioma (uma só vez); o português não tem dicionário. Se falhar, tenta de novo depois. */
+export function carregarIdioma(l) {
+  if (!DICIONARIOS[l] || DIC[l]) return Promise.resolve();
+  if (!aCarregar[l])
+    aCarregar[l] = DICIONARIOS[l]()
+      .then((d) => {
+        DIC[l] = d;
+        delete MODELOS[l];
+        delete IDX[l];
+      })
+      .catch((e) => {
+        delete aCarregar[l];
+        console.error(e);
+      });
+  return aCarregar[l];
+}
+/**
+ * Muda de idioma depois de carregado o dicionário (sem rede, fica o português até o dicionário chegar). Com várias
+ * escolhas seguidas vale a última, mesmo que o dicionário de uma escolha anterior chegue depois.
+ */
+let ultimoPedido = null;
+export function mudarIdioma(l) {
+  ultimoPedido = l;
+  return carregarIdioma(l).then(() => {
+    if (ultimoPedido === l) definirIdioma(l);
+  });
+}
 /** Nome de cada idioma na própria língua (norma dos selectores de idioma). */
 export const NOMES_IDIOMA = { pt: 'Português', en: 'English', ti: 'ትግርኛ' };
 

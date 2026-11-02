@@ -2,6 +2,7 @@
 import { filtrosURL, normTxt } from './filtros.js';
 import { t } from './i18n/i18n.js';
 import { PAGES } from './paginas/catalogo.js';
+import { carregarPagina } from './paginas/modulos.js';
 import { atual, contarAlertas, paginasVisiveis } from './perfil.js';
 import { $, el, svg } from './util.js';
 
@@ -169,6 +170,9 @@ export function nav() {
       $('#app').classList.remove('open');
       esquecerRelatorio(p.id);
     });
+    // Pré-carregamento por intenção: com o rato, o dedo ou o foco na ligação, o módulo da página já vem a caminho
+    const antecipar = () => carregarPagina(p.id).catch(() => {});
+    ['pointerenter', 'touchstart', 'focus'].forEach((ev) => a.addEventListener(ev, antecipar, { once: true, passive: true }));
     // Início: fecha todas as áreas do menu (mesmo já estando no Início) e volta ao topo
     if (p.id === 'inicio')
       a.addEventListener('click', () => {

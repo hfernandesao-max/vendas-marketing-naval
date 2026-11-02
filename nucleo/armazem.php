@@ -103,6 +103,19 @@ function naval_cache(string $chave, int $segundos, callable $f, bool $fresco = f
     });
 }
 
+/**
+ * Metadados de uma entrada da cache ainda válida (mesmas regras de naval_cache): data e tamanho do ficheiro, para
+ * validar pedidos condicionais sem ler a entrada (naval_etag_antecipado). null = em falta ou expirada.
+ */
+function naval_cache_meta(string $chave, int $segundos): ?string
+{
+    $ficheiro = naval_pasta('cache') . '/' . substr(hash('sha256', $chave), 0, 40) . '.json';
+    clearstatcache(true, $ficheiro);
+    $st = @stat($ficheiro);
+    if (!$st || $st['mtime'] < time() - $segundos) return null;
+    return $st['mtime'] . '|' . $st['size'] . '|' . $st['ino'];
+}
+
 /** Apaga as entradas da cache com mais de 2 dias. */
 function naval_cache_limpar(int $idade = 172800): void
 {

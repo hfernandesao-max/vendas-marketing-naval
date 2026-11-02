@@ -13,6 +13,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   Nunca escreve o `.env` nem os dados. Avisos por correio electrónico.
 - **Migrações:** tabela `ATV_MIGRACAO` no script do módulo Equipamentos e pasta `ferramentas/sql/migracoes`.
 
+### Velocidade (2.ª parte)
+- **Páginas a pedido:** o arranque traz só o núcleo do portal e a página que abre; o módulo de cada outra página
+  descarrega-se quando a página se abre pela primeira vez (ou antes, quando o rato ou o dedo passa na ligação do menu).
+  O import map continua a dar a versão a cada módulo; o pré-carregamento fica só para o arranque e a página principal.
+- **Idiomas a pedido:** os dicionários de inglês e tigrínia (100 a 150 KB cada) descarregam-se só quando o idioma é
+  usado; em português não se descarrega nenhum. O dicionário do idioma da conta pré-carrega-se.
+- **Arranque em paralelo:** sessão, rotas, carteira, cargas, cadastros, vendas, dicionário e página partem ao mesmo
+  tempo (antes em quatro etapas seguidas).
+- **Linhas de artigos só quando são precisas:** o portal abre com os documentos; as linhas pedem-se à parte
+  (`include_items=only`), uma vez por período, ao abrir «Vendas por artigo», «Vendas para o SAP», o filtro de artigo
+  ou o relatório consolidado. Na página principal o gráfico de artigos aparece quando as linhas chegam.
+- **Pedidos condicionais resolvidos cedo:** o ETag das vendas, dos dados de base e dos cadastros calcula-se da data e
+  do tamanho da origem (ficheiros, entradas da cache) e do âmbito de quem pede, antes de ler e converter os dados;
+  quando nada mudou o servidor responde 304 logo (ex.: carteira de clientes 8,3 ms → 3,2 ms).
+- Medido numa rede móvel simulada (150 ms, 1,5 Mbps), no Apache: portal 3,4 s → 2,4 s na primeira vez (303 KB →
+  152 KB, 61 → 46 pedidos) e 1,4 s → 0,9 s nas seguintes. Sem alterações à configuração do Apache.
+
 ### Velocidade
 - **Pedidos à API em paralelo:** a sessão PHP fecha-se para escrita logo a seguir à autenticação; os outros pedidos
   da mesma pessoa deixam de esperar pelas consultas lentas (medido: 1,8 s → 6 ms enquanto as vendas são lidas).
