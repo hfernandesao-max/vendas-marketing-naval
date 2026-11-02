@@ -72,6 +72,7 @@ export function organizarRelatorios(pg, pagina) {
 // fica aberta de cada vez; abrir outra fecha a anterior. A área da página aberta abre-se sozinha e
 // fica destacada; com a área fechada, o número de alertas das suas páginas aparece no título.
 const ICONE_GRUPO = {
+  Gestão: 'sino',
   Vendas: 'chart',
   Recebimentos: 'card',
   Clientes: 'users',

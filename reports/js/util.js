@@ -37,6 +37,9 @@ const ICON = {
   route: 'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
   phone: 'M7 2h10v20H7zM11 18h2',
   file: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7',
+  sino: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',
+  ia: 'M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z',
+  tv: 'M3 5h18v12H3zM8 21h8M12 17v4',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

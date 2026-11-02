@@ -20,6 +20,7 @@ const MODULOS = {
   agt: () => import('./agt.js'),
   acessos: () => import('./acessos.js'),
   actualizacoes: () => import('./actualizacoes.js'),
+  gestao: () => import('./gestao.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -51,6 +52,10 @@ export const MODULO_DA_PAGINA = {
   agt: 'agt',
   acessos: 'acessos',
   actualizacoes: 'actualizacoes',
+  alertas: 'gestao',
+  previsao: 'gestao',
+  assistente: 'gestao',
+  'painel-sala': 'gestao',
 };
 
 const pedidos = new Map();
