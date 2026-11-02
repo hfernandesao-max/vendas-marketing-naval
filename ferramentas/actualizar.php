@@ -144,7 +144,7 @@ try {
                 try {
                     if (is_file(naval_raiz() . '/nucleo/servicos/resumo.php')) {
                         naval_servico('resumo');
-                        foreach (naval_periodicas() as $tarefa => $res) echo "  ok     tarefa periódica: $tarefa\n";
+                        naval_periodicas();   // em silêncio: cada tarefa regista o que fez (a tarefa de 5 em 5 minutos não escreve sem pedidos)
                     }
                 } catch (Throwable $e) {
                     error_log('[periódicas] ' . $e->getMessage());
