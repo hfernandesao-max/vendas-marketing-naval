@@ -23,7 +23,7 @@ $mdmAmb = sys_get_temp_dir() . '/naval-mdm-' . getmypid();
 @mkdir($mdmAmb . '/privado', 0770, true);
 $mdmPorta = 18000 + getmypid() % 1000;
 // comando em texto (o proc_open com lista só existe a partir do PHP 7.4); exec para o processo ser o próprio servidor
-$mdmSrv = proc_open('exec ' . escapeshellarg(PHP_BINARY) . ' -S 127.0.0.1:' . $mdmPorta . ' ' . escapeshellarg(dirname(__DIR__) . '/dados/mdm-simulado.php'), [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $mdmTubos);
+$mdmSrv = proc_open('exec ' . escapeshellarg(PHP_BINARY) . ' -S 127.0.0.1:' . $mdmPorta . ' ' . escapeshellarg(dirname(__DIR__) . '/dados/mdm-simulado.php'), [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $mdmTubos);  // nosemgrep: exec-use -- porta inteira calculada; caminhos com escapeshellarg (só testes)
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $mdmPorta); $i++) usleep(100000);
 $bdMdm = $mdmAmb . '/atv.sqlite';
 (new PDO('sqlite:' . $bdMdm))->exec((string) file_get_contents(dirname(__DIR__) . '/dados/equipamentos-sqlite.sql'));
@@ -40,7 +40,7 @@ $correrMdm = function (string $refresh, ?string $tokenGuardado = null) use ($mdm
         'MDM_URL_EQUIPAMENTO=https://mdm.manageengine.com/webclient#/dispositivo/{id}',
     ]) . "\n");
     $saida = [];
-    exec('NAVAL_ENV=' . escapeshellarg($mdmAmb . '/.env') . ' ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/ferramentas/verificar-mdm.php') . ' 2>&1', $saida, $codigo);
+    exec('NAVAL_ENV=' . escapeshellarg($mdmAmb . '/.env') . ' ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/ferramentas/verificar-mdm.php') . ' 2>&1', $saida, $codigo);  // nosemgrep: exec-use -- argumentos com escapeshellarg; .env temporário do próprio teste (só testes)
     return [$codigo, implode("\n", $saida)];
 };
 
