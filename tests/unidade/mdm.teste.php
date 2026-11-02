@@ -64,6 +64,31 @@ teste('MDM: token guardado e recusado (401) → renova e repete; refresh token e
     verdade(strpos($txt, 'invalid_code') !== false, $txt);
 });
 
+teste('MDM: configurar troca o código pelo refresh token, grava o .env com cópia e verifica, sem mostrar segredos', function () use ($mdmAmb, $mdmPorta, $bdMdm) {
+    $env = $mdmAmb . '/.env';
+    file_put_contents($env, implode("\n", ['DADOS_PRIVADOS=' . $mdmAmb . '/privado', 'JWT_SEGREDO=x', 'ATV_DB_DSN=sqlite:' . $bdMdm,
+        'MDM_API_BASE=http://127.0.0.1:' . $mdmPorta, 'MDM_ACCOUNTS_BASE=http://127.0.0.1:' . $mdmPorta, '# MDM_OAUTH_CLIENT_ID=', 'OUTRA=1']) . "\n");
+    $correr = function (string $codigo) use ($env) {
+        $saida = [];
+        exec('NAVAL_ENV=' . escapeshellarg($env) . ' MDM_CONFIG_CLIENT_ID=cliente-teste MDM_CONFIG_CLIENT_SECRET=segredo-xyz MDM_CONFIG_CODIGO=' . escapeshellarg($codigo)
+            . ' ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/ferramentas/configurar-mdm.php') . ' 2>&1', $saida, $c);
+        return [$c, implode("\n", $saida)];
+    };
+    [$c, $txt] = $correr('codigo-velho');
+    igual(1, $c);
+    verdade(strpos($txt, 'invalid_code') !== false && strpos($txt, 'gere outro') !== false, $txt);
+    verdade(strpos((string) file_get_contents($env), 'segredo-xyz') === false, 'código recusado: .env sem alterações');
+    [, $txt] = $correr('codigo-teste');
+    verdade(strpos($txt, 'código trocado pelo refresh token') !== false, $txt);
+    verdade(strpos($txt, 'token OAuth renovado na Zoho') !== false, 'verificação corrida a seguir');
+    verdade(strpos($txt, 'segredo-xyz') === false && strpos($txt, 'rt-teste') === false, 'sem segredos no ecrã');
+    $novo = (string) file_get_contents($env);
+    verdade(strpos($novo, "MDM_OAUTH_CLIENT_ID=cliente-teste\n") !== false && strpos($novo, "MDM_OAUTH_REFRESH_TOKEN=rt-teste\n") !== false && strpos($novo, "OUTRA=1\n") !== false, $novo);
+    igual(1, substr_count($novo, 'MDM_OAUTH_CLIENT_ID'), 'a linha comentada passou a ser a chave');
+    verdade(count(glob($env . '.antes-mdm-*') ?: []) >= 1, 'cópia de segurança do .env');
+    foreach (glob($env . '.antes-mdm-*') ?: [] as $f) unlink($f);
+});
+
 $GLOBALS['casos'][] = ['MDM: fim do servidor simulado', function () use ($mdmSrv, $mdmAmb) {
     proc_terminate($mdmSrv);
     foreach (['/privado/mdm/token.json', '/.env', '/atv.sqlite'] as $f) @unlink($mdmAmb . $f);
