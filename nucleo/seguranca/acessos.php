@@ -64,8 +64,9 @@ const NAVAL_MATRIZ_TXT = [
     'equipamentos-movimentar' => '-  -  -  -  -  -  G  G  -  -',
     'equipamentos-administrar' => 'G  -  -  -  -  -  -  G  -  -',
     // Gestão (análise e IA): alertas, previsão, assistente, resumo diário, app de gestão e painel da sala comercial
+    'painel-gestao'        => 'V  V  V  Vr -  V  -  -  -  V',
     'alertas'              => 'V  V  V  Vr -  V  -  -  -  V',
-    'previsao'             => 'V  V  V  Vr -  -  -  V  -  V',
+    'previsao'             => 'V  V  V  Vr -  -  -  -  -  V',
     'assistente'           => '-  V  -  -  -  -  -  -  -  -',
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -',
     'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -',

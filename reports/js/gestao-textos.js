@@ -16,7 +16,7 @@ export function textoAlerta(a) {
     case 'rota-sem-vendas':
       return [
         t('Rota {r} sem vendas em {d}', { r: p.nome, d: dl(p.dia) }),
-        t('Vendeu em {c} das últimas {n} {s} (mediana {v}). Confirmar se a rota saiu e se o equipamento sincronizou.', {
+        t('Vendeu em {c} de {n} {s} anteriores (mediana {v}). Confirmar se a rota saiu e se o equipamento sincronizou.', {
           c: p.com,
           n: p.n,
           s: t(DIA_SEMANA[p.ds] || ''),
@@ -26,13 +26,13 @@ export function textoAlerta(a) {
     case 'queda-dia':
       return [
         t('Rota {r}: vendas de {d} {p} face ao habitual', { r: p.nome, d: dl(p.dia), p: sinal(p.var) }),
-        t('{v} contra uma mediana de {m} nas últimas {n} {s}.', { v: kz(p.real), m: kz(p.esperado), n: p.n, s: t(DIA_SEMANA[p.ds] || '') }),
+        t('{v} contra uma mediana de {m} em {n} {s} anteriores.', { v: kz(p.real), m: kz(p.esperado), n: p.n, s: t(DIA_SEMANA[p.ds] || '') }),
       ];
     case 'queda-semana':
     case 'subida-semana':
       return [
         t('Rota {r}: semana {p} face às 4 anteriores', { r: p.nome, p: sinal(p.var) }),
-        t('{v} de {de} a {ate}, contra uma média semanal de {m}.', { v: kz(p.semana), de: dl(p.de), ate: dl(p.dia), m: kz(p.media) }),
+        t('{v} de {i} a {f}, contra uma média semanal de {m}.', { v: kz(p.semana), i: dl(p.de), f: dl(p.dia), m: kz(p.media) }),
       ];
     case 'cliente-parado':
       return [

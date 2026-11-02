@@ -17,7 +17,7 @@ export const kzc = (v) => {
   if (a >= 1e3) return n0(Math.round(v / 1e3)) + ' ' + t('mil');
   return n0(v);
 };
-const svgEl = (tag, at, txt) => {
+export const svgEl = (tag, at, txt) => {
   const e = document.createElementNS(NS_SVG, tag);
   Object.entries(at || {}).forEach(([k, v]) => e.setAttribute(k, v));
   if (txt != null) e.textContent = txt;
@@ -29,7 +29,7 @@ const cortar = (s, px, tam = 7) => {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 };
 // Escala «limpa»: máximo arredondado e 4 divisões
-const escala = (max) => {
+export const escala = (max) => {
   if (!(max > 0)) return { max: 1, passo: 0.25 };
   const bruto = max / 4,
     mag = Math.pow(10, Math.floor(Math.log10(bruto))),
@@ -38,7 +38,7 @@ const escala = (max) => {
   return { max: Math.ceil(max / passo) * passo, passo };
 };
 // Barra com as pontas de dados arredondadas (4px) e a base direita
-const pathBarra = (x, y, w, h, vertical) => {
+export const pathBarra = (x, y, w, h, vertical) => {
   const r = Math.min(4, vertical ? w / 2 : h / 2, vertical ? h : w);
   if (vertical) return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
   return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
@@ -79,7 +79,7 @@ const vizTip = (() => {
   };
 })();
 // Marca interactiva: dica ao passar o rato e com o teclado (Tab), destaque, e ligação opcional
-function interactivo(g, titulo, linhas, href) {
+export function interactivo(g, titulo, linhas, href) {
   g.setAttribute('tabindex', '0');
   g.setAttribute('role', href ? 'link' : 'img');
   g.setAttribute('aria-label', titulo + ': ' + linhas.map(([v, l]) => l + ' ' + v).join(', '));

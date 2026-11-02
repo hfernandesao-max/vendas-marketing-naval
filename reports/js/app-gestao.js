@@ -1,15 +1,21 @@
 // App de gestão «Naval Gestão» (gestao/index.html): telemóvel, só de leitura. Separadores Hoje, Rotas, Alertas e
 // Assistente; os dados vêm da API central com o âmbito da conta (v1/sessao, v1/indicadores, v1/assistente) e
 // actualizam-se a cada 5 minutos enquanto a app está aberta. Nada fica guardado no telefone.
-import { apiJson } from './api.js';
-import { dl, kz, n0, setFmt } from './formatos.js';
+import { apiFetch, apiJson } from './api.js';
+import { dl, n0, setFmt } from './formatos.js';
 import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
-import { definirSessao } from './perfil.js';
-import { postJson } from './servidor.js';
 import { el, svg } from './util.js';
 
 const $ = (id) => document.getElementById(id);
+// valores redondos no telemóvel (sem casas decimais)
+const kz = (v) => (v == null || isNaN(v) ? '—' : n0(Math.round(v)) + ' Kz');
+// POST com o código CSRF da sessão (sem os módulos do portal completo)
+const postJson = (rota, corpo) =>
+  apiFetch(rota, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...corpo, csrf: E.sessao && E.sessao.csrf }) }).then(
+    (r) => r.json().catch(() => ({ ok: false, erro: 'Sem resposta do servidor.' })),
+    () => ({ ok: false, erro: 'Sem resposta do servidor.' }),
+  );
 const E = { sessao: null, ind: null, erro: null, sep: 'hoje', conversa: [], aPensar: false };
 const ICONE = { hoje: 'home', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
 
@@ -233,7 +239,6 @@ apiJson('sessao').then((s) => {
     return;
   }
   E.sessao = s;
-  definirSessao(s);
   const l = s.idioma && s.idioma !== LANG ? mudarIdioma(s.idioma).then(setFmt) : Promise.resolve();
   l.then(() => {
     document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';

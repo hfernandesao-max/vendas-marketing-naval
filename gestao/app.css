@@ -178,6 +178,9 @@ body {
   margin: 2px 0 0;
   height: 6px;
 }
+.ag-rota .ag-sub {
+  text-align: left;
+}
 .ag-valor {
   text-align: right;
   font-weight: 600;

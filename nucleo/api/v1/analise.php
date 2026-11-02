@@ -4,6 +4,8 @@
  *
  * GET v1/alertas[?dia=AAAA-MM-DD]   alertas de anomalias do dia (omissão: ontem) — recurso «alertas»
  * GET v1/previsao                   previsão dos próximos 7 dias por rota e qualidade medida — recurso «previsao»
+ * GET v1/painel                     painel de gestão RTM (tendência, ABC, distribuição numérica, valor e artigos por compra,
+ *                                   mapa de calor, carteira) — recurso «painel-gestao»
  * GET v1/indicadores                indicadores do dia para a app de gestão: hoje (ao vivo) face à previsão, ontem, semana,
  *                                   mês, classificação das rotas e número de alertas — recurso «app-gestao»
  */
@@ -63,6 +65,18 @@ if ($f === 'indicadores') {
             error_log('[indicadores alertas] ' . $e->getMessage());
         }
     }
+    naval_json(['ok' => true] + $r);
+}
+
+if ($f === 'painel') {
+    naval_exigir(['painel-gestao']);
+    naval_servico('painel');
+    if (!$veValores) throw new NavalErro('O painel de gestão precisa de acesso às páginas de vendas.', 403);
+    $hoje = date('Y-m-d');
+    $r = naval_cache('painel|' . $hoje . '|' . floor(time() / 900) . '|' . json_encode($rotas), 900, function () use ($hoje, $rotas) {
+        $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - NAVAL_PAINEL_DIAS * 86400), $hoje), $rotas, true);
+        return naval_painel($ag, $hoje, naval_promotores());
+    }, ($_GET['fresco'] ?? '') === '1');
     naval_json(['ok' => true] + $r);
 }
 

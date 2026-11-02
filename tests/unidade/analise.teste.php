@@ -197,3 +197,34 @@ teste('Resumo diário: números, âmbito por rota e correio em HTML justificado'
     verdade(strpos($html, '33 000 Kz') !== false);
     verdade(strpos($html, '28-10-2026') !== false, 'datas dd-mm-aaaa');
 });
+
+teste('Painel RTM: curva ABC, compras, artigos por compra, mapa de calor, carteira e ponte do mês', function () {
+    naval_servico('painel');
+    igual(['n' => 0, 'ate80' => 0, 'classes' => ['A' => 0, 'B' => 0, 'C' => 0], 'curva' => []], naval_painel_abc([]));
+    $abc = naval_painel_abc([80, 10, 5, 3, 2]);
+    igual(1, $abc['ate80'], 'um cliente faz 80 %');
+    igual(['A' => 1, 'B' => 2, 'C' => 2], $abc['classes']);
+    igual([1.0, 1.0], end($abc['curva']));
+    $hoje = '2026-10-28';
+    $h = analise_historico($hoje, 210, ['1001' => 10000, '1002' => 5000]);
+    $ag = [];
+    foreach (naval_analise_dias(date('Y-m-d', strtotime($hoje) - 209 * 86400), $hoje) as $d) {
+        $ag[$d] = naval_analise_resumir(
+            array_map(function ($v) { return $v + ['documento' => $v['data'] . $v['cliente_codigo']]; }, array_filter($h['vendas'], function ($x) use ($d) { return $x['data'] === $d; })),
+            array_map(function ($a) use ($h) { return $a + ['documento' => $a['data'] . 'C' . $a['rota'] . '-' . (date('N', strtotime($a['data'])) === '1' ? '1' : (date('N', strtotime($a['data'])) === '3' ? '2' : '9'))]; },
+                array_filter($h['artigos'], function ($x) use ($d) { return $x['data'] === $d; })));
+    }
+    $p = naval_painel($ag, $hoje, ['1001' => 'Andrea']);
+    igual(90, count($p['tendencia']['dias']));
+    igual(null, $p['tendencia']['dias'][5]['mm7'], 'média móvel só a partir do 7.º dia');
+    verdade($p['tendencia']['dias'][6]['mm7'] > 0);
+    igual(6, $p['kpis']['clientes_activos_30'], '3 clientes por rota');
+    igual(1.0, $p['kpis']['artigos_por_compra'], 'um artigo por compra');
+    igual('1001', $p['por_rota'][0]['rota']);
+    igual(0.0, $p['calor'][0]['dias'][6], 'domingo sem vendas');
+    igual(11000.0, $p['calor'][0]['dias'][2], 'quarta-feira da rota 1001');
+    igual(4, count($p['carteira']));
+    igual(0, $p['carteira'][1]['novos'], 'carteira estável');
+    igual(round($p['mes']['total']['actual'] - $p['mes']['total']['anterior'], 2), round(array_sum(array_column($p['mes']['rotas'], 'contributo')), 2), 'a ponte fecha');
+    igual(1.0, $p['distribuicao'][0]['distribuicao'], 'o único artigo chega a todos os clientes');
+});

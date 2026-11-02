@@ -57,6 +57,7 @@ function naval_api_rotas(): array
         'v1/alertas' => [['GET'], 'jwt', 'analise.php', ['f' => 'alertas']],
         'v1/previsao' => [['GET'], 'jwt', 'analise.php', ['f' => 'previsao']],
         'v1/indicadores' => [['GET'], 'jwt', 'analise.php', ['f' => 'indicadores']],
+        'v1/painel' => [['GET'], 'jwt', 'analise.php', ['f' => 'painel']],
         'v1/assistente' => [['GET', 'POST'], 'jwt', 'assistente.php', []],
         'v1/resumo' => [['GET', 'POST'], 'jwt', 'assistente.php', ['resumo' => '1']],
         'v1/sala' => [['GET'], 'publico', 'sala.php', []],
@@ -159,7 +160,9 @@ function naval_api_executar(): void
         naval_api_ritmo('conta|' . $c['sub']);
     } else {
         // por IP (vários utilizadores podem partilhar o mesmo IP na rede da empresa)
-        naval_api_ritmo('ip|' . naval_ip_cliente(), $acesso === 'publico' ? 120 : 1200);
+        // rotas públicas: limite próprio por rota (o painel da sala, o cartaz do cliente e os relatórios da CSP não se esgotam
+        // uns aos outros quando partilham o IP da rede da empresa)
+        naval_api_ritmo('ip|' . ($acesso === 'publico' ? $rota . '|' : '') . naval_ip_cliente(), $acesso === 'publico' ? 120 : 1200);
     }
     // parâmetros fixos da rota (ex.: v1/sap/excel?numero=5 → xlsx=5)
     foreach ($fixos as $k => $v) {

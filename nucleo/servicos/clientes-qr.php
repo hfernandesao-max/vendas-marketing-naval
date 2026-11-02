@@ -122,7 +122,7 @@ function naval_cqr_artigos(array $agregados, string $rota): array
         }
     }
     usort($a, function ($x, $y) { return $y['q'] <=> $x['q']; });
-    return array_map(function ($x) { unset($x['q']); return $x; }, array_slice(array_values($a), 0, 40));
+    return array_map(function ($x) { unset($x['q']); return $x; }, array_slice($a, 0, 40));
 }
 
 /** Valida e limpa o conteúdo de um pedido; lança NavalErro 400 com a mensagem para o cliente. */

@@ -42,7 +42,7 @@ if (!is_dir($base . '/ambiente')) mkdir($base . '/ambiente', 0770, true);
 @unlink($bdAtv);
 (new PDO('sqlite:' . $bdAtv))->exec((string) file_get_contents(__DIR__ . '/../dados/equipamentos-sqlite.sql'));
 $ambientes = [
-    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0', 'ATV_DB_DSN=sqlite:' . $bdAtv, 'ATV_CONTACTO_DEVOLUCAO_TEL=+244 900 000 000']),
+    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0', 'IA_API_KEY=chave-ia-de-teste', 'IA_API_URL=http://127.0.0.1:8802', 'IA_PERGUNTAS_DIA=5', 'ATV_DB_DSN=sqlite:' . $bdAtv, 'ATV_CONTACTO_DEVOLUCAO_TEL=+244 900 000 000']),
     $base . '/ambiente-mfa' => preparar_ambiente($base . '/ambiente-mfa', 8811, ['MFA_OBRIGATORIA=1']),
 ];
 

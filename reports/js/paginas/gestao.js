@@ -166,7 +166,7 @@ R.previsao = (pg) => {
   const q = tot.qualidade || {};
   pg.append(
     tiles([
-      { l: t('Previsão dos próximos 7 dias'), v: kz(tot.semana), s: t('de {de} a {ate}', { de: dl(d.dias[0]), ate: dl(d.dias[d.dias.length - 1]) }) },
+      { l: t('Previsão dos próximos 7 dias'), v: kz(tot.semana), s: t('de {i} a {f}', { i: dl(d.dias[0]), f: dl(d.dias[d.dias.length - 1]) }) },
       {
         l: t('Tendência'),
         v: sinal(tot.tendencia - 1),

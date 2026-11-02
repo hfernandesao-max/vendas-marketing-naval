@@ -23,7 +23,7 @@ if (($_GET['gerir'] ?? '') === '1') {
     if (!naval_pode('painel-sala', 'G')) throw new NavalErro('Sem permissão para gerir o painel da sala comercial.', 403);
     $lig = naval_json_ler(naval_sala_ficheiro());
     $vista = function (array $l) {
-        return array_values(array_map(function ($id, $x) { unset($x['hash']); return ['id' => $id] + $x; }, array_keys($l), $l));
+        return array_map(function ($id, $x) { unset($x['hash']); return ['id' => $id] + $x; }, array_keys($l), $l);
     };
     if (!naval_e_post()) naval_json(['ok' => true, 'ligacoes' => $vista($lig)]);
     $p = naval_pedido();

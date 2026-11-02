@@ -112,14 +112,14 @@ R['pedidos-clientes'] = (pg) => {
   const n = (e, tp) => PED.pedidos.filter((p) => p.estado === e && (!tp || p.tipo === tp)).length;
   pg.append(
     tiles([
-      { l: t('Pendentes'), v: n0(n('pendente')), s: t('a validar'), tone: n('pendente') ? 'warn' : null },
+      { l: t('Por validar'), v: n0(n('pendente')), s: t('pedidos dos clientes'), tone: n('pendente') ? 'warn' : null },
       { l: t('Encomendas pendentes'), v: n0(n('pendente', 'encomenda')), s: t('confirmar com o cliente') },
       { l: t('Aprovados (30 dias)'), v: n0(n('aprovado')), s: t('encomendas, dados e consentimentos') },
     ]),
   );
   const barra = el('div', 'gst-filtros');
   [
-    ['pendente', 'Pendentes'],
+    ['pendente', 'Por validar'],
     ['aprovado', 'Aprovados'],
     ['recusado', 'Recusados'],
   ].forEach(([e, txt]) => barra.append(botao(t(txt), 'sec' + (filtro === e ? ' on' : ''), () => ((filtro = e), draw()))));

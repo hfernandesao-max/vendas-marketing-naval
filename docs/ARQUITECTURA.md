@@ -192,6 +192,27 @@ no portal («Aplicar mesmo assim»).
 Comandos: `configurar`, `tarefa` (cria as duas tarefas), `apache`, `certificados`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
 servidor (só os que a própria actualização criou, ao repor) e guarda as 5 últimas cópias de segurança.
 
+## Gestão com IA e cartaz do cliente
+
+- **Agregados diários** (`nucleo/servicos/analise.php`): cada dia de vendas do Pinguim BO resume-se por rota, cliente,
+  artigo e cliente × artigo em `dados-privados/analise/AAAA-MM-DD.json` (sem NIF); os dias com mais de 3 dias ficam
+  gravados, os recentes recalculam-se a cada 10 minutos. Os dias em falta lêem-se em blocos de até 31 dias. É a base de
+  todas as funções abaixo, que são cálculos puros testados sem base de dados.
+- **Alertas** (`alertas.php`) e **previsão** (`previsao.php`): estatística robusta e explicável (mediana, desvio absoluto
+  mediano, mesmo dia da semana, tendência amortecida), com a precisão medida por backtest; a previsão do plano de
+  cargas usa as cargas publicadas × a tendência das vendas da rota.
+- **Assistente** (`ia.php`): API de mensagens da Anthropic com ferramentas só de leitura (`vendas_resumo`,
+  `comparar_periodos`, `alertas`, `previsao`, `plano_cargas`, `agt_estado`, `rotas`), cada uma com a matriz de acessos e
+  o âmbito de quem pergunta; instruções e ferramentas em cache; limites mensal e diário; registo de cada pergunta.
+  Princípios: NIST AI RMF, ISO/IEC 42001 e Lei 22/11.
+- **Resumo diário** (`resumo.php`): corre na tarefa de 5 em 5 minutos do servidor (`actualizar.php urgente`), uma vez
+  por dia a partir de `RESUMO_HORA`; agrupa os destinatários pelo âmbito.
+- **Painel da sala** (`sala/`) e **cartaz do cliente** (`c/`): páginas públicas sem módulos, com acesso só por código
+  aleatório; o cartaz grava pedidos pendentes em `dados-privados/clientes-qr/` e o back-office valida-os
+  (`clientes-qr.php`). Nada é escrito no Pinguim BO.
+- **App de gestão** (`gestao/`): aplicação web instalável com manifesto próprio e o código em `reports/js/app-gestao.js`
+  (mesmos dicionários e cliente da API do portal).
+
 ## Testes e qualidade
 
 | Ferramenta                                   | O que garante                                                                                              |

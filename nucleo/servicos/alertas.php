@@ -50,15 +50,15 @@ function naval_alertas_rotas(array $agregados, string $dia, array $p, array $pro
             if ($real <= 0 && $esperado > 0) {
                 $out[] = ['id' => "sem-vendas|$rota|$dia", 'tipo' => 'rota-sem-vendas', 'gravidade' => 'critico', 'rota' => $rota,
                     'titulo' => "Rota $nome sem vendas em " . naval_data_pt($dia),
-                    'detalhe' => 'Vendeu em ' . count($comVendas) . ' das últimas ' . count($hist) . ' ' . naval_dia_nome($dia)
-                        . ' (mediana ' . naval_kz($esperado) . '). Confirmar se a rota saiu e se o equipamento sincronizou.',
+                    'detalhe' => 'Vendeu em ' . count($comVendas) . ' de ' . count($hist) . ' ' . naval_dia_nome($dia)
+                        . ' anteriores (mediana ' . naval_kz($esperado) . '). Confirmar se a rota saiu e se o equipamento sincronizou.',
                     'valor' => 0.0, 'esperado' => round($esperado, 2), 'dia' => $dia, 'pagina' => 'vendas-dia',
                     'p' => ['nome' => $nome, 'dia' => $dia, 'com' => count($comVendas), 'n' => count($hist), 'ds' => naval_dia_semana($dia), 'esperado' => round($esperado)]];
             } elseif ($esperado > 0 && $real < $p['queda_dia'] * $esperado && $esperado - $real > max(2.5 * $mad, 0.1 * $esperado)) {
                 $out[] = ['id' => "queda-dia|$rota|$dia", 'tipo' => 'queda-dia', 'gravidade' => 'aviso', 'rota' => $rota,
                     'titulo' => "Rota $nome: vendas de " . naval_data_pt($dia) . ' ' . naval_pct($real / $esperado - 1) . ' face ao habitual',
-                    'detalhe' => naval_kz($real) . ' contra uma mediana de ' . naval_kz($esperado) . ' nas últimas ' . count($hist) . ' '
-                        . naval_dia_nome($dia) . '.',
+                    'detalhe' => naval_kz($real) . ' contra uma mediana de ' . naval_kz($esperado) . ' em ' . count($hist) . ' '
+                        . naval_dia_nome($dia) . ' anteriores.',
                     'valor' => round($real, 2), 'esperado' => round($esperado, 2), 'dia' => $dia, 'pagina' => 'vendas-dia',
                     'p' => ['nome' => $nome, 'dia' => $dia, 'var' => round($real / $esperado - 1, 3), 'real' => round($real), 'esperado' => round($esperado), 'n' => count($hist), 'ds' => naval_dia_semana($dia)]];
             }
