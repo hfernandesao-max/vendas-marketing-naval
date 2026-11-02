@@ -219,6 +219,23 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
             'sequencia' => naval_sequencia_acima($s, $ontem)];
     }
     usort($rank, function ($a, $b) { return $b['mes'] <=> $a['mes']; });
+    // valor e artigos por compra (compra = cliente com vendas num dia): hoje e mês até hoje
+    $compras = function (string $de, string $ate) use ($ag) {
+        $n = $v = $skus = $comArt = 0;
+        foreach (naval_analise_dias($de, $ate) as $d) {
+            foreach (($ag[$d]['clientes'] ?? []) as $c => $cl) {
+                if ((float) $cl['t'] <= 0) continue;
+                $n++;
+                $v += (float) $cl['t'];
+                $k = count(array_filter((array) ($ag[$d]['ca'][$c] ?? []), function ($q) { return $q > 0; }));
+                if ($k) {
+                    $skus += $k;
+                    $comArt++;
+                }
+            }
+        }
+        return ['compras' => $n, 'valor_medio' => $n ? round($v / $n, 2) : null, 'artigos_por_compra' => $comArt ? round($skus / $comArt, 2) : null];
+    };
     $hojeT = $t($hoje);
     $ontemT = $t($ontem);
     $habOntem = naval_mediana(naval_mesmos_dias($serieTot, $ontem, 6));
@@ -232,6 +249,7 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         'mes' => ['de' => $iniMes, 'total' => round($periodo($iniMes, $hoje), 2), 'anterior' => round($periodo($iniMesAnt, $fimMesAnt), 2),
             'variacao' => $var($periodo($iniMes, $hoje), $periodo($iniMesAnt, $fimMesAnt))],
         'rotas' => $rank,
+        'compras' => ['hoje' => $compras($hoje, $hoje), 'mes' => $compras($iniMes, $hoje), 'mes_anterior' => $compras($iniMesAnt, $fimMesAnt)],
     ];
 }
 

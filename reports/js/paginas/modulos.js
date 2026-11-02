@@ -53,6 +53,7 @@ export const MODULO_DA_PAGINA = {
   agt: 'agt',
   acessos: 'acessos',
   actualizacoes: 'actualizacoes',
+  'painel-gestao': 'gestao',
   alertas: 'gestao',
   previsao: 'gestao',
   assistente: 'gestao',

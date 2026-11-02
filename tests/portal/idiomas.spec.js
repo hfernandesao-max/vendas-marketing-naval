@@ -32,7 +32,7 @@ const PROTEGIDAS = new Set(
     'Foodtec FOODTEC HIGITEC REFITEC FHR PIV SADM TI DIR COM SUP PRO FIN LOG GEO AUD QR PDF CSV SQL Server HTTP XML PHP SimpleXML ' +
     'SHA env DB_HOST DB_NAME DB_USER DB_PASS EMAIL_TENANT_ID EMAIL_CLIENT_ID EMAIL_CLIENT_SECRET EMAIL_REMETENTE RTM_CLIENTES_JSON ' +
     'rtm clientes geo auth config_users php ferramentas utilizadores importar antigo joao silva admin SYNC_PHSE_HISTORY SELECT sys ' +
-    'INFORMATION_SCHEMA nvarchar n decimal p e datetime max NETSALES TAXAMOUNT GROSS_TOTAL SALES PERSON VENDAS RTM2 N A PDO MR AGT DOCHEADEREXTRA IP VPN DB Geolocation by MDM IMEI MAC Bluetooth ID NAV SMT IMP ATV_DB_NAME ATV_DB_DSN GitHub commit actualizar configurar ACME HTTPS ia RESUMO_ACTIVO'
+    'INFORMATION_SCHEMA nvarchar n decimal p e datetime max NETSALES TAXAMOUNT GROSS_TOTAL SALES PERSON VENDAS RTM2 N A PDO MR AGT DOCHEADEREXTRA IP VPN DB Geolocation by MDM IMEI MAC Bluetooth ID NAV SMT IMP ATV_DB_NAME ATV_DB_DSN GitHub commit actualizar configurar ACME HTTPS ia RESUMO_ACTIVO B C ABC'
   ).split(' '),
 );
 // Palavras portuguesas que não podem aparecer nas traduções inglesas

@@ -2,6 +2,7 @@
 // texto seguro (nunca HTML vindo da resposta) e pedidos dos clientes com a marcação «fora do habitual».
 import { test, expect } from '@playwright/test';
 import { abrir } from './dados.js';
+import { readFileSync } from 'node:fs';
 
 const ALERTAS = {
   ok: true,
@@ -146,5 +147,22 @@ test('pedidos dos clientes: encomenda com linha fora do habitual e acções de v
   await expect(c.locator('.p-warn').filter({ hasText: 'fora do habitual' })).toContainText('5×');
   await expect(c).toContainText('dentro do habitual (5)');
   await expect(c.getByRole('button', { name: 'Aprovar' })).toBeVisible();
+  expect(erros).toEqual([]);
+});
+
+test('painel de gestão: indicadores, nove gráficos com tabela e legendas nas séries múltiplas', async ({ page }) => {
+  const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
+  await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
+  const erros = await abrir(page, '#painel-gestao');
+  await expect(page.locator('.tile')).toHaveCount(5);
+  await expect(page.locator('.gst-painel .viz-card')).toHaveCount(9);
+  await expect(page.locator('.gst-painel svg.vx').first()).toBeVisible();
+  await expect(page.locator('.gst-painel .glegenda')).toHaveCount(2);
+  await page
+    .locator('.gst-painel .viz-card')
+    .nth(3)
+    .getByRole('button', { name: /Tabela/ })
+    .click();
+  await expect(page.locator('.gst-painel .viz-card').nth(3).locator('table')).toContainText('A (80% do valor)');
   expect(erros).toEqual([]);
 });

@@ -44,7 +44,9 @@ export function grafTendencia(w, { dias, previsao, rot }) {
   if (pts.length) sv.append(svgEl('polyline', { points: pts.join(' '), fill: 'none', stroke: AZUL, 'stroke-width': 2, 'stroke-linejoin': 'round' }));
   if (previsao.length) {
     const o = dias.length;
-    const banda80 = previsao.map((p, i) => `${x(o + i)},${y(p.maximo)}`).concat([...previsao].reverse().map((p, k) => `${x(o + previsao.length - 1 - k)},${y(p.minimo)}`));
+    const banda80 = previsao
+      .map((p, i) => `${x(o + i)},${y(p.maximo)}`)
+      .concat([...previsao].reverse().map((p, k) => `${x(o + previsao.length - 1 - k)},${y(p.minimo)}`));
     sv.append(svgEl('polygon', { points: banda80.join(' '), fill: AZUL, opacity: 0.12 }));
     sv.append(
       svgEl('polyline', {
@@ -94,7 +96,18 @@ export function grafBalas(w, { itens }) {
     g.append(svgEl('text', { x: Lr - 8, y: y0 + linha / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, x.rotulo));
     const cor = x.anterior > 0 && x.actual < x.anterior ? QUEDA : AZUL;
     g.append(svgEl('path', { d: pathBarra(Lr, y0 + 8, Math.max(1, sx(x.actual) - Lr), linha - 16, false), fill: cor, class: 'vx-bar' }));
-    if (x.anterior > 0) g.append(svgEl('line', { x1: sx(x.anterior), x2: sx(x.anterior), y1: y0 + 4, y2: y0 + linha - 4, stroke: 'currentColor', 'stroke-width': 2.5, class: 'vx-marca' }));
+    if (x.anterior > 0)
+      g.append(
+        svgEl('line', {
+          x1: sx(x.anterior),
+          x2: sx(x.anterior),
+          y1: y0 + 4,
+          y2: y0 + linha - 4,
+          stroke: 'currentColor',
+          'stroke-width': 2.5,
+          class: 'vx-marca',
+        }),
+      );
     g.append(svgEl('text', { x: w - R + 6, y: y0 + linha / 2 + 4, class: 'vx-val' }, x.variacao == null ? '—' : (x.variacao > 0 ? '+' : '') + pct(x.variacao)));
     interactivo(g, x.rotulo, [
       [kzc(x.actual), t('mês até hoje'), cor],
@@ -131,7 +144,17 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim }) {
       h = Math.max(1, Math.abs(y(b.de) - y(b.ate)));
     const g = svgEl('g');
     g.append(svgEl('rect', { x: L + banda * i, y: T, width: banda, height: H - T - B, class: 'vx-hit' }));
-    g.append(svgEl('rect', { x: cx - bw / 2, y: top, width: bw, height: h, rx: 3, fill: b.tipo === 'desce' ? QUEDA : b.tipo === 'sobe' ? AZUL : '#1e3a8a', class: 'vx-bar' }));
+    g.append(
+      svgEl('rect', {
+        x: cx - bw / 2,
+        y: top,
+        width: bw,
+        height: h,
+        rx: 3,
+        fill: b.tipo === 'desce' ? QUEDA : b.tipo === 'sobe' ? AZUL : '#1e3a8a',
+        class: 'vx-bar',
+      }),
+    );
     if (i < barras.length - 1)
       sv.append(svgEl('line', { x1: cx + bw / 2, x2: cx + banda - bw / 2, y1: y(b.ate), y2: y(b.ate), class: 'vx-grid', 'stroke-dasharray': '3 3' }));
     g.append(svgEl('text', { x: cx, y: H - B + 14, class: 'vx-ax', 'text-anchor': 'middle' }, b.rot));
@@ -168,7 +191,11 @@ export function grafAbc(w, { curva, ate80, n, nome }) {
   const g = svgEl('g');
   g.append(svgEl('circle', { cx: sx(x80), cy: sy(0.8), r: 5, fill: AZUL, class: 'vx-bar' }));
   g.append(
-    svgEl('text', { x: Math.min(sx(x80) + 8, w - R - 150), y: sy(0.8) + 18, class: 'vx-val' }, t('{n} {o} ({p}) fazem 80%', { n: n0(ate80), o: nome, p: pct(x80) })),
+    svgEl(
+      'text',
+      { x: Math.min(sx(x80) + 8, w - R - 150), y: sy(0.8) + 18, class: 'vx-val' },
+      t('{n} {o} ({p}) fazem 80%', { n: n0(ate80), o: nome, p: pct(x80) }),
+    ),
   );
   interactivo(g, t('80% do valor'), [
     [n0(ate80), nome],
@@ -184,16 +211,28 @@ export function grafDispersao(w, { itens, fx, fy, rx, ry }) {
     T = 14,
     B = 34,
     R = 16;
-  const ex = escala(Math.max(...itens.map((p) => p.x), 0)),
-    ey = escala(Math.max(...itens.map((p) => p.y), 0));
+  // eixos ajustados aos dados (com margem): numa dispersão interessa a posição relativa, não o zero
+  const dominio = (vals) => {
+    const mn = Math.min(...vals),
+      mx = Math.max(...vals),
+      folga = (mx - mn || mx || 1) * 0.15;
+    const e = escala(mx + folga - Math.max(0, mn - folga));
+    const ini = Math.max(0, Math.floor((mn - folga) / e.passo) * e.passo);
+    return { ini, max: ini + Math.ceil((mx + folga - ini) / e.passo) * e.passo, passo: e.passo };
+  };
+  const ex = dominio(itens.map((p) => p.x)),
+    ey = dominio(itens.map((p) => p.y));
   const L = Math.max(36, 8 + 7 * fy(ey.max).length);
-  const sx = (v) => L + (w - L - R) * (v / ex.max),
-    sy = (v) => T + (H - T - B) * (1 - v / ey.max);
+  const sx = (v) => L + (w - L - R) * ((v - ex.ini) / (ex.max - ex.ini)),
+    sy = (v) => T + (H - T - B) * (1 - (v - ey.ini) / (ey.max - ey.ini));
   const maxT = Math.max(...itens.map((p) => p.tamanho), 1);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
-  for (let v = 0; v <= ey.max + 1e-9; v += ey.passo)
-    sv.append(svgEl('line', { x1: L, x2: w - R, y1: sy(v), y2: sy(v), class: 'vx-grid' }), svgEl('text', { x: L - 6, y: sy(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fy(v)));
-  for (let v = 0; v <= ex.max + 1e-9; v += ex.passo) sv.append(svgEl('text', { x: sx(v), y: H - 16, class: 'vx-ax', 'text-anchor': 'middle' }, fx(v)));
+  for (let v = ey.ini; v <= ey.max + 1e-9; v += ey.passo)
+    sv.append(
+      svgEl('line', { x1: L, x2: w - R, y1: sy(v), y2: sy(v), class: 'vx-grid' }),
+      svgEl('text', { x: L - 6, y: sy(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fy(v)),
+    );
+  for (let v = ex.ini; v <= ex.max + 1e-9; v += ex.passo) sv.append(svgEl('text', { x: sx(v), y: H - 16, class: 'vx-ax', 'text-anchor': 'middle' }, fx(v)));
   sv.append(svgEl('text', { x: (L + w - R) / 2, y: H - 2, class: 'vx-ax', 'text-anchor': 'middle' }, rx));
   const mx = itens.reduce((s, p) => s + p.x, 0) / Math.max(1, itens.length),
     my = itens.reduce((s, p) => s + p.y, 0) / Math.max(1, itens.length);
@@ -232,8 +271,22 @@ export function grafCalor(w, { linhas, colunas, fmt }) {
     l.valores.forEach((v, j) => {
       const g = svgEl('g');
       const f = v / max;
-      g.append(svgEl('rect', { x: Lr + cw * j + 1, y: y0 + 1, width: cw - 2, height: alt - 2, rx: 3, fill: AZUL, opacity: v > 0 ? 0.08 + 0.85 * f : 0.03, class: 'vx-bar' }));
-      if (cw > 54 && v > 0) g.append(svgEl('text', { x: Lr + cw * j + cw / 2, y: y0 + alt / 2 + 4, class: f > 0.55 ? 'vx-val vx-claro' : 'vx-ax', 'text-anchor': 'middle' }, fmt(v)));
+      g.append(
+        svgEl('rect', {
+          x: Lr + cw * j + 1,
+          y: y0 + 1,
+          width: cw - 2,
+          height: alt - 2,
+          rx: 3,
+          fill: AZUL,
+          opacity: v > 0 ? 0.08 + 0.85 * f : 0.03,
+          class: 'vx-bar',
+        }),
+      );
+      if (cw > 54 && v > 0)
+        g.append(
+          svgEl('text', { x: Lr + cw * j + cw / 2, y: y0 + alt / 2 + 4, class: f > 0.55 ? 'vx-val vx-claro' : 'vx-ax', 'text-anchor': 'middle' }, fmt(v)),
+        );
       interactivo(g, l.rot + ' · ' + colunas[j], [[fmt(v), t('média por dia')]]);
       sv.append(g);
     });
@@ -272,4 +325,26 @@ export function grafAgrupadas(w, { cats, series, fmt = n0 }) {
     sv.append(g);
   });
   return sv;
+}
+
+/** Legenda (duas ou mais séries): amostra da cor e nome; o texto fica na cor do texto, nunca na da série. */
+export function comLegenda(svg, itens) {
+  const w = document.createElement('div');
+  const l = document.createElement('div');
+  l.className = 'glegenda';
+  itens.forEach(([cor, txt, tracejado]) => {
+    const s = document.createElement('span'),
+      i = document.createElement('i');
+    i.style.background = tracejado ? 'none' : cor;
+    if (tracejado) {
+      i.style.borderTop = '2px dashed ' + cor;
+      i.style.height = '0';
+      i.style.width = '16px';
+      i.style.borderRadius = '0';
+    }
+    s.append(i, document.createTextNode(txt));
+    l.append(s);
+  });
+  w.append(svg, l);
+  return w;
 }

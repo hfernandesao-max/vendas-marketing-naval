@@ -16,6 +16,9 @@ test('matriz de acessos: cada recurso só para os perfis previstos', async () =>
     ['sup', 'previsao', 200],
     ['fin', 'previsao', 403],
     ['dir', 'indicadores', 200],
+    ['dir', 'painel', 200],
+    ['sup', 'painel', 200],
+    ['log', 'painel', 403],
     ['bo', 'indicadores', 403],
     ['dir', 'assistente', 200],
     ['com', 'assistente', 403],
@@ -39,6 +42,12 @@ test('alertas, previsão e indicadores: formato e âmbito do supervisor (só as 
   const p = await (await ctx.get(API + 'previsao')).json();
   expect(p.ok).toBe(true);
   expect(p.dias.length).toBe(7);
+  const pn = await (await ctx.get(API + 'painel')).json();
+  expect(Object.keys(pn)).toEqual(
+    expect.arrayContaining(['kpis', 'tendencia', 'mes', 'abc_clientes', 'abc_artigos', 'distribuicao', 'por_rota', 'calor', 'carteira']),
+  );
+  expect(pn.tendencia.dias.length).toBe(90);
+  expect(JSON.stringify(pn)).not.toContain('5000000002'); // sem NIF
   const i = await (await ctx.get(API + 'indicadores')).json();
   expect(Object.keys(i)).toEqual(expect.arrayContaining(['hoje', 'ontem', 'semana', 'mes', 'rotas']));
   const sup = await entrar('sup');

@@ -69,6 +69,20 @@
       g.appendChild(c);
     });
     out.push(g);
+    var c = D.compras && D.compras.hoje;
+    if (c && c.compras)
+      out.push(
+        el(
+          'p',
+          's-sub',
+          'Hoje: ' +
+            nf.format(c.compras) +
+            ' clientes compraram · ' +
+            kz(c.valor_medio) +
+            ' por compra' +
+            (c.artigos_por_compra ? ' · ' + String(c.artigos_por_compra).replace('.', ',') + ' artigos por compra' : ''),
+        ),
+      );
     return out;
   }
   function ecraRanking(titulo, sub, campo, extra) {

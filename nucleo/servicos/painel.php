@@ -147,7 +147,7 @@ function naval_painel(array $ag, string $hoje, array $promotores = [], array $no
         for ($j = 1; $j <= 3; $j++) $antes += $porMes[date('Y-m', strtotime($mm . "-01 12:00 -$j month"))] ?? [];
         $actual = $porMes[$mm] ?? [];
         $anterior = $porMes[date('Y-m', strtotime($mm . '-01 12:00 -1 month'))] ?? [];
-        $meses[] = ['mes' => $mm, 'activos' => count($actual), 'novos' => count(array_diff_key($actual, $antes)), 'perdidos' => count(array_diff_key($anterior, $actual)),
+        $meses[] = ['mes' => $mm, 'activos' => count($actual), 'novos' => count(array_diff_key($actual, $antes)), 'perdidos' => $m === 0 ? null : count(array_diff_key($anterior, $actual)),   // mês em curso: ainda não se sabe
             'incompleto' => $m === 0];
     }
 

@@ -1962,3 +1962,45 @@ table.ac-mig tr.ac-off td:not(:last-child) {
     margin: 0;
   }
 }
+.gst-painel {
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  margin-bottom: 12px;
+}
+.gst-painel > .viz-card:first-child {
+  grid-column: 1 / -1;
+}
+.gst-nota {
+  text-align: justify;
+}
+.vx-marca {
+  color: var(--fg);
+}
+.vx-claro {
+  fill: #fff;
+}
+@media (max-width: 520px) {
+  .gst-painel {
+    grid-template-columns: 1fr;
+  }
+}
+.gst-painel {
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  margin-bottom: 12px;
+}
+.gst-painel > .viz-card:first-child {
+  grid-column: 1 / -1;
+}
+.gst-nota {
+  text-align: justify;
+}
+.vx-marca {
+  color: var(--fg);
+}
+.vx-claro {
+  fill: #fff;
+}
+@media (max-width: 520px) {
+  .gst-painel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,9 +4,10 @@
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
-import { cartaoGrafico, grafColunas } from '../componentes/graficos.js';
+import { cartaoGrafico, grafBarras, grafColunas, kzc } from '../componentes/graficos.js';
+import { comLegenda, grafAbc, grafAgrupadas, grafBalas, grafCalor, grafCascata, grafDispersao, grafTendencia } from '../componentes/graficos-gestao.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
-import { dl, ds, kz, n0 } from '../formatos.js';
+import { dl, ds, kz, n0, n1 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
 import { atual, podeVer } from '../perfil.js';
 import { postJson } from '../servidor.js';
@@ -456,3 +457,190 @@ function criarLigacao() {
     );
   });
 }
+
+// ───────────────────────── Painel de gestão RTM ─────────────────────────
+
+const DIAS_CURTOS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const nomeRota = (r) => r.rota + (r.promotor ? ' · ' + r.promotor : '');
+
+R['painel-gestao'] = (pg) => {
+  const d = esperar(pg, 'painel', 'painel', 'painel-gestao');
+  if (!d) return;
+  const k = d.kpis;
+  pg.append(
+    tiles([
+      {
+        l: t('Vendas do mês até hoje'),
+        v: kz(k.vendas_mes),
+        s: t('{p} face aos mesmos dias do mês anterior', { p: sinal(k.variacao_mes) }),
+        tone: tomVar(k.variacao_mes),
+      },
+      { l: t('Clientes activos (30 dias)'), v: n0(k.clientes_activos_30), s: t('{n} compras', { n: n0(k.compras_30) }) },
+      { l: t('Valor médio por compra'), v: kz(k.valor_medio_compra), s: t('vendas ÷ compras (30 dias)') },
+      { l: t('Artigos por compra'), v: k.artigos_por_compra == null ? '—' : n1(k.artigos_por_compra), s: t('artigos diferentes em cada compra') },
+      { l: t('Concentração'), v: n0(k.clientes_80), s: t('clientes fazem 80% das vendas (de {n})', { n: n0(k.clientes_90) }) },
+    ]),
+  );
+  const grid = el('div', 'viz-grid gst-painel');
+  const tend = d.tendencia;
+  grid.append(
+    cartaoGrafico({
+      titulo: t('Tendência diária e previsão'),
+      sub: t('últimos 90 dias, média móvel de 7 dias e previsão com intervalo de 80%'),
+      desenhar: (w) =>
+        comLegenda(grafTendencia(w, { dias: tend.dias, previsao: tend.previsao, rot: (x) => dl(x).slice(0, 5) }), [
+          ['#8fb4ff', t('vendas do dia')],
+          ['#3987e5', t('média móvel de 7 dias')],
+          ['#3987e5', t('previsão'), true],
+        ]),
+      colunas: [
+        [t('Dia'), 0],
+        [t('Vendas'), 1],
+        [t('Média móvel de 7 dias'), 1],
+      ],
+      linhas: tend.dias.map((x) => [dl(x.dia), kz(x.vendas), x.mm7 == null ? '—' : kz(x.mm7)]),
+    }),
+  );
+  const mesRotas = d.mes.rotas;
+  grid.append(
+    cartaoGrafico({
+      titulo: t('Mês até hoje por rota'),
+      sub: t('barra: este mês; traço: mesmos dias do mês anterior'),
+      desenhar: (w) => grafBalas(w, { itens: mesRotas.map((r) => ({ rotulo: nomeRota(r), actual: r.actual, anterior: r.anterior, variacao: r.variacao })) }),
+      colunas: [
+        [t('Rota'), 0],
+        [t('Mês até hoje'), 1],
+        [t('Mês anterior'), 1],
+        [t('Variação'), 1],
+      ],
+      linhas: mesRotas.map((r) => [nomeRota(r), kz(r.actual), kz(r.anterior), sinal(r.variacao)]),
+    }),
+    cartaoGrafico({
+      titulo: t('De onde vem a variação do mês'),
+      sub: t('contributo de cada rota, dos mesmos dias do mês anterior até hoje'),
+      desenhar: (w) =>
+        grafCascata(w, {
+          inicio: d.mes.total.anterior,
+          fim: d.mes.total.actual,
+          passos: [...mesRotas].sort((a, b) => b.contributo - a.contributo).map((r) => ({ rot: r.rota, valor: r.contributo })),
+          rotInicio: t('Anterior'),
+          rotFim: t('Actual'),
+        }),
+      colunas: [
+        [t('Rota'), 0],
+        [t('Contributo'), 1],
+      ],
+      linhas: mesRotas.map((r) => [nomeRota(r), kz(r.contributo)]),
+    }),
+  );
+  const abc = (titulo, sub, x, nome) =>
+    cartaoGrafico({
+      titulo,
+      sub,
+      desenhar: (w) => grafAbc(w, { curva: x.curva, ate80: x.ate80, n: x.n, nome }),
+      colunas: [
+        [t('Classe'), 0],
+        [t('Quantidade'), 1],
+      ],
+      linhas: [
+        [t('A (80% do valor)'), n0(x.classes.A)],
+        [t('B (seguintes 15%)'), n0(x.classes.B)],
+        [t('C (últimos 5%)'), n0(x.classes.C)],
+      ],
+    });
+  grid.append(
+    abc(t('Curva ABC de clientes'), t('últimos 90 dias: quantos clientes fazem 80% das vendas'), d.abc_clientes, t('clientes')),
+    abc(t('Curva ABC de artigos'), t('últimos 90 dias: quantos artigos fazem 80% das vendas'), d.abc_artigos, t('artigos')),
+    cartaoGrafico({
+      titulo: t('Distribuição numérica'),
+      sub: t('% dos clientes activos (30 dias) que compraram cada artigo; os 15 artigos de maior venda'),
+      desenhar: (w, h) =>
+        grafBarras(w, {
+          itens: d.distribuicao.map((a) => ({
+            rot: a.nome,
+            valor: (a.distribuicao || 0) * 100,
+            titulo: a.nome,
+            linhas: [
+              [n0((a.distribuicao || 0) * 100) + '%', t('dos clientes activos')],
+              [n0(a.clientes), t('clientes')],
+            ],
+          })),
+          fmt: (v) => n0(v) + '%',
+          altura: h,
+        }),
+      colunas: [
+        [t('Artigo'), 0],
+        [t('Clientes'), 1],
+        [t('Distribuição numérica'), 1],
+      ],
+      linhas: d.distribuicao.map((a) => [a.nome, n0(a.clientes), a.distribuicao == null ? '—' : n0(a.distribuicao * 100) + '%']),
+    }),
+    cartaoGrafico({
+      titulo: t('Valor médio e artigos por compra'),
+      sub: t('por rota, últimos 30 dias; tamanho: vendas; linhas tracejadas: médias'),
+      desenhar: (w) =>
+        grafDispersao(w, {
+          itens: d.por_rota
+            .filter((r) => r.artigos_por_compra != null)
+            .map((r) => ({ x: r.valor_medio, y: r.artigos_por_compra, tamanho: r.vendas, rot: r.rota, titulo: nomeRota(r) })),
+          fx: kzc,
+          fy: (v) => n1(v),
+          rx: t('valor médio por compra (Kz)'),
+          ry: t('artigos por compra'),
+        }),
+      colunas: [
+        [t('Rota'), 0],
+        [t('Compras'), 1],
+        [t('Valor médio por compra'), 1],
+        [t('Artigos por compra'), 1],
+      ],
+      linhas: d.por_rota.map((r) => [nomeRota(r), n0(r.compras), kz(r.valor_medio), r.artigos_por_compra == null ? '—' : n1(r.artigos_por_compra)]),
+    }),
+    cartaoGrafico({
+      titulo: t('Vendas por rota e dia da semana'),
+      sub: t('média por dia nas últimas 8 semanas'),
+      desenhar: (w) => grafCalor(w, { linhas: d.calor.map((l) => ({ rot: l.rota, valores: l.dias })), colunas: DIAS_CURTOS.map((x) => t(x)), fmt: kzc }),
+      colunas: [[t('Rota'), 0], ...DIAS_CURTOS.map((x) => [t(x), 1])],
+      linhas: d.calor.map((l) => [nomeRota(l), ...l.dias.map(kz)]),
+    }),
+    cartaoGrafico({
+      titulo: t('Carteira de clientes por mês'),
+      sub: t('activos, novos (sem compras nos 3 meses anteriores) e perdidos (compraram no mês anterior)'),
+      desenhar: (w) =>
+        comLegenda(
+          grafAgrupadas(w, {
+            cats: d.carteira.map((m) => t(MESES_CURTOS[+m.mes.slice(5) - 1]) + (m.incompleto ? '*' : '')),
+            series: [
+              { nome: t('activos'), cor: '#3987e5', valores: d.carteira.map((m) => m.activos) },
+              { nome: t('novos'), cor: '#8fb4ff', valores: d.carteira.map((m) => m.novos) },
+              { nome: t('perdidos'), cor: '#d03b3b', valores: d.carteira.map((m) => m.perdidos || 0) },
+            ],
+          }),
+          [
+            ['#3987e5', t('activos')],
+            ['#8fb4ff', t('novos')],
+            ['#d03b3b', t('perdidos')],
+          ],
+        ),
+      colunas: [
+        [t('Mês'), 0],
+        [t('Activos'), 1],
+        [t('Novos'), 1],
+        [t('Perdidos'), 1],
+      ],
+      linhas: d.carteira.map((m) => [m.mes, n0(m.activos), n0(m.novos), m.perdidos == null ? '—' : n0(m.perdidos)]),
+    }),
+  );
+  pg.append(grid);
+  pg.append(
+    el(
+      'p',
+      'note gst-nota',
+      t(
+        '«Compra» é um cliente com vendas num dia (visita produtiva). Indicadores de referência na distribuição porta-a-porta: cobertura e distribuição numérica dizem onde há espaço para vender; valor médio e artigos por compra dizem quanto rende cada visita. * mês em curso.',
+      ),
+    ),
+    actualizarBtn('painel', 'painel', 'painel-gestao'),
+  );
+};

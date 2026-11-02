@@ -81,7 +81,7 @@ $r = naval_cache('sala|' . date('Y-m-d H') . floor((int) date('i') / 2), 120, fu
     return naval_indicadores(time(), null);
 });
 // só totais por rota e o nome do promotor (sem clientes, documentos nem NIF)
-naval_json(['ok' => true, 'hora' => $r['hora'], 'hoje' => $r['hoje'], 'ontem' => $r['ontem'], 'semana' => $r['semana'], 'mes' => $r['mes'],
+naval_json(['ok' => true, 'hora' => $r['hora'], 'hoje' => $r['hoje'], 'ontem' => $r['ontem'], 'semana' => $r['semana'], 'mes' => $r['mes'], 'compras' => $r['compras'] ?? null,
     'rotas' => array_map(function ($x) {
         return array_intersect_key($x, array_flip(['rota', 'promotor', 'hoje', 'previsto_hoje', 'ontem', 'habitual_ontem', 'mes', 'mes_anterior', 'variacao_mes', 'sequencia']));
     }, $r['rotas'])]);

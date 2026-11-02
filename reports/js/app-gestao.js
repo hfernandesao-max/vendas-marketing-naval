@@ -2,7 +2,7 @@
 // Assistente; os dados vêm da API central com o âmbito da conta (v1/sessao, v1/indicadores, v1/assistente) e
 // actualizam-se a cada 5 minutos enquanto a app está aberta. Nada fica guardado no telefone.
 import { apiFetch, apiJson } from './api.js';
-import { dl, n0, setFmt } from './formatos.js';
+import { dl, n0, n1, setFmt } from './formatos.js';
 import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
@@ -66,6 +66,18 @@ function hoje() {
     cartao(el('div', 'ag-rotulo', t('Semana até hoje')), el('div', 'ag-medio', kz(d.semana.total)), variacao(d.semana.variacao, t('face à semana passada'))),
     cartao(el('div', 'ag-rotulo', t('Mês até hoje')), el('div', 'ag-medio', kz(d.mes.total)), variacao(d.mes.variacao, t('face ao mês passado'))),
   );
+  const cp = d.compras;
+  if (cp && cp.mes.compras) {
+    const vm = cp.mes_anterior.valor_medio ? cp.mes.valor_medio / cp.mes_anterior.valor_medio - 1 : null;
+    g.append(
+      cartao(el('div', 'ag-rotulo', t('Valor médio por compra')), el('div', 'ag-medio', kz(cp.mes.valor_medio)), variacao(vm, t('face ao mês passado'))),
+      cartao(
+        el('div', 'ag-rotulo', t('Artigos por compra')),
+        el('div', 'ag-medio', cp.mes.artigos_por_compra == null ? '—' : n1(cp.mes.artigos_por_compra)),
+        el('div', 'ag-sub', t('{n} compras este mês', { n: n0(cp.mes.compras) })),
+      ),
+    );
+  }
   out.push(g);
   if (d.alertas && d.alertas.critico + d.alertas.aviso) {
     const a = cartao(

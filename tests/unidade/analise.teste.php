@@ -224,6 +224,7 @@ teste('Painel RTM: curva ABC, compras, artigos por compra, mapa de calor, cartei
     igual(0.0, $p['calor'][0]['dias'][6], 'domingo sem vendas');
     igual(11000.0, $p['calor'][0]['dias'][2], 'quarta-feira da rota 1001');
     igual(4, count($p['carteira']));
+    igual(null, $p['carteira'][3]['perdidos'], 'mês em curso: perdidos ainda por saber');
     igual(0, $p['carteira'][1]['novos'], 'carteira estável');
     igual(round($p['mes']['total']['actual'] - $p['mes']['total']['anterior'], 2), round(array_sum(array_column($p['mes']['rotas'], 'contributo')), 2), 'a ponte fecha');
     igual(1.0, $p['distribuicao'][0]['distribuicao'], 'o único artigo chega a todos os clientes');
