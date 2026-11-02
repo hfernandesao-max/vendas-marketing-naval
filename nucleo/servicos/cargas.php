@@ -27,6 +27,7 @@ function naval_plano_listas(): array
     }
     foreach (['armazens', 'motoristas', 'zonas', 'viaturas', 'transportadoras', 'destinatarios'] as $k) if (!isset($l[$k]) || !is_array($l[$k])) $l[$k] = [];
     if (empty($l['artigos'])) $l['artigos'] = NAVAL_ARTIGOS_PADRAO;
+    if (!isset($l['capacidades']) || !is_array($l['capacidades'])) $l['capacidades'] = [];
     return $l;
 }
 
@@ -479,10 +480,24 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
             $nome = naval_texto($a['nome'] ?? '', 40);
             $id = (string) preg_replace('/[^a-z0-9]+/', '', strtolower(naval_chave_texto((string) ($a['id'] ?? $nome))));
             if ($nome === '' || $id === '' || isset($art[$id])) continue;
-            $art[$id] = ['id' => $id, 'nome' => $nome];
+            // peso de uma unidade de carga do artigo (kg por caixa/fardo), para o limite de peso da viatura
+            $peso = round(max(0.0, min(5000.0, (float) str_replace(',', '.', (string) ($a['peso'] ?? 0)))), 3);
+            $art[$id] = ['id' => $id, 'nome' => $nome] + ($peso > 0 ? ['peso' => $peso] : []);
         }
         if (!$art) throw new NavalErro('Tem de haver pelo menos um artigo.');
         $l['artigos'] = array_values($art);
+    }
+    if (isset($n['capacidades'])) {
+        // carga máxima (kg) de cada viatura, pela matrícula
+        $l['capacidades'] = [];
+        foreach ((array) $n['capacidades'] as $mat => $kg) {
+            $mat = strtoupper(naval_texto($mat, 20));
+            $kg = (float) str_replace(',', '.', (string) $kg);
+            if ($mat === '' || $kg <= 0) continue;
+            if ($kg > 40000) throw new NavalErro('Capacidade inválida para a viatura ' . $mat . '.');
+            $l['capacidades'][$mat] = round($kg, 1);
+        }
+        ksort($l['capacidades']);
     }
     naval_plano_gravar_listas($l);
     naval_registar('plano_listas', ['destinatarios' => count($l['destinatarios']), 'motoristas' => count($l['motoristas']), 'zonas' => count($l['zonas'])]);

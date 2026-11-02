@@ -11,6 +11,7 @@
  */
 defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('cargas');
+naval_servico('carrinha');
 naval_exigir(['plano-cargas']);
 $gere = naval_plano_gere();
 
@@ -43,6 +44,8 @@ if (!naval_e_post()) {
         'exportar' => naval_pode_exportar('plano-cargas') && naval_rotas() === null,
         'email_configurado' => naval_email_configurado(),
         'ligacao' => naval_plano_ligacao(),
+        // peso que ainda está em cada carrinha (stock actual no Pinguim BO × peso dos artigos): limite de carga
+        'na_carrinha' => $gere ? naval_carga_na_carrinha_seguro() : (object) [],
     ]);
 }
 
@@ -61,6 +64,12 @@ switch ($accao) {
     case 'guardar':
     case 'publicar':
         $p = naval_plano_actualizar((string) ($q['data'] ?? ''), (int) ($q['rev'] ?? -1), (array) ($q['rotas'] ?? []), $eu, $listas['artigos']);
+        // limite de peso: não deixa planear acima do que a viatura ainda pode levar (capacidade − o que já leva)
+        $errosPeso = naval_carga_erros(naval_carga_estado($p['rotas'], $listas, naval_carga_na_carrinha_seguro()));
+        if ($errosPeso) {
+            naval_registar('plano_peso_excedido', ['data' => $p['data'], 'erros' => count($errosPeso)]);
+            throw new NavalErro('A carga passa o peso máximo da viatura:', 400, ['erros' => $errosPeso]);
+        }
         if ($accao === 'guardar') {
             naval_plano_gravar($p);
             naval_json(['ok' => true, 'plano' => $p]);

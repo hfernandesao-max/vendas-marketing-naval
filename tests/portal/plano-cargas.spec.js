@@ -119,3 +119,23 @@ test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo
   await expect(c.locator('.pc-av')).toContainText('sem número de factura');
   expect(erros).toEqual([]);
 });
+
+test('limite de peso: não deixa carregar acima do que ainda cabe na viatura (capacidade − o que já leva)', async ({ page }) => {
+  const pedidos = [];
+  const base = resposta(RASCUNHO);
+  base.listas.artigos = [
+    { id: 'fraldas', nome: 'Fraldas', peso: 8 },
+    { id: 'sabao', nome: 'Sabão', peso: 20 },
+  ];
+  base.listas.capacidades = { 'LD-58-73-GY': 1000 };
+  const erros = await abrirPlano(page, RASCUNHO, pedidos, { listas: base.listas, na_carrinha: { 1001: 160 } });
+  const c = page.locator('.pc-card').first();
+  // 90 × 8 + 10 × 20 = 920 kg planeados; 1000 − 160 = 840 kg disponíveis → assinalado
+  await expect(c.locator('.pc-peso')).toHaveClass(/excede/);
+  const fraldas = c.getByLabel('Fraldas');
+  await fraldas.fill('200');
+  await expect(fraldas).toHaveValue('80'); // (840 − 200) ÷ 8
+  await expect(c.locator('.pc-peso')).toContainText('Peso: 840 kg de 840 kg disponíveis');
+  await expect(c.locator('.pc-peso')).not.toHaveClass(/excede/);
+  expect(erros).toEqual([]);
+});

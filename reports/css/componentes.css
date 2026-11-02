@@ -2046,3 +2046,86 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   color: var(--muted);
   cursor: grab;
 }
+
+/* Conciliação da carrinha (Logística) */
+.cc-rota {
+  display: grid;
+  gap: 8px;
+}
+.cc-rota > .btn {
+  justify-self: start;
+}
+.cc-cab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.cc-scroll {
+  overflow-x: auto;
+}
+.cc-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cc-tab th,
+.cc-tab td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgb(var(--lin2-rgb) / 0.18);
+  text-align: left;
+  vertical-align: middle;
+}
+.cc-tab th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cc-tab td.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cc-tab input[type='number'] {
+  width: 110px;
+  max-width: 40vw;
+}
+.cc-tab select,
+.cc-tab input[type='text'] {
+  display: block;
+  min-width: 180px;
+  margin: 2px 0;
+}
+.cc-un {
+  margin-left: 6px;
+  color: var(--muted);
+}
+.cc-falta td {
+  background: rgb(var(--er1-rgb) / 0.08);
+}
+.cc-sobra td {
+  background: rgb(var(--av1-rgb) / 0.08);
+}
+.cc-alerta td {
+  background: rgb(var(--se1-rgb) / 0.07);
+}
+.cc-contagem,
+.cc-detalhe {
+  display: grid;
+  gap: 10px;
+}
+.cc-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.pc-peso {
+  font-size: 12px;
+  color: var(--muted);
+}
+.pc-peso.excede {
+  color: var(--bad);
+  font-weight: 700;
+}
