@@ -34,7 +34,7 @@ try {
     exit(1);
 }
 
-foreach (['ATV_TIPO', 'ATV_COLABORADOR', 'ATV_ACTIVO', 'ATV_ASSOCIACAO', 'ATV_DOCUMENTO', 'ATV_DOCUMENTO_ACTIVO', 'ATV_ASSINATURA', 'ATV_EVENTO', 'VW_ATV_FICHA', 'VW_ATV_SEM_TERMO'] as $t) {
+foreach (['ATV_TIPO', 'ATV_COLABORADOR', 'ATV_ACTIVO', 'ATV_ASSOCIACAO', 'ATV_DOCUMENTO', 'ATV_DOCUMENTO_ACTIVO', 'ATV_ASSINATURA', 'ATV_EVENTO', 'ATV_MIGRACAO', 'VW_ATV_FICHA', 'VW_ATV_SEM_TERMO'] as $t) {
     try {
         $n = naval_atv_q("SELECT COUNT(*) AS N FROM $t")[0]['N'];
         $linha(true, "$t ($n registos)");

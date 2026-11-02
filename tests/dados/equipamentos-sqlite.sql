@@ -112,6 +112,8 @@ WHERE a.Estado = 'ATRIBUIDO' AND NOT EXISTS (
       AND d.TipoDocumento IN ('TERMO_ENTREGA','AUTO_SUBSTITUICAO') AND d.IdColaborador = a.IdColaboradorActual);
 
 -- Carga inicial de teste
+CREATE TABLE ATV_MIGRACAO (Versao INTEGER NOT NULL PRIMARY KEY, Nome TEXT NOT NULL, AplicadaEm TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, Hash TEXT NULL);
+INSERT INTO ATV_MIGRACAO (Versao, Nome) VALUES (1, 'equipamentos-sqlserver.sql');
 INSERT INTO ATV_TIPO VALUES ('SMT', 'Smartphone'), ('IMP', 'Impressora móvel');
 INSERT INTO ATV_COLABORADOR (Nome, Funcao, Email, RotaActual) VALUES
     ('Andrea Santos', 'Comercial', '1001@naval.co.ao', '1001'),

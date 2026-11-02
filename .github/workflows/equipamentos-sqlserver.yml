@@ -11,6 +11,7 @@ on:
       - 'nucleo/servicos/equipamentos*.php'
       - 'nucleo/servicos/pdf-simples.php'
       - 'nucleo/servicos/bd.php'
+      - 'nucleo/servicos/actualizacao.php'
       - 'nucleo/api/v1/equipamentos.php'
       - 'ferramentas/sql/**'
       - 'ferramentas/verificar-equipamentos.php'
@@ -86,6 +87,12 @@ jobs:
           ATV_TESTE_USER: sa
         run: ATV_TESTE_PASS="$SA" php tests/sqlserver/correr-cenario.php
 
+      - name: Migrações do actualizador (base oficial)
+        env:
+          ATV_TESTE_DSN: 'sqlsrv:Server=127.0.0.1,1433;Encrypt=true;TrustServerCertificate=true;Database=GN_EQUIP_OFICIAL'
+          ATV_TESTE_USER: sa
+        run: ATV_TESTE_PASS="$SA" php tests/sqlserver/migracoes.php
+
   windows:
     name: SQL Server LocalDB (Windows, PDO_ODBC)
     runs-on: windows-2022
@@ -139,3 +146,9 @@ jobs:
         run: |
           $env:ATV_TESTE_DSN = "odbc:Driver={$env:ODBC};Server=(localdb)\Naval;Trusted_Connection=yes;Encrypt=no;Database=GN_EQUIP_TESTE"
           php tests/sqlserver/correr-cenario.php; if ($LASTEXITCODE) { exit 1 }
+
+      - name: Migrações do actualizador (base oficial)
+        shell: pwsh
+        run: |
+          $env:ATV_TESTE_DSN = "odbc:Driver={$env:ODBC};Server=(localdb)\Naval;Trusted_Connection=yes;Encrypt=no;Database=GN_EQUIP_OFICIAL"
+          php tests/sqlserver/migracoes.php; if ($LASTEXITCODE) { exit 1 }

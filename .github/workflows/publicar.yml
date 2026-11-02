@@ -1,0 +1,136 @@
+# Publicação automática das versões do portal:
+#  - publicar: cada alteração no main que passa nos «Testes» dá uma versão (v<AAAA.MM.DD>.<n>) com o pacote do servidor
+#    (scripts/construir-pacote.php: só ficheiros do portal, sem testes, .env nem dados), o SHA-256 e a proveniência
+#    assinada (attestation) do pacote;
+#  - ensaio: num Windows com PHP, um «servidor» com a versão anterior é actualizado pelo próprio actualizador
+#    (ferramentas/actualizar.php), a partir da versão acabada de publicar no GitHub — como o servidor fará de madrugada.
+name: Publicar versão
+
+on:
+  workflow_run:
+    workflows: [Testes]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    name: Publicar
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    outputs:
+      versao: ${{ steps.v.outputs.versao }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.3'
+          extensions: zip
+          coverage: none
+
+      - name: Número da versão
+        id: v
+        run: |
+          SHA=$(git rev-parse HEAD)
+          if git tag --points-at HEAD | grep -q '^v'; then
+            echo "Este commit já tem versão publicada: $(git tag --points-at HEAD | head -1)"
+            echo "versao=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          V="v$(TZ=Africa/Luanda date +%Y.%m.%d).${GITHUB_RUN_NUMBER}"
+          echo "versao=$V" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Pacote
+        if: steps.v.outputs.versao != ''
+        run: php scripts/construir-pacote.php dist "${{ steps.v.outputs.versao }}" "${{ steps.v.outputs.sha }}"
+
+      - name: Proveniência do pacote
+        if: steps.v.outputs.versao != ''
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: dist/portal-rtm-*.zip
+
+      - name: Publicar no GitHub
+        if: steps.v.outputs.versao != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.versao }}
+          SHA: ${{ steps.v.outputs.sha }}
+        run: |
+          ANT=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          {
+            echo "Versão do Portal RTM aplicada automaticamente pelo actualizador do servidor (ferramentas/actualizar.php)."
+            echo
+            echo "Alterações:"
+            if [ -n "$ANT" ]; then git log --no-merges --format='- %s' "$ANT..HEAD"; else git log --no-merges -20 --format='- %s'; fi
+          } > notas.md
+          gh release create "$V" dist/portal-rtm-* --target "$SHA" --title "Portal RTM $V" --notes-file notas.md
+
+  ensaio:
+    name: Ensaio da actualização (Windows)
+    needs: publicar
+    if: needs.publicar.outputs.versao != ''
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.publicar.outputs.sha }}
+          fetch-depth: 2
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.1'
+          extensions: curl, mbstring, pdo_sqlite, openssl
+          coverage: none
+
+      - name: Servidor com a versão anterior e actualização a partir do GitHub
+        shell: pwsh
+        env:
+          TOKEN: ${{ github.token }}
+          VERSAO: ${{ needs.publicar.outputs.versao }}
+        run: |
+          $t = Join-Path $env:RUNNER_TEMP 'ensaio'
+          $srv = Join-Path $t 'servidor'
+          New-Item -ItemType Directory -Force (Join-Path $t 'privado') | Out-Null
+          git archive --format=zip -o (Join-Path $t 'anterior.zip') HEAD^
+          Expand-Archive (Join-Path $t 'anterior.zip') $srv
+          # primeira instalação do actualizador (feita à mão no servidor real)
+          foreach ($f in 'ferramentas/actualizar.php', 'nucleo/servicos/actualizacao.php', 'nucleo/cliente-http.php', 'nucleo/config.php') {
+            Copy-Item $f (Join-Path $srv $f) -Force
+          }
+          New-Item -ItemType Directory -Force (Join-Path $srv 'reports/data') | Out-Null
+          '{"real":true}' | Out-File (Join-Path $srv 'reports/data/vendas.json') -Encoding ascii
+          $segredo = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+          @("DADOS_PRIVADOS=$t\privado", "JWT_SEGREDO=$segredo", "ACTUALIZACAO_GITHUB_TOKEN=$env:TOKEN",
+            "ACTUALIZACAO_REPOSITORIO=$env:GITHUB_REPOSITORY", "ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:8099", "ACTUALIZACAO_AUTOMATICA=1") |
+            Out-File (Join-Path $t '.env') -Encoding ascii
+          $env:NAVAL_ENV = Join-Path $t '.env'
+          $web = Start-Process php -ArgumentList '-d', 'display_errors=0', '-S', '127.0.0.1:8099', '-t', $srv -PassThru -WindowStyle Hidden
+          Start-Sleep -Seconds 2
+          php (Join-Path $srv 'ferramentas/actualizar.php') estado; if ($LASTEXITCODE) { exit 1 }
+          php (Join-Path $srv 'ferramentas/actualizar.php') automatico; $r = $LASTEXITCODE
+          Stop-Process $web
+          if ($r) { exit 1 }
+          $e = Get-Content (Join-Path $t 'privado/actualizacoes/estado.json') | ConvertFrom-Json
+          if ($e.versao -ne $env:VERSAO) { throw "estado com $($e.versao), esperado $env:VERSAO" }
+          if ((Get-Content (Join-Path $srv 'reports/data/vendas.json')) -ne '{"real":true}') { throw 'dados do servidor alterados' }
+          Write-Output "Servidor actualizado para $($e.versao) e verificado."

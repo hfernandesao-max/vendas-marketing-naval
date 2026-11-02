@@ -36,9 +36,11 @@ function naval_bd(): PDO
  * exemplo, ATV_DB_HOST, ATV_DB_NAME, …). Com $herdar, as chaves em falta vêm das do Pinguim BO (DB_*):
  * servidor, porta, driver e cifra — útil para uma base de dados própria no mesmo SQL Server.
  */
-function naval_bd_criar(string $p, bool $herdar = false): PDO
+function naval_bd_criar(string $p, bool $herdar = false, array $sobrepor = []): PDO
 {
-    $cfg = function (string $k, string $omissao = '') use ($p, $herdar) {
+    // $sobrepor: chaves com outro valor só nesta ligação (ex.: USER/PASS da conta das migrações do actualizador)
+    $cfg = function (string $k, string $omissao = '') use ($p, $herdar, $sobrepor) {
+        if (isset($sobrepor[$k]) && $sobrepor[$k] !== '') return (string) $sobrepor[$k];
         $v = naval_config($p . '_' . $k);
         if ($v === '' && $herdar && $p !== 'DB') $v = naval_config('DB_' . $k);
         return $v !== '' ? $v : $omissao;

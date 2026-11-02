@@ -1,6 +1,6 @@
 <?php
 /**
- * Destino do código QR das etiquetas (https://id.naval.co.ao/a/NAV-SMT-0001 → 301 → aqui, ?id=NAV-SMT-0001).
+ * Destino do código QR das etiquetas (https://id.naval.co.ao/a/NAV-SMT-0001 → 302 → aqui, ?id=NAV-SMT-0001; regras em ferramentas/apache).
  *  - com sessão e permissão «Equipamentos»: abre a ficha no portal (e regista a leitura do QR);
  *  - sem sessão (ou sem permissão): página pública «propriedade do Grupo Naval», com o ID e o contacto de
  *    devolução — sem consultar a base de dados, para não revelar se o ID existe nem dados internos.

@@ -52,6 +52,20 @@ SetEnv NAVAL_ENV "$RAIZ/tests/servidor/ambiente/.env"
     Require all granted
 </Directory>
 CONF
+# endereço curto dos códigos QR (ferramentas/apache/id-naval-regras.conf), numa segunda porta
+PORTA_ID=$((PORTA + 1))
+mkdir -p "$TMP/id-vazio"
+cat >> "$TMP/httpd.conf" <<CONF
+Listen 127.0.0.1:$PORTA_ID
+<VirtualHost 127.0.0.1:$PORTA_ID>
+    ServerName id.naval.co.ao
+    DocumentRoot "$TMP/id-vazio"
+    Include "$RAIZ/ferramentas/apache/id-naval-regras.conf"
+</VirtualHost>
+<Directory "$TMP/id-vazio">
+    Require all granted
+</Directory>
+CONF
 apache2 -f "$TMP/httpd.conf" -t || exit 2
 apache2 -f "$TMP/httpd.conf" -k start || { cat "$TMP/erro.log"; exit 2; }
 sleep 1
@@ -126,6 +140,17 @@ P="$(curl -s "$URL/geo/login.php")"
 if echo "$P" | grep -q "icones-entrada.js" && ! echo "$P" | grep -qE "lucide-1\.62|fonts\.googleapis"; then echo "  ok    entrada sem a biblioteca de ícones completa nem Google Fonts"; else echo "  FALHA entrada ainda com recursos pesados ou externos"; FALHAS=$((FALHAS+1)); fi
 P="$(curl -s -b "$CJ" "$URL/reports/")"
 if echo "$P" | grep -q '<script type="importmap">' && echo "$P" | grep -q 'rel="modulepreload"' && echo "$P" | grep -qE 'src="js/main\.js\?v=[0-9a-f]{10}"'; then echo "  ok    portal com import map, pré-carregamento e versões"; else echo "  FALHA portal sem versões nos módulos"; FALHAS=$((FALHAS+1)); fi
+echo "Endereço curto dos códigos QR (id.naval.co.ao):"
+ID="http://127.0.0.1:$PORTA_ID"
+r="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "$ID/a/NAV-SMT-0001")"
+case "$r" in "302 https://geo.naval.co.ao:2051/equipamentos/ficha.php?id=NAV-SMT-0001") echo "  ok    /a/NAV-SMT-0001 → ficha do portal (302)";; *) echo "  FALHA QR curto: $r"; FALHAS=$((FALHAS+1));; esac
+r="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "$ID/a/nav-imp-0011/")"
+case "$r" in "302 https://geo.naval.co.ao:2051/equipamentos/ficha.php?id=nav-imp-0011") echo "  ok    minúsculas e barra final aceites";; *) echo "  FALHA QR curto (minúsculas): $r"; FALHAS=$((FALHAS+1));; esac
+for c in "/" "/a/" "/a/NAV-SMT-1" "/a/NAV-SMT-0001/x" "/a/..%2Fetc" "/equipamentos/ficha.php?id=NAV-SMT-0001"; do
+  e="$(curl -s -o /dev/null -w '%{http_code}' "$ID$c")"
+  if [ "$e" = 404 ]; then echo "  ok    404 $c"; else echo "  FALHA $c → $e (esperado 404)"; FALHAS=$((FALHAS+1)); fi
+done
+verifica "endereço curto sem cache e fora dos motores de busca" "$(curl -s -D - -o /dev/null "$ID/a/NAV-SMT-0001" | tr -d '\r')" "^X-Robots-Tag: noindex"
 echo "Cabeçalhos:"
 H="$(curl -s -D - -o /dev/null "$URL/reports/js/app.js")"
 for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referrer-Policy: strict-origin-when-cross-origin" "Permissions-Policy:"; do
