@@ -3,6 +3,11 @@
 $c = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 header('Content-Type: application/json');
 if ($c === '/oauth/v2/token' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (($_POST['grant_type'] ?? '') === 'authorization_code') {
+        $ok = ($_POST['code'] ?? '') === 'codigo-teste' && ($_POST['client_id'] ?? '') === 'cliente-teste' && ($_POST['client_secret'] ?? '') !== '';
+        echo json_encode($ok ? ['access_token' => 'at-novo', 'refresh_token' => 'rt-teste', 'expires_in' => 3600] : ['error' => 'invalid_code']);
+        exit;
+    }
     $ok = ($_POST['grant_type'] ?? '') === 'refresh_token' && ($_POST['refresh_token'] ?? '') === 'rt-teste' && ($_POST['client_id'] ?? '') === 'cliente-teste' && ($_POST['client_secret'] ?? '') !== '';
     echo json_encode($ok ? ['access_token' => 'at-novo', 'api_domain' => 'https://www.zohoapis.com', 'token_type' => 'Bearer', 'expires_in' => 3600] : ['error' => 'invalid_code']);
     exit;

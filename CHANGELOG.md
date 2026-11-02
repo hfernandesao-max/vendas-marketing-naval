@@ -26,6 +26,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Segunda validação:** testes num SQL Server real (Windows com o ODBC Driver 17, como em produção, e Linux com
   pdo_sqlsrv) e verificação da ligação ao MDM Plus, só de leitura (`php ferramentas/verificar-mdm.php`): token OAuth,
   lista dos equipamentos e cruzamento com o portal pelo ID do MDM, IMEI ou n.º de série.
+- **Configuração do MDM num só passo:** `php ferramentas/configurar-mdm.php` pede o Client ID, o Client Secret e o código
+  do Self Client, troca o código pelo refresh token, grava as chaves no `.env` (com cópia do anterior, sem mostrar os
+  segredos) e verifica a ligação.
 - Fase 2: selagem PAdES com selo temporal, ordens ao MDM Plus, etiquetas, inventário e reconciliação com o MDM.
 
 ### Junção (servidor + GitHub)
