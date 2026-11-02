@@ -152,12 +152,15 @@ caso('versão igual à instalada: nada a copiar, estado gravado', function () us
 });
 
 caso('versão nova: só o que mudou, cópia de segurança e verificação HTTP', function () use ($texto, $util, $srv, $dadosReais) {
-    $f = pacote('v2', ['nucleo/texto.php' => $texto . "\n// v2\n", 'reports/js/util.js' => $util . "\n// v2\n", 'assets/novo-v2.txt' => 'novo']);
+    // inclui o próprio actualizador (no Windows, o ficheiro em execução fica bloqueado)
+    $act = (string) file_get_contents($srv . '/ferramentas/actualizar.php');
+    $f = pacote('v2', ['nucleo/texto.php' => $texto . "\n// v2\n", 'reports/js/util.js' => $util . "\n// v2\n", 'assets/novo-v2.txt' => 'novo', 'ferramentas/actualizar.php' => $act . "\n// v2\n"]);
     [$r, $t] = act('verificar --pacote=' . escapeshellarg($f));
-    confirma($r === 0 && strpos($t, '2 a substituir, 1 novos') !== false && h('assets/novo-v2.txt') === null, 'ensaio alterou ou plano errado: ' . $t);
+    confirma($r === 0 && strpos($t, '3 a substituir, 1 novos') !== false && h('assets/novo-v2.txt') === null, 'ensaio alterou ou plano errado: ' . $t);
     [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
     confirma($r === 0 && strpos($t, '(linha de comandos e HTTP)') !== false, $t);
     confirma(h('nucleo/texto.php') === hash('sha256', $texto . "\n// v2\n") && h('assets/novo-v2.txt') === hash('sha256', 'novo'), 'ficheiros não copiados');
+    confirma(h('ferramentas/actualizar.php') === hash('sha256', $act . "\n// v2\n"), 'o actualizador não se actualizou a si próprio');
     confirma(hash_file('sha256', $srv . '/reports/data/vendas.json') === $dadosReais, 'dados reais alterados');
     confirma((estado()['versao'] ?? '') === 'v2', 'estado sem v2');
     confirma(in_array('Portal RTM · actualizado para v2', emails(), true), 'sem aviso por correio');
