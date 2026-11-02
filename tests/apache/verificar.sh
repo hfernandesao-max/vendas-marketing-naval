@@ -29,6 +29,8 @@ LoadModule authz_core_module $MODS/mod_authz_core.so
 LoadModule mime_module $MODS/mod_mime.so
 LoadModule dir_module $MODS/mod_dir.so
 LoadModule headers_module $MODS/mod_headers.so
+LoadModule filter_module $MODS/mod_filter.so
+LoadModule deflate_module $MODS/mod_deflate.so
 LoadModule rewrite_module $MODS/mod_rewrite.so
 LoadModule env_module $MODS/mod_env.so
 LoadModule php_module $PHPMOD
@@ -111,6 +113,19 @@ if echo "$H" | grep -qi "^Cache-Control: no-cache"; then echo "  ok    sw.js sem
 # com sessão e permissão, o QR abre a ficha no portal (conta DIR: Equipamentos «ver»)
 r="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -b "$CJ" "$URL/equipamentos/ficha.php?id=NAV-SMT-0001")"
 case "$r" in 302*reports/#equipamentos?id=NAV-SMT-0001*) echo "  ok    QR com sessão → ficha no portal";; *) echo "  FALHA QR com sessão: $r"; FALHAS=$((FALHAS+1));; esac
+echo "Velocidade:"
+cabecalho() { curl -s -D - -o /dev/null -H 'Accept-Encoding: gzip' "$URL$1" | tr -d '\r'; }
+verifica() { if echo "$2" | grep -qiE "$3"; then echo "  ok    $1"; else echo "  FALHA $1"; FALHAS=$((FALHAS+1)); fi; }
+verifica "JS comprimido (gzip)" "$(cabecalho /reports/js/app.js)" "^Content-Encoding: gzip"
+verifica "CSS comprimido (gzip)" "$(cabecalho /reports/css/base.css)" "^Content-Encoding: gzip"
+verifica "página de entrada comprimida (gzip)" "$(cabecalho /geo/login.php)" "^Content-Encoding: gzip"
+verifica "JS com versão: cache de um ano (immutable)" "$(cabecalho '/reports/js/app.js?v=0123456789')" "^Cache-Control: public, max-age=31536000, immutable"
+verifica "JS sem versão: confirma sempre (no-cache)" "$(cabecalho /reports/js/app.js)" "^Cache-Control: no-cache"
+verifica "letra Inter local com cache de um ano" "$(cabecalho /assets/fontes/inter-latin-400-normal.woff2)" "^Cache-Control: public, max-age=31536000, immutable"
+P="$(curl -s "$URL/geo/login.php")"
+if echo "$P" | grep -q "icones-entrada.js" && ! echo "$P" | grep -qE "lucide-1\.62|fonts\.googleapis"; then echo "  ok    entrada sem a biblioteca de ícones completa nem Google Fonts"; else echo "  FALHA entrada ainda com recursos pesados ou externos"; FALHAS=$((FALHAS+1)); fi
+P="$(curl -s -b "$CJ" "$URL/reports/")"
+if echo "$P" | grep -q '<script type="importmap">' && echo "$P" | grep -q 'rel="modulepreload"' && echo "$P" | grep -qE 'src="js/main\.js\?v=[0-9a-f]{10}"'; then echo "  ok    portal com import map, pré-carregamento e versões"; else echo "  FALHA portal sem versões nos módulos"; FALHAS=$((FALHAS+1)); fi
 echo "Cabeçalhos:"
 H="$(curl -s -D - -o /dev/null "$URL/reports/js/app.js")"
 for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: SAMEORIGIN" "Referrer-Policy: strict-origin-when-cross-origin" "Permissions-Policy:"; do

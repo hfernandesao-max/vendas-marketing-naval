@@ -7,10 +7,17 @@ DirectoryIndex index.php
     Require all denied
 </Files>
 
-# Módulos JavaScript e estilos: o navegador guarda-os, mas confirma sempre com o servidor
-# se mudaram (resposta 304 quando não mudaram). Assim um «git pull» chega logo a todos.
+# Módulos JavaScript e estilos:
+#  - com versão no endereço (?v=…, posta pelo index.php): o navegador guarda-os um ano sem voltar a perguntar;
+#    uma actualização muda a versão dos ficheiros alterados, que se descarregam logo;
+#  - sem versão (navegadores antigos, bibliotecas de vendor/): o navegador confirma sempre se mudaram (304).
 <IfModule mod_headers.c>
     <FilesMatch "\.(js|css)$">
-        Header set Cache-Control "no-cache"
+        <If "%{QUERY_STRING} =~ /(^|&)v=[0-9a-f]{6,}/">
+            Header set Cache-Control "public, max-age=31536000, immutable"
+        </If>
+        <Else>
+            Header set Cache-Control "no-cache"
+        </Else>
     </FilesMatch>
 </IfModule>

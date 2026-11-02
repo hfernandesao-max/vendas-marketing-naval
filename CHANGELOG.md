@@ -2,6 +2,20 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 02-11-2026
+
+### Velocidade
+- **Pedidos à API em paralelo:** a sessão PHP fecha-se para escrita logo a seguir à autenticação; os outros pedidos
+  da mesma pessoa deixam de esperar pelas consultas lentas (medido: 1,8 s → 6 ms enquanto as vendas são lidas).
+- **Compressão** do HTML, CSS, JS e SVG no Apache (mod_deflate): cerca de 3 vezes menos bytes.
+- **Cache longa com versões:** os módulos e estilos do portal levam a versão no endereço (import map) e ficam no
+  navegador um ano; uma actualização muda só a versão dos ficheiros alterados. Pré-carregamento dos módulos.
+- **Sem dependências externas ao abrir:** letras Inter e Poppins servidas pelo portal (sem Google Fonts) e os ícones
+  da página de entrada sem a biblioteca de 458 KB.
+- Ecrã de carregamento sai logo que os dados chegam.
+- Medido numa rede móvel simulada (150 ms, 1,5 Mbps): entrada 3,6 s → 1,0 s; portal 7,4 s → 3,4–3,9 s na primeira
+  vez e 1,4 s nas seguintes (de 869 KB para 14 KB).
+
 ## 01-11-2026
 
 ### Equipamentos (fase 1)

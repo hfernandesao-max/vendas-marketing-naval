@@ -58,13 +58,14 @@ const LD = {
     }
     $('#ld-sub').textContent = prox ? t(prox[1]) + '…' : t('Pronto');
   },
+  // Velocidade: o ecrã de carregamento sai logo que os dados chegam (antes esperava 0,35 s + 0,6 s)
   fechar() {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       $('#loader').classList.add('fora');
       setTimeout(() => {
         $('#loader').hidden = true;
-      }, 600);
-    }, 350);
+      }, 260);
+    });
   },
 };
 LD.iniciar();

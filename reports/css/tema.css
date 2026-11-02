@@ -399,8 +399,8 @@ tfoot td {
     max(16px, env(safe-area-inset-left, 0px));
   background: radial-gradient(70% 55% at 50% 35%, rgb(var(--az1-rgb) / 0.2), transparent 70%), linear-gradient(180deg, var(--c-ld1), var(--c-ld2));
   transition:
-    opacity 0.5s ease,
-    visibility 0.5s;
+    opacity 0.25s ease,
+    visibility 0.25s;
 }
 
 .loader.fora {
