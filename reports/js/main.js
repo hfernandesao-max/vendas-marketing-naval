@@ -6,7 +6,7 @@ import { route } from './app.js';
 import { LIGACOES, avaliarFontes, fetchVendas, recalcularDias } from './fontes.js';
 import { n0 } from './formatos.js';
 import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
-import { definirSessao, paginasVisiveis, podeVer } from './perfil.js';
+import { definirSessao, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
 import { iniciarSync } from './smartphones.js';
@@ -203,6 +203,8 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
     LD.marcar('pronto', 'feito');
     clearTimeout(ldLimite);
     LD.fechar();
+    // Super administrador: resumo das actualizações do portal ainda por ver (módulo carregado só para esse perfil)
+    if (SESSAO && SESSAO.perfil === 'SADM') import('./novidades.js').then((m) => m.mostrarNovidades()).catch(() => {});
   })
   .catch((e) => {
     console.error(e);

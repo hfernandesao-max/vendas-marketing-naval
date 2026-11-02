@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 02-11-2026
 
+### Resumo das actualizações
+- **Super administrador:** na primeira entrada depois de cada actualização (manual ou automática), o portal mostra
+  uma janela com o resumo do que mudou, tirado deste registo de alterações; fechada, não volta a aparecer.
+
 ### Actualizações automáticas
 - **Publicação:** cada alteração no main que passa nos testes dá uma versão no GitHub com o pacote do servidor, o
   SHA-256 e a proveniência assinada; um Windows com PHP ensaia a actualização a partir da versão publicada.

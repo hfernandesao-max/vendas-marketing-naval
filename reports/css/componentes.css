@@ -10,6 +10,52 @@ dialog.dlg {
   color: var(--fg);
   box-shadow: 0 30px 80px rgb(var(--sombra-rgb) / calc(0.55 * var(--sombra-k)));
 }
+/* Resumo das actualizações do portal (super administrador) */
+dialog.dlg.dlg-largo {
+  width: min(760px, calc(100vw - 32px));
+}
+.nov {
+  gap: 8px;
+}
+.nov-cab {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.nov-cab strong {
+  color: var(--fg);
+}
+.nov-dia {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--card2);
+}
+.nov-dia summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 14px;
+}
+.nov-dia h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.nov-dia ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.nov-dia li {
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: justify;
+  hyphens: auto;
+}
+.nov-dia code {
+  font-size: 12px;
+}
 dialog.dlg::backdrop {
   background: rgb(var(--modal-rgb) / 0.62);
   -webkit-backdrop-filter: blur(6px);

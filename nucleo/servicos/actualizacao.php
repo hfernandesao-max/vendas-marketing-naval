@@ -54,7 +54,7 @@ function naval_act_incluir(string $c): bool
     if (preg_match('#^(tests|docs|\.github|scripts|node_modules|vendor)/#', $c)) return false;
     $dev = ['.editorconfig', '.gitignore', '.gitattributes', '.nojekyll', '.prettierrc.json', '.prettierignore', '.semgrepignore', '.env.exemplo',
         'composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'eslint.config.js', 'playwright.config.js', 'phpstan.neon.dist',
-        'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md'];
+        'README.md', 'CONTRIBUTING.md'];   // o CHANGELOG.md vai: é a origem do resumo das actualizações (o Apache não o serve)
     return !in_array($c, $dev, true);
 }
 
