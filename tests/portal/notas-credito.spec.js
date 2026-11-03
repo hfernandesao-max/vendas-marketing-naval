@@ -101,3 +101,14 @@ test('notas de crédito: mesmo total em todos os ecrãs; não contam como docume
   expect(await quadro(page, 'Facturas pendentes')).toBeCloseTo(3000, 2);
   await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('70,0%'); // 7000 ÷ 10 000 facturados
 });
+
+test('vendas por promotor: só as rotas com movimento; as outras indicadas por baixo; nunca «−0,00»', async ({ page }) => {
+  const V = [nota(780000, { rota: '1011', documento: 'NC 9/1' })];
+  const erros = await abrir(page, '#vendas-promotor', { api: api(V) });
+  const linhas = page.locator('table tbody tr');
+  await expect(linhas).toHaveCount(1);
+  await expect(linhas.first()).toContainText('1011');
+  await expect(page.locator('table')).not.toContainText('-0,00');
+  await expect(page.locator('#page')).toContainText('Sem movimento no período e filtros escolhidos');
+  expect(erros).toEqual([]);
+});

@@ -2184,4 +2184,5 @@ export const EN = {
   'Versões anteriores já incluídas na mais recente ({n})': 'Earlier versions already included in the latest ({n})',
   'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.':
     'Version {v} was removed and the previous one restored; it will not be installed again automatically.',
+  'Sem movimento no período e filtros escolhidos ({n}): {r}.': 'No activity in the selected period and filters ({n}): {r}.',
 };

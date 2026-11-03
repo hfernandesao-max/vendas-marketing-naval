@@ -11,8 +11,13 @@ import { DB, el, group, sum } from '../util.js';
 R['vendas-promotor'] = (pg) => {
   const V = vendasR(),
     F = docsVenda(V),
-    P = porPromotor(V),
+    todas = porPromotor(V),
     tot = sum(V, 'total');
+  // Só as rotas com movimento no período e filtros escolhidos (prática dos relatórios de gestão: sem linhas a zero);
+  // as rotas sem movimento ficam indicadas por baixo da tabela, para não se perder essa informação
+  const comMovimento = (x) => x.docs > 0 || x.total || x.notas_credito || x.recebido || x.por_liquidar;
+  const P = todas.filter(comMovimento),
+    semMov = todas.filter((x) => !comMovimento(x));
   pg.append(
     tiles([
       { l: t('Vendas RTM'), v: mkz(tot), s: subVendas(V) },
@@ -43,6 +48,20 @@ R['vendas-promotor'] = (pg) => {
       ],
     }),
   );
+  if (semMov.length)
+    pg.append(
+      el(
+        'p',
+        'note',
+        t('Sem movimento no período e filtros escolhidos ({n}): {r}.', {
+          n: n0(semMov.length),
+          r: semMov
+            .sort((a, b) => String(a.rota).localeCompare(String(b.rota)))
+            .map((x) => x.promotor)
+            .join(' · '),
+        }),
+      ),
+    );
 };
 
 // Subtítulo do total de vendas: documentos de venda e, se houver, o valor das notas de crédito já descontado
