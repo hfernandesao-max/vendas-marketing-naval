@@ -120,6 +120,25 @@ teste('plano de cargas: conflito de versão devolve 409', function () {
     lanca(400, function () use ($eu) { naval_plano_actualizar('01-10-2026', 1, [], $eu, NAVAL_ARTIGOS_PADRAO); });
 });
 
+teste('plano de cargas: registo histórico importado uma vez para o registo do portal; pré-preenche o dia novo', function () {
+    $f = sys_get_temp_dir() . '/cargas-hist-' . getmypid() . '.json';
+    file_put_contents($f, json_encode([
+        ['data' => '2026-09-10', 'rota' => '1004', 'promotor' => 'Nelson', 'motorista' => 'Adão Paulo', 'matricula' => 'ld-58-73-gy', 'viatura' => 'Canter',
+            'transportadora' => 'Velotrans', 'zonas' => 'Avô Cumbe, Cassequel', 'carga_fraldas' => 90, 'carga_sabao' => 75, 'carga_sabonete' => 0],
+        ['data' => '2026-10-01', 'rota' => '1001', 'motorista' => 'Outro', 'matricula' => 'X', 'zonas' => 'Z', 'carga_fraldas' => 1],   // dia já com plano
+    ]));
+    igual(1, naval_plano_importar_historico($f));
+    igual(0, naval_plano_importar_historico($f), 'uma só vez');
+    $p = naval_plano_ler('2026-09-10');
+    verdade(!empty($p['importado']) && $p['publicado']['por'] === 'historico');
+    igual('LD-58-73-GY', $p['publicado']['rotas'][0]['matricula']);
+    igual(['Avô Cumbe', 'Cassequel'], $p['publicado']['rotas'][0]['zonas']);
+    igual('unidade', naval_plano_ler('2026-10-01')['criado_por'] ?? '', 'o dia que já tinha plano não é tocado');
+    igual(90, $p['publicado']['rotas'][0]['quantidades']['fraldas']);
+    verdade(in_array('Adão Paulo', array_column(naval_plano_listas()['motoristas'], 'nome'), true), 'listas aprendidas');
+    @unlink($f);
+});
+
 teste('SAP: configuração limpa; lote único por documento, anulação com quatro olhos, carregamento', function () {
     $c = naval_sap_gravar_config(['moeda' => 'aoa', 'rotas' => ['1001' => ['local' => 'rtm1', 'loja' => ''], '' => ['local' => 'X'], '1002' => ['local' => '']]]);
     igual(['1001' => ['local' => 'RTM1']], $c['rotas']);

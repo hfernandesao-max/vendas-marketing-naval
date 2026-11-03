@@ -25,6 +25,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Letra legível, números alinhados, sem nada cortado nem deslocamento lateral. Imprimir e Fechar ficam sempre visíveis
   no topo. Imprime-se só o documento.
 
+### Plano de cargas: pré-preenchido a partir do registo
+- O pré-preenchimento só usava planos já publicados no portal; sem nenhum publicado, os cartões vinham vazios.
+- O **registo histórico de cargas** passa a fazer parte do registo do portal. Entra uma vez, sozinho, como dias
+  publicados marcados «importado», e nunca por cima de um dia que já tenha plano.
+- As Listas aprendem os motoristas, as viaturas, as transportadoras e as zonas desse registo.
+- Num dia novo, cada rota vem preenchida com o último registo dela: motorista, matrícula, viatura, transportadora,
+  zonas, quantidades e armazém. Aparece a etiqueta «pré-preenchido com o registo de dd-mm · confirme».
+- A factura e as observações continuam a não se copiar.
+
 ### Comunicação AGT: pedidos de todas as séries
 - O estado lia só o campo extra n.º 26046 (request_number). No Pinguim BO cada tipo de documento / série pode ter o
   seu próprio campo com o mesmo nome, por isso os documentos das outras séries apareciam todos «Por comunicar».

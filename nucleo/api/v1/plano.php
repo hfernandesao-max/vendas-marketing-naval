@@ -31,6 +31,13 @@ if (!naval_e_post()) {
 
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data)) throw new NavalErro('Data inválida.');
+    if ($gere) {
+        try {
+            naval_plano_importar_historico();   // uma vez: o registo histórico de cargas passa a fazer parte do registo do portal
+        } catch (Throwable $e) {
+            error_log('[plano histórico] ' . $e->getMessage());
+        }
+    }
     $listas = naval_plano_listas();
     if (!$gere) $listas['destinatarios'] = [];
     naval_json([
