@@ -58,6 +58,12 @@
           <button id="ppRecalcular" class="action-btn" hidden><i data-lucide="refresh-cw"></i> <span>Recalcular agora</span></button>
         </div>
         <div class="sidebar-panel">
+          <div class="pp-tabs" role="tablist" aria-label="O que mostrar">
+            <button type="button" role="tab" class="pp-tab on" data-vista="potenciais" aria-selected="true">Potenciais</button>
+            <button type="button" role="tab" class="pp-tab" data-vista="esquecidos" aria-selected="false">Sem compras</button>
+            <button type="button" role="tab" class="pp-tab" data-vista="coordenadas" aria-selected="false">Coordenadas</button>
+            <button type="button" role="tab" class="pp-tab" data-vista="funil" aria-selected="false">Resultados</button>
+          </div>
           <h2 id="ppTituloLista">Potenciais clientes</h2>
           <div id="ppLista" class="pp-lista"><p class="pp-nota">A carregar…</p></div>
         </div>

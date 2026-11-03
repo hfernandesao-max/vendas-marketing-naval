@@ -164,3 +164,38 @@ teste('cálculo completo, âmbito por rota e «não existe» tira o potencial do
     $v = naval_geo_calcular([], $fontes, $cl);
     igual(['osm:n8'], array_column($v['potenciais'], 'id'));
 });
+
+teste('Carteira: clientes regulares sem compras por escalão, sem GPS e no mesmo ponto', function () {
+    $ag = [];
+    $dia = function (string $d, array $cl) use (&$ag) { $ag[$d] = ['clientes' => $cl]; };
+    // A: regular, última compra há 40 dias; B: regular e activo; C: só 2 compras (não é regular); D: regular sem GPS
+    foreach (['2026-08-01', '2026-08-15', '2026-09-24'] as $d) $dia($d, ['A' => ['n' => 'Loja A', 'r' => '1001', 't' => 100000, 'd' => 1], 'D' => ['n' => 'Loja D', 'r' => '1002', 't' => 50000, 'd' => 1]]);
+    foreach (['2026-10-20', '2026-10-27', '2026-11-02'] as $d) $dia($d, ['B' => ['n' => 'Loja B', 'r' => '1001', 't' => 30000, 'd' => 1]]);
+    foreach (['2026-08-01', '2026-08-02'] as $d) $ag[$d]['clientes']['C'] = ['n' => 'Loja C', 'r' => '1001', 't' => 10, 'd' => 1];
+    $cl = [
+        ['c' => 'A', 'n' => 'Loja A', 'lat' => -8.8, 'lng' => 13.2, 'r' => '1001'],
+        ['c' => 'B', 'n' => 'Loja B', 'lat' => -8.81, 'lng' => 13.21, 'r' => '1001'],
+        ['c' => 'C', 'n' => 'Loja C', 'lat' => -8.81, 'lng' => 13.21002, 'r' => '1001'],   // ~2 m de B
+    ];
+    $k = naval_geo_carteira($ag, $cl, '2026-11-03');
+    igual(['A', 'D'], array_column($k['esquecidos'], 'c'), 'por valor em risco');
+    igual(40, $k['esquecidos'][0]['dias']);
+    igual(30, $k['esquecidos'][0]['faixa']);
+    igual(-8.8, $k['esquecidos'][0]['lat']);
+    verdade(!isset($k['esquecidos'][1]['lat']), 'D sem coordenadas');
+    igual(['D'], array_column($k['sem_gps'], 'c'));
+    igual(1, count($k['duplicados']));
+    $g = array_column($k['duplicados'][0]['clientes'], 'c');
+    sort($g);
+    igual(['B', 'C'], $g);
+});
+
+teste('Funil da prospecção: por visitar, visitado, interessado e convertidos (90 dias), com taxa', function () {
+    $pot = [['id' => 'osm:n1', 'r' => '1001'], ['id' => 'osm:n2', 'r' => '1001'], ['id' => 'osm:n3', 'r' => '1001', 'ids' => ['osm:n3', 'g:abcdefghijk']], ['id' => 'osm:n4', 'r' => '']];
+    $est = ['osm:n2' => ['e' => 'visitado'], 'g:abcdefghijk' => ['e' => 'interessado']];
+    $conv = ['osm:n9' => ['r' => '1001', 'em' => '2026-10-01'], 'osm:n8' => ['r' => '1001', 'em' => '2026-01-01']];
+    $f = naval_geo_funil($pot, $est, $conv, '2026-11-03');
+    igual(['por_visitar' => 1, 'visitado' => 1, 'interessado' => 1, 'nao_interessado' => 0, 'outro_fornecedor' => 0, 'convertidos' => 1, 'taxa' => 0.333], $f['1001']);
+    igual(1, $f['']['por_visitar']);
+    igual(null, $f['']['taxa']);
+});

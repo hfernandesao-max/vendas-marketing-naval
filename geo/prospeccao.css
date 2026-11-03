@@ -108,3 +108,81 @@
   font-weight: 600;
   text-decoration: none;
 }
+/* Separadores: potenciais, clientes sem compras, coordenadas e resultados */
+.pp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.pp-tab {
+  border: 1px solid var(--gray-600);
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.pp-tab.on {
+  background: #0057b8;
+  border-color: #0057b8;
+  color: #fff;
+}
+.pp-tab:focus-visible {
+  outline: 2px solid #6aa6e8;
+  outline-offset: 2px;
+}
+.pp-sub {
+  font-size: 0.9rem;
+  margin: 12px 0 4px;
+}
+.pp-item.pp-f14 {
+  border-left-color: #f5b547;
+}
+.pp-item.pp-f30 {
+  border-left-color: #e0661c;
+}
+.pp-item.pp-f60,
+.pp-item.pp-sem {
+  border-left-color: #c0262d;
+}
+.pp-faixa {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c2340;
+}
+.pp-faixa.f14 {
+  background: #f5b547;
+}
+.pp-faixa.f30 {
+  background: #f0954f;
+}
+.pp-faixa.f60 {
+  background: #f08a8e;
+}
+.pp-funil-w {
+  overflow-x: auto;
+}
+.pp-funil {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.pp-funil th,
+.pp-funil td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--gray-600);
+  text-align: left;
+}
+.pp-funil .n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pp-funil .pp-total td {
+  font-weight: 700;
+}
