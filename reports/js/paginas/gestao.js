@@ -5,7 +5,17 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { cartaoGrafico, grafBarras, grafColunas, kzc } from '../componentes/graficos.js';
-import { comLegenda, grafAbc, grafAgrupadas, grafBalas, grafCalor, grafCascata, grafDispersao, grafTendencia } from '../componentes/graficos-gestao.js';
+import {
+  comLegenda,
+  corRota,
+  grafAbc,
+  grafAgrupadas,
+  grafBalas,
+  grafCalor,
+  grafCascata,
+  grafDispersao,
+  grafTendencia,
+} from '../componentes/graficos-gestao.js';
 import { arrastavel } from '../componentes/arrastar.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0, n1 } from '../formatos.js';
@@ -624,17 +634,28 @@ export function cartoesGestao(d) {
     cartaoGrafico({
       titulo: t('Valor médio e artigos por compra'),
       sub: t('por rota, últimos 30 dias; tamanho: vendas; linhas tracejadas: médias'),
-      desenhar: (w, h) =>
-        grafDispersao(w, {
-          altura: h,
-          itens: d.por_rota
-            .filter((r) => r.artigos_por_compra != null)
-            .map((r) => ({ x: r.valor_medio, y: r.artigos_por_compra, tamanho: r.vendas, rot: r.rota, titulo: nomeRota(r) })),
+      desenhar: (w, h) => {
+        // cada rota com a sua cor (e anel da 8.ª em diante), legenda por baixo e rótulo ao lado da bola
+        const todas = d.por_rota.map((r) => r.rota);
+        const itens = d.por_rota
+          .filter((r) => r.artigos_por_compra != null)
+          .map((r) => ({ x: r.valor_medio, y: r.artigos_por_compra, tamanho: r.vendas, rot: r.rota, titulo: nomeRota(r), ...corRota(r.rota, todas) }));
+        const legenda = itens.length > 1 && (!h || h >= 170);
+        const g = grafDispersao(w, {
+          altura: h && legenda ? h - (itens.length > 6 ? 46 : 24) : h,
+          itens,
           fx: kzc,
           fy: (v) => n1(v),
           rx: t('valor médio por compra (Kz)'),
           ry: t('artigos por compra'),
-        }),
+        });
+        return legenda
+          ? comLegenda(
+              g,
+              [...itens].sort((a, b) => String(a.rot).localeCompare(String(b.rot), 'pt', { numeric: true })).map((x) => [x.cor, x.rot, false, x.anel]),
+            )
+          : g;
+      },
       colunas: [
         [t('Rota'), 0],
         [t('Compras'), 1],

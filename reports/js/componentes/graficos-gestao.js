@@ -243,19 +243,59 @@ export function grafDispersao(w, { itens, fx, fy, rx, ry, altura }) {
     svgEl('line', { x1: sx(mx), x2: sx(mx), y1: T, y2: H - B, class: 'vx-ref', 'stroke-dasharray': '4 3' }),
     svgEl('line', { x1: L, x2: w - R, y1: sy(my), y2: sy(my), class: 'vx-ref', 'stroke-dasharray': '4 3' }),
   );
-  itens.forEach((p) => {
+  // rótulos ao lado da bola, sem se sobreporem (o que não couber fica na dica e na tabela)
+  const ocupados = [];
+  const livre = (b) => !ocupados.some((o) => b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y);
+  const ordem = [...itens].sort((a, b) => b.tamanho - a.tamanho);
+  const raio = (p) => (H < 200 ? 3 : 4) + (H < 200 ? 9 : 14) * Math.sqrt(p.tamanho / maxT);
+  ordem.forEach((p) => ocupados.push({ x: sx(p.x) - raio(p), y: sy(p.y) - raio(p), w: 2 * raio(p), h: 2 * raio(p) }));
+  ordem.forEach((p) => {
     const g = svgEl('g');
-    const r = (H < 200 ? 3 : 4) + (H < 200 ? 9 : 14) * Math.sqrt(p.tamanho / maxT);
-    g.append(svgEl('circle', { cx: sx(p.x), cy: sy(p.y), r, fill: AZUL, opacity: 0.55, stroke: 'var(--bg)', 'stroke-width': 2, class: 'vx-bar' }));
-    g.append(svgEl('text', { x: sx(p.x), y: sy(p.y) + 4, class: 'vx-ax', 'text-anchor': 'middle' }, p.rot));
+    const r = raio(p);
+    const cor = p.cor || AZUL;
+    // preenchido com intervalo de 2 px da superfície; da 8.ª rota em diante, anel (mesmo tom, sem preenchimento)
+    g.append(
+      p.anel
+        ? svgEl('circle', { cx: sx(p.x), cy: sy(p.y), r: Math.max(3, r - 1.5), fill: 'none', stroke: cor, 'stroke-width': 3, class: 'vx-bar' })
+        : svgEl('circle', { cx: sx(p.x), cy: sy(p.y), r, fill: cor, 'fill-opacity': 0.8, stroke: 'var(--bg)', 'stroke-width': 2, class: 'vx-bar' }),
+    );
+    const tw = 7 * String(p.rot).length + 2,
+      th = 12;
+    const pos = [
+      [sx(p.x) + r + 3, sy(p.y) - th / 2, 'start'],
+      [sx(p.x) - r - 3 - tw, sy(p.y) - th / 2, 'end'],
+      [sx(p.x) - tw / 2, sy(p.y) - r - th - 2, 'middle'],
+      [sx(p.x) - tw / 2, sy(p.y) + r + 2, 'middle'],
+    ].find(([x, y]) => x >= L && x + tw <= w - R && y >= 0 && y + th <= H - B + 4 && livre({ x, y, w: tw, h: th }));
+    if (pos) {
+      ocupados.push({ x: pos[0], y: pos[1], w: tw, h: th });
+      const ax = pos[2] === 'start' ? pos[0] : pos[2] === 'end' ? pos[0] + tw : pos[0] + tw / 2;
+      g.append(svgEl('text', { x: ax, y: pos[1] + th - 2, class: 'vx-ax', 'text-anchor': pos[2] }, p.rot));
+    }
     interactivo(g, p.titulo, [
-      [fx(p.x), rx, AZUL],
+      [fx(p.x), rx, cor],
       [fy(p.y), ry],
       [kzc(p.tamanho), t('vendas')],
     ]);
     sv.append(g);
   });
   return sv;
+}
+
+// Cor de cada rota: paleta categórica validada (7 tons, sem verde; contraste e daltonismo conferidos nos dois temas),
+// atribuída pela ordem do código da rota e não pela posição no gráfico (a cor segue a rota em qualquer filtro). Da 8.ª
+// rota em diante repete o tom com anel (sem preenchimento): codificação composta, em vez de inventar cores novas.
+const PALETA_ROTAS = {
+  escuro: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#e66767'],
+  claro: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6', '#e34948'],
+};
+/** {cor, anel} da rota na lista de todas as rotas (ordenadas pelo código). */
+export function corRota(rota, todas) {
+  const lista = [...new Set(todas.map(String))].sort((a, b) => a.localeCompare(b, 'pt', { numeric: true }));
+  const i = Math.max(0, lista.indexOf(String(rota)));
+  const tema = document.documentElement.getAttribute('data-theme') === 'light' ? 'claro' : 'escuro';
+  const p = PALETA_ROTAS[tema];
+  return { cor: p[i % p.length], anel: i >= p.length };
 }
 
 /** Mapa de calor: linhas × colunas, uma só cor (azul) do claro ao escuro; valor no quadrado quando cabe. */
@@ -335,10 +375,14 @@ export function comLegenda(svg, itens) {
   const w = document.createElement('div');
   const l = document.createElement('div');
   l.className = 'glegenda';
-  itens.forEach(([cor, txt, tracejado]) => {
+  itens.forEach(([cor, txt, tracejado, anel]) => {
     const s = document.createElement('span'),
       i = document.createElement('i');
-    i.style.background = tracejado ? 'none' : cor;
+    i.style.background = tracejado || anel ? 'none' : cor;
+    if (anel) {
+      i.style.border = '2px solid ' + cor;
+      i.style.borderRadius = '50%';
+    }
     if (tracejado) {
       i.style.borderTop = '2px dashed ' + cor;
       i.style.height = '0';
