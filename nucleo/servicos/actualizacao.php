@@ -146,7 +146,8 @@ function naval_act_http(string $url, $comToken, string $aceitar = 'application/v
     if ($fh) fclose($fh);
     if ($errno !== 0) {
         if ($errno === 60 || $errno === 77) {
-            throw new NavalActualizacaoErro('Certificado HTTPS não verificado (' . $erro . '). No php.ini, indicar curl.cainfo e openssl.cafile com o ficheiro cacert.pem (https://curl.se/ca/cacert.pem).');
+            throw new NavalActualizacaoErro('Certificado HTTPS não verificado (' . $erro . '). Descarregar https://curl.se/ca/cacert.pem para o disco do servidor'
+                . ' (ex.: C:\\php\\extras\\ssl\\cacert.pem) e, no php.ini, indicar esse caminho em curl.cainfo e openssl.cafile (o caminho do ficheiro, não o endereço).');
         }
         throw new NavalActualizacaoErro('Sem ligação a ' . (string) parse_url($url, PHP_URL_HOST) . ' (' . $erro . '). Confirmar o acesso do servidor à Internet por HTTPS.');
     }
@@ -175,18 +176,41 @@ function naval_act_usa_app(): bool
     return naval_config('ACTUALIZACAO_GITHUB_APP_ID') !== '';
 }
 
-/** JWT da GitHub App (RS256), válido 9 minutos (o GitHub aceita até 10). */
+/** Diferença (s) entre a hora do GitHub e a do servidor, medida na última resposta recusada; 0 até lá. */
+function naval_act_desvio(?int $novo = null): int
+{
+    static $d = 0;
+    if ($novo !== null) $d = $novo;
+    return $d;
+}
+
+/**
+ * JWT da GitHub App (RS256), válido 9 minutos (o GitHub aceita até 10). A hora é a do servidor acertada pelo desvio
+ * medido face ao GitHub: um relógio adiantado ou atrasado alguns minutos não bloqueia as actualizações.
+ */
 function naval_act_jwt_app(): string
 {
     if (!function_exists('openssl_sign')) throw new NavalActualizacaoErro('O PHP do servidor não tem a extensão openssl (php.ini: extension=openssl).');
     $pem = @file_get_contents(naval_act_ficheiro_chave_app());
     $chave = $pem ? openssl_pkey_get_private($pem) : false;
     if (!$chave) throw new NavalActualizacaoErro('Chave privada da GitHub App em falta ou inválida (correr «php ferramentas/actualizar.php configurar»).');
-    $agora = time();
+    $agora = time() + naval_act_desvio();
     $dados = naval_act_b64url((string) json_encode(['alg' => 'RS256', 'typ' => 'JWT'])) . '.'
         . naval_act_b64url((string) json_encode(['iat' => $agora - 60, 'exp' => $agora + 540, 'iss' => naval_config('ACTUALIZACAO_GITHUB_APP_ID')]));
     if (!openssl_sign($dados, $assinatura, $chave, OPENSSL_ALGO_SHA256)) throw new NavalActualizacaoErro('Não foi possível assinar o pedido à GitHub App.');
     return $dados . '.' . naval_act_b64url($assinatura);
+}
+
+/** Mede o desvio pela data da resposta do GitHub; true se for maior do que 30 s (vale a pena tentar de novo). */
+function naval_act_medir_desvio(array $cabecalhos): bool
+{
+    $t = strtotime((string) ($cabecalhos['date'] ?? ''));
+    if (!$t) return false;
+    $d = $t - time();
+    if (abs($d) <= 30 || abs($d) > 86400) return false;
+    naval_act_desvio($d);
+    error_log('[actualizador] hora do servidor difere ' . $d . ' s da do GitHub: acertar o relógio do Windows (w32tm /resync).');
+    return true;
 }
 
 /** Credencial para a API: de instalação da GitHub App (1 hora, renovada sozinha) ou o código de acesso pessoal. */
@@ -203,14 +227,26 @@ function naval_act_credencial(): string
     $jwt = naval_act_jwt_app();
     $inst = naval_config('ACTUALIZACAO_GITHUB_APP_INSTALACAO');
     if ($inst === '') {
-        [$c, $corpo] = naval_act_http($base . '/repos/' . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO) . '/installation', $jwt);
+        $url = $base . '/repos/' . naval_config('ACTUALIZACAO_REPOSITORIO', NAVAL_ACT_REPOSITORIO) . '/installation';
+        [$c, $corpo, $cab] = naval_act_http($url, $jwt);
+        // recusado com a hora do servidor fora de tempo: acerta pela hora do GitHub e tenta uma vez mais
+        if ($c === 401 && naval_act_medir_desvio($cab)) {
+            $jwt = naval_act_jwt_app();
+            [$c, $corpo] = naval_act_http($url, $jwt);
+        }
         $j = json_decode($corpo, true);
         if ($c !== 200 || empty($j['id'])) throw new NavalActualizacaoErro('A GitHub App não está instalada no repositório do portal ou o ID da App está errado (HTTP ' . $c . ').');
         $inst = (string) $j['id'];
     }
-    [$c, $corpo] = naval_act_http($base . '/app/installations/' . rawurlencode($inst) . '/access_tokens', $jwt, 'application/vnd.github+json', null, 'POST');
+    $urlTk = $base . '/app/installations/' . rawurlencode($inst) . '/access_tokens';
+    [$c, $corpo, $cab] = naval_act_http($urlTk, $jwt, 'application/vnd.github+json', null, 'POST');
+    if ($c === 401 && naval_act_medir_desvio($cab)) [$c, $corpo] = naval_act_http($urlTk, naval_act_jwt_app(), 'application/vnd.github+json', null, 'POST');
     $j = json_decode($corpo, true);
-    if ($c !== 201 || empty($j['token'])) throw new NavalActualizacaoErro('O GitHub recusou a GitHub App (HTTP ' . $c . '): confirmar o ID da App, a chave privada e a instalação no repositório.');
+    if ($c !== 201 || empty($j['token'])) {
+        $msg = 'O GitHub recusou a GitHub App (HTTP ' . $c . '): confirmar o ID da App, a chave privada e a instalação no repositório.';
+        if (abs(naval_act_desvio()) > 60) $msg .= ' A hora do servidor difere ' . abs(naval_act_desvio()) . ' s da do GitHub: acertar o relógio (w32tm /resync).';
+        throw new NavalActualizacaoErro($msg);
+    }
     $cache = [(string) $j['token'], strtotime((string) ($j['expires_at'] ?? '')) ?: time() + 3000];
     return $cache[0];
 }
@@ -822,8 +858,9 @@ function naval_act_reverter(string $raiz): array
     $e['origem'] = 'reversão manual';
     $e['recusada'] = (string) ($l['versao_nova'] ?? '');
     naval_act_gravar_estado($e);
-    naval_act_limpar_pasta($copia);
-    naval_act_registar('reversao_manual', ['para' => $e['versao'], 'erros' => $erros]);
+    // com erros a cópia fica, para se poder repetir ou repor à mão o que faltou (e não recuar para uma cópia mais antiga)
+    if (!$erros) naval_act_limpar_pasta($copia);
+    naval_act_registar('reversao_manual', ['para' => $e['versao'], 'erros' => $erros, 'copia_mantida' => (bool) $erros]);
     return ['versao' => $e['versao'], 'erros' => $erros];
 }
 
@@ -909,6 +946,14 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
         $aprov = naval_act_aprovacoes();
         $pendente = in_array($versao, array_column(naval_act_mais_recentes($versoes, $estado), 'versao'), true);
         if ($accao !== 'cancelar' && !$pendente) throw new NavalErro('Esta versão já está instalada ou é anterior à instalada.', 409);
+        if (in_array($accao, ['aprovar', 'forcar'], true)) {
+            // (uma mais recente reprovada não conta: pode instalar-se a anterior)
+            foreach (naval_act_mais_recentes($versoes, $estado) as $x) {
+                if (strcmp($x['publicada_em'], $v['publicada_em']) > 0 && ($aprov[$x['versao']]['decisao'] ?? '') !== 'reprovada') {
+                    throw new NavalErro('Aprove a versão mais recente, ' . $x['versao'] . ': já inclui a ' . $versao . ' e todas as anteriores.', 409);
+                }
+            }
+        }
         $motivo = trim(preg_replace('/\s+/', ' ', $motivo));
         switch ($accao) {
             case 'aprovar':
@@ -1028,7 +1073,7 @@ function naval_act_vista_portal(): array
     $res = naval_act_resultados();
     $v = [
         'instalada' => ['versao' => (string) $estado['versao'], 'commit' => (string) $estado['commit'], 'aplicada_em' => (string) $estado['aplicada_em'],
-            'recusada' => (string) ($estado['recusada'] ?? '')],
+            'recusada' => (string) ($estado['recusada'] ?? ''), 'origem' => (string) ($estado['origem'] ?? '')],
         'configurada' => naval_act_usa_app() || naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '',
         'credencial' => naval_act_usa_app() ? 'app' : (naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== '' ? 'pessoal' : ''),
         'certificados' => naval_json_ler(naval_act_pasta() . '/certificados.json', ['verificado_em' => '', 'lista' => []]),
@@ -1048,16 +1093,45 @@ function naval_act_vista_portal(): array
         $versoes = [];
     }
     $novas = array_column(naval_act_mais_recentes($versoes, $estado), 'versao');
+    $agora = time();
+    $v['proximo_ciclo'] = date('H:i', naval_act_proximo_ciclo($agora));
+    $v['em_curso'] = false;
     foreach ($versoes as $x) {
         $item = ['versao' => $x['versao'], 'publicada_em' => $x['publicada_em'], 'commit' => substr($x['commit'], 0, 7),
             'seccoes' => naval_nov_seccoes($x['notas']), 'notas' => mb_substr($x['notas'], 0, 4000),
             'decisao' => $aprov[$x['versao']] ?? null, 'resultado' => $res[$x['versao']] ?? null];
-        if (is_array($item['decisao'])) unset($item['decisao']['sha256']);
-        if (in_array($x['versao'], $novas, true)) $v['pendentes'][] = $item;
-        else $v['historico'][] = $item;
+        // estado da instalação depois da decisão: na fila (até ao próximo ciclo da tarefa de 5 em 5 minutos),
+        // a instalar (a tarefa pegou nela e ainda não há resultado) ou esta noite (aprovada sem «instalar já»)
+        $item['fila'] = naval_act_fila($item['decisao'], $item['resultado'], $agora);
+        if (in_array($item['fila'], ['na_fila', 'a_instalar'], true)) $v['em_curso'] = true;
+        if (is_array($item['decisao'])) unset($item['decisao']['sha256'], $item['decisao']['tentada_em']);
+        if (in_array($x['versao'], $novas, true)) {
+            // só a mais recente se aprova: as anteriores já vêm incluídas nela
+            $item['incluida'] = (bool) $v['pendentes'];
+            $v['pendentes'][] = $item;
+        } else $v['historico'][] = $item;
     }
     $v['historico'] = array_slice($v['historico'], 0, 15);
     return $v;
+}
+
+/** Próximo ciclo da tarefa de 5 em 5 minutos (corre aos minutos múltiplos de 5). */
+function naval_act_proximo_ciclo(int $agora): int
+{
+    return (int) (floor($agora / 300) + 1) * 300;
+}
+
+/** Estado da instalação de uma versão decidida: na_fila | a_instalar | esta_noite | null. */
+function naval_act_fila(?array $dec, ?array $res, int $agora): ?string
+{
+    if (!$dec || ($dec['decisao'] ?? '') !== 'aprovada') return null;
+    $em = (string) ($dec['em'] ?? '');
+    $resData = (string) ($res['data'] ?? '');
+    if ($resData !== '' && $resData >= $em) return null;   // já há resultado depois da decisão
+    if (empty($dec['urgente'])) return 'esta_noite';
+    $tentada = (string) ($dec['tentada_em'] ?? '');
+    if ($tentada === '') return 'na_fila';
+    return strtotime($tentada) > $agora - 900 ? 'a_instalar' : null;
 }
 
 // ── Certificados HTTPS ──────────────────────────────────────────────────────────────────────────────

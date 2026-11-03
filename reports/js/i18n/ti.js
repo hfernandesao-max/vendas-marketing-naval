@@ -2148,4 +2148,9 @@ export const TI = {
   'Outro (explicar na nota)': 'ካልእ (ኣብ መዘኻኸሪ ግለጹ)',
   'Conciliação da carrinha': 'ምዝማድ መኪና',
   'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · ምድላይ ዓማዊል፦ ክልላት መስመራትን ተኽእሎ ዘለዎም ዓማዊልን',
+  'Na fila: a tarefa agendada instala até às {h}': 'ኣብ መስርዕ፦ እቲ ዝተመደበ ዕማም ክሳብ {h} ይጽዕኖ',
+  'A instalar… (a tarefa agendada está a aplicar esta versão)': 'ይጽዓን ኣሎ… (እቲ ዝተመደበ ዕማም ነዚ ሕታም ይትግብሮ ኣሎ)',
+  'Aprovada: instala na tarefa desta noite': 'ጸዲቑ፦ ኣብ ዕማም ናይ ሎሚ ምሸት ይጽዓን',
+  'Versões anteriores já incluídas na mais recente ({n})': 'ኣብቲ ናይ መወዳእታ ዝተኻተቱ ዝሓለፉ ሕታማት ({n})',
+  'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.': 'ሕታም {v} ተኣልዩ እቲ ዝሓለፈ ተመሊሱ፤ ብገዛእ ርእሱ ደጊሙ ኣይጽዓንን።',
 };

@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Actualizações: estado em tempo real e protecções
+- Depois de aprovar, a página mostra o estado da instalação: **«Na fila: a tarefa agendada instala até às HH:MM»**,
+  **«A instalar…»** e o resultado, actualizando-se sozinha de 15 em 15 segundos enquanto está em curso.
+- **Só a versão mais recente se aprova** (já inclui todas as anteriores); as anteriores ficam recolhidas, sem botões. O
+  servidor recusa aprovar uma versão mais antiga do que a mais recente por instalar, a não ser que esta seja reprovada.
+- **GitHub App tolerante à hora do servidor**: se o GitHub recusar por a hora estar fora de tempo, o actualizador mede a
+  diferença pela hora do GitHub, acerta a assinatura e tenta de novo (e regista o aviso para acertar o relógio).
+- **Repor a versão anterior** com erros já não apaga a cópia de segurança (pode repetir-se sem recuar para uma cópia
+  mais antiga); a mensagem do certificado HTTPS indica o caminho do ficheiro `cacert.pem` (não o endereço).
+
 ### GeoMobilidade: onde procurar clientes novos
 - **Prospecção** (GeoMobilidade › Prospecção): mapa e lista, por rota e dia de visita, dos estabelecimentos comerciais
   que ainda não são clientes, ordenados por prioridade (confirmado em duas fontes, tipo de estabelecimento, zona

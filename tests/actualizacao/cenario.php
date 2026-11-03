@@ -329,11 +329,15 @@ caso('aprovação: sem aprovação nada é instalado; aviso por correio uma só 
     confirma($v['r']['pendentes'][0]['seccoes'][0]['titulo'] === 'Novidade v12', 'resumo da versão');
 });
 
-caso('aprovação: instala a aprovada (não a mais recente por aprovar); reprovar exige motivo', function () use ($util) {
+caso('aprovação: só a mais recente (a não ser que esta seja reprovada); reprovar exige motivo', function () use ($util) {
     $d = svc('naval_act_decidir("v11", "aprovar", "henrique")');
-    confirma($d['ok'] && $d['r']['decisao'] === 'aprovada' && strlen($d['r']['sha256']) === 64, json_encode($d));
+    confirma(!$d['ok'] && strpos($d['erro'], 'Aprove a versão mais recente, v12') !== false, 'aprovou uma versão mais antiga do que a mais recente: ' . json_encode($d));
     confirma(!svc('naval_act_decidir("v12", "reprovar", "henrique", "mau")')['ok'], 'reprovou sem motivo válido');
     confirma(svc('naval_act_decidir("v12", "reprovar", "henrique", "Falta validar com a Logística")')['ok'], 'não reprovou');
+    $d = svc('naval_act_decidir("v11", "aprovar", "henrique")');
+    confirma($d['ok'] && $d['r']['decisao'] === 'aprovada' && strlen($d['r']['sha256']) === 64, json_encode($d));
+    $v = svc('naval_act_vista_portal()')['r'];
+    confirma(($v['pendentes'][1]['incluida'] ?? null) === true && ($v['pendentes'][1]['fila'] ?? '') === 'esta_noite', 'vista: anterior recolhida e na fila desta noite: ' . json_encode($v['pendentes']));
     [$r, $t] = act('automatico');
     confirma($r === 0 && h('reports/js/util.js') === hash('sha256', $util . "\n// v11\n"), $t);
     [$r, $t] = act('automatico');
