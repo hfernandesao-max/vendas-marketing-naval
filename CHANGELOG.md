@@ -2,6 +2,25 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 03-11-2026
+
+### GeoMobilidade: onde procurar clientes novos
+- **Prospecção** (GeoMobilidade › Prospecção): mapa e lista, por rota e dia de visita, dos estabelecimentos comerciais
+  que ainda não são clientes, ordenados por prioridade (confirmado em duas fontes, tipo de estabelecimento, zona
+  comercial e proximidade dos clientes da rota), com o caminho até lá e o resultado da visita registado pelo vendedor.
+  - Clientes e coordenadas lidos do Pinguim BO (onde os promotores já os registam com GPS e fotografia); rota, dia
+    habitual de visita e ritmo de compras pelas vendas dos últimos 56 dias.
+  - Estabelecimentos do OpenStreetMap (gratuito, todas as semanas) e do Google Places (limite mensal de pedidos; pelas
+    regras do Google as coordenadas apagam-se ao fim de 30 dias); os que já são clientes (a menos de 30 m, ou de 80 m
+    com nome parecido) ficam de fora; quando um potencial cliente passa a cliente conta como convertido.
+- **Território automático de cada rota**: zona à volta dos seus clientes, que cresce sozinha à medida que os clientes
+  aumentam; cada potencial cliente entra na rota e no dia dos clientes mais próximos.
+- **Capacidade das rotas** (30 visitas por dia × 6 dias): ocupação, cobertura (clientes ÷ estabelecimentos) e aviso
+  por correio electrónico quando uma rota passa 90 % durante 14 dias seguidos — **é preciso uma nova rota (vendedor +
+  viatura)**, com a proposta de divisão do território no mapa; aviso também das zonas sem rota com muitos potenciais
+  clientes.
+- Nova linha da matriz de acessos «geo-prospeccao»; API `v1/prospeccao`.
+
 ## 02-11-2026
 
 ### Logística: conciliação da carrinha e limite de peso da carga

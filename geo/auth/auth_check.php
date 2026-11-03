@@ -25,7 +25,7 @@ if (!naval_autenticado()) {
     $relTarget = $configuredRedirect ?: '';
     if ($relTarget === '' && preg_match('#/reports/index\.php$#i', $scriptName)) {
         $relTarget = '../reports/';
-    } elseif ($relTarget === '' && preg_match('#(?:^|/geo/)(geo\.php|reports\.php|view/index\.php|view/viewDist/index\.php)$#i', $scriptName, $m)) {
+    } elseif ($relTarget === '' && preg_match('#(?:^|/geo/)(geo\.php|prospeccao\.php|reports\.php|view/index\.php|view/viewDist/index\.php)$#i', $scriptName, $m)) {
         $relTarget = $m[1];
     }
 

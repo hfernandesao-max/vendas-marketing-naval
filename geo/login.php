@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
 
-$allowedRedirects = ['geo.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../'];
+$allowedRedirects = ['geo.php', 'prospeccao.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../'];
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../';
 if (!in_array($redirect, $allowedRedirects, true)) {
     $redirect = 'geo.php';

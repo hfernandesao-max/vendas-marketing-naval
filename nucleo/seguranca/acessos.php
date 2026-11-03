@@ -79,6 +79,7 @@ const NAVAL_MATRIZ_TXT = [
     'geo-zonas'            => 'V  V  V  Vr -  -  V  V  G  V',
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -',
     'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V',
+    'geo-prospeccao'       => 'V  V  V  Vr Vr -  -  -  G  V',
     // Administração
     'acessos'              => 'E  -  -  -  -  -  -  -  -  E',
     'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -',
@@ -178,6 +179,7 @@ function naval_niveis_recurso(string $rec): array
         case 'plano-cargas':
             return ['', 'Vr', 'V', 'E', 'G'];
         case 'geo-rotas':
+        case 'geo-prospeccao':
         case 'geo-zonas':
         case 'geo-distribuidores':
             return ['', 'Vr', 'V', 'G'];

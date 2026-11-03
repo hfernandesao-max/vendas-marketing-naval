@@ -241,6 +241,16 @@ function naval_periodicas(?int $agora = null): array
             error_log('[agregados] ' . $e->getMessage());
         }
     }
+    // prospecção e territórios das rotas: fontes, cálculo e avisos de madrugada (GEO_ACTIVO)
+    if (naval_config('GEO_ACTIVO', '1') !== '0') {
+        try {
+            naval_servico('prospeccao');
+            $g = naval_bd_configurada() ? naval_geo_noite($agora) : [];
+            if ($g) $feito['geo'] = $g;
+        } catch (Throwable $e) {
+            error_log('[prospecção] ' . $e->getMessage());
+        }
+    }
     // conciliação das carrinhas: aviso do fim do dia a quem conta e aprova (CARRINHA_HORA_AVISO, 19:30)
     if (naval_config('CARRINHA_AVISO_ACTIVO', '1') !== '0') {
         try {

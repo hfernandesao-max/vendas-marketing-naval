@@ -110,3 +110,18 @@ function naval_enviar_email(array $para, string $assunto, string $html, array $a
     if ($codigo === 401) @unlink(naval_pasta_privada() . '/email-token.json');
     return ['ok' => false, 'erro' => 'O Microsoft 365 não aceitou o envio: ' . $det];
 }
+
+/** Contas com o recurso no nível mínimo indicado e correio válido (respeita o âmbito por rota). */
+function naval_destinatarios_recurso(string $recurso, string $minimo, ?string $rota = null): array
+{
+    $m = naval_matriz();
+    $out = [];
+    foreach (naval_utilizadores() as $login => $u) {
+        if (!naval_conta_valida($u) || !naval_email_valido($u['email'] ?? null)) continue;
+        $nivel = (string) ($m[$recurso][$u['perfil']] ?? '');
+        if ($nivel === '' || NAVAL_ORDEM_NIVEIS[$nivel] < NAVAL_ORDEM_NIVEIS[$minimo]) continue;
+        if ($rota !== null && in_array($u['perfil'], naval_perfis_por_rota(), true) && !in_array($rota, array_map('strval', (array) ($u['rotas'] ?? [])), true)) continue;
+        $out[] = ['email' => trim((string) $u['email']), 'nome' => (string) ($u['nome'] ?? $login)];
+    }
+    return $out;
+}
