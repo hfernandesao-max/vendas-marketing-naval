@@ -1,0 +1,103 @@
+{
+  "_nota": "Roteiro do portal mostrado na Apresentação do portal (Gestão). Actualizar com cada versão: estado = concluido | em_curso | planeado. «proximos» são os passos propostos, comunicados para conhecimento.",
+  "actualizado": "2026-11-03",
+  "futuro": [
+    {
+      "titulo": "Ver",
+      "resumo": "O dia de cada rota repetido no mapa.",
+      "detalhe": "Prova de cada visita, tempo no cliente e na estrada, pontos fora do território.",
+      "estado": "em_curso"
+    },
+    {
+      "titulo": "Prever",
+      "resumo": "O cliente que vai parar, antes de parar.",
+      "detalhe": "Carga de amanhã cliente a cliente e vendas perdidas por falta de produto na carrinha.",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Decidir",
+      "resumo": "Potencial de vendas por bairro.",
+      "detalhe": "População pública × comércio × as nossas vendas: onde há mais gente e menos presença nossa. Objectivos justos por vendedor.",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Controlar",
+      "resumo": "Sem procurar.",
+      "detalhe": "Vendas longe do cliente, velocidades impossíveis, descontos e notas de crédito fora do padrão.",
+      "estado": "em_curso"
+    }
+  ],
+  "ia": [
+    {
+      "titulo": "WhatsApp com IA",
+      "resumo": "O cliente encomenda por mensagem ou áudio.",
+      "detalhe": "A IA percebe o pedido, confirma preço e stock e prepara a venda.",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Cliente traz cliente",
+      "resumo": "Crescimento que se alimenta a si próprio.",
+      "detalhe": "Bónus em produto quando um comerciante indica outro que passa a comprar.",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Revendedores de bairro",
+      "resumo": "Mais cobertura sem novas carrinhas.",
+      "detalhe": "Os melhores clientes das zonas sem rota revendem às lojas à volta.",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Fotografia da prateleira",
+      "resumo": "Praticamente inédito em Angola.",
+      "detalhe": "A IA mede o espaço dos nossos produtos e da concorrência, rupturas e preços.",
+      "estado": "planeado"
+    }
+  ],
+  "fases": [
+    {
+      "quando": "Semanas 1 e 2",
+      "titulo": "Ver o terreno",
+      "texto": "Prova de visita, repetição do dia, tempos e coordenadas corrigidas pelas vendas.",
+      "estado": "em_curso"
+    },
+    {
+      "quando": "Mês seguinte",
+      "titulo": "Prever e automatizar",
+      "texto": "Cliente a perder, carga prevista, vendas perdidas e encomendas pelo WhatsApp.",
+      "estado": "planeado"
+    },
+    {
+      "quando": "Depois",
+      "titulo": "Crescer pelo potencial",
+      "texto": "Potencial por bairro, objectivos justos, revendedores e crédito de stock.",
+      "estado": "planeado"
+    }
+  ],
+  "proximos": [
+    {
+      "etiqueta": "Segurança",
+      "texto": "Servidor web dedicado, isolado da rede interna (DMZ).",
+      "quando": "Pedido à Informática"
+    },
+    {
+      "etiqueta": "Fase 1",
+      "texto": "Ligação de leitura ao servidor OLAP para ver o terreno.",
+      "quando": "Esta semana"
+    },
+    {
+      "etiqueta": "Protecção de dados",
+      "texto": "Uso da localização alinhado com os Recursos Humanos e o Jurídico (Lei 22/11).",
+      "quando": "Antes da fase 1"
+    },
+    {
+      "etiqueta": "Canal",
+      "texto": "WhatsApp Business oficial para encomendas e avisos de chegada da carrinha.",
+      "quando": "Fase 2"
+    },
+    {
+      "etiqueta": "Regras comerciais",
+      "texto": "Bónus, crédito de stock, revenda e descontos, com limites definidos com a Direcção Financeira.",
+      "quando": "Fase 3"
+    }
+  ]
+}

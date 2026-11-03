@@ -69,6 +69,7 @@ const SEM_PERIODO = [
   'clientes-qr',
   'visitas-dia',
   'qualidade-dados',
+  'apresentacao',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'sap-exportar']);
