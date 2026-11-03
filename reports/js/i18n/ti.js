@@ -2156,4 +2156,8 @@ export const TI = {
   'Sem movimento no período e filtros escolhidos ({n}): {r}.': 'ኣብቲ ዝተመርጸ እዋንን መጻረዪታትን ምንቅስቓስ ዘይብሎም ({n})፦ {r}።',
   '{p} do cobrado': '{p} ካብቲ ዝተኣከበ',
   'Notas de crédito a clientes': 'ናይ ዓማዊል ናይ ክሬዲት መዘኻኸሪታት',
+  'Notas de crédito sem meio de devolução indicado': 'መንገዲ ምምላስ ዘይተገልጸሎም ናይ ክሬዲት መዘኻኸሪታት',
+  'Notas de crédito sem meio': 'ናይ ክሬዲት መዘኻኸሪታት ብዘይ መንገዲ',
+  'Os meios de cobrança do Pinguim BO não fecham com o recebido (diferença de {v}): confirmar os rodapés dos documentos no Pinguim BO.':
+    'መንገድታት ክፍሊት ናይ Pinguim BO ምስቲ ዝተቐበለ ኣይሰማምዑን (ፍልልይ {v})፦ ኣብ Pinguim BO ታሕተዋይ ክፋል ናይ ሰነዳት ኣረጋግጹ።',
 };

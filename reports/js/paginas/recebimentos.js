@@ -169,11 +169,14 @@ R.pagamentos = (pg) => {
     bruto = recebidoBruto(V),
     nc = notasCredito(V),
     liq = bruto - nc,
+    // notas de crédito já devolvidas por um meio (rodapé do Pinguim BO) e as que não indicam o meio
+    ncComMeio = -sum(V.filter(eNC), (x) => sum(pagosDe(x), 'valor')),
+    ncSemMeio = Math.max(0, nc - ncComMeio),
     pend = pendentesDe(V),
     meio = temMeio();
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa'),
-    pp0 = (v) => t('{p} do cobrado', { p: pct(bruto ? v / bruto : null) });
+    pp0 = (v) => t('{p} do recebido', { p: pct(liq ? v / liq : null) });
   pg.append(
     tiles([
       {
@@ -207,6 +210,17 @@ R.pagamentos = (pg) => {
   }
   // Meios de pagamento tal como vêm do Pinguim BO
   const PM = porMeio(V);
+  const fecho = sum(PM, 'valor') - ncSemMeio - liq;
+  if (Math.abs(fecho) > 1)
+    secs.append(
+      el(
+        'p',
+        'glass act-aviso',
+        t('Os meios de cobrança do Pinguim BO não fecham com o recebido (diferença de {v}): confirmar os rodapés dos documentos no Pinguim BO.', {
+          v: mkz(fecho),
+        }),
+      ),
+    );
   const NOMES_CAT = { dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', transferencia: 'Transferência', outro: 'Outro' };
   secs.append(
     tabela({
@@ -221,18 +235,19 @@ R.pagamentos = (pg) => {
           categoria: t(NOMES_CAT[o.categoria]),
           docs: o.docs,
           valor: o.valor,
-          quota: bruto ? o.valor / bruto : null,
+          quota: liq ? o.valor / liq : null,
         })),
-        // as notas de crédito debitam o recebido: o total da tabela é o recebido líquido
-        ...(nc
+        // as notas de crédito debitam o recebido: as devolvidas por um meio já descontam nesse meio (valor negativo do
+        // Pinguim BO); as sem meio de devolução indicado ficam nesta linha. O total da tabela é o recebido líquido.
+        ...(ncSemMeio > 0.005
           ? [
               {
                 chave: '_nc',
-                meio: t('Notas de crédito a clientes'),
+                meio: t('Notas de crédito sem meio de devolução indicado'),
                 codigo: 'NC',
                 categoria: t('Devolução'),
-                docs: V.filter(eNC).length,
-                valor: -nc,
+                docs: V.filter((x) => eNC(x) && !pagosDe(x).length).length,
+                valor: -ncSemMeio,
                 quota: null,
               },
             ]
@@ -254,7 +269,8 @@ R.pagamentos = (pg) => {
   // Colunas por meio real presente no período
   const meios = PM.map((o) => o.meio);
   const linha = (rs, base) => {
-    const o = { ...base, total: sum(rs, 'total'), recebido: recebidoLiquido(rs), nc: -notasCredito(rs) };
+    const ncM = -sum(rs.filter(eNC), (x) => sum(pagosDe(x), 'valor'));
+    const o = { ...base, total: sum(rs, 'total'), recebido: recebidoLiquido(rs), nc: -Math.max(0, notasCredito(rs) - ncM) };
     meios.forEach((m, i) => {
       o['m' + i] = rs.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0), 0);
     });
@@ -266,7 +282,7 @@ R.pagamentos = (pg) => {
     { key: 'total', label: t('Total'), type: 'kz', sum: true },
     { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
     ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })),
-    ...(nc ? [{ key: 'nc', label: t('Notas de crédito'), type: 'kz', sum: true }] : []),
+    ...(ncSemMeio > 0.005 ? [{ key: 'nc', label: t('Notas de crédito sem meio'), type: 'kz', sum: true }] : []),
     { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true },
   ];
   const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: promotorRota(rs[0].rota) }));

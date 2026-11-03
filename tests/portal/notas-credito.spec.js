@@ -124,7 +124,21 @@ test('notas de crédito debitam o recebido: com tudo pago, recebido = vendas lí
   expect(await quadro(page, 'Valor recebido')).toBeCloseTo(8000, 2);
   await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('100,0%');
   const meios = page.locator('table', { has: page.locator('th', { hasText: 'Meio de cobrança' }) });
-  await expect(meios.locator('tr', { hasText: 'Notas de crédito a clientes' })).toContainText('-2000,00');
+  await expect(meios.locator('tr', { hasText: 'Notas de crédito sem meio de devolução indicado' })).toContainText('-2000,00');
   await expect(meios.locator('tfoot, tr.total').last()).toContainText('8000,00');
+  expect(erros).toEqual([]);
+});
+
+test('meios de cobrança: a nota de crédito devolvida em Multicaixa debita a Multicaixa; dinheiro + Multicaixa = recebido', async ({ page }) => {
+  const mc = (v) => ({ pagamentos: [{ codigo: 'MC', meio: 'Multicaixa', valor: v }], meio_pagamento: 'Multicaixa' });
+  const V = [factura(4000), factura(10000, mc(10000)), nota(2000, mc(-2000))];
+  const erros = await abrir(page, '#inicio', { api: api(V) });
+  expect(await quadro(page, 'Recebido')).toBeCloseTo(12000, 2);
+  expect(await quadro(page, 'Em dinheiro')).toBeCloseTo(4000, 2);
+  expect(await quadro(page, 'Em Multicaixa')).toBeCloseTo(8000, 2); // 10 000 − 2 000 devolvidos em Multicaixa
+  await page.evaluate(() => (location.hash = '#pagamentos'));
+  await page.waitForTimeout(400);
+  await expect(page.locator('#page')).not.toContainText('Notas de crédito sem meio de devolução indicado');
+  await expect(page.locator('#page')).not.toContainText('não fecham com o recebido');
   expect(erros).toEqual([]);
 });
