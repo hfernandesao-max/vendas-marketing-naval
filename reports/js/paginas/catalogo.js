@@ -9,6 +9,7 @@ export const PAGES = [
   { id: 'assistente', grupo: 'Gestão', icon: 'ia', nome: 'Assistente IA' },
   { id: 'painel-sala', grupo: 'Gestão', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'qualidade-dados', grupo: 'Gestão', icon: 'shield', nome: 'Qualidade dos dados e anomalias' },
+  { id: 'apresentacao', grupo: 'Gestão', icon: 'tv', nome: 'Apresentação do portal' },
   { id: 'vendas-promotor', grupo: 'Vendas', icon: 'chart', nome: 'Vendas por promotor' },
   { id: 'vendas-dia', grupo: 'Vendas', icon: 'route', nome: 'Vendas por dia' },
   { id: 'vendas-cliente', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por cliente' },

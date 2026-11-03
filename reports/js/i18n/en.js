@@ -2266,6 +2266,7 @@ export const EN = {
   'Por comunicar à AGT': 'Not yet reported to AGT',
   'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)': 'GEO · field day: route, proof of visit and times (OLAP location)',
   'Fecho do dia por rota por correio electrónico (20:00)': 'Daily close by route by email (20:00)',
+  'Apresentação do portal': 'Portal presentation',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

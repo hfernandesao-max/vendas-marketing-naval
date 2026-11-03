@@ -2234,6 +2234,7 @@ export const TI = {
   'Por comunicar à AGT': 'ገና ናብ AGT ዘይተሓበረ',
   'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)': 'GEO · መዓልቲ ሜዳ፦ መገዲ፡ መረጋገጺ ምብጻሕን ግዜታትን (ኣቀማምጣ OLAP)',
   'Fecho do dia por rota por correio electrónico (20:00)': 'ዕጽዋ መዓልቲ ብመስመር ብኢመይል (20:00)',
+  'Apresentação do portal': 'መግለጺ ፖርታል',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

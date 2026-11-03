@@ -80,6 +80,8 @@ const NAVAL_MATRIZ_TXT = [
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
     'fecho-dia'            => '-  V  V  V  -  V  -  -  -  V  -',
     'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -  -',
+    // apresentação do portal (o que já existe e o roteiro), para todos os perfis
+    'apresentacao'         => 'V  V  V  V  V  V  V  V  V  V  V',
     'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -  -',
     // GEO
     'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V  V',
@@ -161,6 +163,7 @@ function naval_niveis_recurso(string $rec): array
         case 'acessos':
             return ['', 'V', 'E'];   // exportar contas, perfis, matriz e registos (revisão de acessos / auditoria)
         case 'pagina-principal':
+        case 'apresentacao':
         case 'fecho-dia':
         case 'registos':
         case 'nif':
