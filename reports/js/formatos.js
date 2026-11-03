@@ -9,13 +9,15 @@ export const setFmt = () => {
   nf2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 setFmt();
-export const kz = (v) => (v == null || isNaN(v) ? '—' : nf2.format(v) + ' Kz');
+// Valores que arredondam a zero mostram-se sem sinal (nunca «−0,00»)
+const semMenosZero = (v, casas) => (Math.abs(v) < 0.5 * 10 ** -casas ? 0 : v);
+export const kz = (v) => (v == null || isNaN(v) ? '—' : nf2.format(semMenosZero(v, 2)) + ' Kz');
 // Variantes mantidas por compatibilidade das colunas: hoje todas mostram Kz com 2 casas decimais
 export const kz2 = kz;
 export const mkz = kz;
-export const n0 = (v) => (v == null || isNaN(v) ? '—' : nf.format(v));
-export const n1 = (v) => (v == null || isNaN(v) ? '—' : nf1.format(v));
-export const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(v * 100) + '%');
+export const n0 = (v) => (v == null || isNaN(v) ? '—' : nf.format(semMenosZero(v, 0)));
+export const n1 = (v) => (v == null || isNaN(v) ? '—' : nf1.format(semMenosZero(v, 1)));
+export const pct = (v) => (v == null || isNaN(v) || !isFinite(v) ? '—' : nf1.format(semMenosZero(v * 100, 1)) + '%');
 const MES = {
   pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
   en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
