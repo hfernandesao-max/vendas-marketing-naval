@@ -4,6 +4,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Preparação para o servidor OLAP e rotina diária automática
+- **Visitas do dia (Terreno):** os clientes de cada rota para o dia escolhido: os do dia habitual de compra e os que
+  estão atrasados em relação ao seu próprio ritmo. Os parados aparecem primeiro e, dentro de cada estado, os de maior
+  valor. Cada cliente tem uma ficha de preparação da visita:
+  - ritmo de compra (em dia, a abrandar ou parado) e última compra;
+  - encomenda sugerida, pela quantidade habitual de cada artigo;
+  - o que deixou de comprar;
+  - o que propor (artigos que a maioria dos clientes da rota compra e este não);
+  - risco de crédito, só para quem vê as facturas pendentes.
+- **Qualidade dos dados e anomalias (Gestão):** auditoria contínua dos últimos 7 dias, refeita todas as noites. O que
+  for corrigido no Pinguim BO sai sozinho da lista.
+  - Anomalias: documentos sem meio de cobrança, notas de crédito acima de 20 % das vendas do cliente, três ou mais
+    documentos do mesmo cliente no mesmo dia e descontos muito acima do habitual do artigo.
+  - Tarefas de qualidade: clientes sem coordenadas ou no mesmo ponto, artigos sem peso e documentos por comunicar à
+    AGT há mais de 2 dias.
+- **Plano de cargas proposto às 18:00:** se ainda não houver plano para amanhã, o portal cria um rascunho com as
+  rotas que costumam sair nesse dia da semana (último registo e previsão, dentro do peso de cada viatura) e avisa a
+  Logística. Nunca publica nem envia sozinho.
+- **Fecho do dia às 20:00:** correio por rota com as vendas líquidas, o recebido por meio de cobrança, as notas de
+  crédito, os valores em aberto e o estado da conciliação da carrinha. Cada supervisor recebe só as suas rotas
+  (função «Fecho do dia» na matriz de acessos).
+- **Terreno do dia (GeoMobilidade):** página nova, pronta para quando houver ligação ao OLAP.
+  - Percurso de cada rota no mapa, com repetição animada do dia.
+  - Paragens e prova de visita: uma venda a mais de 150 m das coordenadas do cliente fica assinalada.
+  - Tempos: nos clientes, em deslocação e parado sem vender; quilómetros percorridos.
+  - Pontos fora do território da rota.
+  - Coordenadas sugeridas pelas vendas: clientes com 3 ou mais vendas no mesmo sítio.
+
+  Acesso só a quem acompanha as rotas: a localização é um dado pessoal (Lei 22/11).
+- **Ligação ao OLAP preparada:** só leitura, configurada no `.env` (OLAP_*), com o formato dos dados definido e a
+  consulta de exemplo em `ferramentas/sql/olap-localizacao.exemplo.sql`. Os dados são validados (dentro de Angola,
+  com precisão aceitável) e fica guardada uma cópia diária.
+
 ### GeoMobilidade › Prospecção: carteira, coordenadas e resultados
 - A página tem quatro separadores: **Potenciais**, **Sem compras**, **Coordenadas** e **Resultados**. Cada vendedor vê
   só a sua rota.

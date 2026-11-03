@@ -23,6 +23,7 @@ const MODULOS = {
   actualizacoes: () => import('./actualizacoes.js'),
   gestao: () => import('./gestao.js'),
   'pedidos-clientes': () => import('./pedidos-clientes.js'),
+  carteira: () => import('./carteira.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -55,6 +56,8 @@ export const MODULO_DA_PAGINA = {
   agt: 'agt',
   acessos: 'acessos',
   actualizacoes: 'actualizacoes',
+  'visitas-dia': 'carteira',
+  'qualidade-dados': 'carteira',
   alertas: 'gestao',
   previsao: 'gestao',
   assistente: 'gestao',

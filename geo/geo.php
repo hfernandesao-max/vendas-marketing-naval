@@ -37,6 +37,11 @@
         <a href="prospeccao.php" title="Onde procurar clientes novos: territórios das rotas e potenciais clientes" class="nav-btn">
           <i data-lucide="radar"></i> Prospecção
         </a>
+        <?php if (naval_pode('geo-terreno')): ?>
+        <a href="terreno.php" title="Percurso, prova de visita e tempos de cada rota" class="nav-btn">
+          <i data-lucide="footprints"></i> Terreno do dia
+        </a>
+        <?php endif; ?>
         <a href="view/index.php" title="Ir para a delimitação de zonas" class="nav-btn">
           <i data-lucide="map-pinned"></i> Zonas
         </a>

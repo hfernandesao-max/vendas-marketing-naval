@@ -59,6 +59,9 @@ const NAVAL_MATRIZ_TXT = [
     'pedidos-clientes'     => 'V  V  V  Vr -  -  G  -  -  V  V',
     'clientes-qr'          => 'G  -  G  -  -  -  G  -  -  -  -',
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V  V',
+    // carteira: visitas do dia com a ficha de preparação; anomalias de vendas e qualidade dos dados
+    'visitas-dia'          => 'V  V  V  Vr Vr -  V  -  V  V  V',
+    'qualidade-dados'      => 'V  V  V  Vr -  V  V  V  V  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V  V',
     'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E  V',
     'excel-completo'       => '-  E  E  -  -  E  -  -  -  E  -',
@@ -75,6 +78,7 @@ const NAVAL_MATRIZ_TXT = [
     'previsao'             => 'V  V  V  Vr -  -  -  -  -  V  V',
     'assistente'           => '-  V  -  -  -  -  -  -  -  -  -',
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
+    'fecho-dia'            => '-  V  V  V  -  V  -  -  -  V  -',
     'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -  -',
     'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -  -',
     // GEO
@@ -85,6 +89,8 @@ const NAVAL_MATRIZ_TXT = [
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -  -',
     'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V  V',
     'geo-prospeccao'       => 'V  V  V  Vr Vr -  -  -  G  V  V',
+    // terreno do dia (localização do OLAP): dado pessoal dos vendedores, só a quem acompanha as rotas (Lei 22/11)
+    'geo-terreno'          => 'V  V  V  Vr Vr -  -  -  G  V  -',
     // Administração
     'acessos'              => 'E  -  -  -  -  -  -  -  -  E  -',
     'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -  -',
@@ -155,6 +161,7 @@ function naval_niveis_recurso(string $rec): array
         case 'acessos':
             return ['', 'V', 'E'];   // exportar contas, perfis, matriz e registos (revisão de acessos / auditoria)
         case 'pagina-principal':
+        case 'fecho-dia':
         case 'registos':
         case 'nif':
         case 'assistente':
@@ -185,6 +192,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'Vr', 'V', 'E', 'G'];
         case 'geo-rotas':
         case 'geo-prospeccao':
+        case 'geo-terreno':
         case 'geo-zonas':
         case 'geo-distribuidores':
             return ['', 'Vr', 'V', 'G'];

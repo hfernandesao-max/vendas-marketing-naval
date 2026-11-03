@@ -41,8 +41,19 @@ $bdAtv = $base . '/ambiente/equipamentos.sqlite';
 if (!is_dir($base . '/ambiente')) mkdir($base . '/ambiente', 0770, true);
 @unlink($bdAtv);
 (new PDO('sqlite:' . $bdAtv))->exec((string) file_get_contents(__DIR__ . '/../dados/equipamentos-sqlite.sql'));
+// OLAP: localização de teste (rotas 1001 e 1002, 02-11-2026) numa SQLite com a vista do contrato
+$bdOlap = $base . '/ambiente/olap.sqlite';
+@unlink($bdOlap);
+$olap = new PDO('sqlite:' . $bdOlap);
+$olap->exec('CREATE TABLE vw_localizacao (DATA_HORA TEXT, ROTA TEXT, LATITUDE REAL, LONGITUDE REAL, DOCUMENTO TEXT, CLIENTE TEXT, PRECISAO REAL)');
+foreach ([['08:00:00', '1001', -8.8, 13.2, '', '', 8], ['08:05:00', '1001', -8.8001, 13.2001, 'FR 1', 'C1', 8], ['08:30:00', '1001', -8.81, 13.21, '', '', 8],
+    ['09:00:00', '1002', -8.85, 13.25, 'FR 9', 'C2', 8], ['09:10:00', '1002', -8.851, 13.251, '', '', 8]] as [$h, $r, $la, $lo, $doc, $cli, $p]) {
+    $olap->prepare('INSERT INTO vw_localizacao VALUES (?, ?, ?, ?, ?, ?, ?)')->execute(['2026-11-02 ' . $h, $r, $la, $lo, $doc, $cli, $p]);
+}
+$olap = null;
 $ambientes = [
-    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0', 'IA_API_KEY=chave-ia-de-teste', 'IA_API_URL=http://127.0.0.1:8802', 'IA_PERGUNTAS_DIA=5', 'ATV_DB_DSN=sqlite:' . $bdAtv, 'ATV_CONTACTO_DEVOLUCAO_TEL=+244 900 000 000']),
+    $base . '/ambiente' => preparar_ambiente($base . '/ambiente', 8810, ['MFA_OBRIGATORIA=0', 'IA_API_KEY=chave-ia-de-teste', 'IA_API_URL=http://127.0.0.1:8802', 'IA_PERGUNTAS_DIA=5', 'ATV_DB_DSN=sqlite:' . $bdAtv, 'ATV_CONTACTO_DEVOLUCAO_TEL=+244 900 000 000',
+        'OLAP_DSN=sqlite:' . $bdOlap, 'OLAP_VISTA=vw_localizacao']),
     $base . '/ambiente-mfa' => preparar_ambiente($base . '/ambiente-mfa', 8811, ['MFA_OBRIGATORIA=1']),
 ];
 
