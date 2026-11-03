@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Recebido líquido: as notas de crédito debitam o recebido
+- O **Recebido** passa a ser o cobrado nas facturas **menos as notas de crédito a clientes** (devoluções e créditos
+  debitam o recebido, nunca o aumentam), no Início, em Recebimentos › Cobranças, nos documentos, nas vendas por
+  promotor e por dia e na classificação. Com tudo pago, o recebido é igual às vendas líquidas (facturas − notas de
+  crédito) e a taxa de cobrança é 100 %; recebido + facturas pendentes = vendas líquidas.
+- **Por meio de cobrança**: os meios mostram o que foi cobrado (dinheiro, Multicaixa…) e uma linha «Notas de crédito a
+  clientes» a negativo, para o total da tabela ser o recebido líquido; nas tabelas por promotor e por dia, coluna
+  «Notas de crédito». O ficheiro para o SAP não muda (as notas de crédito seguem como documentos próprios).
+
 ### Vendas por promotor só com rotas com movimento
 - A tabela mostra só as rotas com movimento no período e nos filtros escolhidos (sem linhas a zero); as rotas sem
   movimento ficam indicadas numa linha por baixo da tabela. Valores que arredondam a zero aparecem sem sinal (nunca

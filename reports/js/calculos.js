@@ -58,6 +58,10 @@ export const pendenteDe = (x) => (eNC(x) ? 0 : Math.max(0, (+x.total || 0) - rec
 // Facturas pendentes de um conjunto: soma do que falta receber em cada factura (não total − recebido,
 // que com notas de crédito no total deixaria de ser o valor em dívida)
 export const pendentesDe = (V) => sum(V, pendenteDe);
+// Recebido líquido: o que foi cobrado nas facturas menos as notas de crédito a clientes (devoluções e créditos debitam
+// o recebido; nunca o aumentam). Com tudo pago, é igual às vendas líquidas (facturas − notas de crédito).
+export const recebidoBruto = (V) => sum(V, recebidoDe);
+export const recebidoLiquido = (V) => sum(V, recebidoDe) - notasCredito(V);
 export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
 // Agrupa cada meio em dinheiro, Multicaixa, transferência ou outro, pelo código e depois pelo nome
 function catMeio(p) {
@@ -93,7 +97,7 @@ export function porPromotor(V) {
     const rs = vendasPorRota[rota] || [],
       fs = docsVenda(rs);
     const tot = sum(rs, 'total'),
-      liq = sum(rs, recebidoDe);
+      liq = recebidoLiquido(rs);
     return {
       rota,
       promotor,

@@ -2154,4 +2154,6 @@ export const TI = {
   'Versões anteriores já incluídas na mais recente ({n})': 'ኣብቲ ናይ መወዳእታ ዝተኻተቱ ዝሓለፉ ሕታማት ({n})',
   'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.': 'ሕታም {v} ተኣልዩ እቲ ዝሓለፈ ተመሊሱ፤ ብገዛእ ርእሱ ደጊሙ ኣይጽዓንን።',
   'Sem movimento no período e filtros escolhidos ({n}): {r}.': 'ኣብቲ ዝተመርጸ እዋንን መጻረዪታትን ምንቅስቓስ ዘይብሎም ({n})፦ {r}።',
+  '{p} do cobrado': '{p} ካብቲ ዝተኣከበ',
+  'Notas de crédito a clientes': 'ናይ ዓማዊል ናይ ክሬዲት መዘኻኸሪታት',
 };
