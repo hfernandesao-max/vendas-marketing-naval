@@ -24,8 +24,17 @@ teste('AGT: com pedido comunicado, sem pedido por comunicar; anulado pelo docume
 });
 
 teste('AGT: consulta só de leitura com os campos extra 26046 e 26003', function () {
-    $sql = naval_agt_sql();
+    $sql = naval_agt_sql([]);
     naval_bd_so_leitura($sql);   // lança excepção se não for só SELECT
     verdade(strpos($sql, 'E.DOCEXTRA_ID = 26046') !== false);
     verdade(strpos($sql, 'E.DOCEXTRA_ID = 26003') !== false);
+    verdade(strpos($sql, 'INTEGER_VALUE') !== false, 'pedido também em número');
+});
+
+teste('AGT: campos extra com o mesmo nome noutras séries (DOCEXTRA por nome)', function () {
+    $sql = naval_agt_sql(['ID', 'DESCRIPTION', 'CODE']);
+    naval_bd_so_leitura($sql);
+    verdade(strpos($sql, "LOWER(LTRIM(RTRIM(X.CODE))) = 'request_number'") !== false, $sql);
+    verdade(strpos($sql, "LOWER(LTRIM(RTRIM(X.DESCRIPTION))) = 'motivo de cancelamento'") !== false);
+    verdade(strpos($sql, '(E.DOCEXTRA_ID = 26046 OR E.DOCEXTRA_ID IN (SELECT X.ID FROM DOCEXTRA X WHERE') !== false);
 });

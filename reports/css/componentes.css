@@ -2169,21 +2169,25 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   border-radius: 4px;
 }
 dialog.doc-painel {
-  margin: 0 0 0 auto;
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
   height: 100dvh;
   max-height: 100dvh;
-  width: min(560px, 100vw);
+  width: min(900px, 100vw);
   max-width: 100vw;
   padding: 0;
   border: 0;
   border-left: 1px solid var(--line2);
   background: var(--bg);
   color: inherit;
+  overflow-x: hidden;
   overflow-y: auto;
+  box-sizing: border-box;
   animation: docEntra 0.25s ease-out;
 }
 dialog.doc-painel::backdrop {
-  background: rgb(var(--veu-rgb, 10 22 44) / 0.45);
+  background: rgb(var(--veu-rgb, 10 22 44) / 0.55);
 }
 @keyframes docEntra {
   from {
@@ -2193,10 +2197,10 @@ dialog.doc-painel::backdrop {
 }
 @media (max-width: 720px) {
   dialog.doc-painel {
-    margin: auto 0 0;
+    inset: auto 0 0 0;
     width: 100vw;
     height: auto;
-    max-height: 92dvh;
+    max-height: 94dvh;
     border-left: 0;
     border-top: 1px solid var(--line2);
     border-radius: 16px 16px 0 0;
@@ -2216,119 +2220,202 @@ dialog.doc-painel::backdrop {
 }
 .doc-corpo {
   display: grid;
-  gap: 14px;
-  padding: 16px 18px 22px;
+  gap: 16px;
+  padding: 0 20px 24px;
+  min-width: 0;
 }
 .doc-cab {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   position: sticky;
-  top: -16px;
-  padding-top: 4px;
+  top: 0;
+  z-index: 1;
+  padding: 14px 0 12px;
   background: var(--bg);
+  border-bottom: 1px solid var(--line2);
+}
+.doc-idt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 .doc-cab h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
-.doc-resumo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-}
-.doc-resumo div {
-  display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  border: 1px solid var(--line2);
-  border-radius: 10px;
-}
-.doc-resumo span {
-  font-size: 12px;
-  color: var(--muted);
-}
-.doc-talao {
-  background: #fff;
-  color: #111;
-  border-radius: 6px;
-  padding: 16px 18px;
-  font:
-    13px/1.45 ui-monospace,
-    'Cascadia Mono',
-    Consolas,
-    monospace;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
-  max-width: 380px;
-  margin: 0 auto;
-  width: 100%;
-}
-.dt-cab {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  border-bottom: 1px dashed #999;
-  padding-bottom: 6px;
-}
-.dt-data,
-.dt-nota {
-  margin: 6px 0;
-  color: #444;
-  font-size: 12px;
-}
-.dt-cli {
-  display: grid;
-  border-bottom: 1px dashed #999;
-  padding-bottom: 6px;
-}
-.dt-linhas {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 6px 0;
-}
-.dt-linhas td {
-  padding: 3px 0;
-  vertical-align: top;
-}
-.dt-linhas td.n {
-  text-align: right;
-  white-space: nowrap;
-  padding-left: 8px;
-}
-.dt-art,
-.dt-q {
-  display: block;
-}
-.dt-q,
-.dt-espera {
-  color: #555;
-  font-size: 12px;
-}
-.dt-tot {
-  border-top: 1px dashed #999;
-  padding-top: 6px;
-}
-.dt-tot p {
-  display: flex;
-  justify-content: space-between;
-  margin: 2px 0;
-}
-.dt-grande {
-  font-weight: 700;
-  font-size: 15px;
-}
-.dt-falta {
-  color: #b00020;
-}
-.doc-sec h3 {
-  margin: 0 0 6px;
-  font-size: 15px;
+  margin: 0;
+  font-size: 19px;
+  overflow-wrap: anywhere;
 }
 .doc-acc {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
+  flex: none;
+}
+/* Folha do documento: página branca, letra legível (16 px), como o documento emitido */
+.doc-folha {
+  background: #fff;
+  color: #0f1a2b;
+  border-radius: 4px;
+  padding: 32px 36px;
+  font-size: 15px;
+  line-height: 1.5;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.3);
+  min-width: 0;
+}
+.doc-folha h4 {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3a4a63;
+}
+.df-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #0a2a5c;
+}
+.df-orig {
+  display: grid;
+}
+.df-rot {
+  font-size: 12px;
+  color: #56657c;
+}
+.df-id {
+  display: grid;
+  text-align: right;
+}
+.df-tipo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0a2a5c;
+}
+.df-num {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.df-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 20px;
+  margin: 16px 0;
+}
+.df-meta dt,
+.df-tot dt {
+  font-size: 12px;
+  color: #56657c;
+}
+.df-meta dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.df-tabw {
+  overflow-x: auto;
+}
+.df-linhas,
+.df-iva {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.df-linhas th,
+.df-iva th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a4a63;
+  background: #eef2f8;
+  padding: 8px;
+  white-space: nowrap;
+}
+.df-linhas td,
+.df-iva td {
+  padding: 8px;
+  border-bottom: 1px solid #e1e6ee;
+  vertical-align: top;
+}
+.df-linhas .n,
+.df-iva .n {
+  text-align: right;
+  white-space: nowrap;
+}
+.df-espera {
+  color: #56657c;
+  text-align: center;
+}
+.df-pe {
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 0.8fr);
+  gap: 24px;
+  margin-top: 10px;
+  align-items: start;
+}
+.df-pags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.df-pags li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid #e1e6ee;
+  font-variant-numeric: tabular-nums;
+}
+.df-tot {
+  margin: 14px 0 0;
+  display: grid;
+  gap: 2px;
+}
+.df-tot div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.df-tot dd {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.df-tot .df-grande {
+  border-top: 2px solid #0a2a5c;
+  margin-top: 4px;
+  padding-top: 8px;
+  font-size: 18px;
+}
+.df-tot .df-grande dt {
+  font-size: 15px;
+  color: #0a2a5c;
+  font-weight: 700;
+}
+.df-falta dd {
+  color: #b00020;
+}
+.df-nota {
+  margin: 20px 0 0;
+  font-size: 12px;
+  color: #56657c;
+  text-align: justify;
+}
+@media (max-width: 720px) {
+  .doc-corpo {
+    padding: 0 12px 18px;
+  }
+  .doc-folha {
+    padding: 18px 16px;
+  }
+  .df-pe {
+    grid-template-columns: 1fr;
+  }
 }
 @media print {
   body.a-imprimir-doc > *:not(dialog.doc-painel) {
@@ -2339,14 +2426,15 @@ dialog.doc-painel::backdrop {
     width: auto;
     height: auto;
     border: 0;
-    box-shadow: none;
+    overflow: visible;
+    background: #fff;
   }
-  body.a-imprimir-doc .doc-corpo > *:not(.doc-talao) {
+  body.a-imprimir-doc .doc-cab {
     display: none !important;
   }
-  body.a-imprimir-doc .doc-talao {
+  body.a-imprimir-doc .doc-folha {
     box-shadow: none;
-    max-width: 80mm;
+    padding: 0;
   }
 }
 /* Actualizações: aviso da aprovação automática nocturna */

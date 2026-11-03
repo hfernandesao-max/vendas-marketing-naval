@@ -302,7 +302,7 @@ R.documentos = (pg) => {
     pg.append(
       tabela({
         id: 'dc-rota',
-        titulo: t('Vendas por rota'),
+        titulo: t('Resumo por rota'),
         nota: t('Escolha uma rota na barra de filtros para ver só os documentos dessa rota.'),
         sort: 'total',
         total: true,
@@ -340,7 +340,7 @@ R.documentos = (pg) => {
   pg.append(
     tabela({
       id: 'dc',
-      titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Documentos Pinguim'),
+      titulo: rotaDoc ? t('Documentos da rota {r}', { r: rotulo(rotaDoc) }) : t('Registo de documentos de venda'),
       rows: V.map((x) => ({ ...x, promotor: promotorRota(x.rota) })),
       sort: 'data',
       total: true,

@@ -153,13 +153,23 @@ test('ficheiros alterados à mão: lista e «Aplicar mesmo assim»; certificados
   await expect(tile).toContainText('geo.naval.co.ao:2051');
 });
 
-test('só a mais recente se aprova; as anteriores ficam recolhidas; estado «na fila» depois de «instalar já»', async ({ page }) => {
+test('pacote único: uma só decisão para todas as versões por instalar; estado «na fila» depois de «instalar já»', async ({ page }) => {
   const vista = JSON.parse(JSON.stringify(VISTA));
   vista.proximo_ciclo = '11:45';
   vista.em_curso = true;
   vista.pendentes[0].decisao = { decisao: 'aprovada', por: 'admin', em: '2026-11-03 11:42:00', urgente: true };
   vista.pendentes[0].fila = 'na_fila';
   vista.pendentes[1].incluida = true;
+  vista.pendentes[0].pacote = {
+    versoes: [
+      { versao: vista.pendentes[0].versao, publicada_em: vista.pendentes[0].publicada_em, decisao: 'aprovada' },
+      { versao: 'v2026.11.03.6', publicada_em: vista.pendentes[1].publicada_em, decisao: '' },
+    ],
+    seccoes: [
+      { id: 'a', data: '03-11-2026', titulo: 'Novidade A', itens: ['Ponto A'] },
+      { id: 'b', data: '03-11-2026', titulo: 'Novidade B', itens: ['Ponto B'] },
+    ],
+  };
   await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { login: 'henrique', perfil: 'SADM', csrf: 'x', permissoes: { actualizacoes: 'A' } } }));
   await page.route('**/v1/novidades*', (r) => r.fulfill({ json: { ok: true, actualizacoes: [] } }));
   let leituras = 0;
@@ -171,11 +181,14 @@ test('só a mais recente se aprova; as anteriores ficam recolhidas; estado «na 
   const erros = await abrir(page, '#actualizacoes');
   await expect(page.locator('.act-cartao')).toHaveCount(1);
   await expect(page.locator('.act-fila')).toHaveText('Na fila: a tarefa agendada instala até às 11:45');
-  const ant = page.locator('.act-anteriores');
-  await expect(ant.locator('summary')).toHaveText('Versões anteriores já incluídas na mais recente (1)');
-  await ant.locator('summary').click();
-  await expect(ant.locator('li')).toContainText('Versão v2026.11.03.6');
-  await expect(ant.getByRole('button', { name: 'Aprovar' })).toHaveCount(0);
+  const c = page.locator('.act-cartao');
+  await expect(c.locator('h3')).toHaveText('Pacote de instalação ' + vista.pendentes[0].versao);
+  await expect(c.locator('.act-inclui')).toContainText('Pacote único com 2 versões');
+  await expect(c.locator('.act-inclui')).toContainText('v2026.11.03.6');
+  await expect(c.locator('.act-det summary')).toHaveText('O que muda neste pacote');
+  await expect(c.locator('.act-resumo h4')).toHaveText(['03-11-2026 · Novidade A', '03-11-2026 · Novidade B']);
+  await expect(page.locator('.act-anteriores')).toHaveCount(0); // a anterior sem decisão não aparece à parte
+  await expect(page.getByRole('button', { name: 'Aprovar', exact: true })).toHaveCount(0);
   const antes = leituras;
   await page.clock.runFor(16000);
   await expect.poll(() => leituras).toBeGreaterThan(antes); // actualiza-se sozinha enquanto a instalação está em curso

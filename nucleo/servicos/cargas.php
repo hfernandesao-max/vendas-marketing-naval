@@ -172,6 +172,54 @@ function naval_plano_dias(int $max = 400): array
     return $out;
 }
 
+/**
+ * Registo histórico de cargas → registo do portal (uma vez por conteúdo, idempotente). Os dias do registo histórico
+ * (reports/data/cargas.json, anterior ao plano no portal) que ainda não têm plano no portal entram como planos
+ * publicados marcados «importado» (proveniência registada: ISO 8000), e as listas aprendem os motoristas, viaturas,
+ * transportadoras e zonas. Daí em diante o portal só lê o seu próprio registo: o pré-preenchimento de um dia novo
+ * usa o último registo de cada rota. Nunca altera um dia que já tenha plano. Devolve o número de dias importados.
+ */
+function naval_plano_importar_historico(?string $ficheiro = null): int
+{
+    $ficheiro = $ficheiro ?? naval_raiz() . '/reports/data/cargas.json';
+    if (!is_file($ficheiro)) return 0;
+    $marca = naval_plano_pasta() . '/historico-importado.json';
+    $hash = (string) hash_file('sha256', $ficheiro);
+    if ((naval_json_ler($marca)['sha256'] ?? '') === $hash) return 0;
+    return naval_exclusivo('plano-historico', function () use ($ficheiro, $marca, $hash) {
+        $listas = naval_plano_listas();
+        $porDia = [];
+        foreach (naval_json_ler($ficheiro) as $c) {
+            $d = (string) ($c['data'] ?? '');
+            $rt = trim((string) ($c['rota'] ?? ''));
+            if (!naval_data_valida($d) || $rt === '') continue;
+            $q = [];
+            foreach ($listas['artigos'] as $a) $q[$a['id']] = (float) ($c['carga_' . $a['id']] ?? 0);
+            $porDia[$d][$rt] = naval_plano_rota_limpa([
+                'rota' => $rt, 'vendedor' => (string) ($c['promotor'] ?? ''), 'sai' => true, 'armazem' => $listas['armazens'][0] ?? '', 'viagens' => 1,
+                'zonas' => array_map('trim', explode(',', (string) ($c['zonas'] ?? ''))), 'quantidades' => $q,
+                'motorista' => (string) ($c['motorista'] ?? ''), 'matricula' => (string) ($c['matricula'] ?? ''),
+                'viatura' => (string) ($c['viatura'] ?? ''), 'transportadora' => (string) ($c['transportadora'] ?? ''),
+            ], $listas['artigos']);
+        }
+        ksort($porDia);
+        $n = 0;
+        foreach ($porDia as $d => $rotas) {
+            if (naval_plano_ler($d)) continue;   // nunca por cima de um dia que já tem plano no portal
+            $rotas = array_values($rotas);
+            naval_plano_gravar(['data' => $d, 'rev' => 1, 'criado' => date('Y-m-d H:i:s'), 'criado_por' => 'historico', 'rotas' => $rotas, 'envios' => [],
+                'importado' => true, 'publicado' => ['versao' => 0, 'rev' => 1, 'em' => $d . ' 00:00:00', 'por' => 'historico',
+                'por_nome' => 'Registo histórico de cargas', 'nota' => 'Importado do registo histórico de cargas', 'rotas' => $rotas, 'importado' => true]]);
+            naval_plano_aprender($listas, $rotas);
+            $n++;
+        }
+        if ($n) naval_plano_gravar_listas($listas);
+        naval_json_gravar($marca, ['sha256' => $hash, 'em' => date('Y-m-d H:i:s'), 'dias' => $n]);
+        if ($n) naval_registar('plano_historico_importado', ['dias' => $n]);
+        return $n;
+    });
+}
+
 /** Linhas no formato de cargas.json (página Stock por carrinha e escoamento), a partir das versões publicadas. */
 function naval_plano_para_cargas(): array
 {

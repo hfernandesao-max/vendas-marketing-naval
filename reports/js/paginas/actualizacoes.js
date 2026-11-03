@@ -176,8 +176,20 @@ function cartaoPendente(v, maisRecente) {
   const c = el('article', 'glass act-cartao');
   const cab = el('div', 'act-cab');
   const tit = el('div');
-  tit.append(el('h3', null, t('Versão {v}', { v: v.versao })));
+  const inclui = (v.pacote && v.pacote.versoes) || [];
+  tit.append(el('h3', null, inclui.length > 1 ? t('Pacote de instalação {v}', { v: v.versao }) : t('Versão {v}', { v: v.versao })));
   tit.append(el('p', null, t('Publicada em {d} · revisão {c} · passou em todos os testes automáticos', { d: dataHora(v.publicada_em), c: v.commit })));
+  if (inclui.length > 1)
+    tit.append(
+      el(
+        'p',
+        'act-inclui',
+        t('Pacote único com {n} versões ({l}): uma só aprovação, uma só instalação e um só ponto de reposição.', {
+          n: inclui.length,
+          l: inclui.map((x) => x.versao).join(', '),
+        }),
+      ),
+    );
   cab.append(tit);
   const dec = v.decisao;
   if (dec && dec.decisao === 'aprovada')
@@ -219,8 +231,8 @@ function cartaoPendente(v, maisRecente) {
   }
   const det = el('details', 'act-det');
   det.open = maisRecente;
-  det.append(el('summary', null, t('O que muda nesta versão')));
-  det.append(resumo(v));
+  det.append(el('summary', null, inclui.length > 1 ? t('O que muda neste pacote') : t('O que muda nesta versão')));
+  det.append(resumo(inclui.length > 1 ? { ...v, seccoes: v.pacote.seccoes } : v));
   c.append(det);
   const acc = el('div', 'act-accoes');
   if (!dec) {
@@ -310,12 +322,12 @@ R.actualizacoes = (pg) => {
     );
   const lista = el('div', 'act-lista');
   if (!E.pendentes.length) lista.append(el('p', 'note', t('Não há versões novas: o portal está na versão mais recente publicada.')));
-  // só a mais recente se aprova; as anteriores ficam recolhidas (já vêm incluídas nela)
+  // pacote único: só a mais recente se decide (contém as anteriores); as anteriores com decisão antiga podem anular-se
   E.pendentes.filter((v) => !v.incluida).forEach((v, i) => lista.append(cartaoPendente(v, i === 0)));
-  const anteriores = E.pendentes.filter((v) => v.incluida);
+  const anteriores = E.pendentes.filter((v) => v.incluida && v.decisao);
   if (anteriores.length) {
     const d = el('details', 'act-anteriores');
-    d.append(el('summary', null, t('Versões anteriores já incluídas na mais recente ({n})', { n: anteriores.length })));
+    d.append(el('summary', null, t('Decisões antigas sobre versões incluídas no pacote ({n})', { n: anteriores.length })));
     const ul = el('ul');
     anteriores.forEach((v) => {
       const li = el('li', null, t('Versão {v}', { v: v.versao }) + ' · ' + dataHora(v.publicada_em) + ' ');
@@ -333,7 +345,9 @@ R.actualizacoes = (pg) => {
         draw();
       }
     }, 15000);
-  pg.append(secBox(t('Versões por instalar'), t('Cada versão inclui as anteriores: aprovar a mais recente instala também o que vinha antes dela.'), lista));
+  pg.append(
+    secBox(t('Versões por instalar'), t('As versões por instalar juntam-se num pacote único: uma decisão instala tudo, com uma só cópia de segurança.'), lista),
+  );
 
   const hist = el('div', 'act-hist');
   if (!E.historico.length) hist.append(el('p', 'note', t('Ainda sem histórico.')));

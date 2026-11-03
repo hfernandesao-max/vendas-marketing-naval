@@ -1231,6 +1231,18 @@ function naval_act_vista_portal(): array
         } else $v['historico'][] = $item;
     }
     $v['historico'] = array_slice($v['historico'], 0, 15);
+    // Pacote único (gestão de versões, ISO/IEC 20000-1 §8.5.3 e ITIL «release package»): a versão mais recente já
+    // contém todas as anteriores por instalar, por isso há uma só decisão, uma só instalação, uma só cópia de
+    // segurança e um só ponto de reposição. O cartão mostra o que muda em todas, sem repetir secções.
+    if ($v['pendentes']) {
+        $seccoes = [];
+        $inclui = [];
+        foreach ($v['pendentes'] as $p) {
+            $inclui[] = ['versao' => $p['versao'], 'publicada_em' => $p['publicada_em'], 'decisao' => $p['decisao']['decisao'] ?? ''];
+            foreach ($p['seccoes'] as $sec) if (!isset($seccoes[$sec['id']])) $seccoes[$sec['id']] = $sec;
+        }
+        $v['pendentes'][0]['pacote'] = ['versoes' => $inclui, 'seccoes' => array_values($seccoes)];
+    }
     return $v;
 }
 

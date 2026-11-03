@@ -120,6 +120,25 @@ teste('plano de cargas: conflito de versão devolve 409', function () {
     lanca(400, function () use ($eu) { naval_plano_actualizar('01-10-2026', 1, [], $eu, NAVAL_ARTIGOS_PADRAO); });
 });
 
+teste('plano de cargas: registo histórico importado uma vez para o registo do portal; pré-preenche o dia novo', function () {
+    $f = sys_get_temp_dir() . '/cargas-hist-' . getmypid() . '.json';
+    file_put_contents($f, json_encode([
+        ['data' => '2026-09-10', 'rota' => '1004', 'promotor' => 'Nelson', 'motorista' => 'Adão Paulo', 'matricula' => 'ld-58-73-gy', 'viatura' => 'Canter',
+            'transportadora' => 'Velotrans', 'zonas' => 'Avô Cumbe, Cassequel', 'carga_fraldas' => 90, 'carga_sabao' => 75, 'carga_sabonete' => 0],
+        ['data' => '2026-10-01', 'rota' => '1001', 'motorista' => 'Outro', 'matricula' => 'X', 'zonas' => 'Z', 'carga_fraldas' => 1],   // dia já com plano
+    ]));
+    igual(1, naval_plano_importar_historico($f));
+    igual(0, naval_plano_importar_historico($f), 'uma só vez');
+    $p = naval_plano_ler('2026-09-10');
+    verdade(!empty($p['importado']) && $p['publicado']['por'] === 'historico');
+    igual('LD-58-73-GY', $p['publicado']['rotas'][0]['matricula']);
+    igual(['Avô Cumbe', 'Cassequel'], $p['publicado']['rotas'][0]['zonas']);
+    igual('unidade', naval_plano_ler('2026-10-01')['criado_por'] ?? '', 'o dia que já tinha plano não é tocado');
+    igual(90, $p['publicado']['rotas'][0]['quantidades']['fraldas']);
+    verdade(in_array('Adão Paulo', array_column(naval_plano_listas()['motoristas'], 'nome'), true), 'listas aprendidas');
+    @unlink($f);
+});
+
 teste('SAP: configuração limpa; lote único por documento, anulação com quatro olhos, carregamento', function () {
     $c = naval_sap_gravar_config(['moeda' => 'aoa', 'rotas' => ['1001' => ['local' => 'rtm1', 'loja' => ''], '' => ['local' => 'X'], '1002' => ['local' => '']]]);
     igual(['1001' => ['local' => 'RTM1']], $c['rotas']);
@@ -198,4 +217,39 @@ teste('Notas de crédito sem rodapé: devolução no meio da factura que corrige
     $meios = 0.0;
     foreach ($R as $v) $meios += array_sum(array_column($v['pagamentos'], 'valor'));
     igual(round($total, 2), round($meios, 2), 'soma por meio = vendas líquidas');
+});
+
+teste('Factura liquidada sem meio e anulada por nota de crédito: compensação, fora de dinheiro e Multicaixa', function () {
+    naval_servico('vendas');
+    $base = ['rota' => '1009', 'cliente_codigo' => 'X', 'nif' => '5000111', 'data' => '2026-10-21'];
+    $V = [
+        $base + ['documento' => 'FR 9/1', 'hora' => '09:00', 'nc' => false, 'total' => 1000000.0, 'pagamentos' => [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1000000.0]]],
+        $base + ['documento' => 'FR 9/2', 'hora' => '10:00', 'nc' => false, 'total' => 780000.0, 'pagamentos' => [['codigo' => '?', 'meio' => 'Sem meio indicado', 'valor' => 780000.0]]],
+        $base + ['documento' => 'NC 9/1', 'hora' => '11:00', 'nc' => true, 'total' => -780000.0, 'pagamentos' => []],
+    ];
+    $R = array_column(naval_vendas_devolucoes($V), null, 'documento');
+    igual([['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => 780000.0, 'atribuido' => 'NC 9/1']], $R['FR 9/2']['pagamentos']);
+    igual([['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => -780000.0, 'atribuido' => 'FR 9/2']], $R['NC 9/1']['pagamentos']);
+    igual([['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1000000.0]], $R['FR 9/1']['pagamentos'], 'a factura paga em Multicaixa não é tocada');
+    // dinheiro + Multicaixa = vendas líquidas (1 000 000), sem «outros meios»
+    $mc = 0.0;
+    $outros = 0.0;
+    foreach ($R as $v) foreach ($v['pagamentos'] as $p) {
+        if ($p['codigo'] === 'MC' || $p['codigo'] === 'NU') $mc += $p['valor'];
+        elseif ($p['codigo'] !== 'CMP') $outros += $p['valor'];
+    }
+    igual(1000000.0, $mc);
+    igual(0.0, $outros);
+});
+
+teste('Crédito de nota de crédito usado numa factura seguinte do mesmo cliente: compensação', function () {
+    naval_servico('vendas');
+    $base = ['rota' => '1011', 'cliente_codigo' => 'Y', 'nif' => '5000222'];
+    $V = [
+        $base + ['documento' => 'NC 1/1', 'data' => '2026-10-30', 'hora' => '10:00', 'nc' => true, 'total' => -780000.0, 'pagamentos' => []],
+        $base + ['documento' => 'FR 1/3', 'data' => '2026-11-03', 'hora' => '09:00', 'nc' => false, 'total' => 780000.0, 'pagamentos' => [['codigo' => '?', 'meio' => 'Sem meio indicado', 'valor' => 780000.0]]],
+    ];
+    $R = array_column(naval_vendas_devolucoes($V), null, 'documento');
+    igual('CMP', $R['FR 1/3']['pagamentos'][0]['codigo']);
+    igual([['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => -780000.0, 'atribuido' => 'FR 1/3']], $R['NC 1/1']['pagamentos']);
 });
