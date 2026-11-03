@@ -4,6 +4,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Cartazes QR: só o cartaz na folha impressa
+- Ao imprimir ou guardar em PDF, os cartazes deixam de levar o título da página, o endereço, a data e o número da
+  página nos cantos. Cada cartaz ocupa uma folha A4 sem margens do navegador, com margem de segurança de 12 mm por
+  dentro, exactamente como o modelo.
+
 ### Painel da sala comercial redesenhado (ecrã de TV)
 - Feito segundo as regras para ecrãs de parede vistos à distância:
   - uma mensagem por ecrã, no máximo seis números, o principal em destaque;

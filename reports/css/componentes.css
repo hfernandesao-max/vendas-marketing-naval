@@ -1918,10 +1918,28 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   body.a-imprimir .cqr-impressao {
     display: block;
   }
-  .cqr-folha {
+  /* Página com nome e margens a zero: o navegador não tem onde pôr cabeçalhos e rodapés (título, endereço, data,
+     n.º de página); a margem de segurança de 12 mm fica dentro da página. Só o cartaz, como o modelo. */
+  @page cartaz {
+    size: A4 portrait;
+    margin: 0;
+  }
+  .cqr-pagina {
+    page: cartaz;
+    width: 210mm;
+    height: 297mm;
+    padding: 12mm;
+    box-sizing: border-box;
+    overflow: hidden;
     page-break-after: always;
     break-after: page;
-    height: 270mm;
+  }
+  .cqr-pagina:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .cqr-folha {
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
