@@ -96,6 +96,7 @@ test('apresentação: negócio e automação reais, horas configuradas, evoluç�
   await expect(activa).toContainText('Servidor web dedicado.');
   await expect(activa).toContainText('Esta semana');
   await expect(activa).not.toContainText('decisões');
+  await expect(activa).toContainText('Recomendações para os próximos passos');
   await expect(activa).toContainText('03-11-2026');
   expect(erros).toEqual([]);
 });

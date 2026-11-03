@@ -1,5 +1,5 @@
 {
-  "_nota": "Roteiro do portal mostrado na Apresentação do portal (Gestão). Actualizar com cada versão: estado = concluido | em_curso | planeado. «proximos» são os passos propostos, comunicados para conhecimento.",
+  "_nota": "Roteiro do portal mostrado na Apresentação do portal (Gestão). Actualizar com cada versão: estado = concluido | em_curso | planeado. «proximos» são as recomendações para os próximos passos, apresentadas para conhecimento (etiqueta, texto = recomendação e benefício, quando = calendário indicativo).",
   "actualizado": "2026-11-03",
   "futuro": [
     {
@@ -76,27 +76,27 @@
   "proximos": [
     {
       "etiqueta": "Segurança",
-      "texto": "Servidor web dedicado, isolado da rede interna (DMZ).",
-      "quando": "Pedido à Informática"
+      "texto": "Recomenda-se um servidor web dedicado, isolado da rede interna (DMZ), para separar da Internet os dados da empresa.",
+      "quando": "Em curso com a Informática"
     },
     {
-      "etiqueta": "Fase 1",
-      "texto": "Ligação de leitura ao servidor OLAP para ver o terreno.",
+      "etiqueta": "Terreno",
+      "texto": "Recomenda-se a ligação de leitura ao servidor OLAP, para dar início à fase 1: ver o terreno.",
       "quando": "Esta semana"
     },
     {
       "etiqueta": "Protecção de dados",
-      "texto": "Uso da localização alinhado com os Recursos Humanos e o Jurídico (Lei 22/11).",
+      "texto": "Recomenda-se alinhar o uso da localização com os Recursos Humanos e o Jurídico, em cumprimento da Lei 22/11.",
       "quando": "Antes da fase 1"
     },
     {
       "etiqueta": "Canal",
-      "texto": "WhatsApp Business oficial para encomendas e avisos de chegada da carrinha.",
+      "texto": "Recomenda-se a conta oficial do WhatsApp Business, para encomendas e avisos de chegada da carrinha.",
       "quando": "Fase 2"
     },
     {
       "etiqueta": "Regras comerciais",
-      "texto": "Bónus, crédito de stock, revenda e descontos, com limites definidos com a Direcção Financeira.",
+      "texto": "Recomenda-se definir bónus, crédito de stock, revenda e descontos, com limites acordados com a Direcção Financeira.",
       "quando": "Fase 3"
     }
   ]

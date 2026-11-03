@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Recomendações para o Conselho de Administração
+- **Apresentação do portal:** a última cena passa a «Fases e recomendações». Os próximos passos aparecem como
+  recomendações para conhecimento, cada uma com o benefício e o calendário indicativo, e seguem os circuitos habituais
+  de aprovação da empresa (boas práticas de documentos para o conselho: finalidade clara, recomendação, benefício e
+  calendário).
+
 ### Apresentação do portal, com dados reais e sempre actualizada
 - **Apresentação do portal (Gestão):** experiência interactiva, cena a cena, focada no negócio e na automação, para
   comunicar à administração o que o portal já faz e o que se propõe a seguir. Navega-se com as setas do teclado, os
@@ -14,7 +20,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
     recuperar, anomalias e tarefas de qualidade dos dados, calculados sozinhos todas as noites.
   - **O dia automático:** cada tarefa da rotina, à hora configurada, com quantas vezes foi feita nos últimos 30 dias
     (resumos, cálculos, planos de cargas propostos, fechos do dia e versões instaladas).
-  - **Evolução, futuro, fases e próximos passos propostos.**
+  - **Evolução, futuro, fases e recomendações.**
 - **Sempre actualizada, sem ninguém executar nada:** os números refrescam a cada 10 minutos enquanto a página está
   aberta e crescem com os dados; as páginas vêm do catálogo do portal, as novidades deste registo de alterações e o
   roteiro é revisto em cada versão.

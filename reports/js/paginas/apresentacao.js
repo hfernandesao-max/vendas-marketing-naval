@@ -4,7 +4,7 @@
 //    documentos, rotas e valor médio por compra (API v1/apresentacao, no âmbito de quem vê; refrescada a cada 10 min).
 //  - Automação: o que o portal fez sozinho nos últimos 30 dias e a carteira calculada esta noite.
 //  - O dia automático: horas configuradas no servidor.  - Evolução: catálogo de páginas e registo de alterações.
-//  - Futuro, fases e próximos passos: roteiro nucleo/recursos/roteiro.json, revisto em cada versão.
+//  - Futuro, fases e recomendações: roteiro nucleo/recursos/roteiro.json, revisto em cada versão.
 // Conteúdo em português (apresentação).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
@@ -404,8 +404,9 @@ function cenaFases() {
     if (x.quando) d.append(h('small', null, x.quando));
     dec.append(d);
   });
-  cabeca(s, 'Calendário', 'Fases e próximos passos.');
-  s.append(f, h('div', 'apx-olho apx-ambar', 'Próximos passos propostos'), dec);
+  cabeca(s, 'Calendário', 'Fases e recomendações.');
+  s.append(f, h('div', 'apx-olho apx-ambar', 'Recomendações para os próximos passos · para conhecimento'), dec);
+  s.append(h('p', 'apx-aviso', 'Apresentadas para conhecimento. Cada recomendação segue os circuitos habituais de aprovação da empresa.'));
   if (r.actualizado) s.append(h('p', 'apx-aviso', 'Roteiro actualizado em ' + dl(r.actualizado) + '.'));
   return s;
 }
