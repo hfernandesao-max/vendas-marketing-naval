@@ -152,14 +152,20 @@ function naval_vendas_pagamentos_doc(array $linhas, bool $nc, float $pago, bool 
 }
 
 /**
- * Meio de devolução das notas de crédito sem rodapé no Pinguim BO («refund to original tender», a regra das redes de
- * pagamento e dos sistemas de ponto de venda): a devolução debita o meio com que o cliente pagou a factura que a nota
- * corrige — a factura mais recente do mesmo cliente e da mesma rota até à data da nota (Consumidor Final: só no
- * mesmo dia), repartida pelos meios dessa factura e, se não chegar, pelas anteriores, sem nunca devolver mais do que
- * cada factura recebeu nesse meio. Sem factura correspondente, é numerário (devolução em dinheiro na carrinha),
- * marcado como presumido. Assim, a soma por meio de cobrança é sempre igual às vendas líquidas cobradas
- * (facturas − notas de crédito), como na conciliação de caixa. Cada parcela diz de onde veio ('atribuido' ou
- * 'presumido'), para se ver no detalhe do documento e se corrigir na origem.
+ * Notas de crédito sem rodapé no Pinguim BO, pela ordem das boas práticas de contas a receber e de conciliação de caixa:
+ *
+ *  1. Compensação (IAS 32 §42 / liquidação por encontro de contas): se a factura que a nota corrige foi dada como
+ *     liquidada sem nenhum meio de pagamento («Sem meio indicado»), foi a própria nota de crédito que a liquidou —
+ *     não entrou nem saiu dinheiro. As duas ficam com o meio «Compensação com nota de crédito» (código CMP), a
+ *     positivo na factura e a negativo na nota, e saem de dinheiro, Multicaixa e outros meios.
+ *  2. Devolução ao meio original (regra das redes de pagamento e dos sistemas de ponto de venda): o resto debita o meio
+ *     com que o cliente pagou a factura corrigida, repartido pelos meios dela, sem nunca devolver mais do que recebeu.
+ *  3. Sem factura correspondente: numerário (devolução em dinheiro na carrinha), marcado como presumido.
+ *
+ * Factura corrigida: a mais recente do mesmo cliente e da mesma rota até à nota (Consumidor Final: só no mesmo dia),
+ * primeiro a de valor igual ao da nota. Na compensação conta também a factura seguinte do mesmo cliente (o crédito
+ * da nota usado para a pagar). Resultado: soma por meio de cobrança = vendas líquidas cobradas
+ * (facturas − notas de crédito − por receber). Cada parcela diz de onde veio ('atribuido', 'presumido').
  */
 function naval_vendas_devolucoes(array $vendas): array
 {
@@ -167,32 +173,74 @@ function naval_vendas_devolucoes(array $vendas): array
         $cf = !$v['nif'] || preg_match('/^9{9,}$/', (string) $v['nif']);
         return $v['rota'] . '|' . ($cf ? 'CF|' . $v['data'] : (($v['cliente_codigo'] ?? '') !== '' ? $v['cliente_codigo'] : $v['nif']));
     };
+    $quando = function (array $v): string { return ($v['data'] ?? '') . ' ' . ($v['hora'] ?? ''); };
     $facturas = [];   // chave do cliente => [índices], da mais recente para a mais antiga
     $saldo = [];      // índice => [código => valor ainda devolvível]
+    $semMeio = [];    // índice => valor liquidado sem meio indicado (candidato a compensação)
+    $nomes = [];
     foreach ($vendas as $i => $v) {
         if (!empty($v['nc'])) continue;
         $facturas[$chaveCli($v)][] = $i;
         foreach ($v['pagamentos'] ?? [] as $p) {
-            if (($p['codigo'] ?? '?') === '?' || (float) $p['valor'] <= 0) continue;
+            if ((float) $p['valor'] <= 0) continue;
+            if (($p['codigo'] ?? '?') === '?') {
+                $semMeio[$i] = ($semMeio[$i] ?? 0.0) + (float) $p['valor'];
+                continue;
+            }
             $saldo[$i][$p['codigo']] = ($saldo[$i][$p['codigo']] ?? 0.0) + (float) $p['valor'];
+            $nomes[$p['codigo']] = $p['meio'];
         }
     }
-    $quando = function (array $v): string { return ($v['data'] ?? '') . ' ' . ($v['hora'] ?? ''); };
     foreach ($facturas as &$l) usort($l, function ($a, $b) use ($vendas, $quando) { return strcmp($quando($vendas[$b]), $quando($vendas[$a])); });
     unset($l);
-    $nomes = [];
-    foreach ($vendas as $v) foreach ($v['pagamentos'] ?? [] as $p) if (($p['codigo'] ?? '?') !== '?') $nomes[$p['codigo']] = $p['meio'];
-    // notas por ordem cronológica: cada uma consome o que a factura ainda tem para devolver
     $ncs = array_keys(array_filter($vendas, function ($v) { return !empty($v['nc']); }));
     usort($ncs, function ($a, $b) use ($vendas, $quando) { return strcmp($quando($vendas[$a]), $quando($vendas[$b])); });
     foreach ($ncs as $n) {
         $nc = $vendas[$n];
-        $falta = round(abs((float) $nc['total']) - abs(array_sum(array_column($nc['pagamentos'] ?? [], 'valor'))), 2);
+        $valor = abs((float) $nc['total']);
+        $falta = round($valor - abs(array_sum(array_column($nc['pagamentos'] ?? [], 'valor'))), 2);
         if ($falta <= 0.005) continue;
+        $cands = array_values(array_filter($facturas[$chaveCli($nc)] ?? [], function ($i) use ($vendas, $quando, $nc) { return $quando($vendas[$i]) <= $quando($nc); }));
+        // a de valor igual ao da nota primeiro (é quase sempre a que a nota anula)
+        usort($cands, function ($a, $b) use ($vendas, $valor) {
+            $ia = abs(abs((float) $vendas[$a]['total']) - $valor) < 0.005 ? 0 : 1;
+            $ib = abs(abs((float) $vendas[$b]['total']) - $valor) < 0.005 ? 0 : 1;
+            return $ia <=> $ib;
+        });
         $novos = [];
-        foreach ($facturas[$chaveCli($nc)] ?? [] as $i) {
+        // 1. compensação com facturas liquidadas sem meio, antes ou depois da nota: o crédito da nota também pode
+        //    liquidar uma factura seguinte do mesmo cliente (crédito usado como pagamento). Valor igual primeiro,
+        //    depois a mais próxima no tempo.
+        $comp = array_values(array_filter($facturas[$chaveCli($nc)] ?? [], function ($i) use ($semMeio) { return ($semMeio[$i] ?? 0) > 0.005; }));
+        $t0 = strtotime($quando($nc)) ?: 0;
+        usort($comp, function ($a, $b) use ($vendas, $valor, $quando, $t0) {
+            $ia = abs(abs((float) $vendas[$a]['total']) - $valor) < 0.005 ? 0 : 1;
+            $ib = abs(abs((float) $vendas[$b]['total']) - $valor) < 0.005 ? 0 : 1;
+            if ($ia !== $ib) return $ia <=> $ib;
+            return abs((strtotime($quando($vendas[$a])) ?: 0) - $t0) <=> abs((strtotime($quando($vendas[$b])) ?: 0) - $t0);
+        });
+        foreach ($comp as $i) {
             if ($falta <= 0.005) break;
-            if ($quando($vendas[$i]) > $quando($nc)) continue;   // factura posterior à nota
+            $c = min($falta, $semMeio[$i] ?? 0.0);
+            if ($c <= 0.005) continue;
+            $semMeio[$i] -= $c;
+            $falta = round($falta - $c, 2);
+            $novos[] = ['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => -round($c, 2), 'atribuido' => $vendas[$i]['documento']];
+            // na factura, a parte «Sem meio indicado» passa a compensação
+            $resto = $c;
+            foreach ($vendas[$i]['pagamentos'] as $k => $p) {
+                if ($resto <= 0.005 || ($p['codigo'] ?? '?') !== '?') continue;
+                $tira = min($resto, (float) $p['valor']);
+                $vendas[$i]['pagamentos'][$k]['valor'] = round((float) $p['valor'] - $tira, 2);
+                $resto = round($resto - $tira, 2);
+            }
+            $vendas[$i]['pagamentos'] = array_values(array_filter($vendas[$i]['pagamentos'], function ($p) { return abs((float) $p['valor']) > 0.005; }));
+            $vendas[$i]['pagamentos'][] = ['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => round($c, 2), 'atribuido' => $nc['documento']];
+            $vendas[$i]['meio_pagamento'] = implode(', ', array_unique(array_column($vendas[$i]['pagamentos'], 'meio')));
+        }
+        // 2. devolução ao meio original
+        foreach ($cands as $i) {
+            if ($falta <= 0.005) break;
             $disp = array_sum($saldo[$i] ?? []);
             if ($disp <= 0.005) continue;
             $tira = min($falta, $disp);
@@ -210,6 +258,7 @@ function naval_vendas_devolucoes(array $vendas): array
             }
             $falta = round($falta - ($tira - $resto), 2);
         }
+        // 3. sem factura correspondente
         if ($falta > 0.005) $novos[] = ['codigo' => 'NU', 'meio' => $nomes['NU'] ?? NAVAL_MEIOS_PAGAMENTO['NU'], 'valor' => -$falta, 'presumido' => true];
         $vendas[$n]['pagamentos'] = array_merge($nc['pagamentos'] ?? [], $novos);
         $vendas[$n]['meio_pagamento'] = implode(', ', array_unique(array_column($vendas[$n]['pagamentos'], 'meio')));

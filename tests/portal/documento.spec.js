@@ -46,16 +46,22 @@ const A = [
 
 test('clicar no documento abre o painel com a representação, os artigos e os meios de cobrança', async ({ page }) => {
   const erros = await abrir(page, '#documentos', { api: (r) => r.fulfill({ json: { vendas: V, artigos: A } }) });
-  await page.locator('.rel-tab', { hasText: 'Documentos Pinguim' }).click();
+  await page.locator('.rel-tab', { hasText: 'Registo de documentos de venda' }).click();
   await page.getByRole('button', { name: 'Abrir o documento FR 1/7' }).first().click();
   const p = page.locator('dialog.doc-painel');
   await expect(p).toBeVisible();
   await expect(p.locator('h2')).toHaveText('FR 1/7');
-  await expect(p.locator('.doc-talao')).toContainText('CANTINA KIANDA');
-  await expect(p.locator('.doc-talao')).toContainText('Fraldas Bebé M');
-  await expect(p.locator('.doc-talao')).toContainText('Multicaixa');
-  await expect(p.locator('.doc-resumo')).toContainText('Numerário, Multicaixa');
-  await expect(p.locator('.doc-sec table')).toContainText('1400,00');
+  const f = p.locator('.doc-folha');
+  await expect(f.locator('.df-tipo')).toHaveText('Factura-recibo');
+  await expect(f.locator('.df-meta')).toContainText('CANTINA KIANDA');
+  await expect(f.locator('.df-linhas tbody tr')).toHaveCount(1);
+  await expect(f.locator('.df-linhas')).toContainText('Fraldas Bebé M');
+  await expect(f.locator('.df-iva')).toContainText('14 %');
+  await expect(f.locator('.df-pags')).toContainText('Multicaixa');
+  await expect(f.locator('.df-grande')).toContainText(/11\s400,00/);
+  // cabe no painel: sem deslocamento horizontal do painel
+  const [sw, cw] = await p.evaluate((d) => [d.scrollWidth, d.clientWidth]);
+  expect(sw).toBeLessThanOrEqual(cw);
   await page.keyboard.press('Escape');
   await expect(p).toHaveCount(0);
   expect(erros).toEqual([]);

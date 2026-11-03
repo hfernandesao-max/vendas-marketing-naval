@@ -329,6 +329,8 @@ caso('aprovação: sem aprovação nada é instalado; aviso por correio uma só 
     $v = svc('naval_act_vista_portal()');
     confirma($v['ok'] && array_column($v['r']['pendentes'], 'versao') === ['v12', 'v11'], 'vista do portal: ' . json_encode($v));
     confirma($v['r']['pendentes'][0]['seccoes'][0]['titulo'] === 'Novidade v12', 'resumo da versão');
+    $pac = $v['r']['pendentes'][0]['pacote'] ?? [];
+    confirma(array_column($pac['versoes'] ?? [], 'versao') === ['v12', 'v11'] && array_column($pac['seccoes'] ?? [], 'titulo') === ['Novidade v12', 'Novidade v11'], 'pacote único: ' . json_encode($pac));
 });
 
 caso('aprovação: só a mais recente (a não ser que esta seja reprovada); reprovar exige motivo', function () use ($util) {

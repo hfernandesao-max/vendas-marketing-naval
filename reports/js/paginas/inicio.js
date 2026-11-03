@@ -225,6 +225,7 @@ function painelInicio(pg) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
       outros = Math.max(0, valorCat(V, 'transferencia') + valorCat(V, 'outro')),
+      semMeio = Math.max(0, valorCat(V, 'sem_meio')),
       pend = pendentesDe(V),
       ncC = notasCredito(V),
       base = liq + pend; // vendas líquidas: recebido líquido (já sem as notas de crédito) + por receber
@@ -232,6 +233,7 @@ function painelInicio(pg) {
       { nome: t('Numerário'), valor: din, cor: COR.s1 },
       { nome: t('Multicaixa'), valor: mc, cor: COR.s2 },
       { nome: t('Outros meios'), valor: outros, cor: COR.s3 },
+      { nome: t('Sem meio indicado'), valor: semMeio, cor: COR.a2, href: podeVer('auditoria') ? 'auditoria' : null },
       { nome: t('Por receber'), valor: pend, cor: COR.neutro, href: podeVer('pendentes') ? 'pendentes' : null },
     ].filter((p) => p.valor > 0.005 || p.cor === COR.s1);
     cards.push(

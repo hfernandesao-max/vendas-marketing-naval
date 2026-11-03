@@ -9,19 +9,25 @@ teste('perfis do sistema: 12, com âmbito por rota e dois passos', function () {
     igual(NAVAL_COLUNAS, naval_colunas());
 });
 
-teste('EXT (técnicos externos): só ver, todas as rotas, sem exportar, gerir, NIF, registos, acessos nem IA', function () {
+teste('EXT (técnicos externos): só ver (Excel só dos documentos e da AGT), todas as rotas, sem NIF, registos, acessos nem IA', function () {
     $m = naval_matriz_base();
     $ve = [];
     foreach ($m as $rec => $col) {
-        verdade(in_array($col['EXT'], ['', 'V'], true), $rec . ': EXT com ' . $col['EXT']);
-        if ($col['EXT'] === 'V') $ve[] = $rec;
+        verdade(in_array($col['EXT'], in_array($rec, ['documentos', 'agt'], true) ? ['E'] : ['', 'V'], true), $rec . ': EXT com ' . $col['EXT']);
+        if ($col['EXT'] !== '') $ve[] = $rec;
     }
     foreach (['nif', 'acessos', 'registos', 'estrutura-dados', 'excel-completo', 'exportar-dados', 'sap-exportar', 'assistente', 'actualizacoes', 'geo-rotas-descarregar'] as $r) {
         igual('', $m[$r]['EXT'], $r);
     }
-    foreach (['inicio', 'vendas-promotor', 'documentos', 'pagamentos', 'conciliacao-carrinha', 'geo-prospeccao', 'alertas'] as $r) igual('V', $m[$r]['EXT'], $r);
+    foreach (['inicio', 'vendas-promotor', 'pagamentos', 'conciliacao-carrinha', 'geo-prospeccao', 'alertas'] as $r) igual('V', $m[$r]['EXT'], $r);
     verdade(!in_array('EXT', naval_perfis_por_rota(), true), 'EXT vê todas as rotas');
     verdade(count($ve) > 30, 'páginas a validar: ' . count($ve));
+});
+
+teste('documentos e AGT: todos os perfis que os vêem exportam para Excel', function () {
+    foreach (['documentos', 'agt'] as $rec) foreach (naval_matriz_base()[$rec] as $p => $n) {
+        verdade($n === '' || in_array($n, ['E', 'Er', 'A'], true), "$rec/$p: $n");
+    }
 });
 
 teste('perfil criado: coluna nova da matriz com as permissões copiadas; desactivado sai da matriz', function () {

@@ -222,7 +222,14 @@ R.pagamentos = (pg) => {
         }),
       ),
     );
-  const NOMES_CAT = { dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', transferencia: 'Transferência', outro: 'Outro' };
+  const NOMES_CAT = {
+    dinheiro: 'Dinheiro',
+    multicaixa: 'Multicaixa',
+    transferencia: 'Transferência',
+    outro: 'Outro',
+    sem_meio: 'Sem meio indicado',
+    compensacao: 'Compensação',
+  };
   secs.append(
     tabela({
       id: 'pg-meio',

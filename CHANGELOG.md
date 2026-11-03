@@ -4,6 +4,46 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Meios de cobrança: compensação e «Sem meio indicado» separados
+- **Factura anulada por nota de crédito** (liquidada no Pinguim BO sem rodapé de pagamento e corrigida por uma nota
+  de crédito do mesmo cliente): foi a nota que a liquidou, sem dinheiro. As duas passam a «Compensação com nota de
+  crédito» (encontro de contas, IAS 32) e saem de dinheiro, Multicaixa e outros meios. A nota de valor igual é
+  emparelhada primeiro.
+- **Em dinheiro + Em Multicaixa (+ transferências) = recebido líquido**, sem a linha «Outros meios» indevida.
+- O que continuar liquidado sem rodapé aparece como **«Sem meio indicado»** (âmbar, com ligação às Ocorrências para
+  corrigir no Pinguim BO), nunca escondido em «Outros meios».
+
+- A compensação também se faz quando o crédito da nota é usado para pagar uma **factura seguinte** do mesmo cliente
+  (ex.: nota de crédito a 30-10 e factura de igual valor a 03-11, liquidada sem dinheiro).
+
+### Detalhe do documento: o documento como foi emitido
+- O painel lateral passa a mostrar **o documento numa página única**, maior e organizada como uma factura:
+  - tipo e número, data, hora, rota, cliente, NIF e código do cliente;
+  - as linhas com código, descrição, quantidade, unidade, preço unitário, desconto, taxa de IVA e total;
+  - o resumo do IVA por taxa, os meios de pagamento e os totais (ilíquido, descontos, IVA, total do documento,
+    recebido, em falta).
+- Letra legível, números alinhados, sem nada cortado nem deslocamento lateral. Imprimir e Fechar ficam sempre visíveis
+  no topo. Imprime-se só o documento.
+
+### Comunicação AGT: pedidos de todas as séries
+- O estado lia só o campo extra n.º 26046 (request_number). No Pinguim BO cada tipo de documento / série pode ter o
+  seu próprio campo com o mesmo nome, por isso os documentos das outras séries apareciam todos «Por comunicar».
+  Passam a contar todos os campos extra chamados **request_number** (e «Motivo de cancelamento» para as anulações),
+  com o número do pedido em texto ou em número. Só leitura (SELECT), como sempre.
+
+### Excel dos documentos e da AGT para todos
+- Todos os perfis que vêem os Documentos e a Comunicação AGT passam a exportá-los para Excel (supervisores e
+  promotores só das suas rotas).
+
+### Actualizações: pacote único
+- As versões por instalar juntam-se num **pacote de instalação único** (ISO/IEC 20000-1, «release package»): um só
+  cartão com todas as versões incluídas e tudo o que muda, uma só aprovação, uma só instalação, uma só cópia de
+  segurança e um só ponto de reposição.
+
+### Documentos: nomes de secção normalizados
+- «Vendas por rota» passa a **«Resumo por rota»** e «Documentos Pinguim» a **«Registo de documentos de venda»**
+  (diário de vendas), sem nome de sistema no título.
+
 ### Dinheiro + Multicaixa = vendas cobradas (notas de crédito no meio da factura)
 - As **notas de crédito sem meio de devolução** no Pinguim BO passam a debitar o meio com que o cliente pagou a factura
   que corrigem (regra «devolução ao meio original» dos sistemas de ponto de venda): a factura mais recente do mesmo

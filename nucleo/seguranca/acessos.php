@@ -28,7 +28,7 @@ const NAVAL_PERFIS = [
 // Ordem das colunas da matriz: TI DIR COM SUP PRO FIN BO LOG GEO AUD EXT ('-' = sem acesso).
 // O SADM tem 'A' em tudo.
 // EXT — técnicos externos que só validam o portal (menor privilégio: ISO 27001 A.5.15/A.8.2, NIST SP 800-53 AC-6):
-// só ver (V), todas as rotas, nunca exportar, gerir ou administrar, sem NIF nem dados pessoais, sem registos nem
+// só ver (V), todas as rotas, sem gerir nem administrar, só exporta os documentos e a AGT para Excel, sem NIF nem dados pessoais, sem registos nem
 // matriz de acessos, sem o assistente de IA; dois passos obrigatórios. A conta deve ter prazo («--ate»).
 const NAVAL_COLUNAS = ['TI', 'DIR', 'COM', 'SUP', 'PRO', 'FIN', 'BO', 'LOG', 'GEO', 'AUD', 'EXT'];
 const NAVAL_MATRIZ_TXT = [
@@ -39,7 +39,8 @@ const NAVAL_MATRIZ_TXT = [
     'vendas-dia'           => 'V  E  E  Vr Vr E  -  -  -  E  V',
     'vendas-cliente'       => 'V  E  E  Er Vr E  -  -  -  E  V',
     'ranking'              => 'V  E  E  Vr Vr V  -  -  -  V  V',
-    'documentos'           => 'V  E  E  Er Vr E  V  -  -  E  V',
+    // documentos e AGT: todos os perfis que os vêem exportam para Excel (âmbito por rota nos SUP e PRO)
+    'documentos'           => 'E  E  E  Er Er E  E  -  -  E  E',
     'pagamentos'           => 'V  E  V  Vr Vr E  -  -  -  E  V',
     'pendentes'            => 'V  E  V  Vr Vr E  -  -  -  E  V',
     'auditoria'            => 'V  V  E  Vr -  E  V  -  -  E  V',
@@ -51,7 +52,7 @@ const NAVAL_MATRIZ_TXT = [
     'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E  V',
     'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V  V',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
-    'agt'                  => 'V  V  -  -  -  E  V  -  -  E  V',
+    'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
     'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V  V',
     'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V  V',

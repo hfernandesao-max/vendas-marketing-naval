@@ -67,6 +67,10 @@ export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codi
 function catMeio(p) {
   const c = String(p.codigo || '').toUpperCase(),
     m = String(p.meio || '').toUpperCase();
+  // compensação factura × nota de crédito (sem dinheiro): soma zero, fica fora dos meios de cobrança
+  if (c === 'CMP') return 'compensacao';
+  // liquidado no Pinguim BO sem rodapé de pagamento: excepção a corrigir na origem, nunca «outro meio»
+  if (c === '?') return 'sem_meio';
   if (c === 'NU' || /NUMER|DINHEIRO|CASH/.test(m)) return 'dinheiro';
   if (c === 'MC' || /MULTI|TPA|CART|CARD/.test(m)) return 'multicaixa';
   if (c === 'TB' || /TRANSF/.test(m)) return 'transferencia';
@@ -85,7 +89,10 @@ export function porMeio(V) {
       m.set(k, o);
     }),
   );
-  return [...m.values()].map((o) => ({ ...o, docs: o.docs.size })).sort((a, b) => b.valor - a.valor);
+  return [...m.values()]
+    .filter((o) => o.categoria !== 'compensacao' || Math.abs(o.valor) > 0.005)
+    .map((o) => ({ ...o, docs: o.docs.size }))
+    .sort((a, b) => b.valor - a.valor);
 }
 export function porPromotor(V) {
   const vendasPorRota = group(V, 'rota');
