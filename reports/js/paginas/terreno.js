@@ -6,6 +6,7 @@ import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { inR } from '../periodo.js';
 import { DB, group, sum } from '../util.js';
+import { colDocumento } from '../componentes/documento.js';
 
 R.auditoria = (pg) => {
   // Verificam-se os documentos de venda (as notas de crédito não são vendas nem cobranças); o total é líquido
@@ -144,7 +145,7 @@ R.auditoria = (pg) => {
       total: true,
       cols: [
         { key: 'data', label: t('Dia'), type: 'date' },
-        { key: 'documento', label: t('Documento'), nowrap: true },
+        colDocumento(),
         { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'cliente', label: t('Cliente'), wrap: true },
         { key: 'total', label: t('Total'), type: 'kz', sum: true },

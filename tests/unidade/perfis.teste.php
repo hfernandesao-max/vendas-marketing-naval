@@ -1,12 +1,27 @@
 <?php
 // Perfis dinâmicos: perfis do sistema fixos, perfis criados como colunas da matriz.
 
-teste('perfis do sistema: 11, com âmbito por rota e dois passos', function () {
+teste('perfis do sistema: 12, com âmbito por rota e dois passos', function () {
     $p = naval_perfis();
-    igual(11, count($p));
+    igual(12, count($p));
     igual(['SUP', 'PRO'], naval_perfis_por_rota());
-    igual(['SADM', 'TI', 'DIR'], naval_perfis_mfa());
+    igual(['SADM', 'TI', 'DIR', 'EXT'], naval_perfis_mfa());
     igual(NAVAL_COLUNAS, naval_colunas());
+});
+
+teste('EXT (técnicos externos): só ver, todas as rotas, sem exportar, gerir, NIF, registos, acessos nem IA', function () {
+    $m = naval_matriz_base();
+    $ve = [];
+    foreach ($m as $rec => $col) {
+        verdade(in_array($col['EXT'], ['', 'V'], true), $rec . ': EXT com ' . $col['EXT']);
+        if ($col['EXT'] === 'V') $ve[] = $rec;
+    }
+    foreach (['nif', 'acessos', 'registos', 'estrutura-dados', 'excel-completo', 'exportar-dados', 'sap-exportar', 'assistente', 'actualizacoes', 'geo-rotas-descarregar'] as $r) {
+        igual('', $m[$r]['EXT'], $r);
+    }
+    foreach (['inicio', 'vendas-promotor', 'documentos', 'pagamentos', 'conciliacao-carrinha', 'geo-prospeccao', 'alertas'] as $r) igual('V', $m[$r]['EXT'], $r);
+    verdade(!in_array('EXT', naval_perfis_por_rota(), true), 'EXT vê todas as rotas');
+    verdade(count($ve) > 30, 'páginas a validar: ' . count($ve));
 });
 
 teste('perfil criado: coluna nova da matriz com as permissões copiadas; desactivado sai da matriz', function () {

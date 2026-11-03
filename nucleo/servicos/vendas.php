@@ -4,8 +4,9 @@
  * linhas de artigos, e o âmbito de cada perfil (rotas, NIF e Logística só com quantidades).
  *
  * Notas de crédito: vêm com o total (e as linhas) em negativo e 'nc' => true, para o total de vendas ser
- * sempre líquido (facturas − notas de crédito) em todos os ecrãs. Não têm pagamentos nem valor por receber:
- * o recebido e os pendentes continuam a ser os das facturas, como o Pinguim BO os regista.
+ * sempre líquido (facturas − notas de crédito) em todos os ecrãs. Não têm valor por receber; os pagamentos são a
+ * devolução ao cliente, a negativo, no meio do rodapé ou, sem rodapé, no meio da factura que corrigem
+ * (naval_vendas_devolucoes): a soma por meio de cobrança é sempre igual às vendas líquidas cobradas.
  */
 defined('NAVAL_NUCLEO') || exit;
 
@@ -106,7 +107,7 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
             }
         }
     }
-    return ['vendas' => $vendas, 'artigos' => $artigos];
+    return ['vendas' => naval_vendas_devolucoes($vendas), 'artigos' => $artigos];
 }
 
 /**
@@ -148,6 +149,79 @@ function naval_vendas_pagamentos_doc(array $linhas, bool $nc, float $pago, bool 
     $out = [];
     foreach ($porMeio as $k => $v) if (round($v, 2) > 0) $out[] = ['codigo' => (string) $k, 'meio' => $nomes[$k], 'valor' => round($v, 2)];
     return $out;
+}
+
+/**
+ * Meio de devolução das notas de crédito sem rodapé no Pinguim BO («refund to original tender», a regra das redes de
+ * pagamento e dos sistemas de ponto de venda): a devolução debita o meio com que o cliente pagou a factura que a nota
+ * corrige — a factura mais recente do mesmo cliente e da mesma rota até à data da nota (Consumidor Final: só no
+ * mesmo dia), repartida pelos meios dessa factura e, se não chegar, pelas anteriores, sem nunca devolver mais do que
+ * cada factura recebeu nesse meio. Sem factura correspondente, é numerário (devolução em dinheiro na carrinha),
+ * marcado como presumido. Assim, a soma por meio de cobrança é sempre igual às vendas líquidas cobradas
+ * (facturas − notas de crédito), como na conciliação de caixa. Cada parcela diz de onde veio ('atribuido' ou
+ * 'presumido'), para se ver no detalhe do documento e se corrigir na origem.
+ */
+function naval_vendas_devolucoes(array $vendas): array
+{
+    $chaveCli = function (array $v): string {
+        $cf = !$v['nif'] || preg_match('/^9{9,}$/', (string) $v['nif']);
+        return $v['rota'] . '|' . ($cf ? 'CF|' . $v['data'] : (($v['cliente_codigo'] ?? '') !== '' ? $v['cliente_codigo'] : $v['nif']));
+    };
+    $facturas = [];   // chave do cliente => [índices], da mais recente para a mais antiga
+    $saldo = [];      // índice => [código => valor ainda devolvível]
+    foreach ($vendas as $i => $v) {
+        if (!empty($v['nc'])) continue;
+        $facturas[$chaveCli($v)][] = $i;
+        foreach ($v['pagamentos'] ?? [] as $p) {
+            if (($p['codigo'] ?? '?') === '?' || (float) $p['valor'] <= 0) continue;
+            $saldo[$i][$p['codigo']] = ($saldo[$i][$p['codigo']] ?? 0.0) + (float) $p['valor'];
+        }
+    }
+    $quando = function (array $v): string { return ($v['data'] ?? '') . ' ' . ($v['hora'] ?? ''); };
+    foreach ($facturas as &$l) usort($l, function ($a, $b) use ($vendas, $quando) { return strcmp($quando($vendas[$b]), $quando($vendas[$a])); });
+    unset($l);
+    $nomes = [];
+    foreach ($vendas as $v) foreach ($v['pagamentos'] ?? [] as $p) if (($p['codigo'] ?? '?') !== '?') $nomes[$p['codigo']] = $p['meio'];
+    // notas por ordem cronológica: cada uma consome o que a factura ainda tem para devolver
+    $ncs = array_keys(array_filter($vendas, function ($v) { return !empty($v['nc']); }));
+    usort($ncs, function ($a, $b) use ($vendas, $quando) { return strcmp($quando($vendas[$a]), $quando($vendas[$b])); });
+    foreach ($ncs as $n) {
+        $nc = $vendas[$n];
+        $falta = round(abs((float) $nc['total']) - abs(array_sum(array_column($nc['pagamentos'] ?? [], 'valor'))), 2);
+        if ($falta <= 0.005) continue;
+        $novos = [];
+        foreach ($facturas[$chaveCli($nc)] ?? [] as $i) {
+            if ($falta <= 0.005) break;
+            if ($quando($vendas[$i]) > $quando($nc)) continue;   // factura posterior à nota
+            $disp = array_sum($saldo[$i] ?? []);
+            if ($disp <= 0.005) continue;
+            $tira = min($falta, $disp);
+            $resto = $tira;
+            $meios = $saldo[$i];
+            arsort($meios);
+            $ultimo = naval_vendas_chave_ultima($meios);
+            foreach ($meios as $c => $val) {
+                $parte = $c === $ultimo ? $resto : round($tira * $val / $disp, 2);
+                $parte = min($parte, $saldo[$i][$c], $resto);
+                if ($parte <= 0.005) continue;
+                $saldo[$i][$c] -= $parte;
+                $resto = round($resto - $parte, 2);
+                $novos[] = ['codigo' => (string) $c, 'meio' => $nomes[$c] ?? (string) $c, 'valor' => -round($parte, 2), 'atribuido' => $vendas[$i]['documento']];
+            }
+            $falta = round($falta - ($tira - $resto), 2);
+        }
+        if ($falta > 0.005) $novos[] = ['codigo' => 'NU', 'meio' => $nomes['NU'] ?? NAVAL_MEIOS_PAGAMENTO['NU'], 'valor' => -$falta, 'presumido' => true];
+        $vendas[$n]['pagamentos'] = array_merge($nc['pagamentos'] ?? [], $novos);
+        $vendas[$n]['meio_pagamento'] = implode(', ', array_unique(array_column($vendas[$n]['pagamentos'], 'meio')));
+    }
+    return $vendas;
+}
+
+/** Última chave de um vector (array_key_last só existe a partir do PHP 7.3). */
+function naval_vendas_chave_ultima(array $a)
+{
+    $k = array_keys($a);
+    return $k ? $k[count($k) - 1] : null;
 }
 
 /**
@@ -302,7 +376,7 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             $artigos = naval_vendas_artigos_sql($inicio, $fim, $promotores);
             if ($artigos === null) return null;
         }
-        return ['vendas' => $vendas, 'artigos' => $artigos];
+        return ['vendas' => naval_vendas_devolucoes($vendas), 'artigos' => $artigos];
     } catch (Throwable $e) {
         error_log('[vendas SQL] ' . $e->getMessage());
         return null;

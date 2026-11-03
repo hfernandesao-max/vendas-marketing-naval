@@ -71,6 +71,8 @@ file_put_contents($env, implode("\n", [
     'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
+    // a janela nocturna liga-se só no caso dela (a hora real do teste não pode mudar os outros)
+    'ACTUALIZACAO_APROVACAO_AUTOMATICA=0', 'ACTUALIZACAO_INSTALACAO_NOCTURNA=0',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $env);
 putenv('GITHUB_SIMULADO_DIR=' . $gh);
@@ -383,6 +385,40 @@ caso('ficheiros alterados à mão: «Aplicar mesmo assim» decidido no portal', 
     confirma(svc('naval_act_decidir("v15", "forcar", "henrique")')['ok'], 'não decidiu aplicar mesmo assim');
     [$r, $t] = act('urgente');
     confirma($r === 0 && h('nucleo/texto.php') === hash('sha256', $texto . "\n// v15\n") && h('reports/js/util.js') === hash('sha256', $util . "\n// v15\n"), $t);
+});
+
+caso('janela nocturna: não decidida aprovada às 02:45 e instalada às 03:00; disjuntor depois de uma falha', function () use ($env, $util) {
+    $antes = (string) file_get_contents($env);
+    file_put_contents($env, str_replace(['ACTUALIZACAO_APROVACAO_AUTOMATICA=0', 'ACTUALIZACAO_INSTALACAO_NOCTURNA=0'], ['ACTUALIZACAO_APROVACAO_AUTOMATICA=02:45', 'ACTUALIZACAO_INSTALACAO_NOCTURNA=03:00'], $antes));
+    publicar(['v15' => ['reports/js/util.js' => $util . "\n// v15\n"], 'v21' => ['reports/js/util.js' => $util . "\n// v21\n"], 'v22' => ['reports/js/util.js' => $util . "\n// v22\n"]]);
+    $quando = function (string $h, int $dias = 1): string { return 'naval_act_noite(["agora" => strtotime("+' . $dias . ' day ' . $h . '"), "escrever" => function ($s) {}])'; };
+    [$r, $t] = act('automatico');
+    confirma($r === 0 && strpos($t, 'instaladas às 03:00') !== false && h('reports/js/util.js') === hash('sha256', $util . "\n// v15\n"), 'a tarefa das 02:15 não instala: ' . $t);
+    $d = svc($quando('02:20'));
+    confirma($d['ok'] && $d['r'] === null && !isset(svc('naval_act_aprovacoes()')['r']['v22']), 'aprovou antes da hora: ' . json_encode($d));
+    $antesEmails = count(emails());
+    confirma(svc($quando('02:50'))['ok'], 'aprovação automática');
+    $a = svc('naval_act_aprovacoes()')['r'];
+    confirma(($a['v22']['decisao'] ?? '') === 'aprovada' && ($a['v22']['por'] ?? '') === 'automatico' && !empty($a['v22']['automatica']) && empty($a['v22']['urgente']), json_encode($a['v22'] ?? null));
+    confirma(!isset($a['v21']), 'só a mais recente é aprovada');
+    confirma(in_array('Portal RTM · versão v22 aprovada automaticamente', emails(), true) && count(emails()) === $antesEmails + 1, 'sem correio da aprovação automática');
+    svc($quando('02:55'));
+    confirma(count(emails()) === $antesEmails + 1, 'aprovou duas vezes na mesma noite');
+    $d = svc($quando('03:05'));
+    confirma($d['ok'] && ($d['r']['resultado'] ?? '') === 'actualizada' && h('reports/js/util.js') === hash('sha256', $util . "\n// v22\n"), 'instalação às 03:00: ' . json_encode($d));
+    $d = svc($quando('03:10'));
+    confirma($d['ok'] && $d['r'] === null, 'instalou duas vezes na mesma noite');
+    // disjuntor: depois de uma instalação que correu mal, nada é aprovado sozinho
+    publicar(['v22' => ['reports/js/util.js' => $util . "\n// v22\n"], 'v23' => ['reports/js/util.js' => $util . "\n// v23\n"]]);
+    svc('naval_act_registar("revertida", ["versao" => "v22", "falhas" => ["teste"]])');
+    svc($quando('02:50', 2));
+    $a = svc('naval_act_aprovacoes()')['r'];
+    confirma(!isset($a['v23']) && in_array('Portal RTM · aprovação automática suspensa', emails(), true), 'disjuntor: ' . json_encode($a['v23'] ?? null));
+    // recém-publicada (menos de uma hora) fica para a noite seguinte
+    svc('naval_act_registar("actualizada", ["versao" => "v22"])');
+    $d = svc('naval_act_a_aprovar_sozinha([["versao" => "v24", "publicada_em" => gmdate("Y-m-d\\TH:i:s\\Z", time() - 600)]], ["versao" => "v22"], [], time(), 60)');
+    confirma($d['ok'] && $d['r'] === null, 'aprovou uma recém-publicada: ' . json_encode($d));
+    file_put_contents($env, $antes);
 });
 
 caso('GitHub App: credencial de instalação de 1 hora, sem código pessoal nem renovação anual', function () use ($env, $gh, $tmp, $priv) {

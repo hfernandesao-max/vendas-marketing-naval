@@ -13,7 +13,8 @@
  *         [--pacote=ficheiro.zip] [--forcar] [--sem-http]
  *   php ferramentas/actualizar.php reverter          repõe a versão anterior (última cópia de segurança)
  *   php ferramentas/actualizar.php automatico        o que a tarefa nocturna corre (respeita ACTUALIZACAO_AUTOMATICA)
- *   php ferramentas/actualizar.php urgente           o que a tarefa de 5 em 5 minutos corre (só age com pedidos do portal)
+ *   php ferramentas/actualizar.php urgente           o que a tarefa de 5 em 5 minutos corre (pedidos do portal; às 02:45 aprova
+ *                                                    as versões não decididas e às 03:00 instala as aprovadas)
  *
  * Com ACTUALIZACAO_EXIGE_APROVACAO=1 (omissão) só se instalam versões aprovadas pelo super administrador na página
  * «Actualizações» do portal; «aplicar --pacote=» (instalação manual de um pacote) não depende da aprovação.
@@ -164,7 +165,9 @@ try {
             }
             if ($comando === 'urgente') {
                 $r = naval_act_urgente();
-                if ($r === null) exit(0);   // sem pedidos do portal
+                // sem pedidos do portal: janela nocturna (aprovação automática às 02:45, instalação às 03:00)
+                if ($r === null) $r = naval_act_noite();
+                if ($r === null) exit(0);
                 if ($r['resultado'] === 'revertida_pedido') {
                     echo '  ok     versão anterior reposta a pedido do portal' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . "\n";
                     naval_act_avisar('versão anterior reposta', ['A pedido feito no portal, foi reposta a versão anterior' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . '.']);
@@ -175,6 +178,17 @@ try {
                     $falha('reposição com erros: ' . implode('; ', $r['erros']));
                 }
             } else {
+            if ($comando === 'automatico' && naval_act_exige_aprovacao() && !$opcao('pacote') && naval_act_horas_noite()['instalar'] !== '') {
+                // a instalação das aprovadas faz-se às 03:00 na tarefa de 5 em 5 minutos (naval_act_noite): aqui só se avisa
+                try {
+                    naval_act_avisar_pendentes(naval_act_versoes(), naval_act_estado());
+                } catch (Throwable $e) {
+                    naval_act_registar('pendentes_erro', ['erro' => $e->getMessage()]);
+                }
+                $h = naval_act_horas_noite();
+                echo '  ok     versões aprovadas instaladas às ' . $h['instalar'] . ($h['aprovar'] !== '' ? ' (as não decididas são aprovadas às ' . $h['aprovar'] . ')' : '') . "\n";
+                exit(0);
+            }
             $r = naval_act_aplicar([
                 'pacote' => is_string($opcao('pacote')) ? $opcao('pacote') : null,
                 'ensaio' => $comando === 'verificar',

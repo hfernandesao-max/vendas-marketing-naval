@@ -1,7 +1,7 @@
 <?php
 /**
  * Matriz de acessos («Matriz de acessos · Plataforma RTM e GeoMobilidade Naval», 26-10-2026):
- *   - 11 perfis (SADM de emergência + 10 perfis de trabalho);
+ *   - 12 perfis (SADM de emergência + 10 perfis de trabalho + EXT, técnicos externos só a ver);
  *   - nível por recurso: '' sem acesso, V ver, Vr ver só as suas rotas, E exportar,
  *     Er exportar só as suas rotas, G gerir, A administrar;
  *   - âmbito por rota (SUP e PRO) e dados pessoais (NIF) só para quem precisa.
@@ -22,71 +22,75 @@ const NAVAL_PERFIS = [
     'LOG'  => 'Logística e Armazém',
     'GEO'  => 'Planeamento de rotas',
     'AUD'  => 'Auditoria e Controlo',
+    'EXT'  => 'Técnico externo (validação, só leitura)',
 ];
 
-// Ordem das colunas da matriz: TI DIR COM SUP PRO FIN BO LOG GEO AUD ('-' = sem acesso).
+// Ordem das colunas da matriz: TI DIR COM SUP PRO FIN BO LOG GEO AUD EXT ('-' = sem acesso).
 // O SADM tem 'A' em tudo.
-const NAVAL_COLUNAS = ['TI', 'DIR', 'COM', 'SUP', 'PRO', 'FIN', 'BO', 'LOG', 'GEO', 'AUD'];
+// EXT — técnicos externos que só validam o portal (menor privilégio: ISO 27001 A.5.15/A.8.2, NIST SP 800-53 AC-6):
+// só ver (V), todas as rotas, nunca exportar, gerir ou administrar, sem NIF nem dados pessoais, sem registos nem
+// matriz de acessos, sem o assistente de IA; dois passos obrigatórios. A conta deve ter prazo («--ate»).
+const NAVAL_COLUNAS = ['TI', 'DIR', 'COM', 'SUP', 'PRO', 'FIN', 'BO', 'LOG', 'GEO', 'AUD', 'EXT'];
 const NAVAL_MATRIZ_TXT = [
     // REPORTS
-    'pagina-principal'     => 'V  V  V  V  V  V  V  V  V  V',
-    'inicio'               => 'V  E  E  Vr Vr E  V  V  -  V',
-    'vendas-promotor'      => 'V  E  E  Vr Vr E  -  -  -  E',
-    'vendas-dia'           => 'V  E  E  Vr Vr E  -  -  -  E',
-    'vendas-cliente'       => 'V  E  E  Er Vr E  -  -  -  E',
-    'ranking'              => 'V  E  E  Vr Vr V  -  -  -  V',
-    'documentos'           => 'V  E  E  Er Vr E  V  -  -  E',
-    'pagamentos'           => 'V  E  V  Vr Vr E  -  -  -  E',
-    'pendentes'            => 'V  E  V  Vr Vr E  -  -  -  E',
-    'auditoria'            => 'V  V  E  Vr -  E  V  -  -  E',
-    'registo-cargas'       => 'V  V  E  Vr Vr V  -  E  -  V',
-    'stock-carrinha'       => 'V  V  E  Vr Vr V  -  E  -  V',
-    'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V',
-    'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E',
-    'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E',
-    'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E',
-    'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V',
-    'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V',
-    'agt'                  => 'V  V  -  -  -  E  V  -  -  E',
-    'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V',
-    'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V',
-    'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V',
-    'pedidos-clientes'     => 'V  V  V  Vr -  -  G  -  -  V',
-    'clientes-qr'          => 'G  -  G  -  -  -  G  -  -  -',
-    'clientes'             => 'V  -  E  Er Vr V  E  -  V  V',
-    'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V',
-    'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E',
-    'excel-completo'       => '-  E  E  -  -  E  -  -  -  E',
-    'exportar-dados'       => '-  E  -  -  -  E  -  -  -  E',
-    'estrutura-dados'      => 'E  -  -  -  -  -  -  -  -  E',
-    'nif'                  => 'V  -  V  V  V  V  V  -  -  V',
+    'pagina-principal'     => 'V  V  V  V  V  V  V  V  V  V  V',
+    'inicio'               => 'V  E  E  Vr Vr E  V  V  -  V  V',
+    'vendas-promotor'      => 'V  E  E  Vr Vr E  -  -  -  E  V',
+    'vendas-dia'           => 'V  E  E  Vr Vr E  -  -  -  E  V',
+    'vendas-cliente'       => 'V  E  E  Er Vr E  -  -  -  E  V',
+    'ranking'              => 'V  E  E  Vr Vr V  -  -  -  V  V',
+    'documentos'           => 'V  E  E  Er Vr E  V  -  -  E  V',
+    'pagamentos'           => 'V  E  V  Vr Vr E  -  -  -  E  V',
+    'pendentes'            => 'V  E  V  Vr Vr E  -  -  -  E  V',
+    'auditoria'            => 'V  V  E  Vr -  E  V  -  -  E  V',
+    'registo-cargas'       => 'V  V  E  Vr Vr V  -  E  -  V  V',
+    'stock-carrinha'       => 'V  V  E  Vr Vr V  -  E  -  V  V',
+    'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V  V',
+    'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E  V',
+    'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E  V',
+    'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E  V',
+    'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V  V',
+    'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
+    'agt'                  => 'V  V  -  -  -  E  V  -  -  E  V',
+    'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
+    'cadastros-analise'    => 'V  V  E  Vr Vr -  E  -  -  V  V',
+    'cadastros-clientes'   => 'V  -  E  Er Vr -  E  -  V  V  V',
+    'pedidos-clientes'     => 'V  V  V  Vr -  -  G  -  -  V  V',
+    'clientes-qr'          => 'G  -  G  -  -  -  G  -  -  -  -',
+    'clientes'             => 'V  -  E  Er Vr V  E  -  V  V  V',
+    'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V  V',
+    'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E  V',
+    'excel-completo'       => '-  E  E  -  -  E  -  -  -  E  -',
+    'exportar-dados'       => '-  E  -  -  -  E  -  -  -  E  -',
+    'estrutura-dados'      => 'E  -  -  -  -  -  -  -  -  E  -',
+    'nif'                  => 'V  -  V  V  V  V  V  -  -  V  -',
     // Equipamentos (smartphones e impressoras do terreno)
-    'equipamentos'         => 'V  V  -  Vr -  V  V  E  -  E',
-    'equipamentos-movimentar' => '-  -  -  -  -  -  G  G  -  -',
-    'equipamentos-administrar' => 'G  -  -  -  -  -  -  G  -  -',
+    'equipamentos'         => 'V  V  -  Vr -  V  V  E  -  E  V',
+    'equipamentos-movimentar' => '-  -  -  -  -  -  G  G  -  -  -',
+    'equipamentos-administrar' => 'G  -  -  -  -  -  -  G  -  -  -',
     // Gestão (análise e IA): alertas, previsão, assistente, resumo diário, app de gestão e painel da sala comercial
-    'painel-gestao'        => 'V  V  V  Vr -  V  -  -  -  V',
-    'alertas'              => 'V  V  V  Vr -  V  -  -  -  V',
-    'previsao'             => 'V  V  V  Vr -  -  -  -  -  V',
-    'assistente'           => '-  V  -  -  -  -  -  -  -  -',
-    'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -',
-    'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -',
-    'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -',
+    'painel-gestao'        => 'V  V  V  Vr -  V  -  -  -  V  V',
+    'alertas'              => 'V  V  V  Vr -  V  -  -  -  V  V',
+    'previsao'             => 'V  V  V  Vr -  -  -  -  -  V  V',
+    'assistente'           => '-  V  -  -  -  -  -  -  -  -  -',
+    'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
+    'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -  -',
+    'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -  -',
     // GEO
-    'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V',
-    'geo-rotas-importar'   => 'G  -  -  -  -  -  G  -  G  -',
-    'geo-rotas-descarregar' => 'V  -  E  Er Er -  -  E  E  -',
-    'geo-zonas'            => 'V  V  V  Vr -  -  V  V  G  V',
-    'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -',
-    'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V',
-    'geo-prospeccao'       => 'V  V  V  Vr Vr -  -  -  G  V',
+    'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V  V',
+    'geo-rotas-importar'   => 'G  -  -  -  -  -  G  -  G  -  -',
+    'geo-rotas-descarregar' => 'V  -  E  Er Er -  -  E  E  -  -',
+    'geo-zonas'            => 'V  V  V  Vr -  -  V  V  G  V  V',
+    'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -  -',
+    'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V  V',
+    'geo-prospeccao'       => 'V  V  V  Vr Vr -  -  -  G  V  V',
     // Administração
-    'acessos'              => 'E  -  -  -  -  -  -  -  -  E',
-    'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -',
-    'admin-config'         => '-  -  -  -  -  -  -  -  -  -',
-    'registos'             => 'V  -  -  -  -  -  -  -  -  V',
+    'acessos'              => 'E  -  -  -  -  -  -  -  -  E  -',
+    'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -  -',
+    'admin-config'         => '-  -  -  -  -  -  -  -  -  -  -',
+    'registos'             => 'V  -  -  -  -  -  -  -  -  V  -',
     // aprovação das versões do portal: só o super administrador (não editável na matriz)
-    'actualizacoes'        => '-  -  -  -  -  -  -  -  -  -',
+    'actualizacoes'        => '-  -  -  -  -  -  -  -  -  -  -',
 ];
 // Quem vê o NIF dos clientes: linha «nif» da matriz (editável no portal)
 // Perfis em que o âmbito é sempre limitado às rotas atribuídas

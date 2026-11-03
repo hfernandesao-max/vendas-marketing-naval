@@ -7,6 +7,7 @@ import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { inR } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
+import { colDocumento } from '../componentes/documento.js';
 
 R['vendas-promotor'] = (pg) => {
   const V = vendasR(),
@@ -346,7 +347,7 @@ R.documentos = (pg) => {
       cols: [
         { key: 'data', label: t('Dia'), type: 'date' },
         { key: 'hora', label: t('Hora') },
-        { key: 'documento', label: t('Documento'), nowrap: true },
+        colDocumento(),
         { key: 'tipo', label: t('Tipo') },
         { key: 'rota', label: t('Rota'), p: 4 },
         { key: 'promotor', label: t('Promotor'), p: 0 },

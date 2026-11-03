@@ -1751,8 +1751,6 @@ export const EN = {
   'Anular a decisão sobre a versão {v}': 'Cancel the decision on version {v}',
   'A versão é instalada nos próximos 5 minutos, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
     'The version is installed within the next 5 minutes, with a backup and checks; if it fails, the previous one is restored automatically.',
-  'A versão é instalada esta noite às 02:15, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
-    'The version is installed tonight at 02:15, with a backup and checks; if it fails, the previous one is restored automatically.',
   'A versão nunca é instalada. O motivo fica registado.': 'The version is never installed. The reason is recorded.',
   'A versão volta a ficar à espera de decisão.': 'The version goes back to awaiting a decision.',
   'Motivo (obrigatório)': 'Reason (required)',
@@ -1771,7 +1769,6 @@ export const EN = {
   'Sem notas publicadas.': 'No notes published.',
   'Publicada em {d} · revisão {c} · passou em todos os testes automáticos': 'Published on {d} · revision {c} · passed all automated tests',
   'Aprovada para instalar já': 'Approved to install now',
-  'Aprovada: instala esta noite': 'Approved: installs tonight',
   Reprovada: 'Rejected',
   'À espera de decisão': 'Awaiting decision',
   'O que muda nesta versão': 'What changes in this version',
@@ -2180,7 +2177,6 @@ export const EN = {
   'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · prospecting: route territories and potential customers',
   'Na fila: a tarefa agendada instala até às {h}': 'Queued: the scheduled task installs by {h}',
   'A instalar… (a tarefa agendada está a aplicar esta versão)': 'Installing… (the scheduled task is applying this version)',
-  'Aprovada: instala na tarefa desta noite': "Approved: installs in tonight's task",
   'Versões anteriores já incluídas na mais recente ({n})': 'Earlier versions already included in the latest ({n})',
   'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.':
     'Version {v} was removed and the previous one restored; it will not be installed again automatically.',
@@ -2191,4 +2187,25 @@ export const EN = {
   'Notas de crédito sem meio': 'Credit notes, no method',
   'Os meios de cobrança do Pinguim BO não fecham com o recebido (diferença de {v}): confirmar os rodapés dos documentos no Pinguim BO.':
     'The Pinguim BO payment methods do not reconcile with the amount received (difference of {v}): check the document footers in Pinguim BO.',
+  'A versão é instalada esta noite às {h}, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
+    'The version is installed tonight at {h}, with a backup and checks; if it fails, the previous one is restored automatically.',
+  'Aprovada: instala às {h}': 'Approved: installs at {h}',
+  'Aprovada: instala esta noite às {h}': 'Approved: installs tonight at {h}',
+  'aprovação automática': 'automatic approval',
+  'Aprovação automática suspensa: a última instalação não terminou bem': 'Automatic approval suspended: the last installation did not finish well',
+  'Sem decisão até às {a}, a versão mais recente (publicada há pelo menos uma hora) é aprovada automaticamente e instalada às {i}, com cópia de segurança e verificação. Para a impedir, reprove-a com o motivo.':
+    'Without a decision by {a}, the latest version (published at least an hour earlier) is approved automatically and installed at {i}, with a backup and checks. To stop it, reject it with a reason.',
+  'meio da {d}': '{d} tender',
+  presumido: 'presumed',
+  'Técnico externo (validação, só leitura)': 'External technician (validation, read-only)',
+  'Abrir o documento {d}': 'Open document {d}',
+  'Representação do documento': 'Document representation',
+  'Rota {r}': 'Route {r}',
+  'A carregar os artigos…': 'Loading the items…',
+  'Sem linhas de artigos no Pinguim BO.': 'No item lines in Pinguim BO.',
+  'Representação a partir dos dados do Pinguim BO; o documento fiscal original está no Pinguim BO.':
+    'Representation built from Pinguim BO data; the original tax document is in Pinguim BO.',
+  'O documento {d} não está no período carregado.': 'Document {d} is not in the loaded period.',
+  Preço: 'Price',
+  Imprimir: 'Print',
 };

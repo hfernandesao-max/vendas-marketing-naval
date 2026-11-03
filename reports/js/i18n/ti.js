@@ -1725,8 +1725,6 @@ export const TI = {
   'Anular a decisão sobre a versão {v}': 'ውሳነ ብዛዕባ ስሪት {v} ሰርዝ',
   'A versão é instalada nos próximos 5 minutos, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
     'እዚ ስሪት ኣብ ዝቕጽል 5 ደቓይቕ ብቕዳሕ ውሕስነትን ምርግጋጽን ይትከል፤ እንተ ፈሺሉ፡ እቲ ዝሓለፈ ባዕሉ ይምለስ።',
-  'A versão é instalada esta noite às 02:15, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
-    'እዚ ስሪት ሎሚ ለይቲ ሰዓት 02:15 ብቕዳሕ ውሕስነትን ምርግጋጽን ይትከል፤ እንተ ፈሺሉ፡ እቲ ዝሓለፈ ባዕሉ ይምለስ።',
   'A versão nunca é instalada. O motivo fica registado.': 'እዚ ስሪት ፈጺሙ ኣይትከልን። እቲ ምኽንያት ይምዝገብ።',
   'A versão volta a ficar à espera de decisão.': 'እዚ ስሪት ደጊሙ ውሳነ ይጽበ።',
   'Motivo (obrigatório)': 'ምኽንያት (ግዴታ)',
@@ -1745,7 +1743,6 @@ export const TI = {
   'Sem notas publicadas.': 'ዝተሓትመ መግለጺ የለን።',
   'Publicada em {d} · revisão {c} · passou em todos os testes automáticos': 'ዝተሓትመሉ {d} · ክለሳ {c} · ኩሉ ኣውቶማቲክ ፈተናታት ሓሊፉ',
   'Aprovada para instalar já': 'ሕጂ ንክትከል ጸዲቑ',
-  'Aprovada: instala esta noite': 'ጸዲቑ፦ ሎሚ ለይቲ ይትከል',
   Reprovada: 'ተነጺጉ',
   'À espera de decisão': 'ውሳነ ይጽበ',
   'O que muda nesta versão': 'ኣብዚ ስሪት እንታይ ይቕየር',
@@ -2150,7 +2147,6 @@ export const TI = {
   'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · ምድላይ ዓማዊል፦ ክልላት መስመራትን ተኽእሎ ዘለዎም ዓማዊልን',
   'Na fila: a tarefa agendada instala até às {h}': 'ኣብ መስርዕ፦ እቲ ዝተመደበ ዕማም ክሳብ {h} ይጽዕኖ',
   'A instalar… (a tarefa agendada está a aplicar esta versão)': 'ይጽዓን ኣሎ… (እቲ ዝተመደበ ዕማም ነዚ ሕታም ይትግብሮ ኣሎ)',
-  'Aprovada: instala na tarefa desta noite': 'ጸዲቑ፦ ኣብ ዕማም ናይ ሎሚ ምሸት ይጽዓን',
   'Versões anteriores já incluídas na mais recente ({n})': 'ኣብቲ ናይ መወዳእታ ዝተኻተቱ ዝሓለፉ ሕታማት ({n})',
   'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.': 'ሕታም {v} ተኣልዩ እቲ ዝሓለፈ ተመሊሱ፤ ብገዛእ ርእሱ ደጊሙ ኣይጽዓንን።',
   'Sem movimento no período e filtros escolhidos ({n}): {r}.': 'ኣብቲ ዝተመርጸ እዋንን መጻረዪታትን ምንቅስቓስ ዘይብሎም ({n})፦ {r}።',
@@ -2160,4 +2156,25 @@ export const TI = {
   'Notas de crédito sem meio': 'ናይ ክሬዲት መዘኻኸሪታት ብዘይ መንገዲ',
   'Os meios de cobrança do Pinguim BO não fecham com o recebido (diferença de {v}): confirmar os rodapés dos documentos no Pinguim BO.':
     'መንገድታት ክፍሊት ናይ Pinguim BO ምስቲ ዝተቐበለ ኣይሰማምዑን (ፍልልይ {v})፦ ኣብ Pinguim BO ታሕተዋይ ክፋል ናይ ሰነዳት ኣረጋግጹ።',
+  'A versão é instalada esta noite às {h}, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.':
+    'እዚ ስሪት ሎሚ ለይቲ ሰዓት {h} ብቕዳሕ ውሕስነትን ምርግጋጽን ይትከል፤ እንተ ፈሺሉ፡ እቲ ዝሓለፈ ባዕሉ ይምለስ።',
+  'Aprovada: instala às {h}': 'ጸዲቑ፦ ሰዓት {h} ይትከል',
+  'Aprovada: instala esta noite às {h}': 'ጸዲቑ፦ ሎሚ ለይቲ ሰዓት {h} ይትከል',
+  'aprovação automática': 'ኣውቶማቲክ ምጽዳቕ',
+  'Aprovação automática suspensa: a última instalação não terminou bem': 'ኣውቶማቲክ ምጽዳቕ ተኣጊዱ፦ እቲ ናይ መወዳእታ ምትካል ብጽቡቕ ኣይተዛዘመን',
+  'Sem decisão até às {a}, a versão mais recente (publicada há pelo menos uma hora) é aprovada automaticamente e instalada às {i}, com cópia de segurança e verificação. Para a impedir, reprove-a com o motivo.':
+    'ክሳብ ሰዓት {a} ውሳነ እንተ ዘይተዋሂቡ፡ እቲ ናይ መወዳእታ ስሪት (እንተ ወሓደ ቅድሚ ሓደ ሰዓት ዝተዘርግሐ) ባዕሉ ይጸድቕን ሰዓት {i} ብቕዳሕ ውሕስነትን ምርግጋጽን ይትከልን። ንምኽልካሉ፡ ምስ ምኽንያቱ ንጸጎ።',
+  'meio da {d}': 'መንገዲ ክፍሊት ናይ {d}',
+  presumido: 'ግምታዊ',
+  'Técnico externo (validação, só leitura)': 'ናይ ደገ ቴክኒሻን (ምርግጋጽ፡ ንምንባብ ጥራይ)',
+  'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
+  'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
+  'Rota {r}': 'መስመር {r}',
+  'A carregar os artigos…': 'ኣቕሑ ይጽዓኑ ኣለዉ…',
+  'Sem linhas de artigos no Pinguim BO.': 'ኣብ Pinguim BO መስመራት ኣቕሑ የለን።',
+  'Representação a partir dos dados do Pinguim BO; o documento fiscal original está no Pinguim BO.':
+    'ካብ ሓበሬታ Pinguim BO ዝተሰርሐ ምርኢት፤ እቲ መበቆላዊ ናይ ግብሪ ሰነድ ኣብ Pinguim BO እዩ።',
+  'O documento {d} não está no período carregado.': 'ሰነድ {d} ኣብቲ ዝተጻዕነ እዋን የለን።',
+  Preço: 'ዋጋ',
+  Imprimir: 'ሕተም',
 };

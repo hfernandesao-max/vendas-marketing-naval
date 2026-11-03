@@ -12,6 +12,7 @@ import { t } from '../i18n/i18n.js';
 import { st } from '../periodo.js';
 import { el } from '../util.js';
 import { R } from './registo.js';
+import { colDocumento } from '../componentes/documento.js';
 
 const VALIDADE = 5 * 60000; // como o resto do portal: renovado ao fim de 5 minutos
 let pedido = { chave: '', estado: '', dados: null, erro: '', em: 0 };
@@ -97,7 +98,7 @@ R.agt = (pg) => {
       cols: [
         { key: 'rota_txt', label: t('Rota'), p: 0 },
         { key: 'tipo', label: t('Tipo de documento'), get: (r) => t(r.tipo), p: 3 },
-        { key: 'documento', label: t('Documento'), nowrap: true, p: 1 },
+        colDocumento({ p: 1 }),
         { key: 'total', label: t('Total'), type: 'kz', sum: true },
         { key: 'data', label: t('Data do documento'), type: 'date' },
         { key: 'data_fiscal', label: t('Data fiscal'), type: 'date', p: 4 },

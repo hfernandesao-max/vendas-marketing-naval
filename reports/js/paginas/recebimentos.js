@@ -24,6 +24,7 @@ import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { hoje, st } from '../periodo.js';
 import { el, group, sum } from '../util.js';
+import { colDocumento } from '../componentes/documento.js';
 
 // Facturas por receber, com a antiguidade da dívida (dias desde a emissão até hoje, em escalões de 30 dias) e o prazo
 // médio de recebimento (PMR, em inglês DSO = dívida por receber ÷ vendas facturadas no período × dias do período)
@@ -147,7 +148,7 @@ R.pendentes = (pg) => {
       rows: P,
       cols: [
         { key: 'data', label: t('Dia'), type: 'date' },
-        { key: 'documento', label: t('Documento'), nowrap: true, p: 0 },
+        colDocumento({ p: 0 }),
         { key: 'tipo', label: t('Tipo') },
         { key: 'promotor', label: t('Promotor') },
         { key: 'cliente', label: t('Cliente'), wrap: true },
@@ -299,7 +300,7 @@ R.pagamentos = (pg) => {
       search: false,
       cols: [
         { key: 'data', label: t('Dia'), type: 'date' },
-        { key: 'documento', label: t('Documento'), nowrap: true },
+        colDocumento(),
         { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'cliente', label: t('Cliente'), wrap: true },
         { key: 'total', label: t('Total'), type: 'kz', sum: true },

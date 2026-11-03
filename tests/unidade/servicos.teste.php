@@ -47,11 +47,12 @@ teste('vendas: FR/FT e notas de crédito não anuladas, cliente, NIF da entidade
     igual(1, count($d['artigos']));
     igual(1000.0, $d['artigos'][0]['total']);
     igual([], naval_vendas_do_xml(xml_vendas(), [], false)['artigos']);
-    // Nota de crédito: desconta às vendas, sem pagamentos nem valor por receber
+    // Nota de crédito: desconta às vendas, sem valor por receber; sem rodapé nem factura do mesmo cliente, a devolução
+    // é numerário presumido (a soma por meio fica igual às vendas líquidas)
     verdade($nc['nc'] && !$fr['nc'] && !$ft['nc']);
     igual('Nota de crédito', $nc['tipo']);
     igual(-50.0, $nc['total']);
-    igual([], $nc['pagamentos']);
+    igual(-50.0, array_sum(array_column($nc['pagamentos'], 'valor')));
     igual(0.0, $nc['valor_pago']);
     verdade($nc['liquidado']);
     igual(1450.0, array_sum(array_column($d['vendas'], 'total')));   // 1000 + 500 − 50
@@ -160,4 +161,41 @@ teste('meios de cobrança do Pinguim BO (SQL): troco, sem rodapé nunca presumid
     // nota de crédito devolvida em Multicaixa: debita a Multicaixa
     igual([['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => -780000.0]], naval_vendas_pagamentos_doc([$mc + ['valor' => 780000]], true, 0, true, -780000));
     igual([], naval_vendas_pagamentos_doc([], true, 0, true, -780000), 'nota de crédito sem meio de devolução');
+});
+
+teste('Notas de crédito sem rodapé: devolução no meio da factura que corrigem; soma por meio = vendas líquidas', function () {
+    naval_servico('vendas');
+    $f = function (string $doc, string $data, string $hora, string $cli, array $pags, float $total) {
+        return ['documento' => $doc, 'data' => $data, 'hora' => $hora, 'rota' => '1001', 'cliente_codigo' => $cli, 'nif' => $cli === 'CF' ? '999999999' : '5000' . $cli,
+            'nc' => false, 'total' => $total, 'pagamentos' => $pags];
+    };
+    $nc = function (string $doc, string $data, string $hora, string $cli, float $total, array $pags = []) {
+        return ['documento' => $doc, 'data' => $data, 'hora' => $hora, 'rota' => '1001', 'cliente_codigo' => $cli, 'nif' => $cli === 'CF' ? '999999999' : '5000' . $cli,
+            'nc' => true, 'total' => -$total, 'pagamentos' => $pags];
+    };
+    $NU = ['codigo' => 'NU', 'meio' => 'Numerário'];
+    $MC = ['codigo' => 'MC', 'meio' => 'Multicaixa'];
+    $V = [
+        $f('FR 1/1', '2026-11-02', '09:00', 'A', [$MC + ['valor' => 600000.0]], 600000),
+        $f('FR 1/2', '2026-11-02', '10:00', 'A', [$NU + ['valor' => 100000.0], $MC + ['valor' => 300000.0]], 400000),
+        $nc('NC 1/1', '2026-11-02', '11:00', 'A', 500000),                       // corrige a FR 1/2 (400 mil) e depois a FR 1/1
+        $f('FR 1/3', '2026-11-02', '12:00', 'B', [$NU + ['valor' => 50000.0]], 50000),
+        $nc('NC 1/2', '2026-11-02', '13:00', 'C', 30000),                        // sem factura: numerário presumido
+        $nc('NC 1/3', '2026-11-02', '14:00', 'B', 20000, [$MC + ['valor' => -20000.0]]),   // com rodapé: fica como está
+        $f('FR 1/4', '2026-11-03', '09:00', 'A', [$NU + ['valor' => 80000.0]], 80000),     // posterior: não conta
+    ];
+    $R = naval_vendas_devolucoes($V);
+    $porDoc = array_column($R, 'pagamentos', 'documento');
+    $soma = function (array $ps, string $c) { return array_sum(array_map(function ($p) use ($c) { return $p['codigo'] === $c ? $p['valor'] : 0; }, $ps)); };
+    igual(-500000.0, round(array_sum(array_column($porDoc['NC 1/1'], 'valor')), 2), 'NC 1/1 devolvida por inteiro');
+    igual(-400000.0, round($soma($porDoc['NC 1/1'], 'MC'), 2), 'MC: 300 mil da FR 1/2 + 100 mil da FR 1/1');
+    igual(-100000.0, round($soma($porDoc['NC 1/1'], 'NU'), 2), 'NU: 100 mil da FR 1/2');
+    igual(['FR 1/2', 'FR 1/1'], array_values(array_unique(array_column($porDoc['NC 1/1'], 'atribuido'))));
+    igual([['codigo' => 'NU', 'meio' => 'Numerário', 'valor' => -30000.0, 'presumido' => true]], $porDoc['NC 1/2']);
+    igual([$MC + ['valor' => -20000.0]], $porDoc['NC 1/3']);
+    // conciliação: soma de todos os meios = facturas − notas de crédito
+    $total = array_sum(array_column($R, 'total'));
+    $meios = 0.0;
+    foreach ($R as $v) $meios += array_sum(array_column($v['pagamentos'], 'valor'));
+    igual(round($total, 2), round($meios, 2), 'soma por meio = vendas líquidas');
 });
