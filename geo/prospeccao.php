@@ -25,6 +25,7 @@
       <div class="header-nav">
         <a href="index.php" class="nav-btn"><i data-lucide="layout-grid"></i> Início</a>
         <a href="geo.php" class="nav-btn"><i data-lucide="route"></i> Rotas</a>
+        <?php if (naval_pode('geo-terreno')): ?><a href="terreno.php" class="nav-btn"><i data-lucide="footprints"></i> Terreno do dia</a><?php endif; ?>
         <a href="view/index.php" class="nav-btn"><i data-lucide="map-pinned"></i> Zonas</a>
         <a href="auth/logout.php?t=<?= htmlspecialchars(naval_token_saida(), ENT_QUOTES, 'UTF-8') ?>" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">
           <i data-lucide="log-out"></i> Sair

@@ -186,3 +186,31 @@
 .pp-funil .pp-total td {
   font-weight: 700;
 }
+/* Terreno do dia: repetição do percurso */
+.td-rep {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.td-rep input[type='range'] {
+  width: 100%;
+}
+.pp-prova {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c2340;
+}
+.pp-prova.ok {
+  background: #8bb8ef;
+}
+.pp-prova.longe {
+  background: #f08a8e;
+}
+.pp-prova.sem_coordenadas {
+  background: #f5b547;
+}
