@@ -15,10 +15,16 @@
   <body>
     <header class="s-topo">
       <img src="../assets/naval-emblema.png" alt="" width="54" height="54" />
-      <div class="s-marca"><strong>Grupo Naval · RTM</strong><span id="s-titulo">Painel da sala comercial</span></div>
+      <div class="s-marca">
+        <span>Grupo Naval · RTM</span>
+        <h1 id="s-titulo">Painel da sala comercial</h1>
+      </div>
       <div class="s-relogio"><strong id="s-hora">--:--</strong><span id="s-data"></span></div>
     </header>
     <main id="s-ecra" class="s-ecra" aria-live="polite"><p class="s-msg">A carregar…</p></main>
-    <footer class="s-rodape"><span id="s-pontos"></span><span id="s-act"></span></footer>
+    <footer class="s-rodape">
+      <div class="s-tempo-fundo" aria-hidden="true"><i id="s-tempo"></i></div>
+      <div class="s-rodape-l"><span id="s-pontos" aria-hidden="true"></span><span id="s-seguinte"></span><span id="s-act" role="status"></span></div>
+    </footer>
   </body>
 </html>
