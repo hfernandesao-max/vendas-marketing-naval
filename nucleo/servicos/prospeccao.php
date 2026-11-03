@@ -38,7 +38,7 @@ const NAVAL_GEO_PESO_TIPO = [
     'beverages' => 14, 'liquor_store' => 14, 'alcohol' => 14, 'bakery' => 12, 'deli' => 12, 'houseware' => 12, 'hardware' => 8, 'greengrocer' => 10,
     'butcher' => 8, 'frozen_food' => 10, 'bar' => 8, 'cafe' => 8, 'restaurant' => 6, 'fast_food' => 6,
 ];
-const NAVAL_GEO_ESTADOS = ['visitado' => 'Visitado, ainda a decidir', 'nao_interessado' => 'Não interessado', 'nao_existe' => 'Não existe / fechou', 'outro_fornecedor' => 'Compra a outro fornecedor'];
+const NAVAL_GEO_ESTADOS = ['visitado' => 'Visitado, ainda a decidir', 'interessado' => 'Interessado: a preparar a primeira compra', 'nao_interessado' => 'Não interessado', 'nao_existe' => 'Não existe / fechou', 'outro_fornecedor' => 'Compra a outro fornecedor'];
 
 /** Primeira chave de um array já ordenado (array_key_first, compatível com o PHP 7.1); '' se vazio. */
 function naval_geo_chave_maior(array $a)
@@ -577,12 +577,110 @@ function naval_geo_zonas_sem_rota(array $pot, int $minimo = 0): array
 // ── Cálculo completo, histórico, avisos e vista ─────────────────────────────────────────────────────────────────
 
 /**
+ * Carteira: clientes regulares que deixaram de comprar (recuperação de clientes) e qualidade das coordenadas.
+ * $agregados: vendas dos últimos 120 dias por dia. Regular = compras em 3 ou mais dias da janela.
+ * Escalões de dias sem compras: 14–29, 30–59, 60 ou mais (prática de gestão de carteira / «churn»).
+ * Devolve ['esquecidos' => [...], 'sem_gps' => [...], 'duplicados' => [...]].
+ */
+function naval_geo_carteira(array $agregados, array $clientes, ?string $hoje = null): array
+{
+    $hoje = $hoje ?? date('Y-m-d');
+    $t0 = strtotime($hoje . ' 12:00');
+    $info = [];
+    ksort($agregados);
+    foreach ($agregados as $data => $ag) {
+        foreach ((array) ($ag['clientes'] ?? []) as $c => $x) {
+            $c = (string) $c;
+            $i = $info[$c] ?? ['n' => '', 'r' => '', 'dias' => 0, 't' => 0.0, 'ult' => ''];
+            $i['n'] = (string) ($x['n'] ?? $i['n']) ?: $i['n'];
+            $i['r'] = (string) ($x['r'] ?? '') ?: $i['r'];   // a rota mais recente
+            $i['dias']++;
+            $i['t'] += (float) ($x['t'] ?? 0);
+            $i['ult'] = (string) $data;
+            $info[$c] = $i;
+        }
+    }
+    $pos = [];
+    foreach ($clientes as $c) $pos[(string) $c['c']] = $c;
+    $esq = [];
+    $sem = [];
+    foreach ($info as $c => $i) {
+        if (!isset($pos[$c])) {
+            $sem[] = ['c' => $c, 'n' => $i['n'], 'r' => $i['r'], 'compras' => $i['dias'], 'ult' => $i['ult']];
+        }
+        if ($i['dias'] < 3) continue;
+        $dias = (int) floor(($t0 - strtotime($i['ult'] . ' 12:00')) / 86400);
+        if ($dias < 14) continue;
+        $e = ['c' => $c, 'n' => $i['n'], 'r' => $i['r'], 'ult' => $i['ult'], 'dias' => $dias, 'faixa' => $dias >= 60 ? 60 : ($dias >= 30 ? 30 : 14),
+            'compras' => $i['dias'], 'media' => round($i['t'] / max(1, $i['dias']), 2)];
+        if (isset($pos[$c])) $e += ['lat' => $pos[$c]['lat'], 'lng' => $pos[$c]['lng']];
+        $esq[] = $e;
+    }
+    // primeiro os que valiam mais por compra e compravam mais vezes (valor em risco)
+    usort($esq, function ($a, $b) { return ($b['media'] * $b['compras']) <=> ($a['media'] * $a['compras']) ?: strcmp($a['c'], $b['c']); });
+    usort($sem, function ($a, $b) { return $b['compras'] <=> $a['compras'] ?: strcmp($a['c'], $b['c']); });
+    // clientes diferentes no mesmo ponto (a menos de 5 m): coordenadas copiadas ou registadas no escritório
+    $idx = naval_geo_indice($clientes);
+    $visto = [];
+    $dup = [];
+    foreach ($clientes as $k => $c) {
+        if (isset($visto[$k])) continue;
+        $grupo = [];
+        foreach (naval_geo_vizinhos($clientes, $idx, $c['lat'], $c['lng'], 5) as [$j]) {
+            if ((string) $clientes[$j]['c'] === (string) $c['c']) continue;
+            $grupo[$j] = true;
+        }
+        if (!$grupo) continue;
+        $grupo[$k] = true;
+        foreach (array_keys($grupo) as $j) $visto[$j] = true;
+        $dup[] = ['lat' => $c['lat'], 'lng' => $c['lng'], 'r' => $c['r'], 'clientes' => array_map(function ($j) use ($clientes) {
+            return ['c' => (string) $clientes[$j]['c'], 'n' => $clientes[$j]['n'], 'r' => $clientes[$j]['r']];
+        }, array_keys($grupo))];
+    }
+    return ['esquecidos' => array_slice($esq, 0, 400), 'sem_gps' => array_slice($sem, 0, 400), 'duplicados' => array_slice($dup, 0, 200)];
+}
+
+/**
+ * Funil da prospecção por rota: por visitar → visitado → interessado → cliente (convertido), mais os que não
+ * avançam (não interessado, compra a outro fornecedor). Lido no momento (os estados mudam durante o dia).
+ */
+function naval_geo_funil(array $potenciais, array $estados, array $convertidos, ?string $hoje = null): array
+{
+    $desde = date('Y-m-d', strtotime(($hoje ?? date('Y-m-d')) . ' 12:00') - 90 * 86400);
+    $f = [];
+    $vazio = ['por_visitar' => 0, 'visitado' => 0, 'interessado' => 0, 'nao_interessado' => 0, 'outro_fornecedor' => 0, 'convertidos' => 0];
+    foreach ($potenciais as $p) {
+        $r = (string) ($p['r'] ?? '');
+        $f[$r] = $f[$r] ?? $vazio;
+        $e = '';
+        foreach ((array) ($p['ids'] ?? [$p['id']]) as $id) if (isset($estados[$id])) { $e = (string) $estados[$id]['e']; break; }
+        if ($e === '') $f[$r]['por_visitar']++;
+        elseif (isset($f[$r][$e])) $f[$r][$e]++;
+    }
+    foreach ($convertidos as $x) {
+        if (($x['em'] ?? '') < $desde) continue;
+        $r = (string) ($x['r'] ?? '');
+        $f[$r] = $f[$r] ?? $vazio;
+        $f[$r]['convertidos']++;
+    }
+    foreach ($f as $r => $x) {
+        $trabalhados = $x['visitado'] + $x['interessado'] + $x['nao_interessado'] + $x['outro_fornecedor'] + $x['convertidos'];
+        $f[$r]['taxa'] = $trabalhados ? round($x['convertidos'] / $trabalhados, 3) : null;
+    }
+    ksort($f);
+    return $f;
+}
+
+/**
  * Recalcula tudo e grava vista.json. $fontes: pontos já lidos (testes); null = osm.json + google.json.
  * $agregados: null = últimos 56 dias de vendas.
  */
-function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?array $clientesDados = null): array
+function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?array $clientesDados = null, ?array $agregados120 = null): array
 {
-    $agregados = $agregados ?? naval_analise_agregados(date('Y-m-d', time() - 56 * 86400), date('Y-m-d', time() - 86400));
+    if ($agregados120 === null) {
+        $agregados120 = $agregados ?? naval_analise_agregados(date('Y-m-d', time() - 120 * 86400), date('Y-m-d', time() - 86400));
+    }
+    $agregados = $agregados ?? array_filter($agregados120, function ($d) { return $d >= date('Y-m-d', time() - 56 * 86400); }, ARRAY_FILTER_USE_KEY);
     $cd = $clientesDados ?? naval_geo_clientes($agregados);
     $clientes = array_values(array_filter((array) $cd['clientes'], function ($c) { return naval_geo_valida($c['lat'], $c['lng']); }));
     $fontes = $fontes ?? array_merge((array) (naval_json_ler(naval_geo_pasta() . '/osm.json')['pontos'] ?? []), naval_geo_google_pontos());
@@ -612,7 +710,7 @@ function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?ar
         'limiar' => naval_geo_num('GEO_LIMIAR_ROTA', 0.9)],
         'rotas' => $rotas, 'zonas_sem_rota' => naval_geo_zonas_sem_rota($pot),
         'clientes' => array_map(function ($c) { return ['c' => $c['c'], 'n' => $c['n'], 'lat' => $c['lat'], 'lng' => $c['lng'], 'r' => $c['r'], 'd' => $c['d']]; }, $clientes),
-        'potenciais' => $pot];
+        'potenciais' => $pot, 'carteira' => naval_geo_carteira($agregados120, $clientes)];
     naval_json_gravar(naval_geo_pasta() . '/vista.json', $v, false);
     naval_geo_historico($rotas);
     return $v;
@@ -708,7 +806,8 @@ function naval_geo_noite(int $agora): array
     $ini = naval_config('GEO_HORA_INICIO', '01:00');
     if (date('H:i', $agora) < $ini || date('H', $agora) >= '06') return [];
     $feito = [];
-    $agregados = naval_analise_agregados(date('Y-m-d', $agora - 56 * 86400), date('Y-m-d', $agora - 86400));
+    $agregados120 = naval_analise_agregados(date('Y-m-d', $agora - 120 * 86400), date('Y-m-d', $agora - 86400));
+    $agregados = array_filter($agregados120, function ($d) use ($agora) { return $d >= date('Y-m-d', $agora - 56 * 86400); }, ARRAY_FILTER_USE_KEY);
     $cd = naval_geo_clientes($agregados);
     $clientes = (array) ($cd['clientes'] ?? []);
     $fo = naval_geo_pasta() . '/osm.json';
@@ -726,7 +825,7 @@ function naval_geo_noite(int $agora): array
     if ($clientes) $feito['google'] = naval_geo_google_passagem(naval_geo_celulas($clientes), 40, null, $agora);
     $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
     if (substr((string) ($v['gerado'] ?? ''), 0, 10) !== date('Y-m-d', $agora) && date('H', $agora) >= '04') {
-        $v = naval_geo_calcular($agregados, null, $cd);
+        $v = naval_geo_calcular($agregados, null, $cd, $agregados120);
         $feito['calculo'] = count($v['potenciais']);
         $feito['avisos'] = naval_geo_avisar($v);
     }
@@ -744,7 +843,13 @@ function naval_geo_vista(?array $rotas, bool $actualizar = false): array
         $v['clientes'] = array_values(array_filter($v['clientes'], $dentro));
         $v['potenciais'] = array_values(array_filter($v['potenciais'], $dentro));
         $v['zonas_sem_rota'] = [];
+        foreach (['esquecidos', 'sem_gps', 'duplicados'] as $k) {
+            $v['carteira'][$k] = array_values(array_filter((array) ($v['carteira'][$k] ?? []), $dentro));
+        }
     }
+    $v['carteira'] = ($v['carteira'] ?? []) + ['esquecidos' => [], 'sem_gps' => [], 'duplicados' => []];
+    $funil = naval_geo_funil($v['potenciais'], naval_json_ler(naval_geo_pasta() . '/estados.json'), naval_json_ler(naval_geo_pasta() . '/convertidos.json'));
+    $v['funil'] = $rotas === null ? $funil : array_intersect_key($funil, array_flip($rotas));
     foreach ($v['potenciais'] as &$p) unset($p['ids']);
     unset($p);
     $v['estados'] = NAVAL_GEO_ESTADOS;

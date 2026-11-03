@@ -46,6 +46,24 @@ test.beforeAll(() => {
         { id: 'osm:n2', ids: ['osm:n2'], n: 'Loja Dois', t: 'kiosk', lat: -8.851, lng: 13.25, f: ['osm'], r: '1002', d: 2, dc: 90, s: 60 },
         { id: 'osm:n3', ids: ['osm:n3'], n: 'Fora', t: 'bar', lat: -8.9, lng: 13.3, f: ['osm'], r: '', d: null, dc: null, s: 20 },
       ],
+      carteira: {
+        esquecidos: [
+          { c: 'C1', n: 'Um', r: '1001', ult: '2026-09-20', dias: 44, faixa: 30, compras: 6, media: 90000, lat: -8.8, lng: 13.2 },
+          { c: 'C2', n: 'Dois', r: '1002', ult: '2026-10-15', dias: 19, faixa: 14, compras: 4, media: 40000, lat: -8.85, lng: 13.25 },
+        ],
+        sem_gps: [{ c: 'C7', n: 'Sete', r: '1002', compras: 5, ult: '2026-11-01' }],
+        duplicados: [
+          {
+            lat: -8.8,
+            lng: 13.2,
+            r: '1001',
+            clientes: [
+              { c: 'C1', n: 'Um', r: '1001' },
+              { c: 'C8', n: 'Oito', r: '1001' },
+            ],
+          },
+        ],
+      },
     }),
   );
 });
@@ -68,6 +86,14 @@ test('prospecção: acessos e âmbito por rota (o vendedor só vê a sua rota e 
   expect(pro.potenciais.map((p) => p.id)).toEqual(['osm:n2']);
   expect(pro.clientes.map((c) => c.c)).toEqual(['C2']);
   expect(pro.zonas_sem_rota).toEqual([]);
+  // carteira e funil também só da sua rota
+  expect(pro.carteira.esquecidos.map((c) => c.c)).toEqual(['C2']);
+  expect(pro.carteira.sem_gps.map((c) => c.c)).toEqual(['C7']);
+  expect(pro.carteira.duplicados).toEqual([]);
+  expect(Object.keys(pro.funil)).toEqual(['1002']);
+  expect(dir.carteira.esquecidos).toHaveLength(2);
+  expect(dir.funil['1001']).toMatchObject({ por_visitar: 1 });
+  expect(dir.estados.interessado).toBeTruthy();
   expect((await (await entrar('pro')).ctx.get(API + 'prospeccao?actualizar=1')).status()).toBe(403);
 });
 
@@ -89,4 +115,23 @@ test('prospecção: página do mapa protegida pela sessão e pela matriz', async
   expect(html).toContain('Onde procurar clientes novos');
   expect(html).toMatch(/<meta name="csrf-token" content="[^"]{20,}"/);
   expect((await (await entrar('fin')).ctx.get(BASE + '/geo/prospeccao.php')).status()).toBe(403);
+});
+
+test('prospecção: separadores de clientes sem compras, coordenadas e resultados @navegador', async ({ browser }) => {
+  const { ctx } = await entrar('dir');
+  const pagina = await browser.newContext({ baseURL: BASE, storageState: await ctx.storageState(), viewport: { width: 1400, height: 900 } });
+  const page = await pagina.newPage();
+  await page.route(/maps\.googleapis\.com/, (r) => r.abort());
+  await page.goto('/geo/prospeccao.php');
+  await expect(page.locator('#ppTituloLista')).toContainText('Potenciais clientes');
+  await page.getByRole('tab', { name: 'Sem compras' }).click();
+  await expect(page.locator('#ppTituloLista')).toHaveText('Clientes regulares sem compras (2)');
+  await expect(page.locator('.pp-faixa').first()).toHaveText('44 dias');
+  await page.getByRole('tab', { name: 'Coordenadas' }).click();
+  await expect(page.locator('#ppLista')).toContainText('Sete');
+  await expect(page.locator('#ppLista')).toContainText('2 clientes no mesmo ponto');
+  await page.getByRole('tab', { name: 'Resultados' }).click();
+  await expect(page.locator('.pp-funil tr')).toHaveCount(5); // cabeçalho, fora das rotas, 1001, 1002, total
+  await expect(page.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
+  await pagina.close();
 });

@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### GeoMobilidade › Prospecção: carteira, coordenadas e resultados
+- A página tem quatro separadores: **Potenciais**, **Sem compras**, **Coordenadas** e **Resultados**. Cada vendedor vê
+  só a sua rota.
+- **Sem compras.** Mostra os clientes regulares que deixaram de comprar: compravam em 3 ou mais dias nos últimos
+  4 meses e estão parados há 14 dias ou mais. Os de maior valor em risco aparecem primeiro.
+  - No mapa e na lista, por escalão: 14–29, 30–59 e 60 ou mais dias, com cor e texto.
+  - Cada cliente mostra a última compra, o n.º de compras, o valor médio e o botão «Ir».
+- **Coordenadas.** Lista os clientes com compras sem coordenadas válidas no Pinguim BO e os clientes diferentes
+  registados no mesmo ponto (a menos de 5 m), para corrigir junto ao cliente.
+- **Resultados.** Funil da prospecção por rota: por visitar → visitados → interessados → clientes conquistados nos
+  últimos 90 dias, com a taxa de conversão. O vendedor tem um novo resultado de visita: «Interessado: a preparar a
+  primeira compra».
+- Dados só do Pinguim BO e dos registos do portal, recalculados todas as noites.
+
 ### Cartazes QR: só o cartaz na folha impressa
 - Ao imprimir ou guardar em PDF, os cartazes deixam de levar o título da página, o endereço, a data e o número da
   página nos cantos. Cada cartaz ocupa uma folha A4 sem margens do navegador, com margem de segurança de 12 mm por
