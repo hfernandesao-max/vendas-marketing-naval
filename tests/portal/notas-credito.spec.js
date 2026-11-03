@@ -80,7 +80,7 @@ test('notas de crédito: mesmo total em todos os ecrãs; não contam como docume
   await abrir(page, '#documentos', { api: api(V) });
   expect(await quadro(page, 'Vendas RTM')).toBeCloseTo(8500, 2);
   expect(await quadro(page, 'Documentos')).toBe(2); // só as facturas
-  expect(await quadro(page, 'Recebido')).toBeCloseTo(7000, 2);
+  expect(await quadro(page, 'Recebido')).toBeCloseTo(5500, 2); // 7000 cobrados − 1500 de nota de crédito (debita o recebido)
   expect(await quadro(page, 'Facturas pendentes')).toBeCloseTo(3000, 2); // o que falta na factura de 4000
   expect(await quadro(page, 'Clientes com compras')).toBe(1);
   expect(await quadro(page, 'Média por documento')).toBeCloseTo(4250, 2); // 8500 ÷ 2 facturas
@@ -97,9 +97,10 @@ test('notas de crédito: mesmo total em todos os ecrãs; não contam como docume
   }
   await page.evaluate(() => (location.hash = '#pagamentos'));
   await page.waitForTimeout(400);
-  expect(await quadro(page, 'Valor recebido')).toBeCloseTo(7000, 2);
+  expect(await quadro(page, 'Valor recebido')).toBeCloseTo(5500, 2);
   expect(await quadro(page, 'Facturas pendentes')).toBeCloseTo(3000, 2);
-  await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('70,0%'); // 7000 ÷ 10 000 facturados
+  // 5500 ÷ 8500 de vendas líquidas; recebido + pendente = vendas líquidas (5500 + 3000 = 8500)
+  await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('64,7%');
 });
 
 test('vendas por promotor: só as rotas com movimento; as outras indicadas por baixo; nunca «−0,00»', async ({ page }) => {
@@ -110,5 +111,20 @@ test('vendas por promotor: só as rotas com movimento; as outras indicadas por b
   await expect(linhas.first()).toContainText('1011');
   await expect(page.locator('table')).not.toContainText('-0,00');
   await expect(page.locator('#page')).toContainText('Sem movimento no período e filtros escolhidos');
+  expect(erros).toEqual([]);
+});
+
+test('notas de crédito debitam o recebido: com tudo pago, recebido = vendas líquidas (100 %)', async ({ page }) => {
+  const V = [factura(10000), nota(2000)];
+  const erros = await abrir(page, '#inicio', { api: api(V) });
+  expect(await quadro(page, 'Vendas RTM')).toBeCloseTo(8000, 2);
+  expect(await quadro(page, 'Recebido')).toBeCloseTo(8000, 2);
+  await page.evaluate(() => (location.hash = '#pagamentos'));
+  await page.waitForTimeout(400);
+  expect(await quadro(page, 'Valor recebido')).toBeCloseTo(8000, 2);
+  await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('100,0%');
+  const meios = page.locator('table', { has: page.locator('th', { hasText: 'Meio de cobrança' }) });
+  await expect(meios.locator('tr', { hasText: 'Notas de crédito a clientes' })).toContainText('-2000,00');
+  await expect(meios.locator('tfoot, tr.total').last()).toContainText('8000,00');
   expect(erros).toEqual([]);
 });

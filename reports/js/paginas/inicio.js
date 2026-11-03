@@ -10,7 +10,8 @@ import {
   pendenteDe,
   pendentesDe,
   porPromotor,
-  recebidoDe,
+  recebidoBruto,
+  recebidoLiquido,
   temCad,
   temMeio,
   valorCat,
@@ -149,7 +150,7 @@ function barraVista(pg) {
 function painelInicio(pg) {
   const V = vendasR(),
     tot = sum(V, 'total'),
-    liq = sum(V, recebidoDe),
+    liq = recebidoLiquido(V),
     cards = [],
     O = {};
   const nomear = (k, c) => ((O[k] = c), (c.dataset.grafico = k), c);
@@ -159,7 +160,7 @@ function painelInicio(pg) {
   if (pode('vendas-dia') && V.length) {
     const dias = Object.values(group(V, 'data'))
       .sort((a, b) => (a[0].data < b[0].data ? -1 : 1))
-      .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: sum(rs, recebidoDe), n: docsVenda(rs).length }));
+      .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: recebidoLiquido(rs), n: docsVenda(rs).length }));
     cards.push(
       nomear(
         'dia',
@@ -224,9 +225,10 @@ function painelInicio(pg) {
   if (pode('pagamentos') && V.length && temMeio()) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
-      outros = Math.max(0, liq - din - mc),
+      outros = Math.max(0, recebidoBruto(V) - din - mc),
       pend = pendentesDe(V),
-      base = liq + pend; // valor facturado: recebido + por receber (as notas de crédito não se cobram)
+      ncC = notasCredito(V),
+      base = liq + pend; // vendas líquidas: recebido líquido (já sem as notas de crédito) + por receber
     const partes = [
       { nome: t('Numerário'), valor: din, cor: COR.s1 },
       { nome: t('Multicaixa'), valor: mc, cor: COR.s2 },
@@ -238,7 +240,7 @@ function painelInicio(pg) {
         'cobrado',
         cartaoGrafico({
           titulo: t('Como foi cobrado'),
-          sub: t('{p} das vendas já recebido', { p: pct(base ? liq / base : 0) }),
+          sub: t('{p} das vendas já recebido', { p: pct(base ? liq / base : 0) }) + (ncC ? ' · ' + t('notas de crédito: −{v}', { v: kzc(ncC) + ' Kz' }) : ''),
           destino: 'pagamentos',
           desenhar: (w) => grafParte(w, { partes }),
           colunas: [[t('Meio')], [t('Valor'), 1], [t('Parte'), 1]],
@@ -538,7 +540,7 @@ function lerComparavel(pc) {
 }
 const metricas = (V) => {
   const tot = sum(V, 'total'),
-    liq = sum(V, recebidoDe);
+    liq = recebidoLiquido(V);
   return {
     tot,
     liq,
@@ -580,7 +582,7 @@ function serie(V, f) {
 R.inicio = (pg) => {
   const V = vendasR(),
     tot = sum(V, 'total'),
-    liq = sum(V, recebidoDe);
+    liq = recebidoLiquido(V);
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa');
   // Período comparável (lido em segundo plano; os quadros actualizam-se quando chega)
@@ -616,7 +618,7 @@ R.inicio = (pg) => {
           s: t('{p} do total', { p: pct(tot ? liq / tot : null) }),
           cls: 'full-value',
           var: vr('liq', kz2),
-          ...sp((rs) => sum(rs, recebidoDe), t('recebido')),
+          ...sp((rs) => recebidoLiquido(rs), t('recebido')),
         },
         {
           l: t('Em dinheiro'),

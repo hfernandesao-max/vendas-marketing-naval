@@ -1,5 +1,5 @@
 // Vendas: por promotor, dia, cliente, artigo, marca, ranking e documentos.
-import { clientesDe, docsVenda, eNC, isCF, notasCredito, pendenteDe, pendentesDe, porPromotor, promotorRota, recebidoDe, vendasR } from '../calculos.js';
+import { clientesDe, docsVenda, eNC, isCF, notasCredito, pendenteDe, pendentesDe, porPromotor, promotorRota, recebidoLiquido, vendasR } from '../calculos.js';
 import { aguardar, pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV } from '../filtros.js';
 import { dl, mkz, n0, pct } from '../formatos.js';
@@ -78,7 +78,7 @@ R['vendas-dia'] = (pg) => {
     docs: docsVenda(rs).length,
     promotores: new Set(docsVenda(rs).map((x) => x.rota)).size,
     total: sum(rs, 'total'),
-    recebido: sum(rs, recebidoDe),
+    recebido: recebidoLiquido(rs),
   }));
   const secs = el('div', 'secs');
   secs.append(
@@ -202,7 +202,7 @@ R.ranking = (pg) => {
       clientes: clientesDe(docsVenda(rs)),
       total: sum(rs, 'total'),
       medio: docsVenda(rs).length ? sum(rs, 'total') / docsVenda(rs).length : null,
-      recebido: sum(rs, 'total') ? sum(rs, recebidoDe) / sum(rs, 'total') : null,
+      recebido: sum(rs, 'total') ? recebidoLiquido(rs) / sum(rs, 'total') : null,
     })),
   );
   const top10 = CL.slice(0, 10),
@@ -276,7 +276,7 @@ R.documentos = (pg) => {
     F = docsVenda(V),
     nc = notasCredito(V);
   const tot = sum(V, 'total'),
-    liq = sum(V, recebidoDe),
+    liq = recebidoLiquido(V),
     pend = pendentesDe(V),
     cli = clientesDe(F);
   const sRotas = rotaDoc ? promotorRota(rotaDoc) : t('{n} rotas', { n: rotas.length });
@@ -309,7 +309,7 @@ R.documentos = (pg) => {
           const rs = porRota[r] || [],
             fs = docsVenda(rs),
             tt = sum(rs, 'total'),
-            rc = sum(rs, recebidoDe);
+            rc = recebidoLiquido(rs);
           return {
             chave: r,
             rota: r,

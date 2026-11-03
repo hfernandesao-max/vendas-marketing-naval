@@ -2,14 +2,18 @@
 import {
   FAIXAS_DIVIDA,
   docsVenda,
+  eNC,
   faixaDivida,
   isCF,
+  notasCredito,
   pagosDe,
   pendenteDe,
   pendentesDe,
   porMeio,
   promotorRota,
+  recebidoBruto,
   recebidoDe,
+  recebidoLiquido,
   temMeio,
   valorCat,
   vendasR,
@@ -159,16 +163,24 @@ R.pendentes = (pg) => {
 };
 R.pagamentos = (pg) => {
   const V = vendasR(),
-    facturado = sum(docsVenda(V), 'total'), // a taxa de cobrança mede-se sobre as facturas (as notas de crédito não se cobram)
-    liq = sum(V, recebidoDe),
+    // Recebido líquido = cobrado nas facturas − notas de crédito a clientes (as devoluções debitam o recebido);
+    // a taxa de cobrança mede-se sobre as vendas líquidas (facturas − notas de crédito): tudo pago = 100 %
+    vendasLiq = sum(V, 'total'),
+    bruto = recebidoBruto(V),
+    nc = notasCredito(V),
+    liq = bruto - nc,
     pend = pendentesDe(V),
     meio = temMeio();
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa'),
-    pp0 = (v) => t('{p} do recebido', { p: pct(liq ? v / liq : null) });
+    pp0 = (v) => t('{p} do cobrado', { p: pct(bruto ? v / bruto : null) });
   pg.append(
     tiles([
-      { l: t('Valor recebido'), v: mkz(liq), s: t('Taxa de cobrança: {p}', { p: pct(facturado ? liq / facturado : null) }) },
+      {
+        l: t('Valor recebido'),
+        v: mkz(liq),
+        s: t('Taxa de cobrança: {p}', { p: pct(vendasLiq ? liq / vendasLiq : null) }) + (nc ? ' · ' + t('notas de crédito: −{v}', { v: mkz(nc) }) : ''),
+      },
       { l: t('Em dinheiro'), v: meio ? mkz(din) : '—', s: meio ? pp0(din) : t('Falta o meio de cobrança') },
       { l: t('Em Multicaixa'), v: meio ? mkz(mc) : '—', s: meio ? pp0(mc) : t('Falta o meio de cobrança') },
       {
@@ -201,15 +213,31 @@ R.pagamentos = (pg) => {
       id: 'pg-meio',
       titulo: t('Por meio de cobrança'),
       nota: t('Dinheiro efectivamente recebido das vendas, por meio de cobrança, como registado no Pinguim BO (já sem o troco).'),
-      rows: PM.map((o) => ({
-        chave: o.meio,
-        meio: o.meio,
-        codigo: o.codigo,
-        categoria: t(NOMES_CAT[o.categoria]),
-        docs: o.docs,
-        valor: o.valor,
-        quota: liq ? o.valor / liq : null,
-      })),
+      rows: [
+        ...PM.map((o) => ({
+          chave: o.meio,
+          meio: o.meio,
+          codigo: o.codigo,
+          categoria: t(NOMES_CAT[o.categoria]),
+          docs: o.docs,
+          valor: o.valor,
+          quota: bruto ? o.valor / bruto : null,
+        })),
+        // as notas de crédito debitam o recebido: o total da tabela é o recebido líquido
+        ...(nc
+          ? [
+              {
+                chave: '_nc',
+                meio: t('Notas de crédito a clientes'),
+                codigo: 'NC',
+                categoria: t('Devolução'),
+                docs: V.filter(eNC).length,
+                valor: -nc,
+                quota: null,
+              },
+            ]
+          : []),
+      ],
       sort: 'valor',
       total: true,
       search: false,
@@ -226,7 +254,7 @@ R.pagamentos = (pg) => {
   // Colunas por meio real presente no período
   const meios = PM.map((o) => o.meio);
   const linha = (rs, base) => {
-    const o = { ...base, total: sum(rs, 'total'), recebido: sum(rs, recebidoDe) };
+    const o = { ...base, total: sum(rs, 'total'), recebido: recebidoLiquido(rs), nc: -notasCredito(rs) };
     meios.forEach((m, i) => {
       o['m' + i] = rs.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0), 0);
     });
@@ -238,6 +266,7 @@ R.pagamentos = (pg) => {
     { key: 'total', label: t('Total'), type: 'kz', sum: true },
     { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
     ...meios.map((m, i) => ({ key: 'm' + i, label: t(m), type: 'kz', sum: true })),
+    ...(nc ? [{ key: 'nc', label: t('Notas de crédito'), type: 'kz', sum: true }] : []),
     { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true },
   ];
   const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: promotorRota(rs[0].rota) }));
