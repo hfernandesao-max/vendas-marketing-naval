@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Painel da sala comercial redesenhado (ecrã de TV)
+- Feito segundo as regras para ecrãs de parede vistos à distância:
+  - uma mensagem por ecrã, no máximo seis números, o principal em destaque;
+  - letra medida pela altura do ecrã, nunca abaixo de ~30 px num ecrã 1080p (legível a 5 m);
+  - contraste do texto ≥ 7:1 (WCAG AAA) e margens de segurança de 5 % (área útil dos televisores);
+  - variações sempre com símbolo e palavra («▲ +12 % face ao habitual»), nunca só com a cor;
+  - valores grandes abreviados (30,54 M Kz) e o número do dia por extenso;
+  - real contra a previsão do dia, com barra e percentagem.
+- O título do ecrã fica no topo; no rodapé, a barra do tempo até ao ecrã seguinte, o nome do ecrã seguinte e a hora
+  dos dados. Se passarem 10 minutos sem dados novos, aparece um aviso em âmbar.
+- Classificações com as 8 primeiras rotas e pódio numerado. Continua o reconhecimento positivo: nunca o último lugar.
+- Protecção do ecrã: deslocação mínima a cada 4 minutos e brilho reduzido fora de horas (21:00–06:00). Sem piscar e
+  sem animação para quem pede menos movimento.
+- Mesmo endereço e mesmas ligações; os dados continuam a vir do Pinguim BO, só com totais por rota.
+
 ### Meios de cobrança: compensação e «Sem meio indicado» separados
 - **Factura anulada por nota de crédito** (liquidada no Pinguim BO sem rodapé de pagamento e corrigida por uma nota
   de crédito do mesmo cliente): foi a nota que a liquidou, sem dinheiro. As duas passam a «Compensação com nota de
