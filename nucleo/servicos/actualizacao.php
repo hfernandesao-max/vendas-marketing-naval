@@ -935,9 +935,9 @@ function naval_act_sha_publicado(array $v): string
  * Regista a decisão do super administrador sobre uma versão publicada: aprovar (opcionalmente «instalar já»),
  * reprovar (com motivo) ou cancelar uma aprovação ainda não instalada. Devolve a decisão gravada.
  */
-function naval_act_decidir(string $versao, string $accao, string $login, string $motivo = '', bool $urgente = false, ?array $versoes = null): array
+function naval_act_decidir(string $versao, string $accao, string $login, string $motivo = '', bool $urgente = false, ?array $versoes = null, bool $automatica = false): array
 {
-    return naval_exclusivo('actualizacoes-aprovacoes', function () use ($versao, $accao, $login, $motivo, $urgente, $versoes) {
+    return naval_exclusivo('actualizacoes-aprovacoes', function () use ($versao, $accao, $login, $motivo, $urgente, $versoes, $automatica) {
         $versoes = $versoes ?? naval_act_versoes();
         $v = null;
         foreach ($versoes as $x) if ($x['versao'] === $versao) $v = $x;
@@ -946,7 +946,7 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
         $aprov = naval_act_aprovacoes();
         $pendente = in_array($versao, array_column(naval_act_mais_recentes($versoes, $estado), 'versao'), true);
         if ($accao !== 'cancelar' && !$pendente) throw new NavalErro('Esta versão já está instalada ou é anterior à instalada.', 409);
-        if (in_array($accao, ['aprovar', 'forcar'], true)) {
+        if (in_array($accao, ['aprovar', 'forcar'], true) && !$automatica) {   // a automática pode deixar de fora uma recém-publicada
             // (uma mais recente reprovada não conta: pode instalar-se a anterior)
             foreach (naval_act_mais_recentes($versoes, $estado) as $x) {
                 if (strcmp($x['publicada_em'], $v['publicada_em']) > 0 && ($aprov[$x['versao']]['decisao'] ?? '') !== 'reprovada') {
@@ -961,7 +961,7 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
                 // «forcar»: aplicar mesmo com ficheiros alterados à mão no servidor (ficam na cópia de segurança); instala já
                 $aprov[$versao] = ['decisao' => 'aprovada', 'por' => $login, 'em' => date('Y-m-d H:i:s'), 'motivo' => mb_substr($motivo, 0, 500),
                     'sha256' => naval_act_sha_publicado($v), 'urgente' => $urgente || $accao === 'forcar', 'forcar' => $accao === 'forcar',
-                    'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']];
+                    'publicada_em' => $v['publicada_em'], 'commit' => $v['commit']] + ($automatica ? ['automatica' => true] : []);
                 break;
             case 'reprovar':
                 if (mb_strlen($motivo) < 5) throw new NavalErro('Indique o motivo da reprovação.', 400);
@@ -1015,7 +1015,7 @@ function naval_act_ultima_execucao(): ?array
     $linhas = array_reverse(array_slice(file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -200));
     foreach ($linhas as $l) {
         $j = json_decode($l, true);
-        if (is_array($j) && !in_array($j['accao'] ?? '', ['decisao', 'aviso_falhou'], true)) return $j;
+        if (is_array($j) && !in_array($j['accao'] ?? '', ['decisao', 'aviso_falhou', 'aprovacao_automatica_erro', 'pendentes_erro', 'certificados_erro'], true)) return $j;
     }
     return null;
 }
@@ -1043,6 +1043,124 @@ function naval_act_urgente(array $o = []): ?array
     $aprov[$urgente]['tentada_em'] = date('Y-m-d H:i:s');
     naval_act_gravar_aprovacoes($aprov);
     return naval_act_aplicar($o);
+}
+
+// ── Janela nocturna: aprovação automática (02:45) e instalação (03:00) ─────────────────────────────────
+//
+// As versões que ninguém decidiu durante o dia são aprovadas sozinhas às 02:45 (só a mais recente: inclui as
+// anteriores; uma versão reprovada ou revertida nunca é aprovada assim) e tudo o que estiver aprovado é instalado às
+// 03:00, fora do horário de trabalho, com cópia de segurança, verificação e reposição automática se falhar. Corre na
+// tarefa de 5 em 5 minutos (não é preciso mudar as tarefas do Windows); se o servidor estiver desligado à hora certa,
+// faz-se no primeiro ciclo até às 06:00. Cada passo corre uma vez por dia. ACTUALIZACAO_APROVACAO_AUTOMATICA e
+// ACTUALIZACAO_INSTALACAO_NOCTURNA mudam as horas (HH:MM); «0» desliga a aprovação automática.
+// Salvaguardas (gestão de alterações, ITIL / ISO 20000; «deployment window» fora de horas): só se aprovam versões
+// publicadas há pelo menos ACTUALIZACAO_APROVACAO_IDADE_MIN minutos (60, para haver tempo de as ver ou reprovar);
+// se a última instalação falhou, foi revertida ou parou por conflito, não se aprova nada sozinho até uma pessoa
+// decidir (disjuntor); a decisão fica registada em nome de «automatico» e o super administrador recebe um correio.
+
+const NAVAL_ACT_NOITE_FIM = '06:00';
+
+/** Horas da janela nocturna: ['aprovar' => 'HH:MM' ou '', 'instalar' => 'HH:MM']. */
+function naval_act_horas_noite(): array
+{
+    $h = function (string $chave, string $omissao): string {
+        $v = trim(naval_config($chave, $omissao));
+        if ($v === '0' || strtolower($v) === 'nao') return '';
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $v) ? $v : $omissao;
+    };
+    return ['aprovar' => $h('ACTUALIZACAO_APROVACAO_AUTOMATICA', '02:45'), 'instalar' => $h('ACTUALIZACAO_INSTALACAO_NOCTURNA', '03:00')];
+}
+
+/** Está dentro da janela [desde, 06:00[ do dia de $agora? */
+function naval_act_na_janela(string $desde, int $agora): bool
+{
+    $hm = date('H:i', $agora);
+    return $desde !== '' && $hm >= $desde && $hm < NAVAL_ACT_NOITE_FIM;
+}
+
+/**
+ * Versão que a aprovação automática aprova: a mais recente por decidir, publicada há pelo menos $idadeMin minutos,
+ * que não esteja reprovada nem revertida. As recém-publicadas ficam para a noite seguinte.
+ */
+function naval_act_a_aprovar_sozinha(array $versoes, array $estado, array $aprov, int $agora, int $idadeMin = 60): ?array
+{
+    foreach (naval_act_mais_recentes($versoes, $estado) as $v) {   // da mais recente para a mais antiga
+        $d = $aprov[$v['versao']]['decisao'] ?? '';
+        if ($d === 'reprovada') continue;                          // uma reprovada deixa aprovar a anterior
+        if ($d === 'aprovada') return null;                        // já há uma aprovada mais recente: nada a fazer
+        if ($v['versao'] === ($estado['recusada'] ?? '')) return null;
+        $pub = strtotime($v['publicada_em']);
+        if ($pub === false || $pub > $agora - $idadeMin * 60) continue;   // recém-publicada: ainda não
+        return $v;
+    }
+    return null;
+}
+
+/** Disjuntor: a última instalação ou reposição correu mal? (devolve a acção, ou '') */
+function naval_act_ultima_falha(): string
+{
+    $f = naval_act_pasta() . '/registo.jsonl';
+    if (!is_file($f)) return '';
+    $finais = ['actualizada', 'revertida', 'conflito', 'erro', 'reversao_portal', 'reversao_manual'];
+    foreach (array_reverse(array_slice(file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -500)) as $l) {
+        $j = json_decode($l, true);
+        $a = is_array($j) ? (string) ($j['accao'] ?? '') : '';
+        if (in_array($a, $finais, true)) return $a === 'actualizada' ? '' : $a;
+    }
+    return '';
+}
+
+/**
+ * Passo nocturno da tarefa de 5 em 5 minutos. Devolve o resultado de naval_act_aplicar quando instala, ou null.
+ * $o: opções de naval_act_aplicar, mais 'agora' (testes) e 'versoes' (testes).
+ */
+function naval_act_noite(array $o = []): ?array
+{
+    if (!naval_act_exige_aprovacao()) return null;
+    $agora = (int) ($o['agora'] ?? time());
+    $horas = naval_act_horas_noite();
+    $aprovar = naval_act_na_janela($horas['aprovar'], $agora);
+    $instalar = naval_act_na_janela($horas['instalar'], $agora);
+    if (!$aprovar && !$instalar) return null;
+    $f = naval_act_pasta() . '/noite.json';
+    $hoje = date('Y-m-d', $agora);
+    $n = naval_json_ler($f);
+    if ($aprovar && ($n['aprovada'] ?? '') !== $hoje) {
+        $n['aprovada'] = $hoje;
+        naval_json_gravar($f, $n);
+        try {
+            $versoes = $o['versoes'] ?? naval_act_versoes();
+            $idade = max(0, (int) naval_config('ACTUALIZACAO_APROVACAO_IDADE_MIN', '60'));
+            $v = naval_act_a_aprovar_sozinha($versoes, naval_act_estado(), naval_act_aprovacoes(), $agora, $idade);
+            $falha = $v ? naval_act_ultima_falha() : '';
+            if ($v && $falha !== '') {
+                naval_act_registar('aprovacao_automatica_suspensa', ['versao' => $v['versao'], 'motivo' => $falha]);
+                naval_act_avisar('aprovação automática suspensa', [
+                    'A versão ' . $v['versao'] . ' não foi aprovada automaticamente: a última instalação não terminou bem (' . $falha . ').',
+                    'Por segurança, fica à espera de uma decisão no Portal RTM › Administração › Actualizações.',
+                ]);
+                $v = null;
+            }
+            if ($v) {
+                naval_act_decidir($v['versao'], 'aprovar', 'automatico', 'Aprovação automática às ' . $horas['aprovar'] . ': não foi decidida durante o dia.', false, $versoes, true);
+                naval_act_avisar('versão ' . $v['versao'] . ' aprovada automaticamente', [
+                    'A versão ' . $v['versao'] . ' não foi aprovada nem reprovada durante o dia e foi aprovada automaticamente às ' . $horas['aprovar'] . '.',
+                    'É instalada às ' . $horas['instalar'] . ', com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.',
+                ]);
+            }
+        } catch (Throwable $e) {
+            naval_act_registar('aprovacao_automatica_erro', ['erro' => $e->getMessage()]);
+        }
+    }
+    if ($instalar && ($n['instalada'] ?? '') !== $hoje) {
+        $n['instalada'] = $hoje;
+        naval_json_gravar($f, $n);
+        $versoes = $o['versoes'] ?? naval_act_versoes();
+        if (naval_act_alvo_aprovado($versoes, naval_act_estado(), naval_act_aprovacoes()) === null) return null;
+        unset($o['agora'], $o['versoes']);
+        return naval_act_aplicar($o);
+    }
+    return null;
 }
 
 /** Avisa por correio, uma vez por versão, as versões novas à espera de aprovação. */
@@ -1082,6 +1200,7 @@ function naval_act_vista_portal(): array
         'reversao_pedida' => is_file(naval_act_pasta() . '/pedido-reversao.json'),
         'pode_reverter' => naval_act_ultima_copia() !== null,
         'ultima_execucao' => naval_act_ultima_execucao(),
+        'noite' => naval_act_horas_noite(),
         'pendentes' => [],
         'historico' => [],
         'erro' => '',

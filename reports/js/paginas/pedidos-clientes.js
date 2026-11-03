@@ -122,7 +122,11 @@ R['pedidos-clientes'] = (pg) => {
     ['pendente', 'Por validar'],
     ['aprovado', 'Aprovados'],
     ['recusado', 'Recusados'],
-  ].forEach(([e, txt]) => barra.append(botao(t(txt), 'sec' + (filtro === e ? ' on' : ''), () => ((filtro = e), draw()))));
+  ].forEach(([e, txt]) => {
+    const b = botao(t(txt), 'sec' + (filtro === e ? ' on' : ''), () => ((filtro = e), draw()));
+    b.setAttribute('aria-pressed', filtro === e ? 'true' : 'false');
+    barra.append(b);
+  });
   const lista = el('div', 'gst-lista');
   const vis = PED.pedidos.filter((p) => p.estado === filtro);
   if (!vis.length) lista.append(el('p', 'note', t('Sem pedidos.')));

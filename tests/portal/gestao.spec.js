@@ -76,6 +76,12 @@ test('alertas: texto composto a partir dos parâmetros, gravidade e ligação ao
   await expect(page.locator('.gst-alerta.g-info')).toContainText('+42%');
   await page.getByRole('button', { name: 'Críticos' }).click();
   await expect(page.locator('.gst-alerta')).toHaveCount(1);
+  // o botão seleccionado continua legível: texto com cor diferente do fundo e estado em aria-pressed
+  const sel = page.locator('.gst-filtros .btn[aria-pressed="true"]');
+  await expect(sel).toHaveText('Críticos');
+  const [cor, fundo] = await sel.evaluate((b) => [getComputedStyle(b).color, getComputedStyle(b).backgroundColor]);
+  expect(cor).not.toBe(fundo);
+  expect(fundo).toBe('rgb(255, 255, 255)');
   expect(erros).toEqual([]);
 });
 

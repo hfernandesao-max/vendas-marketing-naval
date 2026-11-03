@@ -14,6 +14,8 @@ import { el, toast } from '../util.js';
 import { R } from './registo.js';
 
 let ESTADO = null;
+// janela nocturna (servidor): aprovação automática das não decididas e instalação das aprovadas
+const horaNoite = () => (ESTADO && ESTADO.noite && ESTADO.noite.instalar) || '03:00';
 let aCarregar = false;
 let aSeguir = null;
 
@@ -44,6 +46,7 @@ const RESULTADOS = {
   erro: ['Erro na instalação', 'p-bad'],
   reversao_manual: ['Reposta a versão anterior', 'p-warn'],
   reversao_portal: ['Reposta a versão anterior', 'p-warn'],
+  aprovacao_automatica_suspensa: ['Aprovação automática suspensa: a última instalação não terminou bem', 'p-warn'],
 };
 const resultado = (r) => {
   if (!r) return null;
@@ -77,7 +80,7 @@ function decidir(v, accao, urgente) {
   const notas = {
     aprovar: urgente
       ? t('A versão é instalada nos próximos 5 minutos, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.')
-      : t('A versão é instalada esta noite às 02:15, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.'),
+      : t('A versão é instalada esta noite às {h}, com cópia de segurança e verificação; se falhar, a anterior é reposta sozinha.', { h: horaNoite() }),
     reprovar: t('A versão nunca é instalada. O motivo fica registado.'),
     cancelar: t('A versão volta a ficar à espera de decisão.'),
     forcar: t(
@@ -178,7 +181,16 @@ function cartaoPendente(v, maisRecente) {
   cab.append(tit);
   const dec = v.decisao;
   if (dec && dec.decisao === 'aprovada')
-    cab.append(pill((dec.urgente ? t('Aprovada para instalar já') : t('Aprovada: instala esta noite')) + ' · ' + dec.por + ' · ' + dataHora(dec.em), 'p-ok'));
+    cab.append(
+      pill(
+        (dec.urgente ? t('Aprovada para instalar já') : t('Aprovada: instala às {h}', { h: horaNoite() })) +
+          ' · ' +
+          (dec.por === 'automatico' ? t('aprovação automática') : dec.por) +
+          ' · ' +
+          dataHora(dec.em),
+        'p-ok',
+      ),
+    );
   else if (dec && dec.decisao === 'reprovada') cab.append(pill(t('Reprovada') + ' · ' + dec.por + ' · ' + dataHora(dec.em), 'p-bad'));
   else cab.append(pill(t('À espera de decisão'), 'p-warn'));
   c.append(cab);
@@ -187,7 +199,7 @@ function cartaoPendente(v, maisRecente) {
     const FILA = {
       na_fila: [t('Na fila: a tarefa agendada instala até às {h}', { h: ESTADO.proximo_ciclo }), 'p-serio'],
       a_instalar: [t('A instalar… (a tarefa agendada está a aplicar esta versão)'), 'p-serio'],
-      esta_noite: [t('Aprovada: instala na tarefa desta noite'), 'p-ok'],
+      esta_noite: [t('Aprovada: instala esta noite às {h}', { h: horaNoite() }), 'p-ok'],
     };
     const [txt, cls] = FILA[v.fila];
     const f = pill(txt, cls + ' act-fila');
@@ -280,6 +292,22 @@ R.actualizacoes = (pg) => {
       ),
     );
 
+  // versões sem decisão: aprovadas sozinhas de madrugada e instaladas a seguir (fora do horário de trabalho)
+  const N = E.noite || {};
+  if (E.automatica && E.exige_aprovacao && N.aprovar && porDecidir)
+    pg.append(
+      el(
+        'p',
+        'glass act-noite',
+        t(
+          'Sem decisão até às {a}, a versão mais recente (publicada há pelo menos uma hora) é aprovada automaticamente e instalada às {i}, com cópia de segurança e verificação. Para a impedir, reprove-a com o motivo.',
+          {
+            a: N.aprovar,
+            i: N.instalar,
+          },
+        ),
+      ),
+    );
   const lista = el('div', 'act-lista');
   if (!E.pendentes.length) lista.append(el('p', 'note', t('Não há versões novas: o portal está na versão mais recente publicada.')));
   // só a mais recente se aprova; as anteriores ficam recolhidas (já vêm incluídas nela)

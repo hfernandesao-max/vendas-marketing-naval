@@ -4,6 +4,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 03-11-2026
 
+### Dinheiro + Multicaixa = vendas cobradas (notas de crédito no meio da factura)
+- As **notas de crédito sem meio de devolução** no Pinguim BO passam a debitar o meio com que o cliente pagou a factura
+  que corrigem (regra «devolução ao meio original» dos sistemas de ponto de venda): a factura mais recente do mesmo
+  cliente e rota até à data da nota (Consumidor Final: só no mesmo dia), repartida pelos meios dessa factura, sem
+  nunca devolver mais do que ela recebeu nesse meio. Sem factura correspondente, numerário marcado como presumido.
+- Resultado: **Em dinheiro + Em Multicaixa (+ outros) = vendas líquidas cobradas**, como na conciliação de caixa.
+  No detalhe do documento vê-se de que factura veio cada devolução («meio da FR …») ou se foi presumida.
+
+### Detalhe do documento
+- Clicar no número de um documento (Documentos, Cobranças, Terreno, AGT) abre um painel com a representação do
+  documento (talão), os artigos, os meios de cobrança e o estado; no telemóvel abre de baixo para cima. Fecha com Esc,
+  com o botão ou clicando fora; imprime-se só o documento. Os dados são os do Pinguim BO.
+
+### Actualizações: aprovação automática às 02:45 e instalação às 03:00
+- As versões **não decididas durante o dia** são aprovadas automaticamente às 02:45 (só a mais recente, que inclui as
+  anteriores) e tudo o que estiver aprovado é **instalado às 03:00**, fora do horário de trabalho, com cópia de
+  segurança, verificação e reposição automática se falhar. «Instalar já» continua a instalar em 5 minutos.
+- Salvaguardas (gestão de alterações ITIL): só versões publicadas há pelo menos uma hora; uma versão reprovada nunca é
+  aprovada assim; se a última instalação falhou ou foi revertida, nada é aprovado sozinho até alguém decidir; a
+  decisão fica registada como «aprovação automática» e o super administrador recebe um correio.
+- Corre na tarefa de 5 em 5 minutos que já existe: não é preciso nenhum comando no servidor.
+
+### Perfil EXT para técnicos externos (validação)
+- Perfil novo do sistema **«Técnico externo (validação, só leitura)»**, já configurado na matriz segundo o menor
+  privilégio (ISO 27001, NIST SP 800-53): **só ver** todas as páginas de relatórios, cobranças, cargas, conciliação,
+  gestão e GeoMobilidade, **em todas as rotas**; nunca exportar, gerir ou administrar; sem NIF, sem registos de
+  actividade, sem matriz de acessos, sem ficheiro SAP e sem assistente de IA. Verificação em dois passos obrigatória.
+  Criar uma conta por técnico no portal (Acessos › Utilizadores), com o perfil EXT e «Válida até» preenchido.
+
+### Botões de filtro seleccionados legíveis
+- O botão seleccionado (ex.: «Todos» nos alertas da Gestão) perdia o texto; passa a invertido (fundo claro, texto
+  azul naval) e o estado vai também para os leitores de ecrã.
+
 ### Meios de cobrança sempre como no Pinguim BO
 - **Nunca se presume o meio**: uma factura liquidada sem rodapé de pagamento no Pinguim BO deixava de ser contada como
   Multicaixa e passa a «Sem meio indicado» (e aparece em Terreno › Ocorrências para corrigir no Pinguim BO).

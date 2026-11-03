@@ -2,7 +2,7 @@
 /**
  * Perfis de acesso dinâmicos.
  *
- * Os 11 perfis do sistema (SADM … AUD) vêm do código e não se alteram. O super administrador pode criar
+ * Os 12 perfis do sistema (SADM … AUD, EXT) vêm do código e não se alteram. O super administrador pode criar
  * perfis novos no portal: código, nome, perfil de origem (as permissões são copiadas dele e ficam como a
  * «matriz original» desse perfil), âmbito só das suas rotas e verificação em dois passos obrigatória.
  * Ficam em dados-privados/perfis.json e passam a ser colunas da matriz de acessos.
@@ -10,7 +10,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 
-const NAVAL_PERFIS_SISTEMA_MFA = ['SADM', 'TI', 'DIR'];
+const NAVAL_PERFIS_SISTEMA_MFA = ['SADM', 'TI', 'DIR', 'EXT'];
 
 function naval_ficheiro_perfis(): string
 {
