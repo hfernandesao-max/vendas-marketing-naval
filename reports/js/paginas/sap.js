@@ -83,7 +83,7 @@ function linhasSap() {
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
-      const pg = v.pagamentos || [];
+      const pg = v.nc ? [] : v.pagamentos || []; // as notas de crédito seguem para o SAP sem pagamentos
       const cash = r2(
           sum(
             pg.filter((p) => p.codigo === 'NU'),
@@ -420,13 +420,13 @@ R['sap-exportar'] = (pg) => {
   pg.append(barra);
   const cash = sum(L.docs, (v) =>
       sum(
-        (v.pagamentos || []).filter((p) => p.codigo === 'NU'),
+        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'NU'),
         'valor',
       ),
     ),
     card = sum(L.docs, (v) =>
       sum(
-        (v.pagamentos || []).filter((p) => p.codigo === 'MC'),
+        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'MC'),
         'valor',
       ),
     );

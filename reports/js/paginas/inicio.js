@@ -10,7 +10,6 @@ import {
   pendenteDe,
   pendentesDe,
   porPromotor,
-  recebidoBruto,
   recebidoLiquido,
   temCad,
   temMeio,
@@ -225,7 +224,7 @@ function painelInicio(pg) {
   if (pode('pagamentos') && V.length && temMeio()) {
     const din = valorCat(V, 'dinheiro'),
       mc = valorCat(V, 'multicaixa'),
-      outros = Math.max(0, recebidoBruto(V) - din - mc),
+      outros = Math.max(0, valorCat(V, 'transferencia') + valorCat(V, 'outro')),
       pend = pendentesDe(V),
       ncC = notasCredito(V),
       base = liq + pend; // vendas líquidas: recebido líquido (já sem as notas de crédito) + por receber

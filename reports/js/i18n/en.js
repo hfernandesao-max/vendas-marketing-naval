@@ -2187,4 +2187,8 @@ export const EN = {
   'Sem movimento no período e filtros escolhidos ({n}): {r}.': 'No activity in the selected period and filters ({n}): {r}.',
   '{p} do cobrado': '{p} of collections',
   'Notas de crédito a clientes': 'Customer credit notes',
+  'Notas de crédito sem meio de devolução indicado': 'Credit notes without a refund method',
+  'Notas de crédito sem meio': 'Credit notes, no method',
+  'Os meios de cobrança do Pinguim BO não fecham com o recebido (diferença de {v}): confirmar os rodapés dos documentos no Pinguim BO.':
+    'The Pinguim BO payment methods do not reconcile with the amount received (difference of {v}): check the document footers in Pinguim BO.',
 };

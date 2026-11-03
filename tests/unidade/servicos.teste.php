@@ -144,3 +144,20 @@ teste('SAP: configuração limpa; lote único por documento, anulação com quat
     lanca(403, function () { naval_sap_segunda_via(2); });   // sem sessão de auditoria
     lanca(404, function () { naval_sap_confirmar(99, '', ['login' => 'v']); });
 });
+
+teste('meios de cobrança do Pinguim BO (SQL): troco, sem rodapé nunca presumido, notas de crédito a negativo', function () {
+    naval_servico('vendas');
+    $nu = ['codigo' => 'NU', 'meio' => 'Numerário'];
+    $mc = ['codigo' => 'MC', 'meio' => 'Multicaixa'];
+    // pagou 10 000 em numerário por uma factura de 9 500: o troco sai do numerário
+    igual([['codigo' => 'NU', 'meio' => 'Numerário', 'valor' => 9500.0]], naval_vendas_pagamentos_doc([$nu + ['valor' => 10000]], false, 9500, true, 9500));
+    // misto: 5 000 Multicaixa + 6 000 numerário para 10 000: o troco (1 000) sai do numerário
+    igual([['codigo' => 'NU', 'meio' => 'Numerário', 'valor' => 5000.0], ['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 5000.0]],
+        naval_vendas_pagamentos_doc([$nu + ['valor' => 6000], $mc + ['valor' => 5000]], false, 10000, true, 10000));
+    // liquidada sem rodapé: nunca Multicaixa presumido
+    igual([['codigo' => '?', 'meio' => 'Sem meio indicado', 'valor' => 8000.0]], naval_vendas_pagamentos_doc([], false, 8000, true, 8000));
+    igual([], naval_vendas_pagamentos_doc([], false, 0, false, 8000), 'por pagar, sem rodapé');
+    // nota de crédito devolvida em Multicaixa: debita a Multicaixa
+    igual([['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => -780000.0]], naval_vendas_pagamentos_doc([$mc + ['valor' => 780000]], true, 0, true, -780000));
+    igual([], naval_vendas_pagamentos_doc([], true, 0, true, -780000), 'nota de crédito sem meio de devolução');
+});

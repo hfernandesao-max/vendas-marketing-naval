@@ -56,8 +56,10 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
         $cliente = $entidades[$entidade]['desc'] ?? '';
         if (!$cliente) $cliente = $nif === '999999999' ? 'Consumidor Final' : '';
 
-        $pagamentos = $nc ? [] : naval_vendas_pagamentos($tx, $total, $meios);
-        $pago = round(array_sum(array_column($pagamentos, 'valor')), 2);
+        // nota de crédito: devolução ao cliente por meio, a negativo (debita esse meio); factura: cobrado sem troco
+        $pagamentos = $nc ? array_map(function ($p) { return ['valor' => -abs($p['valor'])] + $p; }, naval_vendas_pagamentos($tx, abs($total), $meios))
+            : naval_vendas_pagamentos($tx, $total, $meios);
+        $pago = $nc ? 0.0 : round(array_sum(array_column($pagamentos, 'valor')), 2);
         $promotor = $promotores[$rota] ?? $rota;
 
         $vendas[] = [
@@ -105,6 +107,47 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
         }
     }
     return ['vendas' => $vendas, 'artigos' => $artigos];
+}
+
+/**
+ * Pagamentos de um documento lido do SQL Server: [{codigo, meio, valor}].
+ * Factura: valores do rodapé (DOCFOOTER) acertados ao valor pago (TOTAL_PAID) — o troco sai do numerário (ou, sem
+ * numerário, do meio com maior valor); liquidada sem rodapé: «Sem meio indicado» (nunca um meio presumido).
+ * Nota de crédito: devolução ao cliente por meio, a negativo; sem rodapé, nenhum meio (o desconto fica nas notas de
+ * crédito sem meio de devolução).
+ */
+function naval_vendas_pagamentos_doc(array $linhas, bool $nc, float $pago, bool $liquidado, float $total): array
+{
+    $porMeio = [];
+    $nomes = [];
+    foreach ($linhas as $l) {
+        $v = (float) ($l['valor'] ?? 0);
+        if (abs($v) < 0.005) continue;
+        $k = trim((string) ($l['codigo'] ?? '')) ?: '?';
+        $porMeio[$k] = ($porMeio[$k] ?? 0.0) + abs($v);
+        $nomes[$k] = (string) ($l['meio'] ?? $k);
+    }
+    if ($nc) {
+        $out = [];
+        foreach ($porMeio as $k => $v) $out[] = ['codigo' => (string) $k, 'meio' => $nomes[$k], 'valor' => -round($v, 2)];
+        return $out;
+    }
+    if (!$porMeio) {
+        $v = $pago > 0 ? $pago : ($liquidado ? $total : 0.0);
+        return $v > 0.005 ? [['codigo' => '?', 'meio' => 'Sem meio indicado', 'valor' => round($v, 2)]] : [];
+    }
+    $alvo = $pago > 0 ? $pago : ($liquidado ? $total : array_sum($porMeio));
+    $excesso = round(array_sum($porMeio) - $alvo, 2);
+    while ($excesso > 0.005 && $porMeio) {
+        $k = isset($porMeio['NU']) && $porMeio['NU'] > 0 ? 'NU' : (string) array_search(max($porMeio), $porMeio, true);
+        $tira = min($excesso, $porMeio[$k]);
+        $porMeio[$k] -= $tira;
+        $excesso = round($excesso - $tira, 2);
+        if ($porMeio[$k] <= 0.005) unset($porMeio[$k]);
+    }
+    $out = [];
+    foreach ($porMeio as $k => $v) if (round($v, 2) > 0) $out[] = ['codigo' => (string) $k, 'meio' => $nomes[$k], 'valor' => round($v, 2)];
+    return $out;
 }
 
 /**
@@ -225,11 +268,13 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
         $vendas = [];
         foreach ($docs as $d) {
             $nc = (int) $d['NC'] === 1;
-            // Nota de crédito: sem pagamentos nem valor por receber (o recebido é o das facturas)
-            $pags = $nc ? [] : ($pagamentosPorDoc[$d['DOC_ID']] ?? []);
             $rota = trim((string) $d['ROTA']);
             $total = (float) $d['TOTAL'];
-            if (!$nc && !$pags && $d['LIQUIDADO']) $pags[] = ['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => $total];
+            // Meios de cobrança sempre como estão no Pinguim BO (rodapé do documento), nunca presumidos:
+            //  - factura: troco descontado (o recebido nunca excede o pago, TOTAL_PAID); liquidada sem rodapé fica
+            //    «Sem meio indicado» (aparece nas ocorrências para corrigir no Pinguim BO);
+            //  - nota de crédito: o que foi devolvido ao cliente, por meio, a negativo (debita esse meio).
+            $pags = naval_vendas_pagamentos_doc($pagamentosPorDoc[$d['DOC_ID']] ?? [], $nc, $nc ? 0.0 : (float) $d['TOTAL_PAID'], (bool) $d['LIQUIDADO'], $total);
             $vendas[] = [
                 'chave' => $d['DOCUMENTO'],
                 'data' => $d['DATA'],
