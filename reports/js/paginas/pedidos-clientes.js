@@ -206,7 +206,10 @@ function imprimir(codigos) {
         'Escolha os artigos e as quantidades, ou actualize os seus dados.',
         'Envie: confirmamos consigo pelo telefone.',
       ].forEach((x) => ol.append(el('li', null, x)));
-      zona.append(f);
+      // cada cartaz numa página A4 própria, sem margens do navegador (sem título, endereço, data nem n.º de página)
+      const pag = el('div', 'cqr-pagina');
+      pag.append(f);
+      zona.append(pag);
     });
     document.body.append(zona);
     document.body.classList.add('a-imprimir');
