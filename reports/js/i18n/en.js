@@ -2177,4 +2177,5 @@ export const EN = {
   'Falta sem justificação': 'Unexplained shortage',
   'Outro (explicar na nota)': 'Other (explain in the note)',
   'Conciliação da carrinha': 'Van reconciliation',
+  'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · prospecting: route territories and potential customers',
 };

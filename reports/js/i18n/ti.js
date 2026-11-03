@@ -2147,4 +2147,5 @@ export const TI = {
   'Falta sem justificação': 'ምኽንያት ዘይብሉ ጉድለት',
   'Outro (explicar na nota)': 'ካልእ (ኣብ መዘኻኸሪ ግለጹ)',
   'Conciliação da carrinha': 'ምዝማድ መኪና',
+  'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · ምድላይ ዓማዊል፦ ክልላት መስመራትን ተኽእሎ ዘለዎም ዓማዊልን',
 };

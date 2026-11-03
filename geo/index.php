@@ -656,6 +656,7 @@ $userProfile = $_SESSION['usuario_perfil'] ?? 'Operador';
             <span class="feature-tag"><i data-lucide="navigation" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Optimização de rotas</span>
             <span class="feature-tag"><i data-lucide="map-pinned" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Delimitação de zonas</span>
             <span class="feature-tag"><i data-lucide="truck" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Gestão de distribuidores</span>
+            <span class="feature-tag"><i data-lucide="radar" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;"></i> Prospecção de clientes</span>
           </div>
         </div>
 

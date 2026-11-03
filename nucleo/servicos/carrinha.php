@@ -372,21 +372,6 @@ function naval_carr_aprovar(string $data, string $rota, array $motivos, array $e
     });
 }
 
-/** Contas com o recurso no nível mínimo indicado e correio válido (respeita o âmbito por rota). */
-function naval_destinatarios_recurso(string $recurso, string $minimo, ?string $rota = null): array
-{
-    $m = naval_matriz();
-    $out = [];
-    foreach (naval_utilizadores() as $login => $u) {
-        if (!naval_conta_valida($u) || !naval_email_valido($u['email'] ?? null)) continue;
-        $nivel = (string) ($m[$recurso][$u['perfil']] ?? '');
-        if ($nivel === '' || NAVAL_ORDEM_NIVEIS[$nivel] < NAVAL_ORDEM_NIVEIS[$minimo]) continue;
-        if ($rota !== null && in_array($u['perfil'], naval_perfis_por_rota(), true) && !in_array($rota, array_map('strval', (array) ($u['rotas'] ?? [])), true)) continue;
-        $out[] = ['email' => trim((string) $u['email']), 'nome' => (string) ($u['nome'] ?? $login)];
-    }
-    return $out;
-}
-
 function naval_carr_avisar_falta(string $data, string $rota, array $linhas, array $motivos, array $res, array $eu): void
 {
     $dest = array_values(array_filter(naval_destinatarios_recurso('conciliacao-carrinha', 'V', $rota), function ($d) use ($eu) {

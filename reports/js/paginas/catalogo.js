@@ -53,6 +53,7 @@ export const NOMES_RECURSO = {
   'geo-zonas': 'GEO · delimitação de zonas (ver)',
   'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas',
   'geo-distribuidores': 'GEO · gestão de distribuidores',
+  'geo-prospeccao': 'GEO · prospecção: territórios das rotas e potenciais clientes',
   'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',

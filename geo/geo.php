@@ -34,6 +34,9 @@
         <a href="index.php" title="Página inicial" class="nav-btn">
           <i data-lucide="layout-grid"></i> Início
         </a>
+        <a href="prospeccao.php" title="Onde procurar clientes novos: territórios das rotas e potenciais clientes" class="nav-btn">
+          <i data-lucide="radar"></i> Prospecção
+        </a>
         <a href="view/index.php" title="Ir para a delimitação de zonas" class="nav-btn">
           <i data-lucide="map-pinned"></i> Zonas
         </a>
