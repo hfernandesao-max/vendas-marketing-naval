@@ -2129,3 +2129,20 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   color: var(--bad);
   font-weight: 700;
 }
+
+/* Actualizações: estado da instalação e versões anteriores recolhidas */
+.act-fila {
+  justify-self: start;
+  margin: 4px 0;
+}
+.act-anteriores summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.act-anteriores li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+}

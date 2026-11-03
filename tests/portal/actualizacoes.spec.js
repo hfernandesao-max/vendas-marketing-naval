@@ -152,3 +152,32 @@ test('ficheiros alterados à mão: lista e «Aplicar mesmo assim»; certificados
   await expect(tile).toContainText('21 dias');
   await expect(tile).toContainText('geo.naval.co.ao:2051');
 });
+
+test('só a mais recente se aprova; as anteriores ficam recolhidas; estado «na fila» depois de «instalar já»', async ({ page }) => {
+  const vista = JSON.parse(JSON.stringify(VISTA));
+  vista.proximo_ciclo = '11:45';
+  vista.em_curso = true;
+  vista.pendentes[0].decisao = { decisao: 'aprovada', por: 'admin', em: '2026-11-03 11:42:00', urgente: true };
+  vista.pendentes[0].fila = 'na_fila';
+  vista.pendentes[1].incluida = true;
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { login: 'henrique', perfil: 'SADM', csrf: 'x', permissoes: { actualizacoes: 'A' } } }));
+  await page.route('**/v1/novidades*', (r) => r.fulfill({ json: { ok: true, actualizacoes: [] } }));
+  let leituras = 0;
+  await page.route('**/v1/actualizacoes*', (r) => {
+    leituras++;
+    return r.fulfill({ json: vista });
+  });
+  await page.clock.install({ time: new Date('2026-11-03T11:42:30+01:00') });
+  const erros = await abrir(page, '#actualizacoes');
+  await expect(page.locator('.act-cartao')).toHaveCount(1);
+  await expect(page.locator('.act-fila')).toHaveText('Na fila: a tarefa agendada instala até às 11:45');
+  const ant = page.locator('.act-anteriores');
+  await expect(ant.locator('summary')).toHaveText('Versões anteriores já incluídas na mais recente (1)');
+  await ant.locator('summary').click();
+  await expect(ant.locator('li')).toContainText('Versão v2026.11.03.6');
+  await expect(ant.getByRole('button', { name: 'Aprovar' })).toHaveCount(0);
+  const antes = leituras;
+  await page.clock.runFor(16000);
+  await expect.poll(() => leituras).toBeGreaterThan(antes); // actualiza-se sozinha enquanto a instalação está em curso
+  expect(erros).toEqual([]);
+});

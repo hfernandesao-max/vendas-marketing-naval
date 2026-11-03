@@ -2178,4 +2178,10 @@ export const EN = {
   'Outro (explicar na nota)': 'Other (explain in the note)',
   'Conciliação da carrinha': 'Van reconciliation',
   'GEO · prospecção: territórios das rotas e potenciais clientes': 'GEO · prospecting: route territories and potential customers',
+  'Na fila: a tarefa agendada instala até às {h}': 'Queued: the scheduled task installs by {h}',
+  'A instalar… (a tarefa agendada está a aplicar esta versão)': 'Installing… (the scheduled task is applying this version)',
+  'Aprovada: instala na tarefa desta noite': "Approved: installs in tonight's task",
+  'Versões anteriores já incluídas na mais recente ({n})': 'Earlier versions already included in the latest ({n})',
+  'A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.':
+    'Version {v} was removed and the previous one restored; it will not be installed again automatically.',
 };

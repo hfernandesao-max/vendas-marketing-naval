@@ -15,6 +15,7 @@ import { R } from './registo.js';
 
 let ESTADO = null;
 let aCarregar = false;
+let aSeguir = null;
 
 function carregar() {
   if (aCarregar) return;
@@ -181,6 +182,18 @@ function cartaoPendente(v, maisRecente) {
   else if (dec && dec.decisao === 'reprovada') cab.append(pill(t('Reprovada') + ' · ' + dec.por + ' · ' + dataHora(dec.em), 'p-bad'));
   else cab.append(pill(t('À espera de decisão'), 'p-warn'));
   c.append(cab);
+  // estado da instalação depois da decisão (actualiza-se sozinho de 15 em 15 segundos enquanto está em curso)
+  if (v.fila) {
+    const FILA = {
+      na_fila: [t('Na fila: a tarefa agendada instala até às {h}', { h: ESTADO.proximo_ciclo }), 'p-serio'],
+      a_instalar: [t('A instalar… (a tarefa agendada está a aplicar esta versão)'), 'p-serio'],
+      esta_noite: [t('Aprovada: instala na tarefa desta noite'), 'p-ok'],
+    };
+    const [txt, cls] = FILA[v.fila];
+    const f = pill(txt, cls + ' act-fila');
+    f.setAttribute('role', 'status');
+    c.append(f);
+  }
   if (dec && dec.motivo) c.append(el('p', 'act-motivo', (dec.decisao === 'reprovada' ? t('Motivo') : t('Observações')) + ': ' + dec.motivo));
   if (v.resultado) c.append(resultado(v.resultado));
   const conflito = v.resultado && v.resultado.accao === 'conflito';
@@ -261,13 +274,37 @@ R.actualizacoes = (pg) => {
       el(
         'p',
         'glass act-aviso',
-        t('A versão {v} falhou a verificação e foi reposta a anterior; não volta a ser instalada sozinha.', { v: E.instalada.recusada }),
+        E.instalada.origem === 'reversão manual'
+          ? t('A versão {v} foi retirada e reposta a anterior; não volta a ser instalada sozinha.', { v: E.instalada.recusada })
+          : t('A versão {v} falhou a verificação e foi reposta a anterior; não volta a ser instalada sozinha.', { v: E.instalada.recusada }),
       ),
     );
 
   const lista = el('div', 'act-lista');
   if (!E.pendentes.length) lista.append(el('p', 'note', t('Não há versões novas: o portal está na versão mais recente publicada.')));
-  E.pendentes.forEach((v, i) => lista.append(cartaoPendente(v, i === 0)));
+  // só a mais recente se aprova; as anteriores ficam recolhidas (já vêm incluídas nela)
+  E.pendentes.filter((v) => !v.incluida).forEach((v, i) => lista.append(cartaoPendente(v, i === 0)));
+  const anteriores = E.pendentes.filter((v) => v.incluida);
+  if (anteriores.length) {
+    const d = el('details', 'act-anteriores');
+    d.append(el('summary', null, t('Versões anteriores já incluídas na mais recente ({n})', { n: anteriores.length })));
+    const ul = el('ul');
+    anteriores.forEach((v) => {
+      const li = el('li', null, t('Versão {v}', { v: v.versao }) + ' · ' + dataHora(v.publicada_em) + ' ');
+      if (v.decisao) li.append(botao(t('Anular decisão'), 'ghost sm', () => decidir(v, 'cancelar', false)));
+      ul.append(li);
+    });
+    d.append(ul);
+    lista.append(d);
+  }
+  clearTimeout(aSeguir);
+  if (E.em_curso)
+    aSeguir = setTimeout(() => {
+      if (atual === 'actualizacoes') {
+        ESTADO = null;
+        draw();
+      }
+    }, 15000);
   pg.append(secBox(t('Versões por instalar'), t('Cada versão inclui as anteriores: aprovar a mais recente instala também o que vinha antes dela.'), lista));
 
   const hist = el('div', 'act-hist');
