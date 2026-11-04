@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Entrada directa no portal e entrada mais leve
+
+- **Sem página intermédia:** depois de entrar, o utilizador vai directo ao portal (Início). A antiga página de escolha
+  «Onde pretende entrar?» deixou de existir, porque o GeoMobilidade já está dentro do portal; a raiz do site também
+  leva ao portal. Menos um clique e menos uma página a carregar em cada entrada.
+- **Página de entrada mais leve:** a biblioteca do código QR só é descarregada quando é preciso configurar a dupla
+  autenticação (menos 56 KB em cada entrada).
+- **Medição de tempos (04-11-2026):** da entrada ao Início utilizável, entre 1,2 e 1,9 segundos (rede do escritório,
+  4G e 4G lento); abrir qualquer função do menu, mediana de 0,2 segundos e máximo de 0,7 segundos em 4G lento. Todas
+  as funções ficam a no máximo dois cliques do Início no computador (três no telemóvel, com o botão Menu).
+
 ### Comunicação AGT: estados e datas exactamente como na consulta
 
 - **Estado AGT:** «Enviado», «Erro», «Pendente» e «Não enviado», como na consulta do Pinguim BO. Os indicadores do topo
