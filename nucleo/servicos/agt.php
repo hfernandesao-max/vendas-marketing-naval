@@ -4,24 +4,21 @@
  *
  * Fonte: DOCHEADEREXTRA (campos extra de cada documento: DOCHEADER_ID, DOCEXTRA_ID, NDX, CLOCK_DATE,
  * INTEGER_VALUE, STRING_VALUE, DELETED), ligada ao DOCHEADER por DOCHEADER_ID. Campos extra usados
- * (tabela DOCEXTRA do Pinguim BO, confirmados em 30-10-2026):
- *   26046 request_number          → número do pedido de comunicação à AGT (STRING_VALUE); NDX = posição no envio
- *   26003 Motivo de cancelamento  → anulação do documento (STRING_VALUE = motivo, ex. «Anulado»)
- * (Os outros campos extra, 26039 «no GUI» e 26064 «EventSet ID», não são da AGT.)
- * Os identificadores podem mudar-se no .env: AGT_PEDIDO_ID e AGT_ANULACAO_ID. Como cada tipo de documento / série
- * pode ter o seu próprio campo extra com o mesmo nome, contam também todos os campos chamados request_number
- * (AGT_PEDIDO_NOME) e «Motivo de cancelamento» (AGT_ANULACAO_NOME); o valor pode estar em texto ou em número.
+ * (tabela DOCEXTRA do Pinguim BO):
+ *   26098 resposta da AGT         → estado e texto da resposta (AGT_ESTADO_ID)
+ *   26003 Motivo de cancelamento  → anulação do documento (STRING_VALUE = motivo, ex. «Anulado»; AGT_ANULACAO_ID)
+ * Como cada tipo de documento / série pode ter o seu próprio campo de anulação com o mesmo nome, conta também todos os
+ * campos chamados «Motivo de cancelamento» (AGT_ANULACAO_NOME).
  *
- * Estado da comunicação (confirmado no Pinguim BO em 04-11-2026): campo extra 26098 (AGT_ESTADO_ID), a resposta da AGT
- * a cada envio. INTEGER_VALUE = código do estado: 3 Enviado, 5 Erro, 2 Pendente; STRING_VALUE = texto da resposta (ou o
- * pedido enviado). Um documento pode ter vários registos: conta a resposta final (código diferente de 2) mais recente e,
- * sem ela, o registo pendente mais recente. Regra:
- *   1. código 3, ou texto de sucesso da AGT («Process completed successfully», «já consta no repositório»;
- *      AGT_SUCESSO_TEXTOS) → comunicado;
- *   2. código 2 → pendente;
- *   3. outro código ou texto → com erro, com a mensagem da AGT;
- *   4. sem registo 26098: com número do pedido (request_number) → pendente (pedido sem resposta); sem nada → por comunicar.
- * Cada documento de vendas do período aparece uma vez, incluindo os anulados; a consulta é sempre limitada ao período.
+ * Estado da comunicação (consulta do Pinguim BO validada pelo utilizador em 04-11-2026, colunas e estados sem alterações):
+ * campo extra 26098 (AGT_ESTADO_ID), a resposta da AGT a cada envio. Só entram os documentos com este registo (CROSS
+ * APPLY) e não eliminados (DH.DELETED = 0). Um documento pode ter vários registos: conta a resposta final
+ * (INTEGER_VALUE diferente de 2) mais recente. Estado AGT, pela ordem:
+ *   INTEGER_VALUE 3 → «Enviado»; 5 → «Erro - Comunicado»; 2 → «Pendente»;
+ *   texto «Process completed successfully» ou «já consta no repositório» (AGT_SUCESSO_TEXTOS) → «Enviado»;
+ *   outro → «Erro - Não comunicado».
+ * Mensagem de erro: vazia quando enviado ou pendente; nos outros casos, o texto da resposta tal como está.
+ * A consulta do portal é sempre limitada ao período escolhido.
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/bd.php';
@@ -71,62 +68,75 @@ function naval_agt_textos_sucesso(): array
     return $out;
 }
 
-/** Consulta: documentos de vendas do período, o estado e a mensagem da AGT, o pedido e o motivo de anulação. */
+/** Expressões do estado AGT e da mensagem de erro (iguais à consulta validada; textos de sucesso do .env). */
+function naval_agt_casos(): array
+{
+    $likes = implode(' OR ', array_map(function ($x) { return "AGT.STRING_VALUE LIKE N'%" . $x . "%'"; }, naval_agt_textos_sucesso() ?: ['Process completed successfully']));
+    $estado = "CASE
+                WHEN AGT.INTEGER_VALUE = 3 THEN 'Enviado'
+                WHEN AGT.INTEGER_VALUE = 5 THEN 'Erro - Comunicado'
+                WHEN AGT.INTEGER_VALUE = 2 THEN 'Pendente'
+                WHEN $likes THEN 'Enviado'
+                ELSE 'Erro - Não comunicado'
+            END";
+    $mensagem = "CASE
+                WHEN AGT.INTEGER_VALUE = 3 OR $likes THEN ''
+                WHEN AGT.INTEGER_VALUE = 2 THEN ''
+                ELSE AGT.STRING_VALUE
+            END";
+    return [$estado, $mensagem];
+}
+
+/** Consulta validada (colunas e estados do Pinguim BO), limitada ao período e com a rota e o motivo de anulação. */
 function naval_agt_sql(?array $colunasExtra = null): string
 {
-    $pedido = naval_agt_campo('AGT_PEDIDO_ID', '26046');
     $anulacao = naval_agt_campo('AGT_ANULACAO_ID', '26003');
-    $condPedido = naval_agt_condicao($pedido, naval_config('AGT_PEDIDO_NOME', 'request_number'), $colunasExtra);
     $condAnulacao = naval_agt_condicao($anulacao, naval_config('AGT_ANULACAO_NOME', 'Motivo de cancelamento'), $colunasExtra);
     $estadoId = naval_agt_campo('AGT_ESTADO_ID', '26098');
+    [$estado, $mensagem] = naval_agt_casos();
     return "
         SELECT
             DH.ID AS DOC_ID,
-            COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4)) AS ROTA,
+            COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)) AS ROTA,
+            COALESCE(S.DESCRIPTION, S.CODE) AS LOJA,
             DC.CODE AS TIPO_DOC,
             DC.DESCRIPTION AS TIPO_DESC,
+            CASE
+                WHEN DH.DOC_PREFIX LIKE '%/' THEN RTRIM(DH.DOC_PREFIX) + CAST(DH.DOC_NUMBER AS VARCHAR(20))
+                ELSE RTRIM(DH.DOC_PREFIX) + '/' + CAST(DH.DOC_NUMBER AS VARCHAR(20))
+            END AS DOCUMENTO_AGT,
             RTRIM(LTRIM(COALESCE(DH.DOC_PREFIX, '') + ' ' + CAST(DH.DOC_NUMBER AS VARCHAR(20)))) AS DOCUMENTO,
-            CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DH.CALC_TOTAL_W_TAX) ELSE DH.CALC_TOTAL_W_TAX END AS FLOAT) AS TOTAL,
+            CAST(DH.CALC_TOTAL_W_TAX * COALESCE(DH.CALC_SALES_SIGNAL, 1) AS DECIMAL(18, 2)) AS TOTAL,
+            DH.DOCSTATUS_ID AS ESTADO_DOCUMENTO,
             CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA_DOCUMENTO,
             CONVERT(VARCHAR(10), DH.FISCAL_DATE, 120) AS DATA_FISCAL,
-            CAST(DH.DELETED AS INT) AS ANULADO,
-            DH.ENTITY_NAME AS ENTIDADE,
-            DH.DOCSTATUS_ID AS ESTADO_DOCUMENTO,
-            COALESCE(STORE.DESCRIPTION, STORE.CODE) AS LOJA,
+            COALESCE(DH.ENTITY_NAME, E.DESCRIPTION) AS ENTIDADE,
+            $estado AS ESTADO_AGT,
+            $mensagem AS MENSAGEM_ERRO,
             CAST(AGT.INTEGER_VALUE AS INT) AS AGT_CODIGO,
-            AGT.STRING_VALUE AS AGT_TEXTO,
             CONVERT(VARCHAR(19), AGT.CLOCK_DATE, 120) AS AGT_DATA,
-            PED.STRING_VALUE AS PEDIDO_AGT,
-            CAST(PED.NDX AS INT) AS PEDIDO_POSICAO,
             ANU.STRING_VALUE AS MOTIVO_ANULACAO
         FROM DOCHEADER DH
         INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
-        LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
-        OUTER APPLY (
-            -- o número do pedido pode vir em texto ou em número (INTEGER_VALUE), conforme a versão do Pinguim BO
-            SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(E.STRING_VALUE)), ''), CAST(NULLIF(E.INTEGER_VALUE, 0) AS VARCHAR(30))) AS STRING_VALUE, E.NDX
-            FROM DOCHEADEREXTRA E
-            WHERE E.DOCHEADER_ID = DH.ID AND $condPedido AND E.DELETED = 0
-              AND COALESCE(NULLIF(LTRIM(RTRIM(E.STRING_VALUE)), ''), CAST(NULLIF(E.INTEGER_VALUE, 0) AS VARCHAR(30))) IS NOT NULL
-            ORDER BY E.CLOCK_DATE DESC
-        ) PED
+        LEFT JOIN STORE S ON S.ID = DH.STORE_ID
+        LEFT JOIN ENTITY E ON E.ID = DH.ENTITY_ID
+        -- só os documentos que comunicaram com a AGT (campo 26098); a resposta final (código diferente de 2) primeiro
+        CROSS APPLY (
+            SELECT TOP 1 DHE.STRING_VALUE, DHE.INTEGER_VALUE, DHE.CLOCK_DATE
+            FROM DOCHEADEREXTRA DHE
+            WHERE DHE.DOCHEADER_ID = DH.ID AND DHE.DOCEXTRA_ID = $estadoId AND DHE.DELETED = 0
+            ORDER BY CASE WHEN DHE.INTEGER_VALUE <> 2 THEN 0 ELSE 1 END, DHE.CLOCK_DATE DESC
+        ) AGT
         OUTER APPLY (
             SELECT TOP 1 E.STRING_VALUE
             FROM DOCHEADEREXTRA E
             WHERE E.DOCHEADER_ID = DH.ID AND $condAnulacao AND E.DELETED = 0
             ORDER BY E.CLOCK_DATE DESC
         ) ANU
-        OUTER APPLY (
-            -- resposta da AGT: a final (código diferente de 2) mais recente; sem ela, a pendente mais recente
-            SELECT TOP 1 E.INTEGER_VALUE, E.STRING_VALUE, E.CLOCK_DATE
-            FROM DOCHEADEREXTRA E
-            WHERE E.DOCHEADER_ID = DH.ID AND E.DOCEXTRA_ID = $estadoId AND E.DELETED = 0
-            ORDER BY CASE WHEN E.INTEGER_VALUE <> 2 THEN 0 ELSE 1 END, E.CLOCK_DATE DESC
-        ) AGT
-        WHERE DH.CALC_SALES_SIGNAL <> 0
+        WHERE DH.DELETED = 0
           AND DH.DOC_DATE >= :de
           AND DH.DOC_DATE <= :ate
-        ORDER BY DH.DOC_DATE DESC, DH.ID DESC";
+        ORDER BY S.CODE ASC, DH.DOC_NUMBER DESC";
 }
 
 /** Mensagem legível da resposta da AGT: o texto, ou num JSON a primeira mensagem/descrição/erro que tiver. */
@@ -150,21 +160,26 @@ function naval_agt_mensagem(string $t): string
     return naval_texto($t, 300);
 }
 
-/** Estado da comunicação (regra no topo do ficheiro): estado, evidência, pedido e mensagem da AGT. */
+/**
+ * Estado da comunicação a partir das colunas da consulta: «Estado AGT» e «Mensagem de erro» tal como vêm do Pinguim BO,
+ * e o estado interno do portal (comunicado, pendente ou erro) para indicadores, alertas e qualidade dos dados.
+ */
 function naval_agt_estado(array $l): array
 {
-    $pedido = trim((string) ($l['PEDIDO_AGT'] ?? ''));
-    $codigo = isset($l['AGT_CODIGO']) && $l['AGT_CODIGO'] !== '' ? (int) $l['AGT_CODIGO'] : null;
-    $texto = trim((string) ($l['AGT_TEXTO'] ?? ''));
-    $base = ['pedido_agt' => $pedido !== '' ? $pedido : null, 'mensagem_agt' => null, 'resposta_agt' => isset($l['AGT_DATA']) ? (string) $l['AGT_DATA'] : null];
-    if ($codigo === null && $texto === '') {
-        return ($pedido !== '' ? ['estado' => 'pendente', 'evidencia' => 'pedido'] : ['estado' => 'por_comunicar', 'evidencia' => 'sem_registo']) + $base;
-    }
-    $sucesso = false;
-    foreach (naval_agt_textos_sucesso() as $x) if ($x !== '' && mb_stripos($texto, $x) !== false) $sucesso = true;
-    if ($codigo === 3 || $sucesso) return ['estado' => 'comunicado', 'evidencia' => 'estado'] + $base;
-    if ($codigo === 2) return ['estado' => 'pendente', 'evidencia' => 'estado'] + $base;
-    return ['estado' => 'erro', 'evidencia' => 'estado', 'mensagem_agt' => $texto !== '' ? naval_agt_mensagem($texto) : 'Resposta da AGT com o código ' . $codigo . '.'] + $base;
+    $rotulo = trim((string) ($l['ESTADO_AGT'] ?? ''));
+    $msg = (string) ($l['MENSAGEM_ERRO'] ?? '');
+    $mapa = ['Enviado' => 'comunicado', 'Pendente' => 'pendente', 'Erro - Comunicado' => 'erro', 'Erro - Não comunicado' => 'erro'];
+    $estado = $mapa[$rotulo] ?? 'erro';
+    if (!isset($mapa[$rotulo])) $rotulo = 'Erro - Não comunicado';
+    return [
+        'estado' => $estado,
+        'estado_agt' => $rotulo,
+        'erro_tipo' => $estado === 'erro' ? ($rotulo === 'Erro - Comunicado' ? 'comunicado' : 'nao_comunicado') : null,
+        'mensagem_erro' => $msg,
+        'mensagem_agt' => $estado === 'erro' ? (trim($msg) !== '' ? naval_agt_mensagem($msg) : $rotulo) : null,
+        'codigo_agt' => isset($l['AGT_CODIGO']) && $l['AGT_CODIGO'] !== '' ? (int) $l['AGT_CODIGO'] : null,
+        'resposta_agt' => isset($l['AGT_DATA']) ? (string) $l['AGT_DATA'] : null,
+    ];
 }
 
 /** Linhas da consulta → documentos para o portal (separado para os testes). */
@@ -182,11 +197,12 @@ function naval_agt_montar(array $linhas): array
             'tipo' => (string) $l['TIPO_DESC'],
             'tipo_codigo' => (string) $l['TIPO_DOC'],
             'documento' => (string) $l['DOCUMENTO'],
+            'documento_agt' => (string) ($l['DOCUMENTO_AGT'] ?? $l['DOCUMENTO']),
             'total' => round((float) $l['TOTAL'], 2),
             'data' => (string) $l['DATA_DOCUMENTO'],
             'data_fiscal' => $l['DATA_FISCAL'] !== null ? (string) $l['DATA_FISCAL'] : null,
             // Anulado: marcado no documento ou com motivo de cancelamento registado
-            'anulado' => (int) $l['ANULADO'] === 1 || $motivo !== '',
+            'anulado' => $motivo !== '',
             'motivo_anulacao' => $motivo !== '' ? $motivo : null,
             'entidade' => trim((string) ($l['ENTIDADE'] ?? '')),
             'loja' => trim((string) ($l['LOJA'] ?? '')),

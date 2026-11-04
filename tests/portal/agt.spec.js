@@ -5,22 +5,26 @@ import { abrir } from './dados.js';
 const doc = (o) => ({
   rota: '1001',
   promotor: 'Andrea Santos',
+  loja: 'Rota 1001',
   tipo: 'Factura-recibo',
   tipo_codigo: 'FR',
-  documento: 'FR 1/1',
+  documento: 'FR FR0126S78519N 6',
+  documento_agt: 'FR FR0126S78519N/6',
   total: 1000,
+  estado_documento: '8002',
   data: '2026-10-24',
   data_fiscal: '2026-10-24',
   anulado: false,
   entidade: 'LOJA A',
-  motivo_anulacao: null,
   estado: 'comunicado',
-  pedido_agt: '559728934618656132',
+  estado_agt: 'Enviado',
+  mensagem_erro: '',
   ...o,
 });
 
-test('Comunicação AGT: menu Integrações, colunas, estados e um só pedido ao servidor', async ({ page }) => {
+test('Comunicação AGT: as colunas e os estados da consulta validada, sem alterações, e um só pedido ao servidor', async ({ page }) => {
   let pedidos = 0;
+  const json = '{"errorList":[{"idError":"E40","descriptionError":"customerTaxID 5000 desconhecido"}]}';
   await page.route('**/v1/agt*', (r) => {
     pedidos++;
     return r.fulfill({
@@ -28,49 +32,45 @@ test('Comunicação AGT: menu Integrações, colunas, estados e um só pedido ao
         disponivel: true,
         documentos: [
           doc({}),
-          doc({ documento: 'FR 1/2', rota: '1002', promotor: 'Cristina', estado: 'por_comunicar', pedido_agt: null }),
-          doc({
-            documento: 'FR 1/9',
-            estado: 'erro',
-            evidencia: 'estado',
-            pedido_agt: null,
-            mensagem_agt: 'customerTaxID 5000 desconhecido no sistema da AGT',
-          }),
-          doc({ documento: 'NC 1/1', tipo: 'Nota de crédito', total: -200 }),
-          doc({ documento: 'FT 1/3', tipo: 'Factura', anulado: true, motivo_anulacao: 'Anulado', data_fiscal: null }),
+          doc({ documento_agt: 'FR FR0126S78519N/7', estado: 'pendente', estado_agt: 'Pendente' }),
+          doc({ documento_agt: 'FR FR0126S78519N/8', estado: 'erro', estado_agt: 'Erro - Comunicado', mensagem_erro: json }),
+          doc({ documento_agt: 'FR FR0126S78519N/9', estado: 'erro', estado_agt: 'Erro - Não comunicado', mensagem_erro: 'Falha genérica' }),
+          doc({ documento_agt: 'NC NC0126S1/1', tipo: 'Nota de crédito', total: -200, loja: 'Rota 1002', rota: '1002' }),
         ],
       },
     });
   });
   const erros = await abrir(page, '#agt');
   await expect(page.locator('h1')).toHaveText('Comunicação AGT');
-  await expect(page.locator('.nav a.on, .nav .on').first()).toContainText('Comunicação AGT');
   const cab = page.locator('#page table thead');
   for (const c of [
-    'Rota',
+    'Loja',
     'Tipo de documento',
-    'Total',
-    'Data do documento',
+    'Documento',
+    'Total do documento',
+    'Mensagem',
+    'Data documento',
     'Data fiscal',
+    'Nome entidade',
     'Estado AGT',
-    'Estado do documento',
-    'Nome da entidade',
-    'Mensagem da AGT',
-    'Estado',
+    'Mensagem de erro',
   ])
     await expect(cab).toContainText(c);
-  await expect(page.locator('tr', { hasText: 'FR 1/1' })).toContainText('Pedido n.º 559728934618656132');
-  await expect(page.locator('tr', { hasText: 'FR 1/9' })).toContainText('Com erro');
-  await expect(page.locator('tr', { hasText: 'FR 1/9' })).toContainText('desconhecido no sistema da AGT');
-  await expect(page.locator('.tile', { hasText: 'Com erro' }).locator('.v')).toHaveText('1');
-  await expect(page.locator('tr', { hasText: 'FR 1/1' })).toContainText('Comunicado');
-  await expect(page.locator('tr', { hasText: 'FR 1/2' })).toContainText('Sem pedido de comunicação');
-  await expect(page.locator('tr', { hasText: 'FR 1/2' })).toContainText('Por comunicar');
-  await expect(page.locator('tr', { hasText: 'FT 1/3' })).toContainText('Anulado');
-  await expect(page.locator('.tile', { hasText: 'Comunicados' }).locator('.v')).toHaveText('3');
-  await expect(page.locator('.tile', { hasText: 'Por comunicar' }).locator('.v')).toHaveText('1');
-  await expect(page.locator('.tile', { hasText: 'Anulados' }).locator('.v')).toHaveText('1');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/6' })).toContainText('Enviado');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/6' })).toContainText('8002');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/7' })).toContainText('Pendente');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/8' })).toContainText('Erro - Comunicado');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/8' })).toContainText('descriptionError');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/9' })).toContainText('Erro - Não comunicado');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/9' })).toContainText('Falha genérica');
   await expect(page.locator('.tile', { hasText: 'Documentos' }).first().locator('.v')).toHaveText('5');
+  await expect(page.locator('.tile', { hasText: 'Enviado' }).locator('.v')).toHaveText('2');
+  await expect(page.locator('.tile', { hasText: 'Erro - Comunicado' }).locator('.v')).toHaveText('1');
+  await expect(page.locator('.tile', { hasText: 'Erro - Não comunicado' }).locator('.v')).toHaveText('1');
+  await expect(page.locator('.tile', { hasText: 'Pendente' }).locator('.v')).toHaveText('1');
+  // ordem da consulta: loja e, dentro da loja, como vem do Pinguim BO
+  await expect(page.locator('#page tbody tr').first()).toContainText('FR FR0126S78519N/6');
+  await expect(page.locator('#page tbody tr').nth(4)).toContainText('Rota 1002');
   expect(pedidos).toBe(1);
   expect(erros).toEqual([]);
 });
