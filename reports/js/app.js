@@ -8,7 +8,8 @@ import { artigosProntos, fetchVendas, garantirArtigos, mostrarFontes } from './f
 import { dl, ds, setFmt } from './formatos.js';
 import { IDIOMAS, LANG, mudarIdioma, t, tv } from './i18n/i18n.js';
 import { REL_ATUAL, definirRelPedido, nav, organizarRelatorios } from './navegacao.js';
-import { PAGES } from './paginas/catalogo.js';
+import { PAGES, seccaoDe } from './paginas/catalogo.js';
+import { actualizarBarraSup } from './barra-superior.js';
 import { R } from './paginas/registo.js';
 import { carregarPagina, carregarPaginas, paginaPronta } from './paginas/modulos.js';
 import { mostrarIndicador } from './smartphones.js';
@@ -153,9 +154,15 @@ export function draw() {
     b.addEventListener('click', () => setPreset(k));
     seg.append(b);
   });
+  // Localização (secção › área) e período: o utilizador sabe sempre onde está (ISO 9241-112)
   $('#eyebrow').textContent =
-    t(p.grupo || 'Portal RTM') + (!st.de || SEM_PERIODO.includes(p.id) ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
+    ([seccaoDe(p), p.grupo]
+      .filter(Boolean)
+      .map((x) => t(x))
+      .join(' › ') || t('Portal RTM')) + (!st.de || SEM_PERIODO.includes(p.id) ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
+  $('#eyebrow').setAttribute('aria-label', t('Localização'));
   $('#titulo').textContent = p.id === 'inicio' ? t('Painel de indicadores') : t(p.nome);
+  actualizarBarraSup();
   // Na página principal em ecrã de computador o espaço vai para os gráficos (painel num só ecrã)
   $('#lead').textContent =
     p.id === 'inicio' && innerWidth < 1200

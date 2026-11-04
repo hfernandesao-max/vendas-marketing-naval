@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Menu e barra superior segundo as normas internacionais (ISO 9241-110/112, ISO/IEC 25010, WCAG 2.2 AA)
+
+- **Menu por secções da cadeia de valor:** Comercial (Vendas, Clientes, Cobranças), Operações (Terreno, Logística),
+  Análise (Inteligência de negócio) e, separada em baixo, Sistema (Equipamentos, Integrações, Administração). O
+  primeiro nível passa de 11 entradas soltas para 4 secções claras.
+- **Nomes que descrevem a função:** «Gestão» deu lugar a «Inteligência de negócio»; «Recebimentos» passou a
+  «Cobranças», como a página; o GeoMobilidade juntou-se ao Terreno (visitas, percurso, rotas, prospecção, zonas e
+  distribuidores no mesmo sítio).
+- **Cada função na sua área:** Histórico de auditoria em Administração; Sincronização dos telemóveis em Equipamentos.
+- **Barra superior:** Procurar (Ctrl+K ou /) vai directo a qualquer função pelo nome; estado das fontes de dados e dos
+  telemóveis em texto (já não ocupa o menu nem depende só da cor); sino dos alertas com o número por tratar; menu da
+  conta no canto superior direito, com nome, perfil e Terminar sessão.
+- **Favoritos:** a estrela ao lado do título (ou na procura) fixa até 6 funções no topo do menu; a lista segue a conta
+  em qualquer computador ou telemóvel.
+- **Indicadores com significado:** o número ao lado de uma área diz o que conta (por exemplo, «75 clientes não
+  activos»), também para leitores de ecrã.
+- **Ícones:** cada função tem um ícone só seu (um ícone, um significado).
+- **Orientação e acessibilidade:** cada página mostra onde está (por exemplo, Comercial › Vendas); texto secundário do
+  tema escuro com contraste de pelo menos 4,5:1.
+
 ### Entrada directa no portal e entrada mais leve
 
 - **Sem página intermédia:** depois de entrar, o utilizador vai directo ao portal (Início). A antiga página de escolha

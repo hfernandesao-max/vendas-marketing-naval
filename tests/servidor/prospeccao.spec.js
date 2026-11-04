@@ -137,7 +137,7 @@ test('prospecção: separadores de clientes sem compras, coordenadas e resultado
   await f.getByRole('tab', { name: 'Resultados' }).click();
   await expect(f.locator('.pp-funil tr')).toHaveCount(5); // cabeçalho, fora das rotas, 1001, 1002, total
   await expect(f.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
-  // menu do portal com a área GeoMobilidade
-  await expect(page.locator('#nav .navg', { hasText: 'GeoMobilidade' })).toBeVisible();
+  // menu do portal: os mapas estão na área Terreno (secção Operações)
+  await expect(page.locator('#nav .navg', { hasText: 'Terreno' })).toBeVisible();
   await pagina.close();
 });

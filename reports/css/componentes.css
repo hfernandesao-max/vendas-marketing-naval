@@ -3500,3 +3500,453 @@ body.pagina-mapa .top {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* ───────── Menu: secções, favoritos ───────── */
+.nav .nav-sec {
+  margin: 14px 12px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav .nav-sec-sis {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.nav .nav-fav a svg {
+  stroke: var(--warn);
+}
+.nav a .n,
+.nav .navg .navg-n {
+  cursor: help;
+}
+
+/* ───────── Barra superior: procurar, estado do sistema, alertas e conta ───────── */
+.barra-sup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -10px 0 10px;
+  min-height: 38px;
+}
+html .barra-sup .menu-btn {
+  margin: 0;
+}
+.procurar {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: min(340px, 40vw);
+  height: 38px;
+  padding: 0 10px 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgb(var(--veu-rgb) / 0.03);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.procurar:hover {
+  border-color: var(--line2);
+  color: var(--fg);
+}
+.procurar:focus-visible,
+.sino:focus-visible,
+.conta-b:focus-visible,
+.fav-b:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+.procurar svg,
+.sino svg,
+.conta-sair svg,
+.fav-b svg,
+.conta-b .seta {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.procurar kbd {
+  margin-left: auto;
+  font: 600 11px/1 inherit;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line2);
+  color: var(--dim);
+}
+.estado-sis {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.estado-sis .fontes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 12px;
+  height: 38px;
+  white-space: nowrap;
+}
+.estado-sis .fontes .l1 {
+  align-items: center;
+}
+.estado-sis .fontes .dot {
+  margin-top: 0;
+}
+.estado-sis .fontes .l2 {
+  padding-left: 0;
+  font-size: 11.5px;
+}
+.estado-sis .fontes .l2:not(:empty)::before {
+  content: '· ';
+}
+.estado-sis .fontes-det {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  min-width: 300px;
+  background: var(--card);
+  border: 1px solid var(--line2);
+  box-shadow: 0 12px 32px rgb(var(--sombra-rgb) / calc(0.35 * var(--sombra-k)));
+}
+.estado-sis .sync-mini {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 12px;
+  height: 38px;
+  white-space: nowrap;
+}
+.estado-sis .sync-mini[hidden] {
+  display: none;
+}
+.estado-sis .sync-t {
+  display: flex;
+  gap: 6px;
+}
+.estado-sis .sync-pontos {
+  display: none; /* o resumo em texto diz o mesmo (WCAG 1.4.1); o detalhe está na página Sincronização */
+}
+.sino {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  text-decoration: none;
+}
+.sino[hidden] {
+  display: none;
+}
+.sino:hover,
+.sino[aria-current='page'] {
+  background: rgb(var(--az2-rgb) / 0.1);
+}
+.sino-n {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.sino-n[hidden] {
+  display: none;
+}
+.conta {
+  position: relative;
+}
+.conta[hidden] {
+  display: none;
+}
+.conta-b {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 8px 0 4px;
+  border-radius: 11px;
+  cursor: pointer;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.conta-b:hover {
+  background: rgb(var(--az2-rgb) / 0.08);
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #273777, #2397d4);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.conta-nome {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conta-p {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 250px;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line2);
+  box-shadow: 0 12px 32px rgb(var(--sombra-rgb) / calc(0.35 * var(--sombra-k)));
+}
+.conta-p[hidden] {
+  display: none;
+}
+.conta-p .quem {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  margin: 0 0 6px;
+  border-bottom: 1px solid var(--line);
+}
+.conta-p .quem b {
+  font-size: 14px;
+}
+.conta-p .quem span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.conta-sair {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--bad);
+}
+.conta-sair:hover,
+.conta-sair:focus-visible {
+  background: rgb(var(--er1-rgb) / 0.1);
+}
+/* estrela «fixar nos favoritos» ao lado do título */
+.titulo-l {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fav-b {
+  all: unset;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-top: 6px;
+  border-radius: 10px;
+  color: var(--dim);
+  cursor: pointer;
+}
+.fav-b[hidden] {
+  display: none;
+}
+.fav-b:hover {
+  color: var(--warn);
+  background: rgb(var(--av1-rgb) / 0.1);
+}
+.fav-b svg {
+  width: 21px;
+  height: 21px;
+}
+.fav-b.on {
+  color: var(--warn);
+}
+.fav-b.on svg,
+.proc-fav.on svg {
+  fill: currentColor;
+}
+
+/* ───────── Procurar uma função (Ctrl+K) ───────── */
+.procura {
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 80px));
+  margin: 10vh auto auto;
+  padding: 0;
+  border-radius: 16px;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  color: var(--fg);
+  box-shadow: 0 24px 60px rgb(var(--sombra-rgb) / calc(0.45 * var(--sombra-k)));
+  overflow: hidden;
+}
+.procura[open] {
+  display: flex;
+  flex-direction: column;
+}
+.procura::backdrop {
+  background: rgb(var(--modal-rgb) / 0.55);
+}
+.proc-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.proc-lupa svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.proc-campo {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 16px;
+}
+.proc-lista {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  flex: 1;
+}
+.proc-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.proc-item.on {
+  background: rgb(var(--az2-rgb) / 0.14);
+}
+.proc-ic svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: var(--c-nav-ico);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.proc-txt {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.proc-txt b {
+  font-weight: 600;
+  font-size: 14px;
+}
+.proc-txt small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.proc-fav {
+  all: unset;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--dim);
+  cursor: pointer;
+}
+.proc-fav:hover,
+.proc-fav.on {
+  color: var(--warn);
+}
+.proc-fav svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.proc-vazio {
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+.proc-dica {
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+#fontes-mini {
+  display: none !important;
+}
+@media (max-width: 960px) {
+  .barra-sup {
+    margin: 0 0 14px;
+    flex-wrap: wrap;
+  }
+  .procurar {
+    min-width: 0;
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .procurar span,
+  .procurar kbd,
+  .conta-nome,
+  .conta-b .seta,
+  .estado-sis .fontes .l2 {
+    display: none;
+  }
+  .estado-sis .fontes-det {
+    position: fixed;
+    top: 64px;
+    left: 16px;
+    right: 16px;
+    min-width: 0;
+  }
+}
+@media (max-width: 560px) {
+  .estado-sis .sync-mini {
+    display: none;
+  }
+}
