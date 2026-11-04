@@ -1000,19 +1000,19 @@
           Planeamento inteligente de rotas com Google Maps, delimitação de zonas de entrega poligonais e gestão
           georreferenciada de distribuidores.</p>
         <div class="feat">
-          <a class="chip" href="geo/geo.php"><svg viewBox="0 0 24 24">
+          <a class="chip" href="reports/#geo-rotas"><svg viewBox="0 0 24 24">
               <path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" />
             </svg><b style="font-weight:400" data-t="Optimização de rotas">Optimização de rotas</b></a>
-          <a class="chip" href="geo/view/"><svg viewBox="0 0 24 24">
+          <a class="chip" href="reports/#geo-zonas"><svg viewBox="0 0 24 24">
               <path
                 d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
             </svg><b style="font-weight:400" data-t="Delimitação de zonas">Delimitação de zonas</b></a>
-          <a class="chip" href="geo/view/viewDist/"><svg viewBox="0 0 24 24">
+          <a class="chip" href="reports/#geo-distribuidores"><svg viewBox="0 0 24 24">
               <path
                 d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
             </svg><b style="font-weight:400" data-t="Gestão de distribuidores">Gestão de distribuidores</b></a>
         </div>
-        <div class="cta"><a href="geo/"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
+        <div class="cta"><a href="reports/#geo-rotas"><span data-t="Aceder ao GEO">Aceder ao GEO</span><svg viewBox="0 0 24 24"
               aria-hidden="true">
               <path d="M5 12h14m-6-6 6 6-6 6" />
             </svg></a></div>
@@ -1111,7 +1111,7 @@
           'vendas-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'plano-cargas', 'sap-exportar', 'pendentes', 'acessos'].some(tem);
         const geo = ['geo-rotas', 'geo-zonas', 'geo-distribuidores'].some(tem);
         const ATALHO = { 'reports/#exportar': () => ['E', 'Er', 'G', 'A'].includes(P['excel-completo']), 'reports/#ranking': () => tem('ranking'), 'reports/#auditoria': () => tem('auditoria'),
-          'geo/geo.php': () => tem('geo-rotas'), 'geo/view/': () => tem('geo-zonas'), 'geo/view/viewDist/': () => tem('geo-distribuidores') };
+          'reports/#geo-rotas': () => tem('geo-rotas'), 'reports/#geo-zonas': () => tem('geo-zonas'), 'reports/#geo-distribuidores': () => tem('geo-distribuidores') };
         document.querySelectorAll('.feat .chip').forEach((c) => { const f = ATALHO[c.getAttribute('href')]; if (f && !f()) c.hidden = true; });
         if (!relatorios) document.querySelector('.mod.r').hidden = true;
         if (!geo) document.querySelector('.mod.g').hidden = true;

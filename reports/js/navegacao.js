@@ -80,6 +80,7 @@ const ICONE_GRUPO = {
   Logística: 'truck',
   Equipamentos: 'phone',
   Integrações: 'upload',
+  GeoMobilidade: 'mapa',
   Administração: 'lock',
 };
 let grupoAberto = null,

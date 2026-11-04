@@ -214,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
 <!DOCTYPE html>
 <html lang="pt">
 <head>
+  <script src="embutido.js" data-rota="login"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <!-- App instalável (iPhone: Safari › Partilhar › Adicionar ao ecrã principal; Android: Instalar) -->

@@ -7,6 +7,7 @@ defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token J
 
 $u = naval_utilizador();
 if (!$u) throw new NavalErro('Sessão terminada.', 401);
+naval_servico('preferencias');
 $perm = [];
 foreach (array_keys(naval_matriz()) as $rec) $perm[$rec] = naval_nivel($rec);
 $GLOBALS['naval_api_sensivel'] = true;   // tem o código CSRF: nunca em cache nem comprimido
@@ -25,5 +26,7 @@ naval_json([
     'csrf' => naval_csrf(),
     'dois_passos' => !empty($u['mfa']),
     'compatibilidade' => !empty($u['compatibilidade']),
+    // preferências pessoais (menu lateral): seguem a conta em qualquer dispositivo
+    'preferencias' => naval_pref_ler((string) $u['login']),
     'sessao' => ['inactiva_s' => NAVAL_SESSAO_INACTIVA, 'maxima_s' => NAVAL_SESSAO_MAXIMA],
 ]);

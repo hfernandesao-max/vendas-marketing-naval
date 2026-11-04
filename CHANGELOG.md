@@ -4,6 +4,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Uma só plataforma: GeoMobilidade dentro do portal
+- **Sem nova entrada:** as páginas de mapas abrem dentro do portal, com a mesma sessão, o mesmo menu e o mesmo tema.
+  Passar entre os relatórios e os mapas já não pede outra vez a palavra-passe. Os endereços antigos do GEO passam
+  sozinhos para o portal.
+- **Nova área GeoMobilidade no menu:** Optimização de rotas, Prospecção de clientes, Percurso do dia, Zonas de entrega
+  e Distribuidores, só para quem tem acesso a cada uma na matriz de acessos.
+- **Menu lateral à medida de cada pessoa** (botão «Menu lateral», no fundo do menu):
+  - modo **Fixo** (sempre visível), **Compacto** (só os ícones; abre ao passar o rato) ou **Oculto** (abre com o botão
+    Menu, deixando o ecrã inteiro para a página);
+  - posição à **esquerda** ou à **direita**;
+  - a escolha fica guardada na conta e vale em qualquer computador ou telemóvel.
+- **Nomes:** a página inicial passa a «Painel de indicadores» e «Cadastros · visão geral» a «Cadastros · indicadores».
+
+### Documento: exportar PDF e ajuste automático à janela
+- **Exportar PDF:** o documento descarrega-se em PDF A4, com texto pesquisável e a mesma estrutura da folha.
+- **Ajuste à janela:** a folha ajusta-se sozinha à largura do painel, como um leitor de PDF, sem barras de deslocação
+  horizontais, no computador e no telemóvel.
+
+### Apresentação do portal para o Conselho de Administração
+- Uma mensagem por ecrã, números grandes e pouco texto, sem explicações técnicas: início, negócio, clientes,
+  automação, futuro e calendário.
+- Datas concretas em cada iniciativa, calendário das fases e recomendações com data, para conhecimento do Conselho.
+
 ### App Naval Gestão: entrada corrigida
 - **Naval Gestão (telemóvel):** quem abria o endereço da app sem sessão iniciada era enviado para uma página de
   entrada inexistente. Agora vai para a página de entrada do portal e, depois de entrar, volta à app, pronta a

@@ -6,7 +6,7 @@ test('Início fecha todas as áreas do menu e volta ao estado inicial', async ({
   await abrir(page, '#pagamentos');
   await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(1);
   await page.locator('#nav a[href="#inicio"]').click();
-  await expect(page.locator('#titulo')).toHaveText('Visão geral');
+  await expect(page.locator('#titulo')).toHaveText('Painel de indicadores');
   await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(0);
   // abrir uma área no Início e voltar a carregar em Início: fecha outra vez
   await page.locator('.navg', { hasText: 'Vendas' }).click();

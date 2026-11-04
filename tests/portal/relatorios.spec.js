@@ -58,6 +58,7 @@ test('menu organizado por áreas de negócio', async ({ page }) => {
     'Recebimentos',
     'Clientes',
     'Terreno',
+    'GeoMobilidade',
     'Logística',
     'Equipamentos',
     'Integrações',

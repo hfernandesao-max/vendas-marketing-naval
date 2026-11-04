@@ -1,3 +1,4 @@
+@import url('../assets/fontes/inter.css');
 * {
   margin: 0;
   padding: 0;
@@ -297,4 +298,30 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   margin-top: 15px;
   white-space: nowrap;
+}
+/* ── Dentro do portal (página GEO num quadro do portal: mesmo menu, mesmo tema, mesma letra) ── */
+html.geo-embutido .app-header {
+  display: none;
+}
+html.geo-embutido body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: transparent;
+}
+html.geo-embutido .app-layout {
+  height: 100vh;
+}
+/* cores do portal (azuis Naval) nos dois temas */
+html.geo-embutido {
+  --gray-900: #08122b;
+  --gray-800: #0c1a3d;
+  --sidebar-bg: #0b1735;
+  --app-blue: #12336b;
+  --app-blue-light: #2a6fe0;
+}
+html.geo-embutido[data-theme='light'] {
+  --gray-900: #eef2f8;
+  --gray-800: #ffffff;
+  --sidebar-bg: #ffffff;
+  --app-blue: #12336b;
+  --app-blue-light: #1e6fd9;
 }

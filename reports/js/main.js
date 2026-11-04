@@ -6,6 +6,7 @@ import { route } from './app.js';
 import { LIGACOES, avaliarFontes, fetchVendas, recalcularDias } from './fontes.js';
 import { n0 } from './formatos.js';
 import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
+import { aplicarPreferencias } from './barra-lateral.js';
 import { definirSessao, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
@@ -95,6 +96,7 @@ const lerSessao = () =>
         d = null;
       }
       definirSessao(d && d.permissoes ? d : null);
+      if (d && d.preferencias) aplicarPreferencias(d.preferencias);
       return d && d.permissoes ? idiomaDaConta(d) : null;
     })
     .catch((e) => {

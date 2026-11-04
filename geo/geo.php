@@ -3,6 +3,7 @@
 <html lang="pt">
 
 <head>
+  <script src="embutido.js" data-rota="geo-rotas"></script>
   <meta charset="UTF-8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -48,7 +49,7 @@
         <a href="view/viewDist/index.php" title="Ir para os distribuidores" class="nav-btn">
           <i data-lucide="map"></i> Distribuidores
         </a>
-        <a href="reports.php" title="Ir para os relatórios" class="nav-btn">
+        <a href="../reports/" target="_top" title="Ir para os relatórios" class="nav-btn">
           <i data-lucide="bar-chart-3"></i> Reports
         </a>
         <a href="auth/logout.php?t=<?= htmlspecialchars(naval_token_saida(), ENT_QUOTES, 'UTF-8') ?>" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">

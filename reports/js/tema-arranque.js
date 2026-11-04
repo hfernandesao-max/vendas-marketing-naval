@@ -20,6 +20,14 @@
     document.documentElement.setAttribute('data-theme', claro ? 'light' : 'dark');
   }
   aplicar();
+  // menu lateral (modo e posição) escolhido pela pessoa: aplicado já, para o primeiro desenho sair certo
+  try {
+    var m = JSON.parse(localStorage.getItem('vm-menu') || '{}');
+    document.documentElement.setAttribute('data-barra', ['fixa', 'compacta', 'oculta'].indexOf(m.barra) >= 0 ? m.barra : 'fixa');
+    document.documentElement.setAttribute('data-lado', m.lado === 'direita' ? 'direita' : 'esquerda');
+  } catch (e) {
+    document.documentElement.setAttribute('data-barra', 'fixa');
+  }
   if (mq && mq.addEventListener) mq.addEventListener('change', aplicar);
   window.vmTema = {
     escolha: escolha,

@@ -12,6 +12,7 @@ import { PAGES } from './paginas/catalogo.js';
 import { R } from './paginas/registo.js';
 import { carregarPagina, carregarPaginas, paginaPronta } from './paginas/modulos.js';
 import { mostrarIndicador } from './smartphones.js';
+import { montarAjusteMenu } from './barra-lateral.js';
 import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeVer } from './perfil.js';
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
@@ -52,6 +53,7 @@ function textos() {
     }),
   );
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
+  montarAjusteMenu();
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
 // Páginas que não dependem do período (sem a barra De / Até)
@@ -70,6 +72,11 @@ const SEM_PERIODO = [
   'visitas-dia',
   'qualidade-dados',
   'apresentacao',
+  'geo-rotas',
+  'geo-prospeccao',
+  'geo-terreno',
+  'geo-zonas',
+  'geo-distribuidores',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'sap-exportar']);
@@ -122,7 +129,8 @@ export function draw() {
   mostrarFontes();
   mostrarIndicador(); // cartão dos telemóveis no menu: sempre na língua escolhida
   document.querySelector('.filters').style.display = SEM_PERIODO.includes(p.id) ? 'none' : '';
-  $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id));
+  document.body.classList.remove('pagina-mapa'); // as páginas de mapas (GEO) voltam a marcá-la ao desenhar
+  $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id)) || p.id.startsWith('geo-');
   $('#xl-all').hidden = !podeExportar('excel-completo');
   $('#xl-dados').hidden = !podeExportar('exportar-dados');
   if (SESSAO) {
@@ -147,7 +155,7 @@ export function draw() {
   });
   $('#eyebrow').textContent =
     t(p.grupo || 'Portal RTM') + (!st.de || SEM_PERIODO.includes(p.id) ? '' : ' · ' + (st.de === st.ate ? ds(st.de) : `${dl(st.de)} – ${dl(st.ate)}`));
-  $('#titulo').textContent = p.id === 'inicio' ? t('Visão geral') : t(p.nome);
+  $('#titulo').textContent = p.id === 'inicio' ? t('Painel de indicadores') : t(p.nome);
   // Na página principal em ecrã de computador o espaço vai para os gráficos (painel num só ecrã)
   $('#lead').textContent =
     p.id === 'inicio' && innerWidth < 1200

@@ -3,6 +3,7 @@
 <html lang="pt">
 
 <head>
+  <script src="embutido.js" data-rota="geo-terreno"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" />
