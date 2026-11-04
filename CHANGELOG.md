@@ -4,6 +4,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Comunicação AGT: estados e datas exactamente como na consulta
+
+- **Estado AGT:** «Enviado», «Erro», «Pendente» e «Não enviado», como na consulta do Pinguim BO. Os indicadores do topo
+  usam os mesmos nomes.
+- **Datas:** Data documento e Data fiscal no formato da consulta (dd/mm/aaaa).
+
+### Pré-visualização do documento: nada sobreposto
+
+- A descrição longa do artigo passa à linha seguinte e já não fica por cima da quantidade; as colunas Qtd., Un. e IVA
+  ficaram mais largas.
+- O código do cliente aparece numa só linha.
+
 ### Comunicação AGT: colunas e estados iguais à consulta validada no Pinguim BO
 
 - **Só os documentos que comunicaram com a AGT:** entram os documentos com resposta da AGT (campo 26098), não

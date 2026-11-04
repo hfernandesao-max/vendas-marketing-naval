@@ -55,8 +55,8 @@ function folha(v, linhas, pags) {
   cab.append(esq, dir);
   f.append(cab);
   const meta = el('dl', 'df-meta');
-  const par = (k, val) => {
-    const d = el('div');
+  const par = (k, val, cl) => {
+    const d = el('div', cl || null);
     d.append(el('dt', null, k), el('dd', null, val));
     meta.append(d);
   };
@@ -64,7 +64,7 @@ function folha(v, linhas, pags) {
   if (v.hora) par(t('Hora'), v.hora);
   par(t('Cliente'), v.cliente || t('Consumidor final'));
   par(t('NIF'), v.nif || '—');
-  if (v.cliente_codigo) par(t('Código do cliente'), v.cliente_codigo);
+  if (v.cliente_codigo) par(t('Código do cliente'), v.cliente_codigo, String(v.cliente_codigo).length > 14 ? 'df-largo' : null);
   f.append(meta);
   // linhas
   const w = el('div', 'df-tabw');

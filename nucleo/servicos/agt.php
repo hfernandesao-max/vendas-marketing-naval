@@ -14,9 +14,9 @@
  * campo extra 26098 (AGT_ESTADO_ID), a resposta da AGT a cada envio. Só entram os documentos com este registo (CROSS
  * APPLY) e não eliminados (DH.DELETED = 0). Um documento pode ter vários registos: conta a resposta final
  * (INTEGER_VALUE diferente de 2) mais recente. Estado AGT, pela ordem:
- *   INTEGER_VALUE 3 → «Enviado»; 5 → «Erro - Comunicado»; 2 → «Pendente»;
+ *   INTEGER_VALUE 3 → «Enviado»; 5 → «Erro»; 2 → «Pendente»;
  *   texto «Process completed successfully» ou «já consta no repositório» (AGT_SUCESSO_TEXTOS) → «Enviado»;
- *   outro → «Erro - Não comunicado».
+ *   outro → «Não enviado».
  * Mensagem de erro: vazia quando enviado ou pendente; nos outros casos, o texto da resposta tal como está.
  * A consulta do portal é sempre limitada ao período escolhido.
  */
@@ -74,10 +74,10 @@ function naval_agt_casos(): array
     $likes = implode(' OR ', array_map(function ($x) { return "AGT.STRING_VALUE LIKE N'%" . $x . "%'"; }, naval_agt_textos_sucesso() ?: ['Process completed successfully']));
     $estado = "CASE
                 WHEN AGT.INTEGER_VALUE = 3 THEN 'Enviado'
-                WHEN AGT.INTEGER_VALUE = 5 THEN 'Erro - Comunicado'
+                WHEN AGT.INTEGER_VALUE = 5 THEN 'Erro'
                 WHEN AGT.INTEGER_VALUE = 2 THEN 'Pendente'
                 WHEN $likes THEN 'Enviado'
-                ELSE 'Erro - Não comunicado'
+                ELSE 'Não enviado'
             END";
     $mensagem = "CASE
                 WHEN AGT.INTEGER_VALUE = 3 OR $likes THEN ''
@@ -110,6 +110,8 @@ function naval_agt_sql(?array $colunasExtra = null): string
             DH.DOCSTATUS_ID AS ESTADO_DOCUMENTO,
             CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA_DOCUMENTO,
             CONVERT(VARCHAR(10), DH.FISCAL_DATE, 120) AS DATA_FISCAL,
+            CONVERT(VARCHAR(10), DH.DOC_DATE, 103) AS DATA_DOCUMENTO_TXT,
+            CONVERT(VARCHAR(10), DH.FISCAL_DATE, 103) AS DATA_FISCAL_TXT,
             COALESCE(DH.ENTITY_NAME, E.DESCRIPTION) AS ENTIDADE,
             $estado AS ESTADO_AGT,
             $mensagem AS MENSAGEM_ERRO,
@@ -168,13 +170,13 @@ function naval_agt_estado(array $l): array
 {
     $rotulo = trim((string) ($l['ESTADO_AGT'] ?? ''));
     $msg = (string) ($l['MENSAGEM_ERRO'] ?? '');
-    $mapa = ['Enviado' => 'comunicado', 'Pendente' => 'pendente', 'Erro - Comunicado' => 'erro', 'Erro - Não comunicado' => 'erro'];
-    $estado = $mapa[$rotulo] ?? 'erro';
-    if (!isset($mapa[$rotulo])) $rotulo = 'Erro - Não comunicado';
+    $mapa = ['Enviado' => 'comunicado', 'Pendente' => 'pendente', 'Erro' => 'erro', 'Não enviado' => 'erro'];
+    if (!isset($mapa[$rotulo])) $rotulo = 'Não enviado';
+    $estado = $mapa[$rotulo];
     return [
         'estado' => $estado,
         'estado_agt' => $rotulo,
-        'erro_tipo' => $estado === 'erro' ? ($rotulo === 'Erro - Comunicado' ? 'comunicado' : 'nao_comunicado') : null,
+        'erro_tipo' => $estado === 'erro' ? ($rotulo === 'Erro' ? 'erro' : 'nao_enviado') : null,
         'mensagem_erro' => $msg,
         'mensagem_agt' => $estado === 'erro' ? (trim($msg) !== '' ? naval_agt_mensagem($msg) : $rotulo) : null,
         'codigo_agt' => isset($l['AGT_CODIGO']) && $l['AGT_CODIGO'] !== '' ? (int) $l['AGT_CODIGO'] : null,
@@ -198,6 +200,9 @@ function naval_agt_montar(array $linhas): array
             'tipo_codigo' => (string) $l['TIPO_DOC'],
             'documento' => (string) $l['DOCUMENTO'],
             'documento_agt' => (string) ($l['DOCUMENTO_AGT'] ?? $l['DOCUMENTO']),
+            // datas como na consulta validada (dd/mm/aaaa); data e data_fiscal (aaaa-mm-dd) para filtros e alertas
+            'data_documento_txt' => isset($l['DATA_DOCUMENTO_TXT']) ? (string) $l['DATA_DOCUMENTO_TXT'] : null,
+            'data_fiscal_txt' => isset($l['DATA_FISCAL_TXT']) ? (string) $l['DATA_FISCAL_TXT'] : null,
             'total' => round((float) $l['TOTAL'], 2),
             'data' => (string) $l['DATA_DOCUMENTO'],
             'data_fiscal' => $l['DATA_FISCAL'] !== null ? (string) $l['DATA_FISCAL'] : null,

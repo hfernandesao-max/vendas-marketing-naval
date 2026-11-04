@@ -14,6 +14,8 @@ const doc = (o) => ({
   estado_documento: '8002',
   data: '2026-10-24',
   data_fiscal: '2026-10-24',
+  data_documento_txt: '24/10/2026',
+  data_fiscal_txt: '24/10/2026',
   anulado: false,
   entidade: 'LOJA A',
   estado: 'comunicado',
@@ -33,8 +35,8 @@ test('Comunicação AGT: as colunas e os estados da consulta validada, sem alter
         documentos: [
           doc({}),
           doc({ documento_agt: 'FR FR0126S78519N/7', estado: 'pendente', estado_agt: 'Pendente' }),
-          doc({ documento_agt: 'FR FR0126S78519N/8', estado: 'erro', estado_agt: 'Erro - Comunicado', mensagem_erro: json }),
-          doc({ documento_agt: 'FR FR0126S78519N/9', estado: 'erro', estado_agt: 'Erro - Não comunicado', mensagem_erro: 'Falha genérica' }),
+          doc({ documento_agt: 'FR FR0126S78519N/8', estado: 'erro', estado_agt: 'Erro', mensagem_erro: json }),
+          doc({ documento_agt: 'FR FR0126S78519N/9', estado: 'erro', estado_agt: 'Não enviado', mensagem_erro: 'Falha genérica' }),
           doc({ documento_agt: 'NC NC0126S1/1', tipo: 'Nota de crédito', total: -200, loja: 'Rota 1002', rota: '1002' }),
         ],
       },
@@ -58,16 +60,37 @@ test('Comunicação AGT: as colunas e os estados da consulta validada, sem alter
     await expect(cab).toContainText(c);
   await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/6' })).toContainText('Enviado');
   await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/6' })).toContainText('8002');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/6' })).toContainText('24/10/2026');
   await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/7' })).toContainText('Pendente');
-  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/8' })).toContainText('Erro - Comunicado');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/8' })).toContainText('Erro');
   await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/8' })).toContainText('descriptionError');
-  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/9' })).toContainText('Erro - Não comunicado');
+  await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/9' })).toContainText('Não enviado');
   await expect(page.locator('tr', { hasText: 'FR FR0126S78519N/9' })).toContainText('Falha genérica');
   await expect(page.locator('.tile', { hasText: 'Documentos' }).first().locator('.v')).toHaveText('5');
-  await expect(page.locator('.tile', { hasText: 'Enviado' }).locator('.v')).toHaveText('2');
-  await expect(page.locator('.tile', { hasText: 'Erro - Comunicado' }).locator('.v')).toHaveText('1');
-  await expect(page.locator('.tile', { hasText: 'Erro - Não comunicado' }).locator('.v')).toHaveText('1');
-  await expect(page.locator('.tile', { hasText: 'Pendente' }).locator('.v')).toHaveText('1');
+  await expect(
+    page
+      .locator('.tile')
+      .filter({ has: page.locator('.l', { hasText: /^Enviado$/ }) })
+      .locator('.v'),
+  ).toHaveText('2');
+  await expect(
+    page
+      .locator('.tile')
+      .filter({ has: page.locator('.l', { hasText: /^Erro$/ }) })
+      .locator('.v'),
+  ).toHaveText('1');
+  await expect(
+    page
+      .locator('.tile')
+      .filter({ has: page.locator('.l', { hasText: /^Não enviado$/ }) })
+      .locator('.v'),
+  ).toHaveText('1');
+  await expect(
+    page
+      .locator('.tile')
+      .filter({ has: page.locator('.l', { hasText: /^Pendente$/ }) })
+      .locator('.v'),
+  ).toHaveText('1');
   // ordem da consulta: loja e, dentro da loja, como vem do Pinguim BO
   await expect(page.locator('#page tbody tr').first()).toContainText('FR FR0126S78519N/6');
   await expect(page.locator('#page tbody tr').nth(4)).toContainText('Rota 1002');

@@ -13,7 +13,7 @@ const V = [
     tipo_codigo: 'FR',
     documento: 'FR 1/7',
     cliente: 'CANTINA KIANDA',
-    cliente_codigo: 'C7',
+    cliente_codigo: '569716347978651604',
     nif: '5000000007',
     liquidado: true,
     total: 11400,
@@ -33,7 +33,7 @@ const A = [
     rota: '1001',
     documento: 'FR 1/7',
     codigo: 'FRM',
-    artigo: 'Fraldas Bebé M',
+    artigo: 'Fraldas Bebé M NAVAL MEDIUM 4 X 48 UNIDADES EMBALAGEM',
     unidade: 'CX',
     quantidade: 2,
     preco_unitario: 5000,
@@ -57,6 +57,14 @@ test('clicar no documento abre o painel com a representação, os artigos e os m
   await expect(f.locator('.df-meta')).toContainText('CANTINA KIANDA');
   await expect(f.locator('.df-linhas tbody tr')).toHaveCount(1);
   await expect(f.locator('.df-linhas')).toContainText('Fraldas Bebé M');
+  // nada sobreposto: cada célula das linhas cabe na sua coluna (o texto longo passa à linha seguinte)
+  const sobra = await f.locator('.df-linhas td').evaluateAll((tds) => tds.filter((td) => td.scrollWidth > td.clientWidth + 1).length);
+  expect(sobra).toBe(0);
+  // código do cliente longo numa só linha
+  const cod = f.locator('.df-meta div', { hasText: 'Código do cliente' }).locator('dd');
+  await expect(cod).toHaveText('569716347978651604');
+  const [ch, lh] = await cod.evaluate((d) => [d.getBoundingClientRect().height, parseFloat(getComputedStyle(d).lineHeight)]);
+  expect(ch).toBeLessThan(lh * 1.5);
   await expect(f.locator('.df-iva')).toContainText('14 %');
   await expect(f.locator('.df-pags')).toContainText('Multicaixa');
   await expect(f.locator('.df-grande')).toContainText(/11\s400,00/);
