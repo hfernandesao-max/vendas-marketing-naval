@@ -141,7 +141,7 @@ function naval_alertas_clientes(array $agregados, string $dia, array $p, int $ma
     return array_slice($out, 0, $max);
 }
 
-/** Documentos por comunicar à AGT há mais de agt_dias dias (até $dia). $docs: naval_agt()['documentos']. */
+/** Documentos por comunicar à AGT há mais de agt_dias dias e documentos recusados pela AGT (até $dia). $docs: naval_agt()['documentos']. */
 function naval_alertas_agt(array $docs, string $dia, array $p): array
 {
     $limite = date('Y-m-d', strtotime($dia . ' 12:00') - $p['agt_dias'] * 86400);
@@ -164,6 +164,25 @@ function naval_alertas_agt(array $docs, string $dia, array $p): array
             'detalhe' => 'O mais antigo é de ' . naval_data_pt($x['mais_antigo']) . " ($antigo dias); total " . naval_kz($x['t']) . '.',
             'valor' => (float) $x['n'], 'esperado' => 0.0, 'dia' => $x['mais_antigo'], 'pagina' => 'agt',
             'p' => ['n' => $x['n'], 'rota' => (string) $r, 'antigo' => $antigo, 'data' => $x['mais_antigo'], 't' => round($x['t'])]];
+    }
+    // documentos recusados pela AGT (estado «Erro» ou mensagem de erro): crítico logo, sem esperar dias
+    $erros = [];
+    foreach ($docs as $d) {
+        if (($d['estado'] ?? '') !== 'erro' || !empty($d['anulado'])) continue;
+        $data = substr((string) ($d['data'] ?? ''), 0, 10);
+        if ($data === '' || $data > $dia) continue;
+        $r = (string) ($d['rota'] ?? '');
+        if (!isset($erros[$r])) $erros[$r] = ['n' => 0, 'mais_antigo' => $data, 't' => 0.0, 'msg' => (string) ($d['mensagem_agt'] ?? '')];
+        $erros[$r]['n']++;
+        $erros[$r]['t'] += (float) ($d['total'] ?? 0);
+        if ($data < $erros[$r]['mais_antigo']) $erros[$r]['mais_antigo'] = $data;
+    }
+    foreach ($erros as $r => $x) {
+        $out[] = ['id' => "agt-erro|$r", 'tipo' => 'agt-erro', 'gravidade' => 'critico', 'rota' => $r,
+            'titulo' => $x['n'] . ($x['n'] === 1 ? ' documento' : ' documentos') . " da rota $r recusados pela AGT",
+            'detalhe' => 'O mais antigo é de ' . naval_data_pt($x['mais_antigo']) . '; total ' . naval_kz($x['t']) . ($x['msg'] !== '' ? '. Mensagem: ' . $x['msg'] : '') . '.',
+            'valor' => (float) $x['n'], 'esperado' => 0.0, 'dia' => $x['mais_antigo'], 'pagina' => 'agt',
+            'p' => ['n' => $x['n'], 'rota' => (string) $r, 'data' => $x['mais_antigo'], 't' => round($x['t']), 'msg' => $x['msg']]];
     }
     return $out;
 }

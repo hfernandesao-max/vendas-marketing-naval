@@ -49,6 +49,11 @@ export function textoAlerta(a) {
         t('{n} documentos da rota {r} por comunicar à AGT', { n: p.n, r: p.rota }),
         t('O mais antigo é de {d} ({k} dias); total {v}.', { d: dl(p.data), k: p.antigo, v: kz(p.t) }),
       ];
+    case 'agt-erro':
+      return [
+        t('{n} documentos da rota {r} recusados pela AGT', { n: p.n, r: p.rota }),
+        t('O mais antigo é de {d}; total {v}.', { d: dl(p.data), v: kz(p.t) }) + (p.msg ? ' ' + t('Mensagem da AGT') + ': ' + p.msg : ''),
+      ];
     case 'mdm-sem-contacto':
       return [
         t('Equipamento «{e}» sem contacto com o MDM há {n} dias', { e: p.nome, n: p.dias }),

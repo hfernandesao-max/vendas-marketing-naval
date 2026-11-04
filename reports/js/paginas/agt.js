@@ -1,6 +1,7 @@
-// Integrações: Comunicação AGT — estado da comunicação de cada documento de vendas do período à AGT,
-// lido do Pinguim BO (DOCHEADEREXTRA ligado ao DOCHEADER; ver nucleo/servicos/agt.php): com número de pedido
-// (request_number) → comunicado; sem pedido → por comunicar. O Pinguim BO não guarda a resposta da AGT.
+// Integrações: Comunicação AGT — estado da comunicação de cada documento de vendas do período à AGT, lido do
+// Pinguim BO (DOCHEADEREXTRA ligado ao DOCHEADER; ver nucleo/servicos/agt.php): o estado devolvido pela AGT
+// (Enviado / Erro / Pendente) e a mensagem de erro mandam; depois o número do pedido; sem nada registado, enviado
+// (como o Pinguim BO mostra).
 // Um pedido ao servidor por período; o filtro de rotas da barra comum filtra no portal, sem nova consulta.
 import { apiFetch } from '../api.js';
 import { draw } from '../app.js';
@@ -20,6 +21,8 @@ let pedido = { chave: '', estado: '', dados: null, erro: '', em: 0 };
 // Estado da comunicação: texto e cor (com rótulo, nunca só a cor)
 const ESTADOS = {
   comunicado: ['Comunicado', 'p-ok'],
+  pendente: ['Pendente', 'p-warn'],
+  erro: ['Com erro', 'p-bad'],
   por_comunicar: ['Por comunicar', 'p-warn'],
 };
 
@@ -43,8 +46,15 @@ function garantir() {
   return 'a-carregar';
 }
 
-// Estado AGT: o número do pedido de comunicação, ou a falta dele
-const textoAgt = (r) => (r.pedido_agt ? t('Pedido n.º {n}', { n: r.pedido_agt }) : t('Sem pedido de comunicação'));
+// Estado AGT: o que a AGT respondeu e o comprovativo (estado registado, número do pedido ou sem registo de erro)
+const textoAgt = (r) => {
+  if (r.estado === 'erro') return t('Erro na comunicação');
+  if (r.estado === 'pendente') return t('Pendente na AGT');
+  if (r.estado === 'por_comunicar') return t('Sem pedido de comunicação');
+  if (r.pedido_agt) return t('Enviado') + ' · ' + t('Pedido n.º {n}', { n: r.pedido_agt });
+  if (r.evidencia === 'sem_registo') return t('Enviado (sem registo de erro)');
+  return t('Enviado');
+};
 // Estado do documento: activo ou anulado (com o motivo de cancelamento, quando é mais do que «Anulado»)
 const textoDoc = (r) =>
   !r.anulado ? t('Activo') : r.motivo_anulacao && r.motivo_anulacao !== 'Anulado' ? t('Anulado') + ' · ' + r.motivo_anulacao : t('Anulado');
@@ -73,13 +83,15 @@ R.agt = (pg) => {
   let D = pedido.dados.documentos || [];
   if (filtroAtivo('agt', 'rota')) D = D.filter((x) => FV.rota.includes(String(x.rota)));
   const conta = (e) => D.filter((x) => x.estado === e).length;
-  const nPor = conta('por_comunicar'),
+  const nPor = conta('por_comunicar') + conta('pendente'),
+    nErro = conta('erro'),
     nCom = conta('comunicado');
   pg.append(
     tiles([
       { l: t('Documentos'), v: n0(D.length) },
       { l: t('Comunicados'), v: n0(nCom), s: t('{p} dos documentos', { p: pct(D.length ? nCom / D.length : null) }) },
-      { l: t('Por comunicar'), v: n0(nPor), tone: nPor ? 'warn' : null },
+      { l: t('Com erro'), v: n0(nErro), tone: nErro ? 'bad' : null },
+      { l: t('Por comunicar'), v: n0(nPor), s: t('pendentes ou sem pedido'), tone: nPor ? 'warn' : null },
       { l: t('Anulados'), v: n0(D.filter((x) => x.anulado).length) },
     ]),
   );
@@ -88,7 +100,9 @@ R.agt = (pg) => {
     tabela({
       id: 'agt',
       titulo: t('Comunicação AGT'),
-      nota: t('Documentos de vendas do período e o pedido de comunicação à AGT registado no Pinguim BO (DOCHEADEREXTRA).'),
+      nota: t(
+        'Documentos de vendas do período e o estado da comunicação à AGT registado no Pinguim BO: estado devolvido pela AGT, mensagem de erro e número do pedido.',
+      ),
       rows: D.map((x) => ({
         ...x,
         rota_txt: promotorRota(x.rota, x.promotor),
@@ -103,6 +117,7 @@ R.agt = (pg) => {
         { key: 'data', label: t('Data do documento'), type: 'date' },
         { key: 'data_fiscal', label: t('Data fiscal'), type: 'date', p: 4 },
         { key: 'estado_agt', label: t('Estado AGT'), wrap: true, get: textoAgt, p: 1 },
+        { key: 'mensagem_agt', label: t('Mensagem da AGT'), wrap: true, get: (r) => r.mensagem_agt || '', p: 2 },
         {
           key: 'anulado',
           label: t('Estado do documento'),

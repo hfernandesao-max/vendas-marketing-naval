@@ -356,6 +356,7 @@ function naval_cart_qualidade(array $recentes): array
         naval_servico('agt');
         foreach (naval_agt(date('Ymd', time() - 9 * 86400), date('Ymd', time() - 2 * 86400))['documentos'] as $d) {
             if ($d['estado'] === 'por_comunicar' && !$d['anulado']) $q[] = ['tipo' => 'agt_por_comunicar', 'rota' => (string) $d['rota'], 'texto' => 'Documento ' . $d['documento'] . ' de ' . naval_data_pt($d['data']) . ' por comunicar à AGT'];
+            if ($d['estado'] === 'erro' && !$d['anulado']) $q[] = ['tipo' => 'agt_erro', 'rota' => (string) $d['rota'], 'texto' => 'Documento ' . $d['documento'] . ' de ' . naval_data_pt($d['data']) . ' recusado pela AGT' . (!empty($d['mensagem_agt']) ? ': ' . $d['mensagem_agt'] : '')];
         }
     } catch (Throwable $e) {
         error_log('[qualidade AGT] ' . $e->getMessage());

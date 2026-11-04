@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Comunicação AGT: estado devolvido pela AGT e mensagens de erro
+- **Estado como no Pinguim BO:** a página passa a ler o estado que a AGT devolveu a cada documento («Enviado»,
+  «Erro» ou «Pendente») e a mensagem de erro, quando a AGT recusa (ex.: NIF do cliente desconhecido no sistema da
+  AGT). Antes só se procurava o número do pedido e muitos documentos comunicados apareciam «por comunicar».
+- **Novos indicadores e coluna:** Comunicados, **Com erro**, Por comunicar (pendentes ou sem pedido), Anulados, e a
+  coluna **Mensagem da AGT**. O Estado AGT mostra o comprovativo: estado registado, número do pedido ou «sem registo
+  de erro».
+- **Alertas:** os documentos recusados pela AGT geram logo um alerta crítico por rota e entram nas tarefas de
+  qualidade dos dados.
+- A consulta ao Pinguim BO continua só de leitura e limitada ao período escolhido.
+
 ### Optimização de rotas automática e GeoMobilidade com os dados do portal
 - **Rotas optimizadas sozinhas, todas as noites, sem intervenção humana:** logo a seguir ao cálculo da carteira, o
   portal calcula o percurso de cada rota para hoje e os 6 dias seguintes. Usa as mesmas visitas das «Visitas do dia»
