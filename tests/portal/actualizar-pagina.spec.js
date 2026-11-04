@@ -9,7 +9,7 @@ test('F5 mantém a página e o relatório abertos', async ({ page }) => {
   await page.reload();
   await page.waitForSelector('#page > *');
   await expect(page).toHaveURL(url);
-  await expect(page.locator('#titulo')).not.toHaveText('Visão geral');
+  await expect(page.locator('#titulo')).not.toHaveText('Painel de indicadores');
 });
 
 test('sem endereço (portal dentro de outra página ou regresso do login), volta à última página do separador', async ({ page }) => {
@@ -21,5 +21,5 @@ test('sem endereço (portal dentro de outra página ou regresso do login), volta
   // uma entrada normal, sem regresso, abre a página principal
   await page.goto('/reports/index.html');
   await page.waitForSelector('#page > *');
-  await expect(page.locator('#titulo')).toHaveText('Visão geral');
+  await expect(page.locator('#titulo')).toHaveText('Painel de indicadores');
 });

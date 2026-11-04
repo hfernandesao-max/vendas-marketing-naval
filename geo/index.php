@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-// A raiz do GEO abre diretamente a aplicação principal. A autenticação e o
+// A raiz do GEO abre o GEO dentro do portal (mesmo menu, mesma sessão). A autenticação e o
 // redirecionamento seguro permanecem centralizados no controlo já existente.
 require_once __DIR__ . '/auth/auth_check.php';
 
-header('Location: geo.php', true, 302);
+header('Location: ../reports/#geo-rotas', true, 302);
 exit;
 
 if (session_status() === PHP_SESSION_NONE) {

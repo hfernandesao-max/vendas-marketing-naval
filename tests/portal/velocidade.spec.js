@@ -44,7 +44,7 @@ test('páginas a pedido: o arranque traz só a página aberta; as outras descarr
   for (const m of ['paginas/acessos.js', 'paginas/sap.js', 'paginas/plano-cargas.js', 'paginas/equipamentos.js', 'paginas/clientes.js'])
     expect(modulo(pedidos, m), m).toBe(false);
   await page.evaluate(() => (location.hash = '#cadastros'));
-  await expect(page.locator('#titulo')).toHaveText('Cadastros · visão geral');
+  await expect(page.locator('#titulo')).toHaveText('Cadastros · indicadores');
   await expect(page.locator('#page')).not.toContainText('A carregar…');
   expect(modulo(pedidos, 'paginas/clientes.js')).toBe(true);
   expect(erros).toEqual([]);
@@ -95,7 +95,7 @@ test('idiomas a pedido: em português não se descarrega nenhum dicionário; o i
   expect(modulo(pedidos, 'i18n/en.js')).toBe(false);
   expect(modulo(pedidos, 'i18n/ti.js')).toBe(false);
   await page.click('#lang button[data-l="en"]');
-  await expect(page.locator('#titulo')).toHaveText('Overview');
+  await expect(page.locator('#titulo')).toHaveText('KPI dashboard');
   expect(modulo(pedidos, 'i18n/en.js')).toBe(true);
   expect(modulo(pedidos, 'i18n/ti.js')).toBe(false);
   expect(erros).toEqual([]);
@@ -106,7 +106,7 @@ test('idioma guardado: o portal abre já traduzido (o dicionário chega antes do
   expect(modulo(pedidos, 'i18n/ti.js')).toBe(true);
   expect(modulo(pedidos, 'i18n/en.js')).toBe(false);
   await expect(page.locator('html')).toHaveAttribute('lang', 'ti');
-  expect(await page.locator('#titulo').textContent()).not.toBe('Visão geral');
+  expect(await page.locator('#titulo').textContent()).not.toBe('Painel de indicadores');
   expect(erros).toEqual([]);
 });
 

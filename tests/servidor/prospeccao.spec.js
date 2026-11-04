@@ -122,16 +122,22 @@ test('prospecção: separadores de clientes sem compras, coordenadas e resultado
   const pagina = await browser.newContext({ baseURL: BASE, storageState: await ctx.storageState(), viewport: { width: 1400, height: 900 } });
   const page = await pagina.newPage();
   await page.route(/maps\.googleapis\.com/, (r) => r.abort());
+  // a página GEO abre dentro do portal (mesmo menu e mesma sessão); o endereço directo passa para o portal
   await page.goto('/geo/prospeccao.php');
-  await expect(page.locator('#ppTituloLista')).toContainText('Potenciais clientes');
-  await page.getByRole('tab', { name: 'Sem compras' }).click();
-  await expect(page.locator('#ppTituloLista')).toHaveText('Clientes regulares sem compras (2)');
-  await expect(page.locator('.pp-faixa').first()).toHaveText('44 dias');
-  await page.getByRole('tab', { name: 'Coordenadas' }).click();
-  await expect(page.locator('#ppLista')).toContainText('Sete');
-  await expect(page.locator('#ppLista')).toContainText('2 clientes no mesmo ponto');
-  await page.getByRole('tab', { name: 'Resultados' }).click();
-  await expect(page.locator('.pp-funil tr')).toHaveCount(5); // cabeçalho, fora das rotas, 1001, 1002, total
-  await expect(page.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(/\/reports\/#geo-prospeccao/);
+  const f = page.frameLocator('iframe.geo-quadro');
+  await expect(f.locator('#ppTituloLista')).toContainText('Potenciais clientes');
+  await expect(f.locator('.app-header')).toBeHidden();
+  await f.getByRole('tab', { name: 'Sem compras' }).click();
+  await expect(f.locator('#ppTituloLista')).toHaveText('Clientes regulares sem compras (2)');
+  await expect(f.locator('.pp-faixa').first()).toHaveText('44 dias');
+  await f.getByRole('tab', { name: 'Coordenadas' }).click();
+  await expect(f.locator('#ppLista')).toContainText('Sete');
+  await expect(f.locator('#ppLista')).toContainText('2 clientes no mesmo ponto');
+  await f.getByRole('tab', { name: 'Resultados' }).click();
+  await expect(f.locator('.pp-funil tr')).toHaveCount(5); // cabeçalho, fora das rotas, 1001, 1002, total
+  await expect(f.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
+  // menu do portal com a área GeoMobilidade
+  await expect(page.locator('#nav .navg', { hasText: 'GeoMobilidade' })).toBeVisible();
   await pagina.close();
 });

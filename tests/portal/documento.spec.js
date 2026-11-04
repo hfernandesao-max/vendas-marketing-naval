@@ -1,5 +1,6 @@
 // Detalhe do documento: clicar no número abre o painel com a representação, os artigos e os meios de cobrança.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { abrir } from './dados.js';
 
 const V = [
@@ -62,7 +63,29 @@ test('clicar no documento abre o painel com a representação, os artigos e os m
   // cabe no painel: sem deslocamento horizontal do painel
   const [sw, cw] = await p.evaluate((d) => [d.scrollWidth, d.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
+  // a tabela das linhas também não desloca: a folha ajusta-se à janela
+  const [tw, tc] = await f.locator('.df-tabw').evaluate((d) => [d.scrollWidth, d.clientWidth]);
+  expect(tw).toBeLessThanOrEqual(tc);
+  // exportar PDF: descarrega o documento em PDF
+  const [ficheiro] = await Promise.all([page.waitForEvent('download'), p.getByRole('button', { name: 'Exportar PDF' }).click()]);
+  expect(ficheiro.suggestedFilename()).toBe('FR_1_7.pdf');
+  const caminho = await ficheiro.path();
+  const bytes = readFileSync(caminho);
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
   await page.keyboard.press('Escape');
   await expect(p).toHaveCount(0);
   expect(erros).toEqual([]);
+});
+
+test('o documento ajusta-se à janela num ecrã pequeno, sem deslocação horizontal', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await abrir(page, '#documentos', { api: (r) => r.fulfill({ json: { vendas: V, artigos: A } }) });
+  await page.locator('.rel-tab', { hasText: 'Registo de documentos de venda' }).first().click();
+  await page.getByRole('button', { name: 'Abrir o documento FR 1/7' }).first().click();
+  const p = page.locator('dialog.doc-painel');
+  await expect(p.locator('.doc-folha')).toBeVisible();
+  const [sw, cw] = await p.evaluate((d) => [d.scrollWidth, d.clientWidth]);
+  expect(sw).toBeLessThanOrEqual(cw);
+  const caixa = await p.locator('.doc-folha').boundingBox();
+  expect(caixa.width).toBeLessThanOrEqual(390);
 });

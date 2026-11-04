@@ -3,6 +3,7 @@
 <html lang="pt">
 
 <head>
+  <script src="../../embutido.js" data-rota="geo-distribuidores"></script>
   <meta charset="UTF-8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,7 +42,7 @@
         <a href="../index.php" title="Ir para a delimitação de zonas" class="nav-btn">
           <i data-lucide="map-pinned"></i> Zonas
         </a>
-        <a href="../../reports.php" title="Ir para os relatórios" class="nav-btn">
+        <a href="../../../reports/" target="_top" title="Ir para os relatórios" class="nav-btn">
           <i data-lucide="bar-chart-3"></i> Reports
         </a>
         <a href="../../auth/logout.php?t=<?= htmlspecialchars(naval_token_saida(), ENT_QUOTES, 'UTF-8') ?>" title="Terminar sessão" class="nav-btn" style="color: #fca5a5; margin-left: 0.5rem;">

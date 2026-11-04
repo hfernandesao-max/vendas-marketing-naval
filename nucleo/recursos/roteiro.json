@@ -1,103 +1,28 @@
 {
-  "_nota": "Roteiro do portal mostrado na Apresentação do portal (Gestão). Actualizar com cada versão: estado = concluido | em_curso | planeado. «proximos» são as recomendações para os próximos passos, apresentadas para conhecimento (etiqueta, texto = recomendação e benefício, quando = calendário indicativo).",
-  "actualizado": "2026-11-03",
+  "_nota": "Roteiro da Apresentação do portal (Gestão), para o Conselho de Administração: frases curtas, sem termos técnicos, datas concretas (AAAA-MM-DD). Rever em cada versão. estado = concluido | em_curso | planeado. «proximos» = recomendações para conhecimento (etiqueta, texto curto, data).",
+  "actualizado": "2026-11-04",
   "futuro": [
-    {
-      "titulo": "Ver",
-      "resumo": "O dia de cada rota repetido no mapa.",
-      "detalhe": "Prova de cada visita, tempo no cliente e na estrada, pontos fora do território.",
-      "estado": "em_curso"
-    },
-    {
-      "titulo": "Prever",
-      "resumo": "O cliente que vai parar, antes de parar.",
-      "detalhe": "Carga de amanhã cliente a cliente e vendas perdidas por falta de produto na carrinha.",
-      "estado": "planeado"
-    },
-    {
-      "titulo": "Decidir",
-      "resumo": "Potencial de vendas por bairro.",
-      "detalhe": "População pública × comércio × as nossas vendas: onde há mais gente e menos presença nossa. Objectivos justos por vendedor.",
-      "estado": "planeado"
-    },
-    {
-      "titulo": "Controlar",
-      "resumo": "Sem procurar.",
-      "detalhe": "Vendas longe do cliente, velocidades impossíveis, descontos e notas de crédito fora do padrão.",
-      "estado": "em_curso"
-    }
+    { "titulo": "Ver", "resumo": "Cada visita confirmada no mapa", "data": "2026-11-09", "estado": "em_curso" },
+    { "titulo": "Prever", "resumo": "O cliente em risco, antes de parar", "data": "2026-11-23", "estado": "planeado" },
+    { "titulo": "Decidir", "resumo": "Onde vender mais, bairro a bairro", "data": "2027-01-04", "estado": "planeado" },
+    { "titulo": "Controlar", "resumo": "Desvios assinalados sozinhos", "data": "2026-11-09", "estado": "em_curso" }
   ],
   "ia": [
-    {
-      "titulo": "WhatsApp com IA",
-      "resumo": "O cliente encomenda por mensagem ou áudio.",
-      "detalhe": "A IA percebe o pedido, confirma preço e stock e prepara a venda.",
-      "estado": "planeado"
-    },
-    {
-      "titulo": "Cliente traz cliente",
-      "resumo": "Crescimento que se alimenta a si próprio.",
-      "detalhe": "Bónus em produto quando um comerciante indica outro que passa a comprar.",
-      "estado": "planeado"
-    },
-    {
-      "titulo": "Revendedores de bairro",
-      "resumo": "Mais cobertura sem novas carrinhas.",
-      "detalhe": "Os melhores clientes das zonas sem rota revendem às lojas à volta.",
-      "estado": "planeado"
-    },
-    {
-      "titulo": "Fotografia da prateleira",
-      "resumo": "Praticamente inédito em Angola.",
-      "detalhe": "A IA mede o espaço dos nossos produtos e da concorrência, rupturas e preços.",
-      "estado": "planeado"
-    }
+    { "titulo": "Encomendas por WhatsApp", "resumo": "O cliente encomenda por mensagem", "data": "2026-11-23", "estado": "planeado" },
+    { "titulo": "Cliente traz cliente", "resumo": "Bónus por cada novo cliente", "data": "2027-01-04", "estado": "planeado" },
+    { "titulo": "Revendedores de bairro", "resumo": "Mais cobertura sem novas carrinhas", "data": "2027-01-04", "estado": "planeado" },
+    { "titulo": "Fotografia da prateleira", "resumo": "Presença na loja medida por imagem", "data": "2027-02-01", "estado": "planeado" }
   ],
   "fases": [
-    {
-      "quando": "Semanas 1 e 2",
-      "titulo": "Ver o terreno",
-      "texto": "Prova de visita, repetição do dia, tempos e coordenadas corrigidas pelas vendas.",
-      "estado": "em_curso"
-    },
-    {
-      "quando": "Mês seguinte",
-      "titulo": "Prever e automatizar",
-      "texto": "Cliente a perder, carga prevista, vendas perdidas e encomendas pelo WhatsApp.",
-      "estado": "planeado"
-    },
-    {
-      "quando": "Depois",
-      "titulo": "Crescer pelo potencial",
-      "texto": "Potencial por bairro, objectivos justos, revendedores e crédito de stock.",
-      "estado": "planeado"
-    }
+    { "titulo": "Ver o terreno", "inicio": "2026-11-09", "fim": "2026-11-20", "estado": "em_curso" },
+    { "titulo": "Prever e automatizar", "inicio": "2026-11-23", "fim": "2026-12-18", "estado": "planeado" },
+    { "titulo": "Crescer pelo potencial", "inicio": "2027-01-04", "fim": "2027-03-31", "estado": "planeado" }
   ],
   "proximos": [
-    {
-      "etiqueta": "Segurança",
-      "texto": "Recomenda-se um servidor web dedicado, isolado da rede interna (DMZ), para separar da Internet os dados da empresa.",
-      "quando": "Em curso com a Informática"
-    },
-    {
-      "etiqueta": "Terreno",
-      "texto": "Recomenda-se a ligação de leitura ao servidor OLAP, para dar início à fase 1: ver o terreno.",
-      "quando": "Esta semana"
-    },
-    {
-      "etiqueta": "Protecção de dados",
-      "texto": "Recomenda-se alinhar o uso da localização com os Recursos Humanos e o Jurídico, em cumprimento da Lei 22/11.",
-      "quando": "Antes da fase 1"
-    },
-    {
-      "etiqueta": "Canal",
-      "texto": "Recomenda-se a conta oficial do WhatsApp Business, para encomendas e avisos de chegada da carrinha.",
-      "quando": "Fase 2"
-    },
-    {
-      "etiqueta": "Regras comerciais",
-      "texto": "Recomenda-se definir bónus, crédito de stock, revenda e descontos, com limites acordados com a Direcção Financeira.",
-      "quando": "Fase 3"
-    }
+    { "etiqueta": "Segurança", "texto": "Servidor web dedicado e isolado", "data": "2026-11-20" },
+    { "etiqueta": "Terreno", "texto": "Ligação ao servidor de localização", "data": "2026-11-06" },
+    { "etiqueta": "Protecção de dados", "texto": "Uso da localização validado por RH e Jurídico", "data": "2026-11-13" },
+    { "etiqueta": "Canal", "texto": "WhatsApp Business oficial", "data": "2026-11-23" },
+    { "etiqueta": "Regras comerciais", "texto": "Bónus, crédito, revenda e descontos com limites", "data": "2027-01-04" }
   ]
 }
