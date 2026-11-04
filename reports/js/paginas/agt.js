@@ -1,7 +1,7 @@
 // Integrações: Comunicação AGT — os documentos que comunicaram com a AGT, com as colunas e os estados da consulta validada
 // no Pinguim BO (ver nucleo/servicos/agt.php): Loja, Tipo de documento, Documento, Total do documento, Mensagem (estado
-// interno), Data documento, Data fiscal, Nome entidade, Estado AGT (Enviado, Erro - Comunicado, Pendente, Erro - Não
-// comunicado) e Mensagem de erro.
+// interno), Data documento, Data fiscal, Nome entidade, Estado AGT (Enviado, Erro, Pendente, Não enviado) e Mensagem de
+// erro, tal como vêm da consulta.
 // Um pedido ao servidor por período; o filtro de rotas da barra comum filtra no portal, sem nova consulta.
 import { apiFetch } from '../api.js';
 import { draw } from '../app.js';
@@ -21,10 +21,10 @@ let pedido = { chave: '', estado: '', dados: null, erro: '', em: 0 };
 const ESTADOS = {
   Enviado: 'p-ok',
   Pendente: 'p-warn',
-  'Erro - Comunicado': 'p-bad',
-  'Erro - Não comunicado': 'p-bad',
+  Erro: 'p-bad',
+  'Não enviado': 'p-bad',
 };
-const estadoAgt = (r) => r.estado_agt || 'Erro - Não comunicado';
+const estadoAgt = (r) => r.estado_agt || 'Não enviado';
 
 /** Pede os documentos do período (uma vez por período). Devolve o estado do pedido. */
 function garantir() {
@@ -71,15 +71,15 @@ R.agt = (pg) => {
   if (filtroAtivo('agt', 'rota')) D = D.filter((x) => FV.rota.includes(String(x.rota)));
   const conta = (e) => D.filter((x) => estadoAgt(x) === e).length;
   const nEnv = conta('Enviado'),
-    nErroC = conta('Erro - Comunicado'),
-    nErroN = conta('Erro - Não comunicado'),
+    nErroC = conta('Erro'),
+    nErroN = conta('Não enviado'),
     nPend = conta('Pendente');
   pg.append(
     tiles([
       { l: t('Documentos'), v: n0(D.length) },
       { l: t('Enviado'), v: n0(nEnv), s: t('{p} dos documentos', { p: pct(D.length ? nEnv / D.length : null) }) },
-      { l: t('Erro - Comunicado'), v: n0(nErroC), tone: nErroC ? 'bad' : null },
-      { l: t('Erro - Não comunicado'), v: n0(nErroN), tone: nErroN ? 'bad' : null },
+      { l: t('Erro'), v: n0(nErroC), tone: nErroC ? 'bad' : null },
+      { l: t('Não enviado'), v: n0(nErroN), tone: nErroN ? 'bad' : null },
       { l: t('Pendente'), v: n0(nPend), tone: nPend ? 'warn' : null },
     ]),
   );
@@ -98,8 +98,8 @@ R.agt = (pg) => {
         colDocumento({ key: 'documento_agt', p: 1, xl: (r) => r.documento_agt }),
         { key: 'total', label: t('Total do documento'), type: 'kz', sum: true },
         { key: 'estado_documento', label: t('Mensagem'), p: 4 },
-        { key: 'data', label: t('Data documento'), type: 'date' },
-        { key: 'data_fiscal', label: t('Data fiscal'), type: 'date', p: 4 },
+        { key: 'data_documento_txt', label: t('Data documento'), get: (r) => r.data_documento_txt || '', p: 1 },
+        { key: 'data_fiscal_txt', label: t('Data fiscal'), get: (r) => r.data_fiscal_txt || '', p: 4 },
         { key: 'entidade', label: t('Nome entidade'), wrap: true, p: 3 },
         {
           key: 'estado_agt',

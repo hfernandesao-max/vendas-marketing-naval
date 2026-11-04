@@ -2333,6 +2333,9 @@ dialog.doc-painel::backdrop {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.df-meta .df-largo {
+  grid-column: span 2;
+}
 .df-tabw {
   overflow: visible;
 }
@@ -2354,10 +2357,10 @@ dialog.doc-painel::backdrop {
   width: 84px;
 }
 .df-linhas .c-qtd {
-  width: 42px;
+  width: 64px;
 }
 .df-linhas .c-un {
-  width: 38px;
+  width: 46px;
 }
 .df-linhas .c-preco {
   width: 104px;
@@ -2366,13 +2369,23 @@ dialog.doc-painel::backdrop {
   width: 74px;
 }
 .df-linhas .c-iva {
-  width: 46px;
+  width: 56px;
 }
 .df-linhas .c-tot {
   width: 112px;
 }
 .df-linhas td {
   overflow-wrap: anywhere;
+  white-space: normal;
+}
+/* cada valor fica dentro da sua coluna: o texto longo passa à linha seguinte, nunca por cima da coluna ao lado */
+.df-linhas td,
+.df-linhas th {
+  overflow: hidden;
+}
+.df-linhas th + th,
+.df-linhas td + td {
+  padding-left: 10px;
 }
 .df-linhas,
 .df-iva {
