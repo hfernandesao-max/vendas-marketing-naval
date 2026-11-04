@@ -4,7 +4,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Comunicação AGT: colunas e estados iguais à consulta validada no Pinguim BO
+
+- **Só os documentos que comunicaram com a AGT:** entram os documentos com resposta da AGT (campo 26098), não
+  eliminados, do período escolhido.
+- **Colunas:** Loja, Tipo de documento, Documento (ex.: FR FR0126S78519N/6), Total do documento, Mensagem (estado
+  interno do documento), Data documento, Data fiscal, Nome entidade, Estado AGT e Mensagem de erro.
+- **Estado AGT:** «Enviado» (código 3 ou confirmação da AGT), «Erro - Comunicado» (código 5), «Pendente» (código 2) e
+  «Erro - Não comunicado» (outros casos). A mensagem de erro aparece tal como vem do Pinguim BO.
+- **Indicadores:** documentos, enviados, erro comunicado, erro não comunicado e pendentes. Os dois tipos de erro
+  continuam a gerar o alerta crítico por rota.
+
 ### Apresentação ao Conselho de Administração, em formato corporativo
+
 - **10 diapositivos em formato executivo (16:9):** capa, sumário executivo, desempenho comercial, carteira de
   clientes, automação e eficiência, governação e segurança, arquitectura e integrações, roteiro com datas, visão
   2027–2028 (Plano Tecnológico do Grupo Naval) e próximos passos recomendados, para conhecimento do Conselho.
@@ -16,6 +28,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Apresentar:** ecrã inteiro, navegação por teclado e ajuste automático a qualquer ecrã, sem barras de deslocamento.
 
 ### Comunicação AGT: a resposta oficial da AGT de cada documento
+
 - **Fonte certa:** o estado passa a vir do campo do Pinguim BO onde fica a resposta da AGT a cada envio: código 3
   enviado, 5 erro, 2 pendente, e o texto da resposta. Quando há várias respostas, conta a final mais recente.
 - **Confirmações da AGT:** «Process completed successfully» e «já consta no repositório» contam como enviado.
@@ -25,6 +38,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   «por comunicar». Deixa de se presumir «enviado» sem prova.
 
 ### Comunicação AGT: estado devolvido pela AGT e mensagens de erro
+
 - **Estado como no Pinguim BO:** a página passa a ler o estado que a AGT devolveu a cada documento («Enviado»,
   «Erro» ou «Pendente») e a mensagem de erro, quando a AGT recusa (ex.: NIF do cliente desconhecido no sistema da
   AGT). Antes só se procurava o número do pedido e muitos documentos comunicados apareciam «por comunicar».
@@ -36,6 +50,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - A consulta ao Pinguim BO continua só de leitura e limitada ao período escolhido.
 
 ### Optimização de rotas automática e GeoMobilidade com os dados do portal
+
 - **Rotas optimizadas sozinhas, todas as noites, sem intervenção humana:** logo a seguir ao cálculo da carteira, o
   portal calcula o percurso de cada rota para hoje e os 6 dias seguintes. Usa as mesmas visitas das «Visitas do dia»
   (dia habitual de compra e compras em atraso) e as coordenadas dos clientes no Pinguim BO.
@@ -53,6 +68,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - As páginas GEO passam a carregar sempre a versão mais recente, sem ficarem presas à cópia guardada no navegador.
 
 ### Uma só plataforma: GeoMobilidade dentro do portal
+
 - **Sem nova entrada:** as páginas de mapas abrem dentro do portal, com a mesma sessão, o mesmo menu e o mesmo tema.
   Passar entre os relatórios e os mapas já não pede outra vez a palavra-passe. Os endereços antigos do GEO passam
   sozinhos para o portal.
@@ -66,16 +82,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Nomes:** a página inicial passa a «Painel de indicadores» e «Cadastros · visão geral» a «Cadastros · indicadores».
 
 ### Documento: exportar PDF e ajuste automático à janela
+
 - **Exportar PDF:** o documento descarrega-se em PDF A4, com texto pesquisável e a mesma estrutura da folha.
 - **Ajuste à janela:** a folha ajusta-se sozinha à largura do painel, como um leitor de PDF, sem barras de deslocação
   horizontais, no computador e no telemóvel.
 
 ### Apresentação do portal para o Conselho de Administração
+
 - Uma mensagem por ecrã, números grandes e pouco texto, sem explicações técnicas: início, negócio, clientes,
   automação, futuro e calendário.
 - Datas concretas em cada iniciativa, calendário das fases e recomendações com data, para conhecimento do Conselho.
 
 ### App Naval Gestão: entrada corrigida
+
 - **Naval Gestão (telemóvel):** quem abria o endereço da app sem sessão iniciada era enviado para uma página de
   entrada inexistente. Agora vai para a página de entrada do portal e, depois de entrar, volta à app, pronta a
   adicionar ao ecrã principal do iPhone ou do Android.
@@ -83,12 +102,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 03-11-2026
 
 ### Recomendações para o Conselho de Administração
+
 - **Apresentação do portal:** a última cena passa a «Fases e recomendações». Os próximos passos aparecem como
   recomendações para conhecimento, cada uma com o benefício e o calendário indicativo, e seguem os circuitos habituais
   de aprovação da empresa (boas práticas de documentos para o conselho: finalidade clara, recomendação, benefício e
   calendário).
 
 ### Apresentação do portal, com dados reais e sempre actualizada
+
 - **Apresentação do portal (Gestão):** experiência interactiva, cena a cena, focada no negócio e na automação, para
   comunicar à administração o que o portal já faz e o que se propõe a seguir. Navega-se com as setas do teclado, os
   botões ou os separadores, e abre em ecrã inteiro.
@@ -106,6 +127,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   de rotas. Só agregados: sem clientes, documentos, NIF nem nomes.
 
 ### Preparação para o servidor OLAP e rotina diária automática
+
 - **Visitas do dia (Terreno):** os clientes de cada rota para o dia escolhido: os do dia habitual de compra e os que
   estão atrasados em relação ao seu próprio ritmo. Os parados aparecem primeiro e, dentro de cada estado, os de maior
   valor. Cada cliente tem uma ficha de preparação da visita:
@@ -134,11 +156,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   - Coordenadas sugeridas pelas vendas: clientes com 3 ou mais vendas no mesmo sítio.
 
   Acesso só a quem acompanha as rotas: a localização é um dado pessoal (Lei 22/11).
+
 - **Ligação ao OLAP preparada:** só leitura, configurada no `.env` (OLAP_*), com o formato dos dados definido e a
   consulta de exemplo em `ferramentas/sql/olap-localizacao.exemplo.sql`. Os dados são validados (dentro de Angola,
   com precisão aceitável) e fica guardada uma cópia diária.
 
 ### GeoMobilidade › Prospecção: carteira, coordenadas e resultados
+
 - A página tem quatro separadores: **Potenciais**, **Sem compras**, **Coordenadas** e **Resultados**. Cada vendedor vê
   só a sua rota.
 - **Sem compras.** Mostra os clientes regulares que deixaram de comprar: compravam em 3 ou mais dias nos últimos
@@ -153,11 +177,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Dados só do Pinguim BO e dos registos do portal, recalculados todas as noites.
 
 ### Cartazes QR: só o cartaz na folha impressa
+
 - Ao imprimir ou guardar em PDF, os cartazes deixam de levar o título da página, o endereço, a data e o número da
   página nos cantos. Cada cartaz ocupa uma folha A4 sem margens do navegador, com margem de segurança de 12 mm por
   dentro, exactamente como o modelo.
 
 ### Painel da sala comercial redesenhado (ecrã de TV)
+
 - Feito segundo as regras para ecrãs de parede vistos à distância:
   - uma mensagem por ecrã, no máximo seis números, o principal em destaque;
   - letra medida pela altura do ecrã, nunca abaixo de ~30 px num ecrã 1080p (legível a 5 m);
@@ -173,6 +199,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Mesmo endereço e mesmas ligações; os dados continuam a vir do Pinguim BO, só com totais por rota.
 
 ### Meios de cobrança: compensação e «Sem meio indicado» separados
+
 - **Factura anulada por nota de crédito** (liquidada no Pinguim BO sem rodapé de pagamento e corrigida por uma nota
   de crédito do mesmo cliente): foi a nota que a liquidou, sem dinheiro. As duas passam a «Compensação com nota de
   crédito» (encontro de contas, IAS 32) e saem de dinheiro, Multicaixa e outros meios. A nota de valor igual é
@@ -185,6 +212,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   (ex.: nota de crédito a 30-10 e factura de igual valor a 03-11, liquidada sem dinheiro).
 
 ### Detalhe do documento: o documento como foi emitido
+
 - O painel lateral passa a mostrar **o documento numa página única**, maior e organizada como uma factura:
   - tipo e número, data, hora, rota, cliente, NIF e código do cliente;
   - as linhas com código, descrição, quantidade, unidade, preço unitário, desconto, taxa de IVA e total;
@@ -194,6 +222,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   no topo. Imprime-se só o documento.
 
 ### Plano de cargas: pré-preenchido a partir do registo
+
 - O pré-preenchimento só usava planos já publicados no portal; sem nenhum publicado, os cartões vinham vazios.
 - O **registo histórico de cargas** passa a fazer parte do registo do portal. Entra uma vez, sozinho, como dias
   publicados marcados «importado», e nunca por cima de um dia que já tenha plano.
@@ -203,25 +232,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - A factura e as observações continuam a não se copiar.
 
 ### Comunicação AGT: pedidos de todas as séries
+
 - O estado lia só o campo extra n.º 26046 (request_number). No Pinguim BO cada tipo de documento / série pode ter o
   seu próprio campo com o mesmo nome, por isso os documentos das outras séries apareciam todos «Por comunicar».
   Passam a contar todos os campos extra chamados **request_number** (e «Motivo de cancelamento» para as anulações),
   com o número do pedido em texto ou em número. Só leitura (SELECT), como sempre.
 
 ### Excel dos documentos e da AGT para todos
+
 - Todos os perfis que vêem os Documentos e a Comunicação AGT passam a exportá-los para Excel (supervisores e
   promotores só das suas rotas).
 
 ### Actualizações: pacote único
+
 - As versões por instalar juntam-se num **pacote de instalação único** (ISO/IEC 20000-1, «release package»): um só
   cartão com todas as versões incluídas e tudo o que muda, uma só aprovação, uma só instalação, uma só cópia de
   segurança e um só ponto de reposição.
 
 ### Documentos: nomes de secção normalizados
+
 - «Vendas por rota» passa a **«Resumo por rota»** e «Documentos Pinguim» a **«Registo de documentos de venda»**
   (diário de vendas), sem nome de sistema no título.
 
 ### Dinheiro + Multicaixa = vendas cobradas (notas de crédito no meio da factura)
+
 - As **notas de crédito sem meio de devolução** no Pinguim BO passam a debitar o meio com que o cliente pagou a factura
   que corrigem (regra «devolução ao meio original» dos sistemas de ponto de venda): a factura mais recente do mesmo
   cliente e rota até à data da nota (Consumidor Final: só no mesmo dia), repartida pelos meios dessa factura, sem
@@ -230,11 +264,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   No detalhe do documento vê-se de que factura veio cada devolução («meio da FR …») ou se foi presumida.
 
 ### Detalhe do documento
+
 - Clicar no número de um documento (Documentos, Cobranças, Terreno, AGT) abre um painel com a representação do
   documento (talão), os artigos, os meios de cobrança e o estado; no telemóvel abre de baixo para cima. Fecha com Esc,
   com o botão ou clicando fora; imprime-se só o documento. Os dados são os do Pinguim BO.
 
 ### Actualizações: aprovação automática às 02:45 e instalação às 03:00
+
 - As versões **não decididas durante o dia** são aprovadas automaticamente às 02:45 (só a mais recente, que inclui as
   anteriores) e tudo o que estiver aprovado é **instalado às 03:00**, fora do horário de trabalho, com cópia de
   segurança, verificação e reposição automática se falhar. «Instalar já» continua a instalar em 5 minutos.
@@ -244,6 +280,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Corre na tarefa de 5 em 5 minutos que já existe: não é preciso nenhum comando no servidor.
 
 ### Perfil EXT para técnicos externos (validação)
+
 - Perfil novo do sistema **«Técnico externo (validação, só leitura)»**, já configurado na matriz segundo o menor
   privilégio (ISO 27001, NIST SP 800-53): **só ver** todas as páginas de relatórios, cobranças, cargas, conciliação,
   gestão e GeoMobilidade, **em todas as rotas**; nunca exportar, gerir ou administrar; sem NIF, sem registos de
@@ -251,10 +288,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   Criar uma conta por técnico no portal (Acessos › Utilizadores), com o perfil EXT e «Válida até» preenchido.
 
 ### Botões de filtro seleccionados legíveis
+
 - O botão seleccionado (ex.: «Todos» nos alertas da Gestão) perdia o texto; passa a invertido (fundo claro, texto
   azul naval) e o estado vai também para os leitores de ecrã.
 
 ### Meios de cobrança sempre como no Pinguim BO
+
 - **Nunca se presume o meio**: uma factura liquidada sem rodapé de pagamento no Pinguim BO deixava de ser contada como
   Multicaixa e passa a «Sem meio indicado» (e aparece em Terreno › Ocorrências para corrigir no Pinguim BO).
 - **Troco**: o valor por meio é acertado ao valor pago do documento (o troco sai do numerário), também na leitura
@@ -262,13 +301,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Notas de crédito por meio**: a devolução ao cliente registada no Pinguim BO (numerário, Multicaixa…) debita esse
   meio; as notas de crédito sem meio de devolução ficam numa linha própria. Dinheiro + Multicaixa + outros − notas de
   crédito sem meio = recebido; se não fechar, a página Cobranças avisa. O ficheiro para o SAP não muda.
+
 ### Valor médio e artigos por compra: uma cor por rota
+
 - Cada rota tem a sua cor, sempre a mesma em qualquer filtro (atribuída pelo código da rota): paleta categórica
   validada para daltonismo e contraste nos dois temas, sem verde; da 8.ª rota em diante o mesmo tom em anel (sem
   preenchimento), como manda a boa prática (não inventar cores novas). Legenda por baixo do gráfico e rótulos ao lado
   das bolas sem se sobreporem (o que não cabe fica na dica e na tabela).
 
 ### Recebido líquido: as notas de crédito debitam o recebido
+
 - O **Recebido** passa a ser o cobrado nas facturas **menos as notas de crédito a clientes** (devoluções e créditos
   debitam o recebido, nunca o aumentam), no Início, em Recebimentos › Cobranças, nos documentos, nas vendas por
   promotor e por dia e na classificação. Com tudo pago, o recebido é igual às vendas líquidas (facturas − notas de
@@ -278,11 +320,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   «Notas de crédito». O ficheiro para o SAP não muda (as notas de crédito seguem como documentos próprios).
 
 ### Vendas por promotor só com rotas com movimento
+
 - A tabela mostra só as rotas com movimento no período e nos filtros escolhidos (sem linhas a zero); as rotas sem
   movimento ficam indicadas numa linha por baixo da tabela. Valores que arredondam a zero aparecem sem sinal (nunca
   «−0,00 Kz»), em todo o portal.
 
 ### Actualizações: estado em tempo real e protecções
+
 - Depois de aprovar, a página mostra o estado da instalação: **«Na fila: a tarefa agendada instala até às HH:MM»**,
   **«A instalar…»** e o resultado, actualizando-se sozinha de 15 em 15 segundos enquanto está em curso.
 - **Só a versão mais recente se aprova** (já inclui todas as anteriores); as anteriores ficam recolhidas, sem botões. O
@@ -293,6 +337,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   mais antiga); a mensagem do certificado HTTPS indica o caminho do ficheiro `cacert.pem` (não o endereço).
 
 ### GeoMobilidade: onde procurar clientes novos
+
 - **Prospecção** (GeoMobilidade › Prospecção): mapa e lista, por rota e dia de visita, dos estabelecimentos comerciais
   que ainda não são clientes, ordenados por prioridade (confirmado em duas fontes, tipo de estabelecimento, zona
   comercial e proximidade dos clientes da rota), com o caminho até lá e o resultado da visita registado pelo vendedor.
@@ -312,6 +357,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 02-11-2026
 
 ### Logística: conciliação da carrinha e limite de peso da carga
+
 - **Conciliação da carrinha** (Logística › Conciliação da carrinha): por rota, dia e artigo, o que estava na carrinha,
   o que foi carregado, vendido e devolvido, lido do Pinguim BO; o que tem de voltar é calculado sozinho.
   - **Alertas automáticos**: vendido acima do que estava na carrinha, stock negativo e movimentos sem documento.
@@ -327,6 +373,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   O servidor recusa também a gravação e a publicação acima do limite.
 
 ### Recebimentos: antiguidade da dívida em escalões internacionais
+
 - A **antiguidade da dívida** passa aos escalões usados internacionalmente nas contas a receber: **0–30, 31–60, 61–90
   e mais de 90 dias** (contados desde a emissão da factura), no Início, em Recebimentos › Facturas pendentes e nas
   tabelas por rota e por cliente, com cores de risco crescente e sempre com o rótulo.
@@ -334,6 +381,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   período × dias do período.
 
 ### Painel por perfil, arrastar e largar, vistas guardadas
+
 - **Início conforme o perfil** (prática internacional: cada função vê primeiro os indicadores que gere):
   Direcção (e TI, Auditoria, Administração) — resultado, tendência, ponte, cobrança e dívida; Comercial — crescimento,
   cobertura (distribuição numérica), valor por compra, carteira de clientes; Supervisão — execução das rotas, clientes
@@ -346,6 +394,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - API: `v1/vistas` (GET/POST, com CSRF) e `configurar` em `v1/sala/ligacoes`.
 
 ### Gestão com inteligência artificial
+
 - **Alertas** (Gestão › Alertas): rotas sem vendas ou muito abaixo do habitual (comparação com o mesmo dia da semana
   nas últimas 6 semanas, por mediana), semanas em queda ou em subida, clientes regulares que deixaram de comprar,
   documentos por comunicar à AGT e equipamentos sem contacto com o MDM; cada alerta diz o valor, o esperado e porquê.
@@ -360,7 +409,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Assistente IA** (perfis com «Assistente IA» na matriz): perguntas em linguagem natural sobre vendas, rotas,
   clientes, alertas, previsão, plano de cargas e AGT; só leitura, com o âmbito de quem pergunta; os números vêm sempre
   do portal e cada resposta indica as fontes; limite mensal e diário; tudo registado. Configuração: `php
-  ferramentas/configurar-ia.php`.
+ferramentas/configurar-ia.php`.
 - **Resumo diário** por correio electrónico às 07:00 (perfis com «Resumo diário» na matriz): vendas de ontem face ao
   habitual, semana, mês, rotas, alertas e previsão do dia, com um parágrafo escrito pela IA.
 - **App de gestão** («Naval Gestão», instalável no iPhone e no Android): vendas de hoje face à previsão, ontem, semana,
@@ -369,6 +418,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   sequências; só reconhecimento positivo; ligação própria revogável, sem conta e sem dados de clientes.
 
 ### Cartaz QR do cliente
+
 - **Cartazes A4** (Clientes › Cartazes QR dos clientes): um código aleatório por cliente, impresso em A4 para colar no
   estabelecimento; pode substituir-se a qualquer momento.
 - **Página do cliente** (sem conta): encomenda já sugerida pelas compras habituais do cliente e por artigos que outros
@@ -379,6 +429,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   lista para lançar no Pinguim BO.
 
 ### Automatização completa do servidor
+
 - **GitHub App** em vez do código de acesso pessoal: o servidor assina um pedido (JWT RS256) com a chave da App e recebe
   uma credencial de instalação que dura 1 hora; a chave não expira (sem renovação anual); só leitura e só no
   repositório do portal.
@@ -394,6 +445,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Migrações:** conta própria só para alterar a estrutura da base de dados do módulo Equipamentos.
 
 ### Aprovação das actualizações
+
 - **Página «Actualizações»** (Administração, só o super administrador): versões publicadas e testadas à espera de
   decisão, com o resumo do que muda; **Aprovar** (instala nessa noite às 02:15), **Aprovar e instalar já** (em
   5 minutos) ou **Reprovar** (com motivo); anular uma decisão ainda não instalada; repor a versão anterior; histórico
@@ -404,10 +456,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   para «instalar já» e reposições; aviso por correio de cada versão nova à espera de aprovação.
 
 ### Resumo das actualizações
+
 - **Super administrador:** na primeira entrada depois de cada actualização (manual ou automática), o portal mostra
   uma janela com o resumo do que mudou, tirado deste registo de alterações; fechada, não volta a aparecer.
 
 ### Actualizações automáticas
+
 - **Publicação:** cada alteração no main que passa nos testes dá uma versão no GitHub com o pacote do servidor, o
   SHA-256 e a proveniência assinada; um Windows com PHP ensaia a actualização a partir da versão publicada.
 - **Actualizador do servidor** (`ferramentas/actualizar.php`, tarefa agendada às 02:15): descarrega e confere a versão,
@@ -417,6 +471,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Migrações:** tabela `ATV_MIGRACAO` no ficheiro SQL do módulo Equipamentos e pasta `ferramentas/sql/migracoes`.
 
 ### Velocidade (2.ª parte)
+
 - **Páginas a pedido:** o arranque traz só o núcleo do portal e a página que abre; o módulo de cada outra página
   descarrega-se quando a página se abre pela primeira vez (ou antes, quando o rato ou o dedo passa na ligação do menu).
   O import map continua a dar a versão a cada módulo; o pré-carregamento fica só para o arranque e a página principal.
@@ -434,6 +489,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   152 KB, 61 → 46 pedidos) e 1,4 s → 0,9 s nas seguintes. Sem alterações à configuração do Apache.
 
 ### Velocidade
+
 - **Pedidos à API em paralelo:** a sessão PHP fecha-se para escrita logo a seguir à autenticação; os outros pedidos
   da mesma pessoa deixam de esperar pelas consultas lentas (medido: 1,8 s → 6 ms enquanto as vendas são lidas).
 - **Compressão** do HTML, CSS, JS e SVG no Apache (mod_deflate): cerca de 3 vezes menos bytes.
@@ -448,6 +504,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 01-11-2026
 
 ### Equipamentos (fase 1)
+
 - **Novo módulo «Equipamentos»** no menu, entre Logística e Integrações: lista dos smartphones e impressoras móveis
   do terreno, ficha de cada equipamento (estado, rota, responsável, equipamento associado, identificação técnica,
   histórico e documentos), registo de equipamentos e de colaboradores, eventos (atribuição, devolução, reparação,
@@ -475,6 +532,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Fase 2: selagem PAdES com selo temporal, ordens ao MDM Plus, etiquetas, inventário e reconciliação com o MDM.
 
 ### Junção (servidor + GitHub)
+
 - **Uma só versão do código:** junta o que estava no servidor (pacotes de 28 a 30-10: stock e vendas pela base de dados,
   sincronização, tigrínia e idioma por conta, modo claro, notas de crédito, Comunicação AGT) com o que estava no GitHub
   (API central v1 com JWT, segurança ASVS, pré-preenchimento do plano de cargas, localização das entradas, plano sem
@@ -488,6 +546,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   ferramenta de linha de comandos, sem valores de ligação predefinidos.
 
 ### Segurança
+
 - **Localização das entradas nos Registos de actividade:** país, região e cidade aproximados de cada IP (com o raio de
   precisão e ligação ao mapa), calculados no servidor com uma base de dados local no formato MaxMind DB
   (`nucleo/seguranca/geoip.php`, leitor próprio sem dependências); o IP nunca sai do servidor. Endereços privados
@@ -495,6 +554,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   `ferramentas/actualizar-geoip.php`. Os registos passam a usar o IP do cliente atrás de proxy de confiança.
 
 ### Dados
+
 - **Plano de cargas sem dados de Excel:** o pré-preenchimento, as listas e as páginas de stock por carrinha e
   escoamento usam só os planos publicados no portal; o histórico importado dos Excel de transportes
   (`reports/data/cargas.json`) deixa de ser lido.
@@ -502,6 +562,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 31-10-2026
 
 ### Plano de cargas
+
 - **Pré-preenchimento automático dos cartões das rotas:** num dia novo, cada rota vem preenchida com o seu último
   registo — primeiro a última versão publicada do plano em que a rota saiu, e em reserva o histórico importado dos
   Excel de transportes (`reports/data/cargas.json`). Preenche motorista, telefone, matrícula, viatura e
@@ -514,6 +575,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 30-10-2026
 
 ### Adicionado (Integrações)
+
 - **Comunicação AGT** (`#agt`, menu Integrações): cada documento de vendas do período com rota, tipo de documento,
   documento, total, data do documento, data fiscal, estado AGT (número do pedido de comunicação), estado do documento
   (activo / anulado, com o motivo de cancelamento), nome da entidade e estado (comunicado / por comunicar).
@@ -523,6 +585,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   FIN e AUD exportar), editável no portal.
 
 ### Corrigido (cálculo)
+
 - **Total de vendas líquido de notas de crédito**: Total de Vendas Líquidas = Facturas − Notas de Crédito. Antes, as
   consultas ao Pinguim BO só traziam documentos com total positivo (e a exportação REST só FR/FT), pelo que as notas
   de crédito ficavam de fora e o total de vendas era o bruto facturado.
@@ -537,6 +600,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   - Testes: cenários sem, com uma, com várias e com nota de crédito parcial, sem vendas, fora do período e anuladas.
 
 ### Adicionado
+
 - **Modo claro** no Portal RTM, na página de escolha (`index.html`) e na página de entrada (`geo/login.php`), com o
   selector **Sistema / Claro / Escuro** (por omissão segue o sistema operativo). A escolha fica no navegador (`vm-tema`)
   e vale nas três páginas; aplica-se antes do primeiro desenho (`reports/js/tema-arranque.js`), sem clarão.
@@ -548,6 +612,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   sistema, partilha entre páginas e contraste AA no modo claro.
 
 ### Corrigido
+
 - **Cartão da conta no menu lateral**: o nome da conta, quando é genérico (ex.: «Administrador»), passa a aparecer na
   língua escolhida, como o nome do perfil; nomes de pessoas ficam como estão registados. O mesmo no «Gerado por» dos Excel.
 - **Cartão dos telemóveis no menu lateral**: passa a mudar de língua com o resto do portal (antes só mudava na leitura
@@ -559,6 +624,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 29-10-2026 (página de entrada)
 
 ### Adicionado
+
 - **Selector de idioma (PT/EN/TI) na página de entrada** (`geo/login.php` e `geo/login-idioma.js`): textos, campos,
   passos de verificação e de nova palavra-passe e mensagens de erro na língua escolhida, com o tipo de letra ge'ez do
   portal. Só visual e idioma: a entrada, as validações e os dados não mudam. Depois de entrar, o portal abre no idioma
@@ -567,12 +633,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 29-10-2026 (idioma por conta e menu)
 
 ### Adicionado
+
 - **Idioma do portal na ficha de cada conta** (Português, English, ትግርኛ), campo obrigatório ao criar e alterar contas
   (validado também no servidor) e coluna «Idioma» na lista de utilizadores. Sempre que a pessoa entra, o portal abre
   nesse idioma; a escolha no topo (PT/EN/TI) vale até à entrada seguinte. Contas antigas sem idioma abrem em português
   até serem alteradas. A alteração do idioma fica no registo de actividade.
 
 ### Alterado
+
 - **Menu**: abrir uma área selecciona logo a primeira página dessa área, e escolher uma página abre sempre o primeiro
   relatório (o que está imediatamente a seguir). O «Início» mantém o comportamento: fecha as áreas.
 - **Pré-visualização do ficheiro para o SAP**: os nomes das colunas ficam iguais em todas as línguas (INVOICENO,
@@ -583,6 +651,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 29-10-2026 (revisão das três línguas)
 
 ### Corrigido
+
 - **Tigrínia e inglês sem textos em português**: nomes das páginas e funções da matriz de acessos, nomes dos perfis,
   registos de actividade (acção, campos e valores), mensagens do servidor (com partes variáveis, como «Lote 12 não
   encontrado»), tipos e estados de cliente, meios de cobrança, folhas e colunas dos Excel (relatório consolidado,
@@ -597,6 +666,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O registo de auditoria das exportações guarda sempre o nome em português, seja qual for a língua do ecrã.
 
 ### Adicionado
+
 - Controlo de qualidade da tradução: `t()` regista os textos pedidos sem tradução; o teste `idiomas.spec.js` percorre
   todas as páginas em tigrínia e em inglês e falha se aparecer algum, e verifica que não há português nas traduções
   inglesas.
@@ -604,6 +674,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 29-10-2026
 
 ### Adicionado
+
 - **Tigrínia (ትግርኛ)** como terceira língua do portal de vendas, ao lado de PT e EN (botão «TI» no topo; a escolha
   fica guardada no navegador). Todos os textos da interface traduzidos (1186), com ortografia da Eritreia e a
   terminologia da tradução tigrínia do MediaWiki; glossário em `docs/GLOSSARIO-TIGRINIA.md`.
@@ -616,6 +687,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 28-10-2026
 
 ### Alterado
+
 - **Sincronização dos smartphones**: uma única consulta à base de dados, a definida pela gestão (última
   sincronização por rota em `SYNC_PHSE_HISTORY`, sem a loja de formação, da mais recente para a mais antiga). A página
   mostra, por esta ordem: Rota, Data última sincronização e Distribuição das horas (barra com as horas desde a última
@@ -633,17 +705,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O diagnóstico do stock usa exactamente a consulta do portal (desde 01-11-2026 na linha de comandos: `php ferramentas/teste-stock-sql.php AAAAMMDD [armazém]`).
 
 ### Corrigido
+
 - Acentos vindos da base de dados pelo driver ODBC (Windows-1252) passam a UTF-8 («Armazém», «SABÃO», «BEBÉ»).
 - Quando o cálculo do stock falha, o portal mostra o motivo (tempo excedido, permissão, estrutura, ligação) e
   «Tentar de novo», em vez de mostrar sem aviso dados antigos de um ficheiro.
 
 ### Removido
+
 - Cópias antigas sem uso: `stockold*.php`, `vendasold*.php`, `stockold2.php`, `teste_vendas_sqlold.php`,
   `fontesold.js`, `logisticaold.js`, `sapold*.js`. O ficheiro de stock para testes sem base de dados é `reports/data/stock.json`.
 
 ## 27-10-2026
 
 ### Arquitectura
+
 - **Módulos separados e API central v1 com JWT** (`docs/API.md`): o front-end (`reports/`) fica só com ficheiros
   estáticos e fala com o back-end apenas pela API (`api/index.php/v1/…`, cliente `reports/js/api.js`); os serviços
   passaram de `reports/data/*.php` para o back-end privado (`nucleo/api/v1/`). Cada pedido leva um código de acesso
@@ -654,6 +729,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   pedido à fonte de cada vez, «Actualizar» com dados frescos, ETag/304 e compressão gzip das respostas grandes.
 
 ### Segurança
+
 - **Segunda validação (OWASP ASVS 4.0.3 nível 2, NIST SP 800-63B) e verificação automática**:
   - dois passos obrigatórios nos perfis marcados (a pessoa configura-os na entrada, com código QR); códigos de uso
     único também na confirmação das alterações de acessos;
@@ -681,13 +757,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   - GEO: escape dos nomes de clientes, rotas e zonas (XSS); bibliotecas locais com versão fixa (lucide 1.62.0, PapaParse 5.3.0).
 
 ### Adicionado
+
 - **Exportação para Excel em todos os menus**: a matriz passa a ter nível de exportação também na Sincronização dos
   smartphones (DIR, COM, LOG, AUD; SUP só as suas rotas), no Plano de cargas (DIR, COM, AUD) e em Acessos (TI e AUD,
   para a revisão periódica de acessos); o Excel da sincronização inclui o histórico de 14 dias; numa página sem dados o
   botão fica inactivo com a explicação.
 - **Comunicação dos smartphones no menu lateral**: um ponto por smartphone (verde em dia ≤ 2 h, âmbar ≤ 24 h, vermelho
   > 24 h, anel vermelho sem registo), resumo «n/N em dia» e detalhe na dica; actualiza a cada minuto e abre a página
-  de sincronização. Só para quem tem acesso a essa página.
+  > de sincronização. Só para quem tem acesso a essa página.
 - **Indicadores da página principal** com variação face ao período comparável (▲/▼ %, azul favorável, vermelho desfavorável;
   Hoje → ontem até à mesma hora, N dias → N dias anteriores, Mês → mesmo intervalo do mês anterior) e mini-linha da tendência.
 - **Vendas por artigo**: preço unitário médio sem IVA (valor s/ IVA ÷ quantidade, já com descontos) e indicador «Valor s/ IVA».
@@ -702,8 +779,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Logística › Registo de cargas**: cargas expedidas a partir dos planos publicados — por rota e viatura
   (matrícula, tipo de viatura, motorista, transportadora, caixas por artigo, zonas), por dia e por viatura.
   Recurso `registo-cargas` na matriz de acessos.
-- **Plano de cargas**: *Exportar Excel* a qualquer momento (rascunho marcado «RASCUNHO — NÃO PUBLICADO»,
-  ou versão publicada oficial) e *Enviar por correio electrónico* a versão publicada aos destinatários escolhidos da lista.
+- **Plano de cargas**: _Exportar Excel_ a qualquer momento (rascunho marcado «RASCUNHO — NÃO PUBLICADO»,
+  ou versão publicada oficial) e _Enviar por correio electrónico_ a versão publicada aos destinatários escolhidos da lista.
 - **Exportar dados** (barra de topo): todos os dados de gestão do negócio desde o arranque do Pinguim BO,
   em tabelas do Excel com dicionário de dados (`RTM - Dados de Gestão-DD-MM-AAAA.xlsx`, confidencial).
   Recurso `exportar-dados` (DIR, FIN, AUD; SADM).
@@ -711,6 +788,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   índices do Pinguim BO, só com SELECT ao catálogo. Recurso `estrutura-dados` (TI, AUD; SADM).
 
 ### Alterado
+
 - Fontes de dados: com ligação parcial a bolinha alterna entre verde e âmbar (sem ligação: vermelho a pulsar); o detalhe
   das fontes fecha sozinho ao fim de 8 s (e com Esc ou clique fora). As fontes de dados mantêm-se.
 - Início: carregar em «Início» fecha todas as áreas do menu e volta ao topo (estado inicial).
@@ -726,6 +804,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## 26-10-2026
 
 ### Adicionado
+
 - **Acessos**: activação da gestão de contas no portal (passagem da lista antiga com correio electrónico, perfil e rotas;
   quem activa fica super administrador, com duas aprovações); criação de contas e de perfis; matriz dinâmica.
 - **Terreno › Sincronização dos smartphones**: estado por limites (em dia ≤ 2 h, atenção ≤ 24 h, crítico),
@@ -736,6 +815,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Projecto novo: UI/UX do portal, módulos em falta e ligação directa à base de dados **só de leitura** (SELECT).
 
 ### Alterado
+
 - Back-end organizado em camadas (`nucleo/`), configuração lida num único sítio (`.env`).
 - «Método de pagamento» passa a **Cobranças / Meio de cobrança / Taxa de cobrança**.
 - Menus laterais em acordeão (um aberto de cada vez); filtros de todas as páginas com o mesmo estilo visual.

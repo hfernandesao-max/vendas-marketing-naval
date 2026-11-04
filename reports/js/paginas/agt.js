@@ -1,11 +1,10 @@
-// Integrações: Comunicação AGT — estado da comunicação de cada documento de vendas do período à AGT, lido do
-// Pinguim BO (DOCHEADEREXTRA ligado ao DOCHEADER; ver nucleo/servicos/agt.php): a resposta da AGT no campo 26098
-// (3 Enviado, 5 Erro, 2 Pendente) com a mensagem; sem resposta, o pedido sem resposta fica pendente e sem nada fica
-// por comunicar.
+// Integrações: Comunicação AGT — os documentos que comunicaram com a AGT, com as colunas e os estados da consulta validada
+// no Pinguim BO (ver nucleo/servicos/agt.php): Loja, Tipo de documento, Documento, Total do documento, Mensagem (estado
+// interno), Data documento, Data fiscal, Nome entidade, Estado AGT (Enviado, Erro - Comunicado, Pendente, Erro - Não
+// comunicado) e Mensagem de erro.
 // Um pedido ao servidor por período; o filtro de rotas da barra comum filtra no portal, sem nova consulta.
 import { apiFetch } from '../api.js';
 import { draw } from '../app.js';
-import { promotorRota } from '../calculos.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { dl, n0, pct } from '../formatos.js';
@@ -18,13 +17,14 @@ import { colDocumento } from '../componentes/documento.js';
 const VALIDADE = 5 * 60000; // como o resto do portal: renovado ao fim de 5 minutos
 let pedido = { chave: '', estado: '', dados: null, erro: '', em: 0 };
 
-// Estado da comunicação: texto e cor (com rótulo, nunca só a cor)
+// Estado AGT: o texto da consulta, com a cor (com rótulo, nunca só a cor)
 const ESTADOS = {
-  comunicado: ['Comunicado', 'p-ok'],
-  pendente: ['Pendente', 'p-warn'],
-  erro: ['Com erro', 'p-bad'],
-  por_comunicar: ['Por comunicar', 'p-warn'],
+  Enviado: 'p-ok',
+  Pendente: 'p-warn',
+  'Erro - Comunicado': 'p-bad',
+  'Erro - Não comunicado': 'p-bad',
 };
+const estadoAgt = (r) => r.estado_agt || 'Erro - Não comunicado';
 
 /** Pede os documentos do período (uma vez por período). Devolve o estado do pedido. */
 function garantir() {
@@ -45,17 +45,6 @@ function garantir() {
     });
   return 'a-carregar';
 }
-
-// Estado AGT: o que a AGT respondeu e o comprovativo (estado registado, número do pedido ou sem registo de erro)
-const textoAgt = (r) => {
-  if (r.estado === 'erro') return t('Erro na comunicação');
-  if (r.estado === 'pendente') return r.evidencia === 'pedido' ? t('Pedido enviado, sem resposta da AGT') : t('Pendente na AGT');
-  if (r.estado === 'por_comunicar') return t('Sem pedido de comunicação');
-  return r.pedido_agt ? t('Enviado') + ' · ' + t('Pedido n.º {n}', { n: r.pedido_agt }) : t('Enviado');
-};
-// Estado do documento: activo ou anulado (com o motivo de cancelamento, quando é mais do que «Anulado»)
-const textoDoc = (r) =>
-  !r.anulado ? t('Activo') : r.motivo_anulacao && r.motivo_anulacao !== 'Anulado' ? t('Anulado') + ' · ' + r.motivo_anulacao : t('Anulado');
 
 R.agt = (pg) => {
   const estado = garantir();
@@ -80,59 +69,47 @@ R.agt = (pg) => {
   }
   let D = pedido.dados.documentos || [];
   if (filtroAtivo('agt', 'rota')) D = D.filter((x) => FV.rota.includes(String(x.rota)));
-  const conta = (e) => D.filter((x) => x.estado === e).length;
-  const nPor = conta('por_comunicar') + conta('pendente'),
-    nErro = conta('erro'),
-    nCom = conta('comunicado');
+  const conta = (e) => D.filter((x) => estadoAgt(x) === e).length;
+  const nEnv = conta('Enviado'),
+    nErroC = conta('Erro - Comunicado'),
+    nErroN = conta('Erro - Não comunicado'),
+    nPend = conta('Pendente');
   pg.append(
     tiles([
       { l: t('Documentos'), v: n0(D.length) },
-      { l: t('Comunicados'), v: n0(nCom), s: t('{p} dos documentos', { p: pct(D.length ? nCom / D.length : null) }) },
-      { l: t('Com erro'), v: n0(nErro), tone: nErro ? 'bad' : null },
-      { l: t('Por comunicar'), v: n0(nPor), s: t('pendentes ou sem pedido'), tone: nPor ? 'warn' : null },
-      { l: t('Anulados'), v: n0(D.filter((x) => x.anulado).length) },
+      { l: t('Enviado'), v: n0(nEnv), s: t('{p} dos documentos', { p: pct(D.length ? nEnv / D.length : null) }) },
+      { l: t('Erro - Comunicado'), v: n0(nErroC), tone: nErroC ? 'bad' : null },
+      { l: t('Erro - Não comunicado'), v: n0(nErroN), tone: nErroN ? 'bad' : null },
+      { l: t('Pendente'), v: n0(nPend), tone: nPend ? 'warn' : null },
     ]),
   );
-  const nomeEstado = (e) => t((ESTADOS[e] || [e])[0]);
   pg.append(
     tabela({
       id: 'agt',
       titulo: t('Comunicação AGT'),
-      nota: t(
-        'Documentos de vendas do período e o estado da comunicação à AGT registado no Pinguim BO: estado devolvido pela AGT, mensagem de erro e número do pedido.',
-      ),
-      rows: D.map((x) => ({
-        ...x,
-        rota_txt: promotorRota(x.rota, x.promotor),
-      })),
-      sort: 'data',
+      nota: t('Documentos que comunicaram com a AGT no período, com o estado e a mensagem de erro registados no Pinguim BO.'),
+      rows: D,
+      sort: 'loja',
+      dir: 1,
       total: true,
       cols: [
-        { key: 'rota_txt', label: t('Rota'), p: 0 },
+        { key: 'loja', label: t('Loja'), wrap: true, p: 0 },
         { key: 'tipo', label: t('Tipo de documento'), get: (r) => t(r.tipo), p: 3 },
-        colDocumento({ p: 1 }),
-        { key: 'total', label: t('Total'), type: 'kz', sum: true },
-        { key: 'data', label: t('Data do documento'), type: 'date' },
+        colDocumento({ key: 'documento_agt', p: 1, xl: (r) => r.documento_agt }),
+        { key: 'total', label: t('Total do documento'), type: 'kz', sum: true },
+        { key: 'estado_documento', label: t('Mensagem'), p: 4 },
+        { key: 'data', label: t('Data documento'), type: 'date' },
         { key: 'data_fiscal', label: t('Data fiscal'), type: 'date', p: 4 },
-        { key: 'estado_agt', label: t('Estado AGT'), wrap: true, get: textoAgt, p: 1 },
-        { key: 'mensagem_agt', label: t('Mensagem da AGT'), wrap: true, get: (r) => r.mensagem_agt || '', p: 2 },
+        { key: 'entidade', label: t('Nome entidade'), wrap: true, p: 3 },
         {
-          key: 'anulado',
-          label: t('Estado do documento'),
-          p: 2,
-          get: textoDoc,
-          render: (v, r) => pill(r ? textoDoc(r) : String(v), r && r.anulado ? 'p-mut' : 'p-ok'),
-          xl: textoDoc,
-        },
-        { key: 'entidade', label: t('Nome da entidade'), wrap: true, p: 3 },
-        {
-          key: 'estado',
-          label: t('Estado'),
+          key: 'estado_agt',
+          label: t('Estado AGT'),
           p: 0,
-          get: (r) => nomeEstado(r.estado),
-          render: (v, r) => pill(nomeEstado(r ? r.estado : v), (ESTADOS[r ? r.estado : v] || [])[1] || 'p-mut'),
-          xl: (r) => nomeEstado(r.estado),
+          get: (r) => t(estadoAgt(r)),
+          render: (v, r) => pill(r ? t(estadoAgt(r)) : String(v), ESTADOS[r ? estadoAgt(r) : v] || 'p-mut'),
+          xl: (r) => t(estadoAgt(r)),
         },
+        { key: 'mensagem_erro', label: t('Mensagem de erro'), wrap: true, get: (r) => r.mensagem_erro || '', p: 2 },
       ],
     }),
   );
