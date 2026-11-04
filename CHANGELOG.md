@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Optimização de rotas automática e GeoMobilidade com os dados do portal
+- **Rotas optimizadas sozinhas, todas as noites, sem intervenção humana:** logo a seguir ao cálculo da carteira, o
+  portal calcula o percurso de cada rota para hoje e os 6 dias seguintes. Usa as mesmas visitas das «Visitas do dia»
+  (dia habitual de compra e compras em atraso) e as coordenadas dos clientes no Pinguim BO.
+  - Ordem de visita pelos métodos de referência do problema do caixeiro-viajante (vizinho mais próximo, 2-opt e
+    Or-opt), com a hora prevista de chegada a cada cliente, os quilómetros, a hora de regresso e o aviso quando o
+    percurso passa a jornada de trabalho.
+  - Ponto de partida: o armazém configurado ou, sem configuração, o sítio onde a carrinha costuma começar o dia
+    (localização do servidor OLAP).
+  - As **Visitas do dia** saem já pela ordem do percurso, com o número de cada paragem.
+- **Optimização de rotas (GeoMobilidade):** deixa de haver ficheiros CSV e botões «Importar» e «Optimizar». A página
+  mostra o percurso do dia escolhido, no mapa e em lista, e o Excel do percurso.
+- **Zonas de entrega e Distribuidores:** os clientes vêm do Pinguim BO pela API do portal, com o mesmo âmbito por rota.
+  As zonas desenhadas ficam guardadas no servidor (iguais para todos, com registo de quem alterou), e não só no
+  navegador de quem as desenhou.
+- As páginas GEO passam a carregar sempre a versão mais recente, sem ficarem presas à cópia guardada no navegador.
+
 ### Uma só plataforma: GeoMobilidade dentro do portal
 - **Sem nova entrada:** as páginas de mapas abrem dentro do portal, com a mesma sessão, o mesmo menu e o mesmo tema.
   Passar entre os relatórios e os mapas já não pede outra vez a palavra-passe. Os endereços antigos do GEO passam

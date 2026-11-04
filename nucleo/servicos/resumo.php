@@ -261,12 +261,14 @@ function naval_periodicas(?int $agora = null): array
             error_log('[conciliação carrinha] ' . $e->getMessage());
         }
     }
-    // carteira de clientes (ritmo, encomenda sugerida, visitas do dia, risco, anomalias, qualidade) de madrugada;
+    // carteira de clientes (ritmo, encomenda sugerida, visitas do dia, risco, anomalias, qualidade) de madrugada e,
+    // logo a seguir, a optimização automática dos percursos de cada rota;
     // plano de cargas de amanhã proposto às 18:00; fecho do dia por rota às 20:00
     naval_servico('bd');
     if (naval_bd_configurada()) {
         foreach ([
             'carteira' => function () use ($agora) { naval_servico('carteira'); return naval_cart_noite($agora) ?: null; },
+            'rotas_optimizadas' => function () use ($agora) { naval_servico('roteamento'); return naval_rot_noite($agora) ?: null; },
             'plano_proposto' => function () use ($agora) { naval_servico('operacao'); return naval_op_plano_18h($agora); },
             'fecho' => function () use ($agora) { naval_servico('operacao'); return naval_op_fecho_20h($agora); },
         ] as $k => $f) {

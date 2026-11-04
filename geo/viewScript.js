@@ -52,7 +52,7 @@ function getCorParaVendedor(vendedor) {
   return vendedorCores.get(vendedor);
 }
 
-// Função para salvar zonas no cache (localStorage)
+// Função para guardar as zonas no servidor (v1/geo-zonas)
 function salvarPolygonsNoCache() {
   const polygonData = allPolygons.map(polygon => {
     const paths = polygon.getPath().getArray().map(latLng => ({
@@ -74,7 +74,7 @@ function salvarPolygonsNoCache() {
     };
   });
 
-  localStorage.setItem('zonasCache', JSON.stringify(polygonData));
+  NavalGeo.gravarZonas(polygonData);
   console.log(`Guardadas ${polygonData.length} zonas na cache`);
 }
 
@@ -250,21 +250,13 @@ function editarNomePolygon(polygon) {
 // Função para carregar zonas do cache
 function carregarPolygonsDoCache() {
   if (!map) return;
-
-  const cacheData = localStorage.getItem('zonasCache');
-  if (!cacheData) return;
-
-  try {
-    const polygonData = JSON.parse(cacheData);
-
-    polygonData.forEach(data => {
-      criarPolygonDoCache(data);
-    });
-
-    console.log(`Carregadas ${polygonData.length} zonas da cache`);
-  } catch (error) {
-    console.error('Erro ao carregar zonas da cache:', error);
-  }
+  // zonas guardadas no servidor (partilhadas por todos)
+  NavalGeo.zonas()
+    .then((polygonData) => {
+      polygonData.forEach((data) => criarPolygonDoCache(data));
+      console.log(`Carregadas ${polygonData.length} zonas do servidor`);
+    })
+    .catch((error) => console.error('Erro ao carregar as zonas:', error));
 }
 
 // Função para criar um zona a partir dos dados do cache
@@ -1160,7 +1152,7 @@ function removerZona(polygonId) {
 // Função para limpar zonas
 function limparPolygonsCache() {
   if (confirm('Tem a certeza de que pretende remover todas as zonas?')) {
-    localStorage.removeItem('zonasCache');
+    NavalGeo.gravarZonas([]);
     allPolygons.forEach(polygon => polygon.setMap(null));
     allPolygons = [];
     polygonLabels.clear();
@@ -1175,72 +1167,6 @@ function limparPolygonsCache() {
 }
 
 // Função para carregar CSV (ajustada para não reinicializar o mapa)
-function loadCSV(file) {
-  if (!file) return;
-
-  const selectStat = document.getElementById("selectStatus");
-  const selectedStatus = selectStat ? selectStat.value : "Ativo";
-
-  console.log("Estado aplicado:", selectedStatus);
-  console.log("Novo ficheiro:", file.name);
-  document.getElementById("csvDocName").textContent = "Documento: " + file.name;
-
-  const maxRows = 10000;
-
-  function filterRow(row) {
-    const rowStatus = (row.Estado !== undefined && row.Estado !== null) ? String(row.Estado).trim() :
-                      (row.Status !== undefined && row.Status !== null) ? String(row.Status).trim() : "";
-    const statusMatch = selectedStatus === "Todos" || (rowStatus.toLowerCase() === selectedStatus.toLowerCase());
-
-    return (
-      row.Nome !== "Cliente Eventual" &&
-      statusMatch &&
-      row.Latitude &&
-      row.Latitude !== " "
-    );
-  }
-
-  // Limpar dados anteriores
-  //jsonData = [];
-  //count = 0;
-
-  Papa.parse(file, {
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true,
-
-    step: function (row) {
-      if (filterRow(row.data) && count < maxRows) {
-        jsonData.push(row.data);
-        count++;
-      }
-    },
-
-    complete: function () {
-      console.log("Total carregado:", count);
-      document.getElementById('textClients').textContent = 'Total de clientes carregados: ' + count;
-      console.log("Dados processados:", jsonData);
-
-      const lats = jsonData.map((coords) => parseFloat(coords.Latitude));
-      const lngs = jsonData.map((coords) => parseFloat(coords.Longitude));
-
-      coords = jsonData.map((c) => ({
-        Latitude: c.Latitude,
-        Longitude: c.Longitude,
-        Nome: c.Nome,
-        Código: c.Código,
-        Vendedor: c.Vendedor,
-        Dia: c.Dia,
-        Estado: c.Estado || c.Status,
-      }));
-
-      console.log("Coordenadas para optimização:", coords);
-
-      // Usar initMap que agora verifica se o mapa já existe
-      initMap(lats, lngs, coords);
-    },
-  });
-}
 
 // Função para importar zonas (chamada pelo botão)
 function importarPolygons() {
@@ -1259,8 +1185,8 @@ function importarPolygons() {
 }
 
 function exportarPolygons() {
-  const cacheData = localStorage.getItem('zonasCache');
-  if (cacheData) {
+  const cacheData = NavalGeo.zonasActuais();
+  if (cacheData && cacheData !== '[]') {
     const blob = new Blob([cacheData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1278,22 +1204,24 @@ function exportarPolygons() {
 
 // Função para lidar com o clique no botão de carregar
 function handleLoadClick() {
-  const csvInput = document.getElementById("csvFile");
-  csvInput.value = "";
-
-  csvInput.onclick = () => {
-    console.clear();
-    console.log("A aguardar novo ficheiro...");
-  };
-
-  csvInput.onchange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      loadCSV(file);
-    }
-  };
-
-  csvInput.click();
+  // clientes do Pinguim BO (coordenadas, rota, dia de visita e estado), pela API do portal: nada de ficheiros
+  const selectStat = document.getElementById("selectStatus");
+  const estado = selectStat ? selectStat.value : "Ativo";
+  document.getElementById("csvDocName").textContent = "A ler os clientes do Pinguim BO…";
+  NavalGeo.clientes(estado === "Ativo" ? "Activo" : estado === "Inativo" ? "Inactivo" : estado)
+    .then((linhas) => {
+      jsonData = linhas;
+      count = linhas.length;
+      document.getElementById("csvDocName").textContent = "Clientes do Pinguim BO";
+      document.getElementById("textClients").textContent = "Total de clientes: " + count;
+      const lats = jsonData.map((c) => parseFloat(c.Latitude));
+      const lngs = jsonData.map((c) => parseFloat(c.Longitude));
+      coords = jsonData.map((c) => ({ ...c }));
+      initMap(lats, lngs, coords);
+    })
+    .catch((e) => {
+      document.getElementById("csvDocName").textContent = e.message;
+    });
 }
 
 function loadButtonClicked() {
@@ -1453,3 +1381,15 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+// Os clientes carregam-se sozinhos quando o mapa fica pronto e sempre que muda o filtro do estado
+(function () {
+  const inicial = window.initMap;
+  window.initMap = function (...a) {
+    inicial(...a);
+    if (!a.length) handleLoadClick();
+  };
+  document.addEventListener("DOMContentLoaded", () => {
+    const sel = document.getElementById("selectStatus");
+    if (sel) sel.addEventListener("change", () => window.google && handleLoadClick());
+  });
+})();

@@ -282,7 +282,10 @@ function naval_geo_clientes(array $agregados, bool $actualizar = false): array
         $c = trim((string) $r['CODIGO']);
         $h = $habitos[$c] ?? null;
         $out[] = ['c' => $c, 'n' => naval_texto($r['NOME'] ?? '', 80), 'lat' => round((float) $r['LATITUDE'], 6), 'lng' => round((float) $r['LONGITUDE'], 6),
-            'r' => $h['r'] ?? '', 'd' => $h['d'] ?? null, 'f' => $h['f'] ?? 1, 'criado' => (string) ($r['CRIADO'] ?? '')];
+            'r' => $h['r'] ?? '', 'd' => $h['d'] ?? null, 'f' => $h['f'] ?? 1, 'criado' => (string) ($r['CRIADO'] ?? '')]
+            // distribuidor e tipo de estabelecimento, quando a consulta (ferramentas/sql/geo-clientes.sql) os traz
+            + (isset($r['DISTRIBUIDOR']) ? ['dist' => naval_texto((string) $r['DISTRIBUIDOR'], 80)] : [])
+            + (isset($r['TIPO']) ? ['tipo' => naval_texto((string) $r['TIPO'], 40)] : []);
     }
     $d = ['origem' => $origem, 'gerado' => date('Y-m-d H:i:s'), 'clientes' => $out];
     naval_json_gravar($f, $d, false);

@@ -70,6 +70,8 @@ function ficha(c) {
   const h = el('div', 'cc-cab');
   const [et, ec] = ESTADO[c.estado] || [c.estado, 'p-mut'];
   const tit = el('div');
+  // posição no percurso optimizado da rota (optimização automática da noite)
+  if (c.ordem) tit.append(el('span', 'vd-ordem', String(c.ordem)));
   tit.append(el('b', null, c.n || c.c), el('span', 'note', ' · ' + c.c));
   const pills = el('div', 'vd-pills');
   pills.append(pill(t(et), ec));

@@ -3304,3 +3304,18 @@ body.pagina-mapa .top {
     grid-template-columns: 1fr;
   }
 }
+/* Visitas do dia: posição do cliente no percurso optimizado */
+.vd-ordem {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

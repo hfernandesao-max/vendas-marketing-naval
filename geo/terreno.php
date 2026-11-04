@@ -3,16 +3,16 @@
 <html lang="pt">
 
 <head>
-  <script src="embutido.js" data-rota="geo-terreno"></script>
+  <script src="embutido.js?v=<?= (int) @filemtime(__DIR__ . '/embutido.js') ?>" data-rota="geo-terreno"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="prospeccao.css" />
+  <link rel="stylesheet" href="style.css?v=<?= (int) @filemtime(__DIR__ . '/style.css') ?>" />
+  <link rel="stylesheet" href="theme.css?v=<?= (int) @filemtime(__DIR__ . '/theme.css') ?>" />
+  <link rel="stylesheet" href="prospeccao.css?v=<?= (int) @filemtime(__DIR__ . '/prospeccao.css') ?>" />
   <title>GeoMobilidade Naval · Terreno do dia</title>
-  <script src="vendor/lucide-1.62.0.min.js"></script>
-  <script src="terreno.js" defer></script>
+  <script src="vendor/lucide-1.62.0.min.js?v=<?= (int) @filemtime(__DIR__ . '/vendor/lucide-1.62.0.min.js') ?>"></script>
+  <script src="terreno.js?v=<?= (int) @filemtime(__DIR__ . '/terreno.js') ?>" defer></script>
   <?= naval_google_maps_script() ?>
 </head>
 
