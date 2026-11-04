@@ -3,20 +3,21 @@
 <html lang="pt">
 
 <head>
-  <script src="../embutido.js" data-rota="geo-zonas"></script>
+  <script src="../embutido.js?v=<?= (int) @filemtime(__DIR__ . '/../embutido.js') ?>" data-rota="geo-zonas"></script>
   <meta charset="UTF-8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="../style.css" />
-  <link rel="stylesheet" href="../theme.css" />
+  <link rel="stylesheet" href="../style.css?v=<?= (int) @filemtime(__DIR__ . '/../style.css') ?>" />
+  <link rel="stylesheet" href="../theme.css?v=<?= (int) @filemtime(__DIR__ . '/../theme.css') ?>" />
   <title>GeoMobilidade Naval</title>
 
-  <script src="../vendor/lucide-1.62.0.min.js"></script>
+  <script src="../vendor/lucide-1.62.0.min.js?v=<?= (int) @filemtime(__DIR__ . '/../vendor/lucide-1.62.0.min.js') ?>"></script>
 
-  <script src="../vendor/papaparse-5.3.0.min.js"></script>
-  <script src="../viewScript.js" defer></script>
+  <meta name="csrf-token" content="<?= htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') ?>" />
+  <script src="../geo-dados.js?v=<?= (int) @filemtime(__DIR__ . '/../geo-dados.js') ?>"></script>
+  <script src="../viewScript.js?v=<?= (int) @filemtime(__DIR__ . '/../viewScript.js') ?>" defer></script>
   <?= naval_google_maps_script(['libraries' => 'drawing']) ?>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js"></script>
@@ -66,18 +67,16 @@
               <select id="selectStatus" class="premium-select">
                 <option value="Ativo" selected>Activo</option>
                 <option value="Inativo">Inactivo</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Todos">Todos</option>
+                                <option value="Todos">Todos</option>
               </select>
             </div>
           </div>
 
           <div class="actions-grid">
             <button id="load" onclick="loadButtonClicked()" class="action-btn"
-              title="Carregar ficheiro CSV com os clientes">
-              <i data-lucide="upload"></i> <span>Importar CSV</span>
+              title="Ler de novo os clientes do Pinguim BO">
+              <i data-lucide="refresh-cw"></i> <span>Actualizar clientes</span>
             </button>
-            <input type="file" id="csvFile" accept=".csv" style="display:none;" />
 
             <button onclick="ativarModoDesenho()" class="action-btn primary" title="Delimitar zonas">
               <i data-lucide="waypoints"></i> <span>Desenhar zona</span>
@@ -101,7 +100,7 @@
         <div class="sidebar-panel info-panel">
           <div class="info-item">
             <i data-lucide="file-text"></i>
-            <span id="csvDocName">Nenhum ficheiro</span>
+            <span id="csvDocName">Clientes do Pinguim BO</span>
           </div>
           <div class="info-item">
             <i data-lucide="users"></i>

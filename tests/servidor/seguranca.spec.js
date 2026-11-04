@@ -81,7 +81,8 @@ test('GEO: chave do Google Maps vem do .env (escapada) e as bibliotecas são loc
   expect(html).not.toMatch(/AIza[0-9A-Za-z_-]{20,}/);
   expect(html).toContain('vendor/lucide-1.62.0.min.js');
   expect(html).not.toContain('unpkg.com');
-  expect(html).toMatch(/auth\/logout\.php\?t=[0-9a-f]{32}/);
+  // terminar sessão com o código anti-falsificação (na barra das páginas GEO com cabeçalho próprio)
+  expect(await (await ctx.get('/geo/prospeccao.php')).text()).toMatch(/auth\/logout\.php\?t=[0-9a-f]{32}/);
   expect((await ctx.get('/geo/vendor/lucide-1.62.0.min.js')).status()).toBe(200);
 });
 

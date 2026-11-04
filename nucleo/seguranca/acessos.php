@@ -85,7 +85,6 @@ const NAVAL_MATRIZ_TXT = [
     'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -  -',
     // GEO
     'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V  V',
-    'geo-rotas-importar'   => 'G  -  -  -  -  -  G  -  G  -  -',
     'geo-rotas-descarregar' => 'V  -  E  Er Er -  -  E  E  -  -',
     'geo-zonas'            => 'V  V  V  Vr -  -  V  V  G  V  V',
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -  -',
@@ -182,7 +181,6 @@ function naval_niveis_recurso(string $rec): array
         case 'estrutura-dados':
         case 'exportar-dados':
             return ['', 'E'];
-        case 'geo-rotas-importar':
         case 'geo-zonas-gerir':
         case 'equipamentos-movimentar':
         case 'equipamentos-administrar':

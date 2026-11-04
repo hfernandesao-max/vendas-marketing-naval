@@ -368,7 +368,24 @@ function naval_cart_vista(string $dia, ?array $rotas): array
 {
     $c = naval_cart_ler();
     $dentro = function ($x) use ($rotas) { return $rotas === null || in_array((string) ($x['rota'] ?? ''), $rotas, true); };
-    return ['gerado' => $c['gerado'] ?? null, 'base' => $c['dia'] ?? null, 'dia' => $dia, 'visitas' => $c ? naval_cart_visitas($c, $dia, $rotas) : [],
+    $visitas = $c ? naval_cart_visitas($c, $dia, $rotas) : [];
+    // pela ordem do percurso optimizado de cada rota (optimização automática da noite), quando existe
+    naval_servico('roteamento');
+    $ordem = naval_rot_ordem($dia);
+    foreach ($visitas as $r => &$l) {
+        if (empty($ordem[$r])) continue;
+        foreach ($l as &$x) $x['ordem'] = $ordem[$r][(string) $x['c']] ?? null;
+        unset($x);
+        // ordenação estável: os clientes sem coordenadas ficam no fim, pela ordem de prioridade que já tinham
+        $i = 0;
+        foreach ($l as &$x) $x['_i'] = $i++;
+        unset($x);
+        usort($l, function ($a, $b) { return [$a['ordem'] ?? PHP_INT_MAX, $a['_i']] <=> [$b['ordem'] ?? PHP_INT_MAX, $b['_i']]; });
+        foreach ($l as &$x) unset($x['_i']);
+        unset($x);
+    }
+    unset($l);
+    return ['gerado' => $c['gerado'] ?? null, 'base' => $c['dia'] ?? null, 'dia' => $dia, 'visitas' => $visitas,
         'anomalias' => array_values(array_filter((array) ($c['anomalias'] ?? []), $dentro)),
         'qualidade' => array_values(array_filter((array) ($c['qualidade'] ?? []), function ($x) use ($dentro, $rotas) { return $rotas === null || ($x['rota'] !== '' && $dentro($x)); }))];
 }
