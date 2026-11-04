@@ -2,6 +2,13 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 04-11-2026
+
+### App Naval Gestão: entrada corrigida
+- **Naval Gestão (telemóvel):** quem abria o endereço da app sem sessão iniciada era enviado para uma página de
+  entrada inexistente. Agora vai para a página de entrada do portal e, depois de entrar, volta à app, pronta a
+  adicionar ao ecrã principal do iPhone ou do Android.
+
 ## 03-11-2026
 
 ### Recomendações para o Conselho de Administração
