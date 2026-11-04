@@ -29,6 +29,13 @@ test('Comunicação AGT: menu Integrações, colunas, estados e um só pedido ao
         documentos: [
           doc({}),
           doc({ documento: 'FR 1/2', rota: '1002', promotor: 'Cristina', estado: 'por_comunicar', pedido_agt: null }),
+          doc({
+            documento: 'FR 1/9',
+            estado: 'erro',
+            evidencia: 'estado',
+            pedido_agt: null,
+            mensagem_agt: 'customerTaxID 5000 desconhecido no sistema da AGT',
+          }),
           doc({ documento: 'NC 1/1', tipo: 'Nota de crédito', total: -200 }),
           doc({ documento: 'FT 1/3', tipo: 'Factura', anulado: true, motivo_anulacao: 'Anulado', data_fiscal: null }),
         ],
@@ -39,9 +46,23 @@ test('Comunicação AGT: menu Integrações, colunas, estados e um só pedido ao
   await expect(page.locator('h1')).toHaveText('Comunicação AGT');
   await expect(page.locator('.nav a.on, .nav .on').first()).toContainText('Comunicação AGT');
   const cab = page.locator('#page table thead');
-  for (const c of ['Rota', 'Tipo de documento', 'Total', 'Data do documento', 'Data fiscal', 'Estado AGT', 'Estado do documento', 'Nome da entidade', 'Estado'])
+  for (const c of [
+    'Rota',
+    'Tipo de documento',
+    'Total',
+    'Data do documento',
+    'Data fiscal',
+    'Estado AGT',
+    'Estado do documento',
+    'Nome da entidade',
+    'Mensagem da AGT',
+    'Estado',
+  ])
     await expect(cab).toContainText(c);
   await expect(page.locator('tr', { hasText: 'FR 1/1' })).toContainText('Pedido n.º 559728934618656132');
+  await expect(page.locator('tr', { hasText: 'FR 1/9' })).toContainText('Com erro');
+  await expect(page.locator('tr', { hasText: 'FR 1/9' })).toContainText('desconhecido no sistema da AGT');
+  await expect(page.locator('.tile', { hasText: 'Com erro' }).locator('.v')).toHaveText('1');
   await expect(page.locator('tr', { hasText: 'FR 1/1' })).toContainText('Comunicado');
   await expect(page.locator('tr', { hasText: 'FR 1/2' })).toContainText('Sem pedido de comunicação');
   await expect(page.locator('tr', { hasText: 'FR 1/2' })).toContainText('Por comunicar');
@@ -49,7 +70,7 @@ test('Comunicação AGT: menu Integrações, colunas, estados e um só pedido ao
   await expect(page.locator('.tile', { hasText: 'Comunicados' }).locator('.v')).toHaveText('3');
   await expect(page.locator('.tile', { hasText: 'Por comunicar' }).locator('.v')).toHaveText('1');
   await expect(page.locator('.tile', { hasText: 'Anulados' }).locator('.v')).toHaveText('1');
-  await expect(page.locator('.tile', { hasText: 'Documentos' }).first().locator('.v')).toHaveText('4');
+  await expect(page.locator('.tile', { hasText: 'Documentos' }).first().locator('.v')).toHaveText('5');
   expect(pedidos).toBe(1);
   expect(erros).toEqual([]);
 });

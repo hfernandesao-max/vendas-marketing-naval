@@ -32,6 +32,7 @@ const TIPOS = {
   artigo_sem_peso: 'Artigo sem peso',
   documento_sem_meio: 'Documento sem meio de cobrança',
   agt_por_comunicar: 'Por comunicar à AGT',
+  agt_erro: 'Recusado pela AGT',
 };
 
 function ler(chave, url, pagina) {
