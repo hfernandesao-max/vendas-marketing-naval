@@ -1,28 +1,133 @@
 {
-  "_nota": "Roteiro da Apresentação do portal (Gestão), para o Conselho de Administração: frases curtas, sem termos técnicos, datas concretas (AAAA-MM-DD). Rever em cada versão. estado = concluido | em_curso | planeado. «proximos» = recomendações para conhecimento (etiqueta, texto curto, data).",
+  "_nota": "Roteiro da Apresentação do portal (Gestão), para o Conselho de Administração: frases curtas, sem termos técnicos, datas concretas (AAAA-MM-DD). Rever em cada versão. estado = concluido | em_curso | planeado. «proximos» = recomendações para conhecimento (etiqueta, texto curto, data). «projecto» = capa; «ponto_partida» = situação antes do portal; «visao» = pilares do Plano Tecnológico.",
   "actualizado": "2026-11-04",
   "futuro": [
-    { "titulo": "Ver", "resumo": "Cada visita confirmada no mapa", "data": "2026-11-09", "estado": "em_curso" },
-    { "titulo": "Prever", "resumo": "O cliente em risco, antes de parar", "data": "2026-11-23", "estado": "planeado" },
-    { "titulo": "Decidir", "resumo": "Onde vender mais, bairro a bairro", "data": "2027-01-04", "estado": "planeado" },
-    { "titulo": "Controlar", "resumo": "Desvios assinalados sozinhos", "data": "2026-11-09", "estado": "em_curso" }
+    {
+      "titulo": "Ver",
+      "resumo": "Cada visita confirmada no mapa",
+      "data": "2026-11-09",
+      "estado": "em_curso"
+    },
+    {
+      "titulo": "Prever",
+      "resumo": "O cliente em risco, antes de parar",
+      "data": "2026-11-23",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Decidir",
+      "resumo": "Onde vender mais, bairro a bairro",
+      "data": "2027-01-04",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Controlar",
+      "resumo": "Desvios assinalados sozinhos",
+      "data": "2026-11-09",
+      "estado": "em_curso"
+    }
   ],
   "ia": [
-    { "titulo": "Encomendas por WhatsApp", "resumo": "O cliente encomenda por mensagem", "data": "2026-11-23", "estado": "planeado" },
-    { "titulo": "Cliente traz cliente", "resumo": "Bónus por cada novo cliente", "data": "2027-01-04", "estado": "planeado" },
-    { "titulo": "Revendedores de bairro", "resumo": "Mais cobertura sem novas carrinhas", "data": "2027-01-04", "estado": "planeado" },
-    { "titulo": "Fotografia da prateleira", "resumo": "Presença na loja medida por imagem", "data": "2027-02-01", "estado": "planeado" }
+    {
+      "titulo": "Encomendas por WhatsApp",
+      "resumo": "O cliente encomenda por mensagem",
+      "data": "2026-11-23",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Cliente traz cliente",
+      "resumo": "Bónus por cada novo cliente",
+      "data": "2027-01-04",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Revendedores de bairro",
+      "resumo": "Mais cobertura sem novas carrinhas",
+      "data": "2027-01-04",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Fotografia da prateleira",
+      "resumo": "Presença na loja medida por imagem",
+      "data": "2027-02-01",
+      "estado": "planeado"
+    }
   ],
   "fases": [
-    { "titulo": "Ver o terreno", "inicio": "2026-11-09", "fim": "2026-11-20", "estado": "em_curso" },
-    { "titulo": "Prever e automatizar", "inicio": "2026-11-23", "fim": "2026-12-18", "estado": "planeado" },
-    { "titulo": "Crescer pelo potencial", "inicio": "2027-01-04", "fim": "2027-03-31", "estado": "planeado" }
+    {
+      "titulo": "Ver o terreno",
+      "inicio": "2026-11-09",
+      "fim": "2026-11-20",
+      "estado": "em_curso"
+    },
+    {
+      "titulo": "Prever e automatizar",
+      "inicio": "2026-11-23",
+      "fim": "2026-12-18",
+      "estado": "planeado"
+    },
+    {
+      "titulo": "Crescer pelo potencial",
+      "inicio": "2027-01-04",
+      "fim": "2027-03-31",
+      "estado": "planeado"
+    }
   ],
   "proximos": [
-    { "etiqueta": "Segurança", "texto": "Servidor web dedicado e isolado", "data": "2026-11-20" },
-    { "etiqueta": "Terreno", "texto": "Ligação ao servidor de localização", "data": "2026-11-06" },
-    { "etiqueta": "Protecção de dados", "texto": "Uso da localização validado por RH e Jurídico", "data": "2026-11-13" },
-    { "etiqueta": "Canal", "texto": "WhatsApp Business oficial", "data": "2026-11-23" },
-    { "etiqueta": "Regras comerciais", "texto": "Bónus, crédito, revenda e descontos com limites", "data": "2027-01-04" }
-  ]
+    {
+      "etiqueta": "Segurança",
+      "texto": "Servidor web dedicado e isolado",
+      "data": "2026-11-20"
+    },
+    {
+      "etiqueta": "Terreno",
+      "texto": "Ligação ao servidor de localização",
+      "data": "2026-11-06"
+    },
+    {
+      "etiqueta": "Protecção de dados",
+      "texto": "Uso da localização validado por RH e Jurídico",
+      "data": "2026-11-13"
+    },
+    {
+      "etiqueta": "Canal",
+      "texto": "WhatsApp Business oficial",
+      "data": "2026-11-23"
+    },
+    {
+      "etiqueta": "Regras comerciais",
+      "texto": "Bónus, crédito, revenda e descontos com limites",
+      "data": "2027-01-04"
+    }
+  ],
+  "projecto": {
+    "titulo": "Portal RTM",
+    "subtitulo": "Transformação digital da operação comercial",
+    "publico": "Conselho de Administração",
+    "apresentador": "Henrique Fernandes",
+    "funcao": "Gestor de Projectos Digitais"
+  },
+  "ponto_partida": "Vendas, cobranças, cargas e terreno em ficheiros e sistemas separados, sem uma visão diária e fiável do negócio.",
+  "visao": {
+    "periodo": "Janeiro de 2027 a Junho de 2028",
+    "titulo": "Plano Tecnológico do Grupo Naval",
+    "pilares": [
+      {
+        "titulo": "Dados únicos do Grupo",
+        "texto": "Um repositório de dados que junta SAP, Cegid Evolution e RTM, com a mesma verdade para todas as empresas."
+      },
+      {
+        "titulo": "Processos automáticos",
+        "texto": "Compras, aprovações e integração contabilística sem trabalho manual nem papel."
+      },
+      {
+        "titulo": "Inteligência artificial na gestão",
+        "texto": "Previsões, alertas e relatórios de gestão gerados e actualizados sozinhos."
+      },
+      {
+        "titulo": "Segurança e governação",
+        "texto": "Acessos por perfil, auditoria completa e conformidade fiscal e de protecção de dados."
+      }
+    ]
+  }
 }

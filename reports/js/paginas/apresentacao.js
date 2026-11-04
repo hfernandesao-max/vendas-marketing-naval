@@ -1,29 +1,33 @@
-// Gestão › Apresentação do portal, pensada para o Conselho de Administração (boas práticas de comunicação a
-// conselhos: uma mensagem por ecrã, números grandes, pouco texto, datas concretas, sem explicações técnicas).
-// Dados reais e actualizados sozinhos (API v1/apresentacao; refresca a cada 10 minutos com a página aberta):
-//  - Negócio: vendas por mês e indicadores do mês, no âmbito de quem vê;
-//  - Clientes: saúde da carteira calculada esta noite;
-//  - Automação: o que o portal fez sozinho nos últimos 30 dias, à hora configurada;
-//  - Futuro, calendário e recomendações: roteiro nucleo/recursos/roteiro.json, revisto em cada versão.
+// Gestão › Apresentação do portal ao Conselho de Administração, em formato corporativo (diapositivos 16:9 com as cores
+// da Naval, uma mensagem por diapositivo, números grandes, fonte e data em cada número, numeração e marca de
+// confidencialidade), com dados reais e actualizada sozinha (API v1/apresentacao; refresca a cada 10 minutos):
+//   1 capa · 2 sumário executivo · 3 desempenho comercial · 4 carteira de clientes · 5 automação e eficiência ·
+//   6 governação, segurança e conformidade · 7 arquitectura e integrações · 8 roteiro · 9 visão 2027–2028 ·
+//   10 recomendações e encerramento.
+// Textos do roteiro e da visão: nucleo/recursos/roteiro.json (revisto em cada versão).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { dl, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { el } from '../util.js';
+import { PAGES } from './catalogo.js';
 import { R } from './registo.js';
 
 const REFRESCAR_MS = 10 * 60 * 1000;
+const L = 1280; // diapositivo 16:9, desenhado a 1280 × 720 e ajustado ao ecrã por escala
+const A = 720;
 let D = null;
 let lidoEm = 0;
 let aLer = false;
 let cena = 0;
 let relogio = 0;
-const reduzir = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let obs = null;
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const nf1 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
 
-/** Valor compacto para leitura à distância: 30,5 M Kz; 850 mil Kz; 900 Kz. */
+/** Valor compacto: 30,5 M Kz; 850 mil Kz. */
 const kzc = (v) => {
   if (v == null || isNaN(v)) return '—';
   const a = Math.abs(v);
@@ -33,7 +37,8 @@ const kzc = (v) => {
   return n0(v) + ' Kz';
 };
 const nomeMes = (m) => MESES[+m.slice(5, 7) - 1] + ' ' + m.slice(2, 4);
-const variacao = (v) => (v == null ? '—' : (v >= 0 ? '▲ ' : '▼ ') + pct(Math.abs(v)));
+const mesLongo = (m) => MESES_LONGOS[+m.slice(5, 7) - 1] + ' de ' + m.slice(0, 4);
+const variacao = (v) => (v == null ? null : (v >= 0 ? '▲ ' : '▼ ') + pct(Math.abs(v)));
 const dia = (iso) => (iso ? dl(iso) : '');
 
 function ler() {
@@ -47,254 +52,469 @@ function ler() {
   });
 }
 
+// ── peças comuns ──
 const h = (tag, cls, txt) => el(tag, cls, txt);
-function cena0(nome, olho, titulo, extra) {
-  const s = h('section', 'apx-cena' + (extra ? ' ' + extra : ''));
+function diapositivo(nome, seccao, titulo, mensagem) {
+  const s = h('section', 'cx-slide');
   s.dataset.nome = nome;
-  if (olho) s.append(h('div', 'apx-olho', olho));
-  if (titulo) s.append(h('h2', null, titulo));
+  const topo = h('header', 'cx-topo');
+  topo.append(h('span', 'cx-marca', 'GRUPO NAVAL ANGOLA'), h('span', 'cx-seccao', seccao));
+  s.append(topo);
+  if (titulo) s.append(h('h2', 'cx-titulo', titulo));
+  if (mensagem) s.append(h('p', 'cx-mensagem', mensagem));
   return s;
 }
-function numero(valor, rotulo, cls) {
-  const d = h('div', 'apx-num' + (cls ? ' ' + cls : ''));
+function kpi(valor, rotulo, nota, cls) {
+  const d = h('div', 'cx-kpi' + (cls ? ' ' + cls : ''));
   d.append(h('b', null, valor), h('span', null, rotulo));
+  if (nota) d.append(h('small', null, nota));
   return d;
 }
-const nota = (txt) => h('p', 'apx-aviso', txt);
-const semValores = () => nota('Disponível para quem acompanha as vendas.');
+const fonte = (txt) => h('p', 'cx-fonte', txt);
+const semDados = () => h('p', 'cx-vazio', 'Disponível para quem acompanha as vendas.');
 
-// ── 1. Abertura: a mensagem e três números ──
-function cenaAbertura() {
-  const s = cena0('Início', 'Grupo Naval · Portal RTM', null, 'apx-abertura');
-  s.append(h('h1', null, 'Vender mais, com menos trabalho manual.'));
-  const g = h('div', 'apx-numeros apx-tres');
-  const n = D.negocio;
-  const a = D.automacao || {};
-  if (n) {
-    g.append(
-      numero(kzc(n.mes.total), 'vendas do mês'),
-      numero(variacao(n.mes.variacao), 'face ao mês anterior', n.mes.variacao < 0 ? 'desce' : 'sobe'),
-      numero(n0(n.clientes_30), 'clientes activos'),
-    );
-  } else {
-    const tot = ['resumos', 'calculos', 'planos', 'fechos', 'versoes'].reduce((x, k) => x + (+a[k] || 0), 0);
-    g.append(numero(n0(tot), 'tarefas automáticas'), numero(n0(a.calculos), 'análises de clientes'), numero(n0(a.resumos), 'resumos enviados'));
-  }
-  s.append(g, nota('Dados de ' + dl(D.hora) + ', ' + String(D.hora || '').slice(11) + '.'));
+// ── 1. Capa ──
+function capa() {
+  const p = (D.roteiro && D.roteiro.projecto) || {};
+  const s = h('section', 'cx-slide cx-capa');
+  s.dataset.nome = 'Capa';
+  const esq = h('div', 'cx-capa-esq');
+  const logo = h('img');
+  logo.src = '../assets/naval-emblema.png';
+  logo.alt = '';
+  esq.append(logo, h('b', null, 'GRUPO NAVAL ANGOLA'), h('span', null, 'Projectos Digitais'));
+  const dir = h('div', 'cx-capa-dir');
+  dir.append(
+    h('div', 'cx-olho', p.publico || 'Conselho de Administração'),
+    h('h1', null, p.titulo || 'Portal RTM'),
+    h('p', 'cx-sub', p.subtitulo || ''),
+    h('div', 'cx-traco'),
+    h('p', 'cx-autor', p.apresentador || ''),
+    h('p', 'cx-funcao', p.funcao || ''),
+    h('p', 'cx-data', dl(D.hora)),
+  );
+  s.append(esq, dir);
   return s;
 }
 
-// ── 2. Negócio: vendas por mês ──
-function graficoMeses(meses) {
+// ── 2. Sumário executivo ──
+function sumario() {
+  const r = D.roteiro || {};
+  const n = D.negocio;
+  const a = D.automacao || {};
+  const tarefas = ['resumos', 'calculos', 'planos', 'fechos', 'versoes'].reduce((x, k) => x + (+a[k] || 0), 0);
+  const grupos = [...new Set(PAGES.map((x) => x.grupo).filter(Boolean))];
+  const s = diapositivo(
+    'Sumário',
+    'Sumário executivo',
+    'Uma plataforma única para gerir a operação comercial',
+    'Em produção, com dados reais do Pinguim BO, a funcionar todos os dias sem trabalho manual.',
+  );
+  const g = h('div', 'cx-quatro');
+  const bloco = (n1, titulo, linhas) => {
+    const b = h('div', 'cx-bloco');
+    b.append(h('span', 'cx-num', n1), h('h3', null, titulo));
+    const ul = h('ul');
+    linhas.filter(Boolean).forEach((l) => ul.append(h('li', null, l)));
+    b.append(ul);
+    return b;
+  };
+  const fases = (r.fases || []).slice(0, 3).map((f) => f.titulo + ' · ' + dia(f.inicio));
+  g.append(
+    bloco('01', 'Ponto de partida', [r.ponto_partida || '']),
+    bloco('02', 'O que foi entregue', [
+      PAGES.length + ' páginas em ' + grupos.length + ' áreas de negócio',
+      n0(D.novidades_total) + ' melhorias publicadas e testadas',
+      'Instalação automática, sem paragens',
+    ]),
+    bloco('03', 'Resultados', [
+      n ? kzc(n.meses.reduce((x, m) => x + m.total, 0)) + ' de vendas em 6 meses' : '',
+      n ? n0(n.clientes_30) + ' clientes activos (30 dias)' : '',
+      n0(tarefas) + ' tarefas automáticas em 30 dias',
+    ]),
+    bloco('04', 'Próximos passos', fases),
+  );
+  s.append(
+    g,
+    h(
+      'div',
+      'cx-base-visao',
+      'Mensagem-chave: a operação comercial já é gerida com dados do próprio dia; as próximas fases levam o mesmo modelo ao terreno e ao resto do Grupo.',
+    ),
+    fonte('Fontes: Pinguim BO, registo de alterações do portal e rotina automática · dados de ' + dl(D.hora) + ', ' + String(D.hora || '').slice(11)),
+  );
+  return s;
+}
+
+// ── 3. Desempenho comercial ──
+function grafico(meses) {
   const ns = 'http://www.w3.org/2000/svg';
-  const W = 600,
-    base = 220,
+  const W = 700,
+    base = 250,
     topo = 30;
   const max = Math.max(1, ...meses.map((m) => m.total));
   const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${W} 260`);
-  svg.setAttribute('class', 'apx-barras');
+  svg.setAttribute('viewBox', `0 0 ${W} 290`);
+  svg.setAttribute('class', 'cx-barras');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Vendas por mês: ' + meses.map((m) => nomeMes(m.mes) + ' ' + kzc(m.total)).join('; '));
   const passo = W / meses.length;
-  const larg = Math.min(56, passo * 0.5);
-  const linha = document.createElementNS(ns, 'line');
+  const larg = Math.min(64, passo * 0.55);
+  const eixo = document.createElementNS(ns, 'line');
   [
     ['x1', 0],
     ['x2', W],
     ['y1', base],
     ['y2', base],
-    ['class', 'apx-eixo'],
-  ].forEach(([k, v]) => linha.setAttribute(k, v));
-  svg.append(linha);
+    ['class', 'cx-eixo'],
+  ].forEach(([k, v]) => eixo.setAttribute(k, v));
+  svg.append(eixo);
   meses.forEach((m, i) => {
-    const alt = Math.max(m.total > 0 ? 4 : 0, ((base - topo) * Math.max(0, m.total)) / max);
+    const alt = Math.max(m.total > 0 ? 3 : 0, ((base - topo) * Math.max(0, m.total)) / max);
     const x = i * passo + (passo - larg) / 2;
     const y = base - alt;
     const rr = Math.min(4, alt);
-    const g = document.createElementNS(ns, 'g');
     const r = document.createElementNS(ns, 'path');
     r.setAttribute('d', `M${x},${base}V${y + rr}Q${x},${y} ${x + rr},${y}H${x + larg - rr}Q${x + larg},${y} ${x + larg},${y + rr}V${base}Z`);
-    r.setAttribute('class', 'apx-barra' + (m.parcial ? ' parcial' : ''));
+    r.setAttribute('class', 'cx-barra' + (m.parcial ? ' parcial' : ''));
     const tt = document.createElementNS(ns, 'title');
-    tt.textContent = `${nomeMes(m.mes)}${m.parcial ? ' (em curso)' : ''}: ${kzc(m.total)}`;
+    tt.textContent = nomeMes(m.mes) + ': ' + kzc(m.total) + (m.parcial ? ' (em curso)' : '');
     r.append(tt);
     const v = document.createElementNS(ns, 'text');
     v.setAttribute('x', x + larg / 2);
     v.setAttribute('y', y - 8);
-    v.setAttribute('class', 'apx-valor');
+    v.setAttribute('class', 'cx-valor');
     v.textContent = kzc(m.total).replace(' Kz', '');
     const l = document.createElementNS(ns, 'text');
     l.setAttribute('x', x + larg / 2);
     l.setAttribute('y', base + 24);
-    l.setAttribute('class', 'apx-rotulo');
+    l.setAttribute('class', 'cx-rotulo');
     l.textContent = nomeMes(m.mes) + (m.parcial ? '*' : '');
-    g.append(r, v, l);
-    svg.append(g);
+    svg.append(r, v, l);
   });
   return svg;
 }
-function cenaNegocio() {
-  const s = cena0('Negócio', 'Negócio', 'Vendas por mês');
+function desempenho() {
   const n = D.negocio;
+  const u = n && n.ultimo_mes;
+  const msg =
+    n && u && u.variacao != null
+      ? mesLongo(u.mes) + ' fechou com ' + kzc(u.total) + ', ' + (u.variacao >= 0 ? 'mais ' : 'menos ') + pct(Math.abs(u.variacao)) + ' do que o mês anterior.'
+      : 'Vendas líquidas lidas directamente do Pinguim BO, já com as notas de crédito.';
+  const s = diapositivo('Desempenho', 'Desempenho comercial', 'Vendas dos últimos 6 meses', msg);
   if (!n) {
-    s.append(semValores());
+    s.append(semDados());
     return s;
   }
-  const corpo = h('div', 'apx-dois');
-  const esq = h('div', 'apx-col apx-grafico');
-  esq.append(graficoMeses(n.meses), nota('* mês em curso, até hoje · valores em kwanzas'));
-  const dir = h('div', 'apx-numeros apx-compacto');
+  const linha = h('div', 'cx-kpis');
+  const total6 = n.meses.reduce((x, m) => x + m.total, 0);
+  linha.append(
+    kpi(kzc(total6), 'vendas em 6 meses'),
+    kpi(kzc(n.media_mensal), 'média mensal', 'meses completos'),
+    kpi(
+      u ? kzc(u.total) : '—',
+      u ? 'vendas de ' + mesLongo(u.mes).toLowerCase() : 'último mês',
+      variacao(u && u.variacao) ? variacao(u.variacao) + ' face ao mês anterior' : null,
+      u && u.variacao < 0 ? 'desce' : 'sobe',
+    ),
+    kpi(kzc(n.mes.total), 'mês em curso, até hoje', variacao(n.mes.variacao) ? variacao(n.mes.variacao) + ' face ao mesmo período' : 'mês a começar'),
+  );
+  const corpo = h('div', 'cx-dois');
+  const esq = h('div', 'cx-grafico');
+  esq.append(grafico(n.meses));
+  const dir = h('div', 'cx-lado');
   dir.append(
-    numero(n0(n.mes.clientes), 'clientes este mês'),
-    numero(kzc(n.mes.valor_medio), 'por compra'),
-    numero(n0(n.mes.documentos), 'vendas este mês'),
-    numero(n0(n.mes.rotas), 'rotas activas'),
+    kpi(n0(n.clientes_30), 'clientes activos', 'compraram nos últimos 30 dias'),
+    kpi(kzc(n.mes.valor_medio), 'valor médio por compra', 'mês em curso'),
+    kpi(n0(n.mes.rotas), 'rotas a vender', 'mês em curso'),
   );
   corpo.append(esq, dir);
-  s.append(corpo);
+  s.append(linha, corpo, fonte('Fonte: Pinguim BO · vendas líquidas em kwanzas · * mês em curso · dados de ' + dl(D.hora)));
   return s;
 }
 
-// ── 3. Clientes: saúde da carteira ──
-function cenaClientes() {
-  const s = cena0('Clientes', 'Clientes', 'Saúde da carteira de clientes');
+// ── 4. Carteira de clientes ──
+function carteira() {
   const c = (D.automacao || {}).carteira;
+  const msg =
+    c && c.parado
+      ? n0(c.parado) + ' clientes parados representam ' + kzc(c.valor_parados) + ' em cada ciclo de compra: são a primeira prioridade comercial.'
+      : 'Cada cliente analisado todas as noites pelo seu próprio ritmo de compra.';
+  const s = diapositivo('Clientes', 'Carteira de clientes', 'Saúde da carteira, cliente a cliente', msg);
   if (!c) {
-    s.append(D.ve_valores ? nota('Primeira análise na próxima noite.') : semValores());
+    s.append(D.ve_valores ? h('p', 'cx-vazio', 'A primeira análise fica pronta na próxima noite.') : semDados());
     return s;
   }
+  const tot = c.em_dia + c.a_abrandar + c.parado || 1;
   const partes = [
     ['em_dia', 'Em dia', c.em_dia],
     ['a_abrandar', 'A abrandar', c.a_abrandar],
     ['parado', 'Parados', c.parado],
   ];
-  const tot = c.em_dia + c.a_abrandar + c.parado || 1;
-  const barra = h('div', 'apx-segmentos');
+  const barra = h('div', 'cx-segmentos');
   barra.setAttribute('role', 'img');
-  barra.setAttribute('aria-label', `Clientes: ${c.em_dia} em dia, ${c.a_abrandar} a abrandar, ${c.parado} parados`);
-  const leg = h('div', 'apx-leg');
+  barra.setAttribute('aria-label', partes.map((p) => p[1] + ' ' + p[2]).join(', '));
+  const leg = h('div', 'cx-leg');
   partes.forEach(([k, nome, v]) => {
     if (v) {
-      const seg = h('div', 'apx-seg ' + k);
+      const seg = h('div', 'cx-seg ' + k);
       seg.style.flexGrow = String(v / tot);
-      seg.title = `${nome}: ${n0(v)} (${pct(v / tot)})`;
+      seg.append(h('span', null, pct(v / tot)));
       barra.append(seg);
     }
-    const i = h('span', 'apx-leg-i');
-    i.append(h('i', 'apx-seg ' + k), document.createTextNode(`${nome} ${n0(v)} · ${pct(v / tot)}`));
+    const i = h('span', 'cx-leg-i');
+    i.append(h('i', 'cx-seg ' + k), document.createTextNode(nome + ' · ' + n0(v) + ' clientes'));
     leg.append(i);
   });
-  const g = h('div', 'apx-numeros apx-tres');
-  g.append(
-    numero(n0(c.encomendas), 'encomendas sugeridas prontas'),
-    numero(kzc(c.valor_parados), 'a recuperar nos parados'),
-    numero(n0(c.anomalias), 'alertas a verificar'),
+  const k = h('div', 'cx-kpis');
+  k.append(
+    kpi(n0(tot), 'clientes analisados'),
+    kpi(n0(c.encomendas), 'encomendas sugeridas prontas', 'para as visitas do dia'),
+    kpi(kzc(c.valor_parados), 'a recuperar nos parados', 'compra habitual de cada um', c.valor_parados ? 'desce' : null),
+    kpi(n0(c.anomalias), 'alertas a verificar', 'últimos 7 dias'),
   );
-  s.append(barra, leg, g);
-  if (c.calculado) s.append(nota('Actualizado em ' + dl(c.calculado) + '.'));
+  const accoes = h('div', 'cx-tres');
+  [
+    ['Visitas do dia', 'Cada vendedor recebe a lista do dia, já pela ordem do percurso, com a ficha de cada cliente.'],
+    ['Encomenda sugerida', 'Quantidades propostas pelo histórico de cada cliente: vende-se mais em cada visita.'],
+    ['Alertas à gestão', 'Clientes a abrandar e parados chegam aos gestores antes de se perderem.'],
+  ].forEach(([tt, tx]) => {
+    const b = h('div', 'cx-accao');
+    b.append(h('b', null, tt), h('span', null, tx));
+    accoes.append(b);
+  });
+  s.append(
+    barra,
+    leg,
+    k,
+    h('div', 'cx-subtitulo', 'O que o portal faz com esta análise, sozinho'),
+    accoes,
+    fonte('Fonte: Pinguim BO · análise automática de ' + dl(c.calculado) + ' às ' + String(c.calculado || '').slice(11, 16)),
+  );
   return s;
 }
 
-// ── 4. Automação: o dia que o portal trabalha sozinho ──
-function cenaAutomacao() {
-  const s = cena0('Automação', 'Automação', 'O que o portal faz sozinho, todos os dias');
+// ── 5. Automação e eficiência ──
+function automacao() {
   const H = D.horas || {};
-  const A = D.automacao || {};
+  const A2 = D.automacao || {};
+  const tot = ['resumos', 'calculos', 'planos', 'fechos', 'versoes'].reduce((x, k) => x + (+A2[k] || 0), 0);
+  const s = diapositivo(
+    'Automação',
+    'Automação e eficiência',
+    'O portal trabalha sozinho, todos os dias',
+    n0(tot) + ' tarefas feitas sem intervenção humana nos últimos 30 dias.',
+  );
   const passos = [
-    [H.instalar, 'Portal actualizado', A.versoes],
-    [H.calculo, 'Clientes analisados', A.calculos],
-    [H.resumo, 'Resumo aos gestores', A.resumos],
-    [H.plano, 'Cargas de amanhã', A.planos],
+    [H.instalar, 'Versões instaladas', A2.versoes],
+    [H.calculo, 'Clientes analisados', A2.calculos],
+    [H.resumo, 'Resumo aos gestores', A2.resumos],
+    [H.plano, 'Cargas de amanhã', A2.planos],
     [H.carrinha, 'Carrinhas conferidas', null],
-    [H.fecho, 'Fecho do dia', A.fechos],
+    [H.fecho, 'Fecho do dia', A2.fechos],
   ]
     .filter((p) => p[0])
     .sort((a, b) => a[0].localeCompare(b[0]));
-  const linha = h('ol', 'apx-linha');
+  const linha = h('ol', 'cx-linha');
   passos.forEach(([hora, nome, n]) => {
-    const li = h('li', 'apx-passo');
-    li.append(h('b', 'apx-hora-t', hora), h('span', 'apx-passo-n', nome), h('small', null, n != null ? n0(n) + ' em 30 dias' : 'todos os dias'));
+    const li = h('li');
+    li.append(h('b', null, hora), h('span', null, nome), h('small', null, n != null ? n0(n) + ' em 30 dias' : 'todos os dias'));
     linha.append(li);
   });
-  const tot = ['resumos', 'calculos', 'planos', 'fechos', 'versoes'].reduce((x, k) => x + (+A[k] || 0), 0);
-  s.append(linha, h('div', 'apx-numeros apx-um'));
-  s.lastChild.append(numero(n0(tot), 'tarefas feitas sozinhas nos últimos 30 dias'));
+  const k = h('div', 'cx-kpis');
+  k.append(
+    kpi(n0(tot), 'tarefas automáticas', 'últimos 30 dias'),
+    kpi(n0(A2.versoes), 'versões instaladas', 'testadas e sem paragens'),
+    kpi('24 h', 'funcionamento', 'actualização de madrugada'),
+    kpi('0', 'ficheiros Excel na origem', 'dados sempre das bases de dados'),
+  );
+  const tab = h('div', 'cx-antes');
+  const cab = h('div', 'cx-antes-l cx-antes-cab');
+  cab.append(h('span', null, 'Antes'), h('span', null, 'Agora, com o portal'));
+  tab.append(cab);
+  [
+    ['Relatórios do dia feitos à mão', 'Resumo no correio de cada gestor às ' + (H.resumo || '07:00')],
+    ['Plano de cargas montado em folhas de cálculo', 'Plano de amanhã proposto sozinho às ' + (H.plano || '18:00')],
+    ['Fecho do dia por telefone e mensagens', 'Fecho por rota enviado às ' + (H.fecho || '20:00')],
+    ['Actualizações com paragens e riscos', 'Versões testadas e instaladas de madrugada, com regresso automático'],
+  ].forEach(([a, b]) => {
+    const l = h('div', 'cx-antes-l');
+    l.append(h('span', null, a), h('b', null, b));
+    tab.append(l);
+  });
+  s.append(linha, k, tab, fonte('Fonte: registos da rotina automática do portal · horas configuradas no servidor'));
   return s;
 }
 
-// ── 5. Futuro: o que vem a seguir, com data ──
-function cartao(item, ia) {
-  const c = h('article', 'apx-cartao' + (ia ? ' apx-ia' : ''));
-  const cab = h('div', 'apx-cab');
-  cab.append(h('h3', null, item.titulo), h('span', 'apx-estado ' + (item.estado || 'planeado'), item.estado === 'em_curso' ? 'Em curso' : dia(item.data)));
-  c.append(cab, h('p', 'apx-det', item.resumo));
-  return c;
-}
-function cenaFuturo() {
-  const s = cena0('Futuro', 'O que vem a seguir', 'Ver, prever, decidir, controlar. E crescer com IA.');
-  const r = D.roteiro || {};
-  const g1 = h('div', 'apx-grelha4');
-  const g2 = h('div', 'apx-grelha4');
-  (r.futuro || []).forEach((x) => g1.append(cartao(x, false)));
-  (r.ia || []).forEach((x) => g2.append(cartao(x, true)));
-  s.append(g1, g2);
+// ── 6. Governação, segurança e conformidade ──
+function governanca() {
+  const g = D.governanca || {};
+  const c = (D.automacao || {}).carteira;
+  const s = diapositivo(
+    'Governação',
+    'Governação, segurança e conformidade',
+    'Controlo de quem vê o quê, e prova de tudo',
+    'Acessos por perfil, verificação em dois passos e registo de todas as acções, segundo as normas internacionais.',
+  );
+  const grelha = h('div', 'cx-seis');
+  grelha.append(
+    kpi(n0(g.contas), 'contas activas', 'cada pessoa com a sua conta'),
+    kpi(g.mfa_pct != null ? pct(g.mfa_pct) : '—', 'com verificação em dois passos', n0(g.mfa) + ' de ' + n0(g.contas) + ' contas'),
+    kpi(n0(g.perfis), 'perfis de acesso', n0(g.recursos) + ' funções controladas pela matriz'),
+    kpi(n0(g.registos_mes), 'acções registadas este mês', 'auditoria completa'),
+    g.agt
+      ? kpi(
+          g.agt.pct != null ? pct(g.agt.pct) : '—',
+          'documentos comunicados à AGT',
+          n0(g.agt.erros) + ' com erro · mês em curso',
+          g.agt.erros ? 'desce' : null,
+        )
+      : kpi('—', 'comunicação à AGT', 'visível a quem acompanha a AGT'),
+    kpi(c ? n0(c.qualidade) : '—', 'tarefas de qualidade dos dados', 'corrigidas na origem'),
+  );
+  const normas = h('div', 'cx-normas');
+  ['ISO/IEC 27001 · acessos', 'ITIL · gestão de versões', 'OWASP · segurança', 'Lei 22/11 · protecção de dados'].forEach((x) =>
+    normas.append(h('span', null, x)),
+  );
+  s.append(grelha, normas, fonte('Fontes: contas e matriz de acessos do portal, registos de actividade e Pinguim BO'));
   return s;
 }
 
-// ── 6. Calendário e recomendações (para conhecimento) ──
-function cenaCalendario() {
-  const s = cena0('Calendário', 'Calendário', 'Fases e recomendações');
+// ── 7. Arquitectura e integrações ──
+function arquitectura() {
+  const sis = D.sistemas || [];
+  const lig = sis.filter((x) => x.ligado).length;
+  const s = diapositivo(
+    'Arquitectura',
+    'Arquitectura e integrações',
+    'Um só portal ligado aos sistemas do Grupo',
+    lig + ' de ' + sis.length + ' integrações activas; as restantes estão preparadas e arrancam com a configuração.',
+  );
+  const mapa = h('div', 'cx-arq');
+  const centro = h('div', 'cx-centro');
+  centro.append(h('b', null, 'Portal RTM'), h('span', null, 'Vendas · Clientes · Terreno · Logística · Gestão'));
+  const lista = h('div', 'cx-sistemas');
+  sis.forEach((x) => {
+    const c = h('div', 'cx-sis' + (x.ligado ? ' on' : ''));
+    c.append(h('b', null, x.nome), h('span', null, x.funcao), h('em', null, x.ligado ? 'Ligado' : 'Por ligar'));
+    lista.append(c);
+  });
+  mapa.append(centro, lista);
+  s.append(mapa, fonte('Estado das ligações lido na configuração do servidor do portal'));
+  return s;
+}
+
+// ── 8. Roteiro ──
+function roteiro() {
   const r = D.roteiro || {};
+  const s = diapositivo('Roteiro', 'Roteiro', 'O que vem a seguir, com datas', 'Três fases, cada uma a começar com resultados visíveis para a gestão.');
   const fases = (r.fases || []).filter((f) => f.inicio && f.fim);
   if (fases.length) {
     const ms = (d) => new Date(d + 'T12:00:00Z').getTime();
     const ini = Math.min(...fases.map((f) => ms(f.inicio)));
     const fim = Math.max(...fases.map((f) => ms(f.fim)));
     const pos = (d) => ((ms(d) - ini) / (fim - ini || 1)) * 100;
-    const g = h('div', 'apx-gantt');
-    g.setAttribute('role', 'img');
-    g.setAttribute('aria-label', fases.map((f) => `${f.titulo}: ${dia(f.inicio)} a ${dia(f.fim)}`).join('; '));
-    const eixo = h('div', 'apx-meses');
+    const g = h('div', 'cx-gantt');
+    const eixo = h('div', 'cx-meses');
     const d0 = new Date(ini);
     for (let d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), 1)); d.getTime() <= fim; d.setUTCMonth(d.getUTCMonth() + 1)) {
-      const p = Math.max(0, ((d.getTime() - ini) / (fim - ini || 1)) * 100);
       const m = h('span', null, MESES[d.getUTCMonth()] + ' ' + String(d.getUTCFullYear()).slice(2));
-      m.style.left = p + '%';
+      m.style.left = Math.max(0, ((d.getTime() - ini) / (fim - ini || 1)) * 100) + '%';
       eixo.append(m);
     }
     g.append(eixo);
     fases.forEach((f) => {
-      const fila = h('div', 'apx-fila');
-      const b = h('div', 'apx-barra-f ' + (f.estado || 'planeado'));
+      const fila = h('div', 'cx-fila');
+      const b = h('div', 'cx-fase ' + (f.estado || 'planeado'));
+      const largura = Math.max(2, pos(f.fim) - pos(f.inicio));
       b.style.left = pos(f.inicio) + '%';
-      b.style.width = Math.max(8, pos(f.fim) - pos(f.inicio)) + '%';
-      b.append(h('b', null, f.titulo), h('small', null, dia(f.inicio) + ' – ' + dia(f.fim)));
-      fila.append(b);
+      b.style.width = largura + '%';
+      const texto = [h('b', null, f.titulo), h('small', null, dia(f.inicio) + ' – ' + dia(f.fim))];
+      if (largura < 28 && pos(f.fim) < 72) {
+        // fase curta: o texto fica ao lado da barra, sem cortes
+        const rotulo = h('div', 'cx-fase-rotulo');
+        rotulo.style.left = 'calc(' + pos(f.fim) + '% + 12px)';
+        rotulo.append(...texto);
+        fila.append(b, rotulo);
+      } else {
+        b.append(...texto);
+        fila.append(b);
+      }
       g.append(fila);
     });
-    const hoje = new Date().toISOString().slice(0, 10);
-    if (ms(hoje) >= ini && ms(hoje) <= fim) {
-      const l = h('i', 'apx-hoje');
-      l.style.left = pos(hoje) + '%';
-      l.title = 'Hoje';
-      g.append(l);
-    }
     s.append(g);
   }
-  const rec = (r.proximos || []).slice().sort((a, b) => String(a.data).localeCompare(String(b.data)));
-  if (rec.length) {
-    s.append(h('div', 'apx-olho apx-ambar', 'Recomendações · para conhecimento do Conselho'));
-    const lista = h('div', 'apx-decis');
-    rec.forEach((x) => {
-      const d = h('div');
-      d.append(h('b', null, x.etiqueta), document.createTextNode(x.texto));
-      if (x.data) d.append(h('small', null, dia(x.data)));
-      lista.append(d);
+  const ini = h('div', 'cx-iniciativas');
+  [...(r.futuro || []), ...(r.ia || [])]
+    .sort((a, b) => String(a.data).localeCompare(String(b.data)))
+    .forEach((x) => {
+      const c = h('div', 'cx-ini');
+      c.append(h('em', null, x.estado === 'em_curso' ? 'Em curso' : dia(x.data)), h('b', null, x.titulo), h('span', null, x.resumo));
+      ini.append(c);
     });
-    s.append(lista);
-  }
+  s.append(ini, fonte('Roteiro revisto em ' + dia(r.actualizado)));
   return s;
+}
+
+// ── 9. Visão 2027–2028 ──
+function visao() {
+  const v = (D.roteiro || {}).visao || {};
+  const s = diapositivo(
+    'Visão',
+    'Visão',
+    v.titulo || 'Plano Tecnológico',
+    'Do Portal RTM a uma plataforma de dados e gestão para todo o Grupo · ' + (v.periodo || ''),
+  );
+  const g = h('div', 'cx-pilares');
+  (v.pilares || []).forEach((p, i) => {
+    const b = h('div', 'cx-bloco cx-pilar');
+    b.append(h('span', 'cx-num', String(i + 1).padStart(2, '0')), h('h3', null, p.titulo), h('p', null, p.texto));
+    g.append(b);
+  });
+  s.append(
+    g,
+    h('div', 'cx-base-visao', 'O Portal RTM é a primeira peça em produção: a mesma arquitectura, segurança e automação estendem-se às restantes empresas.'),
+  );
+  return s;
+}
+
+// ── 10. Recomendações e encerramento ──
+function fecho() {
+  const r = D.roteiro || {};
+  const p = r.projecto || {};
+  const s = diapositivo(
+    'Recomendações',
+    'Recomendações · para conhecimento do Conselho',
+    'Próximos passos recomendados',
+    'Cada recomendação segue os circuitos habituais de aprovação da empresa.',
+  );
+  const tab = h('div', 'cx-recs');
+  (r.proximos || [])
+    .slice()
+    .sort((a, b) => String(a.data).localeCompare(String(b.data)))
+    .forEach((x, i) => {
+      const l = h('div', 'cx-rec');
+      l.append(h('span', 'cx-num', String(i + 1).padStart(2, '0')), h('b', null, x.etiqueta), h('span', null, x.texto), h('em', null, dia(x.data)));
+      tab.append(l);
+    });
+  const fim = h('div', 'cx-obrigado');
+  fim.append(h('b', null, 'Obrigado'), h('span', null, [p.apresentador, p.funcao].filter(Boolean).join(' · ')));
+  s.append(tab, fim);
+  return s;
+}
+
+// ── palco: diapositivo 16:9 ajustado ao espaço, navegação e ecrã inteiro ──
+function ajustar(palco) {
+  const area = palco.querySelector('.cx-area');
+  if (!area) return;
+  const cheio = document.fullscreenElement === palco;
+  const largura = area.clientWidth;
+  const altura = cheio ? innerHeight - 70 : Math.max(320, innerHeight - area.getBoundingClientRect().top - 90);
+  const k = Math.min(largura / L, altura / A);
+  area.style.height = Math.round(A * k) + 'px';
+  area.querySelectorAll('.cx-slide').forEach((x) => {
+    x.style.transform = 'translateX(' + Math.max(0, (largura - L * k) / 2) + 'px) scale(' + k + ')';
+  });
 }
 
 R.apresentacao = (pg) => {
@@ -307,55 +527,70 @@ R.apresentacao = (pg) => {
     pg.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
-  // dados sempre frescos: volta a ler a cada 10 minutos enquanto a página está aberta
   clearTimeout(relogio);
   relogio = setTimeout(() => atual === 'apresentacao' && ler(), Math.max(1000, REFRESCAR_MS - (Date.now() - lidoEm)));
-  const palco = h('div', 'apx');
-  const cenas = [cenaAbertura(), cenaNegocio(), cenaClientes(), cenaAutomacao(), cenaFuturo(), cenaCalendario()];
-  const area = h('div', 'apx-cenas');
-  cenas.forEach((c) => area.append(c));
-  const base = h('div', 'apx-base');
-  const sep = h('div', 'apx-pontos');
+  const palco = h('div', 'cx');
+  const area = h('div', 'cx-area');
+  const slides = [capa(), sumario(), desempenho(), carteira(), automacao(), governanca(), arquitectura(), roteiro(), visao(), fecho()];
+  slides.forEach((x, i) => {
+    if (i) {
+      const rod = h('footer', 'cx-rodape');
+      rod.append(h('span', null, 'Confidencial · Portal RTM · ' + dl(D.hora)), h('span', null, i + 1 + ' / ' + slides.length));
+      x.append(rod);
+    }
+    area.append(x);
+  });
+  const base = h('div', 'cx-nav');
+  const sep = h('div', 'cx-pontos');
   sep.setAttribute('role', 'tablist');
   const ir = (i) => {
-    cena = Math.max(0, Math.min(cenas.length - 1, i));
-    cenas.forEach((c, k) => {
-      c.classList.toggle('activa', k === cena);
-      c.setAttribute('aria-hidden', k === cena ? 'false' : 'true');
+    cena = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((x, k) => {
+      x.classList.toggle('activa', k === cena);
+      x.setAttribute('aria-hidden', k === cena ? 'false' : 'true');
     });
     [...sep.children].forEach((b, k) => {
       b.classList.toggle('on', k === cena);
       b.setAttribute('aria-selected', k === cena ? 'true' : 'false');
     });
   };
-  cenas.forEach((c, i) => {
-    const b = h('button', 'apx-ponto', String(i + 1).padStart(2, '0') + ' ' + c.dataset.nome);
+  slides.forEach((x, i) => {
+    const b = h('button', 'cx-ponto', String(i + 1).padStart(2, '0') + ' ' + x.dataset.nome);
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.addEventListener('click', () => ir(i));
     sep.append(b);
   });
-  const nav = h('div', 'apx-botoes');
+  const botoes = h('div', 'cx-botoes');
   const botao = (txt, rotulo, f) => {
-    const b = h('button', 'apx-btn', txt);
+    const b = h('button', 'cx-btn', txt);
     b.type = 'button';
     if (rotulo) b.setAttribute('aria-label', rotulo);
     b.addEventListener('click', f);
     return b;
   };
-  nav.append(
-    botao('‹', 'Cena anterior', () => ir(cena - 1)),
-    botao('›', 'Cena seguinte', () => ir(cena + 1)),
+  botoes.append(
+    botao('‹', 'Diapositivo anterior', () => ir(cena - 1)),
+    botao('›', 'Diapositivo seguinte', () => ir(cena + 1)),
     botao('Ecrã inteiro', '', () => (palco.requestFullscreen ? palco.requestFullscreen().catch(() => {}) : null)),
   );
-  base.append(sep, nav);
+  base.append(sep, botoes);
   palco.append(area, base);
   palco.tabIndex = 0;
   palco.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') ir(cena + 1);
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      ir(cena + 1);
+    }
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') ir(cena - 1);
   });
-  if (reduzir()) palco.classList.add('apx-quieto');
   pg.append(palco);
   ir(cena);
+  if (obs) obs.disconnect();
+  if (window.ResizeObserver) {
+    obs = new ResizeObserver(() => (palco.isConnected ? ajustar(palco) : obs.disconnect()));
+    obs.observe(palco);
+  }
+  palco.addEventListener('fullscreenchange', () => requestAnimationFrame(() => ajustar(palco)));
+  requestAnimationFrame(() => ajustar(palco));
 };

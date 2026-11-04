@@ -80,6 +80,9 @@ function naval_apx_negocio(array $ag, string $hoje): array
             'variacao' => $mes['anterior'] > 0 ? round($mes['total'] / $mes['anterior'] - 1, 3) : null,
             'documentos' => $mes['documentos'], 'clientes' => count($mes['clientes']), 'rotas' => count($mes['rotas']),
             'valor_medio' => $compras ? round($valorCompras / $compras, 2) : null],
+        // último mês completo face ao anterior e média mensal dos meses completos (comparações estáveis no início do mês)
+        'ultimo_mes' => naval_apx_ultimo_mes($meses),
+        'media_mensal' => naval_apx_media($meses),
         'clientes_30' => count($c30),
         'dias_com_dados' => $dias,
         'desde' => $desde,
@@ -150,4 +153,74 @@ function naval_apx_automacao(string $hoje, ?array $rotas, bool $comCarteira): ar
         'qualidade' => count(array_filter((array) ($c['qualidade'] ?? []), function ($x) use ($dentro, $rotas) { return $rotas === null || ((string) ($x['rota'] ?? '') !== '' && $dentro((string) $x['rota'])); })),
     ];
     return $out;
+}
+
+/** Último mês completo, o total e a variação face ao mês anterior. */
+function naval_apx_ultimo_mes(array $meses): ?array
+{
+    $completos = array_values(array_filter($meses, function ($m) { return empty($m['parcial']); }));
+    $n = count($completos);
+    if (!$n) return null;
+    $u = $completos[$n - 1];
+    $a = $n > 1 ? $completos[$n - 2] : null;
+    return ['mes' => $u['mes'], 'total' => round($u['total'], 2),
+        'variacao' => $a && $a['total'] > 0 ? round($u['total'] / $a['total'] - 1, 3) : null];
+}
+
+/** Média mensal das vendas dos meses completos com vendas. */
+function naval_apx_media(array $meses): ?float
+{
+    $t = array_column(array_filter($meses, function ($m) { return empty($m['parcial']) && $m['total'] > 0; }), 'total');
+    return $t ? round(array_sum($t) / count($t), 2) : null;
+}
+
+/**
+ * Governação, segurança e conformidade (agregados, sem nomes): contas, verificação em dois passos, perfis, recursos
+ * controlados pela matriz de acessos, acções registadas este mês e, a quem vê a AGT, a conformidade do mês.
+ */
+function naval_apx_governanca(bool $veAgt): array
+{
+    $activas = array_filter(naval_utilizadores(), function ($u) { return !empty($u['activo']); });
+    $mfa = count(array_filter($activas, function ($u) { return !empty($u['mfa']); }));
+    $reg = naval_pasta_privada() . '/registos/acessos-' . date('Y-m') . '.jsonl';
+    $n = 0;
+    if (is_file($reg) && ($h = @fopen($reg, 'r'))) {
+        while (!feof($h)) $n += substr_count((string) fread($h, 1 << 20), "\n");
+        fclose($h);
+    }
+    $out = ['contas' => count($activas), 'mfa' => $mfa, 'mfa_pct' => $activas ? round($mfa / count($activas), 3) : null,
+        'perfis' => count(naval_perfis()), 'recursos' => count(naval_matriz()), 'registos_mes' => $n, 'agt' => null];
+    if ($veAgt && naval_bd_configurada()) {
+        try {
+            naval_servico('agt');
+            $docs = naval_cache('apx-agt|' . date('Y-m-d'), 3600, function () {
+                return naval_agt(date('Ym01'), date('Ymd'))['documentos'];
+            });
+            $vivos = array_filter((array) $docs, function ($d) { return empty($d['anulado']); });
+            $com = count(array_filter($vivos, function ($d) { return $d['estado'] === 'comunicado'; }));
+            $err = count(array_filter($vivos, function ($d) { return $d['estado'] === 'erro'; }));
+            $out['agt'] = ['documentos' => count($vivos), 'comunicados' => $com, 'erros' => $err, 'pct' => $vivos ? round($com / count($vivos), 3) : null];
+        } catch (Throwable $e) {
+            error_log('[apresentacao agt] ' . $e->getMessage());
+        }
+    }
+    return $out;
+}
+
+/** Sistemas integrados no portal e o estado de cada ligação (só pela configuração; sem chamadas externas). */
+function naval_apx_sistemas(): array
+{
+    naval_servico('mdm');
+    naval_servico('olap');
+    naval_servico('actualizacao');
+    $bd = naval_bd_configurada();
+    return [
+        ['nome' => 'Pinguim BO', 'funcao' => 'Vendas, clientes e documentos', 'ligado' => $bd],
+        ['nome' => 'AGT', 'funcao' => 'Comunicação fiscal dos documentos', 'ligado' => $bd],
+        ['nome' => 'ManageEngine MDM', 'funcao' => 'Telemóveis e impressoras do terreno', 'ligado' => naval_mdm_configurada()],
+        ['nome' => 'Servidor OLAP', 'funcao' => 'Localização das equipas no terreno', 'ligado' => naval_olap_configurado()],
+        ['nome' => 'Google Maps', 'funcao' => 'Mapas, rotas e prospecção', 'ligado' => naval_config('GOOGLE_MAPS_API_KEY') !== ''],
+        ['nome' => 'GitHub', 'funcao' => 'Versões testadas e instalação automática', 'ligado' => naval_act_usa_app() || naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== ''],
+        ['nome' => 'Correio electrónico', 'funcao' => 'Resumos, alertas e fechos do dia', 'ligado' => naval_config('EMAIL_MODO') !== ''],
+    ];
 }
