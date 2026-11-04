@@ -2259,7 +2259,6 @@ export const TI = {
   'Com erro': 'ምስ ጌጋ',
   'Erro na comunicação': 'ጌጋ ኣብ ምልኣኽ',
   'Pendente na AGT': 'ኣብ AGT ዝጽበ',
-  'Enviado (sem registo de erro)': 'ተላኢኹ (ጌጋ ኣይተመዝገበን)',
   'Mensagem da AGT': 'መልእኽቲ AGT',
   'pendentes ou sem pedido': 'ዝጽበዩ ወይ ሕቶ ዘይብሎም',
   'Documentos de vendas do período e o estado da comunicação à AGT registado no Pinguim BO: estado devolvido pela AGT, mensagem de erro e número do pedido.':
@@ -2267,6 +2266,7 @@ export const TI = {
   'Recusado pela AGT': 'ብAGT ተነጺጉ',
   '{n} documentos da rota {r} recusados pela AGT': '{n} ሰነዳት ናይ መስመር {r} ብAGT ተነጺጎም',
   'O mais antigo é de {d}; total {v}.': 'እቲ ዝበለጸ ነዊሕ ናይ {d} እዩ፤ ድምር {v}።',
+  'Pedido enviado, sem resposta da AGT': 'ሕቶ ተላኢኹ፡ ካብ AGT መልሲ የለን',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

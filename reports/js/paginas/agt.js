@@ -1,7 +1,7 @@
 // Integrações: Comunicação AGT — estado da comunicação de cada documento de vendas do período à AGT, lido do
-// Pinguim BO (DOCHEADEREXTRA ligado ao DOCHEADER; ver nucleo/servicos/agt.php): o estado devolvido pela AGT
-// (Enviado / Erro / Pendente) e a mensagem de erro mandam; depois o número do pedido; sem nada registado, enviado
-// (como o Pinguim BO mostra).
+// Pinguim BO (DOCHEADEREXTRA ligado ao DOCHEADER; ver nucleo/servicos/agt.php): a resposta da AGT no campo 26098
+// (3 Enviado, 5 Erro, 2 Pendente) com a mensagem; sem resposta, o pedido sem resposta fica pendente e sem nada fica
+// por comunicar.
 // Um pedido ao servidor por período; o filtro de rotas da barra comum filtra no portal, sem nova consulta.
 import { apiFetch } from '../api.js';
 import { draw } from '../app.js';
@@ -49,11 +49,9 @@ function garantir() {
 // Estado AGT: o que a AGT respondeu e o comprovativo (estado registado, número do pedido ou sem registo de erro)
 const textoAgt = (r) => {
   if (r.estado === 'erro') return t('Erro na comunicação');
-  if (r.estado === 'pendente') return t('Pendente na AGT');
+  if (r.estado === 'pendente') return r.evidencia === 'pedido' ? t('Pedido enviado, sem resposta da AGT') : t('Pendente na AGT');
   if (r.estado === 'por_comunicar') return t('Sem pedido de comunicação');
-  if (r.pedido_agt) return t('Enviado') + ' · ' + t('Pedido n.º {n}', { n: r.pedido_agt });
-  if (r.evidencia === 'sem_registo') return t('Enviado (sem registo de erro)');
-  return t('Enviado');
+  return r.pedido_agt ? t('Enviado') + ' · ' + t('Pedido n.º {n}', { n: r.pedido_agt }) : t('Enviado');
 };
 // Estado do documento: activo ou anulado (com o motivo de cancelamento, quando é mais do que «Anulado»)
 const textoDoc = (r) =>
