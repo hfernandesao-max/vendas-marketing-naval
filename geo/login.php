@@ -3,9 +3,9 @@ require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
 
 $allowedRedirects = ['geo.php', 'prospeccao.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../gestao/', '../'];
-$redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../';
+$redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../reports/';
 if (!in_array($redirect, $allowedRedirects, true)) {
-    $redirect = 'geo.php';
+    $redirect = '../reports/';
 }
 
 // Se já estiver autenticado (sessão ainda válida), redirecciona para a aplicação pretendida
@@ -718,7 +718,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     </div>
   </div>
 
-  <script src="../reports/vendor/qrcode.js"></script>
+  <?php if (!empty($uri)): ?><script src="../reports/vendor/qrcode.js"></script><?php endif; ?>
   <script>
     lucide.createIcons();
     const qrIns = document.getElementById('qr-inscricao');
