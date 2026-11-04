@@ -56,6 +56,7 @@ teste('Análise: resumo do dia com notas de crédito, clientes sem NIF e artigos
 teste('Análise: agregados gravados por dia, dias sem vendas a zero, só os dias em falta voltam a ler-se', function () {
     analise_limpar();
     $fim = date('Y-m-d', time() - 10 * 86400);
+    if (date('N', strtotime($fim . ' 12:00')) === '7') $fim = date('Y-m-d', strtotime($fim . ' 12:00') - 86400);   // o último dia tem vendas (o domingo não)
     $h = analise_historico($fim, 40, ['1001' => 10000]);
     $leituras = [];
     $leitor = function ($de, $ate) use ($h, &$leituras) { $leituras[] = "$de..$ate"; return analise_leitor($h)($de, $ate); };
