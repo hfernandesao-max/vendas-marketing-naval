@@ -7,6 +7,8 @@ import { LIGACOES, avaliarFontes, fetchVendas, recalcularDias } from './fontes.j
 import { n0 } from './formatos.js';
 import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
 import { aplicarPreferencias } from './barra-lateral.js';
+import { montarBarraSup } from './barra-superior.js';
+import { definirFavoritos } from './favoritos.js';
 import { definirSessao, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
@@ -96,7 +98,10 @@ const lerSessao = () =>
         d = null;
       }
       definirSessao(d && d.permissoes ? d : null);
-      if (d && d.preferencias) aplicarPreferencias(d.preferencias);
+      if (d && d.preferencias) {
+        aplicarPreferencias(d.preferencias);
+        definirFavoritos(d.preferencias.favoritos);
+      }
       return d && d.permissoes ? idiomaDaConta(d) : null;
     })
     .catch((e) => {
@@ -200,6 +205,7 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
   })
   .then(() => {
     // Abre sempre, mesmo sem vendas ainda no dia de hoje: cada página mostra o seu estado vazio
+    montarBarraSup();
     route();
     iniciarSync(); // comunicação dos smartphones (indicador discreto no menu lateral)
     LD.marcar('pronto', 'feito');

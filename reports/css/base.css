@@ -39,7 +39,7 @@
   --line2: rgba(140, 170, 230, 0.24);
   --fg: #f2f5fc;
   --muted: #8fa3c8;
-  --dim: #6b7fa6;
+  --dim: #8396bb; /* contraste ≥ 4,5:1 sobre o menu lateral (WCAG 2.2 AA) */
   --accent: #3f8cff;
   --accent2: #2a6fe0;
   --sky: #6ec3ff;

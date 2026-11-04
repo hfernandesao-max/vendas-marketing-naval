@@ -794,7 +794,7 @@ function naval_geo_avisar(array $v): array
         $html .= '</ul>';
     }
     $url = rtrim(naval_config('PORTAL_URL'), '/');
-    $html .= '<p>Mapa dos territórios e da prospecção: GeoMobilidade › Prospecção' . ($url !== '' ? ' (' . $h($url) . '/geo/prospeccao.php)' : '') . '.</p></div>';
+    $html .= '<p>Mapa dos territórios e da prospecção: Operações › Terreno › Prospecção de clientes' . ($url !== '' ? ' (' . $h($url) . '/geo/prospeccao.php)' : '') . '.</p></div>';
     $r = naval_enviar_email($dest, ($novas ? 'Rota cheia: criar nova rota (vendedor + viatura)' : 'Zonas sem rota com potenciais clientes') . ' · GeoMobilidade', $html);
     if ($r['ok']) naval_json_gravar($f, $av);
     return ['rotas' => $novas, 'zonas' => count($zonas), 'email' => $r['ok']];

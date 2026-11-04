@@ -1,7 +1,8 @@
 // Menu em árvore e divisão das páginas em relatórios (separadores).
 import { filtrosURL, normTxt } from './filtros.js';
 import { t } from './i18n/i18n.js';
-import { PAGES } from './paginas/catalogo.js';
+import { favoritos } from './favoritos.js';
+import { PAGES, SECCAO_GRUPO } from './paginas/catalogo.js';
 import { carregarPagina } from './paginas/modulos.js';
 import { atual, contarAlertas, paginasVisiveis } from './perfil.js';
 import { $, el, svg } from './util.js';
@@ -71,17 +72,30 @@ export function organizarRelatorios(pg, pagina) {
 // Menu principal em acordeão (padrão de divulgação da WAI-ARIA): as áreas começam fechadas e só uma
 // fica aberta de cada vez; abrir outra fecha a anterior. A área da página aberta abre-se sozinha e
 // fica destacada; com a área fechada, o número de alertas das suas páginas aparece no título.
+// As áreas agrupam-se em secções (Comercial, Operações, Análise e, separada em baixo, Sistema) e os favoritos da
+// pessoa ficam logo a seguir ao Início.
 const ICONE_GRUPO = {
-  Gestão: 'sino',
   Vendas: 'chart',
-  Recebimentos: 'card',
   Clientes: 'users',
+  Cobranças: 'card',
   Terreno: 'route',
   Logística: 'truck',
+  'Inteligência de negócio': 'negocio',
   Equipamentos: 'phone',
   Integrações: 'upload',
-  GeoMobilidade: 'mapa',
   Administração: 'lock',
+};
+/** O que significa o número ao lado de uma função (texto acessível e dica; nunca só a cor). */
+export function rotuloAlerta(id, n) {
+  if (id === 'clientes') return t('{n} clientes não activos', { n });
+  if (id === 'pagamentos' || id === 'pendentes') return t('{n} facturas por receber', { n });
+  return t('{n} itens a tratar', { n });
+}
+const contador = (cls, n, rotulo) => {
+  const s = el('span', cls, String(n));
+  s.title = rotulo;
+  s.setAttribute('aria-label', rotulo);
+  return s;
 };
 let grupoAberto = null,
   ultimaPagina = null;
@@ -124,9 +138,41 @@ export function nav() {
     else if (atual === 'inicio') grupoAberto = null;
     guardarGrupo();
   }
-  const visiveis = paginasVisiveis();
-  let caixa = n;
+  const visiveis = paginasVisiveis().filter((p) => p.menu !== false);
+  let caixa = n,
+    seccao = null;
+  const ligacao = (p, comSub) => {
+    const a = el('a');
+    a.href = '#' + p.id;
+    a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
+    a.append(el('span', null, t(p.nome)));
+    if (al[p.id] && p.id !== 'pagamentos') a.append(contador('n', al[p.id], rotuloAlerta(p.id, al[p.id])));
+    if (p.id === atual && comSub) {
+      a.className = 'on';
+      a.setAttribute('aria-current', 'page');
+    }
+    a.addEventListener('click', () => {
+      $('#app').classList.remove('open');
+      esquecerRelatorio(p.id);
+    });
+    // Pré-carregamento por intenção: com o rato, o dedo ou o foco na ligação, o módulo da página já vem a caminho
+    const antecipar = () => carregarPagina(p.id).catch(() => {});
+    ['pointerenter', 'touchstart', 'focus'].forEach((ev) => a.addEventListener(ev, antecipar, { once: true, passive: true }));
+    return a;
+  };
+  // Favoritos da pessoa (só as funções que pode ver), logo a seguir ao Início
+  const favs = favoritos()
+    .map((id) => visiveis.find((x) => x.id === id))
+    .filter(Boolean);
   visiveis.forEach((p, i, arr) => {
+    const sec = SECCAO_GRUPO[p.grupo] || null;
+    if (sec && sec !== seccao) {
+      seccao = sec;
+      const h = el('div', 'nav-sec' + (sec === 'Sistema' ? ' nav-sec-sis' : ''), t(sec));
+      h.setAttribute('role', 'heading');
+      h.setAttribute('aria-level', '2');
+      n.append(h);
+    }
     if (p.grupo && (i === 0 || arr[i - 1].grupo !== p.grupo)) {
       const aberto = p.grupo === grupoAberto,
         id = 'navl-' + slugRel(p.grupo);
@@ -134,8 +180,9 @@ export function nav() {
       b.type = 'button';
       b.innerHTML = svg(ICONE_GRUPO[p.grupo] || 'file'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
       b.append(el('span', 'navg-t', t(p.grupo)));
-      const alertas = visiveis.filter((x) => x.grupo === p.grupo && x.id !== 'pagamentos').reduce((s, x) => s + (al[x.id] || 0), 0);
-      if (alertas) b.append(el('span', 'n navg-n', String(alertas)));
+      const comAlerta = visiveis.filter((x) => x.grupo === p.grupo && x.id !== 'pagamentos' && al[x.id]);
+      const alertas = comAlerta.reduce((s, x) => s + al[x.id], 0);
+      if (alertas) b.append(contador('n navg-n', alertas, comAlerta.map((x) => rotuloAlerta(x.id, al[x.id])).join(' · ')));
       b.setAttribute('aria-expanded', aberto ? 'true' : 'false');
       b.setAttribute('aria-controls', id);
       const lista = el('div', 'navl' + (aberto ? ' aberta' : ''));
@@ -159,22 +206,7 @@ export function nav() {
       n.append(b, lista);
       caixa = dentro;
     } else if (!p.grupo) caixa = n;
-    const a = el('a');
-    a.href = '#' + p.id;
-    a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
-    a.append(el('span', null, t(p.nome)));
-    if (al[p.id] && p.id !== 'pagamentos') a.append(el('span', 'n', String(al[p.id])));
-    if (p.id === atual) {
-      a.className = 'on';
-      a.setAttribute('aria-current', 'page');
-    }
-    a.addEventListener('click', () => {
-      $('#app').classList.remove('open');
-      esquecerRelatorio(p.id);
-    });
-    // Pré-carregamento por intenção: com o rato, o dedo ou o foco na ligação, o módulo da página já vem a caminho
-    const antecipar = () => carregarPagina(p.id).catch(() => {});
-    ['pointerenter', 'touchstart', 'focus'].forEach((ev) => a.addEventListener(ev, antecipar, { once: true, passive: true }));
+    const a = ligacao(p, true);
     // Início: fecha todas as áreas do menu (mesmo já estando no Início) e volta ao topo
     if (p.id === 'inicio')
       a.addEventListener('click', () => {
@@ -184,6 +216,14 @@ export function nav() {
         window.scrollTo(0, 0);
       });
     caixa.append(a);
+    if (p.id === 'inicio' && favs.length) {
+      const h = el('div', 'nav-sec nav-sec-fav', t('Favoritos'));
+      h.setAttribute('role', 'heading');
+      h.setAttribute('aria-level', '2');
+      const caixaFav = el('div', 'nav-fav');
+      favs.forEach((f) => caixaFav.append(ligacao(f, false)));
+      n.append(h, caixaFav);
+    }
     // relatórios da página aberta
     if (p.id === atual && RELS.length) {
       const sub = el('div', 'nav-sub');

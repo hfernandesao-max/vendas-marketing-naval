@@ -1,54 +1,72 @@
-// Catálogo das páginas do portal, por área de negócio, e nomes dos recursos da matriz de acessos.
+// Catálogo das páginas do portal, por secção e área de negócio, e nomes dos recursos da matriz de acessos.
 import { t } from '../i18n/i18n.js';
 
+// Organização do menu (ISO 9241-110, adequação à tarefa; padrão SAP Fiori / Microsoft Dynamics): secções pela cadeia
+// de valor (Comercial → Operações → Análise) e, separadas em baixo, as funções de sistema. Cada página tem um ícone só
+// seu (um ícone, um significado). Os Alertas não ficam no menu: estão no sino da barra superior (convenção
+// internacional do centro de notificações).
+export const SECCOES = ['Comercial', 'Operações', 'Análise', 'Sistema'];
+export const SECCAO_GRUPO = {
+  Vendas: 'Comercial',
+  Clientes: 'Comercial',
+  Cobranças: 'Comercial',
+  Terreno: 'Operações',
+  Logística: 'Operações',
+  'Inteligência de negócio': 'Análise',
+  Equipamentos: 'Sistema',
+  Integrações: 'Sistema',
+  Administração: 'Sistema',
+};
 export const PAGES = [
   { id: 'inicio', grupo: null, icon: 'home', nome: 'Início' },
-  // Gestão: análise e inteligência artificial (alertas, previsão, assistente, painel da sala comercial)
-  { id: 'alertas', grupo: 'Gestão', icon: 'sino', nome: 'Alertas' },
-  { id: 'previsao', grupo: 'Gestão', icon: 'grow', nome: 'Previsão de vendas' },
-  { id: 'assistente', grupo: 'Gestão', icon: 'ia', nome: 'Assistente IA' },
-  { id: 'painel-sala', grupo: 'Gestão', icon: 'tv', nome: 'Painel da sala comercial' },
-  { id: 'qualidade-dados', grupo: 'Gestão', icon: 'shield', nome: 'Qualidade dos dados e anomalias' },
-  { id: 'apresentacao', grupo: 'Gestão', icon: 'tv', nome: 'Apresentação do portal' },
-  { id: 'vendas-promotor', grupo: 'Vendas', icon: 'chart', nome: 'Vendas por promotor' },
-  { id: 'vendas-dia', grupo: 'Vendas', icon: 'route', nome: 'Vendas por dia' },
-  { id: 'vendas-cliente', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por cliente' },
+  { id: 'alertas', grupo: null, icon: 'sino', nome: 'Alertas', menu: false },
+  // Comercial
+  { id: 'vendas-promotor', grupo: 'Vendas', icon: 'user', nome: 'Vendas por promotor' },
+  { id: 'vendas-dia', grupo: 'Vendas', icon: 'cal', nome: 'Vendas por dia' },
+  { id: 'vendas-cliente', grupo: 'Vendas', icon: 'loja', nome: 'Vendas por cliente' },
   { id: 'vendas-artigo', grupo: 'Vendas', icon: 'box', nome: 'Vendas por artigo' },
   { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
   { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação' },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
-  { id: 'pagamentos', grupo: 'Recebimentos', icon: 'card', nome: 'Cobranças' },
-  { id: 'pendentes', grupo: 'Recebimentos', icon: 'clock', nome: 'Facturas pendentes' },
-  { id: 'clientes', grupo: 'Clientes', icon: 'phone', nome: 'Carteira de clientes' },
-  { id: 'cadastros', grupo: 'Clientes', icon: 'users', nome: 'Cadastros · indicadores' },
-  { id: 'cadastros-analise', grupo: 'Clientes', icon: 'grow', nome: 'Análise de cadastros' },
-  { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'file', nome: 'Clientes registados' },
-  { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'clip', nome: 'Pedidos dos clientes' },
-  { id: 'clientes-qr', grupo: 'Clientes', icon: 'tag', nome: 'Cartazes QR dos clientes' },
-  { id: 'visitas-dia', grupo: 'Terreno', icon: 'route', nome: 'Visitas do dia' },
-  { id: 'plano-visitas', grupo: 'Terreno', icon: 'scale', nome: 'Plano de visitas' },
-  { id: 'auditoria', grupo: 'Terreno', icon: 'shield', nome: 'Histórico de auditoria' },
-  { id: 'sincronizacao', grupo: 'Terreno', icon: 'phone', nome: 'Sincronização dos telemóveis' },
-  // GeoMobilidade: mapas de rotas, prospecção, terreno, zonas de entrega e distribuidores, dentro do portal
-  { id: 'geo-rotas', grupo: 'GeoMobilidade', icon: 'mapa', nome: 'Optimização de rotas' },
-  { id: 'geo-prospeccao', grupo: 'GeoMobilidade', icon: 'radar', nome: 'Prospecção de clientes' },
-  { id: 'geo-terreno', grupo: 'GeoMobilidade', icon: 'pin', nome: 'Percurso do dia' },
-  { id: 'geo-zonas', grupo: 'GeoMobilidade', icon: 'zona', nome: 'Zonas de entrega' },
-  { id: 'geo-distribuidores', grupo: 'GeoMobilidade', icon: 'ware', nome: 'Distribuidores' },
+  { id: 'clientes', grupo: 'Clientes', icon: 'lista', nome: 'Carteira de clientes' },
+  { id: 'cadastros', grupo: 'Clientes', icon: 'kpi', nome: 'Cadastros · indicadores' },
+  { id: 'cadastros-analise', grupo: 'Clientes', icon: 'pizza', nome: 'Análise de cadastros' },
+  { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'userplus', nome: 'Clientes registados' },
+  { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'carrinho', nome: 'Pedidos dos clientes' },
+  { id: 'clientes-qr', grupo: 'Clientes', icon: 'qr', nome: 'Cartazes QR dos clientes' },
+  { id: 'pagamentos', grupo: 'Cobranças', icon: 'card', nome: 'Cobranças' },
+  { id: 'pendentes', grupo: 'Cobranças', icon: 'clock', nome: 'Facturas pendentes' },
+  // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
+  { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
+  { id: 'plano-visitas', grupo: 'Terreno', icon: 'agenda', nome: 'Plano de visitas' },
+  { id: 'geo-terreno', grupo: 'Terreno', icon: 'pin', nome: 'Percurso do dia' },
+  { id: 'geo-rotas', grupo: 'Terreno', icon: 'mapa', nome: 'Optimização de rotas' },
+  { id: 'geo-prospeccao', grupo: 'Terreno', icon: 'radar', nome: 'Prospecção de clientes' },
+  { id: 'geo-zonas', grupo: 'Terreno', icon: 'zona', nome: 'Zonas de entrega' },
+  { id: 'geo-distribuidores', grupo: 'Terreno', icon: 'rede', nome: 'Distribuidores' },
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Plano de cargas' },
   { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
-  { id: 'registo-cargas', grupo: 'Logística', icon: 'box', nome: 'Registo de cargas' },
+  { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
-  // Smartphones e impressoras do terreno: ficha, eventos, documentos e assinatura no ecrã
+  // Análise: indicadores, previsão e inteligência artificial
+  { id: 'previsao', grupo: 'Inteligência de negócio', icon: 'grow', nome: 'Previsão de vendas' },
+  { id: 'assistente', grupo: 'Inteligência de negócio', icon: 'ia', nome: 'Assistente IA' },
+  { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
+  { id: 'qualidade-dados', grupo: 'Inteligência de negócio', icon: 'alvo', nome: 'Qualidade dos dados e anomalias' },
+  { id: 'apresentacao', grupo: 'Inteligência de negócio', icon: 'slides', nome: 'Apresentação do portal' },
+  // Sistema: smartphones e impressoras, interfaces com outros sistemas e administração (segregação de funções)
   { id: 'equipamentos', grupo: 'Equipamentos', icon: 'phone', nome: 'Equipamentos' },
-  { id: 'equipamentos-documentos', grupo: 'Equipamentos', icon: 'file', nome: 'Documentos dos equipamentos' },
-  // Interfaces com outros sistemas (separadas da análise; segregação de funções e controlo de interfaces)
+  { id: 'sincronizacao', grupo: 'Equipamentos', icon: 'sync', nome: 'Sincronização dos telemóveis' },
+  { id: 'equipamentos-documentos', grupo: 'Equipamentos', icon: 'pasta', nome: 'Documentos dos equipamentos' },
   { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
   { id: 'agt', grupo: 'Integrações', icon: 'shield', nome: 'Comunicação AGT' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
-  { id: 'actualizacoes', grupo: 'Administração', icon: 'upload', nome: 'Actualizações' },
+  { id: 'auditoria', grupo: 'Administração', icon: 'historico', nome: 'Histórico de auditoria' },
+  { id: 'actualizacoes', grupo: 'Administração', icon: 'actualizar', nome: 'Actualizações' },
 ];
+/** Secção de uma página (Comercial, Operações, Análise, Sistema) ou null (Início, Alertas). */
+export const seccaoDe = (p) => (p && p.grupo ? SECCAO_GRUPO[p.grupo] || null : null);
 
 // Nomes das funções da matriz de acessos que não são páginas
 export const NOMES_RECURSO = {

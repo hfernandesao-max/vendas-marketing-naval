@@ -473,7 +473,7 @@ function ecraUnico(pg, grelha) {
       topo = grelha.getBoundingClientRect().top + scrollY,
       gap = 12,
       fundo = 16;
-    const minimo = filas > 2 ? 120 : 170;
+    const minimo = filas > 2 ? 110 : 170;
     let h = Math.max(minimo, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
     // quadros baixos (ecrãs de 768 px): sem o subtítulo, para o gráfico ter mais espaço
     grelha.classList.toggle('compacto', h < 200);
