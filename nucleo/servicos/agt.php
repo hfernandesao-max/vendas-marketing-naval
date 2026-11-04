@@ -12,14 +12,15 @@
  * pode ter o seu próprio campo extra com o mesmo nome, contam também todos os campos chamados request_number
  * (AGT_PEDIDO_NOME) e «Motivo de cancelamento» (AGT_ANULACAO_NOME); o valor pode estar em texto ou em número.
  *
- * Estado da comunicação (como no Pinguim BO, 04-11-2026): o Pinguim BO grava num campo extra o estado devolvido pela
- * AGT («Enviado», «Erro» ou «Pendente»; campo com a descrição «Estado AGT») e, quando a AGT recusa, a mensagem de erro
- * (ex.: «customerTaxID … desconhecido no sistema da AGT»). Regra, do mais forte para o mais fraco:
- *   1. estado registado: Erro → com erro; Pendente → pendente; Enviado → comunicado;
- *   2. mensagem de erro da AGT sem estado → com erro;
- *   3. número do pedido (request_number) → comunicado;
- *   4. sem nada registado → comunicado «sem registo de erro», como o Pinguim BO o mostra (AGT_SEM_REGISTO=enviado;
- *      com AGT_SEM_REGISTO=por_comunicar fica por comunicar).
+ * Estado da comunicação (confirmado no Pinguim BO em 04-11-2026): campo extra 26098 (AGT_ESTADO_ID), a resposta da AGT
+ * a cada envio. INTEGER_VALUE = código do estado: 3 Enviado, 5 Erro, 2 Pendente; STRING_VALUE = texto da resposta (ou o
+ * pedido enviado). Um documento pode ter vários registos: conta a resposta final (código diferente de 2) mais recente e,
+ * sem ela, o registo pendente mais recente. Regra:
+ *   1. código 3, ou texto de sucesso da AGT («Process completed successfully», «já consta no repositório»;
+ *      AGT_SUCESSO_TEXTOS) → comunicado;
+ *   2. código 2 → pendente;
+ *   3. outro código ou texto → com erro, com a mensagem da AGT;
+ *   4. sem registo 26098: com número do pedido (request_number) → pendente (pedido sem resposta); sem nada → por comunicar.
  * Cada documento de vendas do período aparece uma vez, incluindo os anulados; a consulta é sempre limitada ao período.
  */
 defined('NAVAL_NUCLEO') || exit;
@@ -59,11 +60,11 @@ function naval_agt_condicao(string $id, string $nome, ?array $colunas = null): s
     return "(E.DOCEXTRA_ID = $id OR E.DOCEXTRA_ID IN (SELECT X.ID FROM DOCEXTRA X WHERE $or))";
 }
 
-/** Textos das mensagens de erro da AGT (AGT_ERRO_TEXTOS, separados por «|»), limpos para entrarem num LIKE. */
-function naval_agt_textos_erro(): array
+/** Textos que a AGT devolve quando aceita o documento (AGT_SUCESSO_TEXTOS, separados por «|»), limpos para um LIKE. */
+function naval_agt_textos_sucesso(): array
 {
     $out = [];
-    foreach (explode('|', (string) naval_config('AGT_ERRO_TEXTOS', 'customerTaxID|desconhecido no sistema da AGT')) as $x) {
+    foreach (explode('|', (string) naval_config('AGT_SUCESSO_TEXTOS', 'Process completed successfully|já consta no repositório')) as $x) {
         $x = trim((string) preg_replace("/[^\\p{L}\\p{N} ._-]/u", '', $x));
         if ($x !== '') $out[] = $x;
     }
@@ -77,8 +78,7 @@ function naval_agt_sql(?array $colunasExtra = null): string
     $anulacao = naval_agt_campo('AGT_ANULACAO_ID', '26003');
     $condPedido = naval_agt_condicao($pedido, naval_config('AGT_PEDIDO_NOME', 'request_number'), $colunasExtra);
     $condAnulacao = naval_agt_condicao($anulacao, naval_config('AGT_ANULACAO_NOME', 'Motivo de cancelamento'), $colunasExtra);
-    $erros = '';
-    foreach (naval_agt_textos_erro() as $x) $erros .= "E.STRING_VALUE LIKE '%" . $x . "%' OR ";
+    $estadoId = naval_agt_campo('AGT_ESTADO_ID', '26098');
     return "
         SELECT
             DH.ID AS DOC_ID,
@@ -93,8 +93,9 @@ function naval_agt_sql(?array $colunasExtra = null): string
             DH.ENTITY_NAME AS ENTIDADE,
             DH.DOCSTATUS_ID AS ESTADO_DOCUMENTO,
             COALESCE(STORE.DESCRIPTION, STORE.CODE) AS LOJA,
-            EST.STRING_VALUE AS ESTADO_AGT,
-            MSG.STRING_VALUE AS MENSAGEM_AGT,
+            CAST(AGT.INTEGER_VALUE AS INT) AS AGT_CODIGO,
+            AGT.STRING_VALUE AS AGT_TEXTO,
+            CONVERT(VARCHAR(19), AGT.CLOCK_DATE, 120) AS AGT_DATA,
             PED.STRING_VALUE AS PEDIDO_AGT,
             CAST(PED.NDX AS INT) AS PEDIDO_POSICAO,
             ANU.STRING_VALUE AS MOTIVO_ANULACAO
@@ -116,43 +117,54 @@ function naval_agt_sql(?array $colunasExtra = null): string
             ORDER BY E.CLOCK_DATE DESC
         ) ANU
         OUTER APPLY (
-            -- estado devolvido pela AGT (o registo mais recente)
-            SELECT TOP 1 LTRIM(RTRIM(E.STRING_VALUE)) AS STRING_VALUE
+            -- resposta da AGT: a final (código diferente de 2) mais recente; sem ela, a pendente mais recente
+            SELECT TOP 1 E.INTEGER_VALUE, E.STRING_VALUE, E.CLOCK_DATE
             FROM DOCHEADEREXTRA E
-            LEFT JOIN DOCEXTRA X ON X.ID = E.DOCEXTRA_ID
-            WHERE E.DOCHEADER_ID = DH.ID AND E.DELETED = 0
-              AND (LTRIM(RTRIM(E.STRING_VALUE)) IN ('Enviado', 'Erro', 'Pendente')
-                   OR X.DESCRIPTION LIKE '%Estado AGT%' OR X.DESCRIPTION LIKE '%AGT%Status%')
-            ORDER BY E.CLOCK_DATE DESC
-        ) EST
-        OUTER APPLY (
-            -- mensagem de erro da AGT (o registo mais recente)
-            SELECT TOP 1 E.STRING_VALUE
-            FROM DOCHEADEREXTRA E
-            LEFT JOIN DOCEXTRA X ON X.ID = E.DOCEXTRA_ID
-            WHERE E.DOCHEADER_ID = DH.ID AND E.DELETED = 0
-              AND ($erros X.DESCRIPTION LIKE '%Erro%AGT%' OR X.DESCRIPTION LIKE '%Mensagem%AGT%')
-            ORDER BY E.CLOCK_DATE DESC
-        ) MSG
+            WHERE E.DOCHEADER_ID = DH.ID AND E.DOCEXTRA_ID = $estadoId AND E.DELETED = 0
+            ORDER BY CASE WHEN E.INTEGER_VALUE <> 2 THEN 0 ELSE 1 END, E.CLOCK_DATE DESC
+        ) AGT
         WHERE DH.CALC_SALES_SIGNAL <> 0
           AND DH.DOC_DATE >= :de
           AND DH.DOC_DATE <= :ate
         ORDER BY DH.DOC_DATE DESC, DH.ID DESC";
 }
 
+/** Mensagem legível da resposta da AGT: o texto, ou num JSON a primeira mensagem/descrição/erro que tiver. */
+function naval_agt_mensagem(string $t): string
+{
+    $t = trim($t);
+    $j = $t !== '' && ($t[0] === '{' || $t[0] === '[') ? json_decode($t, true) : null;
+    if (is_array($j)) {
+        // primeiro descrições e mensagens; só depois campos de erro (que podem ser códigos, ex. «E40»)
+        $achar = function ($v, string $padrao) use (&$achar) {
+            if (!is_array($v)) return null;
+            foreach ($v as $k => $x) {
+                if (is_string($x) && $x !== '' && preg_match($padrao, (string) $k)) return $x;
+            }
+            foreach ($v as $x) if (($r = $achar($x, $padrao)) !== null) return $r;
+            return null;
+        };
+        $m = $achar($j, '/mens|message|descr|motivo|reason|texto|text/i') ?? $achar($j, '/erro|error/i');
+        if ($m !== null) return naval_texto($m, 300);
+    }
+    return naval_texto($t, 300);
+}
+
 /** Estado da comunicação (regra no topo do ficheiro): estado, evidência, pedido e mensagem da AGT. */
 function naval_agt_estado(array $l): array
 {
     $pedido = trim((string) ($l['PEDIDO_AGT'] ?? ''));
-    $est = strtolower(trim((string) ($l['ESTADO_AGT'] ?? '')));
-    $msg = trim((string) ($l['MENSAGEM_AGT'] ?? ''));
-    $base = ['pedido_agt' => $pedido !== '' ? $pedido : null, 'mensagem_agt' => $msg !== '' ? naval_texto($msg, 300) : null];
-    if ($est === 'erro' || ($est === '' && $msg !== '')) return ['estado' => 'erro', 'evidencia' => $est === 'erro' ? 'estado' : 'mensagem'] + $base;
-    if ($est === 'pendente') return ['estado' => 'pendente', 'evidencia' => 'estado'] + $base;
-    if ($est === 'enviado') return ['estado' => 'comunicado', 'evidencia' => 'estado'] + $base;
-    if ($pedido !== '') return ['estado' => 'comunicado', 'evidencia' => 'pedido'] + $base;
-    $semRegisto = naval_config('AGT_SEM_REGISTO', 'enviado') === 'por_comunicar' ? 'por_comunicar' : 'comunicado';
-    return ['estado' => $semRegisto, 'evidencia' => 'sem_registo'] + $base;
+    $codigo = isset($l['AGT_CODIGO']) && $l['AGT_CODIGO'] !== '' ? (int) $l['AGT_CODIGO'] : null;
+    $texto = trim((string) ($l['AGT_TEXTO'] ?? ''));
+    $base = ['pedido_agt' => $pedido !== '' ? $pedido : null, 'mensagem_agt' => null, 'resposta_agt' => isset($l['AGT_DATA']) ? (string) $l['AGT_DATA'] : null];
+    if ($codigo === null && $texto === '') {
+        return ($pedido !== '' ? ['estado' => 'pendente', 'evidencia' => 'pedido'] : ['estado' => 'por_comunicar', 'evidencia' => 'sem_registo']) + $base;
+    }
+    $sucesso = false;
+    foreach (naval_agt_textos_sucesso() as $x) if ($x !== '' && mb_stripos($texto, $x) !== false) $sucesso = true;
+    if ($codigo === 3 || $sucesso) return ['estado' => 'comunicado', 'evidencia' => 'estado'] + $base;
+    if ($codigo === 2) return ['estado' => 'pendente', 'evidencia' => 'estado'] + $base;
+    return ['estado' => 'erro', 'evidencia' => 'estado', 'mensagem_agt' => $texto !== '' ? naval_agt_mensagem($texto) : 'Resposta da AGT com o código ' . $codigo . '.'] + $base;
 }
 
 /** Linhas da consulta → documentos para o portal (separado para os testes). */

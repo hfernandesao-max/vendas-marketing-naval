@@ -23,7 +23,7 @@ $h = function (string $k, string $omissao): string {
 $hoje = date('Y-m-d');
 $rotas = naval_rotas();
 $veValores = naval_ve_vendas();
-$chave = $hoje . '|' . floor(time() / 600) . '|' . json_encode($rotas) . '|' . ($veValores ? 1 : 0);
+$chave = $hoje . '|' . floor(time() / 600) . '|' . json_encode($rotas) . '|' . ($veValores ? 1 : 0) . '|' . (naval_pode('agt') ? 1 : 0);
 $r = naval_cache('apresentacao|' . $chave, 600, function () use ($hoje, $rotas, $veValores) {
     $negocio = null;
     $erro = '';
@@ -36,7 +36,8 @@ $r = naval_cache('apresentacao|' . $chave, 600, function () use ($hoje, $rotas, 
             $erro = 'Não foi possível ler as vendas do Pinguim BO neste momento.';
         }
     }
-    return ['negocio' => $negocio, 'negocio_erro' => $erro, 'automacao' => naval_apx_automacao($hoje, $rotas, $veValores)];
+    return ['negocio' => $negocio, 'negocio_erro' => $erro, 'automacao' => naval_apx_automacao($hoje, $rotas, $veValores),
+        'governanca' => naval_apx_governanca(naval_pode('agt')), 'sistemas' => naval_apx_sistemas()];
 }, ($_GET['fresco'] ?? '') === '1');
 $noite = naval_act_horas_noite();
 $seccoes = naval_nov_seccoes((string) @file_get_contents(naval_nov_ficheiro_changelog()));

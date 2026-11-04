@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 04-11-2026
 
+### Apresentação ao Conselho de Administração, em formato corporativo
+- **10 diapositivos em formato executivo (16:9):** capa, sumário executivo, desempenho comercial, carteira de
+  clientes, automação e eficiência, governação e segurança, arquitectura e integrações, roteiro com datas, visão
+  2027–2028 (Plano Tecnológico do Grupo Naval) e próximos passos recomendados, para conhecimento do Conselho.
+- **Todos os números vêm do portal:** vendas de 6 meses, média mensal, último mês fechado e variação, mês corrente,
+  saúde da carteira, tarefas automáticas, contas com dupla autenticação, perfis, registos de acesso e taxa de
+  comunicação à AGT. Cada diapositivo indica a fonte e a hora dos dados.
+- **Leitura de Conselho:** uma mensagem-chave por diapositivo, comparação «antes / agora», normas seguidas (ISO/IEC
+  27001, ITIL, OWASP, Lei 22/11) e estado de cada integração (ligada ou por ligar).
+- **Apresentar:** ecrã inteiro, navegação por teclado e ajuste automático a qualquer ecrã, sem barras de deslocamento.
+
+### Comunicação AGT: a resposta oficial da AGT de cada documento
+- **Fonte certa:** o estado passa a vir do campo do Pinguim BO onde fica a resposta da AGT a cada envio: código 3
+  enviado, 5 erro, 2 pendente, e o texto da resposta. Quando há várias respostas, conta a final mais recente.
+- **Confirmações da AGT:** «Process completed successfully» e «já consta no repositório» contam como enviado.
+- **Mensagem de erro legível:** quando a resposta da AGT vem em formato técnico (JSON), o portal mostra só a descrição
+  do erro.
+- **Sem resposta da AGT:** documento com pedido enviado mas sem resposta fica «pendente»; sem pedido nem resposta fica
+  «por comunicar». Deixa de se presumir «enviado» sem prova.
+
 ### Comunicação AGT: estado devolvido pela AGT e mensagens de erro
 - **Estado como no Pinguim BO:** a página passa a ler o estado que a AGT devolveu a cada documento («Enviado»,
   «Erro» ou «Pendente») e a mensagem de erro, quando a AGT recusa (ex.: NIF do cliente desconhecido no sistema da

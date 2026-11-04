@@ -2,7 +2,7 @@
 // Comunicação AGT: estado de cada documento a partir de DOCHEADEREXTRA (26046 request_number, 26003 motivo de cancelamento).
 naval_servico('agt');
 
-teste('AGT: com pedido comunicado, sem registo enviado (como no Pinguim BO); anulado pelo documento ou pelo motivo', function () {
+teste('AGT: sem resposta, o pedido fica pendente e sem nada por comunicar; anulado pelo documento ou pelo motivo', function () {
     $base = ['DOC_ID' => 1, 'ROTA' => '1001 ', 'TIPO_DOC' => 'FR', 'TIPO_DESC' => 'Factura-recibo', 'DOCUMENTO' => 'FR 1/1', 'TOTAL' => 1000.004,
         'DATA_DOCUMENTO' => '2026-10-24', 'DATA_FISCAL' => '2026-10-24', 'ANULADO' => 0, 'ENTIDADE' => 'Loja A  ', 'PEDIDO_POSICAO' => 1];
     $sem = $base + ['PEDIDO_AGT' => null, 'MOTIVO_ANULACAO' => null];
@@ -11,16 +11,14 @@ teste('AGT: com pedido comunicado, sem registo enviado (como no Pinguim BO); anu
     $anuladoMotivo = $com;
     $anuladoMotivo['MOTIVO_ANULACAO'] = 'Anulado';
     [$a, $b, $c, $d] = naval_agt_montar([$sem, $com, $anuladoDoc, $anuladoMotivo]);
-    igual('comunicado', $a['estado'], 'sem estado nem erro registado: enviado, como o Pinguim BO mostra');
-    igual('sem_registo', $a['evidencia']);
+    igual(['por_comunicar', 'sem_registo'], [$a['estado'], $a['evidencia']]);
     igual(null, $a['pedido_agt']);
     igual('1001', $a['rota']);
     igual(1000.0, $a['total']);
     igual('Loja A', $a['entidade']);
     verdade(!$a['anulado'] && !$b['anulado']);
-    igual('comunicado', $b['estado']);
+    igual(['pendente', 'pedido'], [$b['estado'], $b['evidencia']], 'pedido sem resposta da AGT');
     igual('559728934618656132', $b['pedido_agt']);
-    igual('pedido', $b['evidencia']);
     verdade($c['anulado'] && $d['anulado']);
     igual('Anulado', $d['motivo_anulacao']);
 });
@@ -41,28 +39,28 @@ teste('AGT: campos extra com o mesmo nome noutras séries (DOCEXTRA por nome)', 
     verdade(strpos($sql, '(E.DOCEXTRA_ID = 26046 OR E.DOCEXTRA_ID IN (SELECT X.ID FROM DOCEXTRA X WHERE') !== false);
 });
 
-teste('AGT: estado devolvido pela AGT (Enviado, Erro, Pendente) e mensagem de erro mandam sobre o pedido', function () {
+teste('AGT: resposta do campo 26098 — 3 enviado, 2 pendente, 5 ou outro erro; textos de sucesso; mensagem do JSON', function () {
     $base = ['DOC_ID' => 2, 'ROTA' => '1001', 'TIPO_DOC' => 'FT', 'TIPO_DESC' => 'Factura', 'DOCUMENTO' => 'FT 1/2', 'TOTAL' => 10,
         'DATA_DOCUMENTO' => '2026-11-03', 'DATA_FISCAL' => '2026-11-03', 'ANULADO' => 0, 'ENTIDADE' => 'X', 'PEDIDO_AGT' => '123', 'MOTIVO_ANULACAO' => null,
-        'ESTADO_DOCUMENTO' => 8002, 'LOJA' => 'Rota 1001'];
-    $erro = naval_agt_montar([$base + ['ESTADO_AGT' => 'Erro', 'MENSAGEM_AGT' => 'customerTaxID 5000 desconhecido no sistema da AGT']])[0];
-    igual(['erro', 'estado', 'customerTaxID 5000 desconhecido no sistema da AGT'], [$erro['estado'], $erro['evidencia'], $erro['mensagem_agt']]);
-    igual('8002', $erro['estado_documento']);
-    igual('Rota 1001', $erro['loja']);
-    $so = naval_agt_montar([$base + ['ESTADO_AGT' => null, 'MENSAGEM_AGT' => 'desconhecido no sistema da AGT']])[0];
-    igual(['erro', 'mensagem'], [$so['estado'], $so['evidencia']], 'mensagem de erro sem estado: com erro');
-    igual('pendente', naval_agt_montar([$base + ['ESTADO_AGT' => 'Pendente', 'MENSAGEM_AGT' => null]])[0]['estado']);
-    $env = naval_agt_montar([$base + ['ESTADO_AGT' => ' enviado ', 'MENSAGEM_AGT' => null]])[0];
-    igual(['comunicado', 'estado'], [$env['estado'], $env['evidencia']]);
+        'ESTADO_DOCUMENTO' => 8002, 'LOJA' => 'Rota 1001', 'AGT_DATA' => '2026-11-03 10:00:00'];
+    $est = function (array $x) use ($base) { return naval_agt_montar([$x + $base])[0]; };
+    igual('comunicado', $est(['AGT_CODIGO' => 3, 'AGT_TEXTO' => '{}'])['estado']);
+    igual('pendente', $est(['AGT_CODIGO' => 2, 'AGT_TEXTO' => '{"documentNo":"FT 1/2"}'])['estado']);
+    igual('comunicado', $est(['AGT_CODIGO' => 5, 'AGT_TEXTO' => 'O documento já consta no repositório da AGT'])['estado'], 'texto de sucesso manda sobre o código');
+    igual('comunicado', $est(['AGT_CODIGO' => null, 'AGT_TEXTO' => 'Process completed successfully'])['estado']);
+    $e = $est(['AGT_CODIGO' => 5, 'AGT_TEXTO' => '{"errorList":[{"idError":"E40","descriptionError":"customerTaxID 5000 desconhecido no sistema da AGT"}]}']);
+    igual(['erro', 'customerTaxID 5000 desconhecido no sistema da AGT'], [$e['estado'], $e['mensagem_agt']]);
+    igual('8002', $e['estado_documento']);
+    igual('Rota 1001', $e['loja']);
+    igual('2026-11-03 10:00:00', $e['resposta_agt']);
+    igual(['erro', 'Falha genérica'], [$est(['AGT_CODIGO' => 7, 'AGT_TEXTO' => 'Falha genérica'])['estado'], $est(['AGT_CODIGO' => 7, 'AGT_TEXTO' => 'Falha genérica'])['mensagem_agt']]);
 });
 
-teste('AGT: consulta com o estado e a mensagem da AGT, sempre limitada ao período', function () {
+teste('AGT: consulta com a resposta da AGT (26098, final primeiro), sempre limitada ao período', function () {
     $sql = naval_agt_sql([]);
     naval_bd_so_leitura($sql);
-    verdade(strpos($sql, "IN ('Enviado', 'Erro', 'Pendente')") !== false);
-    verdade(strpos($sql, "X.DESCRIPTION LIKE '%Estado AGT%'") !== false);
-    verdade(strpos($sql, "E.STRING_VALUE LIKE '%customerTaxID%'") !== false);
-    verdade(strpos($sql, "E.STRING_VALUE LIKE '%desconhecido no sistema da AGT%'") !== false);
+    verdade(strpos($sql, 'E.DOCEXTRA_ID = 26098') !== false);
+    verdade(strpos($sql, 'ORDER BY CASE WHEN E.INTEGER_VALUE <> 2 THEN 0 ELSE 1 END, E.CLOCK_DATE DESC') !== false);
     verdade(strpos($sql, 'DH.DOC_DATE >= :de') !== false && strpos($sql, 'DH.DOC_DATE <= :ate') !== false);
     verdade(strpos($sql, 'DH.DOCSTATUS_ID AS ESTADO_DOCUMENTO') !== false);
 });

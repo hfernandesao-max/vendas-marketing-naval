@@ -2291,7 +2291,6 @@ export const EN = {
   'Com erro': 'With error',
   'Erro na comunicação': 'Communication error',
   'Pendente na AGT': 'Pending at AGT',
-  'Enviado (sem registo de erro)': 'Sent (no error recorded)',
   'Mensagem da AGT': 'AGT message',
   'pendentes ou sem pedido': 'pending or without request',
   'Documentos de vendas do período e o estado da comunicação à AGT registado no Pinguim BO: estado devolvido pela AGT, mensagem de erro e número do pedido.':
@@ -2299,6 +2298,7 @@ export const EN = {
   'Recusado pela AGT': 'Rejected by the AGT',
   '{n} documentos da rota {r} recusados pela AGT': '{n} documents of route {r} rejected by the AGT',
   'O mais antigo é de {d}; total {v}.': 'The oldest is from {d}; total {v}.',
+  'Pedido enviado, sem resposta da AGT': 'Request sent, no reply from the AGT',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -21,6 +21,8 @@ const DADOS = {
     meses: MESES,
     mes: { de: '2026-11-01', total: 3200000, anterior: 2500000, variacao: 0.28, documentos: 105, clientes: 55, rotas: 9, valor_medio: 58000 },
     clientes_30: 812,
+    ultimo_mes: { mes: '2026-10', total: 30.5e6, variacao: 0.089 },
+    media_mensal: 25.7e6,
     dias_com_dados: 140,
     desde: '2026-06-01',
     ate: '2026-11-03',
@@ -43,9 +45,35 @@ const DADOS = {
       qualidade: 3,
     },
   },
+  governanca: {
+    contas: 20,
+    mfa: 15,
+    mfa_pct: 0.75,
+    perfis: 12,
+    recursos: 60,
+    registos_mes: 1234,
+    agt: { documentos: 400, comunicados: 390, erros: 4, pct: 0.975 },
+  },
+  sistemas: [
+    { nome: 'Pinguim BO', funcao: 'Vendas, clientes e documentos', ligado: true },
+    { nome: 'Servidor OLAP', funcao: 'Localização das equipas no terreno', ligado: false },
+  ],
   novidades: [{ data: '03-11-2026', titulo: 'Novidade de teste', itens: ['**Função nova** que chegou nesta versão.'] }],
   roteiro: {
     actualizado: '2026-11-04',
+    projecto: {
+      titulo: 'Portal RTM',
+      subtitulo: 'Transformação digital da operação comercial',
+      publico: 'Conselho de Administração',
+      apresentador: 'Henrique Fernandes',
+      funcao: 'Gestor de Projectos Digitais',
+    },
+    ponto_partida: 'Informação dispersa.',
+    visao: {
+      periodo: 'Janeiro de 2027 a Junho de 2028',
+      titulo: 'Plano Tecnológico do Grupo Naval',
+      pilares: [{ titulo: 'Dados únicos do Grupo', texto: 'Um repositório de dados.' }],
+    },
     futuro: [{ titulo: 'Ver', resumo: 'Cada visita confirmada no mapa', data: '2026-11-09', estado: 'em_curso' }],
     ia: [{ titulo: 'Encomendas por WhatsApp', resumo: 'O cliente encomenda por mensagem', data: '2026-11-23', estado: 'planeado' }],
     fases: [
@@ -56,54 +84,73 @@ const DADOS = {
   },
 };
 
-test('apresentação para o Conselho: números reais, automação, futuro com datas e calendário', async ({ page }) => {
+test('apresentação ao Conselho: 10 diapositivos corporativos com dados reais, governação, arquitectura, roteiro e visão', async ({ page }) => {
   await page.route('**/v1/apresentacao**', (r) => r.fulfill({ json: DADOS }));
   const erros = await abrir(page, '#apresentacao');
-  const apx = page.locator('.apx');
-  const activa = apx.locator('.apx-cena.activa');
-  await expect(apx.locator('.apx-ponto')).toHaveCount(6);
-  await expect(activa).toContainText('3,2 M Kz');
-  await expect(activa).toContainText('▲ 28');
-  await expect(activa).toContainText('812');
-  await expect(activa).toContainText('03-11-2026');
-  // negócio: gráfico dos 6 meses, o actual em curso
-  await apx.press('ArrowRight');
-  await expect(activa.locator('.apx-barra')).toHaveCount(6);
-  await expect(activa.locator('.apx-barra.parcial')).toHaveCount(1);
-  await expect(activa).toContainText('30,5');
-  // clientes
-  await apx.press('ArrowRight');
-  await expect(activa.locator('.apx-segmentos .apx-seg')).toHaveCount(3);
-  await expect(activa).toContainText('Parados 50');
-  await expect(activa).toContainText('2,5 M Kz');
-  // automação: hora configurada e contagem
-  await apx.press('ArrowRight');
-  await expect(activa.locator('.apx-passo', { hasText: '21:15' })).toContainText('Fecho do dia');
-  await expect(activa.locator('.apx-passo', { hasText: '21:15' })).toContainText('12 em 30 dias');
-  await expect(activa).toContainText('82');
-  // futuro: datas concretas
-  await apx.press('ArrowRight');
-  await expect(activa.locator('.apx-cartao', { hasText: 'Encomendas por WhatsApp' })).toContainText('23-11-2026');
-  // calendário e recomendações (para conhecimento, sem pedidos)
-  await apx.press('ArrowRight');
-  await expect(activa.locator('.apx-barra-f')).toHaveCount(2);
-  await expect(activa.locator('.apx-barra-f').first()).toContainText('09-11-2026 – 20-11-2026');
+  const cx = page.locator('.cx');
+  const activa = cx.locator('.cx-slide.activa');
+  await expect(cx.locator('.cx-ponto')).toHaveCount(10);
+  // capa
+  await expect(activa).toContainText('Portal RTM');
+  await expect(activa).toContainText('Conselho de Administração');
+  await expect(activa).toContainText('Henrique Fernandes');
+  // sumário executivo
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Sumário executivo');
+  await expect(activa).toContainText('131,7 M Kz de vendas em 6 meses');
+  await expect(activa.locator('.cx-rodape')).toContainText('Confidencial');
+  await expect(activa.locator('.cx-rodape')).toContainText('2 / 10');
+  // desempenho: mensagem com o último mês completo
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Outubro de 2026 fechou com 30,5 M Kz, mais 8,9%');
+  await expect(activa.locator('.cx-barra')).toHaveCount(6);
+  // carteira
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('50 clientes parados representam 2,5 M Kz');
+  // automação
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('82 tarefas feitas sem intervenção humana');
+  await expect(activa.locator('.cx-linha li', { hasText: '21:15' })).toContainText('12 em 30 dias');
+  // governação
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('75,0%');
+  await expect(activa).toContainText('97,5%');
+  await expect(activa).toContainText('ISO/IEC 27001');
+  // arquitectura
+  await cx.press('ArrowRight');
+  await expect(activa.locator('.cx-sis.on')).toHaveCount(1);
+  await expect(activa).toContainText('Por ligar');
+  // roteiro
+  await cx.press('ArrowRight');
+  await expect(activa.locator('.cx-fase').first()).toContainText('09-11-2026 – 20-11-2026');
+  await expect(activa).toContainText('Encomendas por WhatsApp');
+  // visão
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Plano Tecnológico do Grupo Naval');
+  await expect(activa).toContainText('Janeiro de 2027 a Junho de 2028');
+  // recomendações
+  await cx.press('ArrowRight');
   await expect(activa).toContainText('Recomendações · para conhecimento do Conselho');
   await expect(activa).toContainText('Servidor web dedicado e isolado');
   await expect(activa).toContainText('20-11-2026');
-  await expect(activa).not.toContainText('decisões');
+  // o diapositivo cabe na página (ajuste por escala, sem deslocação horizontal)
+  const caixa = await cx.locator('.cx-area').boundingBox();
+  const pagina = await page.locator('#page').boundingBox();
+  expect(caixa.width).toBeLessThanOrEqual(pagina.width + 1);
   expect(erros).toEqual([]);
 });
 
-test('apresentação: sem acesso às vendas mostra a automação e não os valores', async ({ page }) => {
+test('apresentação: sem acesso às vendas mostra a automação e a governação, sem valores', async ({ page }) => {
   await page.route('**/v1/apresentacao**', (r) =>
     r.fulfill({ json: { ...DADOS, ve_valores: false, negocio: null, automacao: { ...DADOS.automacao, carteira: null } } }),
   );
   const erros = await abrir(page, '#apresentacao');
-  const activa = page.locator('.apx .apx-cena.activa');
-  await expect(activa).toContainText('tarefas automáticas');
-  await page.locator('.apx').press('ArrowRight');
+  const cx = page.locator('.cx');
+  const activa = cx.locator('.cx-slide.activa');
+  await cx.locator('.cx-ponto', { hasText: 'Desempenho' }).click();
   await expect(activa).toContainText('Disponível para quem acompanha as vendas');
-  await expect(activa.locator('.apx-barra')).toHaveCount(0);
+  await expect(activa.locator('.cx-barra')).toHaveCount(0);
+  await cx.locator('.cx-ponto', { hasText: 'Governação' }).click();
+  await expect(activa).toContainText('contas activas');
   expect(erros).toEqual([]);
 });
