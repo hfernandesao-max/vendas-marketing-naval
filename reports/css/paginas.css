@@ -775,3 +775,16 @@ p.aviso {
   color: var(--warn);
   margin: 4px 0;
 }
+/* Contas: última entrada e última alteração da palavra-passe, com o local aproximado e o IP */
+.ac-evento {
+  display: inline-block;
+  line-height: 1.35;
+}
+.ac-evento-l {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.ac-como {
+  font-weight: 600;
+  font-size: 12px;
+}

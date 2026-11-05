@@ -254,9 +254,18 @@ function naval_gestao_matriz(array $nova): int
 function naval_gestao_vista(): array
 {
     $bloq = naval_contas_bloqueadas();
-    $ultimas = [];
-    foreach (naval_ler_registos(2000) as $r) {
-        if (($r['accao'] ?? '') === 'entrada' && !isset($ultimas[$r['utilizador']])) $ultimas[$r['utilizador']] = $r['data'];
+    // última entrada e última alteração da palavra-passe de cada conta (com o local aproximado e o IP)
+    $ultimas = $senhas = [];
+    $como = ['senha_alterada' => 'propria', 'conta_recuperada' => 'recuperacao', 'senha_reposta' => 'administrador'];
+    foreach (naval_ler_registos(5000) as $r) {
+        $a = (string) ($r['accao'] ?? '');
+        $quem = (string) ($r['utilizador'] ?? '');
+        $ev = ['data' => $r['data'] ?? null, 'ip' => $r['ip'] ?? '', 'local' => $r['local'] ?? null];
+        if ($a === 'entrada' && !isset($ultimas[$quem])) $ultimas[$quem] = $ev;
+        if (isset($como[$a])) {
+            $conta = $a === 'senha_reposta' ? (string) ($r['detalhe']['conta'] ?? '') : $quem;
+            if ($conta !== '' && !isset($senhas[$conta])) $senhas[$conta] = $ev + ['como' => $como[$a], 'por' => $a === 'senha_reposta' ? $quem : $conta];
+        }
     }
     $us = [];
     foreach (naval_utilizadores() as $login => $u) {
@@ -269,7 +278,10 @@ function naval_gestao_vista(): array
             'idioma' => naval_idioma_conta($u),
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
             'senha_temporaria' => !empty($u['trocar_senha']),
-            'ultima_entrada' => $ultimas[$login] ?? null,
+            'ultima_entrada' => $ultimas[$login]['data'] ?? null,
+            'ultima_entrada_local' => $ultimas[$login]['local'] ?? null,
+            'ultima_entrada_ip' => $ultimas[$login]['ip'] ?? null,
+            'ultima_senha' => $senhas[$login] ?? null,
         ];
     }
     $niveis = [];

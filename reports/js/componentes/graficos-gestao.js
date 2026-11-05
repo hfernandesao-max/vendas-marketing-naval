@@ -18,7 +18,7 @@ const eixoY = (sv, L, R, w, y, max, passo, fmt) => {
 
 /** Tendência: colunas finas com as vendas do dia, linha da média móvel de 7 dias e previsão tracejada com o intervalo de 80%. */
 export function grafTendencia(w, { dias, previsao, rot, altura }) {
-  const H = Math.max(110, Math.round(altura || 260)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 260,
     T = 16,
     B = 26,
     R = 8;
@@ -123,7 +123,7 @@ export function grafBalas(w, { itens, altura }) {
 
 /** Ponte (cascata): do total anterior ao actual, com o contributo de cada linha (subidas a azul, quedas a vermelho). */
 export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim, altura }) {
-  const H = Math.max(110, Math.round(altura || 260)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 260,
     T = 18,
     B = 24,
     R = 8;
@@ -141,6 +141,7 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim, altura 
   const y = (v) => T + (H - T - B) * (1 - Math.max(0, v) / max);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
   eixoY(sv, L, R, w, y, max, passo, kzc);
+  const cada = Math.max(1, Math.ceil((6.2 * Math.max(...barras.map((b) => String(b.rot).length)) + 6) / banda));
   barras.forEach((b, i) => {
     const cx = L + banda * i + banda / 2;
     const top = y(Math.max(b.de, b.ate)),
@@ -160,7 +161,10 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim, altura 
     );
     if (i < barras.length - 1)
       sv.append(svgEl('line', { x1: cx + bw / 2, x2: cx + banda - bw / 2, y1: y(b.ate), y2: y(b.ate), class: 'vx-grid', 'stroke-dasharray': '3 3' }));
-    g.append(svgEl('text', { x: cx, y: H - 8, class: 'vx-ax', 'text-anchor': 'middle' }, b.rot));
+    // rótulos que não cabem na largura da coluna: só o primeiro, o último e os que cabem (o resto na dica)
+    const larg = 6.2 * String(b.rot).length;
+    if (i === 0 || i === barras.length - 1 || (i % cada === 0 && i >= cada && i <= barras.length - 1 - cada))
+      g.append(svgEl('text', { x: Math.min(w - R - larg / 2, Math.max(L + larg / 2, cx)), y: H - 8, class: 'vx-ax', 'text-anchor': 'middle' }, b.rot));
     interactivo(g, b.rot, [[b.tipo === 'total' ? kzc(b.ate) : (b.valor > 0 ? '+' : '') + kzc(b.valor), b.tipo === 'total' ? t('total') : t('contributo')]]);
     sv.append(g);
   });
@@ -169,7 +173,7 @@ export function grafCascata(w, { inicio, fim, passos, rotInicio, rotFim, altura 
 
 /** Curva ABC (Pareto): % acumulada do valor face à % de itens, com a referência dos 80%. */
 export function grafAbc(w, { curva, ate80, n, nome, altura }) {
-  const H = Math.max(110, Math.round(altura || 240)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 240,
     T = 12,
     B = 28,
     L = 40,
@@ -210,7 +214,7 @@ export function grafAbc(w, { curva, ate80, n, nome, altura }) {
 
 /** Dispersão (bolhas): x e y por linha, área proporcional ao tamanho; linhas da média para os quatro quadrantes. */
 export function grafDispersao(w, { itens, fx, fy, rx, ry, altura }) {
-  const H = Math.max(120, Math.round(altura || 280)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 280,
     T = 14,
     B = 34,
     R = 16;
@@ -302,7 +306,7 @@ export function corRota(rota, todas) {
 export function grafCalor(w, { linhas, colunas, fmt, altura }) {
   const Lr = Math.min(150, Math.max(46, w * 0.12)),
     T = 18,
-    alt = altura ? Math.max(10, Math.min(26, Math.floor((altura - T - 4) / Math.max(1, linhas.length)))) : 26;
+    alt = altura ? Math.max(5, Math.min(26, Math.floor((altura - T - 4) / Math.max(1, linhas.length)))) : 26;
   const H = T + linhas.length * alt + 4;
   const cw = (w - Lr - 4) / colunas.length;
   const max = Math.max(...linhas.flatMap((l) => l.valores), 1);
@@ -339,7 +343,7 @@ export function grafCalor(w, { linhas, colunas, fmt, altura }) {
 
 /** Colunas agrupadas (poucas séries, mesma unidade), com legenda à parte. */
 export function grafAgrupadas(w, { cats, series, fmt = n0, altura }) {
-  const H = Math.max(110, Math.round(altura || 230)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 230,
     T = 16,
     B = 26,
     R = 8;

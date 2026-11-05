@@ -213,13 +213,22 @@ function imprimir(codigos) {
     });
     document.body.append(zona);
     document.body.classList.add('a-imprimir');
+    // página sem margens só para os cartazes: o navegador deixa de imprimir título, endereço, data e n.º de página
+    const pagina = el('link');
+    pagina.rel = 'stylesheet';
+    pagina.href = 'css/cartaz-impressao.css';
+    pagina.id = 'cqr-pagina-css';
     const fim = () => {
       document.body.classList.remove('a-imprimir');
       zona.remove();
+      pagina.remove();
       window.removeEventListener('afterprint', fim);
     };
     window.addEventListener('afterprint', fim);
-    setTimeout(() => window.print(), 300);
+    const imprimir = () => setTimeout(() => window.print(), 200);
+    pagina.addEventListener('load', imprimir, { once: true });
+    pagina.addEventListener('error', imprimir, { once: true });
+    document.head.append(pagina);
   });
 }
 function gerar(novo) {

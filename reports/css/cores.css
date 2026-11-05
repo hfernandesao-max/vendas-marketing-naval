@@ -56,6 +56,7 @@
   --c-sair2: #ff6961;
   --c-rodape-t: #132654;
   --c-th-bg: #12224c;
+  --c-th-fixo: #0f1c40; /* cabeçalho fixo das tabelas: a cor do cartão, opaca */
   --c-scroll: #2a3c6e;
   --c-prev: #4a5878;
   --c-prev2: #48484a;
@@ -78,6 +79,7 @@
   /* superfícies: fundo azul-acinzentado suave, menu lateral e cartões brancos, linhas discretas em azul-marinho */
   --bg: #eef2f8;
   --bg2: #f5f8fc;
+  --c-th-fixo: #ffffff;
   --side: rgba(255, 255, 255, 0.86);
   --side2: rgba(246, 249, 253, 0.9);
   --card: #ffffff;

@@ -57,6 +57,14 @@ const NOMES_ACCAO = {
   sap_segunda_via: 'Segunda via do ficheiro para o SAP',
   sap_segunda_via_recusada: 'Segunda via recusada',
   sap_ficheiro_alterado: 'Ficheiro para o SAP alterado',
+  recuperacao_pedida: 'Pedido de recuperação do acesso',
+  recuperacao_limite_ip: 'Recuperação recusada (demasiados pedidos)',
+  recuperacao_codigo_errado: 'Recuperação: código de dois passos errado',
+  conta_recuperada: 'Acesso recuperado (nova palavra-passe)',
+  entrada_suspensa_ip: 'Entrada suspensa (demasiadas falhas no endereço)',
+  ip_suspenso: 'Endereço IP suspenso',
+  geoip_actualizado: 'Base de dados de localização actualizada',
+  novidades_detectadas: 'Novidades da versão detectadas',
 };
 // Campos e valores técnicos do detalhe dos registos, mostrados na língua escolhida
 const NOMES_DETALHE = {
@@ -93,6 +101,14 @@ const NOMES_DETALHE = {
   total: 'Total',
   versao: 'Versão',
   zonas: 'Zonas',
+  resultado: 'Resultado',
+  ip: 'Endereço IP',
+  estava_bloqueada: 'Estava bloqueada',
+  falhas: 'Falhas',
+  origem: 'Origem',
+  tipo: 'Tipo',
+  edicao: 'Edição',
+  seccoes: 'Secções',
 };
 const VALORES_DETALHE = {
   codigo: 'código errado',
@@ -105,6 +121,14 @@ const VALORES_DETALHE = {
   enviado: 'enviado',
   falhou: 'falhou',
   rascunho: 'rascunho',
+  sem_conta: 'conta inexistente ou inactiva (nada enviado)',
+  limite_ip: 'demasiados pedidos do mesmo endereço',
+  limite_conta: 'demasiados pedidos para a conta',
+  erro_envio: 'correio electrónico não enviado',
+  sem_endereco: 'endereço do portal por configurar',
+  recuperacao: 'recuperação pela própria pessoa',
+  proprio: 'a própria pessoa',
+  temporaria_expirada: 'palavra-passe temporária expirada',
 };
 const valorDetalhe = (k, v) => {
   if (Array.isArray(v)) return v.map((x) => (k === 'recursos' || k === 'pagina' ? nomeRecurso(x) : x)).join(', ');
@@ -428,7 +452,7 @@ R.acessos = (pg) => {
       {
         l: t('Contas bloqueadas'),
         v: n0(U.filter((u) => u.bloqueado).length),
-        s: t('desbloqueio pelo super administrador'),
+        s: t('desbloqueio pela própria pessoa ou pelo super administrador'),
         tone: U.some((u) => u.bloqueado) ? 'bad' : null,
       },
       { l: t('Sem correio electrónico associado'), v: n0(U.filter((u) => !u.email_ok).length), tone: U.some((u) => !u.email_ok) ? 'warn' : null },
@@ -480,7 +504,36 @@ R.acessos = (pg) => {
       xl: (r) => t(r.estado),
     },
     { key: 'idioma', label: t('Idioma'), render: (v) => document.createTextNode(NOMES_IDIOMA[v] || '—'), xl: (r) => NOMES_IDIOMA[r.idioma] || '' },
-    { key: 'ultima_entrada', label: t('Última entrada'), render: (v) => document.createTextNode(v ? dl(v) + ' ' + v.slice(11, 16) : '—') },
+    {
+      key: 'ultima_entrada',
+      label: t('Última entrada'),
+      wrap: true,
+      render: (v, r) => celulaEvento(v, r.ultima_entrada_local, r.ultima_entrada_ip),
+      xl: (r) => (r.ultima_entrada ? dl(r.ultima_entrada) + ' ' + r.ultima_entrada.slice(11, 16) + ' · ' + textoLocal(r.ultima_entrada_local) : ''),
+    },
+    {
+      key: 'ultima_senha',
+      label: t('Palavra-passe alterada'),
+      wrap: true,
+      get: (r) => (r.ultima_senha && r.ultima_senha.data) || '',
+      render: (v, r) => {
+        const s = r.ultima_senha;
+        if (!s) return document.createTextNode('—');
+        const w = celulaEvento(s.data, s.local, s.ip);
+        w.prepend(el('b', 'ac-como', t(COMO_SENHA[s.como] || s.como) + (s.como === 'administrador' && s.por ? ' (' + s.por + ')' : '')), el('br'));
+        return w;
+      },
+      xl: (r) =>
+        r.ultima_senha
+          ? t(COMO_SENHA[r.ultima_senha.como] || r.ultima_senha.como) +
+            ' · ' +
+            dl(r.ultima_senha.data) +
+            ' ' +
+            r.ultima_senha.data.slice(11, 16) +
+            ' · ' +
+            textoLocal(r.ultima_senha.local)
+          : '',
+    },
   ];
   if (gerir)
     cols.push({
@@ -980,6 +1033,29 @@ function janelaPerfil(p) {
 }
 
 // ---- localização aproximada do IP (registos de actividade) ----
+const COMO_SENHA = {
+  propria: 'Pela própria pessoa',
+  recuperacao: 'Recuperação por correio electrónico',
+  administrador: 'Reposta pelo super administrador',
+};
+/** Data e hora, com o local aproximado e o IP de onde foi feito (contas: última entrada, palavra-passe). */
+function celulaEvento(data, local, ip) {
+  const w = el('span', 'ac-evento');
+  if (!data) {
+    w.textContent = '—';
+    return w;
+  }
+  w.append(dl(data) + ' ' + data.slice(11, 16));
+  if (local || ip) {
+    const l = celulaLocal(local);
+    if (!local) l.textContent = '';
+    const sub = el('small', 'ac-evento-l');
+    sub.append(l);
+    if (ip) sub.append((local ? ' · ' : '') + ip);
+    w.append(el('br'), sub);
+  }
+  return w;
+}
 const bandeira = (cc) => (/^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '');
 function textoLocal(l) {
   if (!l) return '';

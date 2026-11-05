@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 05-11-2026
 
+### Cartazes QR, painel de indicadores, cabeçalhos fixos e registos de acesso
+
+- **Cartazes QR:** a impressão deixa de ter o título, o endereço, a data e o número de página do navegador (página sem
+  margens só durante a impressão dos cartazes; a margem de segurança fica dentro do cartaz).
+- **Painel de indicadores sem nada cortado:** os gráficos desenham-se à altura real de cada quadro (eixos, datas e
+  legendas sempre visíveis). Em ecrãs baixos, onde os quadros ficariam ilegíveis, o painel passa a deslocar-se na
+  vertical com os quadros à altura normal; nos ecrãs grandes continua num só ecrã. Rótulos que não cabem na largura
+  saem alternados (o valor completo continua na dica). O idioma (PT/EN/TI) passou para a barra superior.
+- **Nome da página e das colunas sempre visíveis:** a barra superior fica fixa ao descer e mostra o nome da página; o
+  cabeçalho das tabelas fica fixo logo abaixo dela, em todas as páginas com tabelas.
+- **Registos de acesso com país e cidade:** a base de dados de localização dos IP (DB-IP) passa a ser instalada e
+  renovada todos os meses pela tarefa automática do servidor, sem intervenção; os registos antigos ganham a
+  localização logo que a base exista.
+- **Contas:** a lista de utilizadores mostra a última entrada e a última alteração da palavra-passe (como foi feita:
+  pela própria pessoa, por recuperação por correio ou reposta pelo super administrador), com a data, o local
+  aproximado e o IP. Os registos da recuperação do acesso aparecem com nomes e detalhes legíveis.
+
 ### Recuperar o acesso pela própria pessoa (palavra-passe esquecida ou conta bloqueada)
 
 - **«Esqueceu-se da palavra-passe ou tem a conta bloqueada?»** na página de entrada: a pessoa indica o utilizador ou o
