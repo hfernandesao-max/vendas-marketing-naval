@@ -60,6 +60,8 @@ $ambientes = [
 $contas = [
     'sadm' => ['SADM', []], 'ti' => ['TI', []], 'dir' => ['DIR', []], 'com' => ['COM', []], 'fin' => ['FIN', []],
     'bo' => ['BO', []], 'log' => ['LOG', []], 'aud' => ['AUD', []], 'sup' => ['SUP', ['1001']], 'pro' => ['PRO', ['1002']],
+    // conta só para o teste de recuperação do acesso (a palavra-passe muda durante o teste)
+    'rec' => ['COM', []],
 ];
 $d = [];
 foreach ($contas as $login => [$perfil, $rotas]) {

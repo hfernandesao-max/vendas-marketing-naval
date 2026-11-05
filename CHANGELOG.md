@@ -2,6 +2,21 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 05-11-2026
+
+### Recuperar o acesso pela própria pessoa (palavra-passe esquecida ou conta bloqueada)
+
+- **«Esqueceu-se da palavra-passe ou tem a conta bloqueada?»** na página de entrada: a pessoa indica o utilizador ou o
+  correio electrónico e recebe, no correio da sua ficha, uma ligação para escolher uma nova palavra-passe. Ao concluir,
+  a conta fica desbloqueada sem precisar do super administrador.
+- **Segurança (OWASP Forgot Password Cheat Sheet, OWASP ASVS 2.5, NIST SP 800-63B):** a resposta é igual exista ou não
+  a conta e demora sempre o mesmo tempo mínimo; a ligação é aleatória, de uso único e válida 30 minutos, e no servidor
+  fica só o seu resumo; um pedido novo anula o anterior; limites por endereço (5 em 15 minutos) e por conta (3 por
+  hora); com a verificação em dois passos activa pede também o código da aplicação (3 erros anulam a ligação).
+- **No fim:** palavra-passe com as regras do portal, todas as sessões abertas terminadas, aviso por correio
+  electrónico («a sua palavra-passe foi alterada») e registo na auditoria. Não entra automaticamente.
+- Quem perdeu o telemóvel da verificação em dois passos continua a precisar do super administrador.
+
 ## 04-11-2026
 
 ### Menu e barra superior segundo as normas internacionais (ISO 9241-110/112, ISO/IEC 25010, WCAG 2.2 AA)

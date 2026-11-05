@@ -94,7 +94,7 @@ while IFS= read -r -d '' f; do
   n="$(basename "$f")"; espera 403 "/$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$n")"
 done < <(find "$RAIZ" -maxdepth 1 -type f \( -iname '*.csv' -o -iname '*.xlsx' -o -iname '*.sql' -o -iname '*.bak' \) -print0)
 echo "Servidos:"
-espera 200 /geo/login.php /geo/vendor/lucide-1.62.0.min.js /geo/vendor/papaparse-5.3.0.min.js /reports/js/app.js /geo/style.css
+espera 200 /geo/login.php /geo/recuperar.php /geo/vendor/lucide-1.62.0.min.js /geo/vendor/papaparse-5.3.0.min.js /reports/js/app.js /geo/style.css
 espera 302 /index.php /reports/
 echo "API central:"
 espera 401 /api/index.php/v1/sessao /api/v1/sessao
