@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 05-11-2026
 
+### Painel de indicadores dinâmico num só ecrã; cabeçalhos das tabelas fixos
+
+- **Painel num só ecrã, sem barras de deslocação, em qualquer ecrã de computador:** a disposição ajusta-se à altura
+  disponível (cabeçalho compacto e, em ecrãs baixos, indicadores numa só linha e quadros sem subtítulo); cada gráfico
+  desenha-se à altura do seu quadro e os números dos eixos espaçam-se para nunca se sobreporem.
+- **Tabelas longas:** ao descer, ficam fixos no topo o cabeçalho da própria tabela (título, nota, Procurar e Excel) e o
+  nome das colunas. A barra superior e os filtros da página já não ficam presos.
+
 ### Cartazes QR, painel de indicadores, cabeçalhos fixos e registos de acesso
 
 - **Cartazes QR:** a impressão deixa de ter o título, o endereço, a data e o número de página do navegador (página sem
@@ -12,8 +20,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   legendas sempre visíveis). Em ecrãs baixos, onde os quadros ficariam ilegíveis, o painel passa a deslocar-se na
   vertical com os quadros à altura normal; nos ecrãs grandes continua num só ecrã. Rótulos que não cabem na largura
   saem alternados (o valor completo continua na dica). O idioma (PT/EN/TI) passou para a barra superior.
-- **Nome da página e das colunas sempre visíveis:** a barra superior fica fixa ao descer e mostra o nome da página; o
-  cabeçalho das tabelas fica fixo logo abaixo dela, em todas as páginas com tabelas.
 - **Registos de acesso com país e cidade:** a base de dados de localização dos IP (DB-IP) passa a ser instalada e
   renovada todos os meses pela tarefa automática do servidor, sem intervenção; os registos antigos ganham a
   localização logo que a base exista.

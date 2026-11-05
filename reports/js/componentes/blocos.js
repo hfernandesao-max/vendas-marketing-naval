@@ -88,6 +88,9 @@ export function tabela(o) {
   const tb = el('table');
   tw.append(tb);
   sec.append(tw);
+  // cabeçalho da tabela (título, nota, Procurar, Excel) e nomes das colunas fixos no topo ao descer muitas linhas
+  sec.classList.add('sec-tab');
+  if ('ResizeObserver' in window) new ResizeObserver(() => sec.style.setProperty('--cab-h', h.offsetHeight + 'px')).observe(h);
   const more = el('div', 'more');
   more.hidden = true;
   sec.append(more);

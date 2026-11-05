@@ -158,8 +158,9 @@ test('pedidos dos clientes: encomenda com linha fora do habitual e acções de v
 
 for (const [w, h, umEcra] of [
   [1920, 1080, true],
-  [1600, 860, false],
-  [1366, 768, false],
+  [1600, 860, true],
+  [1366, 768, true],
+  [1280, 680, true],
 ]) {
   test(`Início com os gráficos de gestão ${w}×${h}: ${umEcra ? 'grelha 4 × 3 num só ecrã' : 'quadros legíveis com deslocação'}, nada cortado, tabelas e legendas`, async ({
     page,
@@ -181,6 +182,19 @@ for (const [w, h, umEcra] of [
         expect(b.y + b.height).toBeLessThanOrEqual(h);
       }
     }
+    // números dos eixos sem sobreposição (marcas a pelo menos 12 px na vertical)
+    const sobrepostos = await page.evaluate(() =>
+      [...document.querySelectorAll('.viz-card svg')].some((sv) => {
+        const eixo = [...sv.querySelectorAll('text.vx-ax[text-anchor="end"]')];
+        const x0 = eixo.length ? eixo[0].getAttribute('x') : null;
+        const ys = eixo
+          .filter((e) => e.getAttribute('x') === x0)
+          .map((e) => e.getBoundingClientRect().top)
+          .sort((a, b) => a - b);
+        return ys.some((y, i) => i && y - ys[i - 1] < 9);
+      }),
+    );
+    expect(sobrepostos).toBe(false);
     // nada cortado: eixos, rótulos e legendas dentro de cada quadro
     const cortados = await page.evaluate(() =>
       [...document.querySelectorAll('.viz-card')]

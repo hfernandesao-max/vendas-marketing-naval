@@ -130,7 +130,7 @@ export function draw() {
   mostrarFontes();
   mostrarIndicador(); // cartão dos telemóveis no menu: sempre na língua escolhida
   document.querySelector('.filters').style.display = SEM_PERIODO.includes(p.id) ? 'none' : '';
-  document.body.classList.remove('pagina-mapa'); // as páginas de mapas (GEO) voltam a marcá-la ao desenhar
+  document.body.classList.remove('pagina-mapa', 'inicio-ecra', 'inicio-apertado'); // cada página volta a marcar as suas ao desenhar
   $('#xl-page').hidden = !(p.id === 'inicio' ? podeExportar('excel-completo') : podeExportar(p.id)) || p.id.startsWith('geo-');
   $('#xl-all').hidden = !podeExportar('excel-completo');
   $('#xl-dados').hidden = !podeExportar('exportar-dados');
