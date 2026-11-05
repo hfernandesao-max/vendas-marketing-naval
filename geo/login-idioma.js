@@ -6,6 +6,42 @@
   var IDIOMAS = { pt: 'pt-PT', en: 'en', ti: 'ti' };
   var D = {
     en: {
+      'Recuperar o acesso · GeoMobilidade Naval':
+        'Recover access · GeoMobilidade Naval',
+      'Recuperar o acesso':
+        'Recover access',
+      'Se os dados corresponderem a uma conta activa, enviámos para o correio electrónico dessa conta uma ligação para escolher uma nova palavra-passe. A ligação é válida durante 30 minutos e só pode ser usada uma vez.':
+        'If the details match an active account, we have sent a link to that account’s email to choose a new password. The link is valid for 30 minutes and can only be used once.',
+      'Não recebeu? Confirme a pasta de lixo electrónico ou peça ajuda ao super administrador da plataforma.':
+        'Did not receive it? Check your junk mail folder or ask the platform super administrator for help.',
+      'Palavra-passe alterada e conta desbloqueada. As sessões que estavam abertas foram terminadas. Entre com a nova palavra-passe.':
+        'Password changed and account unlocked. Any open sessions have been ended. Sign in with your new password.',
+      'Iniciar sessão':
+        'Sign in',
+      'A ligação expirou ou já foi usada. Peça uma nova.':
+        'The link has expired or has already been used. Request a new one.',
+      'Pedir uma nova ligação':
+        'Request a new link',
+      'Escolha a nova palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum. A conta fica desbloqueada e as sessões abertas terminam.':
+        'Choose your new password: at least 12 characters (it can be a phrase), different from the account name and not a common one. The account is unlocked and open sessions are ended.',
+      'Código da aplicação de autenticação':
+        'Authenticator app code',
+      'Guardar e desbloquear':
+        'Save and unlock',
+      'Esqueceu-se da palavra-passe ou a conta ficou bloqueada? Indique o seu utilizador ou correio electrónico: enviamos para o correio da conta uma ligação para escolher uma nova palavra-passe e desbloquear a conta.':
+        'Forgot your password or is your account locked? Enter your username or email: we will send a link to the account’s email to choose a new password and unlock the account.',
+      'Enviar a ligação':
+        'Send the link',
+      'Voltar à página de entrada':
+        'Back to the sign-in page',
+      'Esqueceu-se da palavra-passe ou tem a conta bloqueada?':
+        'Forgot your password or is your account locked?',
+      'Código inválido. Por segurança, a ligação foi anulada: peça uma nova.':
+        'Invalid code. For security, the link has been cancelled: request a new one.',
+      'Código de verificação inválido. Resta 1 tentativa.':
+        'Invalid verification code. 1 attempt left.',
+      'Código de verificação inválido. Restam {n} tentativas.':
+        'Invalid verification code. {n} attempts left.',
       'Mudar a palavra-passe · GeoMobilidade Naval':
         'Change password · GeoMobilidade Naval',
       'Mudar a palavra-passe':
@@ -78,8 +114,8 @@
       'Voltar à página inicial': 'Back to the home page',
       'Todos os direitos reservados.': 'All rights reserved.',
       'Por favor, preencha todos os campos.': 'Please fill in all fields.',
-      'A conta está bloqueada após {n} tentativas falhadas. Peça o desbloqueio ao super administrador.':
-        'The account is locked after {n} failed attempts. Ask the super administrator to unlock it.',
+      'A conta está bloqueada após {n} tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.':
+        'The account is locked after {n} failed attempts. To unlock it now, use «Forgot your password or is your account locked?» or ask the super administrator.',
       'Esta conta não tem correio electrónico associado. Peça ao administrador da plataforma para o associar.':
         'This account has no email linked. Ask the platform administrator to link one.',
       'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.':
@@ -94,6 +130,42 @@
       'Escolha uma palavra-passe diferente da temporária.': 'Choose a password different from the temporary one.',
     },
     ti: {
+      'Recuperar o acesso · GeoMobilidade Naval':
+        'ኣእታውነት ምምላስ · GeoMobilidade Naval',
+      'Recuperar o acesso':
+        'ኣእታውነት ምምላስ',
+      'Se os dados corresponderem a uma conta activa, enviámos para o correio electrónico dessa conta uma ligação para escolher uma nova palavra-passe. A ligação é válida durante 30 minutos e só pode ser usada uma vez.':
+        'እቲ ሓበሬታ ምስ ንጡፍ ኣካውንት እንተ ተሰማሚዑ፡ ሓድሽ መሕለፊ ቃል ንምምራጽ መላግቦ ናብ ኢመይል ናይቲ ኣካውንት ሰዲድና ኣለና። እቲ መላግቦ ን30 ደቓይቕ ቅቡል እዩ፡ ሓንሳእ ጥራይ ይጥቀመሉ።',
+      'Não recebeu? Confirme a pasta de lixo electrónico ou peça ajuda ao super administrador da plataforma.':
+        'ኣይበጽሓኩምን? ናይ ጐሓፍ ኢመይል ፎልደር ርኣዩ ወይ ካብ ሱፐር ኣመሓዳሪ ሓገዝ ሕተቱ።',
+      'Palavra-passe alterada e conta desbloqueada. As sessões que estavam abertas foram terminadas. Entre com a nova palavra-passe.':
+        'መሕለፊ ቃል ተቐይሩ ኣካውንት ተኸፊቱ። ክፉታት ሰሽናት ተዛዚሞም። ብሓድሽ መሕለፊ ቃል እቶ።',
+      'Iniciar sessão':
+        'እቶ',
+      'A ligação expirou ou já foi usada. Peça uma nova.':
+        'እቲ መላግቦ ግዜኡ ኣኺሉ ወይ ድሮ ተጠቒምሉ። ሓድሽ ሕተቱ።',
+      'Pedir uma nova ligação':
+        'ሓድሽ መላግቦ ሕተት',
+      'Escolha a nova palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum. A conta fica desbloqueada e as sessões abertas terminam.':
+        'ሓድሽ መሕለፊ ቃል ምረጹ፦ እንተወሓደ 12 ፊደላት (ሓረግ ክኸውን ይኽእል)፡ ካብ ስም ኣካውንት ዝተፈልየን ልሙድ ዘይኮነን። ኣካውንት ይኽፈት፡ ክፉታት ሰሽናት ይዛዘሙ።',
+      'Código da aplicação de autenticação':
+        'ኮድ ናይ መረጋገጺ ኣፕ',
+      'Guardar e desbloquear':
+        'ዓቅብን ክፈትን',
+      'Esqueceu-se da palavra-passe ou a conta ficou bloqueada? Indique o seu utilizador ou correio electrónico: enviamos para o correio da conta uma ligação para escolher uma nova palavra-passe e desbloquear a conta.':
+        'መሕለፊ ቃል ረሲዕኩም ወይ ኣካውንት ተዓጽዩ? ተጠቃሚ ወይ ኢመይል ኣእትዉ፦ ሓድሽ መሕለፊ ቃል ንምምራጽን ኣካውንት ንምኽፋትን መላግቦ ናብ ኢመይል ናይቲ ኣካውንት ንሰድድ።',
+      'Enviar a ligação':
+        'መላግቦ ስደድ',
+      'Voltar à página de entrada':
+        'ናብ ገጽ መእተዊ ተመለስ',
+      'Esqueceu-se da palavra-passe ou tem a conta bloqueada?':
+        'መሕለፊ ቃል ረሲዕኩም ወይ ኣካውንት ተዓጽዩ?',
+      'Código inválido. Por segurança, a ligação foi anulada: peça uma nova.':
+        'ዘይቅቡል ኮድ። ንድሕነት እቲ መላግቦ ተሰሪዙ፦ ሓድሽ ሕተቱ።',
+      'Código de verificação inválido. Resta 1 tentativa.':
+        'ዘይቅቡል መረጋገጺ ኮድ። 1 ፈተነ ተሪፉ።',
+      'Código de verificação inválido. Restam {n} tentativas.':
+        'ዘይቅቡል መረጋገጺ ኮድ። {n} ፈተነታት ተሪፎም።',
       'Mudar a palavra-passe · GeoMobilidade Naval':
         'መሕለፊ ቃል ምቕያር · GeoMobilidade Naval',
       'Mudar a palavra-passe':
@@ -165,8 +237,8 @@
       'Voltar à página inicial': 'ናብ መበገሲ ገጽ ተመለስ',
       'Todos os direitos reservados.': 'ኩሉ መሰላት ዝተሓለወ እዩ።',
       'Por favor, preencha todos os campos.': 'በጃኹም ኩሉ ዓውድታት ምልኡ።',
-      'A conta está bloqueada após {n} tentativas falhadas. Peça o desbloqueio ao super administrador.':
-        'ድሕሪ {n} ዘይተዓወቱ ፈተነታት እቲ ኣካውንት ተዓጽዩ። ሱፐር ኣመሓዳሪ ክኸፍቶ ሕተቱ።',
+      'A conta está bloqueada após {n} tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.':
+        'ድሕሪ {n} ዘይተዓወቱ ፈተነታት እቲ ኣካውንት ተዓጽዩ። ሕጂ ንምኽፋቱ «መሕለፊ ቃል ረሲዕኩም ወይ ኣካውንት ተዓጽዩ?» ተጠቐሙ ወይ ሱፐር ኣመሓዳሪ ሕተቱ።',
       'Esta conta não tem correio electrónico associado. Peça ao administrador da plataforma para o associar.': 'እዚ ኣካውንት ኢመይል የብሉን። ኣመሓዳሪ መድረኽ ክውስኸሉ ሕተቱ።',
       'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.': 'እዚ ኣካውንት ጠፊኡ ወይ ግዜኡ ኣኺሉ። ንኣመሓዳሪ መድረኽ ተወከሱ።',
       'Utilizador ou palavra-passe incorrectos. Resta 1 tentativa antes de a conta ser bloqueada.': 'ተጠቃሚ ወይ መሕለፊ ቃል ጌጋ እዩ። እቲ ኣካውንት ቅድሚ ምዕጻዉ 1 ፈተነ ተሪፉ።',

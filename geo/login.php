@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
         if (naval_bloqueado($login)) {
             unset($_SESSION['inscricao_pendente']);
             $passo = 'senha';
-            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.';
         } elseif (naval_totp_aceitar($login, $ins['segredo'], (string) $_POST['codigo_inscricao'])) {
             $u = naval_exclusivo('utilizadores', function () use ($login, $ins) {
                 $todos = naval_utilizadores();
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             if ($resta === 0) {
                 unset($_SESSION['inscricao_pendente']);
                 $passo = 'senha';
-                $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+                $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.';
             } else {
                 $erro = 'Código inválido. Confirme que a hora do telemóvel está certa. ' . ($resta === 1 ? 'Resta 1 tentativa.' : 'Restam ' . $resta . ' tentativas.');
             }
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
         if (naval_bloqueado($login)) {
             unset($_SESSION['mfa_pendente']);
             $passo = 'senha';
-            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.';
         } elseif ($u && naval_totp_aceitar($login, (string) ($u['mfa'] ?? ''), (string) $_POST['codigo'])) {
             naval_apos_verificacao($login, $u, $redirect, true);
             $passo = 'nova';
@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             if ($resta === 0) {
                 unset($_SESSION['mfa_pendente']);
                 $passo = 'senha';
-                $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+                $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.';
             } else {
                 $erro = 'Código inválido. ' . ($resta === 1 ? 'Resta 1 tentativa' : 'Restam ' . $resta . ' tentativas') . ' antes de a conta ser bloqueada.';
             }
@@ -177,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             $erro = 'Por favor, preencha todos os campos.';
         } elseif (naval_bloqueado($usuario)) {
             naval_registar('entrada_bloqueada', [], naval_id_registo($usuario));
-            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.';
+            $erro = 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.';
         } elseif (password_verify($senha, isset($usuarios[$usuario]) ? (string) $usuarios[$usuario]['senha'] : NAVAL_HASH_FICTICIO) && isset($usuarios[$usuario])) {
             // (conta inexistente: verifica um hash fictício, para o tempo de resposta não revelar se a conta existe)
             $u = $usuarios[$usuario];
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             $resta = naval_falha_login($usuario);
             naval_ip_falha($ip);
             naval_registar('entrada_falhada', ['motivo' => 'senha'], naval_id_registo($usuario));
-            $erro = $resta === 0 ? 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Peça o desbloqueio ao super administrador.'
+            $erro = $resta === 0 ? 'A conta está bloqueada após ' . NAVAL_MAX_TENTATIVAS . ' tentativas falhadas. Para a desbloquear já, use «Esqueceu-se da palavra-passe ou tem a conta bloqueada?» ou peça ao super administrador.'
                 : 'Utilizador ou palavra-passe incorrectos. ' . ($resta === 1 ? 'Resta 1 tentativa' : 'Restam ' . $resta . ' tentativas') . ' antes de a conta ser bloqueada.';
         }
     }
@@ -705,6 +705,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
         <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
       </button>
 
+<?php if ($passo === 'senha'): ?>
+      <div style="text-align: center; margin-top: 14px;">
+        <a href="recuperar.php" class="return-link" id="recuperar" data-t>Esqueceu-se da palavra-passe ou tem a conta bloqueada?</a>
+      </div>
+<?php endif; ?>
       <div style="text-align: center;">
         <a href="../" class="return-link">
           <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
