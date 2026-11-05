@@ -3530,12 +3530,8 @@ body.pagina-mapa .top {
   gap: 10px;
   margin: -10px 0 10px;
   min-height: 38px;
-  /* fica sempre visível ao descer a página, com o nome da página (ISO 9241-112: orientação) */
-  position: sticky;
-  top: 0;
-  z-index: 101; /* acima da barra de filtros (100); abaixo do ecrã de carregamento */
-  padding-block: 8px;
-  background: var(--bg);
+  position: relative;
+  z-index: 101; /* menus da conta e do estado por cima da barra de filtros (100) */
 }
 html .barra-sup .menu-btn {
   margin: 0;
@@ -3966,43 +3962,72 @@ html .barra-sup .menu-btn {
   font-size: 12px;
 }
 
-/* Nome da página na barra superior, quando o título grande sai do ecrã ao descer */
-.titulo-fixo {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--fg);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.titulo-fixo.ver {
-  opacity: 1;
-}
-/* Tabelas: o nome das colunas fica sempre visível ao percorrer muitas linhas — cabeçalho fixo logo abaixo da barra
-   superior (que também fica fixa, com o nome da página). No computador a tabela não tem deslocamento próprio
-   (as colunas que não cabem já saem por prioridade), para o cabeçalho acompanhar a página. */
+/* Tabelas com muitas linhas: o cabeçalho de cada tabela (título, nota, Procurar e Excel) e o nome das colunas ficam
+   fixos no topo do ecrã enquanto se percorrem as linhas dessa tabela; ao passar à tabela seguinte, sai com ela.
+   No computador a tabela não tem deslocamento próprio (as colunas que não cabem saem por prioridade). */
 @media (min-width: 961px) {
-  .tw {
+  .sec-tab > .sec-h {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    margin: 0 -18px;
+    padding: 12px 18px 10px;
+    background-color: var(--c-th-fixo);
+    border-radius: 14px 14px 0 0;
+  }
+  .sec-tab .tw {
     overflow-x: clip;
     overflow-y: visible;
   }
-  .tw > table > thead th {
+  .sec-tab .tw > table > thead th {
     position: sticky;
-    top: var(--barra-h, 54px);
+    top: var(--cab-h, 70px);
     z-index: 3;
     background-color: var(--c-th-fixo);
     box-shadow: 0 1px 0 var(--line2);
   }
 }
 @media print {
-  .tw {
-    max-height: none;
-    overflow: visible;
-  }
   .barra-sup {
     display: none;
   }
+}
+
+/* ───────── Painel de indicadores num só ecrã (nível 1: cabeçalho compacto) ───────── */
+body.inicio-ecra .top {
+  margin-bottom: 12px;
+  gap: 8px 16px;
+}
+body.inicio-ecra .top h1 {
+  font-size: clamp(24px, 2.4vw, 32px);
+  margin-top: 2px;
+}
+/* filtro das rotas na mesma linha dos períodos (sem caixa própria): menos uma linha no cabeçalho */
+body.inicio-ecra .filters > .filtros2 {
+  flex-basis: auto;
+  order: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+body.inicio-ecra .filters > .filtros2 .fb-linha {
+  flex-wrap: nowrap;
+}
+/* nível 2 (ecrãs baixos): indicadores numa só linha, sem a nota por baixo */
+body.inicio-apertado .top h1 {
+  font-size: clamp(22px, 2vw, 28px);
+}
+body.inicio-apertado .inicio-ecra .tiles-kpi {
+  margin-bottom: 10px;
+}
+body.inicio-apertado .inicio-ecra .tiles-kpi .tile {
+  padding: 8px 12px;
+}
+body.inicio-apertado .inicio-ecra .tiles-kpi .tile .s {
+  display: none;
+}
+body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
+  font-size: 20px;
 }

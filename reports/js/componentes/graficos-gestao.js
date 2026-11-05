@@ -3,17 +3,19 @@
 // dispersão (bolhas), mapa de calor e colunas agrupadas. Cores: azuis Naval; vermelho só para quedas.
 import { n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
-import { COR, escala, interactivo, kzc, pathBarra, svgEl } from './graficos.js';
+import { COR, escala, interactivo, kzc, pathBarra, saltoEixo, svgEl } from './graficos.js';
 
 const AZUL = COR.s1,
   AZUL_CLARO = '#8fb4ff',
   QUEDA = COR.a3;
 const eixoY = (sv, L, R, w, y, max, passo, fmt) => {
-  for (let v = 0; v <= max + 1e-9; v += passo)
-    sv.append(
-      svgEl('line', { x1: L, x2: w - R, y1: y(v), y2: y(v), class: 'vx-grid' }),
-      svgEl('text', { x: L - 6, y: y(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fmt(v)),
-    );
+  const salto = saltoEixo(y(passo) - y(0));
+  for (let v = 0, i = 0; v <= max + 1e-9; v += passo, i++)
+    if (i % salto === 0)
+      sv.append(
+        svgEl('line', { x1: L, x2: w - R, y1: y(v), y2: y(v), class: 'vx-grid' }),
+        svgEl('text', { x: L - 6, y: y(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fmt(v)),
+      );
 };
 
 /** Tendência: colunas finas com as vendas do dia, linha da média móvel de 7 dias e previsão tracejada com o intervalo de 80%. */
@@ -86,11 +88,12 @@ export function grafBalas(w, { itens, altura }) {
   const { max, passo } = escala(Math.max(...itens.map((x) => Math.max(x.actual, x.anterior)), 0));
   const sx = (v) => Lr + (w - Lr - R) * (v / max);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
-  for (let v = 0; v <= max + 1e-9; v += passo)
-    sv.append(
-      svgEl('line', { x1: sx(v), x2: sx(v), y1: T, y2: H - 18, class: 'vx-grid' }),
-      svgEl('text', { x: sx(v), y: H - 4, class: 'vx-ax', 'text-anchor': 'middle' }, kzc(v)),
-    );
+  // números do eixo a pelo menos a sua largura de distância (sem sobreposição em quadros estreitos)
+  const saltoX = Math.max(1, Math.ceil((6.5 * kzc(max).length + 8) / Math.max(1, sx(passo) - sx(0))));
+  for (let v = 0, i = 0; v <= max + 1e-9; v += passo, i++) {
+    sv.append(svgEl('line', { x1: sx(v), x2: sx(v), y1: T, y2: H - 18, class: 'vx-grid' }));
+    if (i % saltoX === 0) sv.append(svgEl('text', { x: sx(v), y: H - 4, class: 'vx-ax', 'text-anchor': 'middle' }, kzc(v)));
+  }
   itens.forEach((x, i) => {
     const y0 = T + i * linha;
     const g = svgEl('g');
@@ -181,13 +184,15 @@ export function grafAbc(w, { curva, ate80, n, nome, altura }) {
   const sx = (v) => L + (w - L - R) * v,
     sy = (v) => T + (H - T - B) * (1 - v);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
-  [0, 0.25, 0.5, 0.75, 1].forEach((v) =>
+  const saltoAbc = saltoEixo(sy(0.25) - sy(0));
+  [0, 0.25, 0.5, 0.75, 1].forEach((v, i) => {
+    if (i % saltoAbc) return;
     sv.append(
       svgEl('line', { x1: L, x2: w - R, y1: sy(v), y2: sy(v), class: 'vx-grid' }),
       svgEl('text', { x: L - 6, y: sy(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, n0(v * 100) + '%'),
-      svgEl('text', { x: sx(v), y: H - 8, class: 'vx-ax', 'text-anchor': 'middle' }, n0(v * 100) + '%'),
-    ),
-  );
+    );
+  });
+  [0, 0.25, 0.5, 0.75, 1].forEach((v) => sv.append(svgEl('text', { x: sx(v), y: H - 8, class: 'vx-ax', 'text-anchor': 'middle' }, n0(v * 100) + '%')));
   if (!curva.length) return sv;
   sv.append(svgEl('polyline', { points: curva.map(([a, b]) => `${sx(a)},${sy(b)}`).join(' '), fill: 'none', stroke: AZUL, 'stroke-width': 2.2 }));
   const x80 = n ? ate80 / n : 0;
@@ -234,11 +239,13 @@ export function grafDispersao(w, { itens, fx, fy, rx, ry, altura }) {
     sy = (v) => T + (H - T - B) * (1 - (v - ey.ini) / (ey.max - ey.ini));
   const maxT = Math.max(...itens.map((p) => p.tamanho), 1);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
-  for (let v = ey.ini; v <= ey.max + 1e-9; v += ey.passo)
-    sv.append(
-      svgEl('line', { x1: L, x2: w - R, y1: sy(v), y2: sy(v), class: 'vx-grid' }),
-      svgEl('text', { x: L - 6, y: sy(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fy(v)),
-    );
+  const saltoDy = saltoEixo(sy(ey.ini + ey.passo) - sy(ey.ini));
+  for (let v = ey.ini, i = 0; v <= ey.max + 1e-9; v += ey.passo, i++)
+    if (i % saltoDy === 0)
+      sv.append(
+        svgEl('line', { x1: L, x2: w - R, y1: sy(v), y2: sy(v), class: 'vx-grid' }),
+        svgEl('text', { x: L - 6, y: sy(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fy(v)),
+      );
   for (let v = ex.ini; v <= ex.max + 1e-9; v += ex.passo) sv.append(svgEl('text', { x: sx(v), y: H - 16, class: 'vx-ax', 'text-anchor': 'middle' }, fx(v)));
   sv.append(svgEl('text', { x: (L + w - R) / 2, y: H - 2, class: 'vx-ax', 'text-anchor': 'middle' }, rx));
   const mx = itens.reduce((s, p) => s + p.x, 0) / Math.max(1, itens.length),
@@ -314,7 +321,9 @@ export function grafCalor(w, { linhas, colunas, fmt, altura }) {
   colunas.forEach((c, j) => sv.append(svgEl('text', { x: Lr + cw * j + cw / 2, y: 14, class: 'vx-ax', 'text-anchor': 'middle' }, c)));
   linhas.forEach((l, i) => {
     const y0 = T + i * alt;
-    sv.append(svgEl('text', { x: Lr - 8, y: y0 + alt / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, l.rot));
+    // linhas baixas: o nome de uma linha em cada tantas (todas na dica e na tabela)
+    if (i % Math.max(1, Math.ceil(12 / alt)) === 0)
+      sv.append(svgEl('text', { x: Lr - 8, y: y0 + Math.max(alt, 12) / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, l.rot));
     l.valores.forEach((v, j) => {
       const g = svgEl('g');
       const f = v / max;

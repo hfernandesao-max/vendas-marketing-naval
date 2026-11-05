@@ -28,6 +28,8 @@ const cortar = (s, px, tam = 7) => {
   const n = Math.max(3, Math.floor(px / tam));
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 };
+// Com o quadro baixo, as marcas do eixo ficam a pelo menos 15 px umas das outras (sem números sobrepostos)
+export const saltoEixo = (px) => Math.max(1, Math.ceil(15 / Math.max(1, Math.abs(px))));
 // Escala «limpa»: máximo arredondado e 4 divisões
 export const escala = (max) => {
   if (!(max > 0)) return { max: 1, passo: 0.25 };
@@ -119,7 +121,9 @@ export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref, altura }) 
     L = Math.max(34, 8 + 7 * fmt(max).length);
   const sv = svgEl('svg', { viewBox: `0 0 ${w} ${H}`, width: w, height: H, class: 'vx' });
   const y = (v) => T + (H - T - B) * (1 - v / max);
-  for (let v = 0; v <= max + 1e-9; v += passo) {
+  const saltoY = saltoEixo(y(passo) - y(0));
+  for (let v = 0, i = 0; v <= max + 1e-9; v += passo, i++) {
+    if (i % saltoY) continue;
     sv.append(
       svgEl('line', { x1: L, x2: w - R, y1: y(v), y2: y(v), class: 'vx-grid' }),
       svgEl('text', { x: L - 6, y: y(v) + 4, class: 'vx-ax', 'text-anchor': 'end' }, fmt(v)),

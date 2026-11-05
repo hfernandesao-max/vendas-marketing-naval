@@ -459,32 +459,38 @@ function painelInicio(pg) {
 // Painel num só ecrã (boas práticas de dashboards: visão geral sem deslocação, «regra dos 5 segundos»):
 // em ecrãs de computador os gráficos ficam numa grelha de 4 × 2 com a altura que sobra no ecrã; cada
 // gráfico mostra o essencial (as maiores parcelas e «Outros») e o detalhe fica no relatório.
-const ECRA_MIN = { w: 1200, h: 700 };
-const VIZ_MIN_LEGIVEL = 150;
+// Painel num só ecrã, sem barras de deslocação (boas práticas de painéis de gestão: tudo de um relance, S. Few), em
+// qualquer ecrã de computador. A disposição ajusta-se à altura disponível, por níveis:
+//  1. cabeçalho compacto (filtro das rotas na linha dos períodos, título e indicadores mais baixos);
+//  2. em ecrãs baixos, quadros sem subtítulo e indicadores numa só linha;
+// e os gráficos desenham-se à altura real de cada quadro (eixos, datas e legendas nunca cortados).
+// Telemóveis e ecrãs estreitos (< 1200 px) mostram os quadros um por baixo do outro, à altura normal.
+const ECRA_MIN = { w: 1200, h: 600 };
 function ecraUnico(pg, grelha) {
   const ajustar = () => {
     if (!grelha.isConnected) return;
     const ok = innerWidth >= ECRA_MIN.w && innerHeight >= ECRA_MIN.h && !matchMedia('print').matches;
     grelha.classList.toggle('ecra-unico', ok);
     pg.classList.toggle('inicio-ecra', ok);
-    if (!ok) return;
-    // quadros de largura dupla (tendência) ocupam dois lugares da grelha
-    const lugares = [...grelha.children].reduce((n, c) => n + (c.classList.contains('dupla') ? 2 : 1), 0);
-    const filas = Math.ceil(lugares / 4),
-      topo = grelha.getBoundingClientRect().top + scrollY,
-      gap = 12,
-      fundo = 16;
-    const minimo = filas > 2 ? 110 : 170;
-    let h = Math.max(minimo, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
-    // abaixo de 150 px por quadro os gráficos deixam de se ler (eixos e legendas apertados): o painel passa a
-    // deslocar-se na vertical, com os quadros à altura normal — ler bem vem antes de caber num só ecrã
-    if (Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas) < VIZ_MIN_LEGIVEL) {
-      grelha.classList.remove('ecra-unico', 'compacto');
-      pg.classList.remove('inicio-ecra');
+    document.body.classList.toggle('inicio-ecra', ok);
+    if (!ok) {
+      document.body.classList.remove('inicio-apertado');
+      grelha.classList.remove('compacto');
       grelha.style.removeProperty('--viz-h');
       return;
     }
-    // quadros baixos (ecrãs de 768 px): sem o subtítulo, para o gráfico ter mais espaço
+    // quadros de largura dupla (tendência) ocupam dois lugares da grelha
+    const lugares = [...grelha.children].reduce((n, c) => n + (c.classList.contains('dupla') ? 2 : 1), 0);
+    const filas = Math.ceil(lugares / 4),
+      gap = 12,
+      fundo = 16;
+    const altura = () => Math.floor((innerHeight - (grelha.getBoundingClientRect().top + scrollY) - fundo - gap * (filas - 1)) / filas);
+    // nível 2 quando cada quadro ficaria abaixo de 170 px com o cabeçalho compacto
+    document.body.classList.remove('inicio-apertado');
+    if (altura() < 170) document.body.classList.add('inicio-apertado');
+    const minimo = 96;
+    let h = Math.max(minimo, altura());
+    // quadros baixos: sem o subtítulo, para o gráfico ter mais espaço
     grelha.classList.toggle('compacto', h < 200);
     grelha.style.setProperty('--viz-h', h + 'px');
     // o que ainda sobrar (margens da página, rodapé) sai da altura dos quadros: nada de barra de deslocação
