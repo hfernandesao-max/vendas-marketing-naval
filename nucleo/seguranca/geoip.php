@@ -204,3 +204,85 @@ function naval_geoip(string $ip): array
     if ($out) $out['fonte'] = (string) ($bd->meta['database_type'] ?? 'mmdb') . ' ' . date('Y-m', (int) ($bd->meta['build_epoch'] ?? time()));
     return $cache[$ip] = $out;
 }
+
+/**
+ * Descarrega (DB-IP «IP to City Lite» do mês, ou do mês anterior) ou instala um ficheiro local, valida e substitui a
+ * base de dados actual. Devolve ['ok' => bool, 'mensagem' => texto, 'tipo', 'edicao'].
+ * Usado pela tarefa automática do servidor (todos os meses, sem intervenção) e por ferramentas/actualizar-geoip.php.
+ */
+function naval_geoip_instalar(?string $ficheiroLocal = null): array
+{
+    $destino = naval_geoip_ficheiro();
+    $pasta = dirname($destino);
+    if (!is_dir($pasta) && !@mkdir($pasta, 0750, true)) return ['ok' => false, 'mensagem' => 'Não foi possível criar a pasta ' . $pasta];
+    $tmp = $destino . '.novo';
+    $origem = '';
+    if ($ficheiroLocal !== null) {
+        if (!is_file($ficheiroLocal) || !copy($ficheiroLocal, $tmp)) return ['ok' => false, 'mensagem' => 'Ficheiro não encontrado: ' . $ficheiroLocal];
+        $origem = basename($ficheiroLocal);
+    } else {
+        foreach ([date('Y-m'), date('Y-m', strtotime('first day of last month'))] as $mes) {
+            $url = "https://download.db-ip.com/free/dbip-city-lite-{$mes}.mmdb.gz";
+            $ctx = stream_context_create(['http' => ['timeout' => 300, 'user_agent' => 'PortalRTM-GeoIP/1.0', 'follow_location' => 1],
+                'ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
+            $in = @fopen('compress.zlib://' . $url, 'rb', false, $ctx);
+            if (!$in) continue;
+            $out = fopen($tmp, 'wb');
+            $n = $out ? stream_copy_to_stream($in, $out) : 0;
+            fclose($in);
+            if ($out) fclose($out);
+            if ($n > 1000000) {
+                $origem = basename($url);
+                break;
+            }
+        }
+        if ($origem === '') {
+            @unlink($tmp);
+            return ['ok' => false, 'mensagem' => 'Não foi possível descarregar a base de dados (rede, proxy ou edição ainda não publicada).'];
+        }
+    }
+    // validação antes de substituir: abre, tem registos e localiza um IP de teste
+    try {
+        $bd = new NavalMmdb($tmp);
+        $ok = (int) ($bd->meta['node_count'] ?? 0) > 1000 && $bd->procurar('8.8.8.8') !== null;
+        $tipo = (string) ($bd->meta['database_type'] ?? '?');
+        $edicao = date('d-m-Y', (int) ($bd->meta['build_epoch'] ?? 0));
+        unset($bd);
+    } catch (Throwable $e) {
+        $ok = false;
+        $tipo = $edicao = '';
+    }
+    if (!$ok) {
+        @unlink($tmp);
+        return ['ok' => false, 'mensagem' => 'O ficheiro não é uma base de dados de localização válida. A actual mantém-se.'];
+    }
+    if (is_file($destino)) {
+        if (is_file($destino . '.anterior')) @unlink($destino . '.anterior');
+        @rename($destino, $destino . '.anterior');
+    }
+    if (!@rename($tmp, $destino)) return ['ok' => false, 'mensagem' => 'Não foi possível instalar ' . $destino];
+    naval_registar('geoip_actualizado', ['origem' => $origem, 'tipo' => $tipo, 'edicao' => $edicao], 'sistema');
+    return ['ok' => true, 'mensagem' => 'Instalado: ' . $destino . ' (' . $tipo . ', edição de ' . $edicao . ')', 'tipo' => $tipo, 'edicao' => $edicao];
+}
+
+/**
+ * Tarefa automática (de 5 em 5 minutos, ferramentas/actualizar.php urgente): instala a base de dados quando falta e
+ * renova-a todos os meses (com mais de 32 dias), de madrugada; uma tentativa por dia (com a base em falta, a cada
+ * 6 horas). GEOIP_AUTOMATICO=0 desliga. Devolve o resultado ou null quando não havia nada a fazer.
+ */
+function naval_geoip_manter(?int $agora = null): ?array
+{
+    $agora = $agora ?? time();
+    if (naval_config('GEOIP_AUTOMATICO', '1') === '0') return null;
+    $f = naval_geoip_ficheiro();
+    $existe = is_file($f);
+    if ($existe && $agora - (int) filemtime($f) < 32 * 86400) return null;
+    if ($existe && !(date('H', $agora) >= '03' && date('H', $agora) < '06')) return null;
+    $marca = naval_pasta('geoip-tentativas') . '/ultima.json';
+    $ultima = (int) (naval_json_ler($marca)['quando'] ?? 0);
+    if ($agora - $ultima < ($existe ? 20 : 6) * 3600) return null;
+    naval_json_gravar($marca, ['quando' => $agora], false);
+    $r = naval_geoip_instalar();
+    if (!$r['ok']) error_log('[geoip] ' . $r['mensagem']);
+    return $r;
+}

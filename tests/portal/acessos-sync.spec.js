@@ -102,3 +102,64 @@ test('Sincronização dos smartphones: rota, data da última sincronização e d
   await expect(page.locator('table.hm')).toHaveCount(0); // sem histórico: a página usa só a consulta da última sincronização
   expect(erros).toEqual([]);
 });
+
+test('Acessos: última entrada e última alteração da palavra-passe com local e IP; registos de recuperação legíveis', async ({ page }) => {
+  const local = { pais: 'AO', pais_nome: 'Angola', cidade: 'Luanda', raio_km: 20, lat: -8.8, lon: 13.2 };
+  const vista = {
+    ...vistaAntiga,
+    compatibilidade: false,
+    pode_activar: false,
+    utilizadores: [
+      {
+        login: 'ana',
+        nome: 'Ana',
+        email: 'ana@naval.co.ao',
+        email_ok: true,
+        perfil: 'DIR',
+        perfil_nome: PERFIS.DIR,
+        rotas: null,
+        activo: true,
+        ligada: true,
+        ultima_entrada: '2026-11-05 08:34:47',
+        ultima_entrada_local: local,
+        ultima_entrada_ip: '196.216.51.188',
+        ultima_senha: { data: '2026-11-05 08:30:02', como: 'recuperacao', por: 'ana', ip: '196.216.51.188', local },
+      },
+    ],
+    registos: [
+      {
+        data: '2026-11-05 08:30:02',
+        utilizador: 'ana',
+        perfil: '',
+        ip: '196.216.51.188',
+        accao: 'conta_recuperada',
+        detalhe: { ip: '196.216.51.188', dois_passos: true, estava_bloqueada: true },
+        local,
+      },
+      {
+        data: '2026-11-05 08:28:00',
+        utilizador: 'ana',
+        perfil: '',
+        ip: '196.216.51.188',
+        accao: 'recuperacao_pedida',
+        detalhe: { resultado: 'enviado' },
+        local,
+      },
+    ],
+  };
+  await page.route('**/v1/gestao*', (r) => r.fulfill({ json: vista }));
+  const erros = await abrir(page, '#acessos');
+  const linha = page.locator('#s-ac-u tbody tr', { hasText: 'ana@naval.co.ao' });
+  await expect(linha).toContainText('Luanda, Angola');
+  await expect(linha).toContainText('196.216.51.188');
+  await expect(linha).toContainText('Recuperação por correio electrónico');
+  await expect(linha).toContainText('05-11-2026 08:30');
+  await page.locator('.rel-tab', { hasText: 'Registos de actividade' }).click();
+  const reg = page.locator('#s-ac-r');
+  await expect(reg).toContainText('Acesso recuperado (nova palavra-passe)');
+  await expect(reg).toContainText('Estava bloqueada: Sim');
+  await expect(reg).toContainText('Pedido de recuperação do acesso');
+  await expect(reg).toContainText('Resultado: enviado');
+  await expect(reg).toContainText('Luanda, Angola');
+  expect(erros).toEqual([]);
+});

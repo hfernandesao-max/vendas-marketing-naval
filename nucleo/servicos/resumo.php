@@ -261,6 +261,13 @@ function naval_periodicas(?int $agora = null): array
             error_log('[conciliação carrinha] ' . $e->getMessage());
         }
     }
+    // base de dados da localização dos IP (país e cidade de cada entrada nos registos): instala e renova sozinha
+    try {
+        $g = naval_geoip_manter($agora);
+        if ($g !== null) $feito['geoip'] = $g['ok'];
+    } catch (Throwable $e) {
+        error_log('[geoip] ' . $e->getMessage());
+    }
     // carteira de clientes (ritmo, encomenda sugerida, visitas do dia, risco, anomalias, qualidade) de madrugada e,
     // logo a seguir, a optimização automática dos percursos de cada rota;
     // plano de cargas de amanhã proposto às 18:00; fecho do dia por rota às 20:00

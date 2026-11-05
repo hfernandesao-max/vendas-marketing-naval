@@ -110,7 +110,7 @@ export function interactivo(g, titulo, linhas, href) {
 }
 // Colunas (uma série ao longo do tempo), com linha de referência opcional
 export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref, altura }) {
-  const H = Math.max(120, Math.round(altura || 230)),
+  const H = altura ? Math.max(56, Math.round(altura)) : 230,
     T = 22,
     B = 26,
     R = 8,

@@ -43,3 +43,14 @@ teste('ficheiro inválido não estraga os registos', function () {
     verdade($erro !== '', 'deve recusar o ficheiro');
     @unlink($f);
 });
+
+teste('base de dados de localização: renovação automática só quando falta ou tem mais de 32 dias, de madrugada, uma vez por dia', function () {
+    $f = naval_geoip_ficheiro();
+    igual(null, naval_geoip_manter(), 'recente: nada a fazer');
+    touch($f, time() - 40 * 86400);
+    igual(null, naval_geoip_manter(strtotime('today 14:00')), 'antiga, mas fora da madrugada');
+    // tentativa recente registada: não volta a tentar no mesmo dia (sem rede nos testes)
+    naval_json_gravar(naval_pasta('geoip-tentativas') . '/ultima.json', ['quando' => strtotime('today 03:10')], false);
+    igual(null, naval_geoip_manter(strtotime('today 04:00')), 'já tentou hoje');
+    touch($f);
+});

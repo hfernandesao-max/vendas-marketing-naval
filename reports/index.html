@@ -85,6 +85,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5" /></svg><span id="procurar-t">Procurar</span
             ><kbd>Ctrl K</kbd>
           </button>
+          <span class="titulo-fixo" id="titulo-fixo" aria-hidden="true"></span>
           <div class="estado-sis" id="estado-sis" role="group" aria-label="Estado do sistema">
             <button class="fontes" id="fontes" type="button" aria-expanded="false" aria-controls="fontes-det">
               <span class="l1"><i class="dot" id="fontes-dot"></i><span id="fontes-l1">A verificar as fontes de dados…</span></span>
@@ -92,6 +93,10 @@
             </button>
             <div class="fontes-det" id="fontes-det" hidden></div>
             <a class="sync-mini" id="sync-mini" href="#sincronizacao" hidden></a>
+          </div>
+          <div class="seg lang-top" id="lang" role="group" aria-label="Idioma / Language / ቋንቋ">
+            <button type="button" data-l="pt">PT</button><button type="button" data-l="en">EN</button
+            ><button type="button" data-l="ti" lang="ti" title="ትግርኛ">TI</button>
           </div>
           <a class="sino" id="sino" href="#alertas" hidden
             ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4" /></svg
@@ -146,10 +151,6 @@
                 <path d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg
               ><span></span>
             </button>
-            <div class="seg lang-top" id="lang" role="group" aria-label="Idioma / Language / ቋንቋ">
-              <button type="button" data-l="pt">PT</button><button type="button" data-l="en">EN</button
-              ><button type="button" data-l="ti" lang="ti" title="ትግርኛ">TI</button>
-            </div>
             <div class="filtros2 fb" id="filtros2" role="group" aria-label="Filtros" hidden></div>
           </div>
         </div>

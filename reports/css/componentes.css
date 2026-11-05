@@ -3530,6 +3530,12 @@ body.pagina-mapa .top {
   gap: 10px;
   margin: -10px 0 10px;
   min-height: 38px;
+  /* fica sempre visível ao descer a página, com o nome da página (ISO 9241-112: orientação) */
+  position: sticky;
+  top: 0;
+  z-index: 101; /* acima da barra de filtros (100); abaixo do ecrã de carregamento */
+  padding-block: 8px;
+  background: var(--bg);
 }
 html .barra-sup .menu-btn {
   margin: 0;
@@ -3947,6 +3953,56 @@ html .barra-sup .menu-btn {
 }
 @media (max-width: 560px) {
   .estado-sis .sync-mini {
+    display: none;
+  }
+}
+/* Idioma na barra superior (junto da conta, como nas plataformas de referência): liberta a linha de filtros */
+.barra-sup .lang-top {
+  flex: none;
+  padding: 3px;
+}
+.barra-sup .lang-top button {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+/* Nome da página na barra superior, quando o título grande sai do ecrã ao descer */
+.titulo-fixo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--fg);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.titulo-fixo.ver {
+  opacity: 1;
+}
+/* Tabelas: o nome das colunas fica sempre visível ao percorrer muitas linhas — cabeçalho fixo logo abaixo da barra
+   superior (que também fica fixa, com o nome da página). No computador a tabela não tem deslocamento próprio
+   (as colunas que não cabem já saem por prioridade), para o cabeçalho acompanhar a página. */
+@media (min-width: 961px) {
+  .tw {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+  .tw > table > thead th {
+    position: sticky;
+    top: var(--barra-h, 54px);
+    z-index: 3;
+    background-color: var(--c-th-fixo);
+    box-shadow: 0 1px 0 var(--line2);
+  }
+}
+@media print {
+  .tw {
+    max-height: none;
+    overflow: visible;
+  }
+  .barra-sup {
     display: none;
   }
 }

@@ -237,6 +237,8 @@ export function actualizarBarraSup() {
   pr.setAttribute('aria-label', t('Procurar uma função') + ' (Ctrl+K)');
   pr.title = t('Procurar uma função') + ' (Ctrl+K)';
   $('#estado-sis').setAttribute('aria-label', t('Estado do sistema'));
+  const mini = $('#titulo-fixo');
+  if (mini) mini.textContent = $('#titulo').textContent;
   actualizarEstrela();
   mostrarSino();
   mostrarConta();
@@ -279,4 +281,14 @@ export function montarBarraSup() {
   setInterval(() => {
     if (!document.hidden) lerAlertas();
   }, 10 * 60000);
+  // altura da barra fixa: os cabeçalhos das tabelas ficam logo abaixo dela
+  const barra = $('#barra-sup');
+  const medir = () => document.documentElement.style.setProperty('--barra-h', Math.round(barra.getBoundingClientRect().height) + 'px');
+  medir();
+  if ('ResizeObserver' in window) new ResizeObserver(medir).observe(barra);
+  // nome da página sempre visível: quando o título grande sai do ecrã, aparece na barra superior
+  const h1 = $('#titulo'),
+    mini = $('#titulo-fixo');
+  if (h1 && mini && 'IntersectionObserver' in window)
+    new IntersectionObserver(([e]) => mini.classList.toggle('ver', !e.isIntersecting), { rootMargin: '-60px 0px 0px 0px' }).observe(h1);
 }

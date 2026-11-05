@@ -1,0 +1,7 @@
+/* Só durante a impressão dos cartazes QR (ligado e retirado pelo portal): página sem margens do navegador, para não
+   haver espaço onde o navegador imprima o título, o endereço, a data e o número de página. A margem de segurança de
+   12 mm fica dentro de cada cartaz (.cqr-pagina). */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}

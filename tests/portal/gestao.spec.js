@@ -156,25 +156,46 @@ test('pedidos dos clientes: encomenda com linha fora do habitual e acções de v
   expect(erros).toEqual([]);
 });
 
-for (const [w, h] of [
-  [1920, 1080],
-  [1366, 768],
+for (const [w, h, umEcra] of [
+  [1920, 1080, true],
+  [1600, 860, false],
+  [1366, 768, false],
 ]) {
-  test(`Início com os gráficos de gestão ${w}×${h}: grelha 4 × 3 num só ecrã, recebimentos mantidos, tabelas e legendas`, async ({ page }) => {
+  test(`Início com os gráficos de gestão ${w}×${h}: ${umEcra ? 'grelha 4 × 3 num só ecrã' : 'quadros legíveis com deslocação'}, nada cortado, tabelas e legendas`, async ({
+    page,
+  }) => {
     const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
     await page.setViewportSize({ width: w, height: h });
     await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
     const erros = await abrir(page, '#inicio');
-    await expect(page.locator('.viz-grid.ecra-unico .viz-card')).toHaveCount(11);
+    await expect(page.locator('.viz-grid .viz-card')).toHaveCount(11);
+    await expect(page.locator('.viz-grid.ecra-unico')).toHaveCount(umEcra ? 1 : 0);
     await expect(page.locator('.viz-card.dupla')).toHaveCount(1);
     for (const titulo of ['Tendência diária e previsão', 'Como foi cobrado', 'Antiguidade da dívida', 'Distribuição numérica', 'Carteira de clientes por mês'])
       await expect(page.locator('.viz-card h3', { hasText: titulo })).toHaveCount(1);
     await page.waitForTimeout(300);
-    expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(1);
-    for (const c of await page.locator('.viz-card').all()) {
-      const b = await c.boundingBox();
-      expect(b.y + b.height).toBeLessThanOrEqual(h);
+    if (umEcra) {
+      expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(1);
+      for (const c of await page.locator('.viz-card').all()) {
+        const b = await c.boundingBox();
+        expect(b.y + b.height).toBeLessThanOrEqual(h);
+      }
     }
+    // nada cortado: eixos, rótulos e legendas dentro de cada quadro
+    const cortados = await page.evaluate(() =>
+      [...document.querySelectorAll('.viz-card')]
+        .map((c) => {
+          const cb = c.getBoundingClientRect();
+          let pior = 0;
+          c.querySelectorAll('svg text').forEach((e) => {
+            const b = e.getBoundingClientRect();
+            if (b.height) pior = Math.max(pior, b.bottom - cb.bottom);
+          });
+          return pior > 0 ? c.querySelector('h3').textContent : null;
+        })
+        .filter(Boolean),
+    );
+    expect(cortados).toEqual([]);
     const abc = page.locator('.viz-card', { hasText: 'Curva ABC de clientes' });
     await abc.getByRole('button', { name: /Tabela/ }).click();
     await expect(abc.locator('table')).toContainText('A (80% do valor)');

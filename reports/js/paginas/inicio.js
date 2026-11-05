@@ -460,6 +460,7 @@ function painelInicio(pg) {
 // em ecrãs de computador os gráficos ficam numa grelha de 4 × 2 com a altura que sobra no ecrã; cada
 // gráfico mostra o essencial (as maiores parcelas e «Outros») e o detalhe fica no relatório.
 const ECRA_MIN = { w: 1200, h: 700 };
+const VIZ_MIN_LEGIVEL = 150;
 function ecraUnico(pg, grelha) {
   const ajustar = () => {
     if (!grelha.isConnected) return;
@@ -475,6 +476,14 @@ function ecraUnico(pg, grelha) {
       fundo = 16;
     const minimo = filas > 2 ? 110 : 170;
     let h = Math.max(minimo, Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas));
+    // abaixo de 150 px por quadro os gráficos deixam de se ler (eixos e legendas apertados): o painel passa a
+    // deslocar-se na vertical, com os quadros à altura normal — ler bem vem antes de caber num só ecrã
+    if (Math.floor((innerHeight - topo - fundo - gap * (filas - 1)) / filas) < VIZ_MIN_LEGIVEL) {
+      grelha.classList.remove('ecra-unico', 'compacto');
+      pg.classList.remove('inicio-ecra');
+      grelha.style.removeProperty('--viz-h');
+      return;
+    }
     // quadros baixos (ecrãs de 768 px): sem o subtítulo, para o gráfico ter mais espaço
     grelha.classList.toggle('compacto', h < 200);
     grelha.style.setProperty('--viz-h', h + 'px');

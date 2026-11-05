@@ -68,7 +68,7 @@ $portaGh = $portaWeb + 500;
 $env = $tmp . '/.env';
 file_put_contents($env, implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'EMAIL_MODO=ficheiro',
-    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
+    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'GEOIP_AUTOMATICO=0', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
     // a janela nocturna liga-se só no caso dela (a hora real do teste não pode mudar os outros)
