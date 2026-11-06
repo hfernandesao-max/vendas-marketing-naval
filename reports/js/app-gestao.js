@@ -573,10 +573,14 @@ function carregar(fresco) {
   if (E.aLer) return Promise.resolve();
   E.aLer = true;
   desenhar();
+  // o estado do Pinguim BO chega quando chegar: os números aparecem logo que os indicadores respondem
   const fonte = apiJson('vendas/estado').then(
     (f) => (E.fonte = f && typeof f.ok === 'boolean' ? f : null),
     () => (E.fonte = null),
   );
+  fonte.then(() => {
+    if (E.ind) desenhar();
+  });
   const ind = apiJson('indicadores' + (fresco ? '?fresco=1' : '')).then(
     (d) => {
       if (d && d.ok) {
@@ -586,7 +590,7 @@ function carregar(fresco) {
     },
     () => (E.erro = 'Não foi possível ler os dados.'),
   );
-  return Promise.all([fonte, ind]).then(() => {
+  return ind.then(() => {
     E.aLer = false;
     desenhar();
   });
@@ -630,6 +634,8 @@ function puxarParaActualizar() {
   });
 }
 
+// Velocidade: a sessão e os indicadores pedem-se ao mesmo tempo (não um depois do outro)
+carregar();
 apiJson('sessao').then((s) => {
   if (!s || !s.login) {
     location.href = '../geo/login.php?redirect=../gestao/';
@@ -640,7 +646,6 @@ apiJson('sessao').then((s) => {
   l.then(() => {
     document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';
     desenhar();
-    carregar();
   });
 });
 $('ag-actualizar').addEventListener('click', () => carregar(true));

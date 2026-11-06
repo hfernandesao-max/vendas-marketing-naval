@@ -33,6 +33,31 @@ function naval_app_da_conta(): string
     return naval_pode('app-gestao') ? 'gestao' : 'portal';
 }
 
+// ───────────── páginas da app: rapidez ─────────────
+/**
+ * Páginas da app (instalar, activar, entrar) num só pedido: estilos, tema e funções dentro da página, letra do sistema
+ * do telemóvel e tradução descarregada só quando o idioma escolhido não é o português. Na rede móvel cada pedido a
+ * mais custa uma ida e volta ao servidor; assim a página aparece com a primeira resposta.
+ */
+function naval_app_cabeca(): string
+{
+    $r = dirname(__DIR__, 2);
+    return '<style>' . file_get_contents($r . '/app/app.css') . '</style>' . "\n" . '<script>' . file_get_contents($r . '/reports/js/tema-arranque.js') . '</script>';
+}
+function naval_app_scripts(): string
+{
+    $r = dirname(__DIR__, 2);
+    return '<script>' . file_get_contents($r . '/app/app.js') . '</script>' . "\n"
+        . '<script>try{if((localStorage.getItem("vm-lang")||"pt")!=="pt"){var s=document.createElement("script");s.src="../geo/login-idioma.js";document.body.appendChild(s)}}catch(e){}</script>';
+}
+/** Sistema do telemóvel pelo navegador (para mostrar logo os passos certos, sem esperar pelo JavaScript). */
+function naval_app_so(string $ua): string
+{
+    if (preg_match('/iPhone|iPad|iPod/', $ua)) return 'ios';
+    if (stripos($ua, 'Android') !== false) return 'android';
+    return 'outro';
+}
+
 // ───────────── código QR ─────────────
 function naval_app_codigo_ficheiro(string $codigo): string
 {
@@ -60,6 +85,20 @@ function naval_app_codigo(string $codigo): ?array
     if (!$x || !empty($x['usado']) || (int) ($x['ate'] ?? 0) < time()) return null;
     return $x;
 }
+/** Registo do código, mesmo já usado ou fora de validade (para saber a app ao reabrir pelo ícone). */
+function naval_app_codigo_registo(string $codigo): ?array
+{
+    if (!naval_app_codigo_valido($codigo)) return null;
+    $x = naval_json_ler(naval_app_codigo_ficheiro($codigo));
+    return $x ?: null;
+}
+/** Cookie do equipamento (só o identificador, não dá acesso): leva a app à entrada rápida com a biometria. */
+function naval_app_cookie(string $id): void
+{
+    $vale = $id === '' ? time() - 3600 : time() + NAVAL_APP_DIAS_SEM_USO * 86400;
+    header('Set-Cookie: naval_eq=' . ($id === '' ? 'x' : $id) . '; Expires=' . gmdate('D, d M Y H:i:s', $vale) . ' GMT; Path=/; HttpOnly; SameSite=Lax' . (naval_https() ? '; Secure' : ''), false);
+}
+
 /** Endereço público do portal (PORTAL_URL) ou o do próprio pedido. */
 function naval_app_url(string $caminho): string
 {

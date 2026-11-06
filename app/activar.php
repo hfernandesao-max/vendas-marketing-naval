@@ -18,6 +18,12 @@ if ($eq) {
     exit;
 }
 $c = naval_app_codigo($codigo);
+// código já usado (a app abre sempre por aqui): directo à entrada rápida com a biometria, sem passar pelo navegador
+$reg = $c ? null : naval_app_codigo_registo($codigo);
+if (!$c && $reg && preg_match('/^[a-f0-9]{24}$/', (string) ($_COOKIE['naval_eq'] ?? ''))) {
+    header('Location: entrar.php?redirect=' . rawurlencode(NAVAL_APP_DESTINO[$reg['app']] ?? '../reports/'));
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -27,13 +33,11 @@ $c = naval_app_codigo($codigo);
   <meta name="referrer" content="no-referrer" />
   <title>Activar a app · Portal RTM</title>
   <meta name="theme-color" content="#273777">
-  <link rel="stylesheet" href="../assets/fontes/inter.css" />
-  <link rel="stylesheet" href="app.css" />
-  <script src="../reports/js/tema-arranque.js"></script>
+  <?= naval_app_cabeca() ?>
 </head>
 <body>
   <main class="caixa" id="activar" data-codigo="<?= htmlspecialchars($c ? $codigo : '', ENT_QUOTES, 'UTF-8') ?>">
-    <img class="logo" src="icones/icone-192.png" alt="Grupo Naval" width="64" height="64" />
+    <img class="logo" src="icones/icone-128.png" alt="Grupo Naval" width="64" height="64" />
     <h1 id="act-titulo" data-t>A activar a app…</h1>
     <p class="quem" id="act-quem"></p>
     <div class="msg erro" role="alert" id="act-erro" hidden></div>
@@ -54,9 +58,8 @@ $c = naval_app_codigo($codigo);
       <button type="button" class="botao" id="act-continuar" data-t>Continuar</button>
     </section>
   </main>
+  <?= naval_app_scripts() ?>
   <script src="registar.js" defer></script>
-  <script src="app.js"></script>
-  <script src="../geo/login-idioma.js"></script>
   <script>
     (function () {
       var tr = function (s) {
@@ -66,6 +69,7 @@ $c = naval_app_codigo($codigo);
         return document.getElementById(id);
       };
       var c = $('activar').dataset.codigo;
+      var opcoes = null;
       var destino = '../reports/';
       try {
         destino = localStorage.getItem('naval-app-destino') || destino;
@@ -80,7 +84,7 @@ $c = naval_app_codigo($codigo);
       }
       if (!c) {
         // código já usado (a app abre sempre por aqui): entrada com a biometria ou a palavra-passe deste equipamento
-        if (NavalApp.equipamento()) location.replace('../geo/login.php?redirect=' + encodeURIComponent(destino));
+        if (NavalApp.equipamento()) location.replace('entrar.php?redirect=' + encodeURIComponent(destino));
         else erro('Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.');
         return;
       }
@@ -93,6 +97,7 @@ $c = naval_app_codigo($codigo);
         if (!r.ok) return erro(r.erro || 'Sem resposta do servidor.');
         NavalApp.guardarEquipamento(r.equipamento);
         destino = r.destino;
+        opcoes = r.opcoes;
         try {
           localStorage.setItem('naval-app-destino', destino);
         } catch (e) {}
@@ -111,7 +116,7 @@ $c = naval_app_codigo($codigo);
       });
       $('act-bio-b').addEventListener('click', function () {
         $('act-bio-b').disabled = true;
-        NavalApp.registar().then(function (r) {
+        NavalApp.registar(opcoes).then(function (r) {
           $('act-bio-b').disabled = false;
           if (r.ok) return seguir();
           $('act-erro').textContent = tr(r.erro || 'A biometria não foi activada.');

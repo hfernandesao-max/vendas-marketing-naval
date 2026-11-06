@@ -15,6 +15,15 @@ let expira = 0;
 let aPedir = null;
 let semServidor = false;
 let erroToken = null; // porque é que o servidor não deu o token (configuração, API indisponível…)
+// Token já emitido dentro da página (index.php): o primeiro pedido à API não espera por POST auth/token
+{
+  const m = typeof document !== 'undefined' && document.querySelector('meta[name="api-token"]');
+  if (m && m.content) {
+    token = m.content;
+    expira = Date.now() + (parseInt(m.dataset.s, 10) || 900) * 1000;
+    m.remove();
+  }
+}
 
 const csrfPagina = () => {
   const m = document.querySelector('meta[name="csrf-token"]');

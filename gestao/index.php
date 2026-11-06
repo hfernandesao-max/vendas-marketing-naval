@@ -18,5 +18,12 @@ if (empty($_SESSION['app_equipamento']) || !naval_app_activo((string) $_SESSION[
     exit;
 }
 header('Content-Type: text/html; charset=utf-8');
-$meta = '<meta name="csrf-token" content="' . htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') . '">';
-echo preg_replace('/<head>/i', '<head>' . "\n  " . $meta, (string) file_get_contents(__DIR__ . '/index.html'), 1);
+require_once dirname(__DIR__) . '/nucleo/versoes.php';
+$meta = '<meta name="csrf-token" content="' . htmlspecialchars(naval_csrf(), ENT_QUOTES, 'UTF-8') . '">' . naval_meta_token();
+$html = (string) preg_replace('/<head>/i', '<head>' . "\n  " . $meta, (string) file_get_contents(__DIR__ . '/index.html'), 1);
+// Velocidade (abrir a app em menos de 1 segundo na rede móvel): estilos dentro da página (menos um pedido), letra do
+// sistema do telemóvel (sem descarregar letras) e módulos com versão no endereço, guardados no telemóvel até mudarem
+// (import map e pré-carregamento de toda a cadeia de módulos, sem esperar pelos import)
+$css = (string) file_get_contents(__DIR__ . '/app.css');
+$html = str_replace('<link rel="stylesheet" href="app.css" />', '<style>' . $css . '</style>', $html);
+echo naval_portal_versionar($html, dirname(__DIR__) . '/reports', [], '../reports/', 'js/app-gestao.js');

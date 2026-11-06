@@ -47,12 +47,8 @@ body {
   margin: 0;
   background: var(--fundo);
   color: var(--texto);
-  font-family:
-    Inter,
-    -apple-system,
-    system-ui,
-    'Segoe UI',
-    sans-serif;
+  /* letra do sistema (San Francisco no iPhone, Roboto no Android): é a recomendada pela Apple e pela Google e não se descarrega */
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.4;
   -webkit-text-size-adjust: 100%;
