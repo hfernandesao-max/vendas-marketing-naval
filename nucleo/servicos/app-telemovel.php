@@ -50,6 +50,12 @@ function naval_app_scripts(): string
     return '<script>' . file_get_contents($r . '/app/app.js') . '</script>' . "\n"
         . '<script>try{if((localStorage.getItem("vm-lang")||"pt")!=="pt"){var s=document.createElement("script");s.src="../geo/login-idioma.js";document.body.appendChild(s)}}catch(e){}</script>';
 }
+/** Logótipo da Naval com os anéis e a órbita a rodar, como no arranque do portal (pára quando a página fica pronta). */
+function naval_app_logo(bool $aRodar = true): string
+{
+    return '<div class="ld-logo' . ($aRodar ? '' : ' parado') . '" id="app-logo" aria-hidden="true"><span class="ld-anel"></span><span class="ld-anel"></span>'
+        . '<span class="ld-anel"></span><span class="ld-orbita"></span><img src="../assets/naval-emblema-160.png" alt="" width="74" height="74"></div>';
+}
 /** Sistema do telemóvel pelo navegador (para mostrar logo os passos certos, sem esperar pelo JavaScript). */
 function naval_app_so(string $ua): string
 {
@@ -159,6 +165,14 @@ function naval_app_equipamento(string $ua): array
     if (stripos($ua, 'Windows') !== false) return ['so' => 'Windows', 'modelo' => 'Computador'];
     if (stripos($ua, 'Mac OS X') !== false) return ['so' => 'macOS', 'modelo' => 'Computador'];
     return ['so' => 'Outro', 'modelo' => 'Desconhecido'];
+}
+/** A pessoa tem a app activa num telemóvel (dentro dos 90 dias de uso)? */
+function naval_app_tem_activa(string $login): bool
+{
+    foreach (naval_app_lista() as $x) {
+        if (($x['login'] ?? '') === $login && ($x['estado'] ?? '') === 'activo' && strtotime((string) $x['ultimo_uso']) >= time() - NAVAL_APP_DIAS_SEM_USO * 86400) return true;
+    }
+    return false;
 }
 /** Equipamento activo (e dentro dos 90 dias de uso) ou null. */
 function naval_app_activo(string $id): ?array

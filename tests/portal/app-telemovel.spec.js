@@ -49,3 +49,19 @@ test('menu da conta: gerar o código QR pessoal para instalar a app e ver o equi
   await expect(dlg.getByRole('button', { name: 'Desactivar este equipamento' })).toBeVisible();
   expect(erros).toEqual([]);
 });
+
+for (const tem of [false, true]) {
+  test('menu da conta: «App no telemóvel» ' + (tem ? 'a vermelho com a app activa' : 'a verde sem a app'), async ({ page }) => {
+    await page.route('**/v1/sessao*', (r) =>
+      r.fulfill({ json: { login: 'h', nome: 'Henrique Fernandes', perfil: 'SADM', csrf: 'x', permissoes: {}, app_instalada: tem } }),
+    );
+    await abrir(page, '#inicio');
+    await page.locator('#conta-b').click();
+    const b = page.locator('#conta-app');
+    if (tem) await expect(b).toHaveClass(/instalada/);
+    else await expect(b).not.toHaveClass(/instalada/);
+    // verde: componente G maior que R; vermelho: R maior que G (tema claro e escuro)
+    const [r, g] = (await b.evaluate((x) => getComputedStyle(x).color)).match(/\d+/g).map(Number);
+    expect(tem ? r > g : g > r).toBe(true);
+  });
+}

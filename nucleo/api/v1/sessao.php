@@ -9,6 +9,7 @@ $u = naval_utilizador();
 if (!$u) throw new NavalErro('Sessão terminada.', 401);
 naval_servico('preferencias');
 naval_servico('actualizacao');
+naval_servico('app-telemovel');
 $perm = [];
 foreach (array_keys(naval_matriz()) as $rec) $perm[$rec] = naval_nivel($rec);
 $GLOBALS['naval_api_sensivel'] = true;   // tem o código CSRF: nunca em cache nem comprimido
@@ -32,6 +33,9 @@ naval_json([
     'sessao' => ['inactiva_s' => NAVAL_SESSAO_INACTIVA, 'maxima_s' => NAVAL_SESSAO_MAXIMA],
     // app instalada pelo código QR (equipamento registado) ou null: fora disso, o portal não funciona como app
     'app' => !empty($_SESSION['app_equipamento']) ? (string) $_SESSION['app_equipamento'] : null,
+    // menu da conta: «App no telemóvel» a vermelho quando já tem a app activa num telemóvel, a verde quando não tem
+    'app_instalada' => naval_app_tem_activa((string) ($u['login'] ?? '')),
+    'app_biometria' => !empty($_SESSION['app_equipamento']) && function_exists('naval_app_activo') && !empty((naval_app_activo((string) $_SESSION['app_equipamento']) ?: [])['credenciais']),
     // versão instalada no servidor: a app no telemóvel recarrega-se sozinha quando muda (actualização transparente)
     'versao' => (string) (naval_act_estado()['versao'] ?? ''),
 ]);

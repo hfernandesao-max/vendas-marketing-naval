@@ -5,15 +5,24 @@ import { apiJson } from './api.js';
 import { botao, janela, msgErro } from './componentes/janelas.js';
 import { dl } from './formatos.js';
 import { t } from './i18n/i18n.js';
+import { SESSAO } from './perfil.js';
 import { carregarScript, postJson } from './servidor.js';
 import { el, toast } from './util.js';
 
 const quando = (s) => (s ? dl(s) + ' ' + String(s).slice(11, 16) : '—');
 const equipamento = (x) => x.modelo + ' · ' + x.so;
 
+/** Cor do item do menu da conta: vermelho com a app activa, verde sem ela. */
+function marcarMenu(tem) {
+  if (SESSAO) SESSAO.app_instalada = tem;
+  const b = document.getElementById('conta-app');
+  if (b) b.classList.toggle('instalada', tem);
+}
+
 export function abrirAppTelemovel() {
   apiJson('app-telemovel').then((d) => {
     if (!d || !d.ok) return toast(t((d && d.erro) || 'Não foi possível ler os dados.'), 5000);
+    marcarMenu(!!d.meu);
     janela(
       t('App no telemóvel'),
       t('A app «{a}» instala-se só por este código QR pessoal: fica registado quem a instalou e em que equipamento.', { a: d.nome }),
@@ -82,6 +91,7 @@ export function abrirAppTelemovel() {
               postJson('app-telemovel', { accao: 'desactivar', id: d.meu.id }).then((r) => {
                 if (r && r.ok) {
                   toast(t('Equipamento desactivado.'), 4000);
+                  marcarMenu(false);
                   fechar();
                 } else {
                   erro.textContent = t((r && r.erro) || 'Sem resposta do servidor.');

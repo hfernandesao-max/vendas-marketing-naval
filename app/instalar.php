@@ -38,7 +38,7 @@ $so = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 </head>
 <body>
   <main class="caixa" id="instalar" data-codigo="<?= htmlspecialchars($c ? $codigo : '', ENT_QUOTES, 'UTF-8') ?>">
-    <img class="logo" src="icones/icone-128.png" alt="Grupo Naval" width="64" height="64" />
+    <?= naval_app_logo(false) ?>
 <?php if (!$c): ?>
     <h1 data-t>Código expirado</h1>
     <div class="msg erro" role="alert" data-t id="inst-invalido">Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.</div>

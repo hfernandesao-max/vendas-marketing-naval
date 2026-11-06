@@ -2441,6 +2441,8 @@ export const EN = {
   Substituída: 'Replaced',
   Desactivada: 'Deactivated',
   Expirada: 'Expired',
+  'Já tem a app activa num telemóvel': 'You already have the app active on a phone',
+  'Ainda não tem a app no telemóvel': 'You do not have the app on your phone yet',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

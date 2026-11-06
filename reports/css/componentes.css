@@ -3855,6 +3855,21 @@ html .barra-sup .menu-btn {
 .conta-sair:focus-visible {
   background: rgb(var(--er1-rgb) / 0.1);
 }
+/* «App no telemóvel»: verde enquanto a pessoa não tem a app; vermelho quando já a tem activa num telemóvel */
+.conta-app {
+  color: var(--ok);
+}
+.conta-app.instalada {
+  color: var(--bad);
+}
+.conta-app:hover,
+.conta-app:focus-visible {
+  background: rgb(48 209 88 / 0.1);
+}
+.conta-app.instalada:hover,
+.conta-app.instalada:focus-visible {
+  background: rgb(var(--er1-rgb) / 0.1);
+}
 /* estrela «fixar nos favoritos» ao lado do título */
 .titulo-l {
   display: flex;

@@ -13,8 +13,14 @@ if (!naval_pode('app-gestao')) {
 }
 // Só nos equipamentos registados: a app instala-se e activa-se apenas pelo código QR pessoal do portal
 naval_servico('app-telemovel');
-if (empty($_SESSION['app_equipamento']) || !naval_app_activo((string) $_SESSION['app_equipamento'])) {
+$eqApp = !empty($_SESSION['app_equipamento']) ? naval_app_activo((string) $_SESSION['app_equipamento']) : null;
+if (!$eqApp) {
     header('Location: ../app/so-pelo-qr.php', true, 302);
+    exit;
+}
+// a app só abre com a chave do telemóvel (Face ID, impressão digital ou código de bloqueio): termina a activação
+if (!$eqApp['credenciais']) {
+    header('Location: ../app/activar.php', true, 302);
     exit;
 }
 header('Content-Type: text/html; charset=utf-8');

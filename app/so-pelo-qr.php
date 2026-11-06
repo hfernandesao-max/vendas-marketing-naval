@@ -2,6 +2,7 @@
 /** A app só funciona nos equipamentos registados pelo código QR pessoal do portal (ver app/instalar.php). */
 require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
+naval_servico('app-telemovel');
 header('Cache-Control: no-store');
 ?>
 <!DOCTYPE html>
@@ -10,13 +11,11 @@ header('Cache-Control: no-store');
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Instalar pelo código QR · Portal RTM</title>
-  <link rel="stylesheet" href="../assets/fontes/inter.css" />
-  <link rel="stylesheet" href="app.css" />
-  <script src="../reports/js/tema-arranque.js"></script>
+  <?= naval_app_cabeca() ?>
 </head>
 <body>
   <main class="caixa" id="so-qr">
-    <img class="logo" src="icones/icone-192.png" alt="Grupo Naval" width="64" height="64" />
+    <?= naval_app_logo(false) ?>
     <h1 data-t>Instale a app pelo código QR</h1>
     <p class="nota" data-t>A app só funciona nos equipamentos registados. Para a instalar neste telemóvel:</p>
     <ol class="passos">
@@ -31,6 +30,6 @@ header('Cache-Control: no-store');
     </form>
 <?php endif; ?>
   </main>
-  <script src="../geo/login-idioma.js"></script>
+  <?= naval_app_scripts() ?>
 </body>
 </html>

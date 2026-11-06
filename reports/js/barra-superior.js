@@ -209,6 +209,9 @@ function mostrarConta() {
   b.setAttribute('aria-label', t('Conta') + ': ' + nome);
   $('#sair-t').textContent = t('Terminar sessão');
   $('#conta-app-t').textContent = t('App no telemóvel');
+  const tem = !!SESSAO.app_instalada;
+  $('#conta-app').classList.toggle('instalada', tem);
+  $('#conta-app').title = t(tem ? 'Já tem a app activa num telemóvel' : 'Ainda não tem a app no telemóvel');
 }
 function fecharConta() {
   const p = $('#conta-p');

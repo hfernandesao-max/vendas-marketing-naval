@@ -217,6 +217,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
   <meta name="format-detection" content="telephone=no">
   <script src="../app/registar.js" defer></script>
   <script src="../app/app.js"></script>
+  <script>
+    // App instalada pelo código QR: nunca mostra a palavra-passe, vai directo à entrada com Face ID
+    (function () {
+      var A = window.NavalApp;
+      if (!A || !A.instalada()) return;
+      document.documentElement.classList.add('modo-app');
+      var eq = A.equipamento();
+      if (!eq) return;
+      var d = '../reports/';
+      try {
+        d = localStorage.getItem('naval-app-destino') || d;
+      } catch (e) {}
+      location.replace('../app/entrar.php?redirect=' + encodeURIComponent(d) + '&eq=' + encodeURIComponent(eq));
+    })();
+  </script>
   <title>Iniciar sessão · GeoMobilidade Naval</title>
   <link rel="stylesheet" href="../assets/fontes/poppins.css" />
   <link rel="stylesheet" href="style.css" />
@@ -599,6 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       body { padding: 18px; overflow: auto; }
       .login-container { padding: 32px 22px 24px; border-radius: 18px; }
     }
+      html.modo-app form .form-group, html.modo-app form .btn-submit, html.modo-app .return-link { display: none !important; }
   </style>
 </head>
 <body>
@@ -670,12 +686,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
         <p data-t style="margin:8px 2px 0;font-size:12.5px;opacity:.75">Abra a aplicação de autenticação no telemóvel e insira o código de GeoMobilidade Naval.</p>
       </div>
 <?php else: ?>
-      <!-- App instalada pelo código QR: entrada com Face ID (ou impressão digital); o equipamento vai com a palavra-passe -->
+      <!-- App instalada pelo código QR: o equipamento vai com a palavra-passe (só fora da app) -->
       <input type="hidden" name="app_equipamento" id="app_equipamento" value="" />
-      <div id="app-bio" hidden>
-        <button type="button" class="btn-bio" id="app-bio-b"><span id="app-bio-t"></span></button>
-        <p class="nota-passo" id="app-bio-ou" style="text-align:center;margin:14px 0 6px" data-t>ou entre com a palavra-passe</p>
-      </div>
       <div class="aviso-app" id="app-aviso" role="alert" style="display:none"><span id="app-aviso-t"></span></div>
       <div class="form-group">
         <label for="usuario" data-t>Utilizador ou correio electrónico</label>
@@ -742,43 +754,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
   </script>
   <script src="login-idioma.js"></script>
   <script>
-    // App no telemóvel: só funciona se foi instalada pelo código QR do portal (equipamento registado neste telemóvel)
+    // App aberta pelo ícone sem ter sido instalada pelo código QR do portal: explica como instalar (sem palavra-passe)
     (function () {
       var A = window.NavalApp;
-      var campo = document.getElementById('app_equipamento');
-      if (!A || !campo) return;
+      if (!A || !A.instalada() || A.equipamento()) return;
       var tr = function (s) { return window.loginT ? window.loginT(s) : s; };
-      var eq = A.equipamento();
-      var aviso = function (t) {
-        document.getElementById('app-aviso-t').textContent = tr(t);
-        document.getElementById('app-aviso').style.display = '';
-      };
-      if (!A.instalada()) return;
-      if (!eq) {
-        aviso('Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.');
-        document.querySelector('form').querySelectorAll('.form-group, .btn-submit').forEach(function (x) { x.style.display = 'none'; });
-        return;
-      }
-      campo.value = eq;
-      A.temBiometria().then(function (tem) {
-        if (!tem) return;
-        document.getElementById('app-bio-t').textContent = tr(A.nomeBiometria() === 'Face ID' ? 'Entrar com Face ID' : 'Entrar com a impressão digital');
-        document.getElementById('app-bio').hidden = false;
-        document.getElementById('app-bio-b').addEventListener('click', function () {
-          var b = this;
-          b.disabled = true;
-          A.entrar().then(function (r) {
-            b.disabled = false;
-            if (r.ok) return location.replace(r.destino);
-            if (r.desactivada) {
-              A.guardarEquipamento('');
-              document.getElementById('app-bio').hidden = true;
-            }
-            if (r.sem_chave) document.getElementById('app-bio').hidden = true;
-            if (!r.cancelado) aviso(r.erro || 'Sem resposta do servidor.');
-          });
-        });
-      });
+      document.getElementById('app-aviso-t').textContent = tr('Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.');
+      document.getElementById('app-aviso').style.display = '';
     })();
   </script>
 </body>

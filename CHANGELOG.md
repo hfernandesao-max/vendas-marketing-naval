@@ -25,6 +25,18 @@ Medido com rede 4G lenta simulada (latência de 150 ms, 1,6 Mbit/s) e processado
   Pinguim BO. O portal também passa a levar o token de acesso na página.
 - O service worker regista-se depois de a página aparecer, sem disputar a rede.
 
+### App no telemóvel: nunca pede a palavra-passe
+
+- Na app só se entra com a chave do telemóvel: Face ID; sem Face ID, a impressão digital; se a biometria falhar, o
+  próprio telemóvel pede o seu código de bloqueio. A página da palavra-passe nunca aparece dentro da app.
+- O Face ID passa a ser obrigatório na activação (sem «Agora não»); se a activação ficar a meio, a app volta a
+  pedi-lo antes de abrir. Um telemóvel sem Face ID, impressão digital nem código de bloqueio não activa a app e
+  explica como activar a protecção nas Definições (o código QR não se gasta).
+- O logótipo da Naval roda nas páginas da app enquanto se espera (como no arranque do portal) e pára quando a
+  página fica pronta.
+- No menu da conta, «App no telemóvel» aparece a verde enquanto a pessoa não tem a app e a vermelho quando já a tem
+  activa num telemóvel.
+
 ### App no telemóvel: actualizações transparentes
 
 - A app vem sempre do servidor: cada versão instalada no portal chega aos telemóveis sem App Store, sem descarregar

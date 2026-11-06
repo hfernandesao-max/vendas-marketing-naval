@@ -94,34 +94,33 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   await t1.page.goto('/gestao/').catch(() => {});
   await t1.page.waitForURL(/\/gestao\/$/);
   await expect(t1.page).toHaveTitle(/Naval Gestão/);
-  // sem o cookie do equipamento (ex.: dados do navegador limpos): a página de entrada também tem o botão
+  // sem o cookie do equipamento (ex.: dados do navegador limpos): na app a página da palavra-passe nunca aparece,
+  // segue para a entrada com a biometria pelo equipamento guardado na própria app
   await t1.ctx.clearCookies();
-  await t1.page.goto('/geo/login.php?redirect=../gestao/');
-  await expect(t1.page.locator('#app-bio-t')).toHaveText('Entrar com a impressão digital');
-  await expect(t1.page.locator('#app-aviso')).toBeHidden();
-  await t1.page.locator('#app-bio-b').click();
-  await expect(t1.page).toHaveURL(/\/gestao\/$/);
+  await t1.page.goto('/geo/login.php?redirect=../gestao/').catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  await expect(t1.page).toHaveTitle(/Naval Gestão/);
 
   // a mesma pessoa activa a app noutro telemóvel: o primeiro deixa de funcionar
   const { ctx: portal, codigo: c2 } = await novoCodigo('dir');
   const t2 = await telemovel(browser);
   await t2.page.goto('/app/activar.php?c=' + c2);
   await expect(t2.page.locator('#act-titulo')).toHaveText('App activada');
-  await t2.page.locator('#act-depois').click();
+  await expect(t2.page.locator('#act-depois')).toHaveCount(0); // o Face ID é obrigatório: não há «Agora não»
+  // activação interrompida antes do Face ID: a app não abre e volta a pedir a biometria
+  await t2.page.goto('/gestao/');
+  await expect(t2.page).toHaveURL(/activar\.php$/);
+  await t2.page.locator('#act-bio-b').click();
   await expect(t2.page).toHaveURL(/\/gestao\/$/);
-  await t1.page.goto('/gestao/').catch(() => {}); // a sessão termina: a app volta à entrada
-  await t1.page.waitForURL(/login\.php/);
-  await t1.page.locator('#app-bio-b').click();
-  await expect(t1.page.locator('#app-aviso')).toContainText('activada noutro equipamento');
-  // com o cookie do equipamento antigo: a entrada rápida diz que a app foi desactivada
-  await t1.ctx.addCookies(eqCookie);
-  await t1.page.goto('/app/entrar.php?redirect=../gestao/');
+  await t1.page.goto('/gestao/').catch(() => {}); // a sessão termina: a app volta à entrada rápida
+  await t1.page.waitForURL(/entrar\.php/);
   await expect(t1.page.locator('h1')).toHaveText('App desactivada');
+  await expect(t1.page.locator('#usuario')).toHaveCount(0); // nunca pede a palavra-passe
 
   // registo: o super administrador vê os equipamentos; a própria pessoa vê o seu
   const meu = await (await portal.get(API + 'app-telemovel')).json();
   expect(meu.meu.estado).toBe('activo');
-  expect(meu.meu.biometria).toBe(false);
+  expect(meu.meu.biometria).toBe(true);
   const { ctx: adm } = await entrar('sadm');
   const l = await (await adm.get(API + 'app-telemovel')).json();
   const dir = l.lista.filter((x) => x.login === 'dir');

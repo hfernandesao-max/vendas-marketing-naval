@@ -2407,6 +2407,8 @@ export const TI = {
   Substituída: 'ተተኪኡ',
   Desactivada: 'ተቛሪጹ',
   Expirada: 'ግዜኡ ሓሊፉ',
+  'Já tem a app activa num telemóvel': 'ኣብ ሞባይል ንጡፍ ኣፕ ኣለኩም',
+  'Ainda não tem a app no telemóvel': 'ገና ኣብ ሞባይል ኣፕ የብልኩምን',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
