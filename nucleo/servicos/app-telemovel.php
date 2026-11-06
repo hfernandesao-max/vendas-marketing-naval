@@ -68,6 +68,33 @@ function naval_app_url(string $caminho): string
     return $base . '/' . ltrim($caminho, '/');
 }
 
+/** Manifesto W3C da app instalada pelo código (já validado por naval_app_codigo): início em activar.php com o código. */
+function naval_app_manifesto(array $c, string $codigo): void
+{
+    header('Content-Type: application/manifest+json; charset=utf-8');
+    header('Cache-Control: no-store');
+    $nome = NAVAL_APP_NOMES[$c['app']];
+    echo json_encode([
+        'id' => 'app-' . $c['app'],
+        'name' => 'Grupo Naval · ' . $nome,
+        'short_name' => $nome,
+        'description' => $c['app'] === 'gestao' ? 'Vendas do dia, rotas, alertas e assistente de gestão do Grupo Naval.' : 'Portal RTM do Grupo Naval.',
+        'lang' => 'pt-PT',
+        'dir' => 'ltr',
+        'start_url' => 'activar.php?c=' . rawurlencode($codigo),
+        'scope' => '../',
+        'display' => 'standalone',
+        'orientation' => 'portrait',
+        'background_color' => '#060d20',
+        'theme_color' => '#273777',
+        'icons' => [
+            ['src' => 'icones/icone-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => 'icones/icone-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => 'icones/icone-maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
 // ───────────── equipamentos ─────────────
 function naval_app_ficheiro(): string
 {
