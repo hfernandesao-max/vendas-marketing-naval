@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 06-11-2026
 
+### App «Naval Gestão» no telemóvel: novo desenho, segundo as apps de gestão de referência
+
+- Desenho inspirado nas melhores apps de gestão (Shopify, Stripe, Power BI, Salesforce, SAP Fiori) e nas regras da
+  Apple e da Google para telemóveis: título grande, barra de separadores em baixo com o número de alertas, alvos de
+  toque de 44 px, tema claro e escuro, puxar para actualizar e esqueleto durante a leitura.
+- **Hoje · Semana · Mês:** um número principal com a comparação ao lado (seta e sinal, não só cor) e um gráfico — barras
+  dos últimos 14 dias, semana actual sobre a semana passada, ou acumulado do mês contra o mês passado.
+- **Precisa de atenção:** os três alertas mais importantes logo no início, com atalho para a lista completa.
+- **Indicadores:** ontem face ao habitual, compras de clientes, valor médio e artigos por compra, com a variação.
+- **Rotas:** classificação do mês ou de hoje, com resumo (a crescer e a cair); ao tocar numa rota abre o detalhe numa
+  folha que sobe do fundo (hoje face à previsão, ontem, mês, mês passado e gráfico de 14 dias).
+- **Dados fiáveis à vista:** hora da actualização com o estado do Pinguim BO no topo e aviso claro quando os valores
+  podem estar incompletos (Pinguim BO sem ligação, sem internet ou dias sem vendas registadas).
+- A API v1/indicadores passa a enviar a série diária desde o início do mês anterior, os últimos 14 dias de cada rota e
+  o último dia com vendas.
+- Testes novos da app no telemóvel (claro e escuro, ecrã pequeno sem nada cortado) e da série da API.
+
 ### Apresentação ao Conselho: projecto estratégico «Frota ligada» (GPS Quatenus e CCTV do parque)
 
 - **Três diapositivos novos** (agora 13): o caso de negócio da ligação do GPS das carrinhas (Quatenus) e do CCTV do

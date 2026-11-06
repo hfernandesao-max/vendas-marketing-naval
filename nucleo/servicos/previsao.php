@@ -216,7 +216,9 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         $rank[] = ['rota' => $rt, 'promotor' => $promotores[$rt] ?? '', 'hoje' => round($t($hoje, $rt), 2), 'previsto_hoje' => $p ? $p['previsto'] : null,
             'ontem' => round($t($ontem, $rt), 2), 'habitual_ontem' => round(naval_mediana(naval_mesmos_dias($s, $ontem, 6)), 2),
             'mes' => round($mes, 2), 'mes_anterior' => round($mesAnt, 2), 'variacao_mes' => $var($mes, $mesAnt),
-            'sequencia' => naval_sequencia_acima($s, $ontem)];
+            'sequencia' => naval_sequencia_acima($s, $ontem),
+            // últimos 14 dias (para o mini-gráfico da rota na app)
+            'serie' => array_map(function ($d) use ($t, $rt) { return round($t($d, $rt), 2); }, naval_analise_dias(date('Y-m-d', $agora - 13 * 86400), $hoje))];
     }
     usort($rank, function ($a, $b) { return $b['mes'] <=> $a['mes']; });
     // valor e artigos por compra (compra = cliente com vendas num dia): hoje e mês até hoje
@@ -236,6 +238,14 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         }
         return ['compras' => $n, 'valor_medio' => $n ? round($v / $n, 2) : null, 'artigos_por_compra' => $comArt ? round($skus / $comArt, 2) : null];
     };
+    // série diária desde o início do mês anterior (gráficos da app: barras do dia, semana e mês acumulado)
+    $serie = [];
+    $ultimaVenda = null;
+    foreach (naval_analise_dias($iniMesAnt, $hoje) as $d) {
+        $v = round($t($d), 2);
+        $serie[] = ['d' => $d, 't' => $v];
+    }
+    foreach (array_keys($ag) as $d) if ($d <= $hoje && $t($d) > 0) $ultimaVenda = max((string) $ultimaVenda, $d);
     $hojeT = $t($hoje);
     $ontemT = $t($ontem);
     $habOntem = naval_mediana(naval_mesmos_dias($serieTot, $ontem, 6));
@@ -249,6 +259,8 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         'mes' => ['de' => $iniMes, 'total' => round($periodo($iniMes, $hoje), 2), 'anterior' => round($periodo($iniMesAnt, $fimMesAnt), 2),
             'variacao' => $var($periodo($iniMes, $hoje), $periodo($iniMesAnt, $fimMesAnt))],
         'rotas' => $rank,
+        'serie' => $serie,
+        'ultima_venda' => $ultimaVenda,
         'compras' => ['hoje' => $compras($hoje, $hoje), 'mes' => $compras($iniMes, $hoje), 'mes_anterior' => $compras($iniMesAnt, $fimMesAnt)],
     ];
 }

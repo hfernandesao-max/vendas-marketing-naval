@@ -49,7 +49,12 @@ test('alertas, previsão e indicadores: formato e âmbito do supervisor (só as 
   expect(pn.tendencia.dias.length).toBe(90);
   expect(JSON.stringify(pn)).not.toContain('5000000002'); // sem NIF
   const i = await (await ctx.get(API + 'indicadores')).json();
-  expect(Object.keys(i)).toEqual(expect.arrayContaining(['hoje', 'ontem', 'semana', 'mes', 'rotas']));
+  expect(Object.keys(i)).toEqual(expect.arrayContaining(['hoje', 'ontem', 'semana', 'mes', 'rotas', 'serie', 'ultima_venda']));
+  // série diária desde o dia 1 do mês anterior até hoje (gráficos da app) e 14 dias por rota
+  expect(i.serie[0].d).toMatch(/^\d{4}-\d{2}-01$/);
+  expect(i.serie.at(-1).d).toBe(i.hoje.dia);
+  expect(i.serie.find((x) => x.d === i.ontem.dia).t).toBeCloseTo(i.ontem.total, 2);
+  for (const r of i.rotas) expect(r.serie.length).toBe(14);
   const sup = await entrar('sup');
   const s = await (await sup.ctx.get(API + 'alertas')).json();
   for (const x of s.alertas) expect(['1001', '']).toContain(x.rota);
