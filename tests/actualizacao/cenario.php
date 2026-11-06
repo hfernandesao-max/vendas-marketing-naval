@@ -68,7 +68,7 @@ $portaGh = $portaWeb + 500;
 $env = $tmp . '/.env';
 file_put_contents($env, implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'EMAIL_MODO=ficheiro',
-    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'GEOIP_AUTOMATICO=0', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
+    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'GEOIP_AUTOMATICO=0', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd,ini', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
     // a janela nocturna liga-se só no caso dela (a hora real do teste não pode mudar os outros)
@@ -464,6 +464,28 @@ caso('requisitos do servidor: PHP mínimo e extensão em falta param antes de al
     file_put_contents($env, $antes);
     confirma($r === 1 && strpos($t, 'Não foi possível activar no PHP: extensao_inexistente_naval') !== false, $t);
     confirma((string) file_get_contents($ini) === $iniAntes && h('reports/js/util.js') !== hash('sha256', $util . "\n// v17\n"), 'alterou o php.ini ou os ficheiros');
+});
+
+caso('desempenho do PHP: o php.ini é afinado (só sobe valores), com cópia; sem php.ini alterável só avisa', function () use ($env, $tmp, $util) {
+    $ini = $tmp . '/php-afinar.ini';
+    file_put_contents($ini, (ini_get('extension_dir') ? "extension_dir=\"" . ini_get('extension_dir') . "\"\n" : '') . "memory_limit=128M\n;realpath_cache_ttl=120\n");
+    $antes = (string) file_get_contents($env);
+    file_put_contents($env, str_replace(',gd,ini', ',gd', $antes) . 'ACTUALIZACAO_PHP_INI=' . $ini . "\n");
+    $req = json_encode(['php_minimo' => '7.1', 'extensoes' => [], 'ini' => ['memory_limit' => '>=512M', 'realpath_cache_ttl' => '>=600', 'max_input_time' => '60']]);
+    $f = pacote('v20', ['reports/js/util.js' => $util . "\n// v20\n", 'ferramentas/requisitos.json' => $req]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    $txt = (string) file_get_contents($ini);
+    confirma($r === 0 && strpos($t, 'Desempenho do PHP afinado') !== false, $t);
+    confirma(strpos($txt, 'memory_limit=512M') !== false && strpos($txt, "\nrealpath_cache_ttl=600") !== false && strpos($txt, 'max_input_time=60') !== false, $txt);
+    confirma(count(glob($ini . '.antes-actualizacao-*') ?: []) === 1, 'cópia do php.ini');
+    // valores já acima do pedido não descem; php.ini só de leitura: avisa e a actualização continua
+    file_put_contents($ini, str_replace('memory_limit=512M', 'memory_limit=1G', $txt));
+    chmod($ini, 0444);
+    $f = pacote('v21', ['reports/js/util.js' => $util . "\n// v21\n", 'ferramentas/requisitos.json' => json_encode(['php_minimo' => '7.1', 'extensoes' => [], 'ini' => ['memory_limit' => '>=512M', 'max_input_time' => '90']])]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    chmod($ini, 0644);
+    file_put_contents($env, $antes);
+    confirma($r === 0 && (strpos($t, 'não pode ser alterado') !== false || function_exists('posix_getuid') && posix_getuid() === 0) && strpos((string) file_get_contents($ini), 'memory_limit=1G') !== false, $t);
 });
 
 caso('configuração do Apache: validada e Apache reiniciado; inválida → reposta, sem reiniciar', function () use ($env, $srv, $repo, $tmp) {

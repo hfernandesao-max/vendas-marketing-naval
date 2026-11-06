@@ -1380,6 +1380,8 @@ function naval_act_requisitos(string $dirPacote, callable $diz): array
     }
     $ignorar = array_filter(array_map('trim', explode(',', strtolower(naval_config('ACTUALIZACAO_REQUISITOS_IGNORAR')))));
     $ini = naval_act_php_ini();
+    // configuração de desempenho do PHP (OPcache, cache de caminhos, memória): melhor esforço, nunca pára a actualização
+    $afinado = in_array('ini', $ignorar, true) ? [false, ''] : naval_act_ini_afinar($ini, (array) ($r['ini'] ?? []), $diz);
     $carregadas = naval_act_modulos_php($ini);
     $faltam = [];
     foreach ((array) ($r['extensoes'] ?? []) as $req) {
@@ -1388,13 +1390,13 @@ function naval_act_requisitos(string $dirPacote, callable $diz): array
         $alt = array_map('trim', explode('|', $req));
         if (!array_intersect($alt, $carregadas)) $faltam[] = $alt;
     }
-    if (!$faltam) return [false, ''];
+    if (!$faltam) return $afinado;
     if ($ini === '' || !is_file($ini) || !is_writable($ini)) {
         throw new NavalActualizacaoErro('Faltam extensões do PHP (' . implode(', ', array_map(function ($a) { return implode(' ou ', $a); }, $faltam)) . ') e o php.ini não pode ser alterado (ACTUALIZACAO_PHP_INI).');
     }
     $antes = (string) file_get_contents($ini);
-    $copia = $ini . '.antes-actualizacao-' . date('Ymd-His');
-    file_put_contents($copia, $antes);
+    $copia = $afinado[1] !== '' ? $afinado[1] : $ini . '.antes-actualizacao-' . date('Ymd-His');
+    if ($afinado[1] === '') file_put_contents($copia, $antes);
     $texto = $antes;
     foreach ($faltam as $alt) $texto = naval_act_ini_activar($texto, $alt[0]);
     file_put_contents($ini, $texto);
@@ -1405,6 +1407,83 @@ function naval_act_requisitos(string $dirPacote, callable $diz): array
         throw new NavalActualizacaoErro('Não foi possível activar no PHP: ' . implode(', ', array_map(function ($a) { return $a[0]; }, $ainda)) . ' (a extensão não está instalada no servidor). Nada foi alterado.');
     }
     $diz('Extensões do PHP activadas no php.ini: ' . implode(', ', array_map(function ($a) { return $a[0]; }, $faltam)) . ' (cópia: ' . basename($copia) . ').');
+    return [true, $copia];
+}
+
+/** Valores efectivos de directivas do php.ini (processo novo do PHP com esse php.ini, como o Apache os verá). */
+function naval_act_ini_ler(string $ini, array $chaves): ?array
+{
+    $f = tempnam(sys_get_temp_dir(), 'naval-ini');
+    if ($f === false) return null;
+    // script num ficheiro: evita aspas na linha de comandos (no Windows o escapeshellarg troca as aspas por espaços)
+    file_put_contents($f, '<?php $o = []; foreach (array_slice($argv, 1) as $k) { $v = ini_get($k); $o[$k] = $v === false ? null : $v; } echo json_encode(["ok" => 1, "v" => $o, "m" => get_loaded_extensions(true)]);');
+    $o = [];
+    exec(escapeshellarg(PHP_BINARY) . ($ini !== '' ? ' -c ' . escapeshellarg($ini) : '') . ' ' . escapeshellarg($f) . ' ' . implode(' ', array_map('escapeshellarg', $chaves)) . ' 2>&1', $o);
+    @unlink($f);
+    $d = json_decode((string) end($o), true);
+    return is_array($d) && !empty($d['ok']) ? ['v' => (array) $d['v'], 'zend' => array_map('strtolower', (array) ($d['m'] ?? []))] : null;
+}
+/** Tamanho do php.ini em bytes («256M», «4096K», «1G» ou número). */
+function naval_act_ini_bytes(string $v): float
+{
+    $v = trim($v);
+    $n = (float) $v;
+    $u = strtoupper(substr($v, -1));
+    return $u === 'G' ? $n * 1073741824 : ($u === 'M' ? $n * 1048576 : ($u === 'K' ? $n * 1024 : $n));
+}
+/** Define uma directiva no texto do php.ini (substitui a linha, mesmo comentada, ou acrescenta no fim). */
+function naval_act_ini_definir(string $texto, string $chave, string $valor): string
+{
+    $padrao = '/^[ \t]*;?[ \t]*' . preg_quote($chave, '/') . '[ \t]*=.*$/mi';
+    if (preg_match($padrao, $texto)) return (string) preg_replace($padrao, $chave . '=' . $valor, $texto, 1);
+    $fim = strpos($texto, "\r\n") !== false ? "\r\n" : "\n";
+    return rtrim($texto, "\r\n") . $fim . $chave . '=' . $valor . '   ; Portal RTM (desempenho)' . $fim;
+}
+/**
+ * Afina o php.ini para muitas pessoas ao mesmo tempo (ferramentas/requisitos.json, «ini»): «>=X» só sobe o valor se
+ * estiver abaixo; outro valor fica exactamente esse. Activa o OPcache (zend_extension) se faltar. Melhor esforço:
+ * sem php.ini alterável, só avisa; se o PHP não arrancar com a configuração nova, repõe a anterior. Devolve
+ * [alterou o php.ini, cópia do php.ini anterior].
+ */
+function naval_act_ini_afinar(string $ini, array $quer, callable $diz): array
+{
+    if (!$quer) return [false, ''];
+    if ($ini === '' || !is_file($ini) || !is_writable($ini)) {
+        $diz('Aviso: o php.ini não pode ser alterado (ACTUALIZACAO_PHP_INI); a configuração de desempenho do PHP fica como está.');
+        return [false, ''];
+    }
+    $agora = naval_act_ini_ler($ini, array_keys($quer));
+    if ($agora === null) return [false, ''];
+    $antes = (string) file_get_contents($ini);
+    $texto = $antes;
+    $mudou = [];
+    $opcache = in_array('zend opcache', $agora['zend'], true);
+    foreach ($quer as $k => $alvo) {
+        $alvo = (string) $alvo;
+        $min = strpos($alvo, '>=') === 0;
+        $valor = $min ? substr($alvo, 2) : $alvo;
+        $actual = $agora['v'][$k] ?? null;
+        $certo = $actual !== null && ($min ? naval_act_ini_bytes((string) $actual) >= naval_act_ini_bytes($valor) || (string) $actual === '-1' : (string) $actual === $valor);
+        if ($certo) continue;
+        $texto = naval_act_ini_definir($texto, $k, $valor);
+        $mudou[] = $k . '=' . $valor;
+    }
+    if (!$opcache && preg_grep('/^opcache\./', array_keys($quer))) {
+        $p = '/^[ \t]*;[ \t]*(zend_extension[ \t]*=[ \t]*"?(?:php_)?opcache(?:\.dll|\.so)?"?)[ \t]*$/mi';
+        $texto = preg_match($p, $texto) ? (string) preg_replace($p, '$1', $texto, 1) : naval_act_ini_definir($texto, 'zend_extension', 'opcache');
+        $mudou[] = 'zend_extension=opcache';
+    }
+    if (!$mudou) return [false, ''];
+    $copia = $ini . '.antes-actualizacao-' . date('Ymd-His');
+    file_put_contents($copia, $antes);
+    file_put_contents($ini, $texto);
+    if (naval_act_ini_ler($ini, array_keys($quer)) === null) {
+        file_put_contents($ini, $antes);   // o PHP não arrancou com a configuração nova: fica a anterior
+        @unlink($copia);
+        $diz('Aviso: a configuração de desempenho do PHP não foi aceite; o php.ini ficou como estava.');
+        return [false, ''];
+    }
+    $diz('Desempenho do PHP afinado no php.ini: ' . implode(', ', $mudou) . ' (cópia: ' . basename($copia) . ').');
     return [true, $copia];
 }
 

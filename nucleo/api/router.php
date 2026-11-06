@@ -28,6 +28,7 @@ function naval_api_rotas(): array
     $r = [
         'v1/auth/token' => [['POST'], 'sessao', 'token.php', []],
         'v1/csp-relatorio' => [['POST'], 'publico', 'csp.php', []],
+        'v1/saude' => [['GET'], 'publico', 'saude.php', []],
         'v1/sessao' => [['GET'], 'jwt', 'sessao.php', []],
         'v1/vendas' => [['GET'], 'jwt', 'vendas.php', []],
         'v1/vendas/estado' => [['GET'], 'jwt', 'vendas.php', ['ping' => '1']],
@@ -140,6 +141,25 @@ function naval_api_corpo(string $rota): void
     if (!in_array($tipo, $aceites, true)) throw new NavalErro('Tipo de conteúdo não suportado (use application/json).', 415);
 }
 
+/**
+ * Observabilidade (práticas de SRE da Google): os pedidos lentos (mais de 1,5 s) e os erros do servidor (5xx) ficam
+ * em registos/desempenho-AAAA-MM.jsonl com a rota, o tempo, o estado e a memória. Só se grava o que importa, para não
+ * pesar no servidor; é a base para ver, com pessoas reais, onde o portal cede antes de alguém reclamar.
+ */
+function naval_api_medir(string $rota): void
+{
+    $t0 = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+    register_shutdown_function(function () use ($rota, $t0) {
+        $ms = (int) round((microtime(true) - $t0) * 1000);
+        $estado = (int) http_response_code();
+        if ($ms < (int) naval_config('API_LENTO_MS', '1500') && $estado < 500) return;
+        naval_jsonl_acrescentar(naval_pasta_privada() . '/registos/desempenho-' . date('Y-m') . '.jsonl', [
+            'data' => date('Y-m-d H:i:s'), 'rota' => $rota, 'ms' => $ms, 'estado' => $estado,
+            'conta' => (string) (($GLOBALS['naval_jwt']['sub'] ?? '')), 'memoria_mb' => round(memory_get_peak_usage(true) / 1048576, 1),
+        ]);
+    });
+}
+
 /** Atende o pedido à API. */
 function naval_api_executar(): void
 {
@@ -159,6 +179,7 @@ function naval_api_executar(): void
     }
     naval_api_corpo($rota);
     $GLOBALS['naval_api_rota'] = $rota;
+    naval_api_medir($rota);
 
     if ($acesso === 'jwt') {
         $c = naval_jwt_autenticar();

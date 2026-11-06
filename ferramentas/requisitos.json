@@ -1,5 +1,23 @@
 {
   "_nota": "Requisitos do servidor desta versão do portal. O actualizador confere-os antes de instalar: activa no php.ini as extensões em falta (com cópia) e pára se a versão do PHP for inferior. «a|b» = uma das duas.",
   "php_minimo": "7.1.0",
-  "extensoes": ["curl", "mbstring", "openssl", "gd", "pdo_odbc|pdo_sqlsrv"]
+  "extensoes": [
+    "curl",
+    "mbstring",
+    "openssl",
+    "gd",
+    "pdo_odbc|pdo_sqlsrv"
+  ],
+  "_nota_ini": "«ini»: configuração de desempenho do PHP para muitas pessoas ao mesmo tempo (melhor esforço, nunca pára a actualização). «>=X» só sobe o valor; outro valor fica exactamente esse.",
+  "ini": {
+    "opcache.enable": "1",
+    "opcache.memory_consumption": ">=256",
+    "opcache.interned_strings_buffer": ">=16",
+    "opcache.max_accelerated_files": ">=20000",
+    "opcache.validate_timestamps": "1",
+    "opcache.revalidate_freq": "2",
+    "realpath_cache_size": ">=4096K",
+    "realpath_cache_ttl": ">=600",
+    "memory_limit": ">=512M"
+  }
 }

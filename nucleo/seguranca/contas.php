@@ -387,7 +387,9 @@ const NAVAL_IP_JANELA = 900;   // 15 minutos
 
 function naval_ip_max_falhas(): int
 {
-    return max(3, (int) naval_config('LOGIN_MAX_FALHAS_IP', '20'));
+    // 100 por omissão: numa empresa (e nas redes móveis) dezenas de pessoas saem para a Internet pelo mesmo IP, e
+    // 20 enganos de várias pessoas bloqueavam o escritório inteiro. Cada conta continua com o seu próprio limite.
+    return max(3, (int) naval_config('LOGIN_MAX_FALHAS_IP', '100'));
 }
 
 function naval_ip_ficheiro(string $ip): string

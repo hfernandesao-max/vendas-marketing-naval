@@ -2,6 +2,24 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 07-11-2026
+
+### Capacidade: 50 pessoas ao mesmo tempo já, caminho para 1000
+
+- **Medido com teste de carga** (`ferramentas/carga.mjs`): 50 pessoas com p95 abaixo de 30 ms e a carga de ~1000
+  pessoas (150 pedidos/s) sem erros. Plano completo, objectivos de serviço e pedido ao departamento de TI em
+  `docs/CAPACIDADE.md`.
+- **Sessões** na pasta privada do portal e limpas só depois de 60 minutos (o valor do PHP, 24 minutos, terminava
+  sessões activas antes dos 30 minutos de inactividade).
+- **Entrada:** limite por IP de 20 para 100 falhas em 15 minutos (muitas pessoas partilham o IP da empresa ou da rede
+  móvel); cada conta mantém o seu limite.
+- **Apache** (aplicado pelo actualizador, com validação e reposição): 600 fios de execução, ligações persistentes,
+  HTTP/2 quando o módulo existe e recomendações para Windows.
+- **PHP** (aplicado pelo actualizador, com cópia do php.ini): OPcache ligado, cache de caminhos e memória — melhor
+  esforço, nunca pára a actualização.
+- **Observabilidade:** pedidos lentos e erros do servidor registados em `registos/desempenho-AAAA-MM.jsonl`;
+  `GET api/index.php/v1/saude` para a monitorização e o futuro balanceador de carga.
+
 ## 06-11-2026
 
 ### App no telemóvel: máxima rapidez na instalação, na entrada e na abertura

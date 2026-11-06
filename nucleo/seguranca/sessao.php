@@ -22,6 +22,12 @@ function naval_iniciar_sessao(): void
             @ini_set('session.cookie_httponly', '1');
             @ini_set('session.sid_length', '48');
             @ini_set('session.sid_bits_per_character', '6');
+            // Capacidade: sessões na pasta privada do portal (não na pasta temporária do Windows, partilhada com outros
+            // programas) e limpeza só depois do tempo de inactividade do portal. O valor do PHP (24 minutos) apagava
+            // sessões activas antes dos 30 minutos, e com muitas pessoas a limpeza corre mais vezes.
+            $pastaSessoes = naval_pasta_privada() . '/sessoes';
+            if (is_dir($pastaSessoes) || @mkdir($pastaSessoes, 0700, true)) @session_save_path($pastaSessoes);
+            @ini_set('session.gc_maxlifetime', (string) (2 * (defined('NAVAL_SESSAO_INACTIVA') ? NAVAL_SESSAO_INACTIVA : 1800)));
             $seguro = naval_https();
             // Nome próprio do cookie; em HTTPS com o prefixo __Host- (só este site, só HTTPS, caminho /)
             session_name($seguro ? '__Host-NAVALSESS' : 'NAVALSESS');
