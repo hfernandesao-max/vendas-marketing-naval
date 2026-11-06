@@ -29,4 +29,6 @@ naval_json([
     // preferências pessoais (menu lateral): seguem a conta em qualquer dispositivo
     'preferencias' => naval_pref_ler((string) $u['login']),
     'sessao' => ['inactiva_s' => NAVAL_SESSAO_INACTIVA, 'maxima_s' => NAVAL_SESSAO_MAXIMA],
+    // app instalada pelo código QR (equipamento registado) ou null: fora disso, o portal não funciona como app
+    'app' => !empty($_SESSION['app_equipamento']) ? (string) $_SESSION['app_equipamento'] : null,
 ]);

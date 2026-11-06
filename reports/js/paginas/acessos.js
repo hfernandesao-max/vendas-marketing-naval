@@ -10,7 +10,7 @@ import { R } from './registo.js';
 import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
-import { apiFetch } from '../api.js';
+import { apiFetch, apiJson } from '../api.js';
 
 const NOMES_ACCAO = {
   entrada: 'Entrada',
@@ -65,6 +65,11 @@ const NOMES_ACCAO = {
   ip_suspenso: 'Endereço IP suspenso',
   geoip_actualizado: 'Base de dados de localização actualizada',
   novidades_detectadas: 'Novidades da versão detectadas',
+  app_codigo_gerado: 'Código QR da app gerado',
+  app_activada: 'App activada num equipamento',
+  app_substituida: 'App substituída por outro equipamento',
+  app_desactivada: 'App desactivada',
+  app_biometria_activada: 'Biometria da app activada',
 };
 // Campos e valores técnicos do detalhe dos registos, mostrados na língua escolhida
 const NOMES_DETALHE = {
@@ -109,6 +114,11 @@ const NOMES_DETALHE = {
   tipo: 'Tipo',
   edicao: 'Edição',
   seccoes: 'Secções',
+  equipamento: 'Equipamento',
+  modelo: 'Modelo',
+  so: 'Sistema',
+  app: 'App',
+  metodo: 'Método',
 };
 const VALORES_DETALHE = {
   codigo: 'código errado',
@@ -129,6 +139,15 @@ const VALORES_DETALHE = {
   recuperacao: 'recuperação pela própria pessoa',
   proprio: 'a própria pessoa',
   temporaria_expirada: 'palavra-passe temporária expirada',
+  codigo_qr: 'código QR',
+  chave: 'Face ID ou impressão digital',
+  app_desactivada: 'app desactivada',
+  novo_equipamento: 'activada noutro equipamento',
+  pelo_proprio: 'pela própria pessoa',
+  pelo_administrador: 'pelo administrador',
+  expirado: '90 dias sem uso',
+  gestao: 'Naval Gestão',
+  portal: 'Portal RTM',
 };
 const valorDetalhe = (k, v) => {
   if (Array.isArray(v)) return v.map((x) => (k === 'recursos' || k === 'pagina' ? nomeRecurso(x) : x)).join(', ');
@@ -140,7 +159,8 @@ const valorDetalhe = (k, v) => {
   return VALORES_DETALHE[v] ? t(VALORES_DETALHE[v]) : v;
 };
 let GESTAO = null,
-  MPEND = {};
+  MPEND = {},
+  APPS = null;
 function carregarGestao() {
   return apiFetch('gestao')
     .then((r) => r.json())
@@ -713,6 +733,7 @@ R.acessos = (pg) => {
     actualizarBotoes();
   }
   pg.append(secM);
+  seccaoApps(pg);
   if ((GESTAO.registos || []).length) {
     pg.append(
       tabela({
@@ -1087,4 +1108,79 @@ function celulaLocal(l) {
   }
   w.title = [t('Localização aproximada pelo IP, não é uma morada.'), l.fonte, l.posterior ? t('Calculada depois do registo.') : ''].filter(Boolean).join(' ');
   return w;
+}
+
+// ---- apps no telemóvel: equipamentos registados pelo código QR (um activo por pessoa) ----
+const ESTADO_APP = { activo: 'Activa', substituido: 'Substituída', desactivado: 'Desactivada', expirado: 'Expirada' };
+function seccaoApps(pg) {
+  if (!APPS) {
+    APPS = { aLer: true };
+    apiJson('app-telemovel').then((d) => {
+      APPS = d && d.ok && d.lista ? d : { sem: true };
+      if (atual === 'acessos') draw();
+    });
+    return;
+  }
+  if (APPS.aLer || APPS.sem) return;
+  const quando = (v) => (v ? dl(v) + ' ' + String(v).slice(11, 16) : '—');
+  const sec = tabela({
+    id: 'ac-apps',
+    titulo: t('Apps no telemóvel'),
+    nota:
+      t('{a} equipamentos activos · {r} registados · {p} pessoas.', { a: n0(APPS.resumo.activos), r: n0(APPS.resumo.registados), p: n0(APPS.resumo.pessoas) }) +
+      ' ' +
+      t('A app instala-se só pelo código QR pessoal do portal; cada pessoa tem um equipamento activo e o anterior é desactivado ao activar outro.'),
+    sort: 'activado',
+    total: false,
+    rows: APPS.lista.map((x) => ({
+      chave: x.id,
+      nome: x.nome,
+      login: x.login,
+      app: x.app_nome,
+      equipamento: x.modelo + ' · ' + x.so,
+      biometria: x.biometria ? t('Sim') : t('Não'),
+      activado: x.activado,
+      ultimo_uso: x.ultimo_uso,
+      estado: t(ESTADO_APP[x.estado] || x.estado),
+      _x: x,
+    })),
+    cols: [
+      { key: 'nome', label: t('Nome'), p: 0 },
+      { key: 'login', label: t('Utilizador') },
+      { key: 'app', label: t('App') },
+      { key: 'equipamento', label: t('Equipamento') },
+      { key: 'biometria', label: t('Biometria') },
+      { key: 'activado', label: t('Activada em'), render: (v) => document.createTextNode(quando(v)) },
+      { key: 'ultimo_uso', label: t('Última utilização'), render: (v) => document.createTextNode(quando(v)) },
+      {
+        key: 'estado',
+        label: t('Estado'),
+        render: (v, row) => {
+          const w = el('span');
+          w.append(pill(v, row._x.estado === 'activo' ? 'ok' : ''));
+          if (row._x.estado === 'activo')
+            w.append(
+              botao(t('Desactivar'), 'ghost sm perigo', () =>
+                confirmarAccao(
+                  t('Desactivar a app'),
+                  t('A app de {n} deixa de funcionar neste equipamento. Para voltar a usá-la, a pessoa lê um código QR novo no portal.', { n: row.nome }),
+                  t('Desactivar'),
+                  () =>
+                    postJson('app-telemovel', { accao: 'desactivar', id: row._x.id }).then((d) => {
+                      if (d && d.ok) {
+                        APPS = null;
+                        draw();
+                        toast(t('Equipamento desactivado.'), 4000);
+                      }
+                      return d;
+                    }),
+                ),
+              ),
+            );
+          return w;
+        },
+      },
+    ],
+  });
+  pg.append(sec);
 }

@@ -98,6 +98,12 @@ const lerSessao = () =>
         d = null;
       }
       definirSessao(d && d.permissoes ? d : null);
+      // aberto como app (ícone no ecrã principal) sem ter sido instalado pelo código QR: não funciona
+      const comoApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+      if (d && d.permissoes && comoApp && !d.app) {
+        location.replace('../app/so-pelo-qr.php');
+        throw new Error('sessao');
+      }
       if (d && d.preferencias) {
         aplicarPreferencias(d.preferencias);
         definirFavoritos(d.preferencias.favoritos);

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
+naval_servico('app-telemovel');
 
 $allowedRedirects = ['geo.php', 'prospeccao.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../gestao/', '../'];
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../reports/';
@@ -21,19 +22,11 @@ $usuarios = naval_utilizadores();
 // Conclui a entrada: nova sessão, perfil, registo e redireccionamento
 function naval_concluir_login(string $login, array $u, string $redirect, bool $comMfa): void
 {
-    session_regenerate_id(true);
-    unset($_SESSION['mfa_pendente'], $_SESSION['csrf']);   // novo identificador e novo código CSRF para a sessão autenticada
-    $_SESSION['usuario_autenticado'] = true;
-    $_SESSION['usuario_login'] = $login;
-    $_SESSION['usuario_nome'] = $u['nome'] ?? $login;
-    $_SESSION['usuario_perfil'] = $u['perfil'] ?? '';
-    $_SESSION['login_time'] = time();
-    $_SESSION['versao_credencial'] = (int) ($u['versao'] ?? 0);   // muda com a palavra-passe ou os dois passos
-    $_SESSION['ultima_actividade'] = time();
-    naval_limpar_falhas($login);
-    naval_registar('entrada', ['dois_passos' => $comMfa], $login);
-    if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
-    header('Location: ' . $redirect);
+    // App instalada pelo código QR (entrada com a palavra-passe, sem biometria): a sessão fica ligada ao equipamento
+    $eq = (string) ($_SESSION['app_equipamento_pedido'] ?? '');
+    naval_abrir_sessao($login, $u, $comMfa, 'senha', $eq);
+    $app = !empty($_SESSION['app_equipamento']) ? naval_app_activo((string) $_SESSION['app_equipamento']) : null;
+    header('Location: ' . ($app ? NAVAL_APP_DESTINO[$app['app']] : $redirect));
     exit;
 }
 
@@ -168,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     } else {
         $usuario = trim($_POST['usuario'] ?? '');
         $senha = $_POST['senha'] ?? '';
+        $_SESSION['app_equipamento_pedido'] = preg_match('/^[a-f0-9]{24}$/', (string) ($_POST['app_equipamento'] ?? '')) ? (string) $_POST['app_equipamento'] : '';
         unset($_SESSION['mfa_pendente'], $_SESSION['troca_pendente'], $_SESSION['inscricao_pendente']);
         // Aceita o utilizador ou o email associado à conta
         [$loginEncontrado] = naval_procurar_conta($usuario);
@@ -217,16 +211,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
   <script src="embutido.js" data-rota="login"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <!-- App instalável (iPhone: Safari › Partilhar › Adicionar ao ecrã principal; Android: Instalar) -->
-  <link rel="manifest" href="../manifest.webmanifest">
+  <!-- A app no telemóvel instala-se só pelo código QR pessoal do portal (app/instalar.php): esta página não a oferece -->
   <meta name="theme-color" content="#273777">
   <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Equipamentos">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="format-detection" content="telephone=no">
   <script src="../app/registar.js" defer></script>
+  <script src="../app/app.js"></script>
   <title>Iniciar sessão · GeoMobilidade Naval</title>
   <link rel="stylesheet" href="../assets/fontes/poppins.css" />
   <link rel="stylesheet" href="style.css" />
@@ -321,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       border-color: var(--app-blue-light);
       box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.25);
     }
-    .btn-submit {
+    .btn-submit, .btn-bio {
       width: 100%;
       padding: 0.85rem;
       margin-top: 0.5rem;
@@ -339,13 +329,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       gap: 0.5rem;
       transition: background 0.2s, transform 0.1s;
     }
-    .btn-submit:hover {
+    .btn-submit:hover, .btn-bio:hover {
       background: var(--app-blue-light);
     }
-    .btn-submit:active {
+    .btn-submit:active, .btn-bio:active {
       transform: scale(0.99);
     }
-    .error-alert {
+    .error-alert, .aviso-app {
       display: flex;
       align-items: center;
       gap: 0.6rem;
@@ -482,7 +472,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     }
     .password-toggle:hover, .password-toggle:focus-visible { color: #fff; background: rgba(255, 255, 255, .07); outline: none; }
 
-    .btn-submit {
+    .btn-submit, .btn-bio {
       min-height: 52px;
       margin-top: 18px;
       border: 1px solid rgba(112, 157, 255, .5);
@@ -491,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       box-shadow: 0 11px 22px rgba(28, 93, 224, .27), inset 0 1px 0 rgba(255, 255, 255, .18);
       font-size: 15px;
     }
-    .btn-submit:hover { background: linear-gradient(105deg, #3076fb, #4a82f4); box-shadow: 0 14px 28px rgba(28, 93, 224, .38); transform: translateY(-1px); }
+    .btn-submit:hover, .btn-bio:hover { background: linear-gradient(105deg, #3076fb, #4a82f4); box-shadow: 0 14px 28px rgba(28, 93, 224, .38); transform: translateY(-1px); }
 
     .return-link {
       display: inline-flex;
@@ -513,7 +503,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       font-size: 11px;
       line-height: 1.55;
     }
-    .error-alert { border-color: rgba(255, 113, 113, .48); background: rgba(130, 29, 45, .3); }
+    .error-alert, .aviso-app { border-color: rgba(255, 113, 113, .48); background: rgba(130, 29, 45, .3); }
 
     /* Selector de idioma (PT/EN/TI), no canto do cartão; o tigrínia usa o tipo de letra ge'ez do portal */
     @font-face { font-family: 'Noto Sans Ethiopic'; font-style: normal; font-weight: 400; font-display: swap;
@@ -586,16 +576,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     :root[data-theme='light'] .password-toggle { color: #52617a; }
     :root[data-theme='light'] .password-toggle:hover,
     :root[data-theme='light'] .password-toggle:focus-visible { color: #0b1f3a; background: rgba(10, 42, 82, .07); }
-    :root[data-theme='light'] .btn-submit {
+    :root[data-theme='light'] .btn-submit, :root[data-theme='light'] .btn-bio {
       border-color: #004a9e;
       background: #0057b8;
       box-shadow: 0 10px 22px -10px rgba(0, 87, 184, .55);
     }
-    :root[data-theme='light'] .btn-submit:hover { background: #004a9e; box-shadow: 0 14px 26px -12px rgba(0, 87, 184, .6); }
+    :root[data-theme='light'] .btn-submit:hover, :root[data-theme='light'] .btn-bio:hover { background: #004a9e; box-shadow: 0 14px 26px -12px rgba(0, 87, 184, .6); }
     :root[data-theme='light'] .return-link { color: #22344d; }
     :root[data-theme='light'] .return-link:hover { color: #0057b8; }
     :root[data-theme='light'] .login-footer { border-top-color: rgba(10, 42, 82, .12); color: #52617a; }
-    :root[data-theme='light'] .error-alert { border-color: rgba(192, 38, 45, .4); background: #fdecec; color: #a3242a; }
+    :root[data-theme='light'] .error-alert, :root[data-theme='light'] .aviso-app { border-color: rgba(192, 38, 45, .4); background: #fdecec; color: #a3242a; }
     :root[data-theme='light'] .idioma,
     :root[data-theme='light'] .tema-login { border-color: rgba(10, 42, 82, .14); background: #eef2f8; }
     :root[data-theme='light'] .idioma button,
@@ -680,6 +670,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
         <p data-t style="margin:8px 2px 0;font-size:12.5px;opacity:.75">Abra a aplicação de autenticação no telemóvel e insira o código de GeoMobilidade Naval.</p>
       </div>
 <?php else: ?>
+      <!-- App instalada pelo código QR: entrada com Face ID (ou impressão digital); o equipamento vai com a palavra-passe -->
+      <input type="hidden" name="app_equipamento" id="app_equipamento" value="" />
+      <div id="app-bio" hidden>
+        <button type="button" class="btn-bio" id="app-bio-b"><span id="app-bio-t"></span></button>
+        <p class="nota-passo" id="app-bio-ou" style="text-align:center;margin:14px 0 6px" data-t>ou entre com a palavra-passe</p>
+      </div>
+      <div class="aviso-app" id="app-aviso" role="alert" style="display:none"><span id="app-aviso-t"></span></div>
       <div class="form-group">
         <label for="usuario" data-t>Utilizador ou correio electrónico</label>
         <div class="input-wrapper">
@@ -744,5 +741,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
     });
   </script>
   <script src="login-idioma.js"></script>
+  <script>
+    // App no telemóvel: só funciona se foi instalada pelo código QR do portal (equipamento registado neste telemóvel)
+    (function () {
+      var A = window.NavalApp;
+      var campo = document.getElementById('app_equipamento');
+      if (!A || !campo) return;
+      var tr = function (s) { return window.loginT ? window.loginT(s) : s; };
+      var eq = A.equipamento();
+      var aviso = function (t) {
+        document.getElementById('app-aviso-t').textContent = tr(t);
+        document.getElementById('app-aviso').style.display = '';
+      };
+      if (!A.instalada()) return;
+      if (!eq) {
+        aviso('Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.');
+        document.querySelector('form').querySelectorAll('.form-group, .btn-submit').forEach(function (x) { x.style.display = 'none'; });
+        return;
+      }
+      campo.value = eq;
+      A.temBiometria().then(function (tem) {
+        if (!tem) return;
+        document.getElementById('app-bio-t').textContent = tr(A.nomeBiometria() === 'Face ID' ? 'Entrar com Face ID' : 'Entrar com a impressão digital');
+        document.getElementById('app-bio').hidden = false;
+        document.getElementById('app-bio-b').addEventListener('click', function () {
+          var b = this;
+          b.disabled = true;
+          A.entrar().then(function (r) {
+            b.disabled = false;
+            if (r.ok) return location.replace(r.destino);
+            if (r.desactivada) {
+              A.guardarEquipamento('');
+              document.getElementById('app-bio').hidden = true;
+            }
+            if (r.sem_chave) document.getElementById('app-bio').hidden = true;
+            if (!r.cancelado) aviso(r.erro || 'Sem resposta do servidor.');
+          });
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

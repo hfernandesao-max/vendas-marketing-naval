@@ -6,6 +6,106 @@
   var IDIOMAS = { pt: 'pt-PT', en: 'en', ti: 'ti' };
   var D = {
     en: {
+      'Instalar a app · Portal RTM':
+        'Install the app · Portal RTM',
+      'Código expirado':
+        'Code expired',
+      'Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.':
+        'This QR code has expired or has already been used. In the portal, open «Mobile app» and scan a new code.',
+      'O código expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.':
+        'The code has expired or has already been used. In the portal, open «Mobile app» and scan a new code.',
+      'A app só se instala pelo código QR pessoal do portal: assim fica registado quem a instalou e em que equipamento.':
+        'The app can only be installed with the personal QR code from the portal: this records who installed it and on which device.',
+      'Instalar a app':
+        'Install the app',
+      'Abra este endereço no Safari: só o Safari consegue instalar a app no iPhone.':
+        'Open this address in Safari: only Safari can install the app on the iPhone.',
+      'Toque em Partilhar':
+        'Tap Share',
+      'na barra do Safari (se não aparecer, toque primeiro em ⋯).':
+        'in the Safari bar (if it does not appear, tap ⋯ first).',
+      'Escolha «Adicionar ao ecrã principal».':
+        'Choose «Add to Home Screen».',
+      'Deixe ligado «Abrir como app web» e toque em «Adicionar».':
+        'Leave «Open as Web App» on and tap «Add».',
+      'Abra a app pelo ícone no ecrã principal: fica activada neste iPhone e pede o Face ID.':
+        'Open the app from its icon on the Home Screen: it is activated on this iPhone and asks for Face ID.',
+      'Toque em «Instalar a app». Depois, abra-a pelo ícone: fica activada neste telemóvel e pede a biometria.':
+        'Tap «Install the app». Then open it from its icon: it is activated on this phone and asks for your biometrics.',
+      'Abra o menu ⋮ do navegador.':
+        'Open the browser\'s ⋮ menu.',
+      'Escolha «Instalar aplicação» ou «Adicionar ao ecrã principal».':
+        'Choose «Install app» or «Add to Home screen».',
+      'Abra a app pelo ícone no ecrã principal.':
+        'Open the app from its icon on the Home screen.',
+      'App instalada. Abra-a pelo ícone no ecrã principal para a activar.':
+        'App installed. Open it from its icon on the Home screen to activate it.',
+      'Abra esta página no telemóvel: leia o código QR do portal com a câmara do telemóvel.':
+        'Open this page on your phone: scan the portal\'s QR code with the phone camera.',
+      'Código válido até':
+        'Code valid until',
+      'uso único':
+        'single use',
+      'Activar a app · Portal RTM':
+        'Activate the app · Portal RTM',
+      'A activar a app…':
+        'Activating the app…',
+      'A app activa-se ao abri-la pelo ícone no ecrã principal, não no navegador.':
+        'The app is activated by opening it from its icon on the Home screen, not in the browser.',
+      'Agora não':
+        'Not now',
+      'Este telemóvel não tem Face ID, impressão digital nem código de bloqueio activos. Nas próximas entradas use a palavra-passe e o código de verificação.':
+        'This phone has no Face ID, fingerprint or screen lock code enabled. Next time, sign in with your password and verification code.',
+      'Continuar':
+        'Continue',
+      'Não foi possível activar a app':
+        'The app could not be activated',
+      'Abra a app pelo ícone':
+        'Open the app from its icon',
+      'App activada':
+        'App activated',
+      'Proteja a entrada com o Face ID: nas próximas vezes basta olhar para o telemóvel.':
+        'Protect sign-in with Face ID: next time, just look at your phone.',
+      'Proteja a entrada com a impressão digital: nas próximas vezes basta tocar no leitor.':
+        'Protect sign-in with your fingerprint: next time, just touch the sensor.',
+      'Activar o Face ID':
+        'Turn on Face ID',
+      'Activar a impressão digital':
+        'Turn on fingerprint',
+      'A biometria não foi activada.':
+        'Biometrics were not turned on.',
+      'A biometria foi cancelada.':
+        'Biometrics were cancelled.',
+      'Sem resposta do servidor.':
+        'No response from the server.',
+      'Instalar pelo código QR · Portal RTM':
+        'Install with the QR code · Portal RTM',
+      'Instale a app pelo código QR':
+        'Install the app with the QR code',
+      'A app só funciona nos equipamentos registados. Para a instalar neste telemóvel:':
+        'The app only works on registered devices. To install it on this phone:',
+      'Num computador, entre no portal e abra o seu nome › «App no telemóvel».':
+        'On a computer, sign in to the portal and open your name › «Mobile app».',
+      'Leia o código QR com a câmara deste telemóvel e siga os passos.':
+        'Scan the QR code with this phone\'s camera and follow the steps.',
+      'Se já tinha a app noutro telemóvel, esse deixa de funcionar: cada pessoa tem um equipamento activo.':
+        'If you already had the app on another phone, that one stops working: each person has one active device.',
+      'Terminar sessão':
+        'Sign out',
+      'ou entre com a palavra-passe':
+        'or sign in with your password',
+      'Entrar com Face ID':
+        'Sign in with Face ID',
+      'Entrar com a impressão digital':
+        'Sign in with fingerprint',
+      'Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.':
+        'This app was not installed with the portal\'s QR code. Delete it and, in the portal (on a computer), open «Mobile app» and scan the QR code with the camera.',
+      'Esta app foi desactivada ou activada noutro equipamento. No portal, abra «App no telemóvel» e leia o código QR.':
+        'This app has been deactivated or activated on another device. In the portal, open «Mobile app» and scan the QR code.',
+      'A biometria ainda não está activada neste equipamento. Entre com a palavra-passe.':
+        'Biometrics are not yet turned on for this device. Sign in with your password.',
+      'Não foi possível confirmar a biometria. Tente de novo ou entre com a palavra-passe.':
+        'Biometrics could not be confirmed. Try again or sign in with your password.',
       'Recuperar o acesso · GeoMobilidade Naval':
         'Recover access · GeoMobilidade Naval',
       'Recuperar o acesso':
@@ -130,6 +230,106 @@
       'Escolha uma palavra-passe diferente da temporária.': 'Choose a password different from the temporary one.',
     },
     ti: {
+      'Instalar a app · Portal RTM':
+        'ኣፕ ምጽዓን · Portal RTM',
+      'Código expirado':
+        'ኮድ ግዜኡ ሓሊፉ',
+      'Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.':
+        'እዚ QR ኮድ ግዜኡ ሓሊፉ ወይ ተጠቒሙሉ እዩ። ኣብ ፖርታል «ኣፕ ኣብ ሞባይል» ከፊትኩም ሓድሽ ኮድ ኣንብቡ።',
+      'O código expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.':
+        'እቲ ኮድ ግዜኡ ሓሊፉ ወይ ተጠቒሙሉ እዩ። ኣብ ፖርታል «ኣፕ ኣብ ሞባይል» ከፊትኩም ሓድሽ ኮድ ኣንብቡ።',
+      'A app só se instala pelo código QR pessoal do portal: assim fica registado quem a instalou e em que equipamento.':
+        'እቲ ኣፕ ብውልቃዊ QR ኮድ ናይቲ ፖርታል ጥራይ ይጽዓን፦ ከምኡ መን ከም ዝጸዓኖን ኣብ ኣየናይ መሳርሒን ይምዝገብ።',
+      'Instalar a app':
+        'ኣፕ ጽዓን',
+      'Abra este endereço no Safari: só o Safari consegue instalar a app no iPhone.':
+        'ነዚ ኣድራሻ ብ ሳፋሪ ክፈትዎ፦ ኣብ ኣይፎን ነቲ ኣፕ ዝጽዕን ሳፋሪ ጥራይ እዩ።',
+      'Toque em Partilhar':
+        'ኣካፍል ጠውቑ',
+      'na barra do Safari (se não aparecer, toque primeiro em ⋯).':
+        'ኣብ መስመር ሳፋሪ (እንተዘይተራእዩ፣ መጀመርያ ⋯ ጠውቑ)።',
+      'Escolha «Adicionar ao ecrã principal».':
+        '«ናብ ቀንዲ ስክሪን ወስኽ» ምረጹ።',
+      'Deixe ligado «Abrir como app web» e toque em «Adicionar».':
+        '«ከም መርበብ ኣፕ ክፈት» ብርሁ ግደፍዎ እሞ «ወስኽ» ጠውቑ።',
+      'Abra a app pelo ícone no ecrã principal: fica activada neste iPhone e pede o Face ID.':
+        'ነቲ ኣፕ ብምልክቱ ኣብ ቀንዲ ስክሪን ክፈትዎ፦ ኣብዚ ኣይፎን ይነጥፍ እሞ ገጽ ይሓትት።',
+      'Toque em «Instalar a app». Depois, abra-a pelo ícone: fica activada neste telemóvel e pede a biometria.':
+        '«ኣፕ ጽዓን» ጠውቑ። ድሕሪኡ ብምልክቱ ክፈትዎ፦ ኣብዚ ሞባይል ይነጥፍ እሞ ባዮሜትሪ ይሓትት።',
+      'Abra o menu ⋮ do navegador.':
+        'ዝርዝር ⋮ ናይቲ መርበብ ክፈቱ።',
+      'Escolha «Instalar aplicação» ou «Adicionar ao ecrã principal».':
+        '«ኣፕ ጽዓን» ወይ «ናብ ቀንዲ ስክሪን ወስኽ» ምረጹ።',
+      'Abra a app pelo ícone no ecrã principal.':
+        'ነቲ ኣፕ ብምልክቱ ኣብ ቀንዲ ስክሪን ክፈትዎ።',
+      'App instalada. Abra-a pelo ícone no ecrã principal para a activar.':
+        'ኣፕ ተጻዒኑ። ንምንጣፉ ብምልክቱ ኣብ ቀንዲ ስክሪን ክፈትዎ።',
+      'Abra esta página no telemóvel: leia o código QR do portal com a câmara do telemóvel.':
+        'ነዚ ገጽ ብሞባይል ክፈትዎ፦ QR ኮድ ናይቲ ፖርታል ብካሜራ ሞባይል ኣንብቡ።',
+      'Código válido até':
+        'ኮድ ክሳብ ዝሰርሕ',
+      'uso único':
+        'ሓንሳብ ጥራይ',
+      'Activar a app · Portal RTM':
+        'ኣፕ ምንጣፍ · Portal RTM',
+      'A activar a app…':
+        'ኣፕ ይነጥፍ ኣሎ…',
+      'A app activa-se ao abri-la pelo ícone no ecrã principal, não no navegador.':
+        'እቲ ኣፕ ብምልክቱ ኣብ ቀንዲ ስክሪን ብምኽፋት ይነጥፍ፣ ኣብ መርበብ ኣይኮነን።',
+      'Agora não':
+        'ሕጂ ኣይኮነን',
+      'Este telemóvel não tem Face ID, impressão digital nem código de bloqueio activos. Nas próximas entradas use a palavra-passe e o código de verificação.':
+        'እዚ ሞባይል ንጡፍ ገጽ፣ ኣሻራ ኣጻብዕ ወይ ናይ መዕጸዊ ኮድ የብሉን። ኣብ ዝቕጽል ብቓል ምሕላፍን ናይ ምርግጋጽ ኮድን እተዉ።',
+      'Continuar':
+        'ቀጽል',
+      'Não foi possível activar a app':
+        'ኣፕ ክነጥፍ ኣይከኣለን',
+      'Abra a app pelo ícone':
+        'ነቲ ኣፕ ብምልክቱ ክፈትዎ',
+      'App activada':
+        'ኣፕ ነጢፉ',
+      'Proteja a entrada com o Face ID: nas próximas vezes basta olhar para o telemóvel.':
+        'ምእታው ብገጽ ሓልዉ፦ ኣብ ዝቕጽል ናብ ሞባይል ምጥማት ጥራይ ይኣክል።',
+      'Proteja a entrada com a impressão digital: nas próximas vezes basta tocar no leitor.':
+        'ምእታው ብኣሻራ ኣጻብዕ ሓልዉ፦ ኣብ ዝቕጽል ነቲ መንበቢ ምትንካፍ ጥራይ ይኣክል።',
+      'Activar o Face ID':
+        'ገጽ ኣንጥፍ',
+      'Activar a impressão digital':
+        'ኣሻራ ኣጻብዕ ኣንጥፍ',
+      'A biometria não foi activada.':
+        'ባዮሜትሪ ኣይነጠፈን።',
+      'A biometria foi cancelada.':
+        'ባዮሜትሪ ተሰሪዙ።',
+      'Sem resposta do servidor.':
+        'ካብቲ ሰርቨር መልሲ የለን።',
+      'Instalar pelo código QR · Portal RTM':
+        'ብQR ኮድ ጽዓን · Portal RTM',
+      'Instale a app pelo código QR':
+        'ነቲ ኣፕ ብQR ኮድ ጽዓንዎ',
+      'A app só funciona nos equipamentos registados. Para a instalar neste telemóvel:':
+        'እቲ ኣፕ ኣብ ዝተመዝገቡ መሳርሒታት ጥራይ ይሰርሕ። ኣብዚ ሞባይል ንምጽዓኑ፦',
+      'Num computador, entre no portal e abra o seu nome › «App no telemóvel».':
+        'ብኮምፒተር ናብቲ ፖርታል እተዉ እሞ ስምኩም › «ኣፕ ኣብ ሞባይል» ክፈቱ።',
+      'Leia o código QR com a câmara deste telemóvel e siga os passos.':
+        'ነቲ QR ኮድ ብካሜራ ናይዚ ሞባይል ኣንብቡ እሞ ስጉምትታት ተኸተሉ።',
+      'Se já tinha a app noutro telemóvel, esse deixa de funcionar: cada pessoa tem um equipamento activo.':
+        'ኣብ ካልእ ሞባይል ኣፕ እንተነይርኩም፣ እቲ ምስራሕ የቋርጽ፦ ነፍሲ ወከፍ ሰብ ሓደ ንጡፍ መሳርሒ ኣለዎ።',
+      'Terminar sessão':
+        'ውዕል ዛዝም',
+      'ou entre com a palavra-passe':
+        'ወይ ብቓል ምሕላፍ እተዉ',
+      'Entrar com Face ID':
+        'ብገጽ እቶ',
+      'Entrar com a impressão digital':
+        'ብኣሻራ ኣጻብዕ እቶ',
+      'Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.':
+        'እዚ ኣፕ ብQR ኮድ ናይቲ ፖርታል ኣይተጻዕነን። ሰርዝዎ እሞ ኣብ ፖርታል (ብኮምፒተር) «ኣፕ ኣብ ሞባይል» ከፊትኩም ነቲ QR ኮድ ብካሜራ ኣንብቡ።',
+      'Esta app foi desactivada ou activada noutro equipamento. No portal, abra «App no telemóvel» e leia o código QR.':
+        'እዚ ኣፕ ተቛሪጹ ወይ ኣብ ካልእ መሳርሒ ነጢፉ። ኣብ ፖርታል «ኣፕ ኣብ ሞባይል» ከፊትኩም ነቲ QR ኮድ ኣንብቡ።',
+      'A biometria ainda não está activada neste equipamento. Entre com a palavra-passe.':
+        'ባዮሜትሪ ገና ኣብዚ መሳርሒ ኣይነጠፈን። ብቓል ምሕላፍ እተዉ።',
+      'Não foi possível confirmar a biometria. Tente de novo ou entre com a palavra-passe.':
+        'ባዮሜትሪ ክረጋገጽ ኣይከኣለን። ደጊምኩም ፈትኑ ወይ ብቓል ምሕላፍ እተዉ።',
       'Recuperar o acesso · GeoMobilidade Naval':
         'ኣእታውነት ምምላስ · GeoMobilidade Naval',
       'Recuperar o acesso':

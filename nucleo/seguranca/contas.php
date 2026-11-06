@@ -228,6 +228,30 @@ function naval_otpauth(string $segredo, string $conta): string
     return 'otpauth://totp/' . rawurlencode('GeoMobilidade Naval:' . $conta) . '?secret=' . $segredo . '&issuer=' . rawurlencode('GeoMobilidade Naval') . '&digits=6&period=30';
 }
 
+/**
+ * Abre a sessão autenticada (palavra-passe, chave de acesso ou código QR da app): novo identificador, perfil, registo.
+ * $equipamento: app instalada pelo código QR; a sessão só fica ligada a ele se for desta conta e estiver activo.
+ */
+function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metodo, string $equipamento = ''): void
+{
+    session_regenerate_id(true);
+    unset($_SESSION['mfa_pendente'], $_SESSION['csrf'], $_SESSION['app_equipamento_pedido'], $_SESSION['app_equipamento']);   // novo identificador e novo código CSRF
+    $_SESSION['usuario_autenticado'] = true;
+    $_SESSION['usuario_login'] = $login;
+    $_SESSION['usuario_nome'] = $u['nome'] ?? $login;
+    $_SESSION['usuario_perfil'] = $u['perfil'] ?? '';
+    $_SESSION['login_time'] = time();
+    $_SESSION['versao_credencial'] = (int) ($u['versao'] ?? 0);   // muda com a palavra-passe ou os dois passos
+    $_SESSION['ultima_actividade'] = time();
+    if ($equipamento !== '' && function_exists('naval_app_activo')) {
+        $eq = naval_app_activo($equipamento);
+        if ($eq && $eq['login'] === $login) $_SESSION['app_equipamento'] = $equipamento;
+    }
+    naval_limpar_falhas($login);
+    naval_registar('entrada', ['dois_passos' => $comMfa] + ($metodo !== 'senha' ? ['metodo' => $metodo] : []) + (!empty($_SESSION['app_equipamento']) ? ['equipamento' => $_SESSION['app_equipamento']] : []), $login);
+    if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
+}
+
 /** Sessão: termina após 30 minutos sem actividade ou 10 horas, e se a conta deixar de ser válida. */
 function naval_sessao_valida(): bool
 {
@@ -240,6 +264,12 @@ function naval_sessao_valida(): bool
     elseif ($agora - $inicio > NAVAL_SESSAO_MAXIMA) $motivo = 'duracao_maxima';
     elseif (!naval_utilizador()) $motivo = 'conta_invalida';
     elseif ((int) (naval_utilizador()['versao'] ?? 0) !== (int) ($_SESSION['versao_credencial'] ?? 0)) $motivo = 'credenciais_alteradas';
+    elseif (!empty($_SESSION['app_equipamento'])) {
+        // app do telemóvel: o equipamento tem de continuar activo (activar a app noutro equipamento desactiva este)
+        if (!function_exists('naval_app_activo')) naval_servico('app-telemovel');
+        if (!naval_app_activo((string) $_SESSION['app_equipamento'])) $motivo = 'app_desactivada';
+        else naval_app_usar((string) $_SESSION['app_equipamento']);
+    }
     if ($motivo) {
         naval_registar('sessao_terminada', ['motivo' => $motivo]);
         $_SESSION = [];

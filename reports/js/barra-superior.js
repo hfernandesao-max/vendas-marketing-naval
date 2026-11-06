@@ -208,6 +208,7 @@ function mostrarConta() {
   $('#conta-nome').textContent = nome;
   b.setAttribute('aria-label', t('Conta') + ': ' + nome);
   $('#sair-t').textContent = t('Terminar sessão');
+  $('#conta-app-t').textContent = t('App no telemóvel');
 }
 function fecharConta() {
   const p = $('#conta-p');
@@ -272,6 +273,10 @@ export function montarBarraSup() {
     if (!ev.target.closest('#conta')) fecharConta();
   });
   $('#sair').addEventListener('click', sair);
+  $('#conta-app').addEventListener('click', () => {
+    fecharConta();
+    import('./app-telemovel.js').then((m) => m.abrirAppTelemovel());
+  });
   aoMudarFavoritos(() => {
     actualizarEstrela();
     import('./navegacao.js').then((m) => m.nav());

@@ -4,6 +4,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 06-11-2026
 
+### App no telemóvel: instalação só pelo código QR, equipamento registado e entrada com Face ID
+
+- **Instalar pelo código QR:** no portal, o seu nome › «App no telemóvel» mostra um código QR pessoal (uso único,
+  válido 10 minutos). A câmara do telemóvel abre a página de instalação, que reconhece o sistema: no Android, um
+  botão «Instalar a app»; no iPhone, os toques Partilhar › Adicionar ao ecrã principal (a Apple não deixa um site
+  instalar apps sozinho). A app instalada é a do perfil: Naval Gestão ou Portal RTM.
+- **Só por este método:** o portal, a página de entrada e a app de gestão deixaram de oferecer a instalação; uma app
+  adicionada de outra forma, ou aberta no navegador, não funciona e explica como instalar pelo código QR.
+- **Registo:** ao abrir pela primeira vez, a app fica activada nesse equipamento (quem, que app, sistema e modelo,
+  data, última utilização) e a pessoa recebe um aviso por correio. Um equipamento activo por pessoa: activar noutro
+  telemóvel desactiva o anterior, que termina a sessão. O equipamento renova-se com o uso e expira após 90 dias sem
+  uso. Em Acessos, a lista «Apps no telemóvel» mostra todos os equipamentos, com o botão Desactivar.
+- **Entrada com Face ID:** chaves de acesso FIDO2/WebAuthn («passkeys»). O telemóvel usa o método mais forte que tiver:
+  Face ID; sem Face ID, a impressão digital; sem biometria, o código de bloqueio do telemóvel. A biometria nunca sai
+  do telemóvel: o servidor guarda só a chave pública e confirma a assinatura. Sem nenhum destes, entra-se com a
+  palavra-passe e o código de verificação.
+- Testes novos: código QR, activação, biometria (autenticador virtual), substituição do equipamento, desactivação
+  pelo administrador e bloqueio da app instalada sem o código.
+
 ### App «Naval Gestão» no telemóvel: novo desenho, segundo as apps de gestão de referência
 
 - Desenho inspirado nas melhores apps de gestão (Shopify, Stripe, Power BI, Salesforce, SAP Fiori) e nas regras da
