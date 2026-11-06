@@ -4121,3 +4121,52 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .s {
 body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   font-size: 20px;
 }
+
+/* App no telemóvel (menu da conta): estado do equipamento e código QR pessoal */
+.app-estado {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sel, rgb(35 151 212 / 0.08));
+  font-size: 13px;
+}
+.app-qr {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+.app-qr-img {
+  width: 220px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  line-height: 0;
+}
+.app-qr-img svg {
+  width: 100%;
+  height: auto;
+}
+.app-qr-img.expirado {
+  opacity: 0.15;
+}
+.app-prazo {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.app-passos {
+  margin: 8px 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  text-align: justify;
+}
+.app-nota {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+  text-align: justify;
+}

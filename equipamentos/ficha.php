@@ -40,7 +40,6 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#273777">
-<link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
 <title><?= $valido ? htmlentities($id, ENT_QUOTES, 'UTF-8') . ' · ' : '' ?>Grupo Naval</title>
 <style>

@@ -1,5 +1,5 @@
 /*
- * Service worker do Portal RTM (app «Equipamentos» instalada no iPhone ou no Android).
+ * Service worker do Portal RTM (apps instaladas pelo código QR do portal, no iPhone ou no Android).
  * Regra de segurança: só guarda em cache ficheiros estáticos públicos da app (ícones e a página «Sem ligação»).
  * Páginas PHP, a API, fichas, documentos e assinaturas vão SEMPRE à rede e nunca ficam guardados no telefone.
  * Sem rede, mostra-se a página «Sem ligação» e não se assina.

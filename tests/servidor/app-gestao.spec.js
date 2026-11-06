@@ -9,9 +9,11 @@ test('app de gestão: sem sessão envia para /geo/login.php com o regresso a ../
   expect(r.headers()['location']).toBe('/geo/login.php?redirect=..%2Fgestao%2F');
 });
 
-test('app de gestão: no iPhone, entrar abre a app; sem «App de gestão» na matriz vai para o portal @navegador', async ({ browser }) => {
+test('app de gestão: no iPhone sem a app instalada pelo QR pede a instalação; sem «App de gestão» na matriz vai para o portal @navegador', async ({
+  browser,
+}) => {
   for (const [conta, destino, titulo] of [
-    ['dir', '/gestao/', 'Naval Gestão'],
+    ['dir', '/app/so-pelo-qr.php', 'Instalar pelo código QR'],
     ['ti', '/reports/', 'Portal RTM'],
   ]) {
     const ctx = await browser.newContext({ ...devices['iPhone 13'] });
