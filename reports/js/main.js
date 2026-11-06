@@ -104,6 +104,18 @@ const lerSessao = () =>
         location.replace('../app/so-pelo-qr.php');
         throw new Error('sessao');
       }
+      // app no telemóvel: uma versão nova instalada no servidor aplica-se sozinha quando a app volta ao ecrã
+      if (d && comoApp && d.versao) {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState !== 'visible') return;
+          apiFetch('sessao')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((s) => {
+              if (s && s.versao && s.versao !== d.versao && !document.querySelector('dialog[open]')) location.reload();
+            })
+            .catch(() => {});
+        });
+      }
       if (d && d.preferencias) {
         aplicarPreferencias(d.preferencias);
         definirFavoritos(d.preferencias.favoritos);
