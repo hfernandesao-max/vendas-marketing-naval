@@ -15,7 +15,8 @@ if (!$c) {
 header('Content-Type: application/manifest+json; charset=utf-8');
 header('Cache-Control: no-store');
 $nome = NAVAL_APP_NOMES[$c['app']];
-echo json_encode([
+// o código já foi validado (32 caracteres de [A-Za-z0-9_-]) e o JSON escapa o resto
+echo json_encode([   // nosemgrep: echoed-request -- resposta JSON (não HTML) com o código validado
     'id' => 'app-' . $c['app'],
     'name' => 'Grupo Naval · ' . $nome,
     'short_name' => $nome,

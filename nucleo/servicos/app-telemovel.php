@@ -41,7 +41,7 @@ function naval_app_codigo_ficheiro(string $codigo): string
 /** Novo código de instalação (o servidor guarda só o resumo SHA-256). */
 function naval_app_codigo_novo(string $login, string $app): array
 {
-    foreach (glob(naval_app_pasta('codigos') . '/*.json') ?: [] as $f) if (filemtime($f) < time() - 86400) @unlink($f);
+    foreach (glob(naval_app_pasta('codigos') . '/*.json') ?: [] as $f) if (filemtime($f) < time() - 86400) @unlink($f);   // nosemgrep: unlink-use -- códigos da própria pasta privada, nome derivado de hash
     $codigo = naval_b64url(random_bytes(24));
     $ate = time() + NAVAL_APP_CODIGO_MIN * 60;
     naval_json_gravar(naval_app_codigo_ficheiro($codigo), ['login' => $login, 'app' => $app, 'ate' => $ate, 'usado' => null], false);

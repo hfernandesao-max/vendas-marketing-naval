@@ -18,7 +18,6 @@ if ($eq) {
     exit;
 }
 $c = naval_app_codigo($codigo);
-$h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); };
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -33,7 +32,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
   <script src="../reports/js/tema-arranque.js"></script>
 </head>
 <body>
-  <main class="caixa" id="activar" data-codigo="<?= $h($c ? $codigo : '') ?>">
+  <main class="caixa" id="activar" data-codigo="<?= htmlspecialchars($c ? $codigo : '', ENT_QUOTES, 'UTF-8') ?>">
     <img class="logo" src="icones/icone-192.png" alt="Grupo Naval" width="64" height="64" />
     <h1 id="act-titulo" data-t>A activar a app…</h1>
     <p class="quem" id="act-quem"></p>

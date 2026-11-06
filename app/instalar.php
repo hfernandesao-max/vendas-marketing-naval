@@ -16,7 +16,6 @@ $codigo = (string) ($_GET['c'] ?? '');
 $c = naval_app_codigo($codigo);
 $u = $c ? (naval_utilizadores()[$c['login']] ?? null) : null;
 $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
-$h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); };
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -26,12 +25,12 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
   <meta name="referrer" content="no-referrer" />
   <title>Instalar a app · Portal RTM</title>
 <?php if ($c): ?>
-  <link rel="manifest" href="manifesto.php?c=<?= $h($codigo) ?>">
+  <link rel="manifest" href="manifesto.php?c=<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="theme-color" content="#273777">
   <link rel="apple-touch-icon" sizes="180x180" href="icones/apple-touch-icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="<?= $h($nomeApp) ?>">
+  <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($nomeApp, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <?php endif; ?>
   <link rel="stylesheet" href="../assets/fontes/inter.css" />
@@ -39,15 +38,15 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
   <script src="../reports/js/tema-arranque.js"></script>
 </head>
 <body>
-  <main class="caixa" id="instalar" data-codigo="<?= $h($c ? $codigo : '') ?>">
+  <main class="caixa" id="instalar" data-codigo="<?= htmlspecialchars($c ? $codigo : '', ENT_QUOTES, 'UTF-8') ?>">
     <img class="logo" src="icones/icone-192.png" alt="Grupo Naval" width="64" height="64" />
 <?php if (!$c): ?>
     <h1 data-t>Código expirado</h1>
     <div class="msg erro" role="alert" data-t id="inst-invalido">Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.</div>
     <p class="nota" data-t>A app só se instala pelo código QR pessoal do portal: assim fica registado quem a instalou e em que equipamento.</p>
 <?php else: ?>
-    <h1><span data-t>Instalar a app</span> «<?= $h($nomeApp) ?>»</h1>
-    <p class="quem"><?= $h((string) ($u['nome'] ?? $c['login'])) ?></p>
+    <h1><span data-t>Instalar a app</span> «<?= htmlspecialchars($nomeApp, ENT_QUOTES, 'UTF-8') ?>»</h1>
+    <p class="quem"><?= htmlspecialchars((string) ($u['nome'] ?? $c['login']), ENT_QUOTES, 'UTF-8') ?></p>
 
     <section id="inst-ios" hidden>
       <div class="msg erro" id="inst-safari" hidden data-t>Abra este endereço no Safari: só o Safari consegue instalar a app no iPhone.</div>
@@ -74,7 +73,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF
       <p class="nota" data-t>Abra esta página no telemóvel: leia o código QR do portal com a câmara do telemóvel.</p>
     </section>
 
-    <p class="validade"><span data-t>Código válido até</span> <?= $h(date('H:i', (int) $c['ate'])) ?> · <span data-t>uso único</span></p>
+    <p class="validade"><span data-t>Código válido até</span> <?= htmlspecialchars(date('H:i', (int) $c['ate']), ENT_QUOTES, 'UTF-8') ?> · <span data-t>uso único</span></p>
 <?php endif; ?>
   </main>
   <script src="registar.js" defer></script>
