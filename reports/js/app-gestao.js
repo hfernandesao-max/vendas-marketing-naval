@@ -652,5 +652,21 @@ setInterval(() => {
   if (document.visibilityState === 'visible' && E.ind) carregar();
 }, 300000);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && E.ind && Date.now() - new Date(E.ind.hora.replace(' ', 'T')).getTime() > 300000) carregar();
+  if (document.visibilityState !== 'visible') return;
+  versaoNova();
+  if (E.ind && Date.now() - new Date(E.ind.hora.replace(' ', 'T')).getTime() > 300000) carregar();
 });
+// Actualizações transparentes: a app vem sempre do servidor; se uma versão nova for instalada com a app aberta,
+// recarrega-se sozinha quando volta ao ecrã (sem perder uma pergunta a meio no assistente).
+function versaoNova() {
+  if (!E.sessao || !E.sessao.versao) return;
+  apiJson('sessao').then((s) => {
+    if (!s || !s.versao || s.versao === E.sessao.versao) return;
+    const ta = document.querySelector('.ag-form textarea');
+    if (E.aPensar || (ta && ta.value.trim())) return;
+    location.reload();
+  });
+}
+setInterval(() => {
+  if (document.visibilityState === 'visible') versaoNova();
+}, 900000);

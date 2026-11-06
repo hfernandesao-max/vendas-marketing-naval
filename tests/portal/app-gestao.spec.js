@@ -183,3 +183,23 @@ test('app de gestão: tema escuro e ecrã pequeno sem nada cortado', async ({ br
   expect(erros).toEqual([]);
   await ctx.close();
 });
+
+test('app de gestão: uma versão nova no servidor aplica-se sozinha quando a app volta ao ecrã', async ({ page }) => {
+  let versao = 'v2026.11.06.41';
+  let aberturas = 0;
+  page.on('load', () => aberturas++);
+  await page.route('**/v1/sessao**', (r) => r.fulfill({ json: { ...SESSAO, versao } }));
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
+  await page.route('**/v1/vendas/estado**', (r) => r.fulfill({ json: { ok: true } }));
+  await page.goto('/gestao/index.html');
+  await expect(page.locator('.ag-heroi')).toBeVisible();
+  // mesma versão: não recarrega
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await page.waitForTimeout(400);
+  expect(aberturas).toBe(1);
+  // versão nova instalada: recarrega sozinha, sem pedir nada à pessoa
+  versao = 'v2026.11.06.42';
+  await Promise.all([page.waitForEvent('load'), page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))]);
+  await expect(page.locator('.ag-heroi')).toBeVisible();
+  expect(aberturas).toBe(2);
+});

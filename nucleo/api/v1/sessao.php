@@ -8,6 +8,7 @@ defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token J
 $u = naval_utilizador();
 if (!$u) throw new NavalErro('Sessão terminada.', 401);
 naval_servico('preferencias');
+naval_servico('actualizacao');
 $perm = [];
 foreach (array_keys(naval_matriz()) as $rec) $perm[$rec] = naval_nivel($rec);
 $GLOBALS['naval_api_sensivel'] = true;   // tem o código CSRF: nunca em cache nem comprimido
@@ -31,4 +32,6 @@ naval_json([
     'sessao' => ['inactiva_s' => NAVAL_SESSAO_INACTIVA, 'maxima_s' => NAVAL_SESSAO_MAXIMA],
     // app instalada pelo código QR (equipamento registado) ou null: fora disso, o portal não funciona como app
     'app' => !empty($_SESSION['app_equipamento']) ? (string) $_SESSION['app_equipamento'] : null,
+    // versão instalada no servidor: a app no telemóvel recarrega-se sozinha quando muda (actualização transparente)
+    'versao' => (string) (naval_act_estado()['versao'] ?? ''),
 ]);

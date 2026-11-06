@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 06-11-2026
 
+### App no telemóvel: actualizações transparentes
+
+- A app vem sempre do servidor: cada versão instalada no portal chega aos telemóveis sem App Store, sem descarregar
+  nada e sem pedir nada à pessoa.
+- Se a versão mudar com a app aberta, a app recarrega-se sozinha quando volta ao ecrã (nunca a meio de uma pergunta
+  ao assistente nem com uma janela aberta). A sessão do portal passa a indicar a versão instalada.
+
 ### App no telemóvel: instalação só pelo código QR, equipamento registado e entrada com Face ID
 
 - **Instalar pelo código QR:** no portal, o seu nome › «App no telemóvel» mostra um código QR pessoal (uso único,
