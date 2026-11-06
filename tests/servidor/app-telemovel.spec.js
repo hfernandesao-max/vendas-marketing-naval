@@ -86,7 +86,15 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   const de2 = await t1.ctx.request.post('/app/chave.php', { data: { f: 'activar', codigo }, headers: { Origin: LOCAL } });
   expect((await de2.json()).erro).toContain('expirou ou já foi usado');
 
-  // sessão terminada: a app abre na entrada e entra com a biometria, sem palavra-passe
+  // sessão terminada: ao abrir a app, a entrada rápida pede logo a biometria e entra (sem palavra-passe nem toques)
+  const eqCookie = (await t1.ctx.cookies()).filter((x) => x.name === 'naval_eq');
+  expect(eqCookie.length).toBe(1);
+  await t1.ctx.clearCookies();
+  await t1.ctx.addCookies(eqCookie);
+  await t1.page.goto('/gestao/').catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  await expect(t1.page).toHaveTitle(/Naval Gestão/);
+  // sem o cookie do equipamento (ex.: dados do navegador limpos): a página de entrada também tem o botão
   await t1.ctx.clearCookies();
   await t1.page.goto('/geo/login.php?redirect=../gestao/');
   await expect(t1.page.locator('#app-bio-t')).toHaveText('Entrar com a impressão digital');
@@ -105,6 +113,10 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   await t1.page.waitForURL(/login\.php/);
   await t1.page.locator('#app-bio-b').click();
   await expect(t1.page.locator('#app-aviso')).toContainText('activada noutro equipamento');
+  // com o cookie do equipamento antigo: a entrada rápida diz que a app foi desactivada
+  await t1.ctx.addCookies(eqCookie);
+  await t1.page.goto('/app/entrar.php?redirect=../gestao/');
+  await expect(t1.page.locator('h1')).toHaveText('App desactivada');
 
   // registo: o super administrador vê os equipamentos; a própria pessoa vê o seu
   const meu = await (await portal.get(API + 'app-telemovel')).json();
@@ -120,7 +132,8 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   const r = await (await adm.post(API + 'app-telemovel', { data: { accao: 'desactivar', id: meu.meu.id, csrf: await csrf(adm) } })).json();
   expect(r.ok).toBe(true);
   await t2.page.goto('/gestao/').catch(() => {});
-  await t2.page.waitForURL(/login\.php/);
+  await t2.page.waitForURL(/entrar\.php/);
+  await expect(t2.page.locator('h1')).toHaveText('App desactivada');
   const reg = await (await adm.get(API + 'gestao')).json();
   const accoes = (reg.registos || []).map((x) => x.accao);
   for (const a of ['app_codigo_gerado', 'app_activada', 'app_substituida', 'app_desactivada', 'app_biometria_activada']) expect(accoes, a).toContain(a);

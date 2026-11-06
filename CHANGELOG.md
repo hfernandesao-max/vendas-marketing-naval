@@ -4,6 +4,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 06-11-2026
 
+### App no telemóvel: máxima rapidez na instalação, na entrada e na abertura
+
+Medido com rede 4G lenta simulada (latência de 150 ms, 1,6 Mbit/s) e processador 4 vezes mais lento:
+
+| Passo                                               | Antes                     | Agora                      |
+| --------------------------------------------------- | ------------------------- | -------------------------- |
+| Página de instalação (passos visíveis)              | 1,5 s · 10 pedidos        | 0,6 s · 2 pedidos          |
+| Primeira abertura até ao botão do Face ID           | 1,3 s · 10 pedidos        | 0,6 s · 4 pedidos          |
+| Abrir a app com a sessão terminada até estar dentro | 4,5 s · 2 ecrãs e 1 toque | 1,6 s · Face ID automático |
+
+- **Páginas da app num só pedido:** estilos, tema e funções dentro da página, letra do sistema do telemóvel (sem
+  descarregar letras), passos do sistema (iPhone ou Android) mostrados logo pelo servidor e tradução descarregada só
+  quando o idioma não é o português.
+- **Entrada rápida com Face ID:** ao abrir a app com a sessão terminada, a biometria aparece logo (como nas apps dos
+  bancos), com o desafio já dentro da página; o Face ID da activação também já vem na resposta da activação.
+- **App de gestão:** módulos com versão no endereço, guardados no telemóvel até mudarem (abrir a app já não volta a
+  pedir cada ficheiro), pré-carregamento de toda a cadeia de módulos, estilos dentro da página, token de acesso já
+  na página e os pedidos da sessão e dos indicadores ao mesmo tempo. Os números aparecem sem esperar pelo estado do
+  Pinguim BO. O portal também passa a levar o token de acesso na página.
+- O service worker regista-se depois de a página aparecer, sem disputar a rede.
+
 ### App no telemóvel: actualizações transparentes
 
 - A app vem sempre do servidor: cada versão instalada no portal chega aos telemóveis sem App Store, sem descarregar
