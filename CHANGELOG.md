@@ -2,6 +2,28 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 06-11-2026
+
+### Apresentação ao Conselho: projecto estratégico «Frota ligada» (GPS Quatenus e CCTV do parque)
+
+- **Três diapositivos novos** (agora 13): o caso de negócio da ligação do GPS das carrinhas (Quatenus) e do CCTV do
+  parque da Foodtec ao portal, o plano com metas e a conformidade legal.
+- **Caso de negócio:** benefícios em três frentes — mais vendas, menos custos e mais controlo — e o valor de cada visita a
+  mais por rota e por dia, calculado com os dados reais do mês (compra média × rotas activas × dias úteis), por mês e
+  por ano. Investimento: plataforma Quatenus e CCTV já em uso, integração interna; só uma câmara de leitura de
+  matrículas no portão, se o CCTV actual não as ler.
+- **Metas a 6 meses com linha de base:** visitas com venda por rota e por dia (valor actual do Pinguim BO), saídas do
+  parque a horas (CCTV e GPS), visitas confirmadas por GPS, quilómetros por venda, combustível por caixa entregue e uso
+  das viaturas fora de horas; cronograma em quatro fases com datas.
+- **Conformidade legal:** o que diz a lei (Constituição, art. 32.º; Lei 22/11, arts. 5.º, 11.º, 17.º, 25.º, 33.º–35.º e
+  51.º) e os sete passos para ficar tudo oficial, cada um com responsável e data: avaliação de impacto, pedido de
+  autorização à Agência de Protecção de Dados, política escrita aos colaboradores, avisos no parque e nas viaturas,
+  contrato com a Quatenus, regras no portal e arranque com dados reais só depois da autorização.
+- A Quatenus e o CCTV do parque aparecem na arquitectura como sistemas «Por ligar» até estarem configurados; novas
+  recomendações ao Conselho: pedido à APD (13-11-2026), acesso à API da Quatenus (16-11-2026) e leitura de matrículas no
+  portão (27-11-2026).
+- Teste novo: nenhum diapositivo tem conteúdo por cima do rodapé.
+
 ## 05-11-2026
 
 ### Painel de indicadores dinâmico num só ecrã; cabeçalhos das tabelas fixos

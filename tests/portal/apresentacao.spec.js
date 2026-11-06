@@ -1,5 +1,6 @@
 // Gestão › Apresentação do portal: negócio e automação com os dados da API, horas configuradas, evolução e roteiro.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { abrir } from './dados.js';
 
 const MESES = ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11'].map((mes, i) => ({
@@ -19,7 +20,18 @@ const DADOS = {
   horas: { aprovar: '02:45', instalar: '03:00', calculo: '04:00', resumo: '07:00', plano: '18:00', carrinha: '19:30', fecho: '21:15' },
   negocio: {
     meses: MESES,
-    mes: { de: '2026-11-01', total: 3200000, anterior: 2500000, variacao: 0.28, documentos: 105, clientes: 55, rotas: 9, valor_medio: 58000 },
+    mes: {
+      de: '2026-11-01',
+      total: 3200000,
+      anterior: 2500000,
+      variacao: 0.28,
+      documentos: 105,
+      clientes: 55,
+      rotas: 9,
+      valor_medio: 58000,
+      dias: 4,
+      visitas_rota_dia: 4.2,
+    },
     clientes_30: 812,
     ultimo_mes: { mes: '2026-10', total: 30.5e6, variacao: 0.089 },
     media_mensal: 25.7e6,
@@ -60,6 +72,7 @@ const DADOS = {
   ],
   novidades: [{ data: '03-11-2026', titulo: 'Novidade de teste', itens: ['**Função nova** que chegou nesta versão.'] }],
   roteiro: {
+    frota: JSON.parse(readFileSync('nucleo/recursos/roteiro.json', 'utf8')).frota,
     actualizado: '2026-11-04',
     projecto: {
       titulo: 'Portal RTM',
@@ -84,12 +97,14 @@ const DADOS = {
   },
 };
 
-test('apresentação ao Conselho: 10 diapositivos corporativos com dados reais, governação, arquitectura, roteiro e visão', async ({ page }) => {
+test('apresentação ao Conselho: 13 diapositivos corporativos com dados reais, governação, arquitectura, roteiro, frota ligada, conformidade legal e visão', async ({
+  page,
+}) => {
   await page.route('**/v1/apresentacao**', (r) => r.fulfill({ json: DADOS }));
   const erros = await abrir(page, '#apresentacao');
   const cx = page.locator('.cx');
   const activa = cx.locator('.cx-slide.activa');
-  await expect(cx.locator('.cx-ponto')).toHaveCount(10);
+  await expect(cx.locator('.cx-ponto')).toHaveCount(13);
   // capa
   await expect(activa).toContainText('Portal RTM');
   await expect(activa).toContainText('Conselho de Administração');
@@ -99,7 +114,7 @@ test('apresentação ao Conselho: 10 diapositivos corporativos com dados reais, 
   await expect(activa).toContainText('Sumário executivo');
   await expect(activa).toContainText('131,7 M Kz de vendas em 6 meses');
   await expect(activa.locator('.cx-rodape')).toContainText('Confidencial');
-  await expect(activa.locator('.cx-rodape')).toContainText('2 / 10');
+  await expect(activa.locator('.cx-rodape')).toContainText('2 / 13');
   // desempenho: mensagem com o último mês completo
   await cx.press('ArrowRight');
   await expect(activa).toContainText('Outubro de 2026 fechou com 30,5 M Kz, mais 8,9%');
@@ -124,6 +139,29 @@ test('apresentação ao Conselho: 10 diapositivos corporativos com dados reais, 
   await cx.press('ArrowRight');
   await expect(activa.locator('.cx-fase').first()).toContainText('09-11-2026 – 20-11-2026');
   await expect(activa).toContainText('Encomendas por WhatsApp');
+  // projecto estratégico: frota ligada (GPS Quatenus), com o valor de cada visita a mais calculado com os dados reais
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Projecto estratégico · Frota ligada');
+  await expect(activa).toContainText('Cada visita a mais por rota e por dia vale cerca de 11,5 M Kz de vendas por mês');
+  await expect(activa).toContainText('Mais vendas');
+  await expect(activa).toContainText('Menos custos');
+  await expect(activa).toContainText('Mais controlo');
+  await expect(activa).toContainText('+137,8 M Kz');
+  // metas e fases
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Como medimos o resultado, e quando');
+  await expect(activa.locator('.cx-metas')).toContainText('4,2 por rota');
+  await expect(activa.locator('.cx-metas')).toContainText('95%');
+  await expect(activa.locator('.cx-gantt')).toContainText('Ligar e associar');
+  await expect(activa).toContainText('Agência de Protecção de Dados');
+  // conformidade legal: a lei aplicável e os passos para ficar tudo oficial, com responsável e data
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('Projecto estratégico · Conformidade legal');
+  await expect(activa.locator('.cx-lei-l')).toHaveCount(8);
+  await expect(activa).toContainText('Lei 22/11, art. 17.º');
+  await expect(activa.locator('.cx-lei-p')).toHaveCount(7);
+  await expect(activa.locator('.cx-lei-p').nth(1)).toContainText('Pedido de autorização à APD');
+  await expect(activa.locator('.cx-lei-p').last()).toContainText('14-12-2026');
   // visão
   await cx.press('ArrowRight');
   await expect(activa).toContainText('Plano Tecnológico do Grupo Naval');
@@ -137,6 +175,19 @@ test('apresentação ao Conselho: 10 diapositivos corporativos com dados reais, 
   const caixa = await cx.locator('.cx-area').boundingBox();
   const pagina = await page.locator('#page').boundingBox();
   expect(caixa.width).toBeLessThanOrEqual(pagina.width + 1);
+  // nenhum diapositivo tem conteúdo por cima do rodapé (nada cortado nem sobreposto)
+  for (let i = 0; i < 13; i++) {
+    await cx.locator('.cx-ponto').nth(i).click();
+    const invade = await activa.evaluate((sl) => {
+      const rod = sl.querySelector('.cx-rodape');
+      if (!rod) return [];
+      const lim = rod.getBoundingClientRect().top + 1;
+      return [...sl.children]
+        .filter((c) => c !== rod && c.getBoundingClientRect().height > 0 && c.getBoundingClientRect().bottom > lim)
+        .map((c) => c.className);
+    });
+    expect(invade, 'diapositivo ' + (i + 1)).toEqual([]);
+  }
   expect(erros).toEqual([]);
 });
 

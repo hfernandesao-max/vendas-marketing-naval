@@ -32,7 +32,7 @@ function naval_apx_negocio(array $ag, string $hoje): array
     $iniAnt = naval_apx_mes($hoje, -1);
     $fimAnt = date('Y-m-d', min(strtotime($iniAnt . ' 12:00') + ((int) substr($hoje, 8, 2) - 1) * 86400, strtotime($iniMes . ' 12:00') - 86400));
     $limite30 = date('Y-m-d', strtotime($hoje . ' 12:00') - 29 * 86400);
-    $mes = ['total' => 0.0, 'anterior' => 0.0, 'documentos' => 0, 'clientes' => [], 'rotas' => []];
+    $mes = ['total' => 0.0, 'anterior' => 0.0, 'documentos' => 0, 'clientes' => [], 'rotas' => [], 'dias' => 0, 'rota_dias' => 0];
     $c30 = [];
     $dias = 0;
     $desde = null;
@@ -45,7 +45,10 @@ function naval_apx_negocio(array $ag, string $hoje): array
         foreach ((array) ($x['rotas'] ?? []) as $rt => $r) {
             $tot += (float) ($r['t'] ?? 0);
             $docs += (int) ($r['d'] ?? 0);
-            if ($dia >= $iniMes && (int) ($r['d'] ?? 0) > 0) $mes['rotas'][(string) $rt] = true;
+            if ($dia >= $iniMes && (int) ($r['d'] ?? 0) > 0) {
+                $mes['rotas'][(string) $rt] = true;
+                $mes['rota_dias']++;   // dias de trabalho de cada rota (para as visitas por rota e por dia)
+            }
         }
         if ($docs > 0) {
             $dias++;
@@ -70,6 +73,7 @@ function naval_apx_negocio(array $ag, string $hoje): array
         if ($dia >= $iniMes) {
             $mes['total'] += $tot;
             $mes['documentos'] += $docs;
+            if ($docs > 0) $mes['dias']++;
         } elseif ($dia >= $iniAnt && $dia <= $fimAnt) $mes['anterior'] += $tot;
     }
     return [
@@ -79,7 +83,10 @@ function naval_apx_negocio(array $ag, string $hoje): array
         'mes' => ['de' => $iniMes, 'total' => round($mes['total'], 2), 'anterior' => round($mes['anterior'], 2),
             'variacao' => $mes['anterior'] > 0 ? round($mes['total'] / $mes['anterior'] - 1, 3) : null,
             'documentos' => $mes['documentos'], 'clientes' => count($mes['clientes']), 'rotas' => count($mes['rotas']),
-            'valor_medio' => $compras ? round($valorCompras / $compras, 2) : null],
+            'valor_medio' => $compras ? round($valorCompras / $compras, 2) : null,
+            'dias' => $mes['dias'],
+            // documentos por rota e por dia de trabalho (aproximação das visitas com venda)
+            'visitas_rota_dia' => $mes['rota_dias'] ? round($mes['documentos'] / $mes['rota_dias'], 1) : null],
         // último mês completo face ao anterior e média mensal dos meses completos (comparações estáveis no início do mês)
         'ultimo_mes' => naval_apx_ultimo_mes($meses),
         'media_mensal' => naval_apx_media($meses),
@@ -222,5 +229,7 @@ function naval_apx_sistemas(): array
         ['nome' => 'Google Maps', 'funcao' => 'Mapas, rotas e prospecção', 'ligado' => naval_config('GOOGLE_MAPS_API_KEY') !== ''],
         ['nome' => 'GitHub', 'funcao' => 'Versões testadas e instalação automática', 'ligado' => naval_act_usa_app() || naval_config('ACTUALIZACAO_GITHUB_TOKEN') !== ''],
         ['nome' => 'Correio electrónico', 'funcao' => 'Resumos, alertas e fechos do dia', 'ligado' => naval_config('EMAIL_MODO') !== ''],
+        ['nome' => 'Quatenus (GPS da frota)', 'funcao' => 'Posição, viagens e paragens das carrinhas', 'ligado' => naval_config('QUATENUS_API_URL') !== ''],
+        ['nome' => 'CCTV do parque (Foodtec)', 'funcao' => 'Saídas e chegadas das viaturas pela matrícula', 'ligado' => naval_config('CCTV_API_URL') !== ''],
     ];
 }

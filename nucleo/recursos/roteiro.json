@@ -1,6 +1,6 @@
 {
-  "_nota": "Roteiro da Apresentação do portal (Gestão), para o Conselho de Administração: frases curtas, sem termos técnicos, datas concretas (AAAA-MM-DD). Rever em cada versão. estado = concluido | em_curso | planeado. «proximos» = recomendações para conhecimento (etiqueta, texto curto, data). «projecto» = capa; «ponto_partida» = situação antes do portal; «visao» = pilares do Plano Tecnológico.",
-  "actualizado": "2026-11-04",
+  "_nota": "Roteiro da Apresentação do portal (Gestão), para o Conselho de Administração: frases curtas, sem termos técnicos, datas concretas (AAAA-MM-DD). Rever em cada versão. estado = concluido | em_curso | planeado. «proximos» = recomendações para conhecimento (etiqueta, texto curto, data). «projecto» = capa; «ponto_partida» = situação antes do portal; «visao» = pilares do Plano Tecnológico. «frota» = projecto estratégico de ligação do GPS das carrinhas (Quatenus): benefícios, indicadores (linha de base e meta) e fases. «frota.legal» = enquadramento legal (lei, artigos) e passos para a conformidade, com responsável e data.",
+  "actualizado": "2026-11-06",
   "futuro": [
     {
       "titulo": "Ver",
@@ -86,7 +86,7 @@
     },
     {
       "etiqueta": "Protecção de dados",
-      "texto": "Uso da localização validado por RH e Jurídico",
+      "texto": "Pedido de autorização à APD (GPS, telemóveis e CCTV)",
       "data": "2026-11-13"
     },
     {
@@ -98,6 +98,16 @@
       "etiqueta": "Regras comerciais",
       "texto": "Bónus, crédito, revenda e descontos com limites",
       "data": "2027-01-04"
+    },
+    {
+      "etiqueta": "Frota ligada",
+      "texto": "Acesso à API da Quatenus e uso da localização validado",
+      "data": "2026-11-16"
+    },
+    {
+      "etiqueta": "Parque Foodtec",
+      "texto": "Leitura de matrículas no portão (CCTV)",
+      "data": "2026-11-27"
     }
   ],
   "projecto": {
@@ -129,5 +139,173 @@
         "texto": "Acessos por perfil, auditoria completa e conformidade fiscal e de protecção de dados."
       }
     ]
+  },
+  "frota": {
+    "titulo": "Frota ligada",
+    "subtitulo": "GPS das carrinhas e CCTV do parque no Portal RTM",
+    "dias_uteis": 22,
+    "visitas_extra": 1,
+    "investimento": "Plataforma Quatenus e CCTV já em uso; integração feita internamente, sem novas licenças. Se o CCTV actual não ler matrículas, basta uma câmara de leitura no portão do parque.",
+    "beneficios": [
+      {
+        "titulo": "Mais vendas",
+        "itens": [
+          "Mais visitas por dia, com rotas pelos tempos reais",
+          "Saídas a horas: cada atraso no arranque são clientes perdidos",
+          "Visitas confirmadas pela paragem junto ao cliente"
+        ]
+      },
+      {
+        "titulo": "Menos custos",
+        "itens": [
+          "Menos quilómetros por venda e por caixa",
+          "Combustível e manutenção pelos quilómetros reais",
+          "Fim do uso fora de horas e das viaturas paradas"
+        ]
+      },
+      {
+        "titulo": "Mais controlo",
+        "itens": [
+          "Saídas e chegadas confirmadas pelo CCTV do parque",
+          "Cada telemóvel associado à sua carrinha, todos os dias",
+          "Alertas de desvio de zona, de horário e de carga"
+        ]
+      }
+    ],
+    "indicadores": [
+      {
+        "nome": "Visitas com venda por rota e por dia",
+        "base": "visitas",
+        "meta": "+1 por rota"
+      },
+      {
+        "nome": "Saídas do parque a horas (CCTV e GPS)",
+        "base": "Medido no 1.º mês",
+        "meta": "90%"
+      },
+      {
+        "nome": "Visitas confirmadas por GPS",
+        "base": "0%",
+        "meta": "95%"
+      },
+      {
+        "nome": "Quilómetros por venda",
+        "base": "Medido no 1.º mês",
+        "meta": "−10%"
+      },
+      {
+        "nome": "Custo de combustível por caixa entregue",
+        "base": "Medido no 1.º mês",
+        "meta": "−10%"
+      },
+      {
+        "nome": "Uso das viaturas fora de horas",
+        "base": "Medido no 1.º mês",
+        "meta": "0 não autorizado"
+      }
+    ],
+    "fases": [
+      {
+        "titulo": "Ligar e associar",
+        "inicio": "2026-11-16",
+        "fim": "2026-11-27",
+        "estado": "planeado"
+      },
+      {
+        "titulo": "Rotas reais, parque e alertas",
+        "inicio": "2026-11-30",
+        "fim": "2026-12-18",
+        "estado": "planeado"
+      },
+      {
+        "titulo": "Custos por rota",
+        "inicio": "2027-01-04",
+        "fim": "2027-01-29",
+        "estado": "planeado"
+      },
+      {
+        "titulo": "Optimizar e medir",
+        "inicio": "2027-02-01",
+        "fim": "2027-02-26",
+        "estado": "planeado"
+      }
+    ],
+    "governacao": "Uso com dados reais só depois da autorização da Agência de Protecção de Dados (ver diapositivo seguinte).",
+    "legal": {
+      "titulo": "Localização e imagem de pessoas: o que diz a lei",
+      "mensagem": "O GPS das viaturas, a localização dos telemóveis e o CCTV com leitura de matrículas tratam dados pessoais dos colaboradores: o projecto arranca com autorização da APD.",
+      "lei": [
+        {
+          "ref": "Constituição, art. 32.º",
+          "texto": "Direito à reserva da intimidade da vida privada."
+        },
+        {
+          "ref": "Lei 22/11, art. 5.º",
+          "texto": "Localização e imagem de uma pessoa identificável são dados pessoais."
+        },
+        {
+          "ref": "Lei 22/11, art. 17.º",
+          "texto": "Videovigilância e controlo electrónico: avisos visíveis no local e autorização da APD (regime do art. 13.º)."
+        },
+        {
+          "ref": "Lei 22/11, art. 25.º",
+          "texto": "Informar cada pessoa: quem trata, para quê, quem recebe e os seus direitos."
+        },
+        {
+          "ref": "Lei 22/11, art. 11.º",
+          "texto": "Conservar os dados só pelo tempo necessário à finalidade."
+        },
+        {
+          "ref": "Lei 22/11, arts. 33.º e 34.º",
+          "texto": "Dados em servidores fora de Angola: notificação ou autorização da APD."
+        },
+        {
+          "ref": "Lei 22/11, art. 35.º",
+          "texto": "A APD responde em 30 dias ao pedido."
+        },
+        {
+          "ref": "Lei 22/11, art. 51.º",
+          "texto": "Coimas até 150 000 USD por infracção, triplicadas para empresas."
+        }
+      ],
+      "passos": [
+        {
+          "texto": "Avaliação de impacto e finalidade única: gestão da frota e da operação comercial",
+          "quem": "Projectos Digitais e Jurídico",
+          "data": "2026-11-11"
+        },
+        {
+          "texto": "Pedido de autorização à APD: GPS, telemóveis, CCTV com matrículas e servidores da Quatenus",
+          "quem": "Jurídico",
+          "data": "2026-11-13"
+        },
+        {
+          "texto": "Política de geolocalização e videovigilância, comunicada por escrito a cada colaborador",
+          "quem": "Recursos Humanos",
+          "data": "2026-11-20"
+        },
+        {
+          "texto": "Avisos visíveis no parque da Foodtec e nas viaturas",
+          "quem": "Serviços Gerais",
+          "data": "2026-11-20"
+        },
+        {
+          "texto": "Contrato com a Quatenus com cláusulas de protecção de dados",
+          "quem": "Jurídico e Compras",
+          "data": "2026-11-27"
+        },
+        {
+          "texto": "Regras no portal: só horário de trabalho, 12 meses, acesso por perfil e registo de consultas",
+          "quem": "Projectos Digitais",
+          "data": "2026-11-27"
+        },
+        {
+          "texto": "Arranque com dados reais, após a autorização da APD",
+          "quem": "Conselho de Administração",
+          "data": "2026-12-14"
+        }
+      ],
+      "nota": "Resumo para decisão; não substitui o parecer do Jurídico."
+    }
   }
 }
