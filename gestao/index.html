@@ -1,39 +1,39 @@
 <!doctype html>
 <html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Naval Gestão</title>
+    <meta name="description" content="App de gestão do Grupo Naval: vendas do dia, rotas, alertas e assistente." />
+    <link rel="icon" type="image/png" href="../assets/naval-emblema.png" />
+    <!-- App instalável (iPhone: Safari › Partilhar › Adicionar ao ecrã principal; Android: Chrome › Instalar aplicação) -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#273777" />
+    <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Naval Gestão" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <script src="../app/registar.js" defer></script>
+    <link rel="stylesheet" href="../assets/fontes/inter.css" />
+    <link rel="stylesheet" href="app.css" />
+    <script type="module" src="../reports/js/app-gestao.js"></script>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Naval Gestão</title>
-  <meta name="description" content="App de gestão do Grupo Naval: vendas do dia, rotas, alertas e assistente.">
-  <link rel="icon" type="image/png" href="../assets/naval-emblema.png">
-  <!-- App instalável (iPhone: Safari › Partilhar › Adicionar ao ecrã principal; Android: Chrome › Instalar aplicação) -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#1E3A8A">
-  <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Naval Gestão">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="format-detection" content="telephone=no">
-  <script src="../app/registar.js" defer></script>
-  <link rel="stylesheet" href="../assets/fontes/inter.css">
-  <link rel="stylesheet" href="app.css">
-  <script type="module" src="../reports/js/app-gestao.js"></script>
-</head>
-
-<body>
-  <header class="ag-topo">
-    <img src="../assets/naval-emblema.png" alt="" width="30" height="30">
-    <div class="ag-titulo"><strong>Naval Gestão</strong><span id="ag-hora">…</span></div>
-    <button type="button" id="ag-actualizar" class="ag-icone" aria-label="Actualizar">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
-    </button>
-  </header>
-  <main id="ag-conteudo" class="ag-conteudo" aria-live="polite">
-    <p class="ag-vazio">A carregar…</p>
-  </main>
-  <nav class="ag-separadores" id="ag-separadores" aria-label="Secções"></nav>
-</body>
-
+  <body>
+    <header class="ag-topo">
+      <img src="../assets/naval-emblema.png" alt="" width="28" height="28" />
+      <div class="ag-titulo"><strong>Naval Gestão</strong><span id="ag-estado">…</span></div>
+      <button type="button" id="ag-actualizar" class="ag-icone" aria-label="Actualizar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" /></svg>
+      </button>
+    </header>
+    <div id="ag-puxar" class="ag-puxar" aria-live="polite"></div>
+    <h1 id="ag-h1" class="ag-h1">Hoje</h1>
+    <main id="ag-conteudo" class="ag-conteudo" aria-live="polite">
+      <p class="ag-vazio">A carregar…</p>
+    </main>
+    <nav class="ag-separadores" id="ag-separadores" aria-label="Secções"></nav>
+  </body>
 </html>
