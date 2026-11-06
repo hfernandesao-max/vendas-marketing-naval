@@ -405,11 +405,11 @@ function arquitectura() {
 }
 
 // ── 8. Roteiro ──
-function roteiro() {
-  const r = D.roteiro || {};
-  const s = diapositivo('Roteiro', 'Roteiro', 'O que vem a seguir, com datas', 'Três fases, cada uma a começar com resultados visíveis para a gestão.');
-  const fases = (r.fases || []).filter((f) => f.inicio && f.fim);
-  if (fases.length) {
+/** Cronograma (Gantt) das fases, com as datas de início e fim. */
+function gantt(lista) {
+  const fases = (lista || []).filter((f) => f.inicio && f.fim);
+  if (!fases.length) return null;
+  {
     const ms = (d) => new Date(d + 'T12:00:00Z').getTime();
     const ini = Math.min(...fases.map((f) => ms(f.inicio)));
     const fim = Math.max(...fases.map((f) => ms(f.fim)));
@@ -442,8 +442,14 @@ function roteiro() {
       }
       g.append(fila);
     });
-    s.append(g);
+    return g;
   }
+}
+function roteiro() {
+  const r = D.roteiro || {};
+  const s = diapositivo('Roteiro', 'Roteiro', 'O que vem a seguir, com datas', 'Três fases, cada uma a começar com resultados visíveis para a gestão.');
+  const g = gantt(r.fases);
+  if (g) s.append(g);
   const ini = h('div', 'cx-iniciativas');
   [...(r.futuro || []), ...(r.ia || [])]
     .sort((a, b) => String(a.data).localeCompare(String(b.data)))
@@ -457,6 +463,100 @@ function roteiro() {
 }
 
 // ── 9. Visão 2027–2028 ──
+// ── Projecto estratégico: frota ligada (GPS Quatenus) ──
+// Caso de negócio segundo as boas práticas (benefícios financeiros e operacionais, linha de base, metas e fases):
+// o valor de cada visita a mais calcula-se com os dados reais do mês (compra média e rotas activas).
+function valorVisita() {
+  const f = (D.roteiro || {}).frota || {};
+  const m = (D.negocio || {}).mes || {};
+  if (!m.valor_medio || !m.rotas) return null;
+  const mensal = m.valor_medio * m.rotas * (f.dias_uteis || 22) * (f.visitas_extra || 1);
+  return { mensal, anual: mensal * 12, compra: m.valor_medio, rotas: m.rotas, dias: f.dias_uteis || 22, extra: f.visitas_extra || 1 };
+}
+function frota() {
+  const f = (D.roteiro || {}).frota || {};
+  const v = valorVisita();
+  const s = diapositivo(
+    'Frota ligada',
+    'Projecto estratégico · ' + (f.titulo || 'Frota ligada'),
+    f.subtitulo || 'GPS das carrinhas integrado no portal',
+    v
+      ? 'Cada visita a mais por rota e por dia vale cerca de ' + kzc(v.mensal) + ' de vendas por mês, com a frota que já temos.'
+      : 'Mais vendas por rota e menos custo por entrega, com prova no terreno.',
+  );
+  const tres = h('div', 'cx-tres');
+  (f.beneficios || []).forEach((b) => {
+    const c = h('div', 'cx-accao cx-benef');
+    const ul = h('ul');
+    (b.itens || []).forEach((x) => ul.append(h('li', null, x)));
+    c.append(h('b', null, b.titulo), ul);
+    tres.append(c);
+  });
+  s.append(tres);
+  if (v) {
+    const k = h('div', 'cx-kpis');
+    k.append(
+      kpi(kzc(v.compra), 'compra média por cliente', 'este mês'),
+      kpi(n0(v.rotas), 'rotas activas', 'este mês'),
+      kpi('+' + kzc(v.mensal), 'vendas por mês', '+' + v.extra + ' visita por rota · ' + v.dias + ' dias úteis', 'sobe'),
+      kpi('+' + kzc(v.anual), 'vendas por ano', 'mesmo cálculo × 12 meses', 'sobe'),
+    );
+    s.append(h('div', 'cx-subtitulo', 'Valor de cada visita a mais, com os dados reais'), k);
+  } else if (!D.ve_valores) s.append(semDados());
+  if (f.investimento) s.append(h('p', 'cx-governacao', f.investimento));
+  s.append(fonte('Fonte: Pinguim BO (compra média e rotas do mês) · os ganhos em custos medem-se contra a linha de base do 1.º mês'));
+  return s;
+}
+function frotaPlano() {
+  const f = (D.roteiro || {}).frota || {};
+  const m = (D.negocio || {}).mes || {};
+  const s = diapositivo(
+    'Frota · metas',
+    'Projecto estratégico · ' + (f.titulo || 'Frota ligada'),
+    'Como medimos o resultado, e quando',
+    'Indicadores com linha de base e meta a 6 meses, revistos todos os meses com a gestão.',
+  );
+  const tab = h('div', 'cx-antes cx-metas');
+  const cab = h('div', 'cx-antes-l cx-antes-cab');
+  cab.append(h('span', null, 'Indicador'), h('span', null, 'Hoje'), h('span', null, 'Meta a 6 meses'));
+  tab.append(cab);
+  (f.indicadores || []).forEach((x) => {
+    const l = h('div', 'cx-antes-l');
+    const base = x.base === 'visitas' ? (m.visitas_rota_dia != null ? nf1.format(m.visitas_rota_dia) + ' por rota' : 'Medido no 1.º mês') : x.base;
+    l.append(h('span', null, x.nome), h('span', null, base), h('b', null, x.meta));
+    tab.append(l);
+  });
+  s.append(tab);
+  const g = gantt(f.fases);
+  if (g) s.append(g);
+  if (f.governacao) s.append(h('p', 'cx-governacao', f.governacao));
+  return s;
+}
+function conformidade() {
+  const lg = ((D.roteiro || {}).frota || {}).legal || {};
+  const s = diapositivo('Conformidade legal', 'Projecto estratégico · Conformidade legal', lg.titulo || 'O que diz a lei', lg.mensagem || '');
+  const g = h('div', 'cx-lei');
+  const esq = h('div', 'cx-lei-col');
+  esq.append(h('div', 'cx-subtitulo', 'O que diz a lei'));
+  (lg.lei || []).forEach((x) => {
+    const l = h('div', 'cx-lei-l');
+    l.append(h('b', null, x.ref), h('span', null, x.texto));
+    esq.append(l);
+  });
+  const dir = h('div', 'cx-lei-col');
+  dir.append(h('div', 'cx-subtitulo', 'O que fazemos para ficar tudo oficial'));
+  (lg.passos || []).forEach((x, i) => {
+    const l = h('div', 'cx-lei-p');
+    const tx = h('span', null, x.texto);
+    l.append(h('span', 'cx-num', String(i + 1).padStart(2, '0')), tx, h('em', null, dia(x.data)));
+    tx.append(h('small', null, x.quem));
+    dir.append(l);
+  });
+  g.append(esq, dir);
+  s.append(g);
+  if (lg.nota) s.append(fonte(lg.nota));
+  return s;
+}
 function visao() {
   const v = (D.roteiro || {}).visao || {};
   const s = diapositivo(
@@ -531,7 +631,21 @@ R.apresentacao = (pg) => {
   relogio = setTimeout(() => atual === 'apresentacao' && ler(), Math.max(1000, REFRESCAR_MS - (Date.now() - lidoEm)));
   const palco = h('div', 'cx');
   const area = h('div', 'cx-area');
-  const slides = [capa(), sumario(), desempenho(), carteira(), automacao(), governanca(), arquitectura(), roteiro(), visao(), fecho()];
+  const slides = [
+    capa(),
+    sumario(),
+    desempenho(),
+    carteira(),
+    automacao(),
+    governanca(),
+    arquitectura(),
+    roteiro(),
+    frota(),
+    frotaPlano(),
+    conformidade(),
+    visao(),
+    fecho(),
+  ];
   slides.forEach((x, i) => {
     if (i) {
       const rod = h('footer', 'cx-rodape');
