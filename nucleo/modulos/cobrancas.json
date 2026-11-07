@@ -1,0 +1,16 @@
+{
+  "id": "cobrancas",
+  "nome": "Cobranças",
+  "versao": "1.0.0",
+  "descricao": "Cobranças por meio de pagamento e facturas pendentes.",
+  "nucleo": false,
+  "paginas": ["pagamentos", "pendentes"],
+  "recursos": ["pagamentos", "pendentes"],
+  "api": [],
+  "conectores": ["pinguim-sql"],
+  "eventos": {
+    "publica": [],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}

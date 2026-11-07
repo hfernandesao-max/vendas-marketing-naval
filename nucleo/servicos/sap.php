@@ -221,7 +221,8 @@ function naval_sap_novo_lote(array $q, string $xlsx, array $eu): array
         $de = (string) ($q['de'] ?? '');
         $ate = (string) ($q['ate'] ?? '');
         $soData = function ($s) { return (string) preg_replace('/[^0-9-]/', '', $s); };
-        $nome = 'RTM_Sales_SAP_Upload_' . $soData($de) . ($ate !== $de ? '_a_' . $soData($ate) : '') . '_lote' . $n . '.xlsx';
+        // no ensaio o nome diz ENSAIO: um ficheiro de teste nunca se confunde com um para carregar no SAP
+        $nome = (naval_ensaio() ? 'ENSAIO_NAO_CARREGAR_' : '') . 'RTM_Sales_SAP_Upload_' . $soData($de) . ($ate !== $de ? '_a_' . $soData($ate) : '') . '_lote' . $n . '.xlsx';
         naval_ficheiro_gravar($f, $xlsx);
         $lote = [
             'numero' => $n, 'estado' => 'emitido', 'em' => date('Y-m-d H:i:s'), 'por' => $eu['login'], 'por_nome' => $eu['nome'] ?? $eu['login'],

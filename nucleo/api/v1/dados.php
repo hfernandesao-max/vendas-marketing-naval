@@ -22,13 +22,13 @@ if ($f === 'cargas') {
     $codigo[] = dirname(__DIR__, 2) . '/servicos/cargas.php';
     naval_etag_antecipado(naval_meta_ficheiros(glob(naval_plano_pasta() . '/????-??-??.json') ?: []), $codigo);
 } else {
-    naval_etag_antecipado(naval_meta_ficheiros([naval_raiz() . '/reports/data/' . $f . '.json']), $codigo);
+    naval_etag_antecipado(naval_meta_ficheiros([naval_dados_reports() . '/' . $f . '.json']), $codigo);
 }
 // Plano de cargas: só os planos publicados no portal (o antigo histórico importado de Excel já não é usado)
 if ($f === 'cargas') {
     $d = naval_plano_para_cargas();
 } else {
-    $d = naval_json_ler(naval_raiz() . '/reports/data/' . $f . '.json');
+    $d = naval_json_ler(naval_dados_reports() . '/' . $f . '.json');
 }
 if ($f !== 'rotas') $d = naval_filtrar_rotas($d);
 if ($f === 'clientes' && !naval_ve_nif()) {

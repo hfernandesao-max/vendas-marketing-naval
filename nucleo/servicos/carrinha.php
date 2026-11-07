@@ -262,6 +262,48 @@ function naval_carr_resumo(array $linhas, array $reg): array
     ];
 }
 
+/** A conciliação fecha sozinha? Contagem feita, nenhuma diferença e nenhum alerta (stock negativo, venda sem carga…). */
+function naval_carr_fecha_sozinha(array $resumo): bool
+{
+    return $resumo['diferencas'] === 0 && $resumo['alertas'] === 0 && $resumo['artigos'] > 0;
+}
+
+/**
+ * Painel da carrinha (um ecrã por carrinha e dia): fecho de rota, carga e as ligações a outros sistemas. Junta a
+ * conciliação (stock inicial e final do Pinguim BO, carregado, vendido, devolvido, contagem e aprovação) com o peso da
+ * carga e o estado dos conectores das contagens da solução do Pinguim BO, da Quatenus e do CCTV (blocos preparados:
+ * passam a ter dados quando cada ligação existir). Contagem cega: quem conta não vê totais antes de contar.
+ */
+function naval_carr_painel(string $data, ?array $rotas, bool $gere, bool $actualizar = false): array
+{
+    naval_servico('modulos');
+    $v = naval_carr_vista($data, $rotas, $gere, $actualizar);
+    $pesos = $data === date('Y-m-d') ? naval_carga_na_carrinha_seguro() : [];
+    $con = naval_conectores();
+    $out = [];
+    foreach ($v['rotas'] as $r) {
+        $res = $r['resumo'];
+        $cega = !empty($r['cega']);
+        $fecho = (string) $res['estado'];
+        if ($fecho === 'aprovada') $fecho = ($r['aprovado_por'] ?? '') === 'automatico' ? 'fechada_auto' : 'aprovada';
+        $out[] = [
+            'rota' => $r['rota'], 'promotor' => $r['promotor'], 'fecho' => $fecho,
+            'artigos' => $res['artigos'], 'alertas' => $cega ? null : $res['alertas'], 'diferencas' => $cega ? null : $res['diferencas'],
+            'falta_kz' => $cega ? null : $res['falta_kz'], 'sobra_kz' => $cega ? null : $res['sobra_kz'],
+            'carregado' => $cega ? null : $res['carregado'], 'vendido' => $cega ? null : $res['vendido'],
+            'contado_por' => $r['contado_por'], 'contado_em' => $r['contado_em'], 'aprovado_por' => $r['aprovado_por'], 'aprovado_em' => $r['aprovado_em'],
+            'peso_kg' => isset($pesos[$r['rota']]) ? round((float) $pesos[$r['rota']], 1) : null,
+        ];
+    }
+    $fontes = [
+        ['id' => 'pinguim-sql', 'bloco' => 'Stock, vendas e movimentos', 'estado' => $con['pinguim-sql']['estado']],
+        ['id' => 'contagens', 'bloco' => 'Contagens da solução do Pinguim BO', 'estado' => naval_config('PINGUIM_CONTAGENS_TABELA') !== '' ? 'ligado' : 'por_ligar'],
+        ['id' => 'quatenus', 'bloco' => 'Percurso, paragens e aberturas de porta (Quatenus)', 'estado' => $con['quatenus']['estado']],
+        ['id' => 'cctv', 'bloco' => 'Imagens da carga e da descarga (CCTV)', 'estado' => $con['cctv']['estado']],
+    ];
+    return ['data' => $data, 'gerado' => $v['gerado'], 'movimentos' => $v['movimentos'], 'rotas' => $out, 'fontes' => $fontes];
+}
+
 /** Retira os números que revelam o esperado (contagem cega), deixando o artigo e a unidade. */
 function naval_carr_cega(array $linhas): array
 {
@@ -322,8 +364,18 @@ function naval_carr_contar(string $data, string $rota, array $contagem, array $e
         $res = naval_carr_resumo($linhas, $reg);
         $reg['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => (string) $eu['login'], 'accao' => $novo ? 'recontagem' : 'contagem',
             'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
+        // Gestão por excepção (fecho de rota da distribuição directa, «route settlement»): contagem igual ao esperado em
+        // todos os artigos e sem alertas → fecha sozinha, sem passo de aprovação; só as diferenças vão a aprovação
+        if (naval_carr_fecha_sozinha($res) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0') {
+            $reg['estado'] = 'aprovada';
+            $reg['aprovado_por'] = 'automatico';
+            $reg['aprovado_em'] = date('Y-m-d H:i:s');
+            $reg['historico'][] = ['em' => $reg['aprovado_em'], 'por' => 'automatico', 'accao' => 'fecho_automatico', 'diferencas' => 0, 'falta_kz' => 0, 'sobra_kz' => 0];
+            $res = naval_carr_resumo($linhas, $reg);
+        }
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
-        naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
+        naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'],
+            'fecho_automatico' => $reg['estado'] === 'aprovada']);
         return ['linhas' => $linhas, 'resumo' => $res];
     });
 }

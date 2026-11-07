@@ -26,6 +26,8 @@ const MODULOS = {
   carteira: () => import('./carteira.js'),
   apresentacao: () => import('./apresentacao.js'),
   geo: () => import('./geo.js'),
+  'admin-modulos': () => import('./admin-modulos.js'),
+  'painel-carrinha': () => import('./painel-carrinha.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -58,6 +60,8 @@ export const MODULO_DA_PAGINA = {
   agt: 'agt',
   acessos: 'acessos',
   actualizacoes: 'actualizacoes',
+  modulos: 'admin-modulos',
+  'painel-carrinha': 'painel-carrinha',
   'visitas-dia': 'carteira',
   'qualidade-dados': 'carteira',
   alertas: 'gestao',

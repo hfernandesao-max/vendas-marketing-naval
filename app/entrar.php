@@ -14,10 +14,10 @@ header('Referrer-Policy: no-referrer');
 $destino = (string) ($_GET['redirect'] ?? '');
 if (!in_array($destino, array_values(NAVAL_APP_DESTINO), true)) $destino = '../reports/';
 // equipamento: cookie da app ou, sem ele (dados do navegador limpos), o identificador guardado na própria app
-$id = (string) ($_COOKIE['naval_eq'] ?? '');
+$id = (string) ($_COOKIE[naval_app_cookie_nome()] ?? '');
 if (!preg_match('/^[a-f0-9]{24}$/', $id)) $id = (string) ($_GET['eq'] ?? '');
 $eq = preg_match('/^[a-f0-9]{24}$/', $id) ? naval_app_activo($id) : null;
-if ($eq && ($_COOKIE['naval_eq'] ?? '') !== $id) naval_app_cookie($id);
+if ($eq && ($_COOKIE[naval_app_cookie_nome()] ?? '') !== $id) naval_app_cookie($id);
 
 // sessão ainda aberta neste equipamento: directo à app
 if ($eq && naval_autenticado() && ($_SESSION['app_equipamento'] ?? '') === $id) {

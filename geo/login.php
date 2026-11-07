@@ -181,6 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
             } elseif (!naval_conta_valida($u)) {
                 naval_registar('entrada_recusada', ['motivo' => 'conta_inactiva'], $usuario);
                 $erro = 'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.';
+            } elseif (!naval_ensaio_permitido($u)) {
+                naval_registar('entrada_recusada', ['motivo' => 'ensaio'], $usuario);
+                $erro = 'O ambiente de ensaio é só para o super administrador e o administrador da plataforma.';
             } elseif (naval_temporaria_expirada($u)) {
                 naval_registar('entrada_recusada', ['motivo' => 'temporaria_expirada'], $usuario);
                 $erro = 'A palavra-passe temporária expirou (válida ' . NAVAL_SENHA_TEMPORARIA_HORAS . ' horas). Peça uma nova ao super administrador.';
@@ -763,5 +766,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals(naval_csrf(), (string)
       document.getElementById('app-aviso').style.display = '';
     })();
   </script>
+<?= naval_faixa_ensaio() ?>
 </body>
 </html>

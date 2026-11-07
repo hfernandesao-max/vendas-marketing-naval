@@ -25,4 +25,4 @@ $extra = [];
 if (naval_pode('inicio')) $extra[] = 'js/paginas/inicio.js';
 $idioma = naval_idioma_conta(naval_utilizador());
 if (in_array($idioma, ['en', 'ti'], true)) $extra[] = 'js/i18n/' . $idioma . '.js';
-echo naval_portal_versionar((string) $html, __DIR__, $extra);
+echo str_ireplace('</body>', naval_faixa_ensaio() . '</body>', naval_portal_versionar((string) $html, __DIR__, $extra));

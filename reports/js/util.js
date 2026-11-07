@@ -23,6 +23,10 @@ const ICON = {
   zona: 'M5 8l6-4 8 3 1 9-7 4-8-3zM5 8h.01M11 4h.01M19 7h.01M20 16h.01M13 20h.01M5 17h.01',
   menu: 'M4 4h16v16H4zM9 4v16',
   actualizar: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
+  // peças de lego (módulos do portal)
+  pecas: 'M4 10h6V4H4zM14 10h6V4h-6zM4 20h6v-6H4zM14 17h6M17 14v6',
+  // carrinha com marca de verificação (painel da carrinha: fecho de rota)
+  carrinhaok: 'M1 6h13v10H1zM14 10h4l3 3v3h-7M5.5 19a1.5 1.5 0 1 0 0-.01M17.5 19a1.5 1.5 0 1 0 0-.01M4.5 11l2 2 4-4',
   clip: 'M9 3h6v3H9zM9 4.5H6v16.5h12V4.5h-3M9 11h6M9 15h6M9 19h3',
   upload: 'M12 15V3M7 8l5-5 5 5M4 15v5h16v-5',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',

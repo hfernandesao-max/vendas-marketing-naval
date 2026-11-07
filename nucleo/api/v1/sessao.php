@@ -10,6 +10,14 @@ if (!$u) throw new NavalErro('Sessão terminada.', 401);
 naval_servico('preferencias');
 naval_servico('actualizacao');
 naval_servico('app-telemovel');
+/** Versão nova no ensaio, para o menu da conta dos administradores de sistema (null para os outros perfis). */
+function naval_sessao_ensaio(string $perfil): ?array
+{
+    if (naval_ensaio() || !in_array($perfil, NAVAL_PERFIS_ADMIN_SISTEMA, true) || !naval_act_ensaio_ligado()) return null;
+    $e = naval_act_ensaio_estado();
+    if ($e['versao'] === '' || $e['versao'] === (string) (naval_act_estado()['versao'] ?? '')) return null;
+    return ['versao' => $e['versao'], 'resultado' => $e['resultado'], 'url' => '../ensaio/reports/'];
+}
 $perm = [];
 foreach (array_keys(naval_matriz()) as $rec) $perm[$rec] = naval_nivel($rec);
 $GLOBALS['naval_api_sensivel'] = true;   // tem o código CSRF: nunca em cache nem comprimido
@@ -37,5 +45,8 @@ naval_json([
     'app_instalada' => naval_app_tem_activa((string) ($u['login'] ?? '')),
     'app_biometria' => !empty($_SESSION['app_equipamento']) && function_exists('naval_app_activo') && !empty((naval_app_activo((string) $_SESSION['app_equipamento']) ?: [])['credenciais']),
     // versão instalada no servidor: a app no telemóvel recarrega-se sozinha quando muda (actualização transparente)
-    'versao' => (string) (naval_act_estado()['versao'] ?? ''),
+    'versao' => naval_ensaio() ? naval_ensaio_versao() : (string) (naval_act_estado()['versao'] ?? ''),
+    // ambiente de ensaio: 'ensaio' dentro de <portal>/ensaio; na produção, a versão nova no ensaio (só SADM e TI)
+    'ambiente' => naval_ensaio() ? 'ensaio' : 'producao',
+    'ensaio' => naval_sessao_ensaio((string) $u['perfil']),
 ]);

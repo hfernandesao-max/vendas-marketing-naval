@@ -47,7 +47,7 @@ function naval_app_cabeca(): string
 function naval_app_scripts(): string
 {
     $r = dirname(__DIR__, 2);
-    return '<script>' . file_get_contents($r . '/app/app.js') . '</script>' . "\n"
+    return naval_faixa_ensaio() . '<script>' . file_get_contents($r . '/app/app.js') . '</script>' . "\n"
         . '<script>try{if((localStorage.getItem("vm-lang")||"pt")!=="pt"){var s=document.createElement("script");s.src="../geo/login-idioma.js";document.body.appendChild(s)}}catch(e){}</script>';
 }
 /** Logótipo da Naval com os anéis e a órbita a rodar, como no arranque do portal (pára quando a página fica pronta). */
@@ -99,10 +99,16 @@ function naval_app_codigo_registo(string $codigo): ?array
     return $x ?: null;
 }
 /** Cookie do equipamento (só o identificador, não dá acesso): leva a app à entrada rápida com a biometria. */
+/** Nome do cookie do equipamento (no ensaio, outro: a app da produção nunca perde o seu). */
+function naval_app_cookie_nome(): string
+{
+    return naval_ensaio() ? 'naval_eq_ensaio' : 'naval_eq';
+}
+
 function naval_app_cookie(string $id): void
 {
     $vale = $id === '' ? time() - 3600 : time() + NAVAL_APP_DIAS_SEM_USO * 86400;
-    header('Set-Cookie: naval_eq=' . ($id === '' ? 'x' : $id) . '; Expires=' . gmdate('D, d M Y H:i:s', $vale) . ' GMT; Path=/; HttpOnly; SameSite=Lax' . (naval_https() ? '; Secure' : ''), false);
+    header('Set-Cookie: ' . naval_app_cookie_nome() . '=' . ($id === '' ? 'x' : $id) . '; Expires=' . gmdate('D, d M Y H:i:s', $vale) . ' GMT; Path=/; HttpOnly; SameSite=Lax' . (naval_https() ? '; Secure' : ''), false);
 }
 
 /** Endereço público do portal (PORTAL_URL) ou o do próprio pedido. */

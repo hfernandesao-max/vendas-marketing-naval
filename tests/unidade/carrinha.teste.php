@@ -78,6 +78,28 @@ teste('contar e aprovar: motivo obrigatório por diferença; «outro» exige not
     lanca(400, function () use ($eu) { naval_carr_contar(date('Y-m-d', time() + 2 * 86400), '1001', [], $eu); });
 });
 
+teste('fecho por excepção: contagem igual ao esperado e sem alertas fecha sozinha; painel da carrinha', function () {
+    $data = date('Y-m-d', time() - 86400);
+    naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', ['data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
+        'precos' => ['A1' => 1000.0, 'B2' => 500.0], 'rotas' => ['1001' => $GLOBALS['cc_rota'], '1002' => $GLOBALS['cc_rota']]]);
+    $eu = ['login' => 'tec.armazem', 'nome' => 'Técnico', 'email' => ''];
+    $r = naval_carr_contar($data, '1001', ['A1' => 4, 'B2' => 2], $eu);
+    igual('aprovada', $r['resumo']['estado'], 'sem diferenças fecha sozinha');
+    $reg = naval_carr_ler($data, '1001');
+    igual('automatico', $reg['aprovado_por']);
+    igual(['contagem', 'fecho_automatico'], array_column($reg['historico'], 'accao'));
+    $p = naval_carr_painel($data, null, true);
+    $porRota = array_column($p['rotas'], null, 'rota');
+    igual('fechada_auto', $porRota['1001']['fecho']);
+    igual(0, $porRota['1001']['diferencas']);
+    igual('por_contar', $porRota['1002']['fecho']);
+    igual(null, $porRota['1002']['carregado'], 'contagem cega: quem conta não vê os totais antes de contar');
+    igual(['pinguim-sql', 'contagens', 'quatenus', 'cctv'], array_column($p['fontes'], 'id'));
+    igual('por_ligar', array_column($p['fontes'], 'estado', 'id')['quatenus']);
+    $r = naval_carr_contar($data, '1002', ['A1' => 3, 'B2' => 2], $eu);
+    igual('por_aprovar', $r['resumo']['estado'], 'com diferenças vai a aprovação');
+});
+
 teste('limite de peso: planeado + o que está na carrinha não passa a capacidade da viatura', function () {
     $listas = ['artigos' => [['id' => 'fraldas', 'nome' => 'Fraldas', 'peso' => 8.0], ['id' => 'sabao', 'nome' => 'Sabão', 'peso' => 20.0]],
         'capacidades' => ['LD-12-34-AB' => 1000.0]];

@@ -32,4 +32,4 @@ $html = (string) preg_replace('/<head>/i', '<head>' . "\n  " . $meta, (string) f
 // (import map e pré-carregamento de toda a cadeia de módulos, sem esperar pelos import)
 $css = (string) file_get_contents(__DIR__ . '/app.css');
 $html = str_replace('<link rel="stylesheet" href="app.css" />', '<style>' . $css . '</style>', $html);
-echo naval_portal_versionar($html, dirname(__DIR__) . '/reports', [], '../reports/', 'js/app-gestao.js');
+echo str_ireplace('</body>', naval_faixa_ensaio() . '</body>', naval_portal_versionar($html, dirname(__DIR__) . '/reports', [], '../reports/', 'js/app-gestao.js'));

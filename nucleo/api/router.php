@@ -77,6 +77,8 @@ function naval_api_rotas(): array
         'v1/terreno' => [['GET'], 'jwt', 'terreno.php', []],
         'v1/pedidos-clientes' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', []],
         'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
+        'v1/modulos' => [['GET', 'POST'], 'jwt', 'modulos.php', []],
+        'v1/painel-carrinha' => [['GET'], 'jwt', 'painel-carrinha.php', []],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)
     if (is_file(__DIR__ . '/v1/stock.php')) {
@@ -188,7 +190,7 @@ function naval_api_executar(): void
         // (ex.: as vendas do mês ainda a ler o SQL Server). A sessão fecha-se já para escrita; continua legível em
         // $_SESSION. Excepção: a gestão de contas, que grava o reforço da autenticação na sessão.
         // a confirmação da identidade (gestão de contas e aprovação das actualizações) grava na sessão
-        if (!in_array($rota, ['v1/gestao', 'v1/actualizacoes'], true)) {
+        if (!in_array($rota, ['v1/gestao', 'v1/actualizacoes', 'v1/modulos'], true)) {
             naval_csrf();   // garante o código CSRF gravado antes de fechar
             session_write_close();
         }
@@ -198,6 +200,15 @@ function naval_api_executar(): void
         // rotas públicas: limite próprio por rota (o painel da sala, o cartaz do cliente e os relatórios da CSP não se esgotam
         // uns aos outros quando partilham o IP da rede da empresa)
         naval_api_ritmo('ip|' . ($acesso === 'publico' ? $rota . '|' : '') . naval_ip_cliente(), $acesso === 'publico' ? 120 : 1200);
+    }
+    // módulo da rota desligado (ou em piloto, fora dos administradores de sistema): 403, como se a página não existisse
+    $modulo = naval_modulos_por_rota()[$rota] ?? null;
+    if ($modulo !== null && !naval_modulo_disponivel($modulo, $acesso === 'jwt' ? naval_perfil() : '')) {
+        throw new NavalErro('Esta função está desligada.', 403, ['codigo' => 'modulo']);
+    }
+    // ensaio: os módulos que escrevem em sistemas partilhados com a produção (ex.: base de dados dos Equipamentos) só lêem
+    if ($modulo !== null && $metodo === 'POST' && naval_modulo_so_leitura_no_ensaio($modulo)) {
+        throw new NavalErro((string) (naval_modulos()[$modulo]['ensaio_motivo'] ?? 'No ensaio, esta função só lê.'), 403, ['codigo' => 'ensaio']);
     }
     // parâmetros fixos da rota (ex.: v1/sap/excel?numero=5 → xlsx=5)
     foreach ($fixos as $k => $v) {

@@ -1,0 +1,16 @@
+{
+  "id": "vendas",
+  "nome": "Vendas",
+  "versao": "1.0.0",
+  "descricao": "Vendas por promotor, dia, cliente, artigo e marca, classificação e documentos.",
+  "nucleo": false,
+  "paginas": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-marca", "ranking", "documentos"],
+  "recursos": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-marca", "ranking", "documentos"],
+  "api": [],
+  "conectores": ["pinguim-sql", "pinguim-rest"],
+  "eventos": {
+    "publica": [],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}

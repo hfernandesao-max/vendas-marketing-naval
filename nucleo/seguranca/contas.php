@@ -232,8 +232,18 @@ function naval_otpauth(string $segredo, string $conta): string
  * Abre a sessão autenticada (palavra-passe, chave de acesso ou código QR da app): novo identificador, perfil, registo.
  * $equipamento: app instalada pelo código QR; a sessão só fica ligada a ele se for desta conta e estiver activo.
  */
+/** Ambiente de ensaio: só o super administrador e o administrador da plataforma entram (fora do ensaio: todos). */
+function naval_ensaio_permitido(array $u): bool
+{
+    return !naval_ensaio() || in_array((string) ($u['perfil'] ?? ''), NAVAL_PERFIS_ADMIN_SISTEMA, true);
+}
+
 function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metodo, string $equipamento = ''): void
 {
+    if (!naval_ensaio_permitido($u)) {
+        naval_registar('entrada_recusada', ['motivo' => 'ensaio'], $login);
+        throw new NavalErro('O ambiente de ensaio é só para o super administrador e o administrador da plataforma.', 403);
+    }
     session_regenerate_id(true);
     unset($_SESSION['mfa_pendente'], $_SESSION['csrf'], $_SESSION['app_equipamento_pedido'], $_SESSION['app_equipamento']);   // novo identificador e novo código CSRF
     $_SESSION['usuario_autenticado'] = true;
@@ -264,6 +274,7 @@ function naval_sessao_valida(): bool
     elseif ($agora - $inicio > NAVAL_SESSAO_MAXIMA) $motivo = 'duracao_maxima';
     elseif (!naval_utilizador()) $motivo = 'conta_invalida';
     elseif ((int) (naval_utilizador()['versao'] ?? 0) !== (int) ($_SESSION['versao_credencial'] ?? 0)) $motivo = 'credenciais_alteradas';
+    elseif (!naval_ensaio_permitido((array) naval_utilizador())) $motivo = 'ensaio';
     elseif (!empty($_SESSION['app_equipamento'])) {
         // app do telemóvel: o equipamento tem de continuar activo (activar a app noutro equipamento desactiva este)
         if (!function_exists('naval_app_activo')) naval_servico('app-telemovel');

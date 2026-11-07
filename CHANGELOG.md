@@ -4,6 +4,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 07-11-2026
 
+### Portal por módulos (peças de lego), ambiente de ensaio e painel da carrinha
+
+- **Módulos:** o portal passa a ser um monólito modular (o modelo da Shopify): cada área de negócio é uma peça com ficha
+  própria (`nucleo/modulos/*.json`: páginas, rotas da API, funções da matriz, conectores, eventos, dependências e
+  versão). Em Administração › Módulos, o super administrador põe cada módulo **ligado**, **piloto** (só SADM e TI,
+  para validar antes de ligar para todos) ou **desligado**, com confirmação da identidade e registo. O núcleo nunca se
+  desliga. Conectores declarados para o Pinguim BO, OLAP, Google Maps, MDM, SAP, IA, GitHub, Quatenus e CCTV.
+- **Ensaio dentro do portal** (só SADM e TI, sem outro endereço): cada versão nova instala-se primeiro em
+  `/ensaio/`, ao lado da produção, com dados privados próprios e testes de fumo automáticos; só se aprova a versão que
+  passou no ensaio (também a aprovação automática das 02:45). Faixa «AMBIENTE DE ENSAIO», ficheiro do SAP marcado
+  `ENSAIO_NAO_CARREGAR_`, correio só para os administradores, Equipamentos só a ler. `ENSAIO=0` desliga.
+- **Painel da carrinha** (Logística): por carrinha e dia, o fecho de rota, a carga e a origem dos dados (contagens da
+  solução do Pinguim BO, Quatenus e CCTV preparados). **Fecho por excepção:** a contagem igual ao esperado em todos
+  os artigos, sem alertas, fecha sozinha; só as diferenças vão a aprovação, com motivo.
+- Documentação: `docs/MODULOS.md`.
+
 ### Documentos anulados fora das vendas
 
 - Os documentos anulados no Pinguim BO (`DOCHEADER.DOCSTATUS_ID = 8002`) deixam de contar nas vendas, nas linhas de

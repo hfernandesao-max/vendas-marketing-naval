@@ -1,0 +1,35 @@
+{
+  "id": "nucleo",
+  "nome": "Núcleo da plataforma",
+  "versao": "1.0.0",
+  "descricao": "Entrada, sessão, página principal, alertas, apresentação, exportações e preferências. Não se desliga.",
+  "nucleo": true,
+  "paginas": ["inicio", "alertas", "apresentacao"],
+  "recursos": ["pagina-principal", "inicio", "alertas", "apresentacao", "nif", "excel-completo", "exportar-dados", "estrutura-dados"],
+  "api": [
+    "v1/auth/token",
+    "v1/csp-relatorio",
+    "v1/saude",
+    "v1/sessao",
+    "v1/vendas",
+    "v1/vendas/estado",
+    "v1/vendas/diagnostico",
+    "v1/vendas/estrutura",
+    "v1/dados/rotas",
+    "v1/dados/cargas",
+    "v1/dados/clientes",
+    "v1/exportacoes",
+    "v1/estrutura-dados",
+    "v1/vistas",
+    "v1/preferencias",
+    "v1/apresentacao",
+    "v1/alertas",
+    "v1/app-telemovel"
+  ],
+  "conectores": ["pinguim-sql", "pinguim-rest"],
+  "eventos": {
+    "publica": ["sessao.aberta"],
+    "escuta": []
+  },
+  "depende": []
+}

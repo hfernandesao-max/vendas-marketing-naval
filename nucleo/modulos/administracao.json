@@ -1,0 +1,16 @@
+{
+  "id": "administracao",
+  "nome": "Administração",
+  "versao": "1.0.0",
+  "descricao": "Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e ensaio. Não se desliga.",
+  "nucleo": true,
+  "paginas": ["acessos", "auditoria", "actualizacoes", "modulos"],
+  "recursos": ["acessos", "auditoria", "actualizacoes", "modulos", "admin-utilizadores", "admin-config", "registos"],
+  "api": ["v1/gestao", "v1/actualizacoes", "v1/novidades", "v1/modulos"],
+  "conectores": ["github"],
+  "eventos": {
+    "publica": ["versao.instalada", "modulo.alterado"],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}

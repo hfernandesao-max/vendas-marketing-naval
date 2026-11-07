@@ -23,7 +23,7 @@ function naval_cadastros_ficheiro(): ?string
 {
     $candidatos = array_filter([
         naval_config('RTM_CLIENTES_JSON'),
-        naval_raiz() . '/reports/data/cadastros.json',
+        naval_dados_reports() . '/cadastros.json',
         dirname(naval_raiz()) . '/rtm-clientes/saida/portal_rtm.json',
     ]);
     foreach ($candidatos as $f) {

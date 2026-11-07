@@ -1,0 +1,18 @@
+{
+  "id": "equipamentos",
+  "nome": "Equipamentos",
+  "versao": "1.0.0",
+  "descricao": "Smartphones e impressoras do terreno, sincronização e documentos dos equipamentos.",
+  "nucleo": false,
+  "paginas": ["equipamentos", "sincronizacao", "equipamentos-documentos"],
+  "recursos": ["equipamentos", "sincronizacao", "equipamentos-movimentar", "equipamentos-administrar"],
+  "api": ["v1/equipamentos", "v1/equipamentos/ficha", "v1/equipamentos/documentos", "v1/equipamentos/pdf", "v1/sincronizacao"],
+  "conectores": ["mdm"],
+  "eventos": {
+    "publica": [],
+    "escuta": []
+  },
+  "depende": ["nucleo"],
+  "ensaio": "so_leitura",
+  "ensaio_motivo": "A base de dados do módulo Equipamentos e o ManageEngine MDM são os da produção: no ensaio o módulo só lê."
+}

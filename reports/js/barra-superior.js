@@ -212,6 +212,16 @@ function mostrarConta() {
   const tem = !!SESSAO.app_instalada;
   $('#conta-app').classList.toggle('instalada', tem);
   $('#conta-app').title = t(tem ? 'Já tem a app activa num telemóvel' : 'Ainda não tem a app no telemóvel');
+  // ambiente de ensaio (só SADM e TI): a versão nova lado a lado, para testar antes de aprovar
+  const ens = $('#conta-ensaio');
+  if (ens) {
+    const e = SESSAO.ensaio;
+    ens.hidden = !e;
+    if (e) {
+      $('#conta-ensaio-t').textContent = t('Versão nova {v} (ensaio)', { v: e.versao });
+      ens.title = t(e.resultado === 'ok' ? 'Passou nos testes de fumo: teste-a antes de a aprovar' : 'Falhou nos testes de fumo');
+    }
+  }
 }
 function fecharConta() {
   const p = $('#conta-p');

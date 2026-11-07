@@ -6,7 +6,7 @@ defined('NAVAL_NUCLEO') || exit;
 function naval_rotas_portal(): array
 {
     $out = [];
-    foreach (naval_json_ler(naval_raiz() . '/reports/data/rotas.json') as $r) {
+    foreach (naval_json_ler(naval_dados_reports() . '/rotas.json') as $r) {
         if (!is_array($r) || !isset($r['rota'])) continue;
         $out[] = ['rota' => (string) $r['rota'], 'promotor' => (string) ($r['promotor'] ?? '')];
     }

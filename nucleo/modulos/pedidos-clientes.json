@@ -1,0 +1,16 @@
+{
+  "id": "pedidos-clientes",
+  "nome": "Pedidos dos clientes",
+  "versao": "1.0.0",
+  "descricao": "Pedidos feitos pelos clientes com o cartaz QR da loja.",
+  "nucleo": false,
+  "paginas": ["pedidos-clientes", "clientes-qr"],
+  "recursos": ["pedidos-clientes", "clientes-qr"],
+  "api": ["v1/pedidos-clientes", "v1/clientes-qr", "v1/cliente"],
+  "conectores": [],
+  "eventos": {
+    "publica": ["pedido.recebido"],
+    "escuta": []
+  },
+  "depende": ["nucleo", "clientes"]
+}

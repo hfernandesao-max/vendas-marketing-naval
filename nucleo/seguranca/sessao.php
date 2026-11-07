@@ -30,7 +30,9 @@ function naval_iniciar_sessao(): void
             @ini_set('session.gc_maxlifetime', (string) (2 * (defined('NAVAL_SESSAO_INACTIVA') ? NAVAL_SESSAO_INACTIVA : 1800)));
             $seguro = naval_https();
             // Nome próprio do cookie; em HTTPS com o prefixo __Host- (só este site, só HTTPS, caminho /)
-            session_name($seguro ? '__Host-NAVALSESS' : 'NAVALSESS');
+            // (no ensaio, um cookie próprio: a sessão da produção e a do ensaio nunca se misturam)
+            $nome = naval_ensaio() ? 'NAVALENSAIO' : 'NAVALSESS';
+            session_name($seguro ? '__Host-' . $nome : $nome);
             if (PHP_VERSION_ID >= 70300) session_set_cookie_params(['path' => '/', 'secure' => $seguro, 'httponly' => true, 'samesite' => 'Lax']);
             else session_set_cookie_params(0, '/; samesite=Lax', '', $seguro, true);   // PHP 7.1 e 7.2
             naval_cabecalhos_seguranca();

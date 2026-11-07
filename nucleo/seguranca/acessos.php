@@ -9,6 +9,7 @@
  * que também pode criar perfis novos (ver perfis.php): cada um passa a ser uma coluna da matriz.
  */
 defined('NAVAL_NUCLEO') || exit;
+require_once dirname(__DIR__) . '/servicos/modulos.php';
 
 const NAVAL_PERFIS = [
     'SADM' => 'Super administrador',
@@ -99,6 +100,8 @@ const NAVAL_MATRIZ_TXT = [
     'registos'             => 'V  -  -  -  -  -  -  -  -  V  -',
     // aprovação das versões do portal: só o super administrador (não editável na matriz)
     'actualizacoes'        => '-  -  -  -  -  -  -  -  -  -  -',
+    // módulos do portal (ligar, piloto, desligar): só o super administrador (não editável na matriz)
+    'modulos'              => '-  -  -  -  -  -  -  -  -  -  -',
 ];
 // Quem vê o NIF dos clientes: linha «nif» da matriz (editável no portal)
 // Perfis em que o âmbito é sempre limitado às rotas atribuídas
@@ -158,6 +161,7 @@ function naval_niveis_recurso(string $rec): array
         case 'admin-utilizadores':
         case 'admin-config':
         case 'actualizacoes':
+        case 'modulos':
             return [];
         case 'acessos':
             return ['', 'V', 'E'];   // exportar contas, perfis, matriz e registos (revisão de acessos / auditoria)
@@ -223,7 +227,9 @@ function naval_nivel(string $recurso): string
 {
     $p = naval_perfil();
     if ($p === '') return '';
-    return naval_matriz()[$recurso][$p] ?? '';
+    $nivel = naval_matriz()[$recurso][$p] ?? '';
+    // módulo desligado (ou em piloto, fora dos administradores de sistema): sem acesso, seja qual for a matriz
+    return $nivel !== '' && !naval_recurso_disponivel($recurso, $p) ? '' : $nivel;
 }
 
 function naval_pode(string $recurso, string $minimo = 'Vr'): bool

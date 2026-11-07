@@ -167,7 +167,15 @@ try {
                 $r = naval_act_urgente();
                 // sem pedidos do portal: janela nocturna (aprovação automática às 02:45, instalação às 03:00)
                 if ($r === null) $r = naval_act_noite();
-                if ($r === null) exit(0);
+                // fora disso: a versão nova mais recente instala-se no ensaio (uma vez por versão)
+                if ($r === null) {
+                    try {
+                        naval_act_ensaio_ciclo();
+                    } catch (Throwable $e) {
+                        naval_act_registar('ensaio_erro', ['erro' => $e->getMessage()]);
+                    }
+                    exit(0);
+                }
                 if ($r['resultado'] === 'revertida_pedido') {
                     echo '  ok     versão anterior reposta a pedido do portal' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . "\n";
                     naval_act_avisar('versão anterior reposta', ['A pedido feito no portal, foi reposta a versão anterior' . ($r['versao'] !== '' ? ' (' . $r['versao'] . ')' : '') . '.']);
