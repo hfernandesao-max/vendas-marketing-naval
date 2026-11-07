@@ -1,9 +1,9 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
-import { nomeRota, tipoDoc, eNC } from '../calculos.js';
+import { catMeio, nomeRota, pagosDe, tipoDoc, eNC, valorCat } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
-import { FV, filtroAtivo } from '../filtros.js';
+import { FV, dadosCompletos, filtroAtivo } from '../filtros.js';
 import { dl, kz, kz2, n0 } from '../formatos.js';
 import { t, tv } from '../i18n/i18n.js';
 import { R } from './registo.js';
@@ -56,6 +56,60 @@ const localLinha = (rota, codigo) => {
 };
 const ROTULO_CAMPO = { loja: 'Loja SAP da rota {r}', local: 'Depósito SAP da rota {r}', empregado: 'Empregado de vendas SAP da rota {r}' };
 const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Por omissão (sem abastecimento)' };
+/** Valor pago num meio (dinheiro, multicaixa) de uma factura; as notas de crédito não levam pagamentos para o SAP. */
+const meioDoc = (v, cat) =>
+  eNC(v)
+    ? 0
+    : sum(
+        pagosDe(v).filter((p) => catMeio(p) === cat),
+        'valor',
+      );
+/**
+ * Conciliação com o Início («Do Início ao ficheiro do SAP»): parte das mesmas vendas do Início (período e rotas) e
+ * mostra, linha a linha, o que não segue no ficheiro — notas de crédito, documentos fora do filtro de tipo, já enviados
+ * e sem linhas de artigo. Painel − exclusões = ficheiro, sempre (prática de conciliação: cada diferença explicada).
+ */
+function conciliacaoSap(L) {
+  const rs = FV.rota.length ? new Set(FV.rota.map(String)) : null;
+  const P = (dadosCompletos().vendas || []).filter((v) => inR(v.data) && (!rs || rs.has(String(v.rota))));
+  const naPagina = new Set((DB.vendas || []).map((v) => v.documento));
+  const noFicheiro = new Set(L.docs.map((v) => v.documento));
+  const grupos = { nc: [], tipo: [], enviados: [], semLinhas: [], ficheiro: [], outros: [] };
+  P.forEach((v) => {
+    const g = eNC(v)
+      ? 'nc'
+      : !naPagina.has(v.documento)
+        ? 'tipo'
+        : SAPD.exportados[v.documento]
+          ? 'enviados'
+          : L.semLinhas.has(v.documento)
+            ? 'semLinhas'
+            : noFicheiro.has(v.documento)
+              ? 'ficheiro'
+              : 'outros';
+    grupos[g].push(v);
+  });
+  const valores = (V) => ({ docs: V.length, total: r2(sum(V, 'total')), din: r2(valorCat(V, 'dinheiro')), mc: r2(valorCat(V, 'multicaixa')) });
+  const menos = (V) => {
+    const x = valores(V);
+    return { docs: -x.docs, total: -x.total, din: -x.din, mc: -x.mc };
+  };
+  const linhas = [{ chave: 'inicio', l: t('Vendas RTM no Início (período e rotas)'), ...valores(P) }];
+  if (grupos.nc.length) linhas.push({ chave: 'nc', l: t('Notas de crédito: não seguem no ficheiro do SAP'), ...menos(grupos.nc) });
+  if (grupos.tipo.length) linhas.push({ chave: 'tipo', l: t('Fora do filtro de tipo de documento'), ...menos(grupos.tipo) });
+  if (grupos.enviados.length) linhas.push({ chave: 'enviados', l: t('Já enviados ao SAP noutro ficheiro'), ...menos(grupos.enviados) });
+  if (grupos.semLinhas.length) linhas.push({ chave: 'sem', l: t('Sem linhas de artigo (por corrigir)'), ...menos(grupos.semLinhas) });
+  if (grupos.outros.length) linhas.push({ chave: 'outros', l: t('Outros documentos fora do ficheiro'), ...menos(grupos.outros) });
+  const fic = {
+    docs: L.docs.length,
+    total: r2(sum(L.docs, 'total')),
+    din: r2(sum(L.docs, (v) => meioDoc(v, 'dinheiro'))),
+    mc: r2(sum(L.docs, (v) => meioDoc(v, 'multicaixa'))),
+  };
+  linhas.push({ chave: 'ficheiro', l: t('No ficheiro do SAP'), ...fic });
+  linhas.forEach((x, i) => (x.n = i + 1));
+  return { P, linhas, fic };
+}
 function linhasSap() {
   const c = SAPD.config;
   // Rota e tipo de documento vêm da barra de filtros. Só facturas: as notas de crédito não entram no ficheiro
@@ -70,7 +124,8 @@ function linhasSap() {
     erros = [],
     avisos = [],
     semLocal = new Set(),
-    porOmissao = new Set();
+    porOmissao = new Set(),
+    semLinhas = new Set();
   let repetidos = 0;
   V.slice()
     .sort((a, b) => (a.data + a.hora + a.documento < b.data + b.hora + b.documento ? -1 : 1))
@@ -84,22 +139,14 @@ function linhasSap() {
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
       const pg = v.nc ? [] : v.pagamentos || []; // as notas de crédito seguem para o SAP sem pagamentos
-      const cash = r2(
-          sum(
-            pg.filter((p) => p.codigo === 'NU'),
-            'valor',
-          ),
-        ),
-        card = r2(
-          sum(
-            pg.filter((p) => p.codigo === 'MC'),
-            'valor',
-          ),
-        );
-      const outros = pg.filter((p) => p.codigo !== 'NU' && p.codigo !== 'MC');
+      // numerário e Multicaixa com a mesma regra do Início (calculos.js: catMeio), para os valores serem iguais
+      const cash = r2(meioDoc(v, 'dinheiro')),
+        card = r2(meioDoc(v, 'multicaixa'));
+      const outros = pg.filter((p) => !['dinheiro', 'multicaixa', 'compensacao'].includes(catMeio(p)));
 
       if (!ls.length) {
         erros.push(t('{d}: o documento não tem linhas de artigo.', { d: docTxt }));
+        semLinhas.add(v.documento);
         return;
       }
       // GROSSSALES = DOCMOVDETAIL.GROSS_TOTAL (exportação REST sem esta coluna: NETSALES + TAXAMOUNT)
@@ -175,7 +222,7 @@ function linhasSap() {
         l: localOmissao(),
       }),
     );
-  return { docs, linhas, erros, avisos, repetidos };
+  return { docs, linhas, erros, avisos, repetidos, semLinhas };
 }
 // Ficheiro para o SAP (formato de carregamento): um livro simples com UMA folha («Upload Format»), UMA linha de
 // cabeçalho com os nomes exactos das colunas e as linhas de dados. Sem estilos (sem cores, negrito, contornos, larguras
@@ -418,24 +465,18 @@ R['sap-exportar'] = (pg) => {
     acc,
   );
   pg.append(barra);
-  const cash = sum(L.docs, (v) =>
-      sum(
-        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'NU'),
-        'valor',
-      ),
-    ),
-    card = sum(L.docs, (v) =>
-      sum(
-        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'MC'),
-        'valor',
-      ),
-    );
+  // Os quadros mostram os mesmos valores do Início; a conciliação abaixo explica o que fica fora do ficheiro
+  const C = conciliacaoSap(L);
   pg.append(
     tiles([
-      { l: t('Documentos a incluir'), v: n0(L.docs.length), s: t('{n} linhas de artigo', { n: n0(L.linhas.length) }) },
-      { l: t('Total facturado'), v: kz2(sum(L.docs, 'total')), cls: 'full-value' },
-      { l: t('Numerário'), v: kz2(cash), cls: 'full-value' },
-      { l: t('Multicaixa'), v: kz2(card), cls: 'full-value' },
+      { l: t('Vendas RTM'), v: kz2(sum(C.P, 'total')), s: t('igual ao Início'), cls: 'full-value' },
+      { l: t('Em dinheiro'), v: kz2(valorCat(C.P, 'dinheiro')), s: t('igual ao Início'), cls: 'full-value' },
+      { l: t('Em Multicaixa'), v: kz2(valorCat(C.P, 'multicaixa')), s: t('igual ao Início'), cls: 'full-value' },
+      {
+        l: t('Documentos a incluir'),
+        v: n0(L.docs.length),
+        s: t('{n} linhas de artigo', { n: n0(L.linhas.length) }) + ' · ' + t('{v} no ficheiro', { v: kz2(C.fic.total) }),
+      },
       {
         l: t('Já enviados ao SAP'),
         v: n0(L.repetidos),
@@ -460,6 +501,25 @@ R['sap-exportar'] = (pg) => {
       pg.append(v);
     }
   }
+  pg.append(
+    tabela({
+      id: 'sap-conc',
+      titulo: t('Do Início ao ficheiro do SAP'),
+      nota: t('Conciliação: os valores do Início menos o que não segue no ficheiro dão o que vai para o SAP.'),
+      search: false,
+      sort: 'n',
+      dir: 1,
+      rows: C.linhas,
+      cols: [
+        { key: 'n', label: '#', type: 'n' },
+        { key: 'l', label: t('Linha'), p: 0, wrap: true },
+        { key: 'docs', label: t('Documentos'), type: 'n' },
+        { key: 'total', label: t('Vendas RTM'), type: 'kz' },
+        { key: 'din', label: t('Em dinheiro'), type: 'kz' },
+        { key: 'mc', label: t('Em Multicaixa'), type: 'kz' },
+      ],
+    }),
+  );
   pg.append(
     tabela({
       id: 'sap-l',
