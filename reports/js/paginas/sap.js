@@ -1,6 +1,6 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
-import { catMeio, nomeRota, pagosDe, tipoDoc } from '../calculos.js';
+import { catMeio, eNC, nomeRota, pagosDe, tipoDoc } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, filtroAtivo } from '../filtros.js';
@@ -426,7 +426,14 @@ R['sap-exportar'] = (pg) => {
     card = sum(L.docs, cardSap);
   pg.append(
     tiles([
-      { l: t('Documentos a incluir'), v: n0(L.docs.length), s: t('{n} linhas de artigo', { n: n0(L.linhas.length) }) },
+      {
+        // como no Início: o número de facturas e, à parte, o valor das notas de crédito (também seguem no ficheiro)
+        l: t('Documentos a incluir'),
+        v: n0(L.docs.filter((v) => !eNC(v)).length),
+        s:
+          (L.docs.some(eNC) ? t('notas de crédito: −{v}', { v: kz2(-sum(L.docs.filter(eNC), 'total')) }) + ' · ' : '') +
+          t('{n} linhas de artigo', { n: n0(L.linhas.length) }),
+      },
       { l: t('Total facturado'), v: kz2(sum(L.docs, 'total')), cls: 'full-value' },
       { l: t('Numerário'), v: kz2(cash), cls: 'full-value' },
       { l: t('Multicaixa'), v: kz2(card), cls: 'full-value' },

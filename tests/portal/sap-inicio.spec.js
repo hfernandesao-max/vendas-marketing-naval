@@ -62,9 +62,19 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
   await expect(page.locator('.tiles-kpi')).toBeVisible();
   const ini = {};
   for (const [, r] of PARES) ini[r] = await quadro(page, r);
+  const subIni = await page
+    .locator('.tile')
+    .filter({ has: page.locator('.l:text-is("Vendas RTM"), .l-t:text-is("Vendas RTM")') })
+    .first()
+    .locator('.s')
+    .innerText();
   await page.evaluate(() => (location.hash = '#sap-exportar'));
   await expect(page.locator('#s-sap-l')).toBeVisible();
   for (const [s, r] of PARES) expect(await quadro(page, s), s).toBe(ini[r]);
+  // número de documentos e notas de crédito como no Início
+  const sap = page.locator('.tile').filter({ has: page.locator('.l:text-is("Documentos a incluir")') });
+  expect(await sap.locator('.v').innerText()).toBe(subIni.match(/^([\d\s]+) documentos/)[1].trim());
+  expect(await sap.locator('.s').innerText()).toContain(subIni.match(/notas de crédito: −[^·]+/)[0].trim());
 
   await page.click('.sap-barra button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
