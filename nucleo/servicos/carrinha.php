@@ -105,9 +105,7 @@ function naval_carr_movimentos_sql(string $data): ?array
         foreach (['WAREHOUSE_ID', 'PRODUCT_ID', 'QNT', 'DOCHEADER_ID'] as $c) if (empty($col['DOCMOV'][$c])) return null;
         $sinal = !empty($col['DOCMOV']['STOCK_SIGNAL']) ? 'MV.STOCK_SIGNAL' : (!empty($col['DOCCONFIG']['STOCK_SIGNAL']) ? 'DC.STOCK_SIGNAL' : '');
         if ($sinal === '') return null;
-        $apagado = (!empty($col['DOCMOV']['DELETED']) ? ' AND MV.DELETED = 0' : '') . (!empty($col['DOCHEADER']['DELETED']) ? ' AND DH.DELETED = 0' : '')
-            // documentos anulados (DOCSTATUS_ID 8002): o movimento não conta, a mercadoria fica onde estava
-            . (!empty($col['DOCHEADER']['DOCSTATUS_ID']) ? ' AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN (' . implode(', ', naval_vendas_estados_anulados()) . ')' : '');
+        $apagado = (!empty($col['DOCMOV']['DELETED']) ? ' AND MV.DELETED = 0' : '') . (!empty($col['DOCHEADER']['DELETED']) ? ' AND DH.DELETED = 0' : '');
         $rows = naval_bd_consultar("
             SELECT E.CODE AS COD_ARMAZEM, E.DESCRIPTION AS ARMAZEM, P.CODE AS CODIGO,
                    CAST(SUM(CASE WHEN MV.QNT * $sinal > 0 THEN ABS(MV.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
