@@ -13,6 +13,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Stock: sem alterações — o stock, as entradas e as saídas mostram-se exactamente como no Pinguim BO (as funções do
   WinRest/Pinguim BO já devolvem ao armazém o stock dos documentos anulados).
 
+### Vendas para o SAP com os mesmos valores do Início
+
+- Os quadros «Vendas RTM», «Em dinheiro» e «Em Multicaixa» mostram os mesmos valores do Início (mesmo período e
+  rotas, vendas líquidas de notas de crédito).
+- Nova tabela «Do Início ao ficheiro do SAP» (conciliação): parte dos valores do Início e mostra, linha a linha, o
+  que não segue no ficheiro — notas de crédito, documentos fora do filtro de tipo, já enviados ao SAP, sem linhas de
+  artigo e outros meios que o Início agrupa — até ao que vai no ficheiro.
+- O ficheiro gerado para o SAP não muda em nada (estrutura, colunas, formatos e valores; CASH AMOUNT = NU e CARD
+  AMOUNT = MC): verificado ficheiro a ficheiro contra o da versão anterior.
+
 ### Falhas momentâneas da rede: o portal repete sozinho
 
 - Com `ERR_NETWORK_CHANGED` (troca de Wi-Fi ou de rede móvel, VPN a ligar, computador a acordar), o pedido do token
