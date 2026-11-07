@@ -23,6 +23,7 @@
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/bd.php';
 require_once __DIR__ . '/rotas.php';
+require_once __DIR__ . '/vendas.php';
 
 /** Identificador de um campo extra (só dígitos, para entrar na consulta sem risco). */
 function naval_agt_campo(string $chave, string $omissao): string
@@ -206,8 +207,8 @@ function naval_agt_montar(array $linhas): array
             'total' => round((float) $l['TOTAL'], 2),
             'data' => (string) $l['DATA_DOCUMENTO'],
             'data_fiscal' => $l['DATA_FISCAL'] !== null ? (string) $l['DATA_FISCAL'] : null,
-            // Anulado: marcado no documento ou com motivo de cancelamento registado
-            'anulado' => $motivo !== '',
+            // Anulado: estado do documento anulado (DOCSTATUS_ID 8002) ou motivo de cancelamento registado
+            'anulado' => $motivo !== '' || (isset($l['ESTADO_DOCUMENTO']) && in_array((int) $l['ESTADO_DOCUMENTO'], naval_vendas_estados_anulados(), true)),
             'motivo_anulacao' => $motivo !== '' ? $motivo : null,
             'entidade' => trim((string) ($l['ENTIDADE'] ?? '')),
             'loja' => trim((string) ($l['LOJA'] ?? '')),
