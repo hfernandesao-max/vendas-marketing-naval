@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 07-11-2026
 
+### Falhas momentâneas da rede: o portal repete sozinho
+
+- Com `ERR_NETWORK_CHANGED` (troca de Wi-Fi ou de rede móvel, VPN a ligar, computador a acordar), o pedido do token
+  e as leituras repetem-se até 3 vezes, com espera crescente (0,4 s, 1,2 s e 3 s), antes de aparecer «Sem ligação
+  ao servidor do portal». As gravações não se repetem sozinhas, para não ficarem em dobro.
+
 ### Capacidade: 50 pessoas ao mesmo tempo já, caminho para 1000
 
 - **Medido com teste de carga** (`ferramentas/carga.mjs`): 50 pessoas com p95 abaixo de 30 ms e a carga de ~1000
