@@ -2456,6 +2456,7 @@ export const EN = {
   'Sem linhas de artigo (por corrigir)': 'Without item lines (to be fixed)',
   'Outros documentos fora do ficheiro': 'Other documents left out of the file',
   'No ficheiro do SAP': 'In the SAP file',
+  'Outros meios agrupados no Início: não seguem em CASH/CARD AMOUNT': 'Other methods grouped on Home: not in CASH/CARD AMOUNT',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

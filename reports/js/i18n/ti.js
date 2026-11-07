@@ -2421,6 +2421,7 @@ export const TI = {
   'Sem linhas de artigo (por corrigir)': 'ብዘይ መስመራት ኣቕሓ (ዝእረም)',
   'Outros documentos fora do ficheiro': 'ካልኦት ካብ ፋይል ወጻኢ ዝተረፉ ሰነዳት',
   'No ficheiro do SAP': 'ኣብ ፋይል SAP',
+  'Outros meios agrupados no Início: não seguem em CASH/CARD AMOUNT': 'ካልኦት ኣገባባት ክፍሊት ኣብ መበገሲ ዝተጠርነፉ፡ ኣብ CASH/CARD AMOUNT ኣይኣትዉን',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

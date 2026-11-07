@@ -1,6 +1,6 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
-import { catMeio, nomeRota, pagosDe, tipoDoc, eNC, valorCat } from '../calculos.js';
+import { nomeRota, tipoDoc, eNC, valorCat } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, dadosCompletos, filtroAtivo } from '../filtros.js';
@@ -56,14 +56,16 @@ const localLinha = (rota, codigo) => {
 };
 const ROTULO_CAMPO = { loja: 'Loja SAP da rota {r}', local: 'Depósito SAP da rota {r}', empregado: 'Empregado de vendas SAP da rota {r}' };
 const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Por omissão (sem abastecimento)' };
-/** Valor pago num meio (dinheiro, multicaixa) de uma factura; as notas de crédito não levam pagamentos para o SAP. */
-const meioDoc = (v, cat) =>
+/** CASH AMOUNT e CARD AMOUNT do ficheiro do SAP (estrutura original, sem alterações): pagamentos NU e MC das facturas. */
+const pagoSap = (v, codigo) =>
   eNC(v)
     ? 0
     : sum(
-        pagosDe(v).filter((p) => catMeio(p) === cat),
+        (v.pagamentos || []).filter((p) => p.codigo === codigo),
         'valor',
       );
+const cashSap = (v) => pagoSap(v, 'NU'),
+  cardSap = (v) => pagoSap(v, 'MC');
 /**
  * Conciliação com o Início («Do Início ao ficheiro do SAP»): parte das mesmas vendas do Início (período e rotas) e
  * mostra, linha a linha, o que não segue no ficheiro — notas de crédito, documentos fora do filtro de tipo, já enviados
@@ -103,9 +105,15 @@ function conciliacaoSap(L) {
   const fic = {
     docs: L.docs.length,
     total: r2(sum(L.docs, 'total')),
-    din: r2(sum(L.docs, (v) => meioDoc(v, 'dinheiro'))),
-    mc: r2(sum(L.docs, (v) => meioDoc(v, 'multicaixa'))),
+    din: r2(sum(L.docs, cashSap)),
+    mc: r2(sum(L.docs, cardSap)),
   };
+  // O Início agrupa os meios também pelo nome; o ficheiro do SAP só leva os códigos NU e MC (modelo original)
+  const noIni = valores(grupos.ficheiro);
+  const dd = r2(noIni.din - fic.din),
+    dm = r2(noIni.mc - fic.mc);
+  if (Math.abs(dd) > 0.005 || Math.abs(dm) > 0.005)
+    linhas.push({ chave: 'meios', l: t('Outros meios agrupados no Início: não seguem em CASH/CARD AMOUNT'), docs: 0, total: 0, din: -dd, mc: -dm });
   linhas.push({ chave: 'ficheiro', l: t('No ficheiro do SAP'), ...fic });
   linhas.forEach((x, i) => (x.n = i + 1));
   return { P, linhas, fic };
@@ -139,10 +147,10 @@ function linhasSap() {
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
       const pg = v.nc ? [] : v.pagamentos || []; // as notas de crédito seguem para o SAP sem pagamentos
-      // numerário e Multicaixa com a mesma regra do Início (calculos.js: catMeio), para os valores serem iguais
-      const cash = r2(meioDoc(v, 'dinheiro')),
-        card = r2(meioDoc(v, 'multicaixa'));
-      const outros = pg.filter((p) => !['dinheiro', 'multicaixa', 'compensacao'].includes(catMeio(p)));
+      // Ficheiro do SAP sem nenhuma alteração: CASH AMOUNT = pagamentos NU e CARD AMOUNT = pagamentos MC (modelo original)
+      const cash = r2(cashSap(v)),
+        card = r2(cardSap(v));
+      const outros = pg.filter((p) => p.codigo !== 'NU' && p.codigo !== 'MC');
 
       if (!ls.length) {
         erros.push(t('{d}: o documento não tem linhas de artigo.', { d: docTxt }));

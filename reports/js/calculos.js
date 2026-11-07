@@ -63,9 +63,8 @@ export const pendentesDe = (V) => sum(V, pendenteDe);
 export const recebidoBruto = (V) => sum(V, recebidoDe);
 export const recebidoLiquido = (V) => sum(V, recebidoDe) - notasCredito(V);
 export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
-// Agrupa cada meio em dinheiro, Multicaixa, transferência ou outro, pelo código e depois pelo nome (a mesma regra em
-// todos os ecrãs e no ficheiro para o SAP, para os valores serem sempre iguais)
-export function catMeio(p) {
+// Agrupa cada meio em dinheiro, Multicaixa, transferência ou outro, pelo código e depois pelo nome
+function catMeio(p) {
   const c = String(p.codigo || '').toUpperCase(),
     m = String(p.meio || '').toUpperCase();
   // compensação factura × nota de crédito (sem dinheiro): soma zero, fica fora dos meios de cobrança
