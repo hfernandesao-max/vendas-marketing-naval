@@ -10,6 +10,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   artigos e nos pagamentos, em todos os ecrãs e exportações (antes só ficavam de fora os eliminados, `DELETED = 1`).
   O estado é configurável no `.env` (`PINGUIM_ESTADO_ANULADO`). No ecrã da AGT, o estado 8002 passa também a marcar o
   documento como anulado.
+- Stock: os movimentos dos documentos anulados também deixam de contar nas entradas e saídas das carrinhas
+  (conciliação diária) e na origem do stock de cada viatura — a mercadoria fica no armazém onde estava.
 
 ### Falhas momentâneas da rede: o portal repete sozinho
 

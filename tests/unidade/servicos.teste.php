@@ -263,3 +263,10 @@ teste('vendas: documentos anulados (DOCSTATUS_ID 8002) e eliminados fora dos doc
     // as três consultas (documentos, pagamentos e artigos) usam a condição
     igual(3, substr_count($f, 'AND $validos') + substr_count($f, 'WHERE $validos'));
 });
+
+teste('stock: movimentos de documentos anulados (8002) não contam nas carrinhas nem na origem do stock', function () {
+    $carr = file_get_contents(__DIR__ . '/../../nucleo/servicos/carrinha.php');
+    verdade(strpos($carr, "COALESCE(DH.DOCSTATUS_ID, 0) NOT IN (' . implode(', ', naval_vendas_estados_anulados())") !== false, 'carrinha');
+    $orig = file_get_contents(__DIR__ . '/../../nucleo/servicos/origem-stock.php');
+    verdade(strpos($orig, 'AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN ($anulados)') !== false, 'origem do stock');
+});

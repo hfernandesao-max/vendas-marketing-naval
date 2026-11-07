@@ -16,6 +16,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/bd.php';
+require_once __DIR__ . '/vendas.php';
 if (is_file(__DIR__ . '/stock.php')) require_once __DIR__ . '/stock.php';   // serviço de stock, quando o projecto o tem
 
 const NAVAL_ARMAZENS_PRINCIPAIS = [
@@ -80,6 +81,8 @@ function naval_origem_transferencias(array $principais, string $desde): ?array
         $marcas[] = ':p' . $i;
         $params[':p' . $i] = (string) $c;
     }
+    // transferências anuladas (DOCSTATUS_ID 8002) não contam: a mercadoria voltou ao armazém
+    $anulados = implode(', ', naval_vendas_estados_anulados());
     try {
         $linhas = naval_bd_consultar("
             SELECT EV.CODE AS VIATURA, EV.DESCRIPTION AS NOME_VIATURA, EP.CODE AS PRINCIPAL, PR.CODE AS ARTIGO,
@@ -88,7 +91,7 @@ function naval_origem_transferencias(array $principais, string $desde): ?array
             FROM DOCMOV MV
             INNER JOIN DOCMOV MP ON MP.DOCHEADER_ID = MV.DOCHEADER_ID AND MP.PRODUCT_ID = MV.PRODUCT_ID
                                 AND MP.DELETED = 0 AND MP.WAREHOUSE_ID <> MV.WAREHOUSE_ID
-            INNER JOIN DOCHEADER DH ON DH.ID = MV.DOCHEADER_ID AND DH.DELETED = 0
+            INNER JOIN DOCHEADER DH ON DH.ID = MV.DOCHEADER_ID AND DH.DELETED = 0 AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN ($anulados)
             INNER JOIN ENTITY EV ON EV.ID = MV.WAREHOUSE_ID
             INNER JOIN ENTITY EP ON EP.ID = MP.WAREHOUSE_ID
             INNER JOIN PRODUCT PR ON PR.ID = MV.PRODUCT_ID
