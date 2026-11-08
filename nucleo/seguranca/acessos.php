@@ -102,6 +102,10 @@ const NAVAL_MATRIZ_TXT = [
     'actualizacoes'        => '-  -  -  -  -  -  -  -  -  -  -',
     // módulos do portal (ligar, piloto, desligar): só o super administrador (não editável na matriz)
     'modulos'              => '-  -  -  -  -  -  -  -  -  -  -',
+    // conformidade (prova dos controlos ISO): administrador da plataforma e auditoria; confirmar a revisão só o SADM
+    'conformidade'         => 'V  -  -  -  -  -  -  -  -  V  -',
+    // suporte e incidentes: todos abrem e seguem os seus pedidos (V); o administrador da plataforma gere todos (G)
+    'suporte'              => 'G  V  V  V  V  V  V  V  V  V  -',
 ];
 // Quem vê o NIF dos clientes: linha «nif» da matriz (editável no portal)
 // Perfis em que o âmbito é sempre limitado às rotas atribuídas
@@ -169,6 +173,7 @@ function naval_niveis_recurso(string $rec): array
         case 'apresentacao':
         case 'fecho-dia':
         case 'registos':
+        case 'conformidade':
         case 'nif':
         case 'assistente':
         case 'resumo-diario':
@@ -178,6 +183,8 @@ function naval_niveis_recurso(string $rec): array
         case 'painel-sala':
         case 'clientes-qr':
             return ['', 'G'];
+        case 'suporte':
+            return ['', 'V', 'G'];
         case 'pedidos-clientes':
         case 'conciliacao-carrinha':
             return ['', 'Vr', 'V', 'G'];

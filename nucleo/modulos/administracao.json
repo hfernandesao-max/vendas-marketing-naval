@@ -1,15 +1,15 @@
 {
   "id": "administracao",
   "nome": "Administração",
-  "versao": "1.0.0",
-  "descricao": "Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e ensaio. Não se desliga.",
+  "versao": "1.1.0",
+  "descricao": "Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, ensaio e conformidade (prova dos controlos ISO). Não se desliga.",
   "nucleo": true,
-  "paginas": ["acessos", "auditoria", "actualizacoes", "modulos"],
-  "recursos": ["acessos", "auditoria", "actualizacoes", "modulos", "admin-utilizadores", "admin-config", "registos"],
-  "api": ["v1/gestao", "v1/actualizacoes", "v1/novidades", "v1/modulos"],
+  "paginas": ["acessos", "auditoria", "actualizacoes", "modulos", "conformidade"],
+  "recursos": ["acessos", "auditoria", "actualizacoes", "modulos", "admin-utilizadores", "admin-config", "registos", "conformidade"],
+  "api": ["v1/gestao", "v1/actualizacoes", "v1/novidades", "v1/modulos", "v1/conformidade"],
   "conectores": ["github"],
   "eventos": {
-    "publica": ["versao.instalada", "modulo.alterado"],
+    "publica": ["versao.instalada", "modulo.alterado", "conformidade.problema", "revisao_acessos.aberta"],
     "escuta": []
   },
   "depende": ["nucleo"]

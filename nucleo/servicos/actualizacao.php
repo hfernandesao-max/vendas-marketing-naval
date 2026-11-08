@@ -1553,7 +1553,7 @@ function naval_act_apache_incluir(string $raiz): string
 // só é aceite para a versão que passou no ensaio, com o mesmo SHA-256. ENSAIO=0 desliga o ensaio (e a exigência).
 
 /** Pastas da pasta privada que não vão para a cópia do ensaio (sessões, cache, limites, registos e o próprio actualizador). */
-const NAVAL_ACT_ENSAIO_SEM_COPIA = ['ensaio', 'sessoes', 'cache', 'limites', 'registos', 'actualizacoes'];
+const NAVAL_ACT_ENSAIO_SEM_COPIA = ['ensaio', 'sessoes', 'cache', 'limites', 'registos', 'actualizacoes', 'copias-dados', 'conformidade'];
 
 function naval_act_ensaio_ligado(): bool
 {
@@ -1589,6 +1589,7 @@ function naval_act_copiar_pasta(string $de, string $para, array $semTopo = []): 
 function naval_act_ensaio_ciclo(array $o = []): ?array
 {
     if (!naval_act_ensaio_ligado()) return null;
+    naval_act_ensaio_limpar($o['raiz'] ?? naval_raiz());
     $versoes = $o['versoes'] ?? naval_act_versoes();
     $novas = naval_act_mais_recentes($versoes, naval_act_estado());
     if (!$novas) return null;
@@ -1606,9 +1607,10 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
     $bloqueio = fopen(naval_act_pasta() . '/.bloqueio-ensaio', 'c');
     if (!$bloqueio || !flock($bloqueio, LOCK_EX | LOCK_NB)) return ['resultado' => 'ocupado', 'versao' => $v['versao']];
     $t0 = microtime(true);
-    $gravar = function (string $resultado, array $falhas, string $sha) use ($v, $t0) {
+    $mascarados = null;
+    $gravar = function (string $resultado, array $falhas, string $sha) use ($v, $t0, &$mascarados) {
         $e = ['versao' => $v['versao'], 'sha256' => $sha, 'instalada_em' => date('Y-m-d H:i:s'), 'resultado' => $resultado, 'falhas' => array_slice($falhas, 0, 20),
-            'seg' => round(microtime(true) - $t0, 1)];
+            'seg' => round(microtime(true) - $t0, 1), 'mascarados' => $mascarados];
         naval_json_gravar(naval_act_pasta() . '/ensaio.json', $e);
         naval_act_registar($resultado === 'ok' ? 'ensaio_instalado' : 'ensaio_falhou', ['versao' => $v['versao'], 'falhas' => $e['falhas'], 'seg' => $e['seg']]);
         return $e;
@@ -1646,7 +1648,10 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         $priv = naval_pasta_privada();
         naval_act_limpar_pasta($priv . '/ensaio');
         $n = naval_act_copiar_pasta($priv, $priv . '/ensaio', NAVAL_ACT_ENSAIO_SEM_COPIA);
-        $diz('Ensaio: ' . count($m['ficheiros']) . ' ficheiros instalados e ' . $n . ' ficheiros de dados copiados.');
+        // dados de teste protegidos (ISO/IEC 27001, 8.33): NIF, telefones, e-mails e moradas mascarados na cópia
+        naval_servico('conformidade');
+        $mascarados = naval_conf_mascarar_pasta($priv . '/ensaio');
+        $diz('Ensaio: ' . count($m['ficheiros']) . ' ficheiros instalados, ' . $n . ' ficheiros de dados copiados e ' . $mascarados . ' dados pessoais mascarados.');
 
         // 4. Testes de fumo: arranque e bases de dados (linha de comandos) e páginas e API por HTTP
         $falhas = naval_act_verificar_cli($alvo);
@@ -1664,6 +1669,23 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         flock($bloqueio, LOCK_UN);
         fclose($bloqueio);
     }
+}
+
+/**
+ * Depois de a versão do ensaio chegar à produção, o ensaio já não é preciso: apaga-se o código e a cópia dos dados
+ * (ISO/IEC 27001, 8.33: os dados de teste apagam-se quando o teste termina). Fica o registo.
+ */
+function naval_act_ensaio_limpar(string $raiz): bool
+{
+    $e = naval_act_ensaio_estado();
+    $instalada = (string) (naval_act_estado()['versao'] ?? '');
+    $alvo = rtrim(str_replace('\\', '/', $raiz), '/') . '/ensaio';
+    if ($e['versao'] === '' || $e['versao'] !== $instalada || (!is_dir($alvo) && !is_dir(naval_pasta_privada() . '/ensaio'))) return false;
+    naval_act_limpar_pasta($alvo);
+    naval_act_limpar_pasta(naval_pasta_privada() . '/ensaio');
+    naval_json_gravar(naval_act_pasta() . '/ensaio.json', $e + ['removido_em' => date('Y-m-d H:i:s')]);
+    naval_act_registar('ensaio_removido', ['versao' => $e['versao']]);
+    return true;
 }
 
 /**

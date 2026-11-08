@@ -23,6 +23,10 @@ const ICON = {
   zona: 'M5 8l6-4 8 3 1 9-7 4-8-3zM5 8h.01M11 4h.01M19 7h.01M20 16h.01M13 20h.01M5 17h.01',
   menu: 'M4 4h16v16H4zM9 4v16',
   actualizar: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
+  // selo de certificação (conformidade)
+  selo: 'M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2zM8.5 12l2.5 2.5 4.5-5',
+  // auscultadores (suporte)
+  suporte: 'M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1zM17 20a4 4 0 0 1-4 2h-1',
   // peças de lego (módulos do portal)
   pecas: 'M4 10h6V4H4zM14 10h6V4h-6zM4 20h6v-6H4zM14 17h6M17 14v6',
   // carrinha com marca de verificação (painel da carrinha: fecho de rota)

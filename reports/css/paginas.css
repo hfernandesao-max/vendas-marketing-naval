@@ -867,3 +867,36 @@ p.aviso {
   gap: 8px;
   margin: 8px 0;
 }
+/* Suporte e Conformidade */
+.sup-barra,
+.conf-barra {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+}
+.sup-cab {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.sup-desc,
+.sup-res {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+  text-align: justify;
+}
+.sup-hist {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--mut);
+}
+.sup-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  margin: 4px 0 8px;
+}

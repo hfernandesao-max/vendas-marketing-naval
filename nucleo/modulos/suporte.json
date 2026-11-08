@@ -1,0 +1,16 @@
+{
+  "id": "suporte",
+  "nome": "Suporte e incidentes",
+  "versao": "1.0.0",
+  "descricao": "Pedidos de suporte, incidentes e incidentes de segurança, com prioridade, prazo, histórico, causa, lições aprendidas e satisfação (ISO/IEC 20000-1, ISO/IEC 27035).",
+  "nucleo": false,
+  "paginas": ["suporte"],
+  "recursos": ["suporte"],
+  "api": ["v1/suporte"],
+  "conectores": [],
+  "eventos": {
+    "publica": ["suporte.criado", "suporte.resolvido"],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}

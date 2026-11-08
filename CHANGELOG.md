@@ -2,6 +2,22 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 08-11-2026
+
+### Conformidade com as normas ISO, suporte e incidentes
+
+- **Registos invioláveis** (ISO/IEC 27001 8.15): cada linha dos registos leva o SHA-256 da anterior; a verificação
+  diária encontra alterações, linhas apagadas e cortes, guarda um selo do dia e copia os registos para fora do servidor.
+- **Contas sem uso** desligam-se sozinhas ao fim de 90 dias (nunca o super administrador) e **revisão de acessos
+  trimestral** confirmada pelo super administrador (ISO/IEC 27001 5.18).
+- **Cópia diária cifrada** dos dados privados (AES-256-GCM) com **teste de recuperação** automático (ISO 22301).
+- **Prazos de retenção** por tipo de dado, com eliminação automática (ISO/IEC 27701, Lei n.º 22/11).
+- **Ensaio** com os dados pessoais mascarados e apagado quando a versão chega à produção (ISO/IEC 27001 8.33).
+- **Componentes e licenças**: inventário das bibliotecas, SBOM CycloneDX e proveniência em cada versão (OpenChain).
+- **Suporte e incidentes** (Administração › Suporte): pedidos com prioridade e prazo, histórico, causa e lições nos
+  incidentes graves e satisfação; incidente de segurança avisa logo o super administrador (ISO/IEC 20000-1, 27035).
+- Nova página **Administração › Conformidade** com a prova de todos os controlos. Documentação: `docs/CONFORMIDADE.md`.
+
 ## 07-11-2026
 
 ### Portal por módulos (peças de lego), ambiente de ensaio e painel da carrinha

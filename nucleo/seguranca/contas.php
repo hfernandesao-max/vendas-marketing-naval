@@ -258,6 +258,8 @@ function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metod
         if ($eq && $eq['login'] === $login) $_SESSION['app_equipamento'] = $equipamento;
     }
     naval_limpar_falhas($login);
+    if (!function_exists('naval_conf_marcar_entrada')) naval_servico('conformidade');
+    naval_conf_marcar_entrada($login);   // última entrada de cada conta (contas sem uso: ISO/IEC 27001 5.18)
     naval_registar('entrada', ['dois_passos' => $comMfa] + ($metodo !== 'senha' ? ['metodo' => $metodo] : []) + (!empty($_SESSION['app_equipamento']) ? ['equipamento' => $_SESSION['app_equipamento']] : []), $login);
     if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
 }

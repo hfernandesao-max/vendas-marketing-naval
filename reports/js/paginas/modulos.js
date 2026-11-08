@@ -27,6 +27,8 @@ const MODULOS = {
   apresentacao: () => import('./apresentacao.js'),
   geo: () => import('./geo.js'),
   'admin-modulos': () => import('./admin-modulos.js'),
+  conformidade: () => import('./conformidade.js'),
+  suporte: () => import('./suporte.js'),
   'painel-carrinha': () => import('./painel-carrinha.js'),
 };
 
@@ -61,6 +63,8 @@ export const MODULO_DA_PAGINA = {
   acessos: 'acessos',
   actualizacoes: 'actualizacoes',
   modulos: 'admin-modulos',
+  conformidade: 'conformidade',
+  suporte: 'suporte',
   'painel-carrinha': 'painel-carrinha',
   'visitas-dia': 'carteira',
   'qualidade-dados': 'carteira',
