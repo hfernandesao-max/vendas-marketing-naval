@@ -58,3 +58,44 @@ test('conformidade: TI e auditoria vêem; outros não; só o SADM confirma a rev
   const ct = await csrf(ti);
   expect((await ti.post(API + 'conformidade', { data: { accao: 'confirmar_revisao', trimestre: v.revisao_actual, csrf: ct } })).status()).toBe(403);
 });
+
+test('não conformidade: a resolução exige a causa e a acção correctiva', async () => {
+  const log = (await entrar('log')).ctx;
+  const r = await (
+    await log.post(API + 'suporte', {
+      data: { accao: 'criar', tipo: 'nao_conformidade', prioridade: 'P3', titulo: 'Revisão de acessos fora do prazo', csrf: await csrf(log) },
+    })
+  ).json();
+  expect(r.ok, JSON.stringify(r)).toBe(true);
+  const ti = (await entrar('ti')).ctx;
+  const ct = await csrf(ti);
+  const id = r.pedido.id;
+  const sem = await ti.post(API + 'suporte', { data: { accao: 'resolver', id, texto: 'Revista', causa: 'Férias', csrf: ct } });
+  expect(sem.status()).toBe(400);
+  const ok = await (
+    await ti.post(API + 'suporte', {
+      data: { accao: 'resolver', id, texto: 'Revista', causa: 'Férias', correctiva: 'Aviso 7 dias antes do fim do trimestre', csrf: ct },
+    })
+  ).json();
+  expect(ok.pedido.estado).toBe('resolvido');
+  expect(ok.pedido.correctiva).toBe('Aviso 7 dias antes do fim do trimestre');
+});
+
+test('SGSI: 93 controlos, riscos, RoPA e documentos; só o SADM aprova, uma vez por versão', async () => {
+  rmSync(`${PRIV}/conformidade/aprovacoes.json`, { force: true });
+  const ti = (await entrar('ti')).ctx;
+  const v = await (await ti.get(API + 'conformidade')).json();
+  expect(v.sgsi.controlos).toHaveLength(93);
+  expect(v.sgsi.documentos.map((d) => d.id)).toEqual(['ambito', 'manual', 'objectivos', 'soa', 'riscos', 'ropa', 'auditoria']);
+  expect(v.sgsi.documentos.every((d) => d.estado === 'por_aprovar')).toBe(true);
+  expect(v.sgsi.nao_conformidades.total).toBeGreaterThan(0);
+  expect((await ti.post(API + 'conformidade', { data: { accao: 'aprovar_documento', doc: 'soa', csrf: await csrf(ti) } })).status()).toBe(403);
+  const sadm = (await entrar('sadm')).ctx;
+  const cs = await csrf(sadm);
+  const a = await (await sadm.post(API + 'conformidade', { data: { accao: 'aprovar_documento', doc: 'soa', notas: 'Reunião', csrf: cs } })).json();
+  expect(a.ok, JSON.stringify(a)).toBe(true);
+  const soa = a.sgsi.documentos.find((d) => d.id === 'soa');
+  expect(soa.estado).toBe('aprovado');
+  expect(soa.aprovacao.hash).toBe(soa.hash);
+  expect((await sadm.post(API + 'conformidade', { data: { accao: 'aprovar_documento', doc: 'soa', csrf: cs } })).status()).toBe(409);
+});

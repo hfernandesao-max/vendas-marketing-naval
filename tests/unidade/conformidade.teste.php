@@ -131,6 +131,7 @@ teste('ensaio: NIF, telefones, e-mails e moradas mascarados; e-mails dos adminis
 
 teste('suporte: abrir, prazo pela prioridade, comentar; só quem abriu avalia; validações', function () {
     @unlink(naval_sup_ficheiro());
+    @unlink(naval_pasta('suporte') . '/contador.json');
     $eu = ['login' => 'ana', 'nome' => 'Ana'];
     $p = naval_sup_criar($eu, ['tipo' => 'incidente', 'prioridade' => 'P2', 'titulo' => 'Telemóvel não sincroniza', 'descricao' => 'Rota 1005']);
     igual('SUP-000001', $p['id']);
@@ -147,4 +148,68 @@ teste('suporte: abrir, prazo pela prioridade, comentar; só quem abriu avalia; v
     $v = naval_sup_vista($eu, time());
     igual(2, $v['indicadores']['abertos']);
     igual(0, count(naval_sup_vista(['login' => 'bruno'], time())['pedidos']), 'cada um vê os seus');
+});
+
+teste('SGSI: 93 controlos da ISO/IEC 27002:2022 (37/8/14/34), tudo bilingue, riscos e RoPA ligados a controlos e prazos', function () {
+    naval_servico('sgsi');
+    $d = naval_sgsi_dados();
+    igual(93, count($d['controlos']));
+    igual(['5' => 37, '6' => 8, '7' => 14, '8' => 34], array_count_values(array_column($d['controlos'], 'tema')));
+    igual(93, count(array_unique(array_column($d['controlos'], 'id'))));
+    $ids = array_column($d['controlos'], 'id');
+    foreach ($d['controlos'] as $c) {
+        verdade($c['nome']['pt'] !== '' && $c['nome']['en'] !== '', $c['id']);
+        verdade(in_array($c['estado'], ['implementado', 'parcial', 'planeado', 'nao_aplicavel'], true), $c['id']);
+        foreach ($c['evidencias'] as $e) verdade(isset($d['evidencias'][$e]), $c['id'] . ' ' . $e);
+        verdade(isset($d['responsaveis'][$c['responsavel']]), $c['id']);
+        // o que não está implementado tem de dizer porquê ou o que falta
+        if ($c['estado'] !== 'implementado') verdade($c['nota']['pt'] !== '' && $c['nota']['en'] !== '', 'nota em ' . $c['id']);
+    }
+    foreach ($d['riscos'] as $r) {
+        foreach ($r['controlos'] as $c) verdade(in_array($c, $ids, true), $r['id'] . ' → ' . $c);
+        verdade(naval_sgsi_nivel($r, true) <= naval_sgsi_nivel($r), 'o residual não é maior: ' . $r['id']);
+        if ($r['tratamento'] === 'aceitar') verdade($r['nota']['pt'] !== '', 'risco aceite justificado: ' . $r['id']);
+    }
+    foreach ($d['ropa'] as $t) {
+        if ($t['regra'] !== null) verdade(isset(NAVAL_RETENCAO[$t['regra']]), $t['id']);
+        foreach ($t['medidas'] as $c) verdade(in_array($c, $ids, true), $t['id'] . ' → ' . $c);
+    }
+    verdade(is_file(naval_sgsi_manual_ficheiro()), 'manual no repositório');
+});
+
+teste('SGSI: aprovar uma versão regista o resumo; repetir dá 409; conteúdo mudado volta a «alterado»', function () {
+    naval_servico('sgsi');
+    @unlink(naval_sgsi_aprovacoes_ficheiro());
+    $estado = function ($id) { return array_column(naval_sgsi_documentos(), 'estado', 'id')[$id]; };
+    igual('por_aprovar', $estado('soa'));
+    $a = naval_sgsi_aprovar('soa', ['login' => 'henrique', 'nome' => 'Henrique'], 'reunião');
+    igual(naval_sgsi_hash('soa'), $a['hash']);
+    igual('aprovado', $estado('soa'));
+    lanca(409, function () { naval_sgsi_aprovar('soa', ['login' => 'henrique'], ''); });
+    lanca(400, function () { naval_sgsi_aprovar('nada', ['login' => 'henrique'], ''); });
+    // outra versão do documento (resumo diferente) → alterado, até nova aprovação
+    $todas = naval_json_ler(naval_sgsi_aprovacoes_ficheiro());
+    $todas[0]['hash'] = str_repeat('0', 64);
+    naval_json_gravar(naval_sgsi_aprovacoes_ficheiro(), $todas);
+    igual('alterado', $estado('soa'));
+    igual(64, strlen(naval_sgsi_hash('manual')));
+    $v = naval_sgsi_vista();
+    igual(6, count($v['objectivos']));
+    verdade(array_key_exists('valor', $v['objectivos'][0]) && isset($v['riscos'][0]['nivel_residual']), 'medições e níveis');
+});
+
+teste('não conformidade: tipo aceite; o número não recua depois de a retenção apagar pedidos antigos', function () {
+    $eu = ['login' => 'ana', 'nome' => 'Ana'];
+    $p = naval_sup_criar($eu, ['tipo' => 'nao_conformidade', 'prioridade' => 'P3', 'titulo' => 'Revisão de acessos do T3 fora do prazo']);
+    igual('nao_conformidade', $p['tipo']);
+    igual('', $p['correctiva']);
+    // retenção do suporte: um pedido fechado há mais de 3 anos sai; o próximo número continua
+    $todos = naval_sup_todos();
+    $todos[$p['id']]['estado'] = 'fechado';
+    $todos[$p['id']]['fechado_em'] = date('Y-m-d H:i:s', time() - 1200 * 86400);
+    naval_json_gravar(naval_sup_ficheiro(), $todos);
+    naval_sup_fechar_antigos(time());
+    verdade(!isset(naval_sup_todos()[$p['id']]), 'apagado');
+    $q = naval_sup_criar($eu, ['tipo' => 'pedido', 'prioridade' => 'P4', 'titulo' => 'Outro pedido']);
+    verdade((int) substr($q['id'], 4) > (int) substr($p['id'], 4), $q['id'] . ' depois de ' . $p['id']);
 });

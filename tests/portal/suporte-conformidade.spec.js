@@ -1,5 +1,6 @@
 // Páginas Suporte e Conformidade com o servidor simulado.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { abrir } from './dados.js';
 
 const P = (id, estado, extra) => ({
@@ -116,5 +117,84 @@ test('conformidade: estado dos controlos, avisos do que falta configurar e confi
   await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();
   await expect.poll(() => confirmado).toMatchObject({ accao: 'confirmar_revisao', trimestre: '2026-T4', notas: 'revisto com a Direcção' });
   await expect(page.locator('.tile').filter({ hasText: 'Revisão de acessos 2026-T4' }).locator('.v')).toHaveText('Confirmada');
+  expect(erros).toEqual([]);
+});
+
+test('conformidade › SGSI: documentos com aprovação, objectivos medidos, 93 controlos, riscos e RoPA', async ({ page }) => {
+  const d = JSON.parse(readFileSync('nucleo/conformidade/sgsi.json', 'utf8'));
+  const docs = ['ambito', 'manual', 'objectivos', 'soa', 'riscos', 'ropa', 'auditoria'];
+  const nomes = {
+    ambito: 'Âmbito do SGSI',
+    manual: 'Manual do SGSI: política e procedimentos',
+    objectivos: 'Objectivos de segurança',
+    soa: 'Declaração de aplicabilidade',
+    riscos: 'Registo de riscos e plano de tratamento',
+    ropa: 'Registo das actividades de tratamento',
+    auditoria: 'Programa de auditoria e revisão pela direcção',
+  };
+  const sgsi = (aprovado) => ({
+    versao: d.versao,
+    data: d.data,
+    ambito: d.ambito,
+    normas: d.normas,
+    documentos: docs.map((id) => ({
+      id,
+      nome: nomes[id],
+      hash: 'a'.repeat(64),
+      estado: aprovado.includes(id) ? 'aprovado' : 'por_aprovar',
+      aprovacao: aprovado.includes(id) ? { em: '2026-11-09 10:00:00', nome: 'Henrique', hash: 'a'.repeat(64) } : null,
+    })),
+    objectivos: d.objectivos.map((o, i) => ({ ...o, valor: i === 3 ? null : 100, cumpre: i === 3 ? null : true })),
+    controlos: d.controlos,
+    evidencias: d.evidencias,
+    temas: d.temas,
+    responsaveis: d.responsaveis,
+    resumo_controlos: { total: 93, por_estado: { implementado: 49, parcial: 37, planeado: 6, nao_aplicavel: 1 } },
+    riscos: d.riscos.map((r) => {
+      const n = r.residual.probabilidade * r.residual.impacto;
+      return { ...r, nivel: r.probabilidade * r.impacto, nivel_residual: n, aceitavel: n <= 6 };
+    }),
+    risco_aceitavel: 6,
+    ropa: d.ropa,
+    auditoria: d.auditoria,
+    nao_conformidades: { abertas: 1, total: 2 },
+  });
+  const base = {
+    ok: true,
+    pode_confirmar: true,
+    revisao_actual: '2026-T4',
+    cifra: true,
+    copia_externa: true,
+    registos_externos: true,
+    contas_dias: 90,
+    estado: {},
+    revisoes: [],
+    copias: [],
+    retencao: [],
+    sgsi: sgsi([]),
+  };
+  let pedido = null;
+  await page.route('**/v1/conformidade**', (r) => {
+    if (r.request().method() === 'POST') {
+      pedido = r.request().postDataJSON();
+      return r.fulfill({ json: { ...base, sgsi: sgsi(['soa']) } });
+    }
+    return r.fulfill({ json: base });
+  });
+  const erros = await abrir(page, '#conformidade');
+  await expect(page.locator('.tile').filter({ hasText: 'Documentos do SGSI aprovados' }).locator('.v')).toHaveText('0 / 7');
+  await expect(page.locator('.tile').filter({ hasText: 'Controlos implementados' }).locator('.v')).toHaveText('49 / 92');
+  await expect(page.locator('#s-conf-soa')).toContainText('A mostrar 20 de 93');
+  await expect(page.locator('#s-conf-riscos tbody tr')).toHaveCount(d.riscos.length);
+  await expect(page.locator('#s-conf-ropa tbody tr')).toHaveCount(d.ropa.length);
+  await expect(page.locator('#s-conf-objectivos')).toContainText('Sem dados');
+  await page.evaluate(() => {
+    location.hash = '#conformidade/conf-docs';
+  });
+  await page.locator('#s-conf-docs tr', { hasText: 'Declaração de aplicabilidade' }).locator('button', { hasText: 'Aprovar' }).click();
+  await page.locator('dialog.dlg input').fill('Reunião da Administração');
+  await page.locator('dialog.dlg button', { hasText: 'Aprovar' }).click();
+  await expect.poll(() => pedido).toMatchObject({ accao: 'aprovar_documento', doc: 'soa', notas: 'Reunião da Administração' });
+  await expect(page.locator('.tile').filter({ hasText: 'Documentos do SGSI aprovados' }).locator('.v')).toHaveText('1 / 7');
   expect(erros).toEqual([]);
 });

@@ -209,7 +209,8 @@ export function tabela(o) {
       : o.rows;
   function body() {
     const rows = filtradas();
-    const col = o.cols.find((c) => c.key === ord.key) || o.cols[0];
+    // o.sort pode ser um campo sem coluna (ex.: «ordem» do documento): ordena pelo valor da linha
+    const col = o.cols.find((c) => c.key === ord.key) || (ord.key === o.sort ? { key: o.sort } : o.cols[0]);
     const sorted = [...rows].sort((a, b2) => {
       const x = val(a, col),
         y = val(b2, col);

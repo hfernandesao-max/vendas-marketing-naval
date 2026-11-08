@@ -2,6 +2,22 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 09-11-2026
+
+### Sistema de gestão da segurança da informação (ISO/IEC 27001) completo
+
+- **Declaração de aplicabilidade** com os 93 controlos da ISO/IEC 27002:2022 (37 organizacionais, 8 de pessoas, 14
+  físicos, 34 tecnológicos): se se aplicam, estado, evidência, responsável e o que falta.
+- **Registo de riscos e plano de tratamento** (probabilidade × impacto, aceitável até 6), incluindo a falta de
+  segregação de funções com uma só pessoa a desenvolver, aceite com controlos compensatórios.
+- **Registo das actividades de tratamento (RoPA)** para a Lei n.º 22/11 e a ISO/IEC 27701.
+- **Objectivos de segurança medidos pelo próprio portal**, programa de auditoria interna e revisão pela direcção.
+- **Manual do SGSI** (SGSI-MAN-01, PT e EN): política de segurança e os procedimentos de acessos, incidentes, cópias e
+  continuidade, desenvolvimento seguro, fornecedores, utilização aceitável, dados pessoais e não conformidades.
+- **Aprovação de cada documento pelo super administrador**, com o resumo SHA-256 da versão aprovada.
+- **Não conformidades** no Suporte: só se resolvem com a causa e a acção correctiva. Pedidos fechados há mais de 3 anos
+  são apagados.
+
 ## 08-11-2026
 
 ### Conformidade com as normas ISO, suporte e incidentes

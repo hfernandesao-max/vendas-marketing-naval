@@ -900,3 +900,18 @@ p.aviso {
   font-size: 13px;
   margin: 4px 0 8px;
 }
+.conf-hash {
+  font:
+    12px/1.4 ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+  color: var(--muted);
+  word-break: break-all;
+  margin: 0 0 8px;
+}
+.conf-ambito {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}

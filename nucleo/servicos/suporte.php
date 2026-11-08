@@ -3,7 +3,8 @@
  * Suporte e incidentes (ISO/IEC 20000-1 e ITIL; incidentes de segurança pela ISO/IEC 27035).
  *
  * Qualquer pessoa com acesso abre um pedido; quem tem «G» na matriz (administrador da plataforma) gere todos.
- *   tipos       pedido (serviço) · incidente (algo não funciona) · seguranca (incidente de segurança) · melhoria
+ *   tipos       pedido (serviço) · incidente (algo não funciona) · seguranca (incidente de segurança) · melhoria ·
+ *               nao_conformidade (ISO/IEC 27001, cláusula 10.2: a resolução exige a causa e a acção correctiva)
  *   prioridade  P1 crítica 4 h · P2 alta 8 h · P3 média 24 h · P4 baixa 72 h (prazo de resolução, horas seguidas)
  *   estados     novo → em_curso → resolvido → fechado (o pedido avalia de 1 a 5; sem avaliação, fecha ao fim de 7 dias)
  *               resolvido → em_curso (reaberto pelo pedido)
@@ -14,7 +15,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 
-const NAVAL_SUP_TIPOS = ['pedido' => 'Pedido de serviço', 'incidente' => 'Incidente', 'seguranca' => 'Incidente de segurança', 'melhoria' => 'Sugestão de melhoria'];
+const NAVAL_SUP_TIPOS = ['pedido' => 'Pedido de serviço', 'incidente' => 'Incidente', 'seguranca' => 'Incidente de segurança', 'melhoria' => 'Sugestão de melhoria', 'nao_conformidade' => 'Não conformidade'];
 const NAVAL_SUP_PRIORIDADES = ['P1' => 4, 'P2' => 8, 'P3' => 24, 'P4' => 72];
 const NAVAL_SUP_ESTADOS = ['novo', 'em_curso', 'resolvido', 'fechado'];
 
@@ -67,13 +68,15 @@ function naval_sup_criar(array $eu, array $d): array
     if (mb_strlen($desc) > 5000) throw new NavalErro('A descrição tem no máximo 5000 caracteres.', 400);
     $p = naval_exclusivo('suporte', function () use ($eu, $tipo, $prio, $titulo, $desc, $d) {
         $todos = naval_sup_todos();
-        $n = 1 + max(array_merge([0], array_map(function ($x) { return (int) substr($x, 4); }, array_keys($todos))));
+        $cont = naval_pasta('suporte') . '/contador.json';
+        $n = 1 + max(array_merge([0, (int) (naval_json_ler($cont)['ultimo'] ?? 0)], array_map(function ($x) { return (int) substr($x, 4); }, array_keys($todos))));
+        naval_json_gravar($cont, ['ultimo' => $n]);
         $id = 'SUP-' . str_pad((string) $n, 6, '0', STR_PAD_LEFT);
         $agora = date('Y-m-d H:i:s');
         $p = ['id' => $id, 'tipo' => $tipo, 'prioridade' => $prio, 'titulo' => $titulo, 'descricao' => $desc, 'estado' => 'novo',
             'criado_por' => (string) $eu['login'], 'criado_nome' => (string) ($eu['nome'] ?? $eu['login']), 'criado_em' => $agora,
             'prazo' => naval_sup_prazo($agora, $prio), 'atribuido' => '', 'dados_pessoais' => !empty($d['dados_pessoais']),
-            'resolucao' => '', 'causa' => '', 'licoes' => '', 'resolvido_em' => null, 'fechado_em' => null, 'satisfacao' => null,
+            'resolucao' => '', 'causa' => '', 'licoes' => '', 'correctiva' => '', 'resolvido_em' => null, 'fechado_em' => null, 'satisfacao' => null,
             'historico' => [['em' => $agora, 'por' => (string) $eu['login'], 'accao' => 'criado', 'texto' => '']]];
         $todos[$id] = $p;
         naval_json_gravar(naval_sup_ficheiro(), $todos);
@@ -129,6 +132,9 @@ function naval_sup_accao(array $eu, string $id, string $accao, array $d): array
                 $causa = trim((string) ($d['causa'] ?? ''));
                 $licoes = trim((string) ($d['licoes'] ?? ''));
                 if ($grave && ($causa === '' || $licoes === '')) throw new NavalErro('Num incidente grave ou de segurança, indique a causa e as lições aprendidas.', 400);
+                $correctiva = trim((string) ($d['correctiva'] ?? ''));
+                if ($p['tipo'] === 'nao_conformidade' && ($causa === '' || $correctiva === '')) throw new NavalErro('Numa não conformidade, indique a causa e a acção correctiva.', 400);
+                $p['correctiva'] = mb_substr($correctiva, 0, 2000);
                 $p['estado'] = 'resolvido';
                 $p['resolucao'] = $texto;
                 $p['causa'] = mb_substr($causa, 0, 2000);
@@ -164,7 +170,8 @@ function naval_sup_accao(array $eu, string $id, string $accao, array $d): array
     return $p;
 }
 
-/** Fecha os pedidos resolvidos há mais de 7 dias sem avaliação (rotina periódica). */
+/** Fecha os pedidos resolvidos há mais de 7 dias sem avaliação e apaga os fechados há mais de RETENCAO_SUPORTE_DIAS
+ *  (3 anos por omissão; ISO/IEC 27701). O contador dos números não recua. Rotina periódica. */
 function naval_sup_fechar_antigos(int $agora): int
 {
     return naval_exclusivo('suporte', function () use ($agora) {
@@ -175,6 +182,13 @@ function naval_sup_fechar_antigos(int $agora): int
                 $todos[$id]['estado'] = 'fechado';
                 $todos[$id]['fechado_em'] = date('Y-m-d H:i:s', $agora);
                 $todos[$id]['historico'][] = ['em' => date('Y-m-d H:i:s', $agora), 'por' => 'automatico', 'accao' => 'fechado', 'texto' => 'Sem avaliação em 7 dias.'];
+                $n++;
+            }
+        }
+        $limite = $agora - max(365, (int) naval_config('RETENCAO_SUPORTE_DIAS', '1095')) * 86400;
+        foreach ($todos as $id => $p) {
+            if ($p['estado'] === 'fechado' && $p['fechado_em'] && strtotime($p['fechado_em']) < $limite) {
+                unset($todos[$id]);
                 $n++;
             }
         }

@@ -1,4 +1,5 @@
-// Administração › Suporte (ISO/IEC 20000-1 e ITIL; incidentes de segurança pela ISO/IEC 27035): cada pessoa abre e
+// Administração › Suporte (ISO/IEC 20000-1 e ITIL; incidentes de segurança pela ISO/IEC 27035; não conformidades pela
+// ISO/IEC 27001, 10.2, com causa e acção correctiva obrigatórias): cada pessoa abre e
 // segue os seus pedidos; o administrador da plataforma gere todos. Prioridade com prazo de resolução, histórico,
 // causa e lições aprendidas nos incidentes graves e avaliação de 1 a 5 no fim. Servidor: nucleo/api/v1/suporte.php.
 import { apiJson } from '../api.js';
@@ -111,6 +112,7 @@ function abrirPedido(p) {
     if (p.resolucao) b.append(el('p', 'sup-res', t('Resolução') + ': ' + p.resolucao));
     if (p.causa) b.append(el('p', 'sup-res', t('Causa') + ': ' + p.causa));
     if (p.licoes) b.append(el('p', 'sup-res', t('Lições aprendidas') + ': ' + p.licoes));
+    if (p.correctiva) b.append(el('p', 'sup-res', t('Acção correctiva') + ': ' + p.correctiva));
     const h = el('ol', 'sup-hist');
     p.historico.forEach((x) => h.append(el('li', null, dh(x.em) + ' · ' + x.por + ' · ' + t(ACCOES[x.accao] || x.accao) + (x.texto ? ': ' + x.texto : ''))));
     b.append(el('h3', null, t('Histórico')), h);
@@ -128,9 +130,18 @@ function abrirPedido(p) {
       const grave = p.tipo === 'seguranca' || (p.tipo === 'incidente' && (p.prioridade === 'P1' || p.prioridade === 'P2'));
       const causa = entrada('text', '', { maxLength: 2000 });
       const licoes = entrada('text', '', { maxLength: 2000 });
+      const correctiva = entrada('text', '', { maxLength: 2000 });
       if (grave) b.append(campo(t('Causa'), causa), campo(t('Lições aprendidas'), licoes));
+      if (p.tipo === 'nao_conformidade') b.append(campo(t('Causa'), causa), campo(t('Acção correctiva'), correctiva));
       ft.append(
-        botao(t('Resolver'), '', () => enviar(corpo('resolver', { causa: causa.value.trim(), licoes: licoes.value.trim() }), erro, fechar, '{id} resolvido.')),
+        botao(t('Resolver'), '', () =>
+          enviar(
+            corpo('resolver', { causa: causa.value.trim(), licoes: licoes.value.trim(), correctiva: correctiva.value.trim() }),
+            erro,
+            fechar,
+            '{id} resolvido.',
+          ),
+        ),
       );
     }
     if (p.estado === 'resolvido' && p.criado_por === SUP.eu) {

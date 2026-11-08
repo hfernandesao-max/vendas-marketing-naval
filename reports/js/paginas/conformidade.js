@@ -2,12 +2,14 @@
 // 27002, ISO/IEC 27701, ISO 22301, ISO 15489, Lei n.º 22/11): registos invioláveis, contas sem uso, revisão
 // trimestral de acessos, cópia diária cifrada com teste de recuperação e prazos de retenção. Para o administrador da
 // plataforma e a auditoria; confirmar a revisão de acessos só o super administrador. Servidor: nucleo/api/v1/conformidade.php.
+// Também o SGSI (ISO/IEC 27001): âmbito, objectivos medidos, declaração de aplicabilidade (93 controlos), riscos, RoPA,
+// programa de auditoria e a aprovação de cada documento pelo super administrador (nucleo/servicos/sgsi.php).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { n0 } from '../formatos.js';
-import { t } from '../i18n/i18n.js';
+import { LANG, t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
@@ -19,6 +21,18 @@ const dh = (s) => {
   const x = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/.exec(String(s || ''));
   return x ? `${x[3]}-${x[2]}-${x[1]}` + (x[4] ? ` ${x[4]}:${x[5]}` : '') : '—';
 };
+/** Texto bilingue dos dados do SGSI ({pt, en}); em tigrínia mostra o inglês. */
+const L = (o) => (o && (o[LANG] || o.en || o.pt)) || '';
+const EST_CTL = {
+  implementado: ['Implementado', 'p-ok'],
+  parcial: ['Parcial', 'p-warn'],
+  planeado: ['Planeado', 'p-serio'],
+  nao_aplicavel: ['Não aplicável', 'p-mut'],
+};
+const EST_DOC = { aprovado: ['Aprovado', 'p-ok'], alterado: ['Alterado, por aprovar', 'p-warn'], por_aprovar: ['Por aprovar', 'p-serio'] };
+/** Mantém a ordem do documento (as tabelas ordenam pela primeira coluna por omissão). */
+const ordem = (rows) => rows.map((r, i) => ({ ...r, ordem: i }));
+const TRAT = { reduzir: 'Reduzir', aceitar: 'Aceitar', transferir: 'Transferir', evitar: 'Evitar' };
 const mb = (b) => (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
 
 function ler(verificar) {
@@ -34,6 +48,181 @@ function ler(verificar) {
         6000,
       );
   });
+}
+
+function aprovar(doc) {
+  janela(t('Aprovar: {d}', { d: t(doc.nome) }), t('Aprova esta versão do documento. Fica registado o resumo SHA-256, quem e quando.'), (b, ft, fechar) => {
+    const notas = entrada('text', '', { maxLength: 1000, placeholder: t('Ex.: aprovado em reunião da Administração') });
+    const erro = msgErro();
+    b.append(el('p', 'conf-hash', 'SHA-256 ' + doc.hash), campo(t('Notas'), notas), erro);
+    ft.append(botao(t('Cancelar'), 'ghost', fechar));
+    ft.append(
+      botao(t('Aprovar'), '', () =>
+        postJson('conformidade', { accao: 'aprovar_documento', doc: doc.id, notas: notas.value.trim() }).then((d) => {
+          if (!d || !d.ok) {
+            erro.textContent = t((d && d.erro) || 'Sem resposta do servidor.');
+            erro.hidden = false;
+            return;
+          }
+          CF = d;
+          fechar();
+          toast(t('Documento aprovado.'), 4000);
+          draw();
+        }),
+      ),
+    );
+  });
+}
+
+/** O sistema de gestão (ISO/IEC 27001): documentos aprovados, objectivos, aplicabilidade, riscos, RoPA e auditoria. */
+function sgsi(pg) {
+  const S = CF.sgsi;
+  if (!S) return;
+  const pe = S.resumo_controlos.por_estado;
+  const docsOk = S.documentos.filter((d) => d.estado === 'aprovado').length;
+  pg.append(
+    tiles([
+      { l: t('Documentos do SGSI aprovados'), v: n0(docsOk) + ' / ' + n0(S.documentos.length), tone: docsOk < S.documentos.length ? 'warn' : null },
+      {
+        l: t('Controlos implementados'),
+        v: n0(pe.implementado || 0) + ' / ' + n0(S.resumo_controlos.total - (pe.nao_aplicavel || 0)),
+        s: t('parciais: {p} · planeados: {q}', { p: n0(pe.parcial || 0), q: n0(pe.planeado || 0) }),
+      },
+      {
+        l: t('Riscos acima do aceitável'),
+        v: n0(S.riscos.filter((r) => !r.aceitavel).length),
+        s: t('residual até {n}', { n: S.risco_aceitavel }),
+        tone: S.riscos.some((r) => !r.aceitavel) ? 'warn' : null,
+      },
+      { l: t('Não conformidades abertas'), v: n0(S.nao_conformidades.abertas), s: t('{n} no total', { n: n0(S.nao_conformidades.total) }) },
+    ]),
+  );
+  pg.append(secBox(t('Âmbito do SGSI'), t('Versão {v} · {d}', { v: S.versao, d: dh(S.data) }), el('p', 'conf-ambito', L(S.ambito))));
+  pg.append(
+    tabela({
+      id: 'conf-docs',
+      titulo: t('Documentos do SGSI'),
+      nota: t('Cada versão é aprovada pelo super administrador; se o conteúdo mudar, volta a «por aprovar».'),
+      search: false,
+      rows: ordem(S.documentos),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'nome', label: t('Documento'), p: 0, get: (r) => t(r.nome) },
+        { key: 'estado', label: t('Estado'), render: (v) => pill(t((EST_DOC[v] || [v])[0]), (EST_DOC[v] || [0, 'p-mut'])[1]) },
+        {
+          key: 'aprovacao',
+          label: t('Aprovação'),
+          get: (r) => (r.aprovacao ? dh(r.aprovacao.em) + ' · ' + r.aprovacao.nome : '—'),
+        },
+        {
+          key: 'id',
+          label: '',
+          p: 0,
+          render: (v, r) => (CF.pode_confirmar && r.estado !== 'aprovado' ? botao(t('Aprovar'), 'ghost sm', () => aprovar(r)) : document.createTextNode('')),
+        },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'conf-objectivos',
+      titulo: t('Objectivos de segurança'),
+      nota: t('Medidos pelo próprio portal (ISO/IEC 27001, 6.2 e 9.1).'),
+      search: false,
+      rows: ordem(S.objectivos),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'texto', label: t('Objectivo'), p: 0, wrap: true, get: (r) => L(r.texto) },
+        { key: 'meta', label: t('Meta'), get: (r) => r.meta + '%' },
+        { key: 'valor', label: t('Resultado'), get: (r) => (r.valor == null ? '—' : r.valor + '%') },
+        {
+          key: 'cumpre',
+          label: t('Estado'),
+          render: (v) => (v == null ? pill(t('Sem dados'), 'p-mut') : pill(t(v ? 'Cumpre' : 'Não cumpre'), v ? 'p-ok' : 'p-bad')),
+        },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'conf-soa',
+      titulo: t('Declaração de aplicabilidade (ISO/IEC 27002:2022)'),
+      nota: t('Os 93 controlos: se se aplicam, estado, evidência e responsável.'),
+      rows: ordem(S.controlos),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'id', label: t('Controlo'), p: 0 },
+        { key: 'nome', label: t('Nome'), wrap: true, get: (r) => L(r.nome) },
+        { key: 'tema', label: t('Tema'), get: (r) => L(S.temas[r.tema]) },
+        { key: 'estado', label: t('Estado'), render: (v) => pill(t((EST_CTL[v] || [v])[0]), (EST_CTL[v] || [0, 'p-mut'])[1]) },
+        { key: 'evidencias', label: t('Evidência'), wrap: true, get: (r) => r.evidencias.map((e) => L(S.evidencias[e])).join(' · ') || '—' },
+        { key: 'nota', label: t('Acção ou justificação'), wrap: true, get: (r) => L(r.nota) || '—' },
+        { key: 'responsavel', label: t('Responsável'), get: (r) => L(S.responsaveis[r.responsavel]) },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'conf-riscos',
+      titulo: t('Registo de riscos e plano de tratamento'),
+      nota: t('Nível = probabilidade × impacto (1 a 25); aceitável até {n}.', { n: S.risco_aceitavel }),
+      rows: S.riscos,
+      sort: 'nivel',
+      dir: -1,
+      cols: [
+        { key: 'id', label: t('Risco'), p: 0 },
+        { key: 'ameaca', label: t('Ameaça'), wrap: true, get: (r) => L(r.ameaca) },
+        { key: 'nivel', label: t('Nível'), type: 'n' },
+        { key: 'tratamento', label: t('Tratamento'), get: (r) => t(TRAT[r.tratamento] || r.tratamento) },
+        { key: 'controlos', label: t('Controlos'), get: (r) => r.controlos.join(', ') },
+        {
+          key: 'nivel_residual',
+          label: t('Residual'),
+          type: 'n',
+          render: (v, r) => pill(String(v), r.aceitavel ? 'p-ok' : 'p-warn'),
+        },
+        { key: 'nota', label: t('Acção ou justificação'), wrap: true, get: (r) => L(r.nota) || '—' },
+        { key: 'dono', label: t('Responsável'), get: (r) => L(S.responsaveis[r.dono]) },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'conf-ropa',
+      titulo: t('Registo das actividades de tratamento (RoPA)'),
+      nota: t('Dados pessoais tratados pela plataforma (ISO/IEC 27701, Lei n.º 22/11).'),
+      search: false,
+      rows: ordem(S.ropa),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'tratamento', label: t('Tratamento'), p: 0, wrap: true, get: (r) => L(r.tratamento) },
+        { key: 'finalidade', label: t('Finalidade'), wrap: true, get: (r) => L(r.finalidade) },
+        { key: 'base_legal', label: t('Base legal'), wrap: true, get: (r) => L(r.base_legal) },
+        { key: 'titulares', label: t('Titulares'), wrap: true, get: (r) => L(r.titulares) },
+        { key: 'dados', label: t('Dados'), wrap: true, get: (r) => L(r.dados) },
+        { key: 'destinatarios', label: t('Destinatários'), wrap: true, get: (r) => L(r.destinatarios) },
+        { key: 'prazo', label: t('Prazo de conservação'), wrap: true, get: (r) => L(r.prazo) },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'conf-auditoria',
+      titulo: t('Programa de auditoria interna e revisão pela direcção'),
+      search: false,
+      rows: ordem(S.auditoria),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'quando', label: t('Mês'), p: 0, get: (r) => r.quando.slice(5) + '-' + r.quando.slice(0, 4) },
+        { key: 'ambito', label: t('Âmbito'), wrap: true, get: (r) => L(r.ambito) },
+      ],
+    }),
+  );
 }
 
 function confirmar(tri) {
@@ -116,6 +305,7 @@ R.conformidade = (pg) => {
   acc.append(botao(t('Verificar os registos agora'), 'ghost', () => ler(true)));
   if (CF.pode_confirmar && rev && !rev.confirmada) acc.append(botao(t('Confirmar a revisão de acessos'), '', () => confirmar(rev.trimestre)));
   pg.append(acc);
+  sgsi(pg);
   if ((e.problemas || []).length) {
     const ul = el('ul');
     e.problemas.forEach((x) => ul.append(el('li', null, x)));

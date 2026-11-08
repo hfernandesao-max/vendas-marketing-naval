@@ -23,6 +23,27 @@ acessos). A rotina corre todas as noites a partir de `CONFORMIDADE_HORA` (02:00)
 `COPIAS_CHAVE` (chave das cópias), `COPIAS_PASTA_EXTERNA` e `REGISTOS_COPIA_PASTA` (pasta fora do servidor). Sem
 elas, a página Conformidade mostra o que falta.
 
+## Sistema de gestão (informação documentada obrigatória da ISO/IEC 27001)
+
+Guardada no código, com versão, e mostrada em Administração › Conformidade:
+
+| Documento                                                         | Cláusula                     | Ficheiro                                                                 |
+| ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| Âmbito do SGSI                                                    | 4.3                          | `nucleo/conformidade/sgsi.json` (`ambito`)                               |
+| Manual do SGSI: política e 8 procedimentos (SGSI-MAN-01, PT e EN) | 5.2, anexo A                 | `nucleo/conformidade/manual-sgsi.html`                                   |
+| Objectivos de segurança, medidos pelo portal                      | 6.2, 9.1                     | `sgsi.json` (`objectivos`)                                               |
+| Declaração de aplicabilidade: 93 controlos da ISO/IEC 27002:2022  | 6.1.3 d)                     | `sgsi.json` (`controlos`)                                                |
+| Registo de riscos e plano de tratamento (P × I, aceitável até 6)  | 6.1.2, 6.1.3, 8.2, 8.3       | `sgsi.json` (`riscos`)                                                   |
+| Registo das actividades de tratamento (RoPA)                      | ISO/IEC 27701, Lei n.º 22/11 | `sgsi.json` (`ropa`)                                                     |
+| Programa de auditoria interna e revisão pela direcção             | 9.2, 9.3                     | `sgsi.json` (`auditoria`)                                                |
+| Não conformidades e acções correctivas                            | 10.2                         | Suporte, tipo «Não conformidade» (causa e acção correctiva obrigatórias) |
+
+Cada documento tem um resumo SHA-256 do conteúdo; o super administrador aprova cada versão e a aprovação fica com o
+resumo, quem e quando (`dados-privados/conformidade/aprovacoes.json`). Se o conteúdo mudar numa versão nova, volta a
+«por aprovar». Para alterar: editar `sgsi.json` (bilingue) e, no manual, a página e a versão do cabeçalho.
+
+Os pedidos de suporte fechados há mais de `RETENCAO_SUPORTE_DIAS` (3 anos) são apagados; a numeração não recua.
+
 ## Certificação
 
 Ordem proposta: ISO/IEC 27001 com a 27701; ISO 22301 e ISO/IEC 20000-1; ISO 9001; ISO/IEC 42001. Os documentos do
