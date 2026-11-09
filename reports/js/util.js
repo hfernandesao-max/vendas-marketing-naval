@@ -25,6 +25,9 @@ const ICON = {
   actualizar: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
   // selo de certificação (conformidade)
   selo: 'M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2zM8.5 12l2.5 2.5 4.5-5',
+  // moeda com seta para cima (valor do portal)
+  valor:
+    'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 14.5c0 1 1.1 1.8 2.5 1.8s2.5-.8 2.5-1.8-1.1-1.6-2.5-1.8-2.5-.8-2.5-1.8 1.1-1.8 2.5-1.8 2.5.8 2.5 1.8M12 6.5v1.2M12 16.3v1.2',
   // auscultadores (suporte)
   suporte: 'M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1zM17 20a4 4 0 0 1-4 2h-1',
   // peças de lego (módulos do portal)

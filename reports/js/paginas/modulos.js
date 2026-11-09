@@ -30,6 +30,7 @@ const MODULOS = {
   conformidade: () => import('./conformidade.js'),
   suporte: () => import('./suporte.js'),
   'painel-carrinha': () => import('./painel-carrinha.js'),
+  'valor-portal': () => import('./valor-portal.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -65,6 +66,7 @@ export const MODULO_DA_PAGINA = {
   modulos: 'admin-modulos',
   conformidade: 'conformidade',
   suporte: 'suporte',
+  'valor-portal': 'valor-portal',
   'painel-carrinha': 'painel-carrinha',
   'visitas-dia': 'carteira',
   'qualidade-dados': 'carteira',

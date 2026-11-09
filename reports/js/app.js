@@ -76,6 +76,7 @@ const SEM_PERIODO = [
   'clientes-qr',
   'visitas-dia',
   'qualidade-dados',
+  'valor-portal',
   'apresentacao',
   'geo-rotas',
   'geo-prospeccao',

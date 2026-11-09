@@ -869,7 +869,8 @@ p.aviso {
 }
 /* Suporte e Conformidade */
 .sup-barra,
-.conf-barra {
+.conf-barra,
+.valor-barra {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -914,4 +915,14 @@ p.aviso {
   margin: 0;
   text-align: justify;
   hyphens: auto;
+}
+.valor-barra select {
+  width: auto;
+}
+.valor-formula {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  text-align: justify;
 }

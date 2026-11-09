@@ -55,6 +55,7 @@ export const PAGES = [
   { id: 'assistente', grupo: 'Inteligência de negócio', icon: 'ia', nome: 'Assistente IA' },
   { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'qualidade-dados', grupo: 'Inteligência de negócio', icon: 'alvo', nome: 'Qualidade dos dados e anomalias' },
+  { id: 'valor-portal', grupo: 'Inteligência de negócio', icon: 'valor', nome: 'Valor do portal' },
   { id: 'apresentacao', grupo: 'Inteligência de negócio', icon: 'slides', nome: 'Apresentação do portal' },
   // Sistema: smartphones e impressoras, interfaces com outros sistemas e administração (segregação de funções)
   { id: 'equipamentos', grupo: 'Equipamentos', icon: 'phone', nome: 'Equipamentos' },
@@ -97,6 +98,7 @@ export const NOMES_RECURSO = {
   modulos: 'Módulos do portal (ligar, piloto, desligar; só o super administrador)',
   conformidade: 'Conformidade (prova dos controlos ISO; confirmar a revisão de acessos só o super administrador)',
   suporte: 'Suporte e incidentes (V: os seus pedidos; G: gerir todos)',
+  'valor-portal': 'Valor do portal (V: ver o cálculo; G: alterar os parâmetros)',
   'admin-utilizadores': 'Utilizadores e perfis',
   'admin-config': 'Configuração e ligações',
   registos: 'Registos de acesso e exportações',

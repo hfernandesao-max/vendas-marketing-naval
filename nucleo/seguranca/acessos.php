@@ -77,6 +77,8 @@ const NAVAL_MATRIZ_TXT = [
     'painel-gestao'        => 'V  V  V  Vr -  V  -  -  -  V  V',
     'alertas'              => 'V  V  V  Vr -  V  -  -  -  V  V',
     'previsao'             => 'V  V  V  Vr -  -  -  -  -  V  V',
+    // valor do portal para a Naval: Direcção gere os parâmetros (G); administrador da plataforma, Financeiro e auditoria vêem
+    'valor-portal'         => 'V  G  -  -  -  V  -  -  -  V  -',
     'assistente'           => '-  V  -  -  -  -  -  -  -  -  -',
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
     'fecho-dia'            => '-  V  V  V  -  V  -  -  -  V  -',
@@ -184,6 +186,7 @@ function naval_niveis_recurso(string $rec): array
         case 'clientes-qr':
             return ['', 'G'];
         case 'suporte':
+        case 'valor-portal':
             return ['', 'V', 'G'];
         case 'pedidos-clientes':
         case 'conciliacao-carrinha':

@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 09-11-2026
 
+### Valor do portal para a Naval
+
+- Nova página **Inteligência de negócio › Valor do portal**: quanto o portal rende à Naval, mês a mês, com contagens
+  reais (rotas conciliadas e fechadas sozinhas, faltas de stock aprovadas, ficheiros SAP, relatórios exportados,
+  utilizadores e documentos anulados no Pinguim BO) e parâmetros definidos pela Direcção no portal (custo da hora,
+  minutos poupados, perda de referência, licença equivalente, reconstrução e câmbio). O que falta definir fica à vista
+  e não entra no total; os anulados são valor corrigido, mostrado à parte. Direcção altera (G), Informática,
+  Financeiro e auditoria vêem.
+
 ### Sistema de gestão da segurança da informação (ISO/IEC 27001) completo
 
 - **Declaração de aplicabilidade** com os 93 controlos da ISO/IEC 27002:2022 (37 organizacionais, 8 de pessoas, 14
