@@ -4069,16 +4069,24 @@ html .barra-sup .menu-btn {
 
 /* Tabelas com muitas linhas: o cabeçalho de cada tabela (título, nota, Procurar e Excel) e o nome das colunas ficam
    fixos no topo do ecrã enquanto se percorrem as linhas dessa tabela; ao passar à tabela seguinte, sai com ela.
-   No computador a tabela não tem deslocamento próprio (as colunas que não cabem saem por prioridade). */
+   No computador a tabela não tem deslocamento próprio (as colunas que não cabem saem por prioridade).
+   Em repouso o cabeçalho não tem fundo próprio (é a superfície do cartão); só quando fica preso no topo ganha a cor
+   do cartão e uma sombra suave, para que as linhas passem por baixo sem se lerem (classe «fixo», blocos.js). */
 @media (min-width: 961px) {
   .sec-tab > .sec-h {
     position: sticky;
     top: 0;
     z-index: 4;
+    /* sem margem por baixo: o espaço até às colunas faz parte do cabeçalho e também tapa as linhas ao descer */
     margin: 0 -18px;
-    padding: 12px 18px 10px;
-    background-color: var(--c-th-fixo);
+    padding: 12px 18px 16px;
     border-radius: 14px 14px 0 0;
+    transition:
+      background-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .sec.sec-tab > .sec-h {
+    margin-bottom: 0;
   }
   .sec-tab .tw {
     overflow-x: clip;
@@ -4088,8 +4096,19 @@ html .barra-sup .menu-btn {
     position: sticky;
     top: var(--cab-h, 70px);
     z-index: 3;
-    background-color: var(--c-th-fixo);
     box-shadow: 0 1px 0 var(--line2);
+  }
+  .sec-tab.fixo > .sec-h,
+  .sec-tab.fixo .tw > table > thead th {
+    background-color: var(--c-th-fixo);
+  }
+  .sec-tab.fixo > .sec-h {
+    border-radius: 0;
+  }
+  .sec-tab.fixo .tw > table > thead th {
+    box-shadow:
+      0 1px 0 var(--line2),
+      0 6px 12px -8px rgb(var(--sombra-rgb) / 0.35);
   }
 }
 @media print {
@@ -4184,4 +4203,10 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   font-size: 12.5px;
   color: var(--dim);
   text-align: justify;
+}
+
+/* marca invisível do início de cada tabela (deteta quando o cabeçalho fica preso no topo) */
+.sec-marca {
+  height: 0;
+  margin: 0;
 }

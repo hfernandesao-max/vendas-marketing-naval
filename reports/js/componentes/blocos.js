@@ -91,6 +91,15 @@ export function tabela(o) {
   // cabeçalho da tabela (título, nota, Procurar, Excel) e nomes das colunas fixos no topo ao descer muitas linhas
   sec.classList.add('sec-tab');
   if ('ResizeObserver' in window) new ResizeObserver(() => sec.style.setProperty('--cab-h', h.offsetHeight + 'px')).observe(h);
+  // «fixo» só enquanto o cabeçalho está preso no topo (a marca do início da tabela já passou para cima do ecrã)
+  if ('IntersectionObserver' in window) {
+    const marca = el('div', 'sec-marca');
+    marca.setAttribute('aria-hidden', 'true');
+    sec.prepend(marca);
+    new IntersectionObserver(([e]) =>
+      sec.classList.toggle('fixo', !e.isIntersecting && e.boundingClientRect.top < (e.rootBounds ? e.rootBounds.top : 0) + 1),
+    ).observe(marca);
+  }
   const more = el('div', 'more');
   more.hidden = true;
   sec.append(more);

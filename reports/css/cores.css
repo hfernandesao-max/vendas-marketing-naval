@@ -56,7 +56,7 @@
   --c-sair2: #ff6961;
   --c-rodape-t: #132654;
   --c-th-bg: #12224c;
-  --c-th-fixo: #0f1c40; /* cabeçalho fixo das tabelas: a cor do cartão, opaca */
+  --c-th-fixo: rgb(19 22 37); /* cabeçalho preso no topo: a cor do cartão, opaca (só ao descer) */
   --c-scroll: #2a3c6e;
   --c-prev: #4a5878;
   --c-prev2: #48484a;

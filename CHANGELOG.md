@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 09-11-2026
 
+### Tabelas com o aspecto das referências internacionais
+
+- O cabeçalho das tabelas deixa de ter a faixa azul: título, colunas e linhas ficam na mesma superfície do cartão,
+  separados só por uma linha (prática das tabelas de dados da Apple, do Material Design e do IBM Carbon). Nomes das
+  colunas em letra normal, mais legível do que em maiúsculas. Procurar e Excel ficam na mesma linha do título.
+- Ao descer numa tabela longa, o cabeçalho continua preso no topo e só então ganha a cor do cartão e uma sombra suave.
+
 ### Valor do portal para a Naval
 
 - Nova página **Inteligência de negócio › Valor do portal**: quanto o portal rende à Naval, mês a mês, com contagens
