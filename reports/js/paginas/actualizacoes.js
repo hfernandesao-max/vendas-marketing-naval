@@ -234,11 +234,19 @@ function cartaoPendente(v, maisRecente) {
   det.append(el('summary', null, inclui.length > 1 ? t('O que muda neste pacote') : t('O que muda nesta versão')));
   det.append(resumo(inclui.length > 1 ? { ...v, seccoes: v.pacote.seccoes } : v));
   c.append(det);
+  // ensaio (versão nova lado a lado no próprio portal): só se aprova a versão que passou nos testes de fumo do ensaio
+  const ens = ESTADO.ensaio;
+  const ensaioOk = !ens || (ens.versao === v.versao && ens.resultado === 'ok');
+  if (ens && maisRecente) c.append(blocoEnsaio(ens, v));
   const acc = el('div', 'act-accoes');
   if (!dec) {
+    const aprovar = botao(t('Aprovar'), '', () => decidir(v, 'aprovar', false));
+    const ja = botao(t('Aprovar e instalar já'), 'ghost', () => decidir(v, 'aprovar', true));
+    aprovar.disabled = ja.disabled = !ensaioOk;
+    if (!ensaioOk) aprovar.title = ja.title = t('Só se aprova depois de a versão passar no ensaio');
     acc.append(
-      botao(t('Aprovar'), '', () => decidir(v, 'aprovar', false)),
-      botao(t('Aprovar e instalar já'), 'ghost', () => decidir(v, 'aprovar', true)),
+      aprovar,
+      ja,
       botao(t('Reprovar'), 'ghost perigo', () => decidir(v, 'reprovar', false)),
     );
   } else {
@@ -389,6 +397,39 @@ R.actualizacoes = (pg) => {
     ),
   );
 };
+
+/** Estado da versão no ensaio e ligação para a abrir (só SADM e TI entram no ensaio). */
+function blocoEnsaio(ens, v) {
+  const b = el('div', 'act-ensaio');
+  b.setAttribute('role', 'status');
+  if (ens.versao !== v.versao) {
+    b.append(pill(t('A instalar no ensaio: fica pronta nos próximos 5 minutos'), 'p-serio'));
+    return b;
+  }
+  if (ens.resultado === 'ok') {
+    b.append(pill(t('No ensaio desde {d} · passou nos testes de fumo', { d: dataHora(ens.instalada_em) }), 'p-ok'));
+    const a = el('a', 'btn sm', t('Abrir a versão nova (ensaio)'));
+    a.href = ens.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    b.append(
+      a,
+      el(
+        'p',
+        'note',
+        t(
+          'Teste no ensaio o que muda nesta versão (lista em baixo). O ensaio usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.',
+        ),
+      ),
+    );
+  } else {
+    b.append(pill(t('Falhou nos testes de fumo do ensaio: não pode ser aprovada'), 'p-bad'));
+    const ul = el('ul');
+    (ens.falhas || []).forEach((f) => ul.append(el('li', null, f)));
+    b.append(ul);
+  }
+  return b;
+}
 
 /** Quadro do certificado HTTPS que expira mais cedo. */
 function certificadosTile(c) {

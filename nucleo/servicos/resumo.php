@@ -261,6 +261,14 @@ function naval_periodicas(?int $agora = null): array
             error_log('[conciliação carrinha] ' . $e->getMessage());
         }
     }
+    // conformidade (ISO 27001, 27701, 22301): registos, contas sem uso, revisão de acessos, cópia e recuperação, retenção
+    try {
+        naval_servico('conformidade');
+        $c = naval_conf_noite($agora);
+        if ($c !== null) $feito['conformidade'] = $c;
+    } catch (Throwable $e) {
+        error_log('[conformidade] ' . $e->getMessage());
+    }
     // base de dados da localização dos IP (país e cidade de cada entrada nos registos): instala e renova sozinha
     try {
         $g = naval_geoip_manter($agora);

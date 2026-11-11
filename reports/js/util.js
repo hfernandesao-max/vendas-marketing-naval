@@ -23,6 +23,17 @@ const ICON = {
   zona: 'M5 8l6-4 8 3 1 9-7 4-8-3zM5 8h.01M11 4h.01M19 7h.01M20 16h.01M13 20h.01M5 17h.01',
   menu: 'M4 4h16v16H4zM9 4v16',
   actualizar: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
+  // selo de certificação (conformidade)
+  selo: 'M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2zM8.5 12l2.5 2.5 4.5-5',
+  // moeda com seta para cima (valor do portal)
+  valor:
+    'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 14.5c0 1 1.1 1.8 2.5 1.8s2.5-.8 2.5-1.8-1.1-1.6-2.5-1.8-2.5-.8-2.5-1.8 1.1-1.8 2.5-1.8 2.5.8 2.5 1.8M12 6.5v1.2M12 16.3v1.2',
+  // auscultadores (suporte)
+  suporte: 'M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1zM17 20a4 4 0 0 1-4 2h-1',
+  // peças de lego (módulos do portal)
+  pecas: 'M4 10h6V4H4zM14 10h6V4h-6zM4 20h6v-6H4zM14 17h6M17 14v6',
+  // carrinha com marca de verificação (painel da carrinha: fecho de rota)
+  carrinhaok: 'M1 6h13v10H1zM14 10h4l3 3v3h-7M5.5 19a1.5 1.5 0 1 0 0-.01M17.5 19a1.5 1.5 0 1 0 0-.01M4.5 11l2 2 4-4',
   clip: 'M9 3h6v3H9zM9 4.5H6v16.5h12V4.5h-3M9 11h6M9 15h6M9 19h3',
   upload: 'M12 15V3M7 8l5-5 5 5M4 15v5h16v-5',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',

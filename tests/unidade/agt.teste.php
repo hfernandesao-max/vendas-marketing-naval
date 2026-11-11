@@ -4,7 +4,7 @@ naval_servico('agt');
 
 $agtBase = ['DOC_ID' => 2, 'ROTA' => '1001 ', 'LOJA' => 'Rota 1001', 'TIPO_DOC' => 'FR', 'TIPO_DESC' => 'Factura-recibo', 'DOCUMENTO' => 'FR FR0126S78519N 6',
     'DOCUMENTO_AGT' => 'FR FR0126S78519N/6', 'TOTAL' => '1000.00', 'DATA_DOCUMENTO' => '2026-11-03', 'DATA_FISCAL' => '2026-11-03', 'ENTIDADE' => 'Loja A  ',
-    'ESTADO_DOCUMENTO' => 8002, 'DATA_DOCUMENTO_TXT' => '03/11/2026', 'DATA_FISCAL_TXT' => '03/11/2026', 'AGT_DATA' => '2026-11-03 10:00:00', 'MOTIVO_ANULACAO' => null];
+    'ESTADO_DOCUMENTO' => 8001, 'DATA_DOCUMENTO_TXT' => '03/11/2026', 'DATA_FISCAL_TXT' => '03/11/2026', 'AGT_DATA' => '2026-11-03 10:00:00', 'MOTIVO_ANULACAO' => null];
 
 teste('AGT: Estado AGT e Mensagem de erro tal como vêm da consulta; estado interno para indicadores e alertas', function () use ($agtBase) {
     $est = function (array $x) use ($agtBase) { return naval_agt_montar([$x + $agtBase])[0]; };
@@ -12,7 +12,7 @@ teste('AGT: Estado AGT e Mensagem de erro tal como vêm da consulta; estado inte
     igual(['comunicado', 'Enviado', null, ''], [$a['estado'], $a['estado_agt'], $a['erro_tipo'], $a['mensagem_erro']]);
     igual('FR FR0126S78519N/6', $a['documento_agt']);
     igual('FR FR0126S78519N 6', $a['documento']);
-    igual(['1001', 'Rota 1001', 'Loja A', '8002', 1000.0], [$a['rota'], $a['loja'], $a['entidade'], $a['estado_documento'], $a['total']]);
+    igual(['1001', 'Rota 1001', 'Loja A', '8001', 1000.0], [$a['rota'], $a['loja'], $a['entidade'], $a['estado_documento'], $a['total']]);
     verdade(!$a['anulado']);
     igual(['03/11/2026', '03/11/2026', '2026-11-03'], [$a['data_documento_txt'], $a['data_fiscal_txt'], $a['data']], 'datas como na consulta');
     igual('pendente', $est(['ESTADO_AGT' => 'Pendente', 'MENSAGEM_ERRO' => '', 'AGT_CODIGO' => 2])['estado']);
@@ -25,6 +25,7 @@ teste('AGT: Estado AGT e Mensagem de erro tal como vêm da consulta; estado inte
     $m = $est(['ESTADO_AGT' => 'Enviado', 'MENSAGEM_ERRO' => '', 'MOTIVO_ANULACAO' => 'Anulado']);
     verdade($m['anulado']);
     igual('Anulado', $m['motivo_anulacao']);
+    verdade($est(['ESTADO_AGT' => 'Enviado', 'MENSAGEM_ERRO' => '', 'ESTADO_DOCUMENTO' => 8002])['anulado'], 'anulado pelo estado do documento (8002)');
 });
 
 teste('AGT: consulta só de leitura igual à validada (CROSS APPLY 26098, estados, mensagem), limitada ao período', function () {

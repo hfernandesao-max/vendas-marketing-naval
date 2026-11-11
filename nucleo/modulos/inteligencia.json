@@ -1,0 +1,16 @@
+{
+  "id": "inteligencia",
+  "nome": "Inteligência de negócio",
+  "versao": "1.1.0",
+  "descricao": "Previsão de vendas, assistente de IA, painel da sala comercial, gráficos de gestão, resumo diário, fecho do dia, app de gestão e valor do portal para a Naval.",
+  "nucleo": false,
+  "paginas": ["previsao", "assistente", "painel-sala", "qualidade-dados", "valor-portal"],
+  "recursos": ["previsao", "assistente", "painel-sala", "painel-gestao", "resumo-diario", "fecho-dia", "app-gestao", "qualidade-dados", "valor-portal"],
+  "api": ["v1/valor", "v1/previsao", "v1/indicadores", "v1/painel", "v1/assistente", "v1/resumo", "v1/sala", "v1/sala/ligacoes"],
+  "conectores": ["ia"],
+  "eventos": {
+    "publica": [],
+    "escuta": ["carrinha.diferenca_detectada"]
+  },
+  "depende": ["nucleo", "vendas"]
+}

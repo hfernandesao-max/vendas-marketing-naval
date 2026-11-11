@@ -13,6 +13,23 @@ defined('NAVAL_NUCLEO') || exit;
 /** Meios de pagamento sem descrição no XML; os nomes que vêm do Pinguim BO prevalecem. */
 const NAVAL_MEIOS_PAGAMENTO = ['NU' => 'Numerário', 'MC' => 'Multicaixa', 'TB' => 'Transferência Bancária', 'CS' => 'Adiantamento'];
 
+/**
+ * Estado do documento anulado no Pinguim BO (DOCHEADER.DOCSTATUS_ID, indicado pelo utilizador em 07-11-2026: 8002).
+ * Os documentos anulados nunca entram nas vendas, nas linhas de artigos nem nos pagamentos. Configurável no .env
+ * (PINGUIM_ESTADO_ANULADO; vários estados separados por vírgulas).
+ */
+function naval_vendas_estados_anulados(): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/\s*,\s*/', (string) naval_config('PINGUIM_ESTADO_ANULADO', '8002'))))));
+    return $ids ?: [8002];
+}
+
+/** Condição SQL dos documentos válidos para as vendas: não eliminados e não anulados (DOCHEADER com o alias DH). */
+function naval_vendas_condicao_validos(): string
+{
+    return 'DH.DELETED = 0 AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN (' . implode(', ', naval_vendas_estados_anulados()) . ')';
+}
+
 /** Páginas que mostram vendas: sem nenhuma, o perfil só vê quantidades por artigo. */
 const NAVAL_PAGINAS_VENDAS = ['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'vendas-marca', 'plano-visitas', 'sap-exportar', 'pendentes'];
 
@@ -44,6 +61,9 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
         $tipo = (string) $tx->document_type;
         // Documentos de venda (Factura-recibo / Factura) e notas de crédito, sem os anulados
         if (!in_array($tipo, ['FR', 'FT', 'NC'], true) || (string) $tx->deleted === '1') continue;
+        // anulado (estado do documento, quando a exportação o traz)
+        $estado = trim((string) $tx->document_status) ?: trim((string) $tx->status);
+        if ($estado !== '' && in_array((int) $estado, naval_vendas_estados_anulados(), true)) continue;
         $nc = $tipo === 'NC';
         // Nota de crédito: o valor desconta às vendas, qualquer que seja o sinal com que vem na exportação
         $sinal = function (float $v) use ($nc) { return $nc ? -abs($v) : $v; };
@@ -338,7 +358,7 @@ function naval_ve_vendas(): bool
 
 /**
  * Vendas e linhas de artigos do período (datas AAAAMMDD) lidas do SQL Server: DOCHEADER + DOCCONFIG +
- * STORE (documentos não anulados: vendas com total positivo e notas de crédito, as de sinal de vendas
+ * STORE (documentos não eliminados nem anulados — DOCSTATUS_ID 8002: vendas com total positivo e notas de crédito, as de sinal de vendas
  * negativo, com o valor em negativo), DOCFOOTER + PAYMETHOD (pagamentos, só das vendas) e
  * DOCMOVDETAIL + UNIT (artigos). Devolve null se a base de dados não responder (o portal usa então a
  * exportação REST). Mesmo formato que naval_vendas_do_xml().
@@ -348,8 +368,9 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
     if (!naval_bd_configurada()) return null;
     try {
         $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
+        $validos = naval_vendas_condicao_validos();
 
-        // 1. Documentos de venda
+        // 1. Documentos de venda (sem os eliminados nem os anulados)
         $docs = naval_bd_consultar("
             SELECT
                 DH.ID AS DOC_ID,
@@ -369,7 +390,7 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             FROM DOCHEADER DH
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
-            WHERE DH.DELETED = 0
+            WHERE $validos
               AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate
@@ -383,6 +404,7 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             INNER JOIN DOCHEADER DH ON DH.ID = DF.DOCHEADER_ID
             LEFT JOIN PAYMETHOD PM ON PM.ID = DF.PAYMETHOD_ID
             WHERE DF.DELETED = 0
+              AND $validos
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate", $p) as $pg) {
             $pagamentosPorDoc[$pg['DOCHEADER_ID']][] = ['codigo' => $pg['CODIGO'] ?? '?', 'meio' => $pg['MEIO'] ?? 'Sem meio indicado', 'valor' => (float) $pg['VALOR']];
@@ -442,6 +464,7 @@ function naval_vendas_artigos_sql(string $inicio, string $fim, array $promotores
     if (!naval_bd_configurada()) return null;
     try {
         $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
+        $validos = naval_vendas_condicao_validos();
         $artigos = [];
         foreach (naval_bd_consultar("
             SELECT
@@ -465,7 +488,7 @@ function naval_vendas_artigos_sql(string $inicio, string $fim, array $promotores
             LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
             LEFT JOIN UNIT U ON U.ID = DMD.UNIT_ID
             WHERE DMD.DELETED = 0
-              AND DH.DELETED = 0
+              AND $validos
               AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate

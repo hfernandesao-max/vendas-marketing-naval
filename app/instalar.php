@@ -16,6 +16,7 @@ $codigo = (string) ($_GET['c'] ?? '');
 $c = naval_app_codigo($codigo);
 $u = $c ? (naval_utilizadores()[$c['login']] ?? null) : null;
 $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
+$so = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -33,13 +34,11 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
   <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($nomeApp, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <?php endif; ?>
-  <link rel="stylesheet" href="../assets/fontes/inter.css" />
-  <link rel="stylesheet" href="app.css" />
-  <script src="../reports/js/tema-arranque.js"></script>
+  <?= naval_app_cabeca() ?>
 </head>
 <body>
   <main class="caixa" id="instalar" data-codigo="<?= htmlspecialchars($c ? $codigo : '', ENT_QUOTES, 'UTF-8') ?>">
-    <img class="logo" src="icones/icone-192.png" alt="Grupo Naval" width="64" height="64" />
+    <?= naval_app_logo(false) ?>
 <?php if (!$c): ?>
     <h1 data-t>Código expirado</h1>
     <div class="msg erro" role="alert" data-t id="inst-invalido">Este código QR expirou ou já foi usado. No portal, abra «App no telemóvel» e leia um código novo.</div>
@@ -48,7 +47,7 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
     <h1><span data-t>Instalar a app</span> «<?= htmlspecialchars($nomeApp, ENT_QUOTES, 'UTF-8') ?>»</h1>
     <p class="quem"><?= htmlspecialchars((string) ($u['nome'] ?? $c['login']), ENT_QUOTES, 'UTF-8') ?></p>
 
-    <section id="inst-ios" hidden>
+    <section id="inst-ios"<?= $so === 'ios' ? '' : ' hidden' ?>>
       <div class="msg erro" id="inst-safari" hidden data-t>Abra este endereço no Safari: só o Safari consegue instalar a app no iPhone.</div>
       <ol class="passos">
         <li><span><span data-t>Toque em Partilhar</span> <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> <span data-t>na barra do Safari (se não aparecer, toque primeiro em ⋯).</span></span></li>
@@ -58,7 +57,7 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
       </ol>
     </section>
 
-    <section id="inst-android" hidden>
+    <section id="inst-android"<?= $so === 'android' ? '' : ' hidden' ?>>
       <p class="nota" data-t>Toque em «Instalar a app». Depois, abra-a pelo ícone: fica activada neste telemóvel e pede a biometria.</p>
       <button type="button" class="botao" id="inst-botao" data-t>Instalar a app</button>
       <ol class="passos" id="inst-menu" hidden>
@@ -69,15 +68,14 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
       <div class="msg ok" id="inst-feito" hidden data-t>App instalada. Abra-a pelo ícone no ecrã principal para a activar.</div>
     </section>
 
-    <section id="inst-outro" hidden>
+    <section id="inst-outro"<?= $so === 'outro' ? '' : ' hidden' ?>>
       <p class="nota" data-t>Abra esta página no telemóvel: leia o código QR do portal com a câmara do telemóvel.</p>
     </section>
 
     <p class="validade"><span data-t>Código válido até</span> <?= htmlspecialchars(date('H:i', (int) $c['ate']), ENT_QUOTES, 'UTF-8') ?> · <span data-t>uso único</span></p>
 <?php endif; ?>
   </main>
-  <script src="registar.js" defer></script>
-  <script src="app.js"></script>
+  <?= naval_app_scripts() ?>
   <script>
     (function () {
       var m = document.getElementById('instalar');
@@ -88,10 +86,19 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
         location.replace('activar.php?c=' + encodeURIComponent(c));
         return;
       }
+      // o servidor já mostrou os passos do sistema; o iPad recente identifica-se como Mac e corrige-se aqui
       var so = NavalApp.so();
-      document.getElementById(so === 'ios' ? 'inst-ios' : so === 'android' ? 'inst-android' : 'inst-outro').hidden = false;
+      ['inst-ios', 'inst-android', 'inst-outro'].forEach(function (id) {
+        document.getElementById(id).hidden = id !== 'inst-' + so;
+      });
       if (so === 'ios' && /CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent)) document.getElementById('inst-safari').hidden = false;
       if (so !== 'android') return;
+      // Android: o service worker (página «Sem ligação») regista-se depois de a página aparecer
+      window.addEventListener('load', function () {
+        var r = document.createElement('script');
+        r.src = 'registar.js';
+        document.body.appendChild(r);
+      });
       var pedido = null;
       var botao = document.getElementById('inst-botao');
       window.addEventListener('beforeinstallprompt', function (e) {
@@ -119,6 +126,5 @@ $nomeApp = $c ? NAVAL_APP_NOMES[$c['app']] : '';
       });
     })();
   </script>
-  <script src="../geo/login-idioma.js"></script>
 </body>
 </html>

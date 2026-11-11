@@ -91,6 +91,15 @@ export function tabela(o) {
   // cabeçalho da tabela (título, nota, Procurar, Excel) e nomes das colunas fixos no topo ao descer muitas linhas
   sec.classList.add('sec-tab');
   if ('ResizeObserver' in window) new ResizeObserver(() => sec.style.setProperty('--cab-h', h.offsetHeight + 'px')).observe(h);
+  // «fixo» só enquanto o cabeçalho está preso no topo (a marca do início da tabela já passou para cima do ecrã)
+  if ('IntersectionObserver' in window) {
+    const marca = el('div', 'sec-marca');
+    marca.setAttribute('aria-hidden', 'true');
+    sec.prepend(marca);
+    new IntersectionObserver(([e]) =>
+      sec.classList.toggle('fixo', !e.isIntersecting && e.boundingClientRect.top < (e.rootBounds ? e.rootBounds.top : 0) + 1),
+    ).observe(marca);
+  }
   const more = el('div', 'more');
   more.hidden = true;
   sec.append(more);
@@ -209,7 +218,8 @@ export function tabela(o) {
       : o.rows;
   function body() {
     const rows = filtradas();
-    const col = o.cols.find((c) => c.key === ord.key) || o.cols[0];
+    // o.sort pode ser um campo sem coluna (ex.: «ordem» do documento): ordena pelo valor da linha
+    const col = o.cols.find((c) => c.key === ord.key) || (ord.key === o.sort ? { key: o.sort } : o.cols[0]);
     const sorted = [...rows].sort((a, b2) => {
       const x = val(a, col),
         y = val(b2, col);

@@ -68,11 +68,13 @@ $portaGh = $portaWeb + 500;
 $env = $tmp . '/.env';
 file_put_contents($env, implode("\n", [
     'DADOS_PRIVADOS=' . $priv, 'JWT_SEGREDO=' . bin2hex(random_bytes(32)), 'ATV_DB_DSN=sqlite:' . $bd, 'EMAIL_MODO=ficheiro',
-    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'GEOIP_AUTOMATICO=0', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
+    'ACTUALIZACAO_EMAIL=ti@naval.co.ao', 'GEOIP_AUTOMATICO=0', 'ACTUALIZACAO_AUTOMATICA=1', 'ACTUALIZACAO_EXIGE_APROVACAO=0', 'ACTUALIZACAO_REQUISITOS_IGNORAR=pdo_odbc|pdo_sqlsrv,gd,ini', 'ACTUALIZACAO_URL_VERIFICACAO=http://127.0.0.1:' . $portaWeb,
     'ACTUALIZACAO_GITHUB_API=http://127.0.0.1:' . $portaGh, 'ACTUALIZACAO_REPOSITORIO=naval/portal',
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
     // a janela nocturna liga-se só no caso dela (a hora real do teste não pode mudar os outros)
     'ACTUALIZACAO_APROVACAO_AUTOMATICA=0', 'ACTUALIZACAO_INSTALACAO_NOCTURNA=0',
+    // o ensaio liga-se só no caso dele (os outros casos aprovam sem passar pelo ensaio)
+    'ENSAIO=0',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $env);
 putenv('GITHUB_SIMULADO_DIR=' . $gh);
@@ -466,6 +468,28 @@ caso('requisitos do servidor: PHP mínimo e extensão em falta param antes de al
     confirma((string) file_get_contents($ini) === $iniAntes && h('reports/js/util.js') !== hash('sha256', $util . "\n// v17\n"), 'alterou o php.ini ou os ficheiros');
 });
 
+caso('desempenho do PHP: o php.ini é afinado (só sobe valores), com cópia; sem php.ini alterável só avisa', function () use ($env, $tmp, $util) {
+    $ini = $tmp . '/php-afinar.ini';
+    file_put_contents($ini, (ini_get('extension_dir') ? "extension_dir=\"" . ini_get('extension_dir') . "\"\n" : '') . "memory_limit=128M\n;realpath_cache_ttl=120\n");
+    $antes = (string) file_get_contents($env);
+    file_put_contents($env, str_replace(',gd,ini', ',gd', $antes) . 'ACTUALIZACAO_PHP_INI=' . $ini . "\n");
+    $req = json_encode(['php_minimo' => '7.1', 'extensoes' => [], 'ini' => ['memory_limit' => '>=512M', 'realpath_cache_ttl' => '>=600', 'max_input_time' => '60']]);
+    $f = pacote('v20', ['reports/js/util.js' => $util . "\n// v20\n", 'ferramentas/requisitos.json' => $req]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    $txt = (string) file_get_contents($ini);
+    confirma($r === 0 && strpos($t, 'Desempenho do PHP afinado') !== false, $t);
+    confirma(strpos($txt, 'memory_limit=512M') !== false && strpos($txt, "\nrealpath_cache_ttl=600") !== false && strpos($txt, 'max_input_time=60') !== false, $txt);
+    confirma(count(glob($ini . '.antes-actualizacao-*') ?: []) === 1, 'cópia do php.ini');
+    // valores já acima do pedido não descem; php.ini só de leitura: avisa e a actualização continua
+    file_put_contents($ini, str_replace('memory_limit=512M', 'memory_limit=1G', $txt));
+    chmod($ini, 0444);
+    $f = pacote('v21', ['reports/js/util.js' => $util . "\n// v21\n", 'ferramentas/requisitos.json' => json_encode(['php_minimo' => '7.1', 'extensoes' => [], 'ini' => ['memory_limit' => '>=512M', 'max_input_time' => '90']])]);
+    [$r, $t] = act('aplicar --pacote=' . escapeshellarg($f));
+    chmod($ini, 0644);
+    file_put_contents($env, $antes);
+    confirma($r === 0 && (strpos($t, 'não pode ser alterado') !== false || function_exists('posix_getuid') && posix_getuid() === 0) && strpos((string) file_get_contents($ini), 'memory_limit=1G') !== false, $t);
+});
+
 caso('configuração do Apache: validada e Apache reiniciado; inválida → reposta, sem reiniciar', function () use ($env, $srv, $repo, $tmp) {
     putenv('HTTPD_SIMULADO_RAIZ=' . $srv);
     $antes = (string) file_get_contents($env);
@@ -488,6 +512,54 @@ caso('configuração do Apache: validada e Apache reiniciado; inválida → repo
     confirma($r === 0 && strpos((string) file_get_contents($httpd), "/ferramentas/apache/portal-rtm.conf\"\r\n") !== false && glob($httpd . '.antes-portal-*'), $t);
     [$r, $t] = act('apache');
     confirma($r === 0 && strpos($t, 'já incluída') !== false && substr_count((string) file_get_contents($httpd), 'portal-rtm.conf') === 1, $t);
+    file_put_contents($env, $antes);
+});
+
+caso('ensaio: versão nova lado a lado em /ensaio (dados próprios, faixa, testes de fumo); só se aprova depois de passar', function () use ($env, $util, $texto, $srv, $priv, $portaWeb) {
+    $antes = (string) file_get_contents($env);
+    file_put_contents($env, str_replace('ENSAIO=0', 'ENSAIO=1', $antes));
+    $instalada = h('reports/js/util.js');
+    publicar(['v30' => ['reports/js/util.js' => $util . "\n// v30\n"]]);
+    $d = svc('naval_act_decidir("v30", "aprovar", "henrique")');
+    confirma(!$d['ok'] && strpos($d['erro'], 'ainda não está no ensaio') !== false, 'aprovou sem ensaio: ' . json_encode($d));
+    $antesEmails = count(emails());
+    [$r, $t] = act('urgente');
+    $e = json_decode((string) @file_get_contents($priv . '/actualizacoes/ensaio.json'), true) ?: [];
+    confirma($r === 0 && ($e['versao'] ?? '') === 'v30' && ($e['resultado'] ?? '') === 'ok', 'ensaio: ' . $t . ' ' . json_encode($e));
+    confirma(is_file($srv . '/ensaio/.ambiente-ensaio') && hash_file('sha256', $srv . '/ensaio/reports/js/util.js') === hash('sha256', $util . "\n// v30\n"), 'código do ensaio');
+    confirma(h('reports/js/util.js') === $instalada, 'o ensaio mexeu na produção');
+    confirma(is_dir($priv . '/ensaio') && !is_dir($priv . '/ensaio/actualizacoes'), 'dados privados do ensaio');
+    confirma(in_array('Portal RTM · versão v30 pronta a testar no ensaio', emails(), true) && count(emails()) === $antesEmails + 1, 'sem aviso do ensaio');
+    $login = (string) @file_get_contents('http://127.0.0.1:' . $portaWeb . '/ensaio/geo/login.php');
+    confirma(strpos($login, 'AMBIENTE DE ENSAIO') !== false && strpos($login, 'v30') !== false, 'faixa do ensaio em falta');
+    confirma(strpos((string) @file_get_contents('http://127.0.0.1:' . $portaWeb . '/geo/login.php'), 'AMBIENTE DE ENSAIO') === false, 'faixa do ensaio na produção');
+    // dentro do ensaio: só SADM e TI entram, dados privados próprios, dados públicos e .env da produção, cookies próprios
+    $f = $srv . '/ensaio-teste.php';
+    file_put_contents($f, '<?php require ' . var_export($srv . '/ensaio/nucleo/arranque.php', true) . '; naval_servico("app-telemovel"); echo json_encode([naval_ensaio(), naval_ensaio_permitido(["perfil" => "DIR"]), naval_ensaio_permitido(["perfil" => "TI"]), naval_ensaio_permitido(["perfil" => "SADM"]), naval_pasta_privada(), naval_dados_reports(), naval_app_cookie_nome(), naval_config("ACTUALIZACAO_AUTOMATICA"), naval_ensaio_versao()]);');
+    $o = [];
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
+    @unlink($f);
+    $x = json_decode(implode('', $o), true);
+    // no Windows a mesma pasta aparece com barras diferentes e nome curto (RUNNER~1): compara o caminho real
+    $caminho = function ($p) { return strtolower(str_replace('\\', '/', (string) (realpath((string) $p) ?: $p))); };
+    if (is_array($x) && count($x) === 9) {
+        $x[4] = $caminho($x[4]);
+        $x[5] = $caminho($x[5]);
+    }
+    confirma($x === [true, false, true, true, $caminho($priv . '/ensaio'), $caminho($srv . '/reports/data'), 'naval_eq_ensaio', '0', 'v30'], 'regras do ensaio: ' . implode("\n", $o));
+    [$r, $t] = act('urgente');
+    confirma($r === 0 && trim($t) === '', 'reinstalou a mesma versão no ensaio: ' . $t);
+    $v = svc('naval_act_vista_portal()')['r'];
+    confirma(($v['ensaio']['versao'] ?? '') === 'v30' && ($v['ensaio']['url'] ?? '') === '../ensaio/reports/', 'vista: ' . json_encode($v['ensaio'] ?? null));
+    confirma(svc('naval_act_decidir("v30", "aprovar", "henrique")')['ok'], 'não aprovou depois do ensaio');
+    // versão que falha nos testes de fumo (erro ao arrancar): fica no ensaio como falhada e não se aprova
+    publicar(['v30' => ['reports/js/util.js' => $util . "\n// v30\n"], 'v31' => ['reports/js/util.js' => $util . "\n// v31\n", 'nucleo/texto.php' => $texto . "\nnaval_funcao_que_nao_existe();\n"]]);
+    act('urgente');
+    $e = json_decode((string) @file_get_contents($priv . '/actualizacoes/ensaio.json'), true) ?: [];
+    confirma(($e['versao'] ?? '') === 'v31' && ($e['resultado'] ?? '') === 'falhou' && $e['falhas'], 'ensaio devia falhar: ' . json_encode($e));
+    confirma(h('nucleo/texto.php') !== hash('sha256', $texto . "\nnaval_funcao_que_nao_existe();\n"), 'a falha chegou à produção');
+    $d = svc('naval_act_decidir("v31", "aprovar", "henrique")');
+    confirma(!$d['ok'] && strpos($d['erro'], 'falhou nos testes do ensaio') !== false, 'aprovou uma versão falhada: ' . json_encode($d));
     file_put_contents($env, $antes);
 });
 

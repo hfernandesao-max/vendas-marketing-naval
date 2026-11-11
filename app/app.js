@@ -10,7 +10,8 @@
       .replace(/=+$/, '');
   const bin = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
   const K = 'naval-app-equipamento';
-  const BASE = new URL('chave.php', document.currentScript.src).href;
+  // dentro das páginas da app (app/) o endereço é relativo à página; na página de entrada vem do próprio ficheiro
+  const BASE = new URL('chave.php', document.currentScript && document.currentScript.src ? document.currentScript.src : location.href).href;
   const A = {
     instalada: () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true,
     so: () =>
@@ -52,8 +53,8 @@
         () => ({ ok: false, erro: 'Sem ligação ao servidor.' }),
       ),
     /** Cria a chave de acesso deste equipamento (pede o Face ID ou a impressão digital). */
-    registar: async () => {
-      const o = await A.pedir({ f: 'registo-opcoes' });
+    registar: async (pre) => {
+      const o = pre ? { ok: true, opcoes: JSON.parse(JSON.stringify(pre)) } : await A.pedir({ f: 'registo-opcoes' });
       if (!o.ok) return o;
       const p = o.opcoes;
       p.challenge = bin(p.challenge);
@@ -65,15 +66,17 @@
       } catch (e) {
         return { ok: false, cancelado: true, erro: 'A biometria não foi activada.' };
       }
-      return A.pedir({
+      const r = await A.pedir({
         f: 'registar',
         resposta: { id: c.id, clientDataJSON: b64(c.response.clientDataJSON), attestationObject: b64(c.response.attestationObject) },
       });
+      // opções já recebidas mas fora de prazo (mais de 5 minutos): repete com opções novas
+      return !r.ok && pre && /expirou/.test(r.erro || '') ? A.registar() : r;
     },
     /** Entra com a chave de acesso deste equipamento. */
-    entrar: async () => {
-      const eq = A.equipamento();
-      const o = await A.pedir({ f: 'entrada-opcoes', equipamento: eq });
+    entrar: async (pre) => {
+      const eq = A.equipamento() || (pre && pre.equipamento) || '';
+      const o = pre ? { ok: true, opcoes: JSON.parse(JSON.stringify(pre.opcoes)) } : await A.pedir({ f: 'entrada-opcoes', equipamento: eq });
       if (!o.ok) return o;
       const p = o.opcoes;
       p.challenge = bin(p.challenge);

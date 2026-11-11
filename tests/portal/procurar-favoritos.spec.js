@@ -21,7 +21,7 @@ test('procurar uma função: Ctrl+K e «/» abrem, as setas escolhem, Enter abre
   await page.keyboard.type('logistica');
   await expect(dlg.locator('.proc-item').first()).toContainText('Plano de cargas');
   await page.keyboard.press('ArrowDown');
-  await expect(dlg.locator('.proc-item.on')).toContainText('Conciliação da carrinha');
+  await expect(dlg.locator('.proc-item.on')).toContainText('Painel da carrinha');
   await page.keyboard.press('Escape');
   await expect(dlg).toBeHidden();
   // botão Procurar

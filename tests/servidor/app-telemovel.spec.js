@@ -86,30 +86,41 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   const de2 = await t1.ctx.request.post('/app/chave.php', { data: { f: 'activar', codigo }, headers: { Origin: LOCAL } });
   expect((await de2.json()).erro).toContain('expirou ou já foi usado');
 
-  // sessão terminada: a app abre na entrada e entra com a biometria, sem palavra-passe
+  // sessão terminada: ao abrir a app, a entrada rápida pede logo a biometria e entra (sem palavra-passe nem toques)
+  const eqCookie = (await t1.ctx.cookies()).filter((x) => x.name === 'naval_eq');
+  expect(eqCookie.length).toBe(1);
   await t1.ctx.clearCookies();
-  await t1.page.goto('/geo/login.php?redirect=../gestao/');
-  await expect(t1.page.locator('#app-bio-t')).toHaveText('Entrar com a impressão digital');
-  await expect(t1.page.locator('#app-aviso')).toBeHidden();
-  await t1.page.locator('#app-bio-b').click();
-  await expect(t1.page).toHaveURL(/\/gestao\/$/);
+  await t1.ctx.addCookies(eqCookie);
+  await t1.page.goto('/gestao/').catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  await expect(t1.page).toHaveTitle(/Naval Gestão/);
+  // sem o cookie do equipamento (ex.: dados do navegador limpos): na app a página da palavra-passe nunca aparece,
+  // segue para a entrada com a biometria pelo equipamento guardado na própria app
+  await t1.ctx.clearCookies();
+  await t1.page.goto('/geo/login.php?redirect=../gestao/').catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  await expect(t1.page).toHaveTitle(/Naval Gestão/);
 
   // a mesma pessoa activa a app noutro telemóvel: o primeiro deixa de funcionar
   const { ctx: portal, codigo: c2 } = await novoCodigo('dir');
   const t2 = await telemovel(browser);
   await t2.page.goto('/app/activar.php?c=' + c2);
   await expect(t2.page.locator('#act-titulo')).toHaveText('App activada');
-  await t2.page.locator('#act-depois').click();
+  await expect(t2.page.locator('#act-depois')).toHaveCount(0); // o Face ID é obrigatório: não há «Agora não»
+  // activação interrompida antes do Face ID: a app não abre e volta a pedir a biometria
+  await t2.page.goto('/gestao/');
+  await expect(t2.page).toHaveURL(/activar\.php$/);
+  await t2.page.locator('#act-bio-b').click();
   await expect(t2.page).toHaveURL(/\/gestao\/$/);
-  await t1.page.goto('/gestao/').catch(() => {}); // a sessão termina: a app volta à entrada
-  await t1.page.waitForURL(/login\.php/);
-  await t1.page.locator('#app-bio-b').click();
-  await expect(t1.page.locator('#app-aviso')).toContainText('activada noutro equipamento');
+  await t1.page.goto('/gestao/').catch(() => {}); // a sessão termina: a app volta à entrada rápida
+  await t1.page.waitForURL(/entrar\.php/);
+  await expect(t1.page.locator('h1')).toHaveText('App desactivada');
+  await expect(t1.page.locator('#usuario')).toHaveCount(0); // nunca pede a palavra-passe
 
   // registo: o super administrador vê os equipamentos; a própria pessoa vê o seu
   const meu = await (await portal.get(API + 'app-telemovel')).json();
   expect(meu.meu.estado).toBe('activo');
-  expect(meu.meu.biometria).toBe(false);
+  expect(meu.meu.biometria).toBe(true);
   const { ctx: adm } = await entrar('sadm');
   const l = await (await adm.get(API + 'app-telemovel')).json();
   const dir = l.lista.filter((x) => x.login === 'dir');
@@ -120,7 +131,8 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   const r = await (await adm.post(API + 'app-telemovel', { data: { accao: 'desactivar', id: meu.meu.id, csrf: await csrf(adm) } })).json();
   expect(r.ok).toBe(true);
   await t2.page.goto('/gestao/').catch(() => {});
-  await t2.page.waitForURL(/login\.php/);
+  await t2.page.waitForURL(/entrar\.php/);
+  await expect(t2.page.locator('h1')).toHaveText('App desactivada');
   const reg = await (await adm.get(API + 'gestao')).json();
   const accoes = (reg.registos || []).map((x) => x.accao);
   for (const a of ['app_codigo_gerado', 'app_activada', 'app_substituida', 'app_desactivada', 'app_biometria_activada']) expect(accoes, a).toContain(a);

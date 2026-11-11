@@ -1,0 +1,2538 @@
+{
+ "versao": "1.0",
+ "data": "2026-11-09",
+ "ambito": {
+  "pt": "Plataforma de Operações Naval (portal Reports e GEO, API, aplicação de equipamentos, ambiente de ensaio e respectivas cópias), as pessoas que a desenvolvem, administram e usam no Grupo Naval Angola, e os fornecedores que a alojam ou com ela se ligam (Cegid Evolution ERP Primavera, Pinguim BO, SAP, Quatenus).",
+  "en": "Naval Operations Platform (Reports and GEO portal, API, equipment app, staging environment and their backups), the people who develop, administer and use it at Grupo Naval Angola, and the suppliers that host it or connect to it (Cegid Evolution ERP Primavera, Pinguim BO, SAP, Quatenus)."
+ },
+ "normas": [
+  "ISO/IEC 27001:2022",
+  "ISO/IEC 27002:2022",
+  "ISO/IEC 27701:2019",
+  "ISO 22301:2019",
+  "ISO/IEC 20000-1:2018",
+  "ISO/IEC 27035",
+  "Lei n.º 22/11"
+ ],
+ "responsaveis": {
+  "SADM": {
+   "pt": "Super administrador",
+   "en": "Super administrator"
+  },
+  "PD": {
+   "pt": "Projectos Digitais",
+   "en": "Digital Projects"
+  },
+  "TI": {
+   "pt": "Informática",
+   "en": "IT"
+  },
+  "ADM": {
+   "pt": "Administração",
+   "en": "Board of Directors"
+  },
+  "RH": {
+   "pt": "Recursos Humanos",
+   "en": "Human Resources"
+  },
+  "JUR": {
+   "pt": "Jurídico",
+   "en": "Legal"
+  },
+  "SEG": {
+   "pt": "Segurança das instalações",
+   "en": "Facilities security"
+  }
+ },
+ "evidencias": {
+  "POL": {
+   "pt": "Manual do SGSI: políticas e procedimentos aprovados pelo super administrador (resumo SHA-256 por versão)",
+   "en": "ISMS manual: policies and procedures approved by the super administrator (SHA-256 digest per version)"
+  },
+  "MATRIZ": {
+   "pt": "Matriz de acessos por perfil e nível (Administração › Acessos)",
+   "en": "Access matrix by profile and level (Administration › Access)"
+  },
+  "CONTAS": {
+   "pt": "Contas nominativas; verificação em dois passos; bloqueio após 3 tentativas; palavra-passe com 10 ou mais caracteres",
+   "en": "Named accounts; two-step verification; lock after 3 attempts; passwords of 10 or more characters"
+  },
+  "SEMUSO": {
+   "pt": "Contas sem uso desligadas automaticamente aos 90 dias",
+   "en": "Unused accounts disabled automatically after 90 days"
+  },
+  "REVISAO": {
+   "pt": "Revisão trimestral de acessos, confirmada pelo super administrador",
+   "en": "Quarterly access review, confirmed by the super administrator"
+  },
+  "REGISTOS": {
+   "pt": "Registos de auditoria invioláveis (cadeia SHA-256), selados todas as noites e copiados para fora do servidor",
+   "en": "Tamper-evident audit logs (SHA-256 chain), sealed every night and copied off the server"
+  },
+  "SUPORTE": {
+   "pt": "Módulo Suporte: incidentes e pedidos com prioridade P1–P4, prazos, causa e lições aprendidas",
+   "en": "Support module: incidents and requests with P1–P4 priority, deadlines, root cause and lessons learned"
+  },
+  "NC": {
+   "pt": "Não conformidades no módulo Suporte, com causa e acção correctiva obrigatórias",
+   "en": "Nonconformities in the Support module, with mandatory root cause and corrective action"
+  },
+  "COPIA": {
+   "pt": "Cópia diária cifrada (AES-256-GCM), guardada fora do servidor, com teste automático de recuperação",
+   "en": "Daily encrypted backup (AES-256-GCM), stored off the server, with an automatic restore test"
+  },
+  "RETENCAO": {
+   "pt": "Prazos de retenção com eliminação automática e registada",
+   "en": "Retention periods with automatic, logged deletion"
+  },
+  "MASC": {
+   "pt": "Dados pessoais mascarados no ambiente de ensaio",
+   "en": "Personal data masked in the staging environment"
+  },
+  "ENSAIO": {
+   "pt": "Ambiente de ensaio separado (só SADM e TI); só se aprova a versão que passou no ensaio com o mesmo SHA",
+   "en": "Separate staging environment (SADM and IT only); only the version that passed staging with the same SHA can be approved"
+  },
+  "CI": {
+   "pt": "17 verificações automáticas antes de cada versão: estilo, análise estática, testes unitários, de actualização, de servidor, do portal e do Apache",
+   "en": "17 automatic checks before every release: style, static analysis, unit, update, server, portal and Apache tests"
+  },
+  "SBOM": {
+   "pt": "SBOM CycloneDX e inventário de licenças em cada versão",
+   "en": "CycloneDX SBOM and licence inventory in every release"
+  },
+  "MODULOS": {
+   "pt": "Inventário de módulos e conectores (Administração › Módulos)",
+   "en": "Module and connector inventory (Administration › Modules)"
+  },
+  "CIFRA": {
+   "pt": "HTTPS (TLS), cookies seguros e segredos fora do código (.env)",
+   "en": "HTTPS (TLS), secure cookies and secrets kept out of the code (.env)"
+  },
+  "ROPA": {
+   "pt": "Registo das actividades de tratamento (RoPA)",
+   "en": "Record of processing activities (RoPA)"
+  },
+  "RISCOS": {
+   "pt": "Registo de riscos e plano de tratamento",
+   "en": "Risk register and treatment plan"
+  },
+  "ACT": {
+   "pt": "Actualizações automáticas com proveniência verificada e reposição automática se falharem",
+   "en": "Automatic updates with verified provenance and automatic rollback on failure"
+  },
+  "MONIT": {
+   "pt": "Estado do sistema, desempenho e alertas por email",
+   "en": "System status, performance and email alerts"
+  },
+  "HORA": {
+   "pt": "Hora do servidor sincronizada; registos com data e hora",
+   "en": "Server clock synchronised; logs carry date and time"
+  },
+  "PERFIS": {
+   "pt": "Perfis e níveis separam quem consulta, quem edita e quem administra",
+   "en": "Profiles and levels separate who views, who edits and who administers"
+  },
+  "CONF": {
+   "pt": "Página Conformidade: prova diária dos controlos automáticos",
+   "en": "Compliance page: daily evidence of the automatic controls"
+  }
+ },
+ "temas": {
+  "5": {
+   "pt": "Organizacionais",
+   "en": "Organisational"
+  },
+  "6": {
+   "pt": "Pessoas",
+   "en": "People"
+  },
+  "7": {
+   "pt": "Físicos",
+   "en": "Physical"
+  },
+  "8": {
+   "pt": "Tecnológicos",
+   "en": "Technological"
+  }
+ },
+ "objectivos": [
+  {
+   "id": "O-1",
+   "medida": "registos",
+   "meta": 100,
+   "texto": {
+    "pt": "Registos de auditoria íntegros em todas as verificações",
+    "en": "Audit logs intact in every check"
+   }
+  },
+  {
+   "id": "O-2",
+   "medida": "recuperacao",
+   "meta": 100,
+   "texto": {
+    "pt": "Teste de recuperação da cópia passa todos os dias",
+    "en": "Backup restore test passes every day"
+   }
+  },
+  {
+   "id": "O-3",
+   "medida": "revisao",
+   "meta": 100,
+   "texto": {
+    "pt": "Revisão de acessos confirmada em cada trimestre",
+    "en": "Access review confirmed every quarter"
+   }
+  },
+  {
+   "id": "O-4",
+   "medida": "sla",
+   "meta": 95,
+   "texto": {
+    "pt": "Pedidos e incidentes resolvidos no prazo (últimos 30 dias)",
+    "en": "Requests and incidents resolved on time (last 30 days)"
+   }
+  },
+  {
+   "id": "O-5",
+   "medida": "controlos",
+   "meta": 90,
+   "texto": {
+    "pt": "Controlos aplicáveis implementados",
+    "en": "Applicable controls implemented"
+   }
+  },
+  {
+   "id": "O-6",
+   "medida": "riscos",
+   "meta": 100,
+   "texto": {
+    "pt": "Riscos com nível residual aceitável (até 6)",
+    "en": "Risks with acceptable residual level (up to 6)"
+   }
+  }
+ ],
+ "controlos": [
+  {
+   "id": "5.1",
+   "tema": "5",
+   "nome": {
+    "pt": "Políticas de segurança da informação",
+    "en": "Policies for information security"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.2",
+   "tema": "5",
+   "nome": {
+    "pt": "Funções e responsabilidades de segurança da informação",
+    "en": "Information security roles and responsibilities"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL",
+    "PERFIS"
+   ],
+   "responsavel": "ADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.3",
+   "tema": "5",
+   "nome": {
+    "pt": "Segregação de funções",
+    "en": "Segregation of duties"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "ENSAIO",
+    "CI",
+    "REGISTOS"
+   ],
+   "responsavel": "ADM",
+   "nota": {
+    "pt": "Uma só pessoa desenvolve: risco aceite (R-01) com controlos compensatórios; segundo aprovador de versões (direcção) a nomear.",
+    "en": "A single person develops: accepted risk (R-01) with compensating controls; a second release approver (management) to be appointed."
+   }
+  },
+  {
+   "id": "5.4",
+   "tema": "5",
+   "nome": {
+    "pt": "Responsabilidades da gestão",
+    "en": "Management responsibilities"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "ADM",
+   "nota": {
+    "pt": "Aprovação formal do Manual do SGSI pela Administração e revisão anual pela direcção.",
+    "en": "Formal approval of the ISMS manual by the Board and yearly management review."
+   }
+  },
+  {
+   "id": "5.5",
+   "tema": "5",
+   "nome": {
+    "pt": "Contacto com as autoridades",
+    "en": "Contact with authorities"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Manter os contactos da Agência de Protecção de Dados e da Polícia (crimes informáticos) no procedimento de incidentes.",
+    "en": "Keep the contacts of the Data Protection Agency and the Police (cybercrime) in the incident procedure."
+   }
+  },
+  {
+   "id": "5.6",
+   "tema": "5",
+   "nome": {
+    "pt": "Contacto com grupos de interesse especial",
+    "en": "Contact with special interest groups"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Subscrever os avisos de segurança dos fornecedores (PHP, Apache, Microsoft, Primavera, Pinguim) e do CERT nacional.",
+    "en": "Subscribe to supplier security advisories (PHP, Apache, Microsoft, Primavera, Pinguim) and the national CERT."
+   }
+  },
+  {
+   "id": "5.7",
+   "tema": "5",
+   "nome": {
+    "pt": "Informação sobre ameaças",
+    "en": "Threat intelligence"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "SBOM",
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Cruzar o SBOM com a base de vulnerabilidades em cada versão.",
+    "en": "Cross-check the SBOM against the vulnerability database in every release."
+   }
+  },
+  {
+   "id": "5.8",
+   "tema": "5",
+   "nome": {
+    "pt": "Segurança da informação na gestão de projectos",
+    "en": "Information security in project management"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL",
+    "ENSAIO",
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.9",
+   "tema": "5",
+   "nome": {
+    "pt": "Inventário da informação e de outros activos associados",
+    "en": "Inventory of information and other associated assets"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "MODULOS",
+    "SBOM",
+    "ROPA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Juntar o inventário de servidores, postos de trabalho e telemóveis (ManageEngine).",
+    "en": "Add the inventory of servers, workstations and phones (ManageEngine)."
+   }
+  },
+  {
+   "id": "5.10",
+   "tema": "5",
+   "nome": {
+    "pt": "Utilização aceitável da informação e de outros activos associados",
+    "en": "Acceptable use of information and other associated assets"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.11",
+   "tema": "5",
+   "nome": {
+    "pt": "Devolução de activos",
+    "en": "Return of assets"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "RH",
+   "nota": {
+    "pt": "Lista de verificação de saída: equipamentos, cartões e contas.",
+    "en": "Exit checklist: equipment, cards and accounts."
+   }
+  },
+  {
+   "id": "5.12",
+   "tema": "5",
+   "nome": {
+    "pt": "Classificação da informação",
+    "en": "Classification of information"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.13",
+   "tema": "5",
+   "nome": {
+    "pt": "Rotulagem da informação",
+    "en": "Labelling of information"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.14",
+   "tema": "5",
+   "nome": {
+    "pt": "Transferência de informação",
+    "en": "Information transfer"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CIFRA",
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.15",
+   "tema": "5",
+   "nome": {
+    "pt": "Controlo de acessos",
+    "en": "Access control"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MATRIZ",
+    "POL"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.16",
+   "tema": "5",
+   "nome": {
+    "pt": "Gestão de identidades",
+    "en": "Identity management"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CONTAS",
+    "SEMUSO"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.17",
+   "tema": "5",
+   "nome": {
+    "pt": "Informação de autenticação",
+    "en": "Authentication information"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CONTAS"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.18",
+   "tema": "5",
+   "nome": {
+    "pt": "Direitos de acesso",
+    "en": "Access rights"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MATRIZ",
+    "REVISAO",
+    "SEMUSO"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.19",
+   "tema": "5",
+   "nome": {
+    "pt": "Segurança da informação nas relações com fornecedores",
+    "en": "Information security in supplier relationships"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL",
+    "MODULOS"
+   ],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Avaliar cada fornecedor crítico (alojamento, Primavera, Pinguim, Quatenus) com o questionário de segurança.",
+    "en": "Assess each critical supplier (hosting, Primavera, Pinguim, Quatenus) with the security questionnaire."
+   }
+  },
+  {
+   "id": "5.20",
+   "tema": "5",
+   "nome": {
+    "pt": "Segurança da informação nos acordos com fornecedores",
+    "en": "Addressing information security within supplier agreements"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Incluir cláusulas de confidencialidade, protecção de dados e aviso de incidentes nos contratos.",
+    "en": "Include confidentiality, data protection and incident notification clauses in contracts."
+   }
+  },
+  {
+   "id": "5.21",
+   "tema": "5",
+   "nome": {
+    "pt": "Gestão da segurança da informação na cadeia de fornecimento das TIC",
+    "en": "Managing information security in the ICT supply chain"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SBOM",
+    "ACT"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.22",
+   "tema": "5",
+   "nome": {
+    "pt": "Monitorização, revisão e gestão de alterações dos serviços de fornecedores",
+    "en": "Monitoring, review and change management of supplier services"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "MONIT"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Revisão anual de cada fornecedor crítico, registada.",
+    "en": "Yearly, recorded review of each critical supplier."
+   }
+  },
+  {
+   "id": "5.23",
+   "tema": "5",
+   "nome": {
+    "pt": "Segurança da informação na utilização de serviços em nuvem",
+    "en": "Information security for use of cloud services"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL",
+    "CIFRA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Registar os serviços em nuvem usados (GitHub, Microsoft 365) e as respectivas definições de segurança.",
+    "en": "Record the cloud services in use (GitHub, Microsoft 365) and their security settings."
+   }
+  },
+  {
+   "id": "5.24",
+   "tema": "5",
+   "nome": {
+    "pt": "Planeamento e preparação da gestão de incidentes de segurança da informação",
+    "en": "Information security incident management planning and preparation"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL",
+    "SUPORTE"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.25",
+   "tema": "5",
+   "nome": {
+    "pt": "Avaliação e decisão sobre eventos de segurança da informação",
+    "en": "Assessment and decision on information security events"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SUPORTE",
+    "MONIT"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.26",
+   "tema": "5",
+   "nome": {
+    "pt": "Resposta a incidentes de segurança da informação",
+    "en": "Response to information security incidents"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SUPORTE",
+    "POL"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.27",
+   "tema": "5",
+   "nome": {
+    "pt": "Aprendizagem com os incidentes de segurança da informação",
+    "en": "Learning from information security incidents"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SUPORTE"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.28",
+   "tema": "5",
+   "nome": {
+    "pt": "Recolha de provas",
+    "en": "Collection of evidence"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "REGISTOS"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.29",
+   "tema": "5",
+   "nome": {
+    "pt": "Segurança da informação durante uma perturbação",
+    "en": "Information security during disruption"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL",
+    "COPIA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.30",
+   "tema": "5",
+   "nome": {
+    "pt": "Prontidão das TIC para a continuidade do negócio",
+    "en": "ICT readiness for business continuity"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "COPIA",
+    "ACT"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Exercício anual de continuidade: repor o portal num servidor de reserva a partir da cópia.",
+    "en": "Yearly continuity exercise: restore the portal on a standby server from the backup."
+   }
+  },
+  {
+   "id": "5.31",
+   "tema": "5",
+   "nome": {
+    "pt": "Requisitos legais, estatutários, regulamentares e contratuais",
+    "en": "Legal, statutory, regulatory and contractual requirements"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "ROPA",
+    "POL"
+   ],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Lista de requisitos legais revista pelo Jurídico (Lei n.º 22/11, Lei n.º 7/17, facturação electrónica AGT).",
+    "en": "List of legal requirements reviewed by Legal (Law 22/11, Law 7/17, AGT e-invoicing)."
+   }
+  },
+  {
+   "id": "5.32",
+   "tema": "5",
+   "nome": {
+    "pt": "Direitos de propriedade intelectual",
+    "en": "Intellectual property rights"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "SBOM"
+   ],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Acordo escrito de titularidade do software do portal entre o autor e o Grupo Naval.",
+    "en": "Written agreement on ownership of the portal software between the author and Grupo Naval."
+   }
+  },
+  {
+   "id": "5.33",
+   "tema": "5",
+   "nome": {
+    "pt": "Protecção dos registos",
+    "en": "Protection of records"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "REGISTOS",
+    "RETENCAO",
+    "COPIA"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.34",
+   "tema": "5",
+   "nome": {
+    "pt": "Privacidade e protecção de dados pessoais",
+    "en": "Privacy and protection of PII"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "ROPA",
+    "MASC",
+    "RETENCAO"
+   ],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Notificar os tratamentos à Agência de Protecção de Dados e concluir as avaliações de impacto da videovigilância e da geolocalização.",
+    "en": "Notify the processing to the Data Protection Agency and complete the impact assessments for CCTV and geolocation."
+   }
+  },
+  {
+   "id": "5.35",
+   "tema": "5",
+   "nome": {
+    "pt": "Revisão independente da segurança da informação",
+    "en": "Independent review of information security"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "ADM",
+   "nota": {
+    "pt": "Auditoria interna anual por pessoa independente do desenvolvimento e auditoria externa de certificação.",
+    "en": "Yearly internal audit by someone independent of development, and external certification audit."
+   }
+  },
+  {
+   "id": "5.36",
+   "tema": "5",
+   "nome": {
+    "pt": "Cumprimento das políticas, regras e normas de segurança da informação",
+    "en": "Compliance with policies, rules and standards for information security"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CONF",
+    "CI"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "5.37",
+   "tema": "5",
+   "nome": {
+    "pt": "Procedimentos operacionais documentados",
+    "en": "Documented operating procedures"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "6.1",
+   "tema": "6",
+   "nome": {
+    "pt": "Verificação de antecedentes",
+    "en": "Screening"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "RH",
+   "nota": {
+    "pt": "Verificação, proporcional à função, antes de dar acesso de administração.",
+    "en": "Role-proportionate screening before granting administrative access."
+   }
+  },
+  {
+   "id": "6.2",
+   "tema": "6",
+   "nome": {
+    "pt": "Termos e condições de emprego",
+    "en": "Terms and conditions of employment"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "RH",
+   "nota": {
+    "pt": "Cláusula de segurança da informação e confidencialidade nos contratos.",
+    "en": "Information security and confidentiality clause in employment contracts."
+   }
+  },
+  {
+   "id": "6.3",
+   "tema": "6",
+   "nome": {
+    "pt": "Sensibilização, educação e formação em segurança da informação",
+    "en": "Information security awareness, education and training"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Formação anual registada; guias de primeiro acesso já publicados.",
+    "en": "Recorded yearly training; first-access guides already published."
+   }
+  },
+  {
+   "id": "6.4",
+   "tema": "6",
+   "nome": {
+    "pt": "Processo disciplinar",
+    "en": "Disciplinary process"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "RH",
+   "nota": {
+    "pt": "Referência às violações de segurança no regulamento disciplinar.",
+    "en": "Reference to security breaches in the disciplinary rules."
+   }
+  },
+  {
+   "id": "6.5",
+   "tema": "6",
+   "nome": {
+    "pt": "Responsabilidades após o fim ou a alteração do emprego",
+    "en": "Responsibilities after termination or change of employment"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SEMUSO",
+    "REVISAO",
+    "POL"
+   ],
+   "responsavel": "RH",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "6.6",
+   "tema": "6",
+   "nome": {
+    "pt": "Acordos de confidencialidade ou de não divulgação",
+    "en": "Confidentiality or non-disclosure agreements"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "JUR",
+   "nota": {
+    "pt": "Acordo de confidencialidade assinado por quem administra o portal e pelos fornecedores com acesso.",
+    "en": "NDA signed by portal administrators and suppliers with access."
+   }
+  },
+  {
+   "id": "6.7",
+   "tema": "6",
+   "nome": {
+    "pt": "Trabalho remoto",
+    "en": "Remote working"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CONTAS",
+    "CIFRA",
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "6.8",
+   "tema": "6",
+   "nome": {
+    "pt": "Comunicação de eventos de segurança da informação",
+    "en": "Information security event reporting"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "SUPORTE"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "7.1",
+   "tema": "7",
+   "nome": {
+    "pt": "Perímetros de segurança física",
+    "en": "Physical security perimeters"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "SEG",
+   "nota": {
+    "pt": "Sala de servidores fechada; registar o perímetro no plano de segurança das instalações.",
+    "en": "Server room locked; record the perimeter in the facilities security plan."
+   }
+  },
+  {
+   "id": "7.2",
+   "tema": "7",
+   "nome": {
+    "pt": "Entrada física",
+    "en": "Physical entry"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "SEG",
+   "nota": {
+    "pt": "Registo de entradas na sala de servidores.",
+    "en": "Entry log for the server room."
+   }
+  },
+  {
+   "id": "7.3",
+   "tema": "7",
+   "nome": {
+    "pt": "Segurança de escritórios, salas e instalações",
+    "en": "Securing offices, rooms and facilities"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "SEG",
+   "nota": {
+    "pt": "Incluir no plano de segurança das instalações.",
+    "en": "Include in the facilities security plan."
+   }
+  },
+  {
+   "id": "7.4",
+   "tema": "7",
+   "nome": {
+    "pt": "Monitorização da segurança física",
+    "en": "Physical security monitoring"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "SEG",
+   "nota": {
+    "pt": "Videovigilância das áreas técnicas, com avaliação de impacto.",
+    "en": "CCTV in technical areas, with impact assessment."
+   }
+  },
+  {
+   "id": "7.5",
+   "tema": "7",
+   "nome": {
+    "pt": "Protecção contra ameaças físicas e ambientais",
+    "en": "Protecting against physical and environmental threats"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Detecção de incêndio e climatização na sala de servidores, verificadas.",
+    "en": "Fire detection and air conditioning in the server room, checked."
+   }
+  },
+  {
+   "id": "7.6",
+   "tema": "7",
+   "nome": {
+    "pt": "Trabalho em áreas seguras",
+    "en": "Working in secure areas"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "SEG",
+   "nota": {
+    "pt": "Regras de trabalho na sala de servidores.",
+    "en": "Working rules for the server room."
+   }
+  },
+  {
+   "id": "7.7",
+   "tema": "7",
+   "nome": {
+    "pt": "Secretária limpa e ecrã limpo",
+    "en": "Clear desk and clear screen"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "7.8",
+   "tema": "7",
+   "nome": {
+    "pt": "Localização e protecção dos equipamentos",
+    "en": "Equipment siting and protection"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Servidores em bastidor fechado.",
+    "en": "Servers in a locked rack."
+   }
+  },
+  {
+   "id": "7.9",
+   "tema": "7",
+   "nome": {
+    "pt": "Segurança dos activos fora das instalações",
+    "en": "Security of assets off-premises"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Telemóveis das rotas geridos por MDM, com bloqueio e apagamento remoto.",
+    "en": "Route phones managed by MDM, with remote lock and wipe."
+   }
+  },
+  {
+   "id": "7.10",
+   "tema": "7",
+   "nome": {
+    "pt": "Suportes de armazenamento",
+    "en": "Storage media"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "COPIA",
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "7.11",
+   "tema": "7",
+   "nome": {
+    "pt": "Serviços de suporte",
+    "en": "Supporting utilities"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "UPS e gerador testados com registo.",
+    "en": "UPS and generator tested and recorded."
+   }
+  },
+  {
+   "id": "7.12",
+   "tema": "7",
+   "nome": {
+    "pt": "Segurança da cablagem",
+    "en": "Cabling security"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Cablagem identificada e protegida nas áreas técnicas.",
+    "en": "Cabling labelled and protected in technical areas."
+   }
+  },
+  {
+   "id": "7.13",
+   "tema": "7",
+   "nome": {
+    "pt": "Manutenção dos equipamentos",
+    "en": "Equipment maintenance"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Plano de manutenção registado.",
+    "en": "Recorded maintenance plan."
+   }
+  },
+  {
+   "id": "7.14",
+   "tema": "7",
+   "nome": {
+    "pt": "Eliminação ou reutilização segura dos equipamentos",
+    "en": "Secure disposal or re-use of equipment"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Apagamento seguro com certificado antes de abater discos.",
+    "en": "Certified secure erasure before disposing of disks."
+   }
+  },
+  {
+   "id": "8.1",
+   "tema": "8",
+   "nome": {
+    "pt": "Dispositivos dos utilizadores",
+    "en": "User end point devices"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "POL"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Política de MDM para os telemóveis das rotas e antivírus nos postos.",
+    "en": "MDM policy for route phones and antivirus on workstations."
+   }
+  },
+  {
+   "id": "8.2",
+   "tema": "8",
+   "nome": {
+    "pt": "Direitos de acesso privilegiado",
+    "en": "Privileged access rights"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MATRIZ",
+    "REVISAO",
+    "REGISTOS"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.3",
+   "tema": "8",
+   "nome": {
+    "pt": "Restrição do acesso à informação",
+    "en": "Information access restriction"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MATRIZ",
+    "PERFIS"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.4",
+   "tema": "8",
+   "nome": {
+    "pt": "Acesso ao código-fonte",
+    "en": "Access to source code"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Tornar o repositório privado numa organização do Grupo, com verificação em dois passos.",
+    "en": "Make the repository private in a Group organisation, with two-step verification."
+   }
+  },
+  {
+   "id": "8.5",
+   "tema": "8",
+   "nome": {
+    "pt": "Autenticação segura",
+    "en": "Secure authentication"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CONTAS"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.6",
+   "tema": "8",
+   "nome": {
+    "pt": "Gestão da capacidade",
+    "en": "Capacity management"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MONIT"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.7",
+   "tema": "8",
+   "nome": {
+    "pt": "Protecção contra software malicioso",
+    "en": "Protection against malware"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "ACT"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Antivírus gerido no servidor e análise dos ficheiros carregados.",
+    "en": "Managed antivirus on the server and scanning of uploaded files."
+   }
+  },
+  {
+   "id": "8.8",
+   "tema": "8",
+   "nome": {
+    "pt": "Gestão das vulnerabilidades técnicas",
+    "en": "Management of technical vulnerabilities"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "SBOM",
+    "ACT",
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Análise mensal de vulnerabilidades do servidor e teste de intrusão anual.",
+    "en": "Monthly server vulnerability scan and yearly penetration test."
+   }
+  },
+  {
+   "id": "8.9",
+   "tema": "8",
+   "nome": {
+    "pt": "Gestão da configuração",
+    "en": "Configuration management"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "ACT",
+    "MODULOS"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.10",
+   "tema": "8",
+   "nome": {
+    "pt": "Eliminação da informação",
+    "en": "Information deletion"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "RETENCAO"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.11",
+   "tema": "8",
+   "nome": {
+    "pt": "Mascaramento de dados",
+    "en": "Data masking"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MASC"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.12",
+   "tema": "8",
+   "nome": {
+    "pt": "Prevenção da fuga de dados",
+    "en": "Data leakage prevention"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "MATRIZ",
+    "REGISTOS"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Registar as exportações de ficheiros e rever os volumes fora do normal.",
+    "en": "Log file exports and review unusual volumes."
+   }
+  },
+  {
+   "id": "8.13",
+   "tema": "8",
+   "nome": {
+    "pt": "Cópias de segurança da informação",
+    "en": "Information backup"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "COPIA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.14",
+   "tema": "8",
+   "nome": {
+    "pt": "Redundância das instalações de processamento da informação",
+    "en": "Redundancy of information processing facilities"
+   },
+   "aplicavel": true,
+   "estado": "planeado",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Servidor de reserva com a última cópia, pronto a entrar em serviço.",
+    "en": "Standby server with the latest backup, ready to take over."
+   }
+  },
+  {
+   "id": "8.15",
+   "tema": "8",
+   "nome": {
+    "pt": "Registo de eventos",
+    "en": "Logging"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "REGISTOS",
+    "HORA"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.16",
+   "tema": "8",
+   "nome": {
+    "pt": "Actividades de monitorização",
+    "en": "Monitoring activities"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MONIT",
+    "CONF"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.17",
+   "tema": "8",
+   "nome": {
+    "pt": "Sincronização dos relógios",
+    "en": "Clock synchronization"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "HORA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.18",
+   "tema": "8",
+   "nome": {
+    "pt": "Utilização de programas utilitários privilegiados",
+    "en": "Use of privileged utility programs"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "PERFIS"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Acesso de administração ao servidor só com conta nominativa e registo.",
+    "en": "Server administrative access only with a named account and logging."
+   }
+  },
+  {
+   "id": "8.19",
+   "tema": "8",
+   "nome": {
+    "pt": "Instalação de software nos sistemas em produção",
+    "en": "Installation of software on operational systems"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "ACT",
+    "ENSAIO"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.20",
+   "tema": "8",
+   "nome": {
+    "pt": "Segurança das redes",
+    "en": "Networks security"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [
+    "CIFRA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Firewall com regras documentadas e revistas.",
+    "en": "Firewall with documented, reviewed rules."
+   }
+  },
+  {
+   "id": "8.21",
+   "tema": "8",
+   "nome": {
+    "pt": "Segurança dos serviços de rede",
+    "en": "Security of network services"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CIFRA"
+   ],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.22",
+   "tema": "8",
+   "nome": {
+    "pt": "Segregação das redes",
+    "en": "Segregation of networks"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Separar a rede de câmaras e equipamentos da rede de escritório.",
+    "en": "Separate the camera and equipment network from the office network."
+   }
+  },
+  {
+   "id": "8.23",
+   "tema": "8",
+   "nome": {
+    "pt": "Filtragem web",
+    "en": "Web filtering"
+   },
+   "aplicavel": true,
+   "estado": "parcial",
+   "evidencias": [],
+   "responsavel": "TI",
+   "nota": {
+    "pt": "Filtro de navegação nos postos.",
+    "en": "Web filter on workstations."
+   }
+  },
+  {
+   "id": "8.24",
+   "tema": "8",
+   "nome": {
+    "pt": "Utilização de criptografia",
+    "en": "Use of cryptography"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CIFRA",
+    "COPIA",
+    "REGISTOS"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.25",
+   "tema": "8",
+   "nome": {
+    "pt": "Ciclo de vida de desenvolvimento seguro",
+    "en": "Secure development life cycle"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CI",
+    "ENSAIO",
+    "POL"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.26",
+   "tema": "8",
+   "nome": {
+    "pt": "Requisitos de segurança das aplicações",
+    "en": "Application security requirements"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "POL",
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.27",
+   "tema": "8",
+   "nome": {
+    "pt": "Princípios de arquitectura e engenharia de sistemas seguros",
+    "en": "Secure system architecture and engineering principles"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MODULOS",
+    "POL"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.28",
+   "tema": "8",
+   "nome": {
+    "pt": "Programação segura",
+    "en": "Secure coding"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CI"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.29",
+   "tema": "8",
+   "nome": {
+    "pt": "Testes de segurança no desenvolvimento e na aceitação",
+    "en": "Security testing in development and acceptance"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "CI",
+    "ENSAIO"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.30",
+   "tema": "8",
+   "nome": {
+    "pt": "Desenvolvimento subcontratado",
+    "en": "Outsourced development"
+   },
+   "aplicavel": false,
+   "estado": "nao_aplicavel",
+   "evidencias": [],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "Não há desenvolvimento subcontratado: o portal é desenvolvido internamente. O código produzido com assistência de IA passa pelas mesmas verificações e pelo ensaio.",
+    "en": "There is no outsourced development: the portal is developed in-house. Code produced with AI assistance goes through the same checks and staging."
+   }
+  },
+  {
+   "id": "8.31",
+   "tema": "8",
+   "nome": {
+    "pt": "Separação dos ambientes de desenvolvimento, teste e produção",
+    "en": "Separation of development, test and production environments"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "ENSAIO"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.32",
+   "tema": "8",
+   "nome": {
+    "pt": "Gestão de alterações",
+    "en": "Change management"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "ENSAIO",
+    "CI",
+    "ACT"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.33",
+   "tema": "8",
+   "nome": {
+    "pt": "Informação de teste",
+    "en": "Test information"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "MASC"
+   ],
+   "responsavel": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "8.34",
+   "tema": "8",
+   "nome": {
+    "pt": "Protecção dos sistemas de informação durante os testes de auditoria",
+    "en": "Protection of information systems during audit testing"
+   },
+   "aplicavel": true,
+   "estado": "implementado",
+   "evidencias": [
+    "PERFIS",
+    "ENSAIO"
+   ],
+   "responsavel": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  }
+ ],
+ "riscos": [
+  {
+   "id": "R-01",
+   "ameaca": {
+    "pt": "Uma só pessoa desenvolve, testa e publica (falta de segregação de funções)",
+    "en": "A single person develops, tests and releases (no segregation of duties)"
+   },
+   "activo": "Portal",
+   "probabilidade": 4,
+   "impacto": 4,
+   "tratamento": "aceitar",
+   "controlos": [
+    "5.3",
+    "8.25",
+    "8.31",
+    "8.32"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 4
+   },
+   "dono": "ADM",
+   "nota": {
+    "pt": "Controlos compensatórios: 17 verificações automáticas, ensaio com o mesmo SHA, registos invioláveis e revisão mensal das alterações pela direcção.",
+    "en": "Compensating controls: 17 automatic checks, staging with the same SHA, tamper-evident logs and monthly change review by management."
+   }
+  },
+  {
+   "id": "R-02",
+   "ameaca": {
+    "pt": "Conta comprometida (palavra-passe roubada ou adivinhada)",
+    "en": "Compromised account (stolen or guessed password)"
+   },
+   "activo": "Contas",
+   "probabilidade": 3,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.17",
+    "8.5",
+    "5.18"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 4
+   },
+   "dono": "SADM",
+   "nota": {
+    "pt": "Verificação em dois passos obrigatória para perfis de administração.",
+    "en": "Mandatory two-step verification for administrative profiles."
+   }
+  },
+  {
+   "id": "R-03",
+   "ameaca": {
+    "pt": "Ex-colaborador mantém acesso",
+    "en": "Former employee keeps access"
+   },
+   "activo": "Contas",
+   "probabilidade": 3,
+   "impacto": 3,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.18",
+    "6.5"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 3
+   },
+   "dono": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-04",
+   "ameaca": {
+    "pt": "Perda de dados por avaria, erro ou ransomware no servidor",
+    "en": "Data loss through hardware failure, error or ransomware on the server"
+   },
+   "activo": "Servidor",
+   "probabilidade": 3,
+   "impacto": 5,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.13",
+    "5.30",
+    "8.7"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 4
+   },
+   "dono": "TI",
+   "nota": {
+    "pt": "Cópia fora do servidor (COPIAS_PASTA_EXTERNA) a configurar pela Informática.",
+    "en": "Off-server copy (COPIAS_PASTA_EXTERNA) to be configured by IT."
+   }
+  },
+  {
+   "id": "R-05",
+   "ameaca": {
+    "pt": "Indisponibilidade prolongada do servidor",
+    "en": "Prolonged server outage"
+   },
+   "activo": "Servidor",
+   "probabilidade": 2,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.14",
+    "5.30"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 3
+   },
+   "dono": "TI",
+   "nota": {
+    "pt": "Servidor de reserva (8.14) em plano.",
+    "en": "Standby server (8.14) planned."
+   }
+  },
+  {
+   "id": "R-06",
+   "ameaca": {
+    "pt": "Actualização com defeito chega à produção",
+    "en": "Faulty update reaches production"
+   },
+   "activo": "Portal",
+   "probabilidade": 3,
+   "impacto": 3,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.29",
+    "8.31",
+    "8.32"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 2
+   },
+   "dono": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-07",
+   "ameaca": {
+    "pt": "Vulnerabilidade numa biblioteca ou no PHP/Apache",
+    "en": "Vulnerability in a library or in PHP/Apache"
+   },
+   "activo": "Portal",
+   "probabilidade": 3,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.8",
+    "5.21",
+    "5.7"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 3
+   },
+   "dono": "PD",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-08",
+   "ameaca": {
+    "pt": "Alteração ou apagamento dos registos para esconder uma acção",
+    "en": "Logs altered or deleted to hide an action"
+   },
+   "activo": "Registos",
+   "probabilidade": 2,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.15",
+    "5.28",
+    "5.33"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 2
+   },
+   "dono": "SADM",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-09",
+   "ameaca": {
+    "pt": "Fuga de dados pessoais de clientes ou vendedores",
+    "en": "Leak of customer or salesperson personal data"
+   },
+   "activo": "Dados pessoais",
+   "probabilidade": 2,
+   "impacto": 5,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.34",
+    "8.11",
+    "8.12",
+    "8.10"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 4
+   },
+   "dono": "JUR",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-10",
+   "ameaca": {
+    "pt": "Tratamento de imagens (CCTV) e localização sem base legal ou sem notificação",
+    "en": "Processing of CCTV images and location without legal basis or notification"
+   },
+   "activo": "Dados pessoais",
+   "probabilidade": 3,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.31",
+    "5.34"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 3
+   },
+   "dono": "JUR",
+   "nota": {
+    "pt": "Avaliação de impacto e notificação antes de ligar as câmaras ao portal.",
+    "en": "Impact assessment and notification before connecting the cameras to the portal."
+   }
+  },
+  {
+   "id": "R-11",
+   "ameaca": {
+    "pt": "Falha de um fornecedor crítico (Primavera, Pinguim, alojamento)",
+    "en": "Failure of a critical supplier (Primavera, Pinguim, hosting)"
+   },
+   "activo": "Fornecedores",
+   "probabilidade": 3,
+   "impacto": 3,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.19",
+    "5.22"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 3
+   },
+   "dono": "JUR",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-12",
+   "ameaca": {
+    "pt": "Código-fonte público expõe a arquitectura",
+    "en": "Public source code exposes the architecture"
+   },
+   "activo": "Código-fonte",
+   "probabilidade": 4,
+   "impacto": 3,
+   "tratamento": "reduzir",
+   "controlos": [
+    "8.4"
+   ],
+   "residual": {
+    "probabilidade": 1,
+    "impacto": 2
+   },
+   "dono": "PD",
+   "nota": {
+    "pt": "Repositório privado numa organização do Grupo.",
+    "en": "Private repository in a Group organisation."
+   }
+  },
+  {
+   "id": "R-13",
+   "ameaca": {
+    "pt": "Telemóvel de rota perdido ou roubado",
+    "en": "Route phone lost or stolen"
+   },
+   "activo": "Telemóveis",
+   "probabilidade": 4,
+   "impacto": 2,
+   "tratamento": "reduzir",
+   "controlos": [
+    "7.9",
+    "8.1"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 1
+   },
+   "dono": "TI",
+   "nota": {
+    "pt": "",
+    "en": ""
+   }
+  },
+  {
+   "id": "R-14",
+   "ameaca": {
+    "pt": "Dependência de uma só pessoa (conhecimento não partilhado)",
+    "en": "Dependence on a single person (knowledge not shared)"
+   },
+   "activo": "Portal",
+   "probabilidade": 4,
+   "impacto": 4,
+   "tratamento": "reduzir",
+   "controlos": [
+    "5.37",
+    "5.30"
+   ],
+   "residual": {
+    "probabilidade": 2,
+    "impacto": 3
+   },
+   "dono": "ADM",
+   "nota": {
+    "pt": "Documentação técnica no repositório e segunda pessoa formada.",
+    "en": "Technical documentation in the repository and a second person trained."
+   }
+  }
+ ],
+ "ropa": [
+  {
+   "id": "T-01",
+   "tratamento": {
+    "pt": "Contas e acessos ao portal",
+    "en": "Portal accounts and access"
+   },
+   "finalidade": {
+    "pt": "Identificar quem usa o portal e controlar o acesso",
+    "en": "Identify who uses the portal and control access"
+   },
+   "base_legal": {
+    "pt": "Execução do contrato de trabalho e interesse legítimo na segurança",
+    "en": "Performance of the employment contract and legitimate interest in security"
+   },
+   "titulares": {
+    "pt": "Colaboradores e prestadores",
+    "en": "Employees and contractors"
+   },
+   "dados": {
+    "pt": "Nome, utilizador, email, perfil, entradas, endereço IP",
+    "en": "Name, username, email, profile, sign-ins, IP address"
+   },
+   "destinatarios": {
+    "pt": "Informática e super administrador",
+    "en": "IT and super administrator"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "Enquanto a conta existir; desligada aos 90 dias sem uso",
+    "en": "While the account exists; disabled after 90 days unused"
+   },
+   "regra": null,
+   "medidas": [
+    "5.15",
+    "8.5",
+    "8.15"
+   ]
+  },
+  {
+   "id": "T-02",
+   "tratamento": {
+    "pt": "Vendas, facturação e clientes",
+    "en": "Sales, invoicing and customers"
+   },
+   "finalidade": {
+    "pt": "Mostrar e reconciliar as vendas e enviar os totais ao SAP",
+    "en": "Show and reconcile sales and send totals to SAP"
+   },
+   "base_legal": {
+    "pt": "Obrigação legal (facturação e contabilidade) e execução de contrato",
+    "en": "Legal obligation (invoicing and accounting) and performance of contract"
+   },
+   "titulares": {
+    "pt": "Clientes (pessoas singulares e empresários em nome individual)",
+    "en": "Customers (individuals and sole traders)"
+   },
+   "dados": {
+    "pt": "Nome, NIF, morada, documentos e valores",
+    "en": "Name, tax number, address, documents and amounts"
+   },
+   "destinatarios": {
+    "pt": "Comercial, Financeiro, AGT",
+    "en": "Sales, Finance, Tax Authority (AGT)"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "Prazo legal de conservação dos documentos fiscais (no ERP); resumos no portal 365 dias",
+    "en": "Legal retention period for tax documents (in the ERP); summaries in the portal 365 days"
+   },
+   "regra": "resumo",
+   "medidas": [
+    "5.15",
+    "8.11",
+    "8.13"
+   ]
+  },
+  {
+   "id": "T-03",
+   "tratamento": {
+    "pt": "Rotas, carrinhas e geolocalização",
+    "en": "Routes, vans and geolocation"
+   },
+   "finalidade": {
+    "pt": "Planear e liquidar as rotas e controlar o stock das carrinhas",
+    "en": "Plan and settle routes and control van stock"
+   },
+   "base_legal": {
+    "pt": "Interesse legítimo na gestão da frota, com informação prévia aos vendedores; avaliação de impacto obrigatória",
+    "en": "Legitimate interest in fleet management, with prior notice to salespeople; impact assessment required"
+   },
+   "titulares": {
+    "pt": "Vendedores e motoristas",
+    "en": "Salespeople and drivers"
+   },
+   "dados": {
+    "pt": "Nome, rota, contagens, localização em horário de trabalho",
+    "en": "Name, route, counts, location during working hours"
+   },
+   "destinatarios": {
+    "pt": "Supervisão, Logística",
+    "en": "Supervision, Logistics"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "5 anos (conciliações das carrinhas)",
+    "en": "5 years (van reconciliations)"
+   },
+   "regra": "carrinha",
+   "medidas": [
+    "5.15",
+    "5.34",
+    "8.10"
+   ]
+  },
+  {
+   "id": "T-04",
+   "tratamento": {
+    "pt": "Videovigilância (CCTV) ligada ao portal",
+    "en": "CCTV linked to the portal"
+   },
+   "finalidade": {
+    "pt": "Segurança de pessoas e bens e contagem de stock (planeado)",
+    "en": "Safety of people and property and stock counting (planned)"
+   },
+   "base_legal": {
+    "pt": "Interesse legítimo; exige notificação à Agência de Protecção de Dados e avaliação de impacto antes de iniciar",
+    "en": "Legitimate interest; requires notification to the Data Protection Agency and an impact assessment before starting"
+   },
+   "titulares": {
+    "pt": "Colaboradores e visitantes",
+    "en": "Employees and visitors"
+   },
+   "dados": {
+    "pt": "Imagens",
+    "en": "Images"
+   },
+   "destinatarios": {
+    "pt": "Segurança das instalações",
+    "en": "Facilities security"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "A definir na avaliação de impacto (curto, por regra 30 dias)",
+    "en": "To be set in the impact assessment (short, as a rule 30 days)"
+   },
+   "regra": null,
+   "medidas": [
+    "7.4",
+    "5.34"
+   ]
+  },
+  {
+   "id": "T-05",
+   "tratamento": {
+    "pt": "Suporte e incidentes",
+    "en": "Support and incidents"
+   },
+   "finalidade": {
+    "pt": "Responder a pedidos e incidentes",
+    "en": "Respond to requests and incidents"
+   },
+   "base_legal": {
+    "pt": "Execução do contrato de trabalho",
+    "en": "Performance of the employment contract"
+   },
+   "titulares": {
+    "pt": "Colaboradores",
+    "en": "Employees"
+   },
+   "dados": {
+    "pt": "Nome, utilizador, descrição do pedido",
+    "en": "Name, username, request description"
+   },
+   "destinatarios": {
+    "pt": "Projectos Digitais, Informática",
+    "en": "Digital Projects, IT"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "3 anos após o fecho",
+    "en": "3 years after closure"
+   },
+   "regra": null,
+   "medidas": [
+    "5.24",
+    "5.15"
+   ]
+  },
+  {
+   "id": "T-06",
+   "tratamento": {
+    "pt": "Registos de auditoria",
+    "en": "Audit logs"
+   },
+   "finalidade": {
+    "pt": "Provar quem fez o quê e quando; detectar abusos",
+    "en": "Prove who did what and when; detect misuse"
+   },
+   "base_legal": {
+    "pt": "Interesse legítimo na segurança e obrigação de demonstrar conformidade",
+    "en": "Legitimate interest in security and duty to demonstrate compliance"
+   },
+   "titulares": {
+    "pt": "Utilizadores do portal",
+    "en": "Portal users"
+   },
+   "dados": {
+    "pt": "Utilizador, acção, data e hora, endereço IP",
+    "en": "Username, action, date and time, IP address"
+   },
+   "destinatarios": {
+    "pt": "Super administrador e auditoria",
+    "en": "Super administrator and audit"
+   },
+   "transferencias": {
+    "pt": "Nenhuma",
+    "en": "None"
+   },
+   "prazo": {
+    "pt": "3 anos",
+    "en": "3 years"
+   },
+   "regra": "registos",
+   "medidas": [
+    "8.15",
+    "5.33"
+   ]
+  }
+ ],
+ "auditoria": [
+  {
+   "quando": "2027-01",
+   "ambito": {
+    "pt": "Controlo de acessos, contas e revisão de acessos (5.15–5.18, 8.2, 8.5)",
+    "en": "Access control, accounts and access review (5.15–5.18, 8.2, 8.5)"
+   }
+  },
+  {
+   "quando": "2027-03",
+   "ambito": {
+    "pt": "Cópias, recuperação e continuidade (5.29, 5.30, 8.13, 8.14)",
+    "en": "Backups, restore and continuity (5.29, 5.30, 8.13, 8.14)"
+   }
+  },
+  {
+   "quando": "2027-05",
+   "ambito": {
+    "pt": "Desenvolvimento seguro e gestão de alterações (8.25–8.33)",
+    "en": "Secure development and change management (8.25–8.33)"
+   }
+  },
+  {
+   "quando": "2027-07",
+   "ambito": {
+    "pt": "Incidentes, registos e não conformidades (5.24–5.28, 8.15, cláusula 10)",
+    "en": "Incidents, logs and nonconformities (5.24–5.28, 8.15, clause 10)"
+   }
+  },
+  {
+   "quando": "2027-09",
+   "ambito": {
+    "pt": "Privacidade e fornecedores (5.19–5.23, 5.34, ISO/IEC 27701)",
+    "en": "Privacy and suppliers (5.19–5.23, 5.34, ISO/IEC 27701)"
+   }
+  },
+  {
+   "quando": "2027-10",
+   "ambito": {
+    "pt": "Revisão pela direcção (cláusula 9.3): resultados, objectivos, riscos, auditorias e melhorias",
+    "en": "Management review (clause 9.3): results, objectives, risks, audits and improvements"
+   }
+  }
+ ]
+}

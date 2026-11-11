@@ -2,7 +2,143 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 09-11-2026
+
+### Tabelas com o aspecto das referências internacionais
+
+- O cabeçalho das tabelas deixa de ter a faixa azul: título, colunas e linhas ficam na mesma superfície do cartão,
+  separados só por uma linha (prática das tabelas de dados da Apple, do Material Design e do IBM Carbon). Nomes das
+  colunas em letra normal, mais legível do que em maiúsculas. Procurar e Excel ficam na mesma linha do título.
+- Ao descer numa tabela longa, o cabeçalho continua preso no topo e só então ganha a cor do cartão e uma sombra suave.
+
+### Valor do portal para a Naval
+
+- Nova página **Inteligência de negócio › Valor do portal**: quanto o portal rende à Naval, mês a mês, com contagens
+  reais (rotas conciliadas e fechadas sozinhas, faltas de stock aprovadas, ficheiros SAP, relatórios exportados,
+  utilizadores e documentos anulados no Pinguim BO) e parâmetros definidos pela Direcção no portal (custo da hora,
+  minutos poupados, perda de referência, licença equivalente, reconstrução e câmbio). O que falta definir fica à vista
+  e não entra no total; os anulados são valor corrigido, mostrado à parte. Direcção altera (G), Informática,
+  Financeiro e auditoria vêem.
+
+### Sistema de gestão da segurança da informação (ISO/IEC 27001) completo
+
+- **Declaração de aplicabilidade** com os 93 controlos da ISO/IEC 27002:2022 (37 organizacionais, 8 de pessoas, 14
+  físicos, 34 tecnológicos): se se aplicam, estado, evidência, responsável e o que falta.
+- **Registo de riscos e plano de tratamento** (probabilidade × impacto, aceitável até 6), incluindo a falta de
+  segregação de funções com uma só pessoa a desenvolver, aceite com controlos compensatórios.
+- **Registo das actividades de tratamento (RoPA)** para a Lei n.º 22/11 e a ISO/IEC 27701.
+- **Objectivos de segurança medidos pelo próprio portal**, programa de auditoria interna e revisão pela direcção.
+- **Manual do SGSI** (SGSI-MAN-01, PT e EN): política de segurança e os procedimentos de acessos, incidentes, cópias e
+  continuidade, desenvolvimento seguro, fornecedores, utilização aceitável, dados pessoais e não conformidades.
+- **Aprovação de cada documento pelo super administrador**, com o resumo SHA-256 da versão aprovada.
+- **Não conformidades** no Suporte: só se resolvem com a causa e a acção correctiva. Pedidos fechados há mais de 3 anos
+  são apagados.
+
+## 08-11-2026
+
+### Conformidade com as normas ISO, suporte e incidentes
+
+- **Registos invioláveis** (ISO/IEC 27001 8.15): cada linha dos registos leva o SHA-256 da anterior; a verificação
+  diária encontra alterações, linhas apagadas e cortes, guarda um selo do dia e copia os registos para fora do servidor.
+- **Contas sem uso** desligam-se sozinhas ao fim de 90 dias (nunca o super administrador) e **revisão de acessos
+  trimestral** confirmada pelo super administrador (ISO/IEC 27001 5.18).
+- **Cópia diária cifrada** dos dados privados (AES-256-GCM) com **teste de recuperação** automático (ISO 22301).
+- **Prazos de retenção** por tipo de dado, com eliminação automática (ISO/IEC 27701, Lei n.º 22/11).
+- **Ensaio** com os dados pessoais mascarados e apagado quando a versão chega à produção (ISO/IEC 27001 8.33).
+- **Componentes e licenças**: inventário das bibliotecas, SBOM CycloneDX e proveniência em cada versão (OpenChain).
+- **Suporte e incidentes** (Administração › Suporte): pedidos com prioridade e prazo, histórico, causa e lições nos
+  incidentes graves e satisfação; incidente de segurança avisa logo o super administrador (ISO/IEC 20000-1, 27035).
+- Nova página **Administração › Conformidade** com a prova de todos os controlos. Documentação: `docs/CONFORMIDADE.md`.
+
+## 07-11-2026
+
+### Portal por módulos (peças de lego), ambiente de ensaio e painel da carrinha
+
+- **Módulos:** o portal passa a ser um monólito modular (o modelo da Shopify): cada área de negócio é uma peça com ficha
+  própria (`nucleo/modulos/*.json`: páginas, rotas da API, funções da matriz, conectores, eventos, dependências e
+  versão). Em Administração › Módulos, o super administrador põe cada módulo **ligado**, **piloto** (só SADM e TI,
+  para validar antes de ligar para todos) ou **desligado**, com confirmação da identidade e registo. O núcleo nunca se
+  desliga. Conectores declarados para o Pinguim BO, OLAP, Google Maps, MDM, SAP, IA, GitHub, Quatenus e CCTV.
+- **Ensaio dentro do portal** (só SADM e TI, sem outro endereço): cada versão nova instala-se primeiro em
+  `/ensaio/`, ao lado da produção, com dados privados próprios e testes de fumo automáticos; só se aprova a versão que
+  passou no ensaio (também a aprovação automática das 02:45). Faixa «AMBIENTE DE ENSAIO», ficheiro do SAP marcado
+  `ENSAIO_NAO_CARREGAR_`, correio só para os administradores, Equipamentos só a ler. `ENSAIO=0` desliga.
+- **Painel da carrinha** (Logística): por carrinha e dia, o fecho de rota, a carga e a origem dos dados (contagens da
+  solução do Pinguim BO, Quatenus e CCTV preparados). **Fecho por excepção:** a contagem igual ao esperado em todos
+  os artigos, sem alertas, fecha sozinha; só as diferenças vão a aprovação, com motivo.
+- Documentação: `docs/MODULOS.md`.
+
+### Documentos anulados fora das vendas
+
+- Os documentos anulados no Pinguim BO (`DOCHEADER.DOCSTATUS_ID = 8002`) deixam de contar nas vendas, nas linhas de
+  artigos e nos pagamentos, em todos os ecrãs e exportações (antes só ficavam de fora os eliminados, `DELETED = 1`).
+  O estado é configurável no `.env` (`PINGUIM_ESTADO_ANULADO`). No ecrã da AGT, o estado 8002 passa também a marcar o
+  documento como anulado.
+- Stock: sem alterações — o stock, as entradas e as saídas mostram-se exactamente como no Pinguim BO (as funções do
+  WinRest/Pinguim BO já devolvem ao armazém o stock dos documentos anulados).
+
+### Vendas para o SAP com os valores do Início
+
+- O total facturado, o numerário e o Multicaixa da página são os do Início, e são exactamente esses que seguem no
+  ficheiro: as notas de crédito seguem como documentos próprios, a negativo, e o numerário e o Multicaixa seguem a
+  mesma regra do Início. A estrutura do ficheiro não muda (uma folha, as mesmas colunas, os mesmos formatos).
+
+### Falhas momentâneas da rede: o portal repete sozinho
+
+- Com `ERR_NETWORK_CHANGED` (troca de Wi-Fi ou de rede móvel, VPN a ligar, computador a acordar), o pedido do token
+  e as leituras repetem-se até 3 vezes, com espera crescente (0,4 s, 1,2 s e 3 s), antes de aparecer «Sem ligação
+  ao servidor do portal». As gravações não se repetem sozinhas, para não ficarem em dobro.
+
+### Capacidade: 50 pessoas ao mesmo tempo já, caminho para 1000
+
+- **Medido com teste de carga** (`ferramentas/carga.mjs`): 50 pessoas com p95 abaixo de 30 ms e a carga de ~1000
+  pessoas (150 pedidos/s) sem erros. Plano completo, objectivos de serviço e pedido ao departamento de TI em
+  `docs/CAPACIDADE.md`.
+- **Sessões** na pasta privada do portal e limpas só depois de 60 minutos (o valor do PHP, 24 minutos, terminava
+  sessões activas antes dos 30 minutos de inactividade).
+- **Entrada:** limite por IP de 20 para 100 falhas em 15 minutos (muitas pessoas partilham o IP da empresa ou da rede
+  móvel); cada conta mantém o seu limite.
+- **Apache** (aplicado pelo actualizador, com validação e reposição): 600 fios de execução, ligações persistentes,
+  HTTP/2 quando o módulo existe e recomendações para Windows.
+- **PHP** (aplicado pelo actualizador, com cópia do php.ini): OPcache ligado, cache de caminhos e memória — melhor
+  esforço, nunca pára a actualização.
+- **Observabilidade:** pedidos lentos e erros do servidor registados em `registos/desempenho-AAAA-MM.jsonl`;
+  `GET api/index.php/v1/saude` para a monitorização e o futuro balanceador de carga.
+
 ## 06-11-2026
+
+### App no telemóvel: máxima rapidez na instalação, na entrada e na abertura
+
+Medido com rede 4G lenta simulada (latência de 150 ms, 1,6 Mbit/s) e processador 4 vezes mais lento:
+
+| Passo                                               | Antes                     | Agora                      |
+| --------------------------------------------------- | ------------------------- | -------------------------- |
+| Página de instalação (passos visíveis)              | 1,5 s · 10 pedidos        | 0,6 s · 2 pedidos          |
+| Primeira abertura até ao botão do Face ID           | 1,3 s · 10 pedidos        | 0,6 s · 4 pedidos          |
+| Abrir a app com a sessão terminada até estar dentro | 4,5 s · 2 ecrãs e 1 toque | 1,6 s · Face ID automático |
+
+- **Páginas da app num só pedido:** estilos, tema e funções dentro da página, letra do sistema do telemóvel (sem
+  descarregar letras), passos do sistema (iPhone ou Android) mostrados logo pelo servidor e tradução descarregada só
+  quando o idioma não é o português.
+- **Entrada rápida com Face ID:** ao abrir a app com a sessão terminada, a biometria aparece logo (como nas apps dos
+  bancos), com o desafio já dentro da página; o Face ID da activação também já vem na resposta da activação.
+- **App de gestão:** módulos com versão no endereço, guardados no telemóvel até mudarem (abrir a app já não volta a
+  pedir cada ficheiro), pré-carregamento de toda a cadeia de módulos, estilos dentro da página, token de acesso já
+  na página e os pedidos da sessão e dos indicadores ao mesmo tempo. Os números aparecem sem esperar pelo estado do
+  Pinguim BO. O portal também passa a levar o token de acesso na página.
+- O service worker regista-se depois de a página aparecer, sem disputar a rede.
+
+### App no telemóvel: nunca pede a palavra-passe
+
+- Na app só se entra com a chave do telemóvel: Face ID; sem Face ID, a impressão digital; se a biometria falhar, o
+  próprio telemóvel pede o seu código de bloqueio. A página da palavra-passe nunca aparece dentro da app.
+- O Face ID passa a ser obrigatório na activação (sem «Agora não»); se a activação ficar a meio, a app volta a
+  pedi-lo antes de abrir. Um telemóvel sem Face ID, impressão digital nem código de bloqueio não activa a app e
+  explica como activar a protecção nas Definições (o código QR não se gasta).
+- O logótipo da Naval roda nas páginas da app enquanto se espera (como no arranque do portal) e pára quando a
+  página fica pronta.
+- No menu da conta, «App no telemóvel» aparece a verde enquanto a pessoa não tem a app e a vermelho quando já a tem
+  activa num telemóvel.
 
 ### App no telemóvel: actualizações transparentes
 

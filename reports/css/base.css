@@ -753,11 +753,18 @@ h1 {
   max-width: 80ch;
 }
 
+.sec-h > div:first-child {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* Procurar e Excel na mesma linha, alinhados à direita do título */
 .sec-tools {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: none;
 }
 
 .search {
@@ -893,13 +900,15 @@ td {
   border-bottom: 1px solid var(--line);
 }
 
+/* Cabeçalho das colunas na mesma superfície da tabela, separado só pela linha (prática das tabelas de dados da
+   Apple, do Material Design e do IBM Carbon): sem faixa de cor, em letra normal (mais legível do que maiúsculas). */
 th {
-  background: var(--c-th-bg);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  background: transparent;
+  font-size: 12px;
+  letter-spacing: 0;
   color: var(--muted);
   font-weight: 600;
+  border-bottom-color: var(--line2);
 }
 
 th button {

@@ -104,6 +104,10 @@ const lerSessao = () =>
         location.replace('../app/so-pelo-qr.php');
         throw new Error('sessao');
       }
+      if (d && d.permissoes && comoApp && d.app_biometria === false) {
+        location.replace('../app/activar.php'); // falta activar o Face ID neste telemóvel
+        throw new Error('sessao');
+      }
       // app no telemóvel: uma versão nova instalada no servidor aplica-se sozinha quando a app volta ao ecrã
       if (d && comoApp && d.versao) {
         document.addEventListener('visibilitychange', () => {

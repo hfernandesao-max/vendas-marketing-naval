@@ -22,7 +22,7 @@ function naval_stock_cargas(): array
 {
     $porRota = [];
     $porDia = [];
-    $linhas = naval_json_ler(naval_raiz() . '/reports/data/cargas.json');
+    $linhas = naval_json_ler(naval_dados_reports() . '/cargas.json');
     foreach (naval_plano_para_cargas() as $x) $linhas[] = $x;
     usort($linhas, function ($a, $b) { return strcmp((string) ($a['data'] ?? ''), (string) ($b['data'] ?? '')); });
     foreach ($linhas as $c) {
@@ -253,7 +253,7 @@ function naval_stock(string $data, string $armazem = ''): ?array
         throw new NavalErro($msg, 503, ['codigo' => 'stock_bd'] + ($tecnico ? ['detalhe' => $e] : []));
     }
     // Sem base de dados configurada (desenvolvimento, testes): exportação «Stock de artigos» convertida
-    $f = naval_json_ler(naval_raiz() . '/reports/data/stock.json');
+    $f = naval_json_ler(naval_dados_reports() . '/stock.json');
     if (!$f) return null;
     $f['origem'] = $f['origem'] ?? 'stock.json (exportação «Stock de artigos»)';
     $filtro = trim($armazem);

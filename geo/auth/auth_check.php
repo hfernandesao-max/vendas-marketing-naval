@@ -30,6 +30,11 @@ if (!naval_autenticado()) {
     }
 
     $redirectParam = $relTarget !== '' ? ('?redirect=' . urlencode($relTarget)) : '';
+    // App instalada pelo código QR (cookie do equipamento): entrada rápida com Face ID ou impressão digital
+    if (preg_match('/^[a-f0-9]{24}$/', (string) ($_COOKIE[naval_ensaio() ? 'naval_eq_ensaio' : 'naval_eq'] ?? '')) && preg_match('#^(.*)/geo/$#', $basePath, $mm)) {
+        header('Location: ' . $mm[1] . '/app/entrar.php' . $redirectParam);
+        exit;
+    }
     header('Location: ' . $basePath . 'login.php' . $redirectParam);
     exit;
 }

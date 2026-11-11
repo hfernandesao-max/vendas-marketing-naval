@@ -1,6 +1,6 @@
 // Ficheiro de vendas para o SAP, gerado a partir do modelo original.
 import { draw } from '../app.js';
-import { nomeRota, tipoDoc, eNC } from '../calculos.js';
+import { catMeio, eNC, nomeRota, pagosDe, tipoDoc } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, filtroAtivo } from '../filtros.js';
@@ -56,11 +56,23 @@ const localLinha = (rota, codigo) => {
 };
 const ROTULO_CAMPO = { loja: 'Loja SAP da rota {r}', local: 'Depósito SAP da rota {r}', empregado: 'Empregado de vendas SAP da rota {r}' };
 const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Por omissão (sem abastecimento)' };
+/**
+ * CASH AMOUNT e CARD AMOUNT de cada documento com a mesma regra do Início (calculos.js: catMeio): numerário e
+ * Multicaixa; nas notas de crédito, a devolução ao cliente a negativo. Assim o ficheiro leva exactamente os valores do
+ * Início. A estrutura do ficheiro (folha, colunas, formatos) não muda.
+ */
+const meioDoc = (v, cat) =>
+  sum(
+    pagosDe(v).filter((p) => catMeio(p) === cat),
+    'valor',
+  );
+const cashSap = (v) => meioDoc(v, 'dinheiro'),
+  cardSap = (v) => meioDoc(v, 'multicaixa');
 function linhasSap() {
   const c = SAPD.config;
-  // Rota e tipo de documento vêm da barra de filtros. Só facturas: as notas de crédito não entram no ficheiro
-  // do SAP (o modelo RTM_Sales_SAP_Upload_Format é de vendas; decisão de 30-10-2026)
-  const V = (DB.vendas || []).filter((v) => inR(v.data) && !eNC(v));
+  // Rota e tipo de documento vêm da barra de filtros. Os mesmos documentos do Início: facturas e notas de crédito
+  // (estas com os valores a negativo, como documentos próprios), para o ficheiro levar exactamente os valores do Início
+  const V = (DB.vendas || []).filter((v) => inR(v.data));
   const porDoc = {};
   (DB.artigos || []).forEach((a) => {
     (porDoc[a.documento] = porDoc[a.documento] || []).push(a);
@@ -83,20 +95,11 @@ function linhasSap() {
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
-      const pg = v.nc ? [] : v.pagamentos || []; // as notas de crédito seguem para o SAP sem pagamentos
-      const cash = r2(
-          sum(
-            pg.filter((p) => p.codigo === 'NU'),
-            'valor',
-          ),
-        ),
-        card = r2(
-          sum(
-            pg.filter((p) => p.codigo === 'MC'),
-            'valor',
-          ),
-        );
-      const outros = pg.filter((p) => p.codigo !== 'NU' && p.codigo !== 'MC');
+      const pg = pagosDe(v); // nas notas de crédito, a devolução ao cliente (a negativo)
+      // CASH AMOUNT e CARD AMOUNT: os valores do Início (a estrutura do ficheiro não muda)
+      const cash = r2(cashSap(v)),
+        card = r2(cardSap(v));
+      const outros = pg.filter((p) => !['dinheiro', 'multicaixa', 'compensacao'].includes(catMeio(p)));
 
       if (!ls.length) {
         erros.push(t('{d}: o documento não tem linhas de artigo.', { d: docTxt }));
@@ -418,21 +421,19 @@ R['sap-exportar'] = (pg) => {
     acc,
   );
   pg.append(barra);
-  const cash = sum(L.docs, (v) =>
-      sum(
-        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'NU'),
-        'valor',
-      ),
-    ),
-    card = sum(L.docs, (v) =>
-      sum(
-        (v.nc ? [] : v.pagamentos || []).filter((p) => p.codigo === 'MC'),
-        'valor',
-      ),
-    );
+  // os mesmos documentos e valores do Início, que são os que seguem no ficheiro
+  const cash = sum(L.docs, cashSap),
+    card = sum(L.docs, cardSap);
   pg.append(
     tiles([
-      { l: t('Documentos a incluir'), v: n0(L.docs.length), s: t('{n} linhas de artigo', { n: n0(L.linhas.length) }) },
+      {
+        // como no Início: o número de facturas e, à parte, o valor das notas de crédito (também seguem no ficheiro)
+        l: t('Documentos a incluir'),
+        v: n0(L.docs.filter((v) => !eNC(v)).length),
+        s:
+          (L.docs.some(eNC) ? t('notas de crédito: −{v}', { v: kz2(-sum(L.docs.filter(eNC), 'total')) }) + ' · ' : '') +
+          t('{n} linhas de artigo', { n: n0(L.linhas.length) }),
+      },
       { l: t('Total facturado'), v: kz2(sum(L.docs, 'total')), cls: 'full-value' },
       { l: t('Numerário'), v: kz2(cash), cls: 'full-value' },
       { l: t('Multicaixa'), v: kz2(card), cls: 'full-value' },

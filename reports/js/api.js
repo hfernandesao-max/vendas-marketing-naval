@@ -15,24 +15,52 @@ let expira = 0;
 let aPedir = null;
 let semServidor = false;
 let erroToken = null; // porque é que o servidor não deu o token (configuração, API indisponível…)
+// Token já emitido dentro da página (index.php): o primeiro pedido à API não espera por POST auth/token
+{
+  const m = typeof document !== 'undefined' && document.querySelector('meta[name="api-token"]');
+  if (m && m.content) {
+    token = m.content;
+    expira = Date.now() + (parseInt(m.dataset.s, 10) || 900) * 1000;
+    m.remove();
+  }
+}
 
 const csrfPagina = () => {
   const m = document.querySelector('meta[name="csrf-token"]');
   return m ? m.getAttribute('content') || '' : '';
 };
 
+/**
+ * Falhas momentâneas da rede (ERR_NETWORK_CHANGED ao trocar de Wi-Fi ou de rede móvel, VPN a ligar, computador a
+ * acordar): repete o pedido até 3 vezes, com espera crescente e aleatória (0,4 s, 1,2 s, 3 s — prática das APIs da
+ * Google e da AWS), antes de dizer que não há ligação. Só para erros de rede, nunca para respostas do servidor.
+ */
+const ESPERAS = [400, 1200, 3000];
+export async function comRepeticao(fn) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i >= ESPERAS.length || (e && e.name === 'AbortError')) throw e;
+      await new Promise((ok) => setTimeout(ok, ESPERAS[i] * (0.75 + Math.random() * 0.5)));
+    }
+  }
+}
+
 /** Token de acesso válido (pede um novo quando falta menos de 1 minuto ou quando `novo` é verdadeiro). */
 export function obterToken(novo = false) {
   if (semServidor) return Promise.resolve(null);
   if (!novo && token && Date.now() < expira - 60000) return Promise.resolve(token);
   if (!aPedir)
-    aPedir = fetch(API + 'auth/token', {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfPagina() },
-      body: '{}',
-    })
+    aPedir = comRepeticao(() =>
+      fetch(API + 'auth/token', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfPagina() },
+        body: '{}',
+      }),
+    )
       .then((r) => {
         const json = (r.headers.get('content-type') || '').includes('application/json');
         if (!json && r.status === 501) {
@@ -78,13 +106,16 @@ export function esquecerToken() {
  * (ex.: 'vendas?start_date=…'). Repete uma vez com um token novo quando a resposta é 401.
  */
 export async function apiFetch(rota, init = {}) {
-  const pedir = (tk) =>
+  const metodo = String(init.method || 'GET').toUpperCase();
+  const uma = (tk) =>
     fetch(API + rota, {
       ...init,
       credentials: 'same-origin',
       cache: init.cache || 'no-cache', // valida com ETag (304) em vez de transferir de novo
       headers: { ...(init.headers || {}), ...(tk ? { Authorization: 'Bearer ' + tk } : {}) },
     });
+  // leituras (GET) repetem-se sozinhas numa falha momentânea da rede; gravações não (poderiam ficar em dobro)
+  const pedir = (tk) => (metodo === 'GET' || metodo === 'HEAD' ? comRepeticao(() => uma(tk)) : uma(tk));
   const tk = await obterToken();
   // Sem token por um problema do servidor (ex.: JWT_SEGREDO em falta no .env): não envia o pedido sem token
   // (daria 401 e o portal voltaria à página de entrada em ciclo); devolve o erro real, que o portal mostra.

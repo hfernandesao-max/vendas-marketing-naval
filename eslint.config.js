@@ -30,6 +30,12 @@ export default [
     rules: { 'no-empty': ['error', { allowEmptyCatch: true }], 'no-unused-vars': ['error', { caughtErrors: 'none' }] },
   },
   {
+    // ferramentas da linha de comandos em Node (ex.: teste de carga)
+    files: ['ferramentas/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
+    rules: { 'no-empty': ['error', { allowEmptyCatch: true }], 'no-unused-vars': ['error', { caughtErrors: 'none' }] },
+  },
+  {
     files: ['tests/**/*.js', '*.config.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
     rules: { 'no-empty': ['error', { allowEmptyCatch: true }], 'no-unused-vars': ['error', { caughtErrors: 'none' }] },

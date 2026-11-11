@@ -1,0 +1,16 @@
+{
+  "id": "sap",
+  "nome": "Integração SAP",
+  "versao": "1.0.0",
+  "descricao": "Ficheiro de vendas para o SAP (estrutura do modelo original, sem alterações) e lotes emitidos.",
+  "nucleo": false,
+  "paginas": ["sap-exportar"],
+  "recursos": ["sap-exportar"],
+  "api": ["v1/sap", "v1/sap/modelo", "v1/sap/excel"],
+  "conectores": ["sap"],
+  "eventos": {
+    "publica": ["sap.lote_emitido"],
+    "escuta": []
+  },
+  "depende": ["nucleo", "vendas"]
+}

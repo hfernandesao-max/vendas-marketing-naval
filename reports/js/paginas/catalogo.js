@@ -45,6 +45,7 @@ export const PAGES = [
   { id: 'geo-zonas', grupo: 'Terreno', icon: 'zona', nome: 'Zonas de entrega' },
   { id: 'geo-distribuidores', grupo: 'Terreno', icon: 'rede', nome: 'Distribuidores' },
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Plano de cargas' },
+  { id: 'painel-carrinha', grupo: 'Logística', icon: 'carrinhaok', nome: 'Painel da carrinha' },
   { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
   { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Registo de cargas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
@@ -54,6 +55,7 @@ export const PAGES = [
   { id: 'assistente', grupo: 'Inteligência de negócio', icon: 'ia', nome: 'Assistente IA' },
   { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'qualidade-dados', grupo: 'Inteligência de negócio', icon: 'alvo', nome: 'Qualidade dos dados e anomalias' },
+  { id: 'valor-portal', grupo: 'Inteligência de negócio', icon: 'valor', nome: 'Valor do portal' },
   { id: 'apresentacao', grupo: 'Inteligência de negócio', icon: 'slides', nome: 'Apresentação do portal' },
   // Sistema: smartphones e impressoras, interfaces com outros sistemas e administração (segregação de funções)
   { id: 'equipamentos', grupo: 'Equipamentos', icon: 'phone', nome: 'Equipamentos' },
@@ -64,6 +66,9 @@ export const PAGES = [
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
   { id: 'auditoria', grupo: 'Administração', icon: 'historico', nome: 'Histórico de auditoria' },
   { id: 'actualizacoes', grupo: 'Administração', icon: 'actualizar', nome: 'Actualizações' },
+  { id: 'modulos', grupo: 'Administração', icon: 'pecas', nome: 'Módulos' },
+  { id: 'conformidade', grupo: 'Administração', icon: 'selo', nome: 'Conformidade' },
+  { id: 'suporte', grupo: 'Administração', icon: 'suporte', nome: 'Suporte' },
 ];
 /** Secção de uma página (Comercial, Operações, Análise, Sistema) ou null (Início, Alertas). */
 export const seccaoDe = (p) => (p && p.grupo ? SECCAO_GRUPO[p.grupo] || null : null);
@@ -90,6 +95,10 @@ export const NOMES_RECURSO = {
   nif: 'Ver o NIF dos clientes',
   acessos: 'Página Acessos',
   actualizacoes: 'Actualizações do portal (aprovação; só o super administrador)',
+  modulos: 'Módulos do portal (ligar, piloto, desligar; só o super administrador)',
+  conformidade: 'Conformidade (prova dos controlos ISO; confirmar a revisão de acessos só o super administrador)',
+  suporte: 'Suporte e incidentes (V: os seus pedidos; G: gerir todos)',
+  'valor-portal': 'Valor do portal (V: ver o cálculo; G: alterar os parâmetros)',
   'admin-utilizadores': 'Utilizadores e perfis',
   'admin-config': 'Configuração e ligações',
   registos: 'Registos de acesso e exportações',

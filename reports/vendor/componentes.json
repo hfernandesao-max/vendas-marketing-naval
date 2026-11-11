@@ -1,0 +1,11 @@
+{
+  "nota": "Inventário das bibliotecas de terceiros incluídas no portal (OpenChain ISO/IEC 5230). Cada ficheiro de reports/vendor tem de estar aqui, com a licença e o SHA-256; ao actualizar uma biblioteca, actualizar esta lista (tests/unidade/componentes.teste.php).",
+  "licencas_permitidas": ["MIT", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "ISC"],
+  "componentes": [
+    { "ficheiro": "exceljs.min.js", "nome": "exceljs", "versao": "4.4.0", "licenca": "MIT", "origem": "https://github.com/exceljs/exceljs", "sha256": "d5830d139d04d67c4dcfea3dd10f80eaa2086e1cf257544b6ffa530e42051525" },
+    { "ficheiro": "jspdf.plugin.autotable.min.js", "nome": "jspdf-autotable", "versao": "3.8.4", "licenca": "MIT", "origem": "https://github.com/simonbengtsson/jsPDF-AutoTable", "sha256": "38f9f9aef8219f3a689461adc095248261f70387f973ad8aa1ae28ff6650cc2e" },
+    { "ficheiro": "jspdf.umd.min.js", "nome": "jspdf", "versao": "2.5.2", "licenca": "MIT", "origem": "https://github.com/parallax/jsPDF", "sha256": "3a042c3a16ca6868ebaffc01e00dcf4ce64bc9aebabec91276c49555d178b143" },
+    { "ficheiro": "jszip.min.js", "nome": "jszip", "versao": "3.10.1", "licenca": "MIT", "origem": "https://github.com/Stuk/jszip", "sha256": "f29f07dd9b6726fe167a2ae93c22615f0dd923a769e3fadb4b2c1273581637e2" },
+    { "ficheiro": "qrcode.js", "nome": "qrcode-generator", "versao": "1.4.4", "licenca": "MIT", "origem": "https://github.com/kazuhikoarase/qrcode-generator", "sha256": "f943d4d3165b68e2d5fa9f5050c373063efe46a5f2061ddda76a27fd2cedfa8e" }
+  ]
+}

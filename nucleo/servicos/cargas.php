@@ -181,7 +181,7 @@ function naval_plano_dias(int $max = 400): array
  */
 function naval_plano_importar_historico(?string $ficheiro = null): int
 {
-    $ficheiro = $ficheiro ?? naval_raiz() . '/reports/data/cargas.json';
+    $ficheiro = $ficheiro ?? naval_dados_reports() . '/cargas.json';
     if (!is_file($ficheiro)) return 0;
     $marca = naval_plano_pasta() . '/historico-importado.json';
     $hash = (string) hash_file('sha256', $ficheiro);

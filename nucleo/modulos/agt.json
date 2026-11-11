@@ -1,0 +1,16 @@
+{
+  "id": "agt",
+  "nome": "Comunicação AGT",
+  "versao": "1.0.0",
+  "descricao": "Estado da comunicação dos documentos à AGT, lido do Pinguim BO.",
+  "nucleo": false,
+  "paginas": ["agt"],
+  "recursos": ["agt"],
+  "api": ["v1/agt"],
+  "conectores": ["pinguim-sql"],
+  "eventos": {
+    "publica": [],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}

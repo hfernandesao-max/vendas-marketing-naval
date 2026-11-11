@@ -34,8 +34,10 @@ try {
         }
         $u = naval_utilizadores()[$eq['login']];
         naval_abrir_sessao($eq['login'], $u, true, 'codigo_qr', $eq['id']);
+        naval_app_cookie($eq['id']);
+        // as opções do Face ID vão já na resposta: ao tocar no botão, o telemóvel pede logo a biometria
         naval_json(['ok' => true, 'equipamento' => $eq['id'], 'app' => $eq['app'], 'nome' => NAVAL_APP_NOMES[$eq['app']], 'destino' => NAVAL_APP_DESTINO[$eq['app']],
-            'pessoa' => (string) ($u['nome'] ?? $eq['login'])]);
+            'pessoa' => (string) ($u['nome'] ?? $eq['login']), 'opcoes' => naval_wa_opcoes_registo($eq, $u)]);
     }
     if ($f === 'registo-opcoes' || $f === 'registar') {
         $id = (string) ($_SESSION['app_equipamento'] ?? '');
@@ -48,6 +50,7 @@ try {
     if ($f === 'entrada-opcoes' || $f === 'entrar') {
         $id = (string) ($q['equipamento'] ?? '');
         $eq = naval_app_activo($id);
+        if (!$eq) naval_app_cookie('');
         if (!$eq) naval_json(['ok' => false, 'desactivada' => true, 'erro' => 'Esta app foi desactivada ou activada noutro equipamento. No portal, abra «App no telemóvel» e leia o código QR.'], 410);
         if (!$eq['credenciais']) naval_json(['ok' => false, 'sem_chave' => true, 'erro' => 'A biometria ainda não está activada neste equipamento. Entre com a palavra-passe.'], 409);
         if ($f === 'entrada-opcoes') naval_json(['ok' => true, 'opcoes' => naval_wa_opcoes_entrada($eq)]);

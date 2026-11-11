@@ -13,9 +13,53 @@ function naval_raiz(): string
     return dirname(__DIR__);
 }
 
+/**
+ * Ambiente de ensaio (versão nova lado a lado, dentro do portal: «instalação azul e verde»). O actualizador instala a
+ * versão nova em <portal>/ensaio/ com o ficheiro .ambiente-ensaio. Aí, o portal usa o .env da produção (os segredos não
+ * se copiam) com estas diferenças: dados privados próprios (<dados-privados>/ensaio, uma cópia feita na instalação),
+ * endereço com /ensaio, sem actualizações automáticas, correio só para os administradores de sistema e entrada só para
+ * o super administrador e o administrador da plataforma. A produção nunca lê nada do ensaio.
+ */
+function naval_ensaio(): bool
+{
+    static $e = null;
+    if ($e === null) $e = is_file(naval_raiz() . '/.ambiente-ensaio');
+    return $e;
+}
+
+/** Raiz da produção: no ensaio, a pasta acima de <portal>/ensaio. */
+function naval_raiz_producao(): string
+{
+    return naval_ensaio() ? dirname(naval_raiz()) : naval_raiz();
+}
+
+/** Dados públicos do portal (reports/data/*.json): no ensaio, os da produção (só leitura). */
+function naval_dados_reports(): string
+{
+    return naval_raiz_producao() . '/reports/data';
+}
+
+/** Versão instalada no ensaio (ficheiro .ambiente-ensaio, escrito pelo actualizador). */
+function naval_ensaio_versao(): string
+{
+    if (!naval_ensaio()) return '';
+    $j = json_decode((string) @file_get_contents(naval_raiz() . '/.ambiente-ensaio'), true);
+    return is_array($j) ? (string) ($j['versao'] ?? '') : '';
+}
+
+/** Faixa fixa «ENSAIO» em todas as páginas do ensaio (nunca se confunde com a produção); vazio na produção. */
+function naval_faixa_ensaio(): string
+{
+    if (!naval_ensaio()) return '';
+    $v = htmlspecialchars(naval_ensaio_versao(), ENT_QUOTES, 'UTF-8');
+    return '<div id="faixa-ensaio" role="status" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:#273777;color:#fff;'
+        . 'font:600 12px/1.4 system-ui,sans-serif;text-align:center;padding:4px 12px;letter-spacing:.04em;pointer-events:none">'
+        . 'AMBIENTE DE ENSAIO' . ($v !== '' ? ' · versão ' . $v : '') . ' · não é a produção</div>';
+}
+
 function naval_ficheiro_env(): string
 {
-    return getenv('NAVAL_ENV') ?: naval_raiz() . '/.env';
+    return getenv('NAVAL_ENV') ?: naval_raiz_producao() . '/.env';
 }
 
 /** Todas as chaves do .env (lidas uma vez por pedido). */
@@ -31,6 +75,13 @@ function naval_env(): array
         if ($l === '' || $l[0] === '#' || strpos($l, '=') === false) continue;
         [$k, $v] = explode('=', $l, 2);
         $env[trim($k)] = trim(trim($v), "\"'");
+    }
+    if (naval_ensaio()) {
+        $priv = rtrim($env['DADOS_PRIVADOS'] ?? '', '/\\') ?: dirname(naval_raiz_producao()) . '/dados-privados';
+        $env['DADOS_PRIVADOS'] = $priv . '/ensaio';
+        if (($env['PORTAL_URL'] ?? '') !== '') $env['PORTAL_URL'] = rtrim($env['PORTAL_URL'], '/') . '/ensaio';
+        $env['ACTUALIZACAO_AUTOMATICA'] = '0';
+        $env['NAVAL_AMBIENTE'] = 'ensaio';
     }
     return $env;
 }

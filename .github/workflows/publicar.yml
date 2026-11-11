@@ -62,11 +62,18 @@ jobs:
         if: steps.v.outputs.versao != ''
         run: php scripts/construir-pacote.php dist "${{ steps.v.outputs.versao }}" "${{ steps.v.outputs.sha }}"
 
-      - name: Proveniência do pacote
+      # lista de componentes (SBOM, CycloneDX): bibliotecas de terceiros com licença e SHA-256 (OpenChain ISO/IEC 5230)
+      - name: Lista de componentes (SBOM)
+        if: steps.v.outputs.versao != ''
+        run: php scripts/sbom.php "dist/portal-rtm-${{ steps.v.outputs.versao }}.sbom.cdx.json" "${{ steps.v.outputs.versao }}" "${{ steps.v.outputs.sha }}"
+
+      - name: Proveniência do pacote e da lista de componentes
         if: steps.v.outputs.versao != ''
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-path: dist/portal-rtm-*.zip
+          subject-path: |
+            dist/portal-rtm-*.zip
+            dist/portal-rtm-*.sbom.cdx.json
 
       - name: Publicar no GitHub
         if: steps.v.outputs.versao != ''
