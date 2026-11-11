@@ -11,6 +11,7 @@
 defined('NAVAL_API') || exit;
 naval_servico('conformidade');
 naval_servico('sgsi');
+naval_servico('vigia');
 naval_exigir(['conformidade']);
 $eu = (array) naval_utilizador();
 $GLOBALS['naval_api_sensivel'] = true;
@@ -18,7 +19,7 @@ $GLOBALS['naval_api_sensivel'] = true;
 if (!naval_e_post()) {
     $v = naval_conf_vista();
     if (($_GET['verificar'] ?? '') === '1') $v['verificacao'] = naval_registos_verificar();
-    naval_json(['ok' => true, 'pode_confirmar' => ($eu['perfil'] ?? '') === 'SADM', 'sgsi' => naval_sgsi_vista()] + $v);
+    naval_json(['ok' => true, 'pode_confirmar' => ($eu['perfil'] ?? '') === 'SADM', 'sgsi' => naval_sgsi_vista(), 'vigia' => naval_vigia_vista()] + $v);
 }
 $p = naval_pedido();
 naval_exigir_csrf($p);
@@ -31,4 +32,4 @@ if ($accao === 'confirmar_revisao') {
 } else {
     throw new NavalErro('Acção desconhecida.', 400);
 }
-naval_json(['ok' => true, 'pode_confirmar' => true, 'sgsi' => naval_sgsi_vista()] + naval_conf_vista());
+naval_json(['ok' => true, 'pode_confirmar' => true, 'sgsi' => naval_sgsi_vista(), 'vigia' => naval_vigia_vista()] + naval_conf_vista());

@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   php:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -58,7 +58,7 @@ jobs:
         run: npm ci && npx playwright test --project=servidor --grep-invert @navegador
 
   analise:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     name: Análise do PHP
     steps:
@@ -77,7 +77,7 @@ jobs:
         run: composer analisar
 
   testes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -138,7 +138,7 @@ jobs:
         run: php tests/actualizacao/cenario.php
 
   apache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     name: Regras do Apache
     steps:

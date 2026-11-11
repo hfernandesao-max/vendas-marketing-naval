@@ -99,6 +99,29 @@ test('conformidade: estado dos controlos, avisos do que falta configurar e confi
       { id: 'registos', descricao: 'Registos de actividade e auditoria', dias: 1095 },
       { id: 'email', descricao: 'Cópias dos correios enviados', dias: 90 },
     ],
+    vigia: {
+      activa: true,
+      ultimo: '2026-11-11 10:15:00',
+      abertos: 1,
+      github_erro: 'A GitHub App do portal não tem permissão para criar «issues» (dar «Issues: Read and write» à App no GitHub).',
+      repositorio: 'naval/portal',
+      negocio: {
+        pinguim: { ok: true },
+        'vendas_2026-11-10': { ok: false, mensagem: 'O Pinguim BO tem 80 documentos de venda em 2026-11-10 e o portal não mostra nenhum.' },
+      },
+      problemas: [
+        {
+          id: 'a1',
+          tipo: 'negocio_vendas',
+          mensagem: 'O Pinguim BO tem 80 documentos de venda em 2026-11-10 e o portal não mostra nenhum.',
+          contagem: 3,
+          ultimo: '2026-11-11 10:15:00',
+          estado: 'aberto',
+          issue: 71,
+        },
+        { id: 'b2', tipo: 'TypeError', mensagem: 'Argumento inválido', contagem: 1, ultimo: '2026-11-01 08:00:00', estado: 'resolvido', issue: null },
+      ],
+    },
   };
   await page.route('**/v1/conformidade**', (r) => {
     if (r.request().method() === 'POST') {
@@ -112,6 +135,11 @@ test('conformidade: estado dos controlos, avisos do que falta configurar e confi
   await expect(page.locator('.tile').filter({ hasText: 'Teste de recuperação' }).locator('.v')).toHaveText('Passou');
   await expect(page.locator('main')).toContainText('COPIAS_CHAVE');
   await expect(page.locator('#s-conf-contas tbody tr')).toHaveCount(1);
+  await expect(page.locator('.tile').filter({ hasText: 'Problemas abertos' }).locator('.v')).toHaveText('1');
+  await expect(page.locator('.tile').filter({ hasText: 'Verificações de negócio' }).locator('.v')).toHaveText('1 / 2');
+  await expect(page.locator('main')).toContainText('Issues: Read and write');
+  await expect(page.locator('#s-conf-vigia tbody tr')).toHaveCount(2);
+  await expect(page.locator('#s-conf-vigia a', { hasText: '#71' })).toHaveAttribute('href', 'https://github.com/naval/portal/issues/71');
   await page.click('button:has-text("Confirmar a revisão de acessos")');
   await page.locator('dialog.dlg input').fill('revisto com a Direcção');
   await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();

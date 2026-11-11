@@ -269,6 +269,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conformidade] ' . $e->getMessage());
     }
+    // vigilância em produção: falhas do código, verificações de negócio, GitHub e reposição automática (VIGIA_ACTIVA)
+    try {
+        naval_servico('vigia');
+        $v = naval_vigia_ciclo($agora);
+        if ($v !== null) $feito['vigia'] = $v;
+    } catch (Throwable $e) {
+        error_log('[vigilância] ' . $e->getMessage());
+    }
     // base de dados da localização dos IP (país e cidade de cada entrada nos registos): instala e renova sozinha
     try {
         $g = naval_geoip_manter($agora);

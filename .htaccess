@@ -16,6 +16,14 @@ ServerSignature Off
 <FilesMatch "(?i)\.(csv|tsv|xlsx?|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|log|jsonl|ini|conf|cfg|dist|neon|lock|sh|ps1|bat|py)$|~$">
     Require all denied
 </FilesMatch>
+# Chaves, certificados e arquivos comprimidos (ex.: a chave .pem da GitHub App ou um .zip deixados na pasta do site)
+<FilesMatch "(?i)\.(pem|key|crt|cer|der|csr|pfx|p12|jks|kdbx|ppk|zip|rar|7z|gz|tgz|tar|bz2|xz|cab|iso|msi|exe|dll|bk|dump|xml|md)$">
+    Require all denied
+</FilesMatch>
+# Notas e listas em texto (ex.: «APP ID.txt»), excepto robots.txt, security.txt e as licenças das fontes e bibliotecas
+<FilesMatch "(?i)^(?!(robots|security|humans)\.txt$|licen[cs][ae]|ofl-).*\.txt$">
+    Require all denied
+</FilesMatch>
 # Documentação e configurações do projecto na raiz (não são páginas do portal)
 <FilesMatch "^(composer\.json|package(-lock)?\.json|README\.md|CHANGELOG\.md|CONTRIBUTING\.md|eslint\.config\.js|playwright\.config\.js|phpstan\.neon\.dist)$">
     Require all denied

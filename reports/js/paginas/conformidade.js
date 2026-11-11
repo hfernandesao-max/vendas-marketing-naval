@@ -74,6 +74,62 @@ function aprovar(doc) {
   });
 }
 
+/** Vigilância em produção: falhas do código, verificações de negócio e o que já foi para o GitHub. */
+function vigia(pg) {
+  const V = CF.vigia;
+  if (!V) return;
+  const neg = Object.entries(V.negocio || {});
+  const negFalha = neg.filter(([, r]) => !r.ok);
+  pg.append(
+    tiles([
+      {
+        l: t('Vigilância'),
+        v: V.activa ? t('Ligada') : t('Desligada'),
+        s: V.ultimo ? t('última verificação: {d}', { d: dh(V.ultimo) }) : t('ainda sem verificações'),
+        tone: V.activa ? null : 'warn',
+      },
+      { l: t('Problemas abertos'), v: n0(V.abertos), tone: V.abertos ? 'warn' : null },
+      {
+        l: t('Verificações de negócio'),
+        v: neg.length ? n0(neg.length - negFalha.length) + ' / ' + n0(neg.length) : '—',
+        tone: negFalha.length ? 'warn' : null,
+      },
+    ]),
+  );
+  if (V.github_erro || negFalha.length) {
+    const ul = el('ul');
+    if (V.github_erro) ul.append(el('li', null, t(V.github_erro)));
+    negFalha.forEach(([, r]) => ul.append(el('li', null, r.mensagem)));
+    pg.append(secBox(t('Atenção da vigilância'), '', ul));
+  }
+  pg.append(
+    tabela({
+      id: 'conf-vigia',
+      titulo: t('Problemas detectados em produção'),
+      nota: t('Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pelo ensaio.'),
+      search: false,
+      rows: V.problemas || [],
+      sort: 'ultimo',
+      dir: -1,
+      cols: [
+        { key: 'mensagem', label: t('Problema'), p: 0, wrap: true },
+        { key: 'tipo', label: t('Tipo') },
+        { key: 'contagem', label: t('Ocorrências'), type: 'n' },
+        { key: 'ultimo', label: t('Última'), get: (r) => dh(r.ultimo) },
+        { key: 'estado', label: t('Estado'), p: 0, render: (v) => pill(v === 'aberto' ? t('Aberto') : t('Resolvido'), v === 'aberto' ? 'p-warn' : 'p-mut') },
+        {
+          key: 'issue',
+          label: t('GitHub'),
+          render: (v) =>
+            v
+              ? Object.assign(el('a', null, '#' + v), { href: 'https://github.com/' + V.repositorio + '/issues/' + v, target: '_blank', rel: 'noopener' })
+              : document.createTextNode('—'),
+        },
+      ],
+    }),
+  );
+}
+
 /** O sistema de gestão (ISO/IEC 27001): documentos aprovados, objectivos, aplicabilidade, riscos, RoPA e auditoria. */
 function sgsi(pg) {
   const S = CF.sgsi;
@@ -306,6 +362,7 @@ R.conformidade = (pg) => {
   if (CF.pode_confirmar && rev && !rev.confirmada) acc.append(botao(t('Confirmar a revisão de acessos'), '', () => confirmar(rev.trimestre)));
   pg.append(acc);
   sgsi(pg);
+  vigia(pg);
   if ((e.problemas || []).length) {
     const ul = el('ul');
     e.problemas.forEach((x) => ul.append(el('li', null, x)));
