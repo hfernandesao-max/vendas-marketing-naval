@@ -19,7 +19,7 @@ jobs:
     if: >-
       (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled' ||
        github.event.workflow_run.conclusion == 'timed_out') && github.event.workflow_run.run_attempt < 3
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Esperar e repetir os trabalhos que falharam

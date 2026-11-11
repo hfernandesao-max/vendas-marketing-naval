@@ -26,7 +26,7 @@ concurrency:
 jobs:
   segredos:
     name: Segredos (gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
@@ -45,7 +45,7 @@ jobs:
 
   dependencias:
     name: Dependências vulneráveis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
@@ -62,7 +62,7 @@ jobs:
 
   sast:
     name: Análise estática (Semgrep)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -87,7 +87,7 @@ jobs:
 
   codeql:
     name: Análise estática (CodeQL)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -110,7 +110,7 @@ jobs:
 
   dast:
     name: Varrimento dinâmico (OWASP ZAP)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -144,7 +144,7 @@ jobs:
     name: Alerta da verificação semanal
     needs: [segredos, dependencias, sast, codeql]
     if: failure() && github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       issues: write
     steps:

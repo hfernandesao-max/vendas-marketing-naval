@@ -9,6 +9,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Quando as verificações do GitHub falham ou são canceladas por razões passageiras (fila sem servidores de teste,
   espelho do Ubuntu em baixo), repetem-se sozinhas até 3 vezes, ao fim de 5 e de 15 minutos. Execuções substituídas
   por uma alteração mais recente não se repetem. Um defeito verdadeiro continua a bloquear a versão.
+- As verificações correm em `ubuntu-24.04` fixo em vez de `ubuntu-latest`: durante a migração do GitHub para o
+  Ubuntu 26, os servidores `ubuntu-latest` deixaram de aceitar trabalhos («not acquired by Runner») e as versões
+  ficavam por publicar.
 
 ### Ensaio fiável no servidor Windows
 
