@@ -50,6 +50,20 @@ function naval_app_scripts(): string
     return naval_faixa_ensaio() . '<script>' . file_get_contents($r . '/app/app.js') . '</script>' . "\n"
         . '<script>try{if((localStorage.getItem("vm-lang")||"pt")!=="pt"){var s=document.createElement("script");s.src="../geo/login-idioma.js";document.body.appendChild(s)}}catch(e){}</script>';
 }
+/** Escreve o logótipo da app (HTML fixo do servidor; o único dado é um booleano). */
+function naval_app_escrever_logo(bool $pre): void
+{
+    echo naval_app_logo($pre);
+}
+
+/** Escreve dados para o JavaScript da página num <script type="application/json">, com < > & ' " escapados. */
+function naval_app_escrever_json(string $id, $dados): void
+{
+    echo '<script type="application/json" id="' . htmlspecialchars($id, ENT_QUOTES, 'UTF-8') . '">'
+        . json_encode($dados, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+        . '</script>';
+}
+
 /** Logótipo da Naval com os anéis e a órbita a rodar, como no arranque do portal (pára quando a página fica pronta). */
 function naval_app_logo(bool $aRodar = true): string
 {
