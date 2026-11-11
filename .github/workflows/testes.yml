@@ -102,7 +102,13 @@ jobs:
         run: npm run lint && npm run format:check
 
       - name: Navegador dos testes
-        run: npx playwright install --with-deps chromium
+        # o apt passa para outro espelho oficial do Ubuntu se o do GitHub não responder (.github/scripts/apt-preparar.sh)
+        run: |
+          for i in 1 2 3; do
+            sudo -E bash .github/scripts/apt-preparar.sh && npx playwright install --with-deps chromium && exit 0
+            sleep 15
+          done
+          exit 1
 
       - name: Testes do portal e do servidor
         run: npm test
@@ -133,20 +139,17 @@ jobs:
 
   apache:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     name: Regras do Apache
     steps:
       - uses: actions/checkout@v5
 
       - name: Apache 2.4 com PHP
-        timeout-minutes: 6
+        timeout-minutes: 15
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: |
-          for i in 1 2 3; do
-            sudo -E apt-get update -q && sudo -E apt-get install -y -q --no-install-recommends apache2 libapache2-mod-php && break
-            sleep 10
-          done
+        # o apt passa para outro espelho oficial do Ubuntu se o do GitHub não responder (.github/scripts/apt-preparar.sh)
+        run: sudo -E bash .github/scripts/apt-preparar.sh apache2 libapache2-mod-php
 
       - name: Ficheiros internos recusados, páginas servidas e cabeçalhos de segurança
         run: sudo bash tests/apache/verificar.sh
