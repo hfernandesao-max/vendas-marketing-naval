@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 11-11-2026
 
+### Ensaio fiável no servidor Windows
+
+- Ao activar a versão no ensaio, o Windows pode recusar a mudança de nome da pasta enquanto o antivírus ou o indexador
+  lêem os ficheiros acabados de escrever («Não foi possível activar a pasta nova do ensaio»). O actualizador tenta de
+  novo com espera crescente (cerca de 30 s) e, se mesmo assim não der, copia a pasta. A mensagem passa a dizer o erro do
+  sistema.
+- Uma falha da instalação no ensaio repete-se sozinha até 3 vezes, de 5 em 5 minutos; falhas dos testes de fumo não se
+  repetem. Novo botão **«Repetir no ensaio»** em Actualizações.
+
 ### Vendas de novo visíveis: a regra dos documentos anulados corrigida
 
 - Desde 07-11-2026 o portal tirava das vendas os documentos com `DOCSTATUS_ID = 8002`. A verificação no Pinguim BO

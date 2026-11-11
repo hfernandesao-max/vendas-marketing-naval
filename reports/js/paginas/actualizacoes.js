@@ -422,11 +422,38 @@ function blocoEnsaio(ens, v) {
         ),
       ),
     );
+  } else if (ens.resultado === '') {
+    b.append(pill(t('A instalar no ensaio: fica pronta nos próximos 5 minutos'), 'p-serio'));
   } else {
-    b.append(pill(t('Falhou nos testes de fumo do ensaio: não pode ser aprovada'), 'p-bad'));
+    // falha da instalação (pasta, rede, ficheiro em uso): repete-se sozinha até 3 vezes; falha dos testes: defeito da versão
+    b.append(
+      pill(
+        t(ens.testes ? 'Falhou nos testes de fumo do ensaio: não pode ser aprovada' : 'A instalação no ensaio falhou: não pode ser aprovada ainda'),
+        'p-bad',
+      ),
+    );
     const ul = el('ul');
     (ens.falhas || []).forEach((f) => ul.append(el('li', null, f)));
     b.append(ul);
+    if (!ens.testes) {
+      b.append(
+        el(
+          'p',
+          'note',
+          (ens.tentativas || 1) < 3
+            ? t('Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.', { n: ens.tentativas || 1 })
+            : t('As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».'),
+        ),
+        botao(t('Repetir no ensaio'), 'sm ghost', () =>
+          pedir({ accao: 'repetir_ensaio' }).then((d) => {
+            if (d.cancelado) return;
+            if (!d.ok) return toast(t(d.erro || 'Sem resposta do servidor.'), 6000);
+            toast(t('A versão volta a instalar-se no ensaio nos próximos 5 minutos.'), 5000);
+            recarregar();
+          }),
+        ),
+      );
+    }
   }
   return b;
 }

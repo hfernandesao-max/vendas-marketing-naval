@@ -2754,6 +2754,13 @@ export const TI = {
   'Pôr em piloto': 'ናብ ፈተነ ኣሕልፍ',
   'Desligar o módulo': 'እቲ ሞጁል ኣጥፍእ',
   'Ligar o módulo para todos': 'እቲ ሞጁል ንኹሉ ኣወልዕ',
+  'Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.': 'ፈተነ {n} ካብ 3፦ እቲ ሰርቨር ኣብ ውሽጢ 5 ደቓይቕ ባዕሉ ደጊሙ ክፍትን እዩ።',
+  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».':
+    '3 ፈተነታት ፈሺሎም። ነቲ ጠንቂ ኣዕርዩ (ንኣብነት፡ ኣብ ስራሕ ዘሎ ማህደር ፈተነ) ድሕሪኡ «ኣብ ፈተነ ድገሞ» ጠውቑ።',
+  'Repetir no ensaio': 'ኣብ ፈተነ ድገሞ',
+  'A versão volta a instalar-se no ensaio nos próximos 5 minutos.': 'እቲ ሕታም ኣብ ዝመጽእ 5 ደቓይቕ ደጊሙ ኣብ ፈተነ ክጸዓን እዩ።',
+  'A instalação no ensaio falhou: não pode ser aprovada ainda': 'ምጽዓን ኣብ ፈተነ ፈሺሉ፦ ገና ክጸድቕ ኣይክእልን',
+  'Não há nenhuma instalação falhada no ensaio para repetir.': 'ክድገም ዝኽእል ዝፈሸለ ምጽዓን ኣብ ፈተነ የለን።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

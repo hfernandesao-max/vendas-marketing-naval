@@ -20,12 +20,16 @@ if (!naval_e_post()) naval_json(['ok' => true] + naval_act_vista_portal());
 $p = naval_pedido();
 naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
-if (!in_array($accao, ['aprovar', 'forcar', 'reprovar', 'cancelar', 'reverter'], true)) throw new NavalErro('Acção desconhecida.', 400);
+if (!in_array($accao, ['aprovar', 'forcar', 'reprovar', 'cancelar', 'reverter', 'repetir_ensaio'], true)) throw new NavalErro('Acção desconhecida.', 400);
 naval_servico('gestao');
 $pedirConfirmacao = naval_gestao_confirmar($eu, 'actualizacao_' . $accao, (string) ($p['confirmacao'] ?? ''));
 if ($pedirConfirmacao) naval_json($pedirConfirmacao);
 
 try {
+    if ($accao === 'repetir_ensaio') {
+        naval_act_ensaio_repetir((string) $eu['login']);
+        naval_json(['ok' => true]);
+    }
     if ($accao === 'reverter') {
         naval_act_pedir_reversao((string) $eu['login']);
         naval_json(['ok' => true]);
