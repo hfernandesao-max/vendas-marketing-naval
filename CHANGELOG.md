@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 11-11-2026
 
+### Vigilância em produção e reposição automática
+
+- Cada excepção ou erro fatal do PHP fica registado sem dados pessoais (e-mails, NIF e valores saem da mensagem) e
+  agrupado por assinatura. De 15 em 15 minutos a vigilância junta as falhas e as respostas 5xx da API; de hora a hora
+  confirma que o Pinguim BO responde e que, havendo documentos de venda no Pinguim BO, o portal os mostra (o defeito de
+  07-11-2026 não dava erro nenhum).
+- Cada problema novo vai para o GitHub como «issue» com a etiqueta `vigilancia` (lida pela correcção automática da
+  madrugada) e por correio a `ACTUALIZACAO_EMAIL`. Falta de permissão da GitHub App aparece no portal.
+- Na primeira hora depois de uma actualização, se as falhas dispararem ou as vendas deixarem de aparecer, o portal
+  volta sozinho à versão anterior (uma vez por versão) e avisa por correio.
+- Nova secção em Administração › Conformidade com os problemas, as verificações e a ligação ao GitHub.
+- O Apache recusa chaves e certificados (`.pem`, `.key`, `.pfx`…), arquivos (`.zip`, `.rar`, `.7z`…) e notas em texto
+  deixados na pasta do site; as licenças das fontes continuam disponíveis.
+
 ### Ensaio fiável no servidor Windows
 
 - Ao activar a versão no ensaio, o Windows pode recusar a mudança de nome da pasta enquanto o antivírus ou o indexador

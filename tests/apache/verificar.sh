@@ -89,6 +89,11 @@ espera 403 /.env /.env.exemplo /.gitignore /.htaccess /.git/config /.git/HEAD /.
   /nucleo/config.php /nucleo/servicos/bd.php /ferramentas/utilizadores.php /tests/servidor/preparar.php /tests/servidor/ambiente/.env \
   /docs/ARQUITECTURA.md /node_modules/ /geo/apache_vhost.conf /geo/config.php /geo/auth/config_users.php \
   /reports/data/vendas.json /reports/data/rotas.json /reports/modelos/
+# chaves, arquivos e notas deixados na pasta do site (como em 11-11-2026): nunca servidos; as licenças continuam
+for n in "chave-teste.private-key.pem" "copia-teste.zip" "APP ID teste.txt" "LISTA_DE_FICHEIROS_TESTE.txt" "certificado-teste.pfx"; do echo x > "$RAIZ/$n"; done
+espera 403 /chave-teste.private-key.pem /copia-teste.zip "/APP%20ID%20teste.txt" /LISTA_DE_FICHEIROS_TESTE.txt /certificado-teste.pfx
+rm -f "$RAIZ/chave-teste.private-key.pem" "$RAIZ/copia-teste.zip" "$RAIZ/APP ID teste.txt" "$RAIZ/LISTA_DE_FICHEIROS_TESTE.txt" "$RAIZ/certificado-teste.pfx"
+espera 200 /assets/fontes/LICENCA-Inter.txt /geo/vendor/LICENSE-lucide.txt
 # ficheiros de dados que existam na raiz do site (por exemplo, exportações de clientes ou de stock)
 while IFS= read -r -d '' f; do
   n="$(basename "$f")"; espera 403 "/$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$n")"

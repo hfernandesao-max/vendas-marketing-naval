@@ -249,6 +249,17 @@ function naval_detalhe(string $detalhe): array
  * Erros em JSON: NavalErro passa a {ok:false, erro, ...} com o seu código; qualquer outro erro
  * (incluindo erros fatais do PHP) é registado no log e devolvido como 500 sem mostrar HTML.
  */
+/** Entrega a falha à vigilância (nucleo/servicos/vigia.php); nunca impede a resposta de erro. */
+function naval_falha_vigiar(string $origem, string $tipo, string $msg, string $ficheiro, int $linha): void
+{
+    try {
+        naval_servico('vigia');
+        naval_vigia_registar_falha($origem, $tipo, $msg, $ficheiro, $linha);
+    } catch (Throwable $x) {
+        // sem vigilância, fica o error_log
+    }
+}
+
 function naval_erros_em_json(string $origem): void
 {
     ini_set('display_errors', '0');
@@ -260,6 +271,7 @@ function naval_erros_em_json(string $origem): void
             naval_json(['ok' => false, 'erro' => $e->getMessage()] + $e->extra(), $e->estado());
         }
         error_log('[' . $origem . '] ' . get_class($e) . ': ' . $e->getMessage() . ' em ' . $e->getFile() . ':' . $e->getLine());
+        naval_falha_vigiar($origem, get_class($e), $e->getMessage(), $e->getFile(), $e->getLine());
         naval_json(['ok' => false, 'erro' => 'Erro interno no servidor.'] + naval_detalhe($e->getMessage()), 500);
     });
     register_shutdown_function(function () use ($origem) {
@@ -273,6 +285,7 @@ function naval_erros_em_json(string $origem): void
         elseif (stripos($msg, 'Maximum execution time') !== false) $erro = 'O Pinguim BO demorou demasiado a responder. Experimente um período mais curto.';
         elseif (stripos($msg, 'Allowed memory size') !== false) $erro = 'Memória do PHP insuficiente para este período. Experimente um período mais curto.';
         error_log('[' . $origem . '] FATAL ' . $msg . ' em ' . $e['file'] . ':' . $e['line']);
+        naval_falha_vigiar($origem, 'fatal', $msg, (string) $e['file'], (int) $e['line']);
         naval_json(['ok' => false, 'erro' => $erro] + naval_detalhe($msg . ' (' . basename($e['file']) . ':' . $e['line'] . ')'), 500);
     });
 }
