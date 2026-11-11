@@ -43,7 +43,7 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
 </head>
 <body>
   <main class="caixa" id="entrar" data-destino="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>">
-    <?= naval_app_logo((bool) $pre) ?>
+    <?= naval_app_logo((bool) $pre) /* nosemgrep: echoed-request -- HTML fixo do servidor; só recebe um booleano */ ?>
 <?php if (!$eq || $semChave): ?>
     <h1 data-t><?= $eq ? 'Active de novo a app' : 'App desactivada' ?></h1>
     <div class="msg erro" role="alert" data-t><?= $eq ? 'A activação deste telemóvel ficou a meio, sem o Face ID. No portal, abra «App no telemóvel» e leia um código QR novo.' : 'Esta app foi desactivada ou activada noutro equipamento. No portal, abra «App no telemóvel» e leia o código QR.' ?></div>
@@ -54,7 +54,7 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
     <div class="bio" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16c1.7 1.3 4.3 1.3 6 0"/></svg></div>
     <button type="button" class="botao" id="ent-bio" data-t><?= $ios ? 'Entrar com Face ID' : 'Entrar com a impressão digital' ?></button>
     <p class="validade" data-t>Se a biometria falhar, o telemóvel pede o seu código de bloqueio.</p>
-    <script type="application/json" id="ent-opcoes"><?= json_encode($pre, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+    <script type="application/json" id="ent-opcoes"><?= json_encode($pre, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) /* nosemgrep: echoed-request -- JSON com < > & ' " escapados, dentro de um script application/json */ ?></script>
 <?php endif; ?>
   </main>
   <?= naval_app_scripts() ?>

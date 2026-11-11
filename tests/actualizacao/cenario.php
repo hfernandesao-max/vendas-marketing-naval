@@ -540,7 +540,13 @@ caso('ensaio: versão nova lado a lado em /ensaio (dados próprios, faixa, teste
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
     @unlink($f);
     $x = json_decode(implode('', $o), true);
-    confirma($x === [true, false, true, true, $priv . '/ensaio', $srv . '/reports/data', 'naval_eq_ensaio', '0', 'v30'], 'regras do ensaio: ' . implode("\n", $o));
+    // no Windows a mesma pasta aparece com barras diferentes e nome curto (RUNNER~1): compara o caminho real
+    $caminho = function ($p) { return strtolower(str_replace('\\', '/', (string) (realpath((string) $p) ?: $p))); };
+    if (is_array($x) && count($x) === 9) {
+        $x[4] = $caminho($x[4]);
+        $x[5] = $caminho($x[5]);
+    }
+    confirma($x === [true, false, true, true, $caminho($priv . '/ensaio'), $caminho($srv . '/reports/data'), 'naval_eq_ensaio', '0', 'v30'], 'regras do ensaio: ' . implode("\n", $o));
     [$r, $t] = act('urgente');
     confirma($r === 0 && trim($t) === '', 'reinstalou a mesma versão no ensaio: ' . $t);
     $v = svc('naval_act_vista_portal()')['r'];
