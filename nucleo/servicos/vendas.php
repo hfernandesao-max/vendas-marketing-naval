@@ -14,20 +14,49 @@ defined('NAVAL_NUCLEO') || exit;
 const NAVAL_MEIOS_PAGAMENTO = ['NU' => 'Numerário', 'MC' => 'Multicaixa', 'TB' => 'Transferência Bancária', 'CS' => 'Adiantamento'];
 
 /**
- * Estado do documento anulado no Pinguim BO (DOCHEADER.DOCSTATUS_ID, indicado pelo utilizador em 07-11-2026: 8002).
- * Os documentos anulados nunca entram nas vendas, nas linhas de artigos nem nos pagamentos. Configurável no .env
- * (PINGUIM_ESTADO_ANULADO; vários estados separados por vírgulas).
+ * Documentos anulados no Pinguim BO. Nunca entram nas vendas, nas linhas de artigos nem nos pagamentos.
+ *
+ * Um documento conta como anulado quando:
+ *   - está eliminado (DOCHEADER.DELETED = 1);
+ *   - tem o motivo de cancelamento preenchido (DOCHEADEREXTRA, campo PINGUIM_ANULACAO_EXTRA_ID, por omissão o mesmo
+ *     do ecrã da AGT, 26003 «Motivo de cancelamento»): é assim que o Pinguim BO regista a anulação;
+ *   - opcionalmente, tem um dos estados de PINGUIM_ESTADO_ANULADO (DOCHEADER.DOCSTATUS_ID, separados por vírgulas).
+ *
+ * Nota (11-11-2026): o 8002 foi indicado como estado de anulado em 07-11-2026, mas a verificação no Pinguim BO mostrou
+ * que TODOS os documentos (facturas, facturas-recibo e notas de crédito) têm DOCSTATUS_ID = 8002 — é o estado normal
+ * de um documento fechado. Por isso nenhum estado conta por omissão; se o Pinguim BO tiver um estado próprio de
+ * anulado, define-se no .env sem mexer no código.
  */
 function naval_vendas_estados_anulados(): array
 {
-    $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/\s*,\s*/', (string) naval_config('PINGUIM_ESTADO_ANULADO', '8002'))))));
-    return $ids ?: [8002];
+    return array_values(array_unique(array_filter(array_map('intval', preg_split('/\s*,\s*/', naval_config('PINGUIM_ESTADO_ANULADO', ''))))));
+}
+
+/** Campo do motivo de cancelamento (DOCHEADEREXTRA.DOCEXTRA_ID); 0 desliga esta regra. */
+function naval_vendas_extra_anulacao(): int
+{
+    return max(0, (int) naval_config('PINGUIM_ANULACAO_EXTRA_ID', naval_config('AGT_ANULACAO_ID', '26003')));
+}
+
+/** Condição SQL dos documentos anulados (DOCHEADER com o alias DH), sem contar os eliminados. '' se nenhuma regra. */
+function naval_vendas_condicao_anulados(): string
+{
+    $c = [];
+    $ids = naval_vendas_estados_anulados();
+    if ($ids) $c[] = 'COALESCE(DH.DOCSTATUS_ID, 0) IN (' . implode(', ', $ids) . ')';
+    $extra = naval_vendas_extra_anulacao();
+    if ($extra > 0) {
+        $c[] = 'EXISTS (SELECT 1 FROM DOCHEADEREXTRA ANUL WHERE ANUL.DOCHEADER_ID = DH.ID AND ANUL.DOCEXTRA_ID = ' . $extra
+            . " AND ANUL.DELETED = 0 AND LTRIM(RTRIM(COALESCE(ANUL.STRING_VALUE, ''))) <> '')";
+    }
+    return $c ? '(' . implode(' OR ', $c) . ')' : '';
 }
 
 /** Condição SQL dos documentos válidos para as vendas: não eliminados e não anulados (DOCHEADER com o alias DH). */
 function naval_vendas_condicao_validos(): string
 {
-    return 'DH.DELETED = 0 AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN (' . implode(', ', naval_vendas_estados_anulados()) . ')';
+    $anulados = naval_vendas_condicao_anulados();
+    return 'DH.DELETED = 0' . ($anulados !== '' ? ' AND NOT ' . $anulados : '');
 }
 
 /** Páginas que mostram vendas: sem nenhuma, o perfil só vê quantidades por artigo. */
@@ -64,6 +93,7 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
         // anulado (estado do documento, quando a exportação o traz)
         $estado = trim((string) $tx->document_status) ?: trim((string) $tx->status);
         if ($estado !== '' && in_array((int) $estado, naval_vendas_estados_anulados(), true)) continue;
+        if (trim((string) $tx->cancel_reason) !== '' || trim((string) $tx->motivo_anulacao) !== '') continue;
         $nc = $tipo === 'NC';
         // Nota de crédito: o valor desconta às vendas, qualquer que seja o sinal com que vem na exportação
         $sinal = function (float $v) use ($nc) { return $nc ? -abs($v) : $v; };
@@ -358,7 +388,7 @@ function naval_ve_vendas(): bool
 
 /**
  * Vendas e linhas de artigos do período (datas AAAAMMDD) lidas do SQL Server: DOCHEADER + DOCCONFIG +
- * STORE (documentos não eliminados nem anulados — DOCSTATUS_ID 8002: vendas com total positivo e notas de crédito, as de sinal de vendas
+ * STORE (documentos não eliminados nem anulados — naval_vendas_condicao_validos(): vendas com total positivo e notas de crédito, as de sinal de vendas
  * negativo, com o valor em negativo), DOCFOOTER + PAYMETHOD (pagamentos, só das vendas) e
  * DOCMOVDETAIL + UNIT (artigos). Devolve null se a base de dados não responder (o portal usa então a
  * exportação REST). Mesmo formato que naval_vendas_do_xml().

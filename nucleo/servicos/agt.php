@@ -207,7 +207,7 @@ function naval_agt_montar(array $linhas): array
             'total' => round((float) $l['TOTAL'], 2),
             'data' => (string) $l['DATA_DOCUMENTO'],
             'data_fiscal' => $l['DATA_FISCAL'] !== null ? (string) $l['DATA_FISCAL'] : null,
-            // Anulado: estado do documento anulado (DOCSTATUS_ID 8002) ou motivo de cancelamento registado
+            // Anulado: motivo de cancelamento registado ou, se configurado, um estado de anulado (PINGUIM_ESTADO_ANULADO)
             'anulado' => $motivo !== '' || (isset($l['ESTADO_DOCUMENTO']) && in_array((int) $l['ESTADO_DOCUMENTO'], naval_vendas_estados_anulados(), true)),
             'motivo_anulacao' => $motivo !== '' ? $motivo : null,
             'entidade' => trim((string) ($l['ENTIDADE'] ?? '')),

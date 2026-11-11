@@ -3,7 +3,11 @@
  * Início da app instalada (start_url do manifesto, com o código QR). Na primeira abertura activa a app neste
  * equipamento e cria a chave de acesso do telemóvel (obrigatória): Face ID; sem Face ID, a impressão digital; sem
  * biometria, o código de bloqueio do telemóvel. Na app nunca se pede a palavra-passe. Nas aberturas seguintes segue
- * para a app (sessão aberta) ou para a entrada rápida com a biometria.
+ * sempre para a entrada rápida com a biometria.
+ *
+ * Abrir a app depois de a terminar pede sempre o Face ID (como nas apps dos bancos): esta página é o start_url do
+ * manifesto, e o telemóvel só a carrega quando a app arranca de novo — voltar de segundo plano não passa por aqui.
+ * Por isso, se ainda houver uma sessão da app aberta, é terminada aqui e a pessoa confirma quem é com a biometria.
  */
 require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
@@ -12,10 +16,12 @@ header('Cache-Control: no-store');
 header('Referrer-Policy: no-referrer');
 
 $codigo = (string) ($_GET['c'] ?? '');
-// sessão da app ainda aberta neste equipamento: directo à app
+// sessão da app ainda aberta neste equipamento: a app foi terminada e aberta de novo — termina-a e pede a biometria
 $eq = naval_autenticado() && !empty($_SESSION['app_equipamento']) ? naval_app_activo((string) $_SESSION['app_equipamento']) : null;
 if ($eq && $eq['credenciais']) {
-    header('Location: ' . NAVAL_APP_DESTINO[$eq['app']]);
+    naval_terminar_sessao('app_reaberta');
+    naval_iniciar_sessao();
+    header('Location: entrar.php?redirect=' . rawurlencode(NAVAL_APP_DESTINO[$eq['app']]));
     exit;
 }
 // sessão da app aberta mas sem a chave do telemóvel (activação interrompida): termina a activação da biometria

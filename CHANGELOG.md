@@ -2,6 +2,29 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 11-11-2026
+
+### Vendas de novo visíveis: a regra dos documentos anulados corrigida
+
+- Desde 07-11-2026 o portal tirava das vendas os documentos com `DOCSTATUS_ID = 8002`. A verificação no Pinguim BO
+  mostrou que **todos** os documentos (facturas, facturas-recibo e notas de crédito) têm esse estado: é o estado normal
+  de um documento fechado. As vendas, o Início, os pagamentos e o ficheiro para o SAP ficavam a zero, e o ecrã da AGT
+  marcava tudo como anulado.
+- Um documento conta agora como anulado quando está eliminado (`DELETED = 1`) ou tem o **motivo de cancelamento**
+  preenchido no Pinguim BO (o mesmo campo que o ecrã da AGT já lia, `PINGUIM_ANULACAO_EXTRA_ID`, 26003 por omissão). Se
+  o Pinguim BO tiver um estado próprio de anulado, define-se em `PINGUIM_ESTADO_ANULADO`, sem mexer no código.
+
+### App no telemóvel: Face ID sempre que a app volta a abrir
+
+- Ao terminar a app e abri-la de novo, a sessão anterior termina e a entrada pede o Face ID (ou a impressão digital),
+  como nas apps dos bancos. Voltar de segundo plano não pede. Fica registado («sessão terminada: app reaberta»).
+
+### Módulos com interruptor
+
+- Cada módulo tem um interruptor ligado/desligado no topo do cartão, como nas definições do telemóvel (com motivo e
+  confirmação da identidade). O piloto fica ao lado («Pôr em piloto» / «Ligar para todos»). O núcleo mostra o
+  interruptor bloqueado: nunca se desliga.
+
 ## 09-11-2026
 
 ### Tabelas com o aspecto das referências internacionais

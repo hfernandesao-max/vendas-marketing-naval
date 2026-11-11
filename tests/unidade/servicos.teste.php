@@ -22,7 +22,7 @@ function xml_vendas(): SimpleXMLElement
       <footer><line><payment_code>MC</payment_code><amount>200</amount></line></footer>
     </transaction>
     <transaction><document_type>FR</document_type><document_nr>FR 1/2</document_nr><store_code>1001</store_code><total>50</total><deleted>1</deleted></transaction>
-    <transaction><document_type>FT</document_type><document_nr>FT 1/3</document_nr><store_code>1001</store_code><total>70</total><deleted>0</deleted><document_status>8002</document_status></transaction>
+    <transaction><document_type>FT</document_type><document_nr>FT 1/3</document_nr><store_code>1001</store_code><total>70</total><deleted>0</deleted><document_status>8002</document_status><cancel_reason>Erro no cliente</cancel_reason></transaction>
     <transaction><document_type>NC</document_type><document_nr>NC 1/1</document_nr><store_code>1001</store_code><total>-50</total><deleted>0</deleted></transaction>
   </transactions>
 </export>
@@ -32,7 +32,7 @@ XML
 
 teste('vendas: FR/FT e notas de crédito não anuladas, cliente, NIF da entidade, troco e nomes dos meios', function () {
     $d = naval_vendas_do_xml(xml_vendas(), ['1001' => 'Ana'], true);
-    igual(['FR 1/1', 'FT 1/1', 'NC 1/1'], array_column($d['vendas'], 'documento'));   // FR 1/2 eliminada e FT 1/3 anulada (estado 8002) ficam de fora
+    igual(['FR 1/1', 'FT 1/1', 'NC 1/1'], array_column($d['vendas'], 'documento'));   // FR 1/2 eliminada e FT 1/3 anulada (motivo de cancelamento) ficam de fora; o estado 8002 sozinho não anula
     [$fr, $ft, $nc] = $d['vendas'];
     igual('Ana', $fr['promotor']);
     igual('1002', $ft['promotor']);               // sem promotor conhecido fica a rota
@@ -255,10 +255,12 @@ teste('Crédito de nota de crédito usado numa factura seguinte do mesmo cliente
     igual([['codigo' => 'CMP', 'meio' => 'Compensação com nota de crédito', 'valor' => -780000.0, 'atribuido' => 'FR 1/3']], $R['NC 1/1']['pagamentos']);
 });
 
-teste('vendas: documentos anulados (DOCSTATUS_ID 8002) e eliminados fora dos documentos, pagamentos e artigos', function () {
-    igual([8002], naval_vendas_estados_anulados());
+teste('vendas: anulados (motivo de cancelamento) e eliminados fora; o 8002 não conta (é o estado de todos os documentos)', function () {
+    igual([], naval_vendas_estados_anulados(), 'nenhum estado por omissão');
     $c = naval_vendas_condicao_validos();
-    igual('DH.DELETED = 0 AND COALESCE(DH.DOCSTATUS_ID, 0) NOT IN (8002)', $c);
+    igual("DH.DELETED = 0 AND NOT (EXISTS (SELECT 1 FROM DOCHEADEREXTRA ANUL WHERE ANUL.DOCHEADER_ID = DH.ID AND ANUL.DOCEXTRA_ID = 26003 AND ANUL.DELETED = 0 AND LTRIM(RTRIM(COALESCE(ANUL.STRING_VALUE, ''))) <> ''))", $c);
+    verdade(strpos($c, '8002') === false, 'sem 8002');
+    naval_bd_so_leitura('SELECT 1 FROM DOCHEADER DH WHERE ' . $c);
     $f = file_get_contents(__DIR__ . '/../../nucleo/servicos/vendas.php');
     // as três consultas (documentos, pagamentos e artigos) usam a condição
     igual(3, substr_count($f, 'AND $validos') + substr_count($f, 'WHERE $validos'));

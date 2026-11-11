@@ -37,6 +37,24 @@ const dataHora = (s) => {
   const x = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(s || ''));
   return x ? `${x[3]}-${x[2]}-${x[1]} ${x[4]}:${x[5]}` : '—';
 };
+/** Interruptor ligado/desligado (role="switch", como nas definições do iPhone e do Android). O núcleo não se desliga. */
+function interruptor(m) {
+  const ligado = m.estado !== 'desligado';
+  const b = el('button', 'mod-int');
+  b.type = 'button';
+  b.setAttribute('role', 'switch');
+  b.setAttribute('aria-checked', String(ligado));
+  b.setAttribute('aria-label', t('Módulo «{m}» ligado', { m: t(m.nome) }));
+  b.append(el('span', 'mod-int-bola'));
+  if (m.nucleo) {
+    b.disabled = true;
+    b.title = t('O núcleo nunca se desliga.');
+  } else {
+    b.title = t(ligado ? 'Desligar o módulo' : 'Ligar o módulo para todos');
+    b.addEventListener('click', () => mudar(m, ligado ? 'desligado' : 'ligado'));
+  }
+  return b;
+}
 const nomePagina = (id) => t((PAGES.find((p) => p.id === id) || {}).nome || id);
 
 /** Pedido com confirmação da identidade quando o servidor a exigir. */
@@ -79,6 +97,7 @@ function cartao(m) {
   const [rot, cls] = ESTADOS[m.estado] || ESTADOS.ligado;
   h.append(el('b', null, t(m.nome)), el('span', 'mod-versao mono', 'v' + m.versao), pill(t(rot), cls));
   if (m.nucleo) h.append(pill(t('Núcleo'), 'p-mut'));
+  h.append(interruptor(m));
   c.append(h, el('p', 'mod-desc', t(m.descricao)));
   const det = el('dl', 'mod-det');
   const linha = (k, v) => {
@@ -92,11 +111,11 @@ function cartao(m) {
   linha(t('Eventos'), ev.join(' · '));
   if (m.alterado_em) linha(t('Última alteração'), dataHora(m.alterado_em) + ' · ' + m.alterado_por);
   c.append(det);
-  if (!m.nucleo) {
+  // o interruptor liga e desliga; o piloto (validar com os administradores antes de ligar para todos) fica ao lado
+  if (!m.nucleo && m.estado !== 'desligado') {
     const acc = el('div', 'mod-acc');
-    Object.keys(ESTADOS)
-      .filter((e) => e !== m.estado)
-      .forEach((e) => acc.append(botao(t('Passar a {e}', { e: t(ESTADOS[e][0]).toLowerCase() }), 'sm ghost', () => mudar(m, e))));
+    if (m.estado === 'piloto') acc.append(botao(t('Ligar para todos'), 'sm ghost', () => mudar(m, 'ligado')));
+    else acc.append(botao(t('Pôr em piloto'), 'sm ghost', () => mudar(m, 'piloto')));
     c.append(acc);
   }
   return c;
