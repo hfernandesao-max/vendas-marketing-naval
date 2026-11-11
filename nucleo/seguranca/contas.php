@@ -284,13 +284,19 @@ function naval_sessao_valida(): bool
         else naval_app_usar((string) $_SESSION['app_equipamento']);
     }
     if ($motivo) {
-        naval_registar('sessao_terminada', ['motivo' => $motivo]);
-        $_SESSION = [];
-        if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
+        naval_terminar_sessao($motivo);
         return false;
     }
     $_SESSION['ultima_actividade'] = $agora;
     return true;
+}
+
+/** Termina a sessão actual, com registo do motivo (inactividade, app reaberta, conta alterada…). */
+function naval_terminar_sessao(string $motivo): void
+{
+    naval_registar('sessao_terminada', ['motivo' => $motivo]);
+    $_SESSION = [];
+    if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
 }
 
 function naval_base32_decode(string $s): string

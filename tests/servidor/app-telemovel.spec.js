@@ -86,6 +86,21 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   const de2 = await t1.ctx.request.post('/app/chave.php', { data: { f: 'activar', codigo }, headers: { Origin: LOCAL } });
   expect((await de2.json()).erro).toContain('expirou ou já foi usado');
 
+  // app terminada e aberta de novo (o telemóvel carrega o start_url): mesmo com a sessão aberta, pede o Face ID
+  const antes = (await t1.ctx.cookies()).find((x) => /NAVALSESS$/.test(x.name));
+  const visitadas = [];
+  t1.page.on('framenavigated', (f) => {
+    if (f === t1.page.mainFrame()) visitadas.push(f.url());
+  });
+  await t1.page.goto('/app/activar.php?c=' + codigo).catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  expect(
+    visitadas.some((u) => /entrar\.php/.test(u)),
+    visitadas.join(' → '),
+  ).toBe(true);
+  const depois = (await t1.ctx.cookies()).find((x) => x.name === (antes && antes.name));
+  expect(depois && antes && depois.value !== antes.value, 'sessão nova depois do Face ID').toBe(true);
+
   // sessão terminada: ao abrir a app, a entrada rápida pede logo a biometria e entra (sem palavra-passe nem toques)
   const eqCookie = (await t1.ctx.cookies()).filter((x) => x.name === 'naval_eq');
   expect(eqCookie.length).toBe(1);

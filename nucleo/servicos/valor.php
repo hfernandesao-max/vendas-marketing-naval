@@ -7,7 +7,7 @@
  *                faltas e sobras (Kz) aprovadas
  *   SAP          dados-privados/sap/lotes.json: ficheiros emitidos (sem os anulados)
  *   relatórios   registos de auditoria: exportações de relatórios e utilizadores distintos que entraram no mês
- *   anulados     Pinguim BO (só SELECT): documentos com DOCHEADER.DOCSTATUS_ID anulado (8002) que o portal deixou
+ *   anulados     Pinguim BO (só SELECT): documentos anulados (motivo de cancelamento ou estado configurado) que o portal deixou
  *                fora das vendas e do SAP. É valor corrigido, não poupança: mostra-se à parte e não entra no total.
  *
  * Parâmetros (definidos no portal por quem tem o nível G, com registo; nunca de Excel): o custo de uma hora de
@@ -143,8 +143,8 @@ function naval_valor_registos(array $meses): array
 /** Documentos anulados no Pinguim BO por mês (quantidade e valor); null sem base de dados. */
 function naval_valor_anulados(array $meses): ?array
 {
-    if (!naval_bd_configurada() || !$meses) return null;
-    $ids = implode(', ', naval_vendas_estados_anulados());
+    $anulados = naval_vendas_condicao_anulados();
+    if (!naval_bd_configurada() || !$meses || $anulados === '') return null;
     $de = $meses[0] . '-01';
     $ate = date('Y-m-t', (int) strtotime(end($meses) . '-01'));
     try {
@@ -154,7 +154,7 @@ function naval_valor_anulados(array $meses): ?array
                    CAST(SUM(ABS(DH.CALC_TOTAL_W_TAX)) AS FLOAT) AS VALOR
             FROM DOCHEADER DH
             WHERE DH.DELETED = 0
-              AND DH.DOCSTATUS_ID IN ($ids)
+              AND $anulados
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate
             GROUP BY CONVERT(VARCHAR(7), DH.DOC_DATE, 120)", [':de' => naval_bd_data($de), ':ate' => naval_bd_data($ate)]);

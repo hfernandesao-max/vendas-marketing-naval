@@ -25,7 +25,7 @@ teste('AGT: Estado AGT e Mensagem de erro tal como vêm da consulta; estado inte
     $m = $est(['ESTADO_AGT' => 'Enviado', 'MENSAGEM_ERRO' => '', 'MOTIVO_ANULACAO' => 'Anulado']);
     verdade($m['anulado']);
     igual('Anulado', $m['motivo_anulacao']);
-    verdade($est(['ESTADO_AGT' => 'Enviado', 'MENSAGEM_ERRO' => '', 'ESTADO_DOCUMENTO' => 8002])['anulado'], 'anulado pelo estado do documento (8002)');
+    verdade(!$est(['ESTADO_AGT' => 'Enviado', 'MENSAGEM_ERRO' => '', 'ESTADO_DOCUMENTO' => 8002])['anulado'], 'o 8002 é o estado normal de um documento fechado: não é anulado');
 });
 
 teste('AGT: consulta só de leitura igual à validada (CROSS APPLY 26098, estados, mensagem), limitada ao período', function () {

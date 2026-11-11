@@ -70,15 +70,25 @@ test('módulos: estado de cada peça, núcleo sem botões, piloto pede motivo e 
   const erros = await abrir(page, '#modulos');
   await expect(page.locator('.mod-cartao')).toHaveCount(3);
   const nucleo = page.locator('.mod-cartao').filter({ has: page.locator('.mod-cab b', { hasText: /^Núcleo da plataforma$/ }) });
-  await expect(nucleo.locator('button')).toHaveCount(0);
+  // o núcleo mostra o interruptor ligado mas bloqueado: nunca se desliga
+  await expect(nucleo.locator('[role=switch]')).toHaveAttribute('aria-checked', 'true');
+  await expect(nucleo.locator('[role=switch]')).toBeDisabled();
+  await expect(nucleo.locator('button:not([role=switch])')).toHaveCount(0);
   const sap = page.locator('.mod-cartao').filter({ has: page.locator('.mod-cab b', { hasText: /^Integração SAP$/ }) });
   await expect(sap.locator('.pill').first()).toHaveText('Piloto');
   await expect(page.locator('.tile').filter({ hasText: 'Conectores por ligar' }).locator('.v')).toHaveText('1');
-  await sap.locator('button', { hasText: 'Passar a ligado' }).click();
+  await expect(sap.locator('[role=switch]')).toHaveAttribute('aria-checked', 'true'); // piloto conta como ligado
+  await sap.locator('button', { hasText: 'Ligar para todos' }).click();
   await page.locator('dialog.dlg input').fill('validado com a Tesouraria');
   await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();
   await expect.poll(() => corpo).toMatchObject({ id: 'sap', estado: 'ligado', motivo: 'validado com a Tesouraria' });
   await expect(sap.locator('.pill').first()).toHaveText('Ligado');
+  // o interruptor desliga (com motivo e confirmação)
+  await sap.locator('[role=switch]').click();
+  await page.locator('dialog.dlg input').fill('fora de uso');
+  await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();
+  await expect.poll(() => corpo && corpo.estado).toBe('desligado');
+  await expect(sap.locator('[role=switch]')).toHaveAttribute('aria-checked', 'false');
   expect(erros).toEqual([]);
 });
 
