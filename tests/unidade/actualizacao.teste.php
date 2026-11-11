@@ -52,3 +52,38 @@ teste('GitHub App: desvio de hora medido pela resposta do GitHub (só acima de 3
     igual(false, naval_act_medir_desvio([]), 'sem data');
     naval_act_desvio(0);
 });
+
+teste('ensaio no Windows: mudar o nome da pasta tenta de novo com espera; se nunca der, diz o erro do sistema', function () {
+    $b = sys_get_temp_dir() . '/ren-' . getmypid();
+    @mkdir($b . '/a/sub', 0770, true);
+    file_put_contents($b . '/a/sub/x.txt', 'x');
+    $esperas = [];
+    $esperar = function (float $s) use (&$esperas) { $esperas[] = $s; };
+    naval_act_renomear_pasta($b . '/a', $b . '/b', $esperar);
+    verdade(is_file($b . '/b/sub/x.txt') && !is_dir($b . '/a'), 'mudou');
+    igual([], $esperas, 'sem espera quando corre bem');
+    // destino ocupado (pasta com ficheiros): o rename falha sempre; espera 0,5 + 1 + 2 + 4 + 8 + 15 s e explica
+    @mkdir($b . '/c', 0770, true);
+    file_put_contents($b . '/c/y.txt', 'y');
+    $msg = '';
+    try {
+        naval_act_renomear_pasta($b . '/b', $b . '/c', $esperar);
+    } catch (NavalActualizacaoErro $e) {
+        $msg = $e->getMessage();
+    }
+    igual([0.5, 1.0, 2.0, 4.0, 8.0, 15.0], $esperas);
+    verdade(strpos($msg, 'Não foi possível mudar b para c (') === 0, $msg);
+    verdade(is_file($b . '/b/sub/x.txt') && is_file($b . '/c/y.txt'), 'nada se perdeu');
+    naval_act_limpar_pasta($b);
+});
+
+teste('ensaio: «Repetir no ensaio» só depois de uma falha; recomeça as tentativas', function () {
+    $f = naval_act_pasta() . '/ensaio.json';
+    naval_json_gravar($f, ['versao' => 'v9', 'sha256' => 'x', 'instalada_em' => '2026-11-11 21:10:00', 'resultado' => 'ok', 'falhas' => []]);
+    lanca(409, function () { naval_act_ensaio_repetir('henrique'); });
+    naval_json_gravar($f, ['versao' => 'v9', 'sha256' => '', 'instalada_em' => '2026-11-11 21:10:00', 'resultado' => 'falhou', 'falhas' => ['Não foi possível activar a pasta nova do ensaio.'], 'tentativas' => 3]);
+    naval_act_ensaio_repetir('henrique');
+    $e = naval_act_ensaio_estado();
+    igual(['v9', '', 0], [$e['versao'], $e['resultado'], $e['tentativas']]);
+    @unlink($f);
+});

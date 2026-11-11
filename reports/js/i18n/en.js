@@ -2795,6 +2795,13 @@ export const EN = {
   'Pôr em piloto': 'Move to pilot',
   'Desligar o módulo': 'Turn the module off',
   'Ligar o módulo para todos': 'Turn the module on for everyone',
+  'Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.': 'Attempt {n} of 3: the server will try again on its own within 5 minutes.',
+  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».':
+    'All 3 attempts failed. Fix the cause (for example, a staging folder in use) and press "Repeat in staging".',
+  'Repetir no ensaio': 'Repeat in staging',
+  'A versão volta a instalar-se no ensaio nos próximos 5 minutos.': 'The version will be installed in staging again within the next 5 minutes.',
+  'A instalação no ensaio falhou: não pode ser aprovada ainda': 'Installation in staging failed: it cannot be approved yet',
+  'Não há nenhuma instalação falhada no ensaio para repetir.': 'There is no failed staging installation to repeat.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -440,6 +440,34 @@ function naval_act_escrever(string $origem, string $destino): void
     }
 }
 
+/**
+ * Muda o nome de uma pasta com tolerância ao Windows: o antivírus (Microsoft Defender) e o indexador abrem por momentos
+ * os ficheiros acabados de escrever, e o rename falha com «acesso negado». Tenta de novo com espera crescente (cerca de
+ * 30 s no total); se continuar a falhar, copia a pasta e apaga a origem. Lança excepção com o erro do sistema.
+ */
+function naval_act_renomear_pasta(string $de, string $para, ?callable $esperar = null): void
+{
+    $esperar = $esperar ?? function (float $s) { usleep((int) ($s * 1e6)); };
+    $erro = '';
+    foreach ([0, 0.5, 1, 2, 4, 8, 15] as $s) {
+        if ($s > 0) $esperar($s);
+        clearstatcache();
+        if (@rename($de, $para)) return;
+        $erro = (string) ((error_get_last() ?: [])['message'] ?? '');
+    }
+    // último recurso: cópia completa e remoção da origem (mais lento, não depende de nenhum ficheiro estar livre)
+    if (!is_dir($para)) {
+        $n = naval_act_copiar_pasta($de, $para);
+        $total = iterator_count(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($de, FilesystemIterator::SKIP_DOTS)));
+        if ($n === $total) {
+            naval_act_limpar_pasta($de);
+            return;
+        }
+        naval_act_limpar_pasta($para);
+    }
+    throw new NavalActualizacaoErro('Não foi possível mudar ' . basename($de) . ' para ' . basename($para) . ($erro !== '' ? ' (' . $erro . ')' : '') . '.');
+}
+
 function naval_act_limpar_pasta(string $d): void
 {
     if (!is_dir($d)) return;
@@ -1582,8 +1610,10 @@ function naval_act_copiar_pasta(string $de, string $para, array $semTopo = []): 
 }
 
 /**
- * Instala no ensaio a versão publicada mais recente ainda não instalada na produção, se ainda não lá estiver (uma vez
- * por versão; uma falha não se repete sozinha até haver versão nova). Devolve o resultado, ou null sem nada a fazer.
+ * Instala no ensaio a versão publicada mais recente ainda não instalada na produção, se ainda não lá estiver. Uma falha
+ * da instalação (pasta, rede, ficheiros em uso) repete-se sozinha até 3 vezes, de 5 em 5 minutos; uma falha nos testes
+ * de fumo não se repete (a versão tem um defeito). «Repetir o ensaio» (Actualizações) recomeça. Devolve o resultado,
+ * ou null sem nada a fazer.
  * $o: versoes (testes), raiz (testes), sem_http, escrever.
  */
 function naval_act_ensaio_ciclo(array $o = []): ?array
@@ -1595,8 +1625,17 @@ function naval_act_ensaio_ciclo(array $o = []): ?array
     if (!$novas) return null;
     $v = $novas[0];
     $e = naval_act_ensaio_estado();
-    if ($e['versao'] === $v['versao'] && $e['resultado'] !== '') return null;
-    return naval_act_ensaio_instalar($v, $o);
+    if ($e['versao'] === $v['versao'] && $e['resultado'] !== '') {
+        $tentativas = (int) ($e['tentativas'] ?? 1);
+        if ($e['resultado'] === 'ok' || !empty($e['testes']) || $tentativas >= 3) return null;
+    }
+    $r = naval_act_ensaio_instalar($v, $o);
+    // conta as tentativas da mesma versão (a seguinte só repete se ainda não chegou às 3)
+    if (($r['resultado'] ?? '') !== 'ocupado') {
+        $r['tentativas'] = $e['versao'] === $v['versao'] ? (int) ($e['tentativas'] ?? 1) + 1 : 1;
+        naval_json_gravar(naval_act_pasta() . '/ensaio.json', $r);
+    }
+    return $r;
 }
 
 /** Descarrega, confere e instala a versão $v em <raiz>/ensaio, copia os dados privados e corre os testes de fumo. */
@@ -1608,9 +1647,10 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
     if (!$bloqueio || !flock($bloqueio, LOCK_EX | LOCK_NB)) return ['resultado' => 'ocupado', 'versao' => $v['versao']];
     $t0 = microtime(true);
     $mascarados = null;
-    $gravar = function (string $resultado, array $falhas, string $sha) use ($v, $t0, &$mascarados) {
+    // $testes: a falha veio dos testes de fumo (defeito da versão, não se repete) e não da instalação
+    $gravar = function (string $resultado, array $falhas, string $sha, bool $testes = false) use ($v, $t0, &$mascarados) {
         $e = ['versao' => $v['versao'], 'sha256' => $sha, 'instalada_em' => date('Y-m-d H:i:s'), 'resultado' => $resultado, 'falhas' => array_slice($falhas, 0, 20),
-            'seg' => round(microtime(true) - $t0, 1), 'mascarados' => $mascarados];
+            'seg' => round(microtime(true) - $t0, 1), 'mascarados' => $mascarados, 'testes' => $testes];
         naval_json_gravar(naval_act_pasta() . '/ensaio.json', $e);
         naval_act_registar($resultado === 'ok' ? 'ensaio_instalado' : 'ensaio_falhou', ['versao' => $v['versao'], 'falhas' => $e['falhas'], 'seg' => $e['seg']]);
         return $e;
@@ -1639,8 +1679,11 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         foreach (array_keys($m['ficheiros']) as $c) naval_act_escrever($dir . '/ficheiros/' . $c, $novo . '/' . $c);
         file_put_contents($novo . '/.ambiente-ensaio', (string) json_encode(['versao' => $m['versao'], 'sha256' => $sha, 'instalada_em' => date('Y-m-d H:i:s')]));
         naval_act_limpar_pasta($alvo . '.antigo');
-        if (is_dir($alvo) && !@rename($alvo, $alvo . '.antigo')) throw new NavalActualizacaoErro('Não foi possível substituir a pasta do ensaio (ficheiro em uso?).');
-        if (!@rename($novo, $alvo)) throw new NavalActualizacaoErro('Não foi possível activar a pasta nova do ensaio.');
+        if (is_dir($alvo . '.antigo')) throw new NavalActualizacaoErro('Não foi possível apagar a pasta ' . basename($alvo) . '.antigo (ficheiro em uso?).');
+        $esperar = $o['esperar'] ?? null;
+        if (is_dir($alvo)) naval_act_renomear_pasta($alvo, $alvo . '.antigo', $esperar);
+        elseif (file_exists($alvo)) throw new NavalActualizacaoErro('Existe um ficheiro com o nome da pasta do ensaio: ' . $alvo);
+        naval_act_renomear_pasta($novo, $alvo, $esperar);
         naval_act_limpar_pasta($alvo . '.antigo');
         naval_act_limpar_pasta($dir);
 
@@ -1657,7 +1700,7 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         $falhas = naval_act_verificar_cli($alvo);
         $base = empty($o['sem_http']) ? naval_act_url_portal() : '';
         if ($base !== '') $falhas = array_merge($falhas, naval_act_verificar_http($base . '/ensaio'));
-        $e = $gravar($falhas ? 'falhou' : 'ok', $falhas, $sha);
+        $e = $gravar($falhas ? 'falhou' : 'ok', $falhas, $sha, (bool) $falhas);
         $diz($falhas ? 'Ensaio: FALHA nos testes de fumo: ' . implode('; ', $falhas) : 'Ensaio: testes de fumo passaram.');
         naval_act_avisar($falhas ? 'versão ' . $v['versao'] . ' falhou no ensaio' : 'versão ' . $v['versao'] . ' pronta a testar no ensaio', $falhas
             ? array_merge(['A versão ' . $v['versao'] . ' foi instalada no ensaio mas não passou nos testes de fumo; não pode ser aprovada:'], $falhas)
@@ -1669,6 +1712,16 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         flock($bloqueio, LOCK_UN);
         fclose($bloqueio);
     }
+}
+
+/** «Repetir o ensaio» (super administrador): a versão volta a instalar-se no ensaio na próxima volta (até 5 minutos). */
+function naval_act_ensaio_repetir(string $login): void
+{
+    $e = naval_act_ensaio_estado();
+    if ($e['versao'] === '' || $e['resultado'] === 'ok') throw new NavalErro('Não há nenhuma instalação falhada no ensaio para repetir.', 409);
+    naval_json_gravar(naval_act_pasta() . '/ensaio.json', ['versao' => $e['versao'], 'sha256' => '', 'instalada_em' => '', 'resultado' => '', 'falhas' => [], 'tentativas' => 0]);
+    naval_act_registar('ensaio_repetir', ['versao' => $e['versao'], 'por' => $login]);
+    naval_registar('actualizacao_ensaio_repetir', ['versao' => $e['versao']], $login);
 }
 
 /**
