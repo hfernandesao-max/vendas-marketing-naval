@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 11-11-2026
 
+### Publicação sem intervenção humana, mesmo com falhas do GitHub
+
+- Quando as verificações do GitHub falham ou são canceladas por razões passageiras (fila sem servidores de teste,
+  espelho do Ubuntu em baixo), repetem-se sozinhas até 3 vezes, ao fim de 5 e de 15 minutos. Execuções substituídas
+  por uma alteração mais recente não se repetem. Um defeito verdadeiro continua a bloquear a versão.
+
 ### Ensaio fiável no servidor Windows
 
 - Ao activar a versão no ensaio, o Windows pode recusar a mudança de nome da pasta enquanto o antivírus ou o indexador
