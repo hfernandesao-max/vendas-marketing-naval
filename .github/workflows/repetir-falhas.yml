@@ -1,0 +1,49 @@
+# Recuperação automática das verificações, sem intervenção humana:
+# quando «Testes» ou «Segurança» terminam com falha ou cancelados (fila do GitHub, servidor de testes sem rede, espelho
+# do Ubuntu em baixo…), repete só os trabalhos que falharam, até 3 tentativas no total, com espera crescente (5 e 15
+# minutos) para dar tempo à infra-estrutura do GitHub de recuperar. Um defeito verdadeiro no código falha nas 3
+# tentativas e fica a vermelho; uma falha passageira passa sozinha e a versão é publicada como sempre.
+name: Repetir falhas passageiras
+
+on:
+  workflow_run:
+    workflows: [Testes, Segurança]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  repetir:
+    if: >-
+      (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled' ||
+       github.event.workflow_run.conclusion == 'timed_out') && github.event.workflow_run.run_attempt < 3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Esperar e repetir os trabalhos que falharam
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          TENTATIVA: ${{ github.event.workflow_run.run_attempt }}
+          NOME: ${{ github.event.workflow_run.name }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RAMO: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          # uma execução cancelada porque entretanto chegou uma alteração mais recente ao mesmo ramo não se repete
+          ultimo=$(gh api "repos/$REPO/commits/$RAMO" --jq .sha 2>/dev/null || echo "")
+          if [ -n "$ultimo" ] && [ "$ultimo" != "$SHA" ]; then
+            echo "::notice::«$NOME» de $SHA já foi substituído por $ultimo: nada a repetir."
+            exit 0
+          fi
+          espera=$(( TENTATIVA == 1 ? 300 : 900 ))
+          echo "::notice::«$NOME» falhou na tentativa $TENTATIVA; repete daqui a $((espera / 60)) minutos."
+          sleep "$espera"
+          ultimo=$(gh api "repos/$REPO/commits/$RAMO" --jq .sha 2>/dev/null || echo "")
+          if [ -n "$ultimo" ] && [ "$ultimo" != "$SHA" ]; then
+            echo "::notice::Entretanto chegou $ultimo: não se repete $SHA."
+            exit 0
+          fi
+          gh run rerun "$RUN_ID" --repo "$REPO" --failed

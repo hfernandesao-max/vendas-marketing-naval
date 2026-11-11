@@ -18,6 +18,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O Apache recusa chaves e certificados (`.pem`, `.key`, `.pfx`…), arquivos (`.zip`, `.rar`, `.7z`…) e notas em texto
   deixados na pasta do site; as licenças das fontes continuam disponíveis.
 
+### Publicação sem intervenção humana, mesmo com falhas do GitHub
+
+- Quando as verificações do GitHub falham ou são canceladas por razões passageiras (fila sem servidores de teste,
+  espelho do Ubuntu em baixo), repetem-se sozinhas até 3 vezes, ao fim de 5 e de 15 minutos. Execuções substituídas
+  por uma alteração mais recente não se repetem. Um defeito verdadeiro continua a bloquear a versão.
+- As verificações correm em `ubuntu-24.04` fixo em vez de `ubuntu-latest`: durante a migração do GitHub para o
+  Ubuntu 26, os servidores `ubuntu-latest` deixaram de aceitar trabalhos («not acquired by Runner») e as versões
+  ficavam por publicar.
+
 ### Ensaio fiável no servidor Windows
 
 - Ao activar a versão no ensaio, o Windows pode recusar a mudança de nome da pasta enquanto o antivírus ou o indexador
