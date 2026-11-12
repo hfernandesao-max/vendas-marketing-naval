@@ -533,7 +533,7 @@ function desenhar() {
       const b = el('button');
       b.type = 'button';
       const ic = el('span', 'ag-tab-ic');
-      ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+      ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml, insecure-document-method -- ícone SVG estático do próprio código
       if (id === 'alertas' && nAl) ic.append(el('b', 'ag-badge', nAl > 99 ? '99+' : String(nAl)));
       b.append(ic, el('span', null, t(nome)));
       if (id === E.sep) b.setAttribute('aria-current', 'page');

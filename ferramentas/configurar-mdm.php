@@ -70,5 +70,6 @@ try {
 }
 
 // verificação com o .env novo, num processo próprio (o .env já foi lido por este)
+// nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
 passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/verificar-mdm.php'), $codigoSaida);
 exit((int) $codigoSaida);
