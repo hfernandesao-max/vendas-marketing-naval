@@ -425,7 +425,22 @@ test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multic
     riscos: { top5_clientes: 0.31, maior_rota: { rota: '1011', peso: 0.28 }, notas_credito: 1, peso_notas_credito: 0.024 },
   };
   await page.route('**/v1/sessao**', (r) => r.fulfill({ json: sess }));
-  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: { ...IND, controlo } }));
+  const objectivos = {
+    mes: '2026-11',
+    rotas: [],
+    total: {
+      objectivo: 3000000,
+      dias_uteis: 25,
+      realizado: 1000000,
+      cumprimento: 0.333,
+      ritmo: 0.9,
+      estado: 'abaixo',
+      dias_restantes: 20,
+      necessario_dia: 100000,
+      projeccao: 2700000,
+    },
+  };
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: { ...IND, controlo, objectivos } }));
   const pg = (codigo, meio, valor) => ({ pagamentos: [{ codigo, meio, valor }], liquidado: true, valor_pago: valor });
   await page.route(
     (u) => u.pathname.endsWith('/v1/vendas'),
@@ -449,6 +464,10 @@ test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multic
   await expect(page.locator('#ag-h1')).toHaveText('Controlo');
   await expect(page.locator('.ag-heroi').first()).toContainText('Fecho previsto do mês');
   await expect(page.locator('.ag-heroi').first()).toContainText('2 500 000 Kz');
+  // objectivo automático do mês e o ritmo necessário
+  await expect(page.locator('.ag-objectivo')).toContainText('3 000 000 Kz');
+  await expect(page.locator('.ag-objectivo')).toContainText('33% do objectivo');
+  await expect(page.locator('.ag-objectivo .ag-mau')).toContainText('100 mil Kz por dia útil (20 dias)');
   const rec = page.locator('.ag-rec', { hasText: '1011' }).first();
   await expect(rec).toContainText('Dinheiro 90 mil Kz · Multicaixa 70 mil Kz');
   await expect(page.locator('.ag-rec', { hasText: '1002' }).first()).toContainText('por receber 140 mil Kz');

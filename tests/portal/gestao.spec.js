@@ -102,6 +102,49 @@ test('previsão: indicadores, precisão medida e tabela por rota', async ({ page
   expect(erros).toEqual([]);
 });
 
+test('previsão: objectivos automáticos do mês por rota, com ritmo, necessário por dia e estado', async ({ page }) => {
+  await simular(page);
+  const obj = (rota, o, r, estado) => ({
+    rota,
+    promotor: 'P' + rota,
+    objectivo: o,
+    dias_uteis: 25,
+    realizado: r,
+    objectivo_ate_hoje: o / 2,
+    cumprimento: r / o,
+    ritmo: r / (o / 2),
+    desvio: r - o / 2,
+    falta: o - r,
+    dias_restantes: 12,
+    necessario_dia: (o - r) / 12,
+    projeccao: r * 2,
+    estado,
+    criterio: 'minimo',
+    crescimento: 0.03,
+  });
+  await page.route('**/v1/previsao**', (r) =>
+    r.fulfill({
+      json: {
+        ...PREVISAO,
+        objectivos: {
+          mes: '2026-10',
+          parametros: { crescimento_min: 0.03, crescimento_alvo: 0.05 },
+          rotas: [obj('1002', 2000000, 800000, 'abaixo'), obj('1001', 1000000, 600000, 'acima')],
+          total: { ...obj('', 3000000, 1400000, 'abaixo') },
+        },
+      },
+    }),
+  );
+  const erros = await abrir(page, '#previsao');
+  await expect(page.locator('.tile').filter({ hasText: 'Objectivo de' })).toContainText(/3\s?000\s?000/);
+  await expect(page.locator('.tile').filter({ hasText: 'Ritmo face ao objectivo' })).toContainText('93%');
+  const linhas = page.locator('section', { hasText: 'Objectivos do mês por rota' }).locator('tbody tr');
+  await expect(linhas).toHaveCount(2);
+  await expect(linhas.first()).toContainText('Abaixo do objectivo');
+  await expect(page.locator('section', { hasText: 'Objectivos do mês por rota' })).toContainText('+ 5% de crescimento');
+  expect(erros).toEqual([]);
+});
+
 test('assistente: resposta com negrito e tabela, HTML da resposta mostrado como texto, fontes', async ({ page }) => {
   await simular(page);
   const erros = await abrir(page, '#assistente');

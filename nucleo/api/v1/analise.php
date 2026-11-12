@@ -3,7 +3,8 @@
  * Análise de gestão (nucleo/servicos/analise.php, alertas.php, previsao.php), com o âmbito de quem pede.
  *
  * GET v1/alertas[?dia=AAAA-MM-DD]   alertas de anomalias do dia (omissão: ontem) — recurso «alertas»
- * GET v1/previsao                   previsão dos próximos 7 dias por rota e qualidade medida — recurso «previsao»
+ * GET v1/previsao                   previsão dos próximos 7 dias por rota e qualidade medida, e os objectivos automáticos
+ *                                   do mês com o acompanhamento (nucleo/servicos/objectivos.php) — recurso «previsao»
  * GET v1/painel                     painel de gestão RTM (tendência, ABC, distribuição numérica, valor e artigos por compra,
  *                                   mapa de calor, carteira) — recurso «painel-gestao»
  * GET v1/indicadores                indicadores do dia para a app de gestão: hoje (ao vivo) face à previsão, ontem, semana,
@@ -40,6 +41,16 @@ if ($f === 'previsao') {
         $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - 90 * 86400), $ult), $rotas, true);
         return naval_previsao_vendas($ag, $ult, 7, naval_promotores());
     }, ($_GET['fresco'] ?? '') === '1');
+    // objectivos automáticos do mês (congelados no início do mês) e o seu acompanhamento até hoje
+    $r['objectivos'] = null;
+    try {
+        naval_servico('objectivos');
+        $r['objectivos'] = naval_cache('objectivos|' . date('Y-m-d H') . floor((int) date('i') / 10) . '|' . json_encode($rotas), 600, function () use ($rotas) {
+            return naval_objectivos(date('Y-m-d'), $rotas);
+        }, ($_GET['fresco'] ?? '') === '1');
+    } catch (Throwable $e) {
+        error_log('[objectivos] ' . $e->getMessage());
+    }
     naval_json(['ok' => true] + $r);
 }
 
@@ -51,6 +62,16 @@ if ($f === 'indicadores') {
     $r = naval_cache('indicadores|' . date('Y-m-d H') . floor((int) date('i') / 5) . '|' . json_encode($rotas), 300, function () use ($rotas) {
         return naval_indicadores(time(), $rotas);
     }, ($_GET['fresco'] ?? '') === '1');
+    // objectivo do mês (total e por rota) para a app de gestão
+    $r['objectivos'] = null;
+    try {
+        naval_servico('objectivos');
+        $r['objectivos'] = naval_cache('objectivos|' . date('Y-m-d H') . floor((int) date('i') / 10) . '|' . json_encode($rotas), 600, function () use ($rotas) {
+            return naval_objectivos(date('Y-m-d'), $rotas);
+        });
+    } catch (Throwable $e) {
+        error_log('[objectivos] ' . $e->getMessage());
+    }
     $r['alertas'] = null;
     if (naval_pode('alertas')) {
         try {
