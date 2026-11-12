@@ -175,6 +175,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
       json: {
         ok: true,
         gere: true,
+        aprova: true,
         caixa,
         promotores: { 1001: 'Andrea Santos', 1002: 'Cristina Sachuma' },
         saidas: {
@@ -218,13 +219,13 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
     tpa: [{ rota: '1002', banco: 'BPC', talao: 'TPA-0457', valor: 300 }],
     saidas: [{ tipo: 'transferencia_gestao', valor: 200 }],
   });
-  await page.getByRole('button', { name: 'Fechar a caixa' }).click();
+  await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByLabel('Dinheiro contado na caixa').fill('1290');
   await expect(dlg).toContainText('Diferença');
   await dlg.getByLabel('Explicação da diferença').fill('troco dado a mais');
-  await dlg.getByRole('button', { name: 'Fechar a caixa' }).click();
-  await expect(page.locator('.cx-cab')).toContainText('Fechada, por aprovar');
+  await dlg.getByRole('button', { name: 'Validar a caixa' }).click();
+  await expect(page.locator('.cx-cab')).toContainText('Validada, por aprovar');
   expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 1290, explicacao: 'troco dado a mais' });
   await expect(page.getByRole('button', { name: 'Aprovar a caixa' })).toBeVisible();
   await expect(page.locator('.cx-tab input')).toHaveCount(0);
@@ -307,13 +308,13 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   expect(pedidos[0].entregas[0]).toMatchObject({ rota: '1001', valor: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
   expect(pedidos[0].tpa[0]).toMatchObject({ rota: '1002', banco: 'BPC', talao: '0457', valor: 8000 });
   // fecho: contagem física por notas
-  await page.getByRole('button', { name: 'Fechar a caixa' }).click();
+  await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const f = page.locator('dialog[open]');
   await f.getByLabel('Notas de 5000 Kz').fill('2');
   await f.getByLabel('Notas de 1000 Kz').fill('1');
   await f.getByLabel('Moedas (valor em Kz)').fill('500');
   await expect(f.getByLabel('Dinheiro contado na caixa')).toHaveValue('11500');
-  await f.getByRole('button', { name: 'Fechar a caixa' }).click();
+  await f.getByRole('button', { name: 'Validar a caixa' }).click();
   await expect.poll(() => pedidos.length).toBe(2);
   expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
   expect(erros).toEqual([]);

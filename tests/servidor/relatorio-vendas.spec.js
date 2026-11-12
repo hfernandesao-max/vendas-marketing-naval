@@ -10,7 +10,7 @@ test.beforeAll(() => {
   rmSync('tests/servidor/ambiente/dados-privados/relatorio-vendas', { recursive: true, force: true });
 });
 
-test('folha de caixa: quem regista e fecha não aprova; perfis sem acesso não vêem', async () => {
+test('folha de caixa: quem lança e valida não aprova; aprova o superior hierárquico; perfis sem acesso não vêem', async () => {
   expect((await (await entrar('sup')).ctx.get(API + 'caixa?dia=' + dia)).status()).toBe(403);
   const fin = (await entrar('fin')).ctx;
   const v = await (await fin.get(API + 'caixa?dia=' + dia)).json();
@@ -34,7 +34,9 @@ test('folha de caixa: quem regista e fecha não aprova; perfis sem acesso não v
   expect(f.json.caixa.estado).toBe('fechada');
   expect((await post(fin, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403);
   const bo = (await entrar('bo')).ctx;
-  expect((await post(bo, { accao: 'aprovar', versao: f.json.caixa.versao })).json.caixa.estado).toBe('aprovada');
+  expect((await post(bo, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403); // um colega da tesouraria não aprova
+  expect((await dir.get(API + 'caixa?dia=' + dia).then((r) => r.json())).aprova).toBe(true);
+  expect((await post(dir, { accao: 'aprovar', versao: f.json.caixa.versao })).json.caixa.estado).toBe('aprovada');
 });
 
 test('relatório de vendas: sem as fontes completas não se gera; perfis sem acesso não vêem', async () => {

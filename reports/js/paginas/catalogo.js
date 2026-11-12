@@ -94,6 +94,7 @@ export const NOMES_RECURSO = {
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
   'conciliacao-fecho': 'Conciliação da carrinha · aprovação final do responsável (2.º nível, fecha)',
+  'caixa-aprovacao': 'Folha de caixa · aprovação pelo superior hierárquico de quem a regista',
   'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',

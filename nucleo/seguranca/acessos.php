@@ -61,6 +61,8 @@ const NAVAL_MATRIZ_TXT = [
     // Relatório de Vendas diário (gerar e exportar: E) e folha de caixa do Marketing (tesouraria e apoio RTM registam: G)
     'relatorio-vendas'     => 'V  E  E  -  -  E  V  -  -  E  -',
     'caixa-marketing'      => 'V  V  V  -  -  G  G  -  -  V  -',
+    // aprovação da folha de caixa pelo superior hierárquico de quem a regista (dupla verificação; quem regista não aprova)
+    'caixa-aprovacao'      => '-  G  -  -  -  -  -  -  -  -  -',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
@@ -213,6 +215,7 @@ function naval_niveis_recurso(string $rec): array
         case 'geo-zonas-gerir':
         case 'conciliacao-coordenacao':
         case 'conciliacao-fecho':
+        case 'caixa-aprovacao':
         case 'equipamentos-movimentar':
         case 'equipamentos-administrar':
             return ['', 'G'];
