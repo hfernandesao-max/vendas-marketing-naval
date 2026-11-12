@@ -4,6 +4,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Novo relatório «Vendas por promotor e artigo»
+
+- Portal › Vendas › **Vendas por promotor e artigo** (análise do mix de vendas de cada promotor, com as linhas de
+  venda do Pinguim BO no período, já descontadas as notas de crédito):
+  - **Matriz promotor × artigo**: valor s/ IVA de cada promotor nos 8 artigos que mais vendem na empresa (mapa de
+    intensidade numa só cor azul), restantes em «Outros artigos», e o peso no promotor ao passar o rato.
+  - **Sortido por promotor**: artigos vendidos, artigos A (80% do valor, análise ABC), artigo principal e o seu peso,
+    clientes (distribuição numérica), documentos, artigos por documento e peso na empresa.
+  - **Lacunas de sortido**: dos 10 artigos mais fortes da empresa, os promotores que não os venderam no período
+    (oportunidades de venda por rota).
+  - **Detalhe por promotor e artigo**: quantidade, preço unit. s/ IVA (média ponderada) e diferença face ao preço
+    médio da empresa, desconto e % de desconto, valor s/ e c/ IVA, peso no promotor, quota no artigo, classe ABC,
+    clientes e presença nos documentos.
+- Filtros de rota, cliente, artigo e tipo de documento; Excel desta página; português, inglês e tigrínia; perfis com
+  o mesmo acesso que «Vendas por promotor» (SADM e TI podem ajustar em Acessos).
+
 ### App no idioma do telefone, e notificações também
 
 - A app «Naval Gestão» abre no idioma do telefone (Definições › Geral › Idioma e região), entre português, inglês e

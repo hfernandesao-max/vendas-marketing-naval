@@ -8,6 +8,7 @@ const PAGINAS = [
   'vendas-dia',
   'vendas-cliente',
   'vendas-artigo',
+  'vendas-promotor-artigo',
   'ranking',
   'documentos',
   'pagamentos',

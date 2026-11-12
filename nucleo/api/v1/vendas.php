@@ -36,7 +36,7 @@ if (($_GET['ping'] ?? '') === '1') {
     naval_json(naval_pinguim_estado());
 }
 
-naval_exigir(array_merge(['inicio', 'vendas-artigo'], NAVAL_PAGINAS_VENDAS));
+naval_exigir(array_merge(['inicio', 'vendas-artigo', 'vendas-promotor-artigo'], NAVAL_PAGINAS_VENDAS));
 $dataAaaammdd = function (string $param, string $omissao) {
     return (string) preg_replace('/\D/', '', (string) ($_GET[$param] ?? $omissao));
 };

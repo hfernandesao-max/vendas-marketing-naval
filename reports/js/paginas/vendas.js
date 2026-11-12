@@ -2,7 +2,7 @@
 import { clientesDe, docsVenda, eNC, isCF, notasCredito, pendenteDe, pendentesDe, porPromotor, promotorRota, recebidoLiquido, vendasR } from '../calculos.js';
 import { aguardar, pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV } from '../filtros.js';
-import { dl, mkz, n0, pct } from '../formatos.js';
+import { dl, mkz, n0, n1, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
 import { inR } from '../periodo.js';
@@ -433,6 +433,266 @@ R['vendas-artigo'] = (pg) => {
         { key: 'iva', label: t('IVA'), type: 'kz', sum: true },
         { key: 'total', label: t('Valor c/ IVA'), type: 'bar', sum: true },
         { key: 'docs', label: t('Documentos'), type: 'n', sum: true },
+      ],
+    }),
+  );
+};
+// Vendas por promotor e artigo (mix de vendas por vendedor): a análise que as equipas comerciais das grandes empresas
+// de bens de consumo usam para gerir o sortido de cada rota — o que cada promotor vende, com que peso, a que preço,
+// em quantos clientes (distribuição numérica) e que artigos fortes da empresa ainda não vende (lacunas de sortido).
+const TOP_MATRIZ = 8;
+R['vendas-promotor-artigo'] = (pg) => {
+  const A = (DB.artigos || []).filter((x) => inR(x.data));
+  if (!A.length) {
+    pg.append(el('div', 'glass empty', t('Sem linhas de venda no período e filtros escolhidos.')));
+    return;
+  }
+  // Cliente de cada documento (as linhas de artigo trazem só o documento): Consumidor Final pelo nome, os outros pelo NIF
+  const cliDoc = new Map((DB.vendas || []).map((v) => [v.documento, isCF(v.nif) ? 'n:' + v.cliente : v.nif]));
+  const chaveArt = (x) => x.codigo + '|' + x.artigo;
+  const docsDe = (ls) => new Set(docsVenda(ls).map((x) => x.documento));
+  const clientesDeLinhas = (ls) => new Set([...docsDe(ls)].map((d) => cliDoc.get(d)).filter(Boolean));
+
+  // Totais por artigo (empresa) e por promotor
+  const porArtigo = Object.values(group(A, chaveArt)).map((ls) => ({
+    chave: chaveArt(ls[0]),
+    codigo: ls[0].codigo,
+    artigo: ls[0].artigo,
+    valor: sum(ls, 'valor_sem_iva'),
+    quantidade: sum(ls, 'quantidade'),
+    unidades: new Set(ls.map((x) => x.unidade).filter(Boolean)),
+  }));
+  porArtigo.sort((a, b) => b.valor - a.valor);
+  const artigo = new Map(porArtigo.map((a) => [a.chave, a]));
+  porArtigo.forEach((a) => {
+    a.preco = a.quantidade && a.unidades.size <= 1 ? a.valor / a.quantidade : null;
+  });
+  const totalEmpresa = sum(porArtigo, 'valor');
+  const promotores = Object.values(group(A, 'rota')).map((ls) => ({
+    rota: ls[0].rota,
+    promotor: promotorRota(ls[0].rota),
+    linhas: ls,
+    valor: sum(ls, 'valor_sem_iva'),
+    docs: docsDe(ls).size,
+    clientes: clientesDeLinhas(ls).size,
+  }));
+  promotores.sort((a, b) => b.valor - a.valor);
+
+  // Linhas promotor × artigo, com o peso no promotor, a quota no artigo, o preço face à média da empresa,
+  // a presença nos documentos do promotor e a classe ABC dentro do promotor (80% / 95% do valor)
+  const linhas = [];
+  promotores.forEach((p) => {
+    const ls = Object.values(group(p.linhas, chaveArt)).map((xs) => {
+      const a = artigo.get(chaveArt(xs[0])),
+        valor = sum(xs, 'valor_sem_iva'),
+        quantidade = sum(xs, 'quantidade'),
+        unidades = new Set(xs.map((x) => x.unidade).filter(Boolean)),
+        preco = quantidade && unidades.size <= 1 ? valor / quantidade : null,
+        desconto = sum(xs, 'desconto'),
+        bruto = valor + desconto;
+      return {
+        rota: p.rota,
+        promotor: p.promotor,
+        codigo: xs[0].codigo,
+        artigo: xs[0].artigo,
+        unidade: [...unidades].join(', '),
+        quantidade,
+        valor_sem_iva: valor,
+        total: sum(xs, 'total'),
+        desconto,
+        desconto_pct: bruto > 0 ? desconto / bruto : null,
+        preco_unit: preco,
+        preco_var: preco != null && a.preco ? preco / a.preco - 1 : null,
+        peso_promotor: p.valor ? valor / p.valor : null,
+        quota_artigo: a.valor ? valor / a.valor : null,
+        docs: docsDe(xs).size,
+        presenca: p.docs ? docsDe(xs).size / p.docs : null,
+        clientes: clientesDeLinhas(xs).size,
+      };
+    });
+    ls.sort((a, b) => b.valor_sem_iva - a.valor_sem_iva);
+    let acum = 0;
+    ls.forEach((l) => {
+      acum += l.valor_sem_iva;
+      const ate = p.valor > 0 ? (acum - l.valor_sem_iva) / p.valor : 1;
+      l.abc = ate < 0.8 ? 'A' : ate < 0.95 ? 'B' : 'C';
+    });
+    p.artigos = ls.length;
+    p.artigosA = ls.filter((l) => l.abc === 'A').length;
+    p.ls = ls;
+    linhas.push(...ls);
+  });
+
+  // Indicadores de topo
+  const nArt = porArtigo.length,
+    top3 = totalEmpresa > 0 ? sum(porArtigo.slice(0, 3), 'valor') / totalEmpresa : null,
+    sortidoMedio = promotores.length ? sum(promotores, 'artigos') / promotores.length : null,
+    clientes = new Set([...docsDe(A)].map((d) => cliDoc.get(d)).filter(Boolean)).size;
+  const fortes = porArtigo.slice(0, Math.min(10, nArt));
+  const lacunas = fortes.map((a) => {
+    const sem = promotores.filter((p) => !p.ls.some((l) => chaveArt(l) === a.chave));
+    return { ...a, com: promotores.length - sem.length, sem };
+  });
+  const nLacunas = sum(lacunas, (x) => x.sem.length);
+  pg.append(
+    tiles([
+      { l: t('Valor s/ IVA'), v: mkz(totalEmpresa), s: t('vendas líquidas, sem IVA') },
+      { l: t('Promotores com vendas'), v: n0(promotores.length), s: t('{n} clientes', { n: n0(clientes) }) },
+      { l: t('Artigos vendidos'), v: n0(nArt), s: t('sortido médio por promotor: {n}', { n: n1(sortidoMedio) }) },
+      { l: t('Peso dos 3 maiores artigos'), v: pct(top3), s: t('concentração do sortido') },
+      {
+        l: t('Lacunas de sortido'),
+        v: n0(nLacunas),
+        s: t('artigos fortes por vender, por promotor'),
+        tone: nLacunas ? 'warn' : null,
+      },
+    ]),
+  );
+
+  // 1. Matriz promotor × artigo (valor s/ IVA): os maiores artigos da empresa em colunas e o resto em «Outros»
+  const colunas = porArtigo.slice(0, TOP_MATRIZ),
+    outros = nArt > TOP_MATRIZ;
+  const matriz = promotores.map((p) => {
+    const r = { rota: p.rota, promotor: p.promotor, total: p.valor };
+    colunas.forEach(
+      (a, i) =>
+        (r['a' + i] =
+          sum(
+            p.ls.filter((l) => chaveArt(l) === a.chave),
+            'valor_sem_iva',
+          ) || null),
+    );
+    if (outros) r.outros = p.valor - colunas.reduce((s, a, i) => s + (r['a' + i] || 0), 0) || null;
+    return r;
+  });
+  const maxCel = Math.max(0, ...matriz.flatMap((r) => colunas.map((a, i) => r['a' + i] || 0)));
+  const celula = (v, r) => {
+    const s = el('span', 'pa-cel', v ? mkz(v) : '—');
+    if (v && maxCel) s.style.setProperty('--a', (0.06 + 0.4 * (v / maxCel)).toFixed(3));
+    if (v && r.total) s.title = t('{p} do promotor', { p: pct(v / r.total) });
+    return s;
+  };
+  pg.append(
+    tabela({
+      id: 'vpa-matriz',
+      titulo: t('Matriz promotor × artigo'),
+      nota: t(
+        'Valor s/ IVA de cada promotor nos {n} artigos que mais vendem na empresa; quanto mais escuro, maior o valor. Passe o rato por uma célula para ver o peso no promotor.',
+        { n: n0(colunas.length) },
+      ),
+      rows: matriz,
+      sort: 'total',
+      total: true,
+      cols: [
+        { key: 'promotor', label: t('Promotor'), p: 0 },
+        ...colunas.map((a, i) => ({ key: 'a' + i, label: a.artigo, type: 'kz', sum: true, render: celula, p: i < 3 ? 2 : 5 })),
+        ...(outros ? [{ key: 'outros', label: t('Outros artigos'), type: 'kz', sum: true, p: 5 }] : []),
+        { key: 'total', label: t('Total'), type: 'bar', sum: true, p: 1 },
+      ],
+    }),
+  );
+
+  // 2. Resumo do sortido de cada promotor
+  pg.append(
+    tabela({
+      id: 'vpa-sortido',
+      titulo: t('Sortido por promotor'),
+      nota: t('Artigos A: os que somam 80% do valor do promotor (análise ABC). Clientes: os que compraram ao promotor no período (distribuição numérica).'),
+      rows: promotores.map((p) => ({
+        rota: p.rota,
+        promotor: p.promotor,
+        artigos: p.artigos,
+        artigos_a: p.artigosA,
+        principal: p.ls[0] ? p.ls[0].artigo : '',
+        peso_principal: p.ls[0] ? p.ls[0].peso_promotor : null,
+        docs: p.docs,
+        clientes: p.clientes,
+        linhas_doc: p.docs ? docsVenda(p.linhas).length / p.docs : null,
+        valor: p.valor,
+        peso: totalEmpresa ? p.valor / totalEmpresa : null,
+      })),
+      sort: 'valor',
+      total: true,
+      cols: [
+        { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'artigos', label: t('Artigos'), type: 'n' },
+        { key: 'artigos_a', label: t('Artigos A'), type: 'n', p: 4 },
+        { key: 'principal', label: t('Artigo principal'), wrap: true, p: 3 },
+        { key: 'peso_principal', label: t('Peso do principal'), type: 'pct', p: 4 },
+        { key: 'clientes', label: t('Clientes'), type: 'n', p: 3 },
+        { key: 'docs', label: t('Documentos'), type: 'n', sum: true, p: 4 },
+        { key: 'linhas_doc', label: t('Artigos por documento'), type: 'n', p: 5, render: (v) => document.createTextNode(n1(v)) },
+        { key: 'valor', label: t('Valor s/ IVA'), type: 'bar', sum: true, p: 1 },
+        { key: 'peso', label: t('Peso na empresa'), type: 'pct', sum: true, p: 2 },
+      ],
+    }),
+  );
+
+  // 3. Lacunas de sortido: os artigos fortes da empresa que algum promotor ainda não vendeu no período
+  const comLacunas = lacunas.filter((x) => x.sem.length);
+  if (comLacunas.length)
+    pg.append(
+      tabela({
+        id: 'vpa-lacunas',
+        titulo: t('Lacunas de sortido'),
+        nota: t(
+          'Dos {n} artigos que mais vendem na empresa, os promotores que não os venderam no período: oportunidades de venda a acompanhar com cada rota.',
+          { n: n0(fortes.length) },
+        ),
+        rows: comLacunas.map((a) => ({
+          codigo: a.codigo,
+          artigo: a.artigo,
+          peso: totalEmpresa ? a.valor / totalEmpresa : null,
+          com: a.com,
+          n_sem: a.sem.length,
+          sem: a.sem.map((p) => p.promotor).join(' · '),
+        })),
+        sort: 'peso',
+        cols: [
+          { key: 'codigo', label: t('Código'), p: 5 },
+          { key: 'artigo', label: t('Artigo'), wrap: true, p: 0 },
+          { key: 'peso', label: t('Peso na empresa'), type: 'pct', p: 3 },
+          { key: 'com', label: t('Promotores que vendem'), type: 'n', p: 4 },
+          { key: 'n_sem', label: t('Promotores sem venda'), type: 'n', p: 2 },
+          { key: 'sem', label: t('Sem venda no período'), wrap: true, p: 1 },
+        ],
+      }),
+    );
+
+  // 4. Detalhe: uma linha por promotor e artigo
+  pg.append(
+    tabela({
+      id: 'vpa',
+      titulo: t('Detalhe por promotor e artigo'),
+      nota: t(
+        'Linhas de venda do Pinguim BO no período, já descontadas as notas de crédito. Preço unit. s/ IVA: média ponderada (valor s/ IVA ÷ quantidade). Face à média: diferença para o preço médio do artigo na empresa. Presença: documentos do promotor com o artigo.',
+      ),
+      rows: linhas,
+      sort: 'valor_sem_iva',
+      total: true,
+      cols: [
+        { key: 'promotor', label: t('Promotor'), p: 0 },
+        { key: 'codigo', label: t('Código'), p: 6 },
+        { key: 'artigo', label: t('Artigo'), wrap: true, p: 0 },
+        { key: 'abc', label: t('Classe'), p: 4, render: (v) => pill(v, v === 'A' ? 'p-ok' : v === 'B' ? 'p-warn' : 'p-mut') },
+        { key: 'unidade', label: t('Un.'), p: 6 },
+        { key: 'quantidade', label: t('Qtd.'), type: 'n', sum: true, p: 3 },
+        { key: 'preco_unit', label: t('Preço unit. s/ IVA'), type: 'kz', p: 4 },
+        {
+          key: 'preco_var',
+          label: t('Face à média'),
+          type: 'pct',
+          p: 5,
+          render: (v) => document.createTextNode(v == null ? '—' : (v > 0 ? '+' : '') + pct(v)),
+        },
+        { key: 'desconto', label: t('Desconto'), type: 'kz', sum: true, p: 5 },
+        { key: 'desconto_pct', label: t('% desconto'), type: 'pct', p: 6 },
+        { key: 'valor_sem_iva', label: t('Valor s/ IVA'), type: 'bar', sum: true, p: 1 },
+        { key: 'total', label: t('Valor c/ IVA'), type: 'kz', sum: true, p: 5 },
+        { key: 'peso_promotor', label: t('Peso no promotor'), type: 'pct', p: 2 },
+        { key: 'quota_artigo', label: t('Quota no artigo'), type: 'pct', p: 4 },
+        { key: 'clientes', label: t('Clientes'), type: 'n', p: 3 },
+        { key: 'presenca', label: t('Presença'), type: 'pct', p: 5 },
       ],
     }),
   );
