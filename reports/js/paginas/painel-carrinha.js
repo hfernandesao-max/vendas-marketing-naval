@@ -81,7 +81,7 @@ function cartao(r) {
   if (r.diferencas != null) linha(t('Diferenças'), q(r.diferencas) + (r.falta_kz ? ' · ' + t('falta {v}', { v: kz(r.falta_kz) }) : ''));
   if (r.alertas) linha(t('Alertas'), q(r.alertas));
   if (r.peso_kg != null) linha(t('Peso na carrinha'), n0(r.peso_kg) + ' kg');
-  if (r.contado_em) linha(t('Contada'), String(r.contado_em).slice(11, 16) + ' · ' + r.contado_por);
+  if (r.contado_em) linha(t('Contado'), String(r.contado_em).slice(11, 16) + ' · ' + r.contado_por);
   if (r.aprovado_em) linha(t('Fechada'), String(r.aprovado_em).slice(11, 16) + ' · ' + (r.aprovado_por === 'automatico' ? t('automático') : r.aprovado_por));
   c.append(det);
   if (['por_contar', 'por_validar', 'por_aprovar', 'por_fechar'].includes(r.fecho)) {

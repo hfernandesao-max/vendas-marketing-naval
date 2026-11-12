@@ -663,3 +663,47 @@ function naval_carga_na_carrinha_seguro(): array
         return [];
     }
 }
+
+/**
+ * Correcção do registo de quem contou e de quem validou (só o super administrador), para contagens feitas antes do
+ * circuito actual ou registadas na conta de outra pessoa. Não muda números, estado nem aprovações: só os nomes, com
+ * motivo obrigatório, e o que estava antes fica no histórico (registo de auditoria rastreável).
+ * $rotas: rotas do dia a corrigir (só as já contadas). Devolve as rotas corrigidas.
+ */
+function naval_carr_corrigir_registo(string $data, array $rotas, string $contado, string $validado, string $motivo, array $eu): array
+{
+    $nome = function (string $s, string $o) {
+        $s = trim(preg_replace('/\s+/u', ' ', $s));
+        if ($s === '') return null;
+        if (!preg_match('/^[\p{L}0-9 .\'_-]{2,60}$/u', $s)) throw new NavalErro('Nome inválido em «' . $o . '».', 400);
+        return $s;
+    };
+    $contado = $nome($contado, 'Contado por');
+    $validado = $nome($validado, 'Validada por');
+    if ($contado === null && $validado === null) throw new NavalErro('Indique quem contou ou quem validou.', 400);
+    $motivo = naval_texto($motivo, 300);
+    if (mb_strlen($motivo) < 10) throw new NavalErro('Indique o motivo da correcção.', 400);
+    $feitas = [];
+    foreach (array_unique(array_map('strval', $rotas)) as $rota) {
+        if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota)) continue;
+        $ok = naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $contado, $validado, $motivo, $eu) {
+            $reg = naval_carr_ler($data, $rota);
+            if ($reg['contagem'] === null) return false;
+            $antes = ['contado_por' => $reg['contado_por'] ?? null, 'validado_por' => $reg['validado_por'] ?? null];
+            if ($contado !== null) $reg['contado_por'] = $contado;
+            if ($validado !== null) {
+                $reg['validado_por'] = $validado;
+                // validação sem data registada (contagens anteriores ao passo «validar»): a da contagem
+                if (empty($reg['validado_em'])) $reg['validado_em'] = $reg['contado_em'] ?? null;
+            }
+            $depois = ['contado_por' => $reg['contado_por'], 'validado_por' => $reg['validado_por']];
+            if ($antes === $depois) return false;
+            $reg['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => (string) $eu['login'], 'accao' => 'correccao_registo', 'antes' => $antes, 'depois' => $depois, 'motivo' => $motivo];
+            naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
+            return true;
+        });
+        if ($ok) $feitas[] = $rota;
+    }
+    if ($feitas) naval_registar('carrinha_correccao_registo', ['data' => $data, 'rotas' => $feitas, 'motivo' => $motivo]);
+    return $feitas;
+}

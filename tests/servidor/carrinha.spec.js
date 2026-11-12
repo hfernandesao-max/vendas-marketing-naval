@@ -105,3 +105,30 @@ test('requisição de reposição: criada pela conciliação, editada e emitida 
   expect(c.estado).toBe('carregada');
   expect(c.linhas.map((l) => l.entregue)).toEqual([26, 3]);
 });
+
+test('correcção do registo de quem contou / validou: só o super administrador, com motivo, fica no histórico', async () => {
+  const URL = API + 'conciliacao-carrinha';
+  const post = async (ctx, corpo) => {
+    const x = await ctx.post(URL, { data: { data: dia, ...corpo, csrf: await csrf(ctx) } });
+    return { status: x.status(), json: await x.json() };
+  };
+  const corpo = {
+    accao: 'corrigir_registo',
+    rotas: ['1001', '1002'],
+    contado_por: 'Manuel Queia',
+    validado_por: 'henrique.fernandes',
+    motivo: 'contagem feita pelo Manuel e lançada na conta do Henrique',
+  };
+  expect((await post((await entrar('log')).ctx, corpo)).status).toBe(403);
+  const sadm = (await entrar('sadm')).ctx;
+  expect((await post(sadm, { ...corpo, motivo: 'curto' })).status).toBe(400);
+  const r = await post(sadm, corpo);
+  expect(r.json.rotas).toContain('1001');
+  const v = await (await sadm.get(URL + '?data=' + dia)).json();
+  expect(v.pode.corrigir).toBe(true);
+  const x = v.rotas.find((y) => y.rota === '1001');
+  expect(x).toMatchObject({ contado_por: 'Manuel Queia', validado_por: 'henrique.fernandes' });
+  expect(x.historico.at(-1)).toMatchObject({ accao: 'correccao_registo', motivo: corpo.motivo });
+  // repetir não muda nada nem duplica o histórico
+  expect((await post(sadm, corpo)).json.rotas).toEqual([]);
+});

@@ -8,6 +8,7 @@
  * POST v1/conciliacao-carrinha {accao: validar, data, rota, csrf}                                   quem contou
  * POST v1/conciliacao-carrinha {accao: aprovar, data, rota, motivos: {codigo: {motivo, nota}}, csrf}  «conciliacao-coordenacao» G
  * POST v1/conciliacao-carrinha {accao: fechar, data, rota, csrf}                                    «conciliacao-fecho» G
+ * POST v1/conciliacao-carrinha {accao: corrigir_registo, data, rotas: [..], contado_por, validado_por, motivo, csrf}  só SADM
  */
 defined('NAVAL_API') || exit;
 naval_servico('carrinha');
@@ -19,12 +20,24 @@ $eu = (array) naval_utilizador();
 if (!naval_e_post()) {
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
-    naval_json(['ok' => true, 'gere' => $gere, 'pode' => $pode, 'eu' => (string) ($eu['login'] ?? '')] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
+    naval_json(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => naval_perfil() === 'SADM'], 'eu' => (string) ($eu['login'] ?? '')] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
 }
 
 $p = naval_pedido();
 naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
+if ($accao === 'corrigir_registo') {
+    // correcção de quem contou / validou: só o super administrador, com motivo, fica no histórico de cada rota
+    if (naval_perfil() !== 'SADM') {
+        naval_registar('alteracao_recusada', ['accao' => 'carrinha_corrigir_registo', 'motivo' => 'perfil']);
+        throw new NavalErro('Só o super administrador corrige o registo da contagem.', 403);
+    }
+    $data = (string) ($p['data'] ?? '');
+    if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
+    $feitas = naval_carr_corrigir_registo($data, array_slice((array) ($p['rotas'] ?? []), 0, 500), (string) ($p['contado_por'] ?? ''),
+        (string) ($p['validado_por'] ?? ''), (string) ($p['motivo'] ?? ''), $eu);
+    naval_json(['ok' => true, 'rotas' => $feitas]);
+}
 $precisa = ['contar' => 'contar', 'validar' => 'contar', 'aprovar' => 'coordenar', 'fechar' => 'fechar'][$accao] ?? 'contar';
 if (!$pode[$precisa]) {
     naval_registar('alteracao_recusada', ['accao' => 'carrinha_' . $accao, 'motivo' => 'perfil']);
