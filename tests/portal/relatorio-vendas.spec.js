@@ -175,7 +175,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
       json: {
         ok: true,
         gere: true,
-        aprova: true,
+        aprova: [1],
         caixa,
         promotores: { 1001: 'Andrea Santos', 1002: 'Cristina Sachuma' },
         saidas: {
@@ -225,9 +225,9 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   await expect(dlg).toContainText('Diferença');
   await dlg.getByLabel('Explicação da diferença').fill('troco dado a mais');
   await dlg.getByRole('button', { name: 'Validar a caixa' }).click();
-  await expect(page.locator('.cx-cab')).toContainText('Validada, por aprovar');
+  await expect(page.locator('.cx-cab')).toContainText('Validada, por aprovar (1.º nível)');
   expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 1290, explicacao: 'troco dado a mais' });
-  await expect(page.getByRole('button', { name: 'Aprovar a caixa' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Aprovar (1.º nível)' })).toBeVisible();
   await expect(page.locator('.cx-tab input')).toHaveCount(0);
   expect(erros).toEqual([]);
 });

@@ -16,8 +16,14 @@ teste('caixa: saldo do dia anterior, saldo teórico, contagem com diferença exp
     $c = naval_caixa_fechar($d1, 14308000, 'falta de troco no fim do dia', $c['versao'], 'josefa');
     igual(-670.01, $c['diferenca']);
     lanca(403, function () use ($d1, $c) { naval_caixa_aprovar($d1, $c['versao'], 'josefa'); });
-    $c = naval_caixa_aprovar($d1, $c['versao'], 'fin');
+    lanca(403, function () use ($d1, $c) { naval_caixa_aprovar($d1, $c['versao'], 'sara', [2]); }); // sem o 1.º nível
+    $c = naval_caixa_aprovar($d1, $c['versao'], 'sara', [1]);
+    igual('verificada', $c['estado'], '1.º nível');
+    lanca(403, function () use ($d1, $c) { naval_caixa_aprovar($d1, $c['versao'], 'sara', [1, 2]); }); // quem aprovou o 1.º nível não aprova o final
+    lanca(403, function () use ($d1, $c) { naval_caixa_aprovar($d1, $c['versao'], 'michael', [1]); }); // sem o nível final
+    $c = naval_caixa_aprovar($d1, $c['versao'], 'michael', [2]);
     igual('aprovada', $c['estado']);
+    igual('sara', $c['verificada_por']);
     lanca(409, function () use ($d1, $c) { naval_caixa_reabrir($d1, 'corrigir valores', $c['versao'], 'fin'); });
     $n = naval_caixa_ler($d2);
     igual(14308000.0, $n['saldo_inicial'], 'saldo inicial = contagem aprovada do dia anterior');

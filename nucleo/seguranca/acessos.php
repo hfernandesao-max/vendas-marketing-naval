@@ -61,8 +61,10 @@ const NAVAL_MATRIZ_TXT = [
     // Relatório de Vendas diário (gerar e exportar: E) e folha de caixa do Marketing (tesouraria e apoio RTM registam: G)
     'relatorio-vendas'     => 'V  E  E  -  -  E  V  -  -  E  -',
     'caixa-marketing'      => 'V  V  V  -  -  G  G  -  -  V  -',
-    // aprovação da folha de caixa pelo superior hierárquico de quem a regista (dupla verificação; quem regista não aprova)
-    'caixa-aprovacao'      => '-  G  -  -  -  -  -  -  -  -  -',
+    // aprovação da folha de caixa em dois níveis (segregação de funções: quem lança valida, três pessoas diferentes):
+    // 1.º nível o superior de quem lança; 2.º nível (final) o responsável máximo. Atribui-se no portal aos perfis próprios.
+    'caixa-aprovacao'      => '-  -  -  -  -  -  -  -  -  -  -',
+    'caixa-aprovacao-final' => '-  G  -  -  -  -  -  -  -  -  -',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
@@ -216,6 +218,7 @@ function naval_niveis_recurso(string $rec): array
         case 'conciliacao-coordenacao':
         case 'conciliacao-fecho':
         case 'caixa-aprovacao':
+        case 'caixa-aprovacao-final':
         case 'equipamentos-movimentar':
         case 'equipamentos-administrar':
             return ['', 'G'];

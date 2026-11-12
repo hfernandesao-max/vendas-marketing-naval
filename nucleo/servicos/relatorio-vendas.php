@@ -8,7 +8,7 @@
  *   1. Pinguim BO: todos os telemóveis das rotas com vendas sincronizaram depois da hora de fecho (RELATORIO_HORA_FECHO);
  *   2. conciliação de todas as carrinhas com movimento fechada (contagem, validação e aprovações);
  *   3. vendas do dia no SAP: todos os documentos estão num ficheiro de carregamento marcado «carregado no SAP»;
- *   4. folha de caixa do dia validada e aprovada pelo superior hierárquico;
+ *   4. folha de caixa do dia validada e aprovada nos dois níveis;
  *   5. SAP (facturação das outras empresas): lida pelo conector OData; enquanto não estiver ligado fica «por ligar»
  *      e essa parte do relatório sai assinalada (não impede o resto).
  * Uma vez gerado, o relatório fica congelado (fotografia dos dados, com impressão digital SHA-256 e número de versão):
@@ -93,7 +93,7 @@ function naval_rv_controlos(string $dia, array $f): array
     $cx = $f['caixa'];
     $c['caixa'] = ($cx['estado'] ?? '') === 'aprovada'
         ? ['estado' => 'ok', 'detalhe' => 'Folha de caixa aprovada por ' . ($cx['aprovada_por'] ?? '') . '.']
-        : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Folha de caixa validada, por aprovar pelo superior hierárquico.' : 'Folha de caixa por lançar e validar.'];
+        : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Folha de caixa validada, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Folha de caixa aprovada no 1.º nível, falta a aprovação final.' : 'Folha de caixa por lançar e validar.')];
     // 5. SAP (outras empresas)
     $c['sap_odata'] = !($f['sap_configurado'] ?? false)
         ? ['estado' => 'por_ligar', 'detalhe' => 'Conector SAP por ligar: o relatório mostra só as vendas RTM do Pinguim BO.']

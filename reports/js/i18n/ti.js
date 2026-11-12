@@ -3340,6 +3340,17 @@ export const TI = {
   'Quem lança valida; aprova o superior hierárquico, nunca quem lançou ou validou (segregação de funções).':
     'ዝመዝገበ የረጋግጽ፤ ሓላፊ የጽድቕ፣ ዝመዝገበ ወይ ዘረጋገጸ ፈጺሙ ኣየጽድቕን (ምፍልላይ ሓላፍነት)።',
   'Folha de caixa · aprovação pelo superior hierárquico de quem a regista': 'ወረቐት ካሳ · ምጽዳቕ ብሓላፊ ናይቲ ዝመዝገበ',
+  'Validada, por aprovar (1.º nível)': 'ዝተረጋገጸ፣ ንምጽዳቕ (1ይ ደረጃ)',
+  'Aprovada no 1.º nível, falta a aprovação final': 'ብ1ይ ደረጃ ጸዲቑ፣ መወዳእታ ምጽዳቕ ይተርፍ',
+  '1.º nível por {p}': '1ይ ደረጃ ብ {p}',
+  'Aprovar (1.º nível)': 'ኣጽድቕ (1ይ ደረጃ)',
+  'Aprovação final': 'መወዳእታ ምጽዳቕ',
+  'Caixa aprovada no 1.º nível.': 'ካሳ ብ1ይ ደረጃ ጸዲቑ።',
+  'Caixa validada. Falta a aprovação do 1.º nível.': 'ካሳ ተረጋጊጹ። ምጽዳቕ 1ይ ደረጃ ይጽበ ኣሎ።',
+  'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).':
+    'ዝመዝገበ የረጋግጽ፤ ሓላፊ ናይቲ ዝመዝገበ የጽድቕ (1ይ ደረጃ)፣ ኣብ መወዳእታ ድማ ላዕለዋይ ሓላፊ። ሰለስተ ዝተፈላለዩ ሰባት (ምፍልላይ ሓላፍነት)።',
+  'Folha de caixa · aprovação do superior de quem a lança (1.º nível)': 'ወረቐት ካሳ · ምጽዳቕ ብሓላፊ ናይቲ ዝመዝገበ (1ይ ደረጃ)',
+  'Folha de caixa · aprovação final do responsável máximo (2.º nível)': 'ወረቐት ካሳ · መወዳእታ ምጽዳቕ ብላዕለዋይ ሓላፊ (2ይ ደረጃ)',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
