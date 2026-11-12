@@ -462,3 +462,14 @@ test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multic
   expect(await semCorte(page)).toEqual([]);
   expect(erros).toEqual([]);
 });
+
+test.describe('app de gestão: idioma do telefone', () => {
+  test.use({ locale: 'en-GB' });
+  test('telefone em inglês: a app abre em inglês, mesmo com a conta em português', async ({ page }) => {
+    await page.route('**/v1/sessao**', (r) => r.fulfill({ json: { ...SESSAO, idioma: 'pt' } }));
+    await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
+    await page.goto('/gestao/index.html');
+    await expect(page.locator('.ag-separadores')).toContainText('Today');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+});

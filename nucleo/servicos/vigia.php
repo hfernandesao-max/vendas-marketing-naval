@@ -238,7 +238,8 @@ function naval_vigia_avisar(array $novos): void
     naval_act_avisar('vigilância: ' . count($novos) . ' problema(s) novo(s)', $linhas);
     naval_servico('notificacoes');
     foreach ($novos as $p) {
-        naval_notificar('problema', 'Problema em produção', mb_substr($p['mensagem'], 0, 200), ['chave' => 'problema|' . $p['id'] . '|' . $p['primeiro'], 'url' => '../reports/#conformidade/vigilancia']);
+        $tx = naval_notif_txt('problema', ['m' => mb_substr($p['mensagem'], 0, 200)]);
+        naval_notificar('problema', $tx['pt'][0], $tx['pt'][1], ['chave' => 'problema|' . $p['id'] . '|' . $p['primeiro'], 'url' => '../reports/#conformidade/vigilancia', 'textos' => $tx]);
     }
 }
 
@@ -293,9 +294,8 @@ function naval_vigia_ciclo(int $agora, array $o = []): ?array
                 naval_json_gravar($dirC . '/' . $conf['dia'] . '.json', $conf);
                 if ($conf['diferencas'] && empty($o['sem_email'])) {
                     naval_servico('notificacoes');
-                    naval_notificar('conferencia', 'Conferência de ' . date('d-m-Y', strtotime($conf['dia'])) . ' com diferenças',
-                        count($conf['diferencas']) . ' rota(s) com documentos ou valores diferentes do Pinguim BO: ' . implode(', ', array_column($conf['diferencas'], 'rota')) . '.',
-                        ['chave' => 'conferencia|' . $conf['dia'], 'url' => '../reports/#conformidade/vigilancia'], $agora);
+                    $tx = naval_notif_txt('conferencia', ['d' => date('d-m-Y', strtotime($conf['dia'])), 'n' => count($conf['diferencas']), 'lista' => implode(', ', array_column($conf['diferencas'], 'rota'))]);
+                    naval_notificar('conferencia', $tx['pt'][0], $tx['pt'][1], ['chave' => 'conferencia|' . $conf['dia'], 'url' => '../reports/#conformidade/vigilancia', 'textos' => $tx], $agora);
                 }
                 foreach ($conf['diferencas'] as $d) {
                     $ocorr[] = ['tipo' => 'conferencia', 'ficheiro' => '', 'linha' => 0, 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora),

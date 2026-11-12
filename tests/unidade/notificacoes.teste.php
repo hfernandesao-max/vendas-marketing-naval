@@ -183,3 +183,27 @@ teste('notificações: ciclo do dia — rota parada, sem vendas às 10:30, venda
     nt_limpar();
     unset($GLOBALS['naval_notif_entregar']);
 });
+
+teste('notificações: cada telefone recebe no seu idioma (inglês, tigrínia), a caixa guarda os três', function () {
+    nt_limpar();
+    naval_notif_subscrever('chefe', nt_telefone('en')[0], 'iPhone', 'en-GB');
+    naval_notif_subscrever('chefe', nt_telefone('ti')[0], 'Android', 'ti');
+    naval_notif_subscrever('chefe', nt_telefone('xx')[0], 'iPad', 'fr-FR');   // idioma que a app não tem: fica o da conta (pt)
+    naval_notif_gravar_preferencias('chefe', ['silencio' => false]);
+    $GLOBALS['naval_notif_entregar'] = function ($sub, $msg) {
+        $GLOBALS['nt_entregas'][] = [$sub['idioma'], $msg['titulo'], $msg['corpo'], isset($msg['textos'])];
+        return 201;
+    };
+    $tx = naval_notif_txt('parada', ['r' => '1011 · Robel', 'h' => 1, 'm' => 10, 'u' => '09:40', 'n' => 3]);
+    naval_notificar('rota_parada', $tx['pt'][0], $tx['pt'][1], ['chave' => 'i1', 'textos' => $tx], strtotime('2026-11-12 11:00'));
+    $e = $GLOBALS['nt_entregas'];
+    igual(['en', 'Route 1011 · Robel stopped', 'No sales for 1 h 10 min (last at 09:40). Today: 3 documents.', false], $e[0]);
+    igual('መስመር 1011 · Robel ደው ኢሉ', $e[1][1]);
+    igual('Rota 1011 · Robel parada', $e[2][1]);
+    $caixa = naval_notif_caixa('chefe');
+    igual('Route 1011 · Robel stopped', $caixa[0]['textos']['en'][0]);
+    igual('Rota 1011 · Robel parada', $caixa[0]['textos']['pt'][0]);
+    unset($GLOBALS['naval_notif_entregar']);
+    nt_limpar();
+    unset($GLOBALS['naval_notif_entregar']);
+});
