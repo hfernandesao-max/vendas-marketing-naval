@@ -168,7 +168,8 @@ function naval_op_fecho_20h(int $agora): ?array
         naval_servico('carrinha');
         foreach (naval_carr_vista($dia, null, false)['rotas'] as $r) {
             $e = (string) ($r['resumo']['estado'] ?? '');
-            $carr[(string) $r['rota']] = ['por_contar' => 'por contar', 'por_aprovar' => 'por aprovar', 'aprovada' => 'aprovada'][$e] ?? $e;
+            $carr[(string) $r['rota']] = ['por_contar' => 'por contar', 'por_validar' => 'por validar', 'por_aprovar' => 'por aprovar (coordenador)',
+                'por_fechar' => 'por aprovar (responsável)', 'aprovada' => 'aprovada'][$e] ?? $e;
         }
     } catch (Throwable $e) {
         error_log('[fecho carrinha] ' . $e->getMessage());

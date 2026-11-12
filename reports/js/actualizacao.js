@@ -3,6 +3,7 @@
 // passam para o novo dia. O topo mostra a hora da última actualização; o botão «Actualizar» recarrega o portal.
 import { draw } from './app.js';
 import { fecharAberto } from './componentes/barra-filtros.js';
+import { haPorGravar } from './componentes/rascunho.js';
 import { fetchVendas, pedirFresco } from './fontes.js';
 import { t } from './i18n/i18n.js';
 import { aplicarPreset, periodoAberto, presets, st } from './periodo.js';
@@ -16,8 +17,10 @@ export function marcarActualizado() {
   actualizadoEm = Date.now();
 }
 
-// Não interrompe quem está a trabalhar: janela aberta, painel de filtros aberto ou a escrever num campo
+// Não interrompe quem está a trabalhar: janela aberta, painel de filtros aberto, a escrever num campo ou com dados
+// escritos e ainda não gravados (contagem a meio, por exemplo); actualiza logo que se grave ou se limpe
 const ocupado = () =>
+  haPorGravar() ||
   !!document.querySelector('dialog[open]') ||
   !!fecharAberto ||
   (document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && document.activeElement.closest('#page'));

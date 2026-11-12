@@ -991,7 +991,9 @@ const fechoDaRota = (rota) => ((E.ao && E.ao.carrinhas && E.ao.carrinhas.rotas) 
 const FECHO = {
   por_contar: ['Por contar', 'aviso'],
   contagem_parcial: ['Contagem a meio', 'aviso'],
+  por_validar: ['Por validar', 'aviso'],
   por_aprovar: ['Por aprovar', 'aviso'],
+  por_fechar: ['Por aprovação final', 'aviso'],
   aprovada: ['Fechada', 'ok'],
   fechada_auto: ['Fechada', 'ok'],
 };
@@ -1014,7 +1016,7 @@ function rotasAoVivo() {
   const out = [];
   const nPar = rs.filter((r) => r.estado === 'parada' || r.estado === 'sem').length;
   const C = E.ao.carrinhas;
-  const porContar = C && C.rotas ? C.rotas.filter((r) => r.fecho === 'por_contar' || r.fecho === 'por_aprovar').length : 0;
+  const porContar = C && C.rotas ? C.rotas.filter((r) => ['por_contar', 'por_validar', 'por_aprovar', 'por_fechar'].includes(r.fecho)).length : 0;
   out.push(
     el(
       'p',

@@ -4,6 +4,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Conciliação da carrinha: folha de contagem às cegas, PDF do resultado e aprovação em dois níveis
+
+- **Imprimir folha de contagem** (às cegas): PDF A4 com a referência da contagem (CC-rota-data), os artigos, o código
+  e a unidade, e espaço para escrever a quantidade contada e as observações. Não leva nenhuma quantidade do sistema.
+  Tem a hora de início e de fim, a assinatura de quem conta e de quem acompanha (o promotor), e «Página x de y».
+- **PDF da contagem**: depois de gravada, a mesma tabela do ecrã (inicial, carregado, vendido, devolvido, tem de
+  voltar, contado, diferença, valor e motivo), o resumo (faltas e sobras), o circuito de aprovação (quem e quando) e
+  quatro assinaturas.
+- **Circuito de aprovação com segregação de funções**: quem contou confere e **valida** (ou reconta); o
+  **coordenador** aprova, com o motivo de cada diferença (1.º nível); por fim, o **responsável** aprova e a
+  conciliação fica **fechada** (2.º nível). A mesma pessoa não pode fazer dois passos (o servidor recusa). Quando não
+  há diferenças nem alertas, a contagem validada continua a fechar sozinha.
+- Novas linhas na matriz de acessos: «Conciliação da carrinha · aprovação do coordenador (1.º nível)» (Logística) e
+  «… aprovação final do responsável (2.º nível, fecha)» (Direcção e Financeiro). O SADM pode mudar quem tem cada uma.
+- As colunas têm cores por tipo, no ecrã e no PDF: sistema (Pinguim BO) em cinza-azulado, contagem física em azul,
+  diferença em âmbar. As faltas aparecem a vermelho e as sobras a azul, com legenda.
+- Painel da carrinha, app «Naval Gestão», notificações e aviso do fim do dia passam a conhecer os passos novos.
+- **A actualização automática já não apaga o que se está a escrever**: cada número da contagem fica guardado como
+  rascunho neste navegador até se gravar (e volta se a página redesenhar ou abrir de novo). Enquanto houver dados por
+  gravar, o portal não actualiza sozinho e a app não recarrega com uma versão nova. Ao fechar ou recarregar o
+  separador com dados por gravar, o navegador pede confirmação. Os rascunhos com mais de 7 dias apagam-se sozinhos.
+
 ### Novo relatório «Vendas por promotor e artigo»
 
 - Portal › Vendas › **Vendas por promotor e artigo** (análise do mix de vendas de cada promotor, com as linhas de

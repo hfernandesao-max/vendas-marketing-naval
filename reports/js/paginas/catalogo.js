@@ -88,6 +88,8 @@ export const NOMES_RECURSO = {
   'geo-prospeccao': 'GEO · prospecção: territórios das rotas e potenciais clientes',
   'geo-terreno': 'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)',
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
+  'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
+  'conciliacao-fecho': 'Conciliação da carrinha · aprovação final do responsável (2.º nível, fecha)',
   'equipamentos-movimentar': 'Equipamentos · eventos, documentos e assinaturas',
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',

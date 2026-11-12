@@ -53,6 +53,9 @@ const NAVAL_MATRIZ_TXT = [
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E  V',
     'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E  V',
     'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V  V',
+    // circuito de aprovação da conciliação (segregação de funções): 1.º nível coordenador, 2.º nível responsável (fecha)
+    'conciliacao-coordenacao' => '-  -  -  -  -  -  -  G  -  -  -',
+    'conciliacao-fecho'    => '-  G  -  -  -  G  -  -  -  -  -',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
@@ -197,6 +200,8 @@ function naval_niveis_recurso(string $rec): array
         case 'exportar-dados':
             return ['', 'E'];
         case 'geo-zonas-gerir':
+        case 'conciliacao-coordenacao':
+        case 'conciliacao-fecho':
         case 'equipamentos-movimentar':
         case 'equipamentos-administrar':
             return ['', 'G'];

@@ -43,16 +43,31 @@ test('conciliação da carrinha: acessos, contagem cega, âmbito, motivo e aprov
   const c = await csrf(log);
   expect((await log.post(API + 'conciliacao-carrinha', { data: { accao: 'contar', data: dia, rota: '1001', contagem: { A1: 3 } } })).status()).toBe(403);
   const r = await (await log.post(API + 'conciliacao-carrinha', { data: { accao: 'contar', data: dia, rota: '1001', contagem: { A1: 3 }, csrf: c } })).json();
-  expect(r.resumo).toMatchObject({ estado: 'por_aprovar', diferencas: 1, falta_kz: 1000 });
-  expect((await log.post(API + 'conciliacao-carrinha', { data: { accao: 'aprovar', data: dia, rota: '1001', motivos: {}, csrf: c } })).status()).toBe(400);
-  const a = await (
-    await log.post(API + 'conciliacao-carrinha', { data: { accao: 'aprovar', data: dia, rota: '1001', motivos: { A1: { motivo: 'avaria' } }, csrf: c } })
-  ).json();
+  expect(r.resumo).toMatchObject({ estado: 'por_validar', diferencas: 1, falta_kz: 1000 });
+  const post = async (ctx, corpo) => {
+    const x = await ctx.post(API + 'conciliacao-carrinha', { data: { data: dia, rota: '1001', ...corpo, csrf: await csrf(ctx) } });
+    return { status: x.status(), json: await x.json() };
+  };
+  const sadm = (await entrar('sadm')).ctx;
+  const dirCtx = (await entrar('dir')).ctx;
+  // 1. só quem contou valida; o coordenador não aprova antes da validação
+  expect((await post(sadm, { accao: 'validar' })).status).toBe(403);
+  expect((await post(sadm, { accao: 'aprovar', motivos: { A1: { motivo: 'avaria' } } })).status).toBe(409);
+  expect((await post(log, { accao: 'validar' })).json.resumo.estado).toBe('por_aprovar');
+  // 2. coordenador (1.º nível): quem contou não aprova (segregação de funções); motivo obrigatório
+  expect((await post(log, { accao: 'aprovar', motivos: { A1: { motivo: 'avaria' } } })).status).toBe(403);
+  expect((await post(sadm, { accao: 'aprovar', motivos: {} })).status).toBe(400);
+  expect((await post(dirCtx, { accao: 'aprovar', motivos: { A1: { motivo: 'avaria' } } })).status).toBe(403); // perfil sem o 1.º nível
+  expect((await post(sadm, { accao: 'aprovar', motivos: { A1: { motivo: 'avaria' } } })).json.resumo.estado).toBe('por_fechar');
+  // 3. responsável (2.º nível): nem o coordenador nem quem contou fecham
+  expect((await post(sadm, { accao: 'fechar' })).status).toBe(403);
+  expect((await post(log, { accao: 'fechar' })).status).toBe(403);
+  const a = (await post(dirCtx, { accao: 'fechar' })).json;
   expect(a.resumo.estado).toBe('aprovada');
   const dir = await (await (await entrar('dir')).ctx.get(URL)).json();
   const r1 = dir.rotas.find((x) => x.rota === '1001');
   expect(r1.resumo.estado).toBe('aprovada');
-  expect(r1.aprovado_por).toBe('log');
+  expect(r1).toMatchObject({ contado_por: 'log', validado_por: 'log', coordenado_por: 'sadm', aprovado_por: 'dir' });
   expect(r1.motivos.A1.motivo).toBe('avaria');
   expect(dir.rotas.find((x) => x.rota === '1002').resumo.estado).toBe('por_contar');
 });

@@ -1,5 +1,6 @@
 // Desenho da página actual e encaminhamento pelo endereço (#página/relatório?filtros).
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
+import { limparPorGravar } from './componentes/rascunho.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
 import { exportarDados } from './dados-gestao.js';
 import { FV, desenharFiltros, filtroAberto, filtroAtivo, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
@@ -131,6 +132,7 @@ export function draw() {
     });
   definirReg({ tabelas: [], kpis: [] });
   definirFits([]);
+  limparPorGravar();
   textos();
   mostrarFontes();
   mostrarIndicador(); // cartão dos telemóveis no menu: sempre na língua escolhida

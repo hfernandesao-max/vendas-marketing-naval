@@ -573,7 +573,7 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
         }
     }
     foreach ((array) $car as $r) {
-        if (($r['resumo']['estado'] ?? '') !== 'por_aprovar') continue;
+        if (!in_array($r['resumo']['estado'] ?? '', ['por_aprovar', 'por_fechar'], true)) continue;
         $falta = (float) ($r['resumo']['falta_kz'] ?? 0);
         $fl = $falta ? naval_notif_txt('carrinha_falta', ['v' => number_format($falta, 0, ',', ' ')]) : ['pt' => [''], 'en' => [''], 'ti' => ['']];
         $tx = [];

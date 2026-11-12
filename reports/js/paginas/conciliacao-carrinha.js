@@ -12,6 +12,8 @@ import { hoje } from '../periodo.js';
 import { postJson } from '../servidor.js';
 import { el, somaDias, toast } from '../util.js';
 import { R } from './registo.js';
+import { folhaContagemCega, resultadoContagem } from '../componentes/contagem-pdf.js';
+import { apagarRascunho, guardarRascunho, lerRascunho } from '../componentes/rascunho.js';
 
 let CC = null;
 let dia = null;
@@ -19,8 +21,10 @@ let aberta = null;
 let aLer = false;
 const ESTADOS = {
   por_contar: ['Por contar', 'p-warn'],
-  por_aprovar: ['Por aprovar', 'p-serio'],
-  aprovada: ['Aprovada', 'p-ok'],
+  por_validar: ['Por validar', 'p-warn'],
+  por_aprovar: ['Por aprovar (coordenador)', 'p-serio'],
+  por_fechar: ['Por aprovar (responsável)', 'p-serio'],
+  aprovada: ['Fechada', 'p-ok'],
 };
 const ALERTAS = {
   negativo: 'Stock negativo na carrinha',
@@ -68,6 +72,21 @@ function barra() {
   return b;
 }
 
+/** Botão que gera um PDF da contagem (fica inactivo enquanto o gera; avisa se falhar). */
+function pdfBotao(txt, gerar) {
+  const b = botao(txt, 'ghost sm cc-pdf', () => {
+    b.disabled = true;
+    Promise.resolve()
+      .then(gerar)
+      .catch((e) => {
+        console.error(e);
+        toast(t('Não foi possível gerar o PDF.'), 5000);
+      })
+      .then(() => (b.disabled = false));
+  });
+  return b;
+}
+
 /** Contagem cega: só o artigo e o campo da quantidade que voltou na carrinha. */
 function formContagem(r) {
   const f = el('div', 'cc-contagem');
@@ -76,10 +95,28 @@ function formContagem(r) {
   [t('Artigo'), t('Quantidade que voltou')].forEach((x) => th.append(el('th', null, x)));
   tab.append(th);
   const campos = {};
+  // Rascunho da contagem: cada número escrito fica guardado neste navegador até gravar; a página pode actualizar
+  // (ou voltar a abrir) sem apagar o que já foi contado
+  const chave = 'contagem-' + dia + '-' + r.rota;
+  const rasc = lerRascunho(chave);
+  const guardar = () => {
+    const v = {};
+    Object.entries(campos).forEach(([c, i]) => (v[c] = i.value));
+    guardarRascunho(chave, v);
+    estado.textContent = Object.values(v).some((x) => x !== '')
+      ? t('Rascunho guardado neste navegador às {h}; só fica registado ao gravar.', { h: new Date().toTimeString().slice(0, 5) })
+      : '';
+  };
+  const estado = el('p', 'note cc-rascunho');
+  estado.setAttribute('aria-live', 'polite');
+  if (rasc)
+    estado.textContent = t('Rascunho reposto: {n} artigo(s) já contados. Confira e grave.', { n: n0(Object.values(rasc.v).filter((x) => x !== '').length) });
   r.linhas.forEach((l) => {
     const tr = el('tr');
-    const i = entrada('number', l.contado == null ? '' : l.contado, { min: 0, step: 'any', inputMode: 'decimal' });
+    const inicial = rasc && rasc.v[l.codigo] != null ? rasc.v[l.codigo] : l.contado == null ? '' : l.contado;
+    const i = entrada('number', inicial, { min: 0, step: 'any', inputMode: 'decimal' });
     i.setAttribute('aria-label', l.artigo);
+    i.addEventListener('input', guardar);
     campos[l.codigo] = i;
     const td = el('td');
     td.append(i, el('span', 'cc-un', l.unidade || ''));
@@ -88,8 +125,10 @@ function formContagem(r) {
   });
   const erro = msgErro();
   f.append(
+    pdfBotao(t('Imprimir folha de contagem'), () => folhaContagemCega(r, dia)),
     el('p', 'note', t('Conte o que voltou na carrinha (artigos por vender e devoluções). Os números do sistema só aparecem depois de gravar a contagem.')),
     tab,
+    estado,
     erro,
     botao(t('Gravar contagem'), null, () => {
       const contagem = {};
@@ -109,53 +148,91 @@ function formContagem(r) {
           return;
         }
         toast(
-          x.resumo.diferencas ? t('Contagem gravada: {n} diferença(s) a aprovar.', { n: x.resumo.diferencas }) : t('Contagem gravada, sem diferenças.'),
+          x.resumo.diferencas
+            ? t('Contagem gravada com {n} diferença(s): confira e valide.', { n: x.resumo.diferencas })
+            : t('Contagem gravada, sem diferenças: confira e valide.'),
           4000,
         );
+        apagarRascunho(chave);
         CC = null;
         ler();
         draw();
       });
     }),
   );
+  if (rasc) guardarRascunho(chave, rasc.v);
   return f;
 }
 
-/** Tabela completa (inicial, carregado, vendido, devolvido, esperado, contado, diferença) e, a aprovar, os motivos. */
-function tabelaRota(r, gere) {
-  const aprovar = gere && r.resumo.estado === 'por_aprovar';
+// Grupos de colunas com cor própria (prática dos sistemas de inventário físico): o que diz o sistema, o que foi
+// contado, a diferença entre os dois e a justificação. A mesma legenda e as mesmas cores vão para o PDF.
+const GRUPOS = [
+  { id: 'sis', nome: 'Sistema · Pinguim BO', cols: ['Inicial', 'Carregado', 'Vendido', 'Devolvido', 'Tem de voltar'] },
+  { id: 'cont', nome: 'Contagem física', cols: ['Contado'] },
+  { id: 'dif', nome: 'Diferença', cols: ['Diferença', 'Valor'] },
+];
+const quando = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
+
+/** Circuito de aprovação: contada → validada por quem contou → coordenador (1.º nível) → responsável (2.º nível, fecha). */
+function circuito(r) {
+  const auto = r.aprovado_por === 'automatico';
+  const passos = [
+    ['Contada', r.contado_por, r.contado_em],
+    ['Validada por quem contou', r.validado_por, r.validado_em],
+    ['Aprovada pelo coordenador', auto ? null : r.coordenado_por, auto ? null : r.coordenado_em],
+    [auto ? 'Fechada sozinha (sem diferenças)' : 'Aprovada pelo responsável · fechada', auto ? t('automático') : r.aprovado_por, r.aprovado_em],
+  ];
+  const ol = el('ol', 'cc-circuito');
+  ol.setAttribute('aria-label', t('Circuito de aprovação'));
+  let actual = false;
+  passos.forEach(([nome, quem, em], i) => {
+    if (auto && i === 2) return;
+    const feito = !!em;
+    const li = el('li', feito ? 'feito' : !actual ? 'actual' : null);
+    if (!feito) actual = true;
+    li.append(el('b', null, t(nome)), el('span', null, feito ? (quem || '') + ' · ' + quando(em) : t('pendente')));
+    ol.append(li);
+  });
+  return ol;
+}
+
+/** Tabela completa (inicial, carregado, vendido, devolvido, esperado, contado, diferença) e as acções de cada passo. */
+function tabelaRota(r) {
+  const est = r.resumo.estado,
+    eu = String(CC.eu || '').toLowerCase(),
+    pode = CC.pode || { contar: CC.gere },
+    fui = (k) => !!eu && String(r[k] || '').toLowerCase() === eu;
+  const aprovar = est === 'por_aprovar' && pode.coordenar && !fui('contado_por');
   const box = el('div', 'cc-detalhe');
-  const tab = el('table', 'cc-tab');
+  box.append(circuito(r));
+  const tab = el('table', 'cc-tab cc-cores');
+  const g = el('tr', 'cc-grupos');
+  g.append(el('th', null, ''));
+  GRUPOS.forEach((x) => {
+    const th = el('th', 'cc-g-' + x.id, t(x.nome));
+    th.colSpan = x.cols.length;
+    th.scope = 'colgroup';
+    g.append(th);
+  });
+  g.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Justificação')));
   const th = el('tr');
-  [
-    'Artigo',
-    'Inicial',
-    'Carregado',
-    'Vendido',
-    'Devolvido',
-    'Tem de voltar',
-    'Contado',
-    'Diferença',
-    'Valor',
-    r.resumo.estado === 'por_contar' ? 'Alertas' : 'Motivo',
-  ].forEach((x) => th.append(el('th', null, t(x))));
-  tab.append(th);
+  th.append(el('th', null, t('Artigo')));
+  GRUPOS.forEach((x) => x.cols.forEach((c) => th.append(el('th', 'n cc-g-' + x.id, t(c)))));
+  th.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Motivo')));
+  const cab = el('thead');
+  cab.append(g, th);
+  tab.append(cab);
+  const corpo = el('tbody');
   const escolhas = {};
   r.linhas.forEach((l) => {
     const tr = el('tr', l.diferenca ? (l.diferenca < 0 ? 'cc-falta' : 'cc-sobra') : l.alertas.length ? 'cc-alerta' : null);
-    tr.append(
-      el('td', null, l.artigo),
-      el('td', 'n', q(l.inicial)),
-      el('td', 'n', q(l.carregado)),
-      el('td', 'n', q(l.vendido)),
-      el('td', 'n', q(l.devolvido)),
-      el('td', 'n', q(l.esperado)),
-      el('td', 'n', q(l.contado)),
-      el('td', 'n', difTxt(l.diferenca)),
-      el('td', 'n', l.valor == null ? '—' : kz(l.valor)),
-    );
-    const ult = el('td');
-    if (r.resumo.estado === 'por_contar') l.alertas.forEach((a) => ult.append(pill(t(ALERTAS[a] || a), 'p-warn')));
+    tr.append(el('td', null, l.artigo));
+    [l.inicial, l.carregado, l.vendido, l.devolvido, l.esperado].forEach((v) => tr.append(el('td', 'n cc-g-sis', q(v))));
+    tr.append(el('td', 'n cc-g-cont', q(l.contado)));
+    const sinal = l.diferenca ? (l.diferenca < 0 ? ' cc-neg' : ' cc-pos') : '';
+    tr.append(el('td', 'n cc-g-dif' + sinal, difTxt(l.diferenca)), el('td', 'n cc-g-dif' + sinal, l.valor == null ? '—' : kz(l.valor)));
+    const ult = el('td', 'cc-g-mot');
+    if (est === 'por_contar') l.alertas.forEach((a) => ult.append(pill(t(ALERTAS[a] || a), 'p-warn')));
     else if (l.diferenca && aprovar) {
       const s = el('select');
       s.append(el('option', null, t('Escolha o motivo')));
@@ -174,43 +251,65 @@ function tabelaRota(r, gere) {
       ult.textContent = m ? t(CC.motivos[m.motivo] || m.motivo) + (m.nota ? ' · ' + m.nota : '') : '—';
     }
     tr.append(ult);
-    tab.append(tr);
+    corpo.append(tr);
   });
+  tab.append(corpo);
   const wrap = el('div', 'cc-scroll');
   wrap.append(tab);
   box.append(wrap);
-  if (aprovar) {
-    const erro = msgErro();
-    const acc = el('div', 'cc-acc');
-    acc.append(
-      botao(t('Recontar'), 'ghost', () => {
-        r.linhas = r.linhas.map((l) => ({ ...l, contado: null }));
-        r.resumo.estado = 'por_contar';
-        r.cega = true;
-        draw();
-      }),
-      botao(r.resumo.diferencas ? t('Aprovar com as diferenças') : t('Aprovar'), null, () => {
-        const motivos = {};
-        Object.entries(escolhas).forEach(([c, x]) => (motivos[c] = { motivo: x.s.value, nota: x.nota.value }));
-        postJson('conciliacao-carrinha', { accao: 'aprovar', data: dia, rota: r.rota, motivos }).then((x) => {
-          if (!x.ok) {
-            erro.hidden = false;
-            erro.textContent = t(x.erro || 'Não foi possível gravar.') + (x.erros ? ' ' + x.erros.join(', ') : '');
-            return;
-          }
-          toast(t('Conciliação aprovada.'), 4000);
-          CC = null;
-          ler();
-          draw();
-        });
-      }),
-    );
-    box.append(erro, acc);
+  const legenda = el('p', 'note cc-legenda');
+  GRUPOS.forEach((x) => legenda.append(el('span', 'cc-g-' + x.id, t(x.nome))));
+  legenda.append(el('span', 'cc-neg', t('falta')), el('span', 'cc-pos', t('sobra')));
+  box.append(legenda);
+  if (est !== 'por_contar') box.prepend(pdfBotao(t('PDF da contagem'), () => resultadoContagem(r, dia, CC.motivos)));
+
+  // Acções do passo em que a conciliação está, só para quem o pode fazer (segregação de funções)
+  const erro = msgErro();
+  const acc = el('div', 'cc-acc');
+  const enviar = (corpo, ok) =>
+    postJson('conciliacao-carrinha', { data: dia, rota: r.rota, ...corpo }).then((x) => {
+      if (!x.ok) {
+        erro.hidden = false;
+        erro.textContent = t(x.erro || 'Não foi possível gravar.') + (x.erros ? ' ' + x.erros.join(', ') : '');
+        return;
+      }
+      toast(t(ok), 4000);
+      CC = null;
+      ler();
+      draw();
+    });
+  const recontar = botao(t('Recontar'), 'ghost', () => {
+    r.linhas = r.linhas.map((l) => ({ ...l, contado: null }));
+    r.resumo.estado = 'por_contar';
+    r.cega = true;
+    draw();
+  });
+  const espera = (txt) => box.append(el('p', 'note cc-espera', txt));
+  if (est === 'por_validar') {
+    if (fui('contado_por')) {
+      acc.append(
+        recontar,
+        botao(t('Validar contagem'), null, () => enviar({ accao: 'validar' }, 'Contagem validada; segue para o coordenador.')),
+      );
+      espera(t('Confira os números: se estiverem certos, valide; se não, reconte. Depois de validada segue para o coordenador.'));
+    } else espera(t('Aguarda a validação de {p}, que fez a contagem.', { p: r.contado_por || '—' }));
+  } else if (est === 'por_aprovar') {
+    if (aprovar) {
+      if (pode.contar) acc.append(recontar);
+      acc.append(
+        botao(t('Aprovar (coordenador)'), null, () => {
+          const motivos = {};
+          Object.entries(escolhas).forEach(([c, x]) => (motivos[c] = { motivo: x.s.value, nota: x.nota.value }));
+          enviar({ accao: 'aprovar', motivos }, 'Aprovada pelo coordenador; segue para o responsável.');
+        }),
+      );
+    } else espera(fui('contado_por') ? t('Validada. Aguarda a aprovação do coordenador (quem contou não aprova).') : t('Aguarda a aprovação do coordenador.'));
+  } else if (est === 'por_fechar') {
+    if (pode.fechar && !fui('contado_por') && !fui('coordenado_por'))
+      acc.append(botao(t('Aprovar e fechar'), null, () => enviar({ accao: 'fechar' }, 'Conciliação aprovada e fechada.')));
+    else espera(t('Aguarda a aprovação final do responsável (quem contou ou aprovou o 1.º nível não aprova o 2.º).'));
   }
-  const quem = [];
-  if (r.contado_por) quem.push(t('Contada por {p} em {d}', { p: r.contado_por, d: dl(r.contado_em) + ' ' + String(r.contado_em).slice(11, 16) }));
-  if (r.aprovado_por) quem.push(t('Aprovada por {p} em {d}', { p: r.aprovado_por, d: dl(r.aprovado_em) + ' ' + String(r.aprovado_em).slice(11, 16) }));
-  if (quem.length) box.append(el('p', 'note', quem.join(' · ')));
+  if (acc.childNodes.length) box.append(erro, acc);
   return box;
 }
 
@@ -233,8 +332,14 @@ R['conciliacao-carrinha'] = (pg) => {
     tiles([
       { l: t('Carrinhas com movimento'), v: n0(rs.length), s: t('rotas no dia') },
       { l: t('Por contar'), v: n0(n('por_contar')), tone: n('por_contar') ? 'warn' : null, s: t('técnico do armazém') },
-      { l: t('Por aprovar'), v: n0(n('por_aprovar')), tone: n('por_aprovar') ? 'serio' : null, s: t('contadas, com diferenças a justificar') },
-      { l: t('Aprovadas'), v: n0(n('aprovada')), s: t('fechadas') },
+      { l: t('Por validar'), v: n0(n('por_validar')), tone: n('por_validar') ? 'warn' : null, s: t('por quem contou') },
+      {
+        l: t('Por aprovar'),
+        v: n0(n('por_aprovar') + n('por_fechar')),
+        tone: n('por_aprovar') + n('por_fechar') ? 'serio' : null,
+        s: t('coordenador: {a} · responsável: {b}', { a: n0(n('por_aprovar')), b: n0(n('por_fechar')) }),
+      },
+      { l: t('Fechadas'), v: n0(n('aprovada')), s: t('aprovadas nos dois níveis ou sem diferenças') },
       { l: t('Faltas'), v: kz(soma('falta_kz')), tone: soma('falta_kz') ? 'bad' : null, s: t('ao preço médio de venda do dia') },
       { l: t('Alertas automáticos'), v: n0(soma('alertas')), tone: soma('alertas') ? 'warn' : null, s: t('artigos assinalados pelo sistema') },
     ]),
@@ -271,7 +376,7 @@ R['conciliacao-carrinha'] = (pg) => {
       () => ((aberta = aberta === r.rota ? null : r.rota), draw()),
     );
     c.append(abrir);
-    if (aberta === r.rota) c.append(r.cega ? formContagem(r) : tabelaRota(r, CC.gere));
+    if (aberta === r.rota) c.append(r.cega ? formContagem(r) : tabelaRota(r));
     lista.append(c);
   });
   pg.append(secBox(t('Carrinhas do dia'), t('Carregado, vendido e devolvido por artigo; diferenças entre o que tinha de voltar e o que foi contado.'), lista));
