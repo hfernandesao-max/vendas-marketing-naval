@@ -80,6 +80,8 @@ const ICON = {
   negocio: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 20h16',
   grelha: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   requisicao: 'M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 11h8M8 15h8M8 19h4',
+  relatorio: 'M6 3h9l4 4v14H6zM15 3v4h4M9 17v-3M12 17v-6M15 17v-4',
+  caixa: 'M3 8h18v11H3zM3 12h18M7 8V5h10v3M10 15.5h4',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

@@ -33,6 +33,7 @@ const NAVAL_CONECTORES = [
     'google-maps' => ['Google Maps', 'GOOGLE_MAPS_API_KEY'],
     'mdm' => ['ManageEngine MDM Plus', 'MDM_OAUTH_CLIENT_ID'],
     'sap' => ['SAP (ficheiro de carregamento)', ''],
+    'sap-odata' => ['SAP S/4HANA (OData, só leitura)', 'SAP_ODATA_URL'],
     'ia' => ['Assistente de inteligência artificial', 'IA_API_KEY'],
     'github' => ['GitHub (versões do portal)', ''],
     'quatenus' => ['Quatenus (GPS das viaturas)', 'QUATENUS_API_URL'],
@@ -53,6 +54,7 @@ const NAVAL_CONECTORES_FICHA = [
     'cctv' => ['Segurança física', 'Gravador NVR do parque', 'ONVIF / RTSP', 'entrada', 'Imagens do parque nas cargas e descargas das carrinhas.'],
     'ia' => ['Inteligência artificial', 'Fornecedor de IA', 'REST (HTTPS)', 'entrada e saída', 'Assistente que responde a perguntas sobre os dados do portal.'],
     'sap' => ['Integração com sistemas', 'SAP', 'Ficheiro Excel (modelo de carregamento)', 'saída', 'Ficheiro de vendas para carregar no SAP, sem alterações à estrutura.'],
+    'sap-odata' => ['Dados de negócio (ERP)', 'SAP', 'OData v2 (HTTPS), só leitura', 'entrada', 'Facturação de todas as empresas (Naval, Foodtec, Higitec, Refitech) para o Relatório de Vendas.'],
     'github' => ['Plataforma', 'GitHub', 'REST (GitHub App)', 'entrada', 'Versões novas do portal, instaladas pelo actualizador.'],
 ];
 

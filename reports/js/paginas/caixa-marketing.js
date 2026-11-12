@@ -1,0 +1,360 @@
+// Cobranças › Folha de caixa (tesouraria do Marketing): dinheiro entregue por promotor, talões do TPA por banco, saídas
+// (depósito, fundo de maneio, transferência para a gestão), saldo inicial e final, contagem física, fecho e aprovação.
+// Substitui a folha Excel «Cash control». Servidor: nucleo/api/v1/caixa.php e nucleo/servicos/caixa.php.
+import { apiJson } from '../api.js';
+import { draw } from '../app.js';
+import { pill, tiles } from '../componentes/blocos.js';
+import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { marcarPorGravar } from '../componentes/rascunho.js';
+import { dl, ds, kz } from '../formatos.js';
+import { t } from '../i18n/i18n.js';
+import { atual } from '../perfil.js';
+import { hoje } from '../periodo.js';
+import { postJson } from '../servidor.js';
+import { el, somaDias, toast } from '../util.js';
+import { R } from './registo.js';
+
+let D = null; // resposta do servidor
+let dia = null;
+let ed = null; // cópia em edição
+let aLer = false;
+const ESTADOS = { aberta: ['Aberta', 'p-warn'], fechada: ['Fechada, por aprovar', 'p-serio'], aprovada: ['Aprovada', 'p-ok'] };
+
+function ler() {
+  if (aLer) return;
+  aLer = true;
+  apiJson('caixa?dia=' + dia).then((d) => {
+    aLer = false;
+    D = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler os dados.') };
+    ed = D.caixa ? copia(D.caixa) : null;
+    if (atual === 'caixa-marketing') draw();
+  });
+}
+const copia = (c) => ({
+  entregas: c.entregas.map((x) => ({ ...x })),
+  tpa: c.tpa.map((x) => ({ ...x })),
+  saidas: c.saidas.map((x) => ({ ...x })),
+  saldo_inicial: c.saldo_inicial,
+  mudou: false,
+});
+function mudarDia(d) {
+  if (!d || d > hoje()) return;
+  dia = d;
+  D = null;
+  marcarPorGravar('caixa', false);
+  draw();
+}
+const opcoes = (s, lista, valor, vazio) => {
+  if (vazio) {
+    const o = el('option', null, vazio);
+    o.value = '';
+    s.append(o);
+  }
+  lista.forEach(([v, txt]) => {
+    const o = el('option', null, txt);
+    o.value = v;
+    if (String(v) === String(valor || '')) o.selected = true;
+    s.append(o);
+  });
+  return s;
+};
+const somaDe = (l) => l.reduce((a, x) => a + (+x.valor || 0), 0);
+
+/** Tabela editável de linhas (entregas, talões, saídas). */
+function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
+  const s = el('section', 'glass sec cx-sec');
+  const h = el('div', 'sec-h');
+  const hl = el('div');
+  hl.append(el('h2', null, titulo), el('p', null, nota));
+  h.append(hl);
+  s.append(h);
+  const tab = el('table', 'cc-tab cx-tab');
+  const cab = el('tr');
+  campos.forEach((c) => cab.append(el('th', c.n ? 'n' : null, c.label)));
+  if (editavel) cab.append(el('th', null, ''));
+  tab.append(cab);
+  linhas.forEach((l, i) => {
+    const tr = el('tr');
+    campos.forEach((c) => {
+      const td = el('td', c.n ? 'n' : null);
+      if (editavel) {
+        let inp;
+        if (c.lista) inp = opcoes(el('select'), c.lista(), l[c.key], c.vazio);
+        else
+          inp = entrada(
+            c.n ? 'number' : 'text',
+            l[c.key] == null ? '' : l[c.key],
+            c.n ? { min: 0, step: '0.01', inputMode: 'decimal' } : { maxLength: c.max || 120 },
+          );
+        inp.setAttribute('aria-label', c.label + ' · ' + (i + 1));
+        inp.addEventListener(c.lista ? 'change' : 'input', () => {
+          l[c.key] = c.n ? (inp.value === '' ? null : Number(inp.value)) : inp.value;
+          mudou();
+        });
+        td.append(inp);
+      } else td.textContent = c.ver ? c.ver(l) : c.n ? kz(l[c.key]) : l[c.key] || '—';
+      tr.append(td);
+    });
+    if (editavel) {
+      const td = el('td');
+      const b = botao('×', 'ghost sm', () => {
+        linhas.splice(i, 1);
+        mudou();
+        draw();
+      });
+      b.setAttribute('aria-label', t('Retirar a linha {n}', { n: i + 1 }));
+      td.append(b);
+      tr.append(td);
+    }
+    tab.append(tr);
+  });
+  const tot = el('tr', 'cx-total');
+  campos.forEach((c, i) => {
+    const td = el('td', c.n ? 'n' : null, i === 0 ? t('Total') : c.n ? kz(somaDe(linhas)) : '');
+    // o total acompanha o que se escreve (sem redesenhar a página, para não perder o campo onde se está a escrever)
+    if (c.n) td.dataset.somaDe = String(linhas === ed.entregas ? 'entregas' : linhas === ed.tpa ? 'tpa' : 'saidas');
+    tot.append(td);
+  });
+  if (editavel) tot.append(el('td'));
+  tab.append(tot);
+  const wrap = el('div', 'cc-scroll');
+  wrap.append(tab);
+  s.append(wrap);
+  if (editavel)
+    s.append(
+      botao(t('Juntar linha'), 'ghost sm', () => {
+        linhas.push(nova());
+        mudou();
+        draw();
+      }),
+    );
+  return s;
+}
+
+function enviar(corpo, erro, ok) {
+  return postJson('caixa', { dia, versao: D.caixa.versao, ...corpo }).then((x) => {
+    if (!x.ok) {
+      erro.hidden = false;
+      erro.textContent = t(x.erro || 'Não foi possível gravar.');
+      return null;
+    }
+    D.caixa = x.caixa;
+    ed = copia(x.caixa);
+    marcarPorGravar('caixa', false);
+    if (ok) toast(t(ok), 4000);
+    draw();
+    return x.caixa;
+  });
+}
+
+R['caixa-marketing'] = (pg) => {
+  dia = dia || hoje();
+  const barra = el('section', 'glass sec pc-barra');
+  const d = el('div', 'pc-dia');
+  const ant = botao('‹', 'ghost sm', () => mudarDia(somaDias(dia, -1)));
+  ant.setAttribute('aria-label', t('Dia anterior'));
+  const seg = botao('›', 'ghost sm', () => mudarDia(somaDias(dia, 1)));
+  seg.setAttribute('aria-label', t('Dia seguinte'));
+  seg.disabled = dia >= hoje();
+  const di = entrada('date', dia, { max: hoje() });
+  di.setAttribute('aria-label', t('Dia'));
+  di.addEventListener('change', () => mudarDia(di.value));
+  const dc = el('span', 'pc-dcampo');
+  dc.append(di, el('span', 'dv', dl(dia)));
+  d.append(ant, el('b', 'pc-dia-t', ds(dia)), dc, seg);
+  barra.append(d);
+  pg.append(barra);
+  if (!D) {
+    pg.append(el('div', 'glass empty', t('A carregar…')));
+    ler();
+    return;
+  }
+  if (D.falhou) {
+    pg.append(el('div', 'glass empty', t(D.falhou)));
+    return;
+  }
+  const c = D.caixa,
+    aberta = c.estado === 'aberta' && D.gere,
+    mudou = () => {
+      ed.mudou = true;
+      marcarPorGravar('caixa', true);
+      const n = document.getElementById('cx-estado');
+      if (n) n.textContent = t('Alterações por gravar.');
+      totais();
+    };
+  // Totais e saldo teórico ao vivo, enquanto se escreve
+  const totais = () => {
+    document.querySelectorAll('[data-soma-de]').forEach((td) => (td.textContent = kz(somaDe(ed[td.dataset.somaDe]))));
+    const e = somaDe(ed.entregas),
+      s0 = somaDe(ed.saidas),
+      i0 = ed.saldo_inicial == null ? null : +ed.saldo_inicial;
+    const v = [i0, e, s0, i0 == null ? null : i0 + e - s0, somaDe(ed.tpa)];
+    document.querySelectorAll('#page .tiles .tile .v').forEach((x, i) => {
+      if (i < v.length) x.textContent = kz(v[i]);
+    });
+  };
+  if (ed.mudou) marcarPorGravar('caixa', true);
+  const promotores = () => Object.entries(D.promotores || {}).map(([r, p]) => [r, r + ' · ' + p]);
+  const empresas = () => (D.empresas || []).map((e) => [e, e]);
+  const bancos = () => (D.bancos || []).map((b) => [b, b]);
+  const saidasTipos = () => Object.entries(D.saidas || {}).map(([k, v]) => [k, t(v)]);
+  const prom = (l) => (D.promotores && D.promotores[l.rota] ? l.rota + ' · ' + D.promotores[l.rota] : l.rota);
+  const ent = somaDe(ed.entregas),
+    sai = somaDe(ed.saidas),
+    si = ed.saldo_inicial == null ? null : +ed.saldo_inicial,
+    teorico = si == null ? null : si + ent - sai;
+  const [txt, cls] = ESTADOS[c.estado] || [c.estado, 'p-mut'];
+  pg.append(
+    tiles([
+      { l: t('Saldo inicial'), v: kz(si), s: c.saldo_inicial_origem === 'manual' ? t('primeiro dia: escrito à mão') : t('saldo aprovado do dia anterior') },
+      { l: t('Dinheiro entregue'), v: kz(ent), s: t('{n} entregas', { n: ed.entregas.length }) },
+      { l: t('Saídas'), v: kz(sai), s: t('depósitos, fundos de maneio e transferências') },
+      { l: t('Saldo final teórico'), v: kz(teorico), s: c.contagem_fisica != null ? t('contado: {v}', { v: kz(c.contagem_fisica) }) : t('por contar') },
+      { l: t('Multicaixa (talões do TPA)'), v: kz(somaDe(ed.tpa)), s: t('não entra no saldo da caixa') },
+    ]),
+  );
+  const cab = el('section', 'glass sec cx-cab');
+  cab.append(el('b', null, t('Folha de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
+  if (c.fechada_por) cab.append(el('span', 'note', t('fechada por {p}', { p: c.fechada_por })));
+  if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: c.aprovada_por })));
+  if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
+    cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
+  pg.append(cab);
+  if (aberta && c.saldo_inicial_origem === 'manual') {
+    const s = el('section', 'glass sec cx-sec');
+    const i = entrada('number', ed.saldo_inicial == null ? '' : ed.saldo_inicial, { min: 0, step: '0.01', inputMode: 'decimal' });
+    i.setAttribute('aria-label', t('Saldo inicial'));
+    i.addEventListener('input', () => {
+      ed.saldo_inicial = i.value === '' ? null : Number(i.value);
+      mudou();
+    });
+    s.append(el('b', null, t('Saldo inicial')), i, el('span', 'note', t('Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior.')));
+    pg.append(s);
+  }
+  pg.append(
+    grelha(
+      t('Dinheiro entregue pelos promotores'),
+      t('Uma linha por entrega. Compara-se no Relatório de Vendas com o dinheiro recebido no Pinguim BO.'),
+      ed.entregas,
+      [
+        { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
+        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
+        { key: 'valor', label: t('Valor'), n: true },
+        { key: 'nota', label: t('Nota') },
+      ],
+      () => ({ rota: '', empresa: '', valor: null, nota: '' }),
+      aberta,
+      mudou,
+    ),
+    grelha(
+      t('Talões do TPA (Multicaixa)'),
+      t('Fecho de cada TPA, por banco. Compara-se com o Multicaixa recebido no Pinguim BO.'),
+      ed.tpa,
+      [
+        { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
+        { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha') },
+        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
+        { key: 'valor', label: t('Valor'), n: true },
+      ],
+      () => ({ rota: '', banco: '', empresa: '', valor: null }),
+      aberta,
+      mudou,
+    ),
+    grelha(
+      t('Saídas da caixa'),
+      t('Depósitos no banco, fundos de maneio de cada empresa, transferências para a gestão e outras saídas (com descrição).'),
+      ed.saidas,
+      [
+        { key: 'tipo', label: t('Tipo'), lista: saidasTipos, vazio: t('Escolha'), ver: (l) => t((D.saidas || {})[l.tipo] || l.tipo) },
+        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
+        { key: 'descricao', label: t('Descrição'), max: 160 },
+        { key: 'valor', label: t('Valor'), n: true },
+      ],
+      () => ({ tipo: '', empresa: '', descricao: '', valor: null }),
+      aberta,
+      mudou,
+    ),
+  );
+  const erro = msgErro();
+  const estado = el('p', 'note');
+  estado.id = 'cx-estado';
+  estado.setAttribute('aria-live', 'polite');
+  if (ed.mudou) estado.textContent = t('Alterações por gravar.');
+  const acc = el('div', 'cc-acc');
+  if (aberta) {
+    const g = botao(t('Gravar'), 'ghost', () => enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
+    const f = botao(t('Fechar a caixa'), null, () =>
+      janela(t('Fechar a caixa de {d}', { d: dl(dia) }), t('Conte o dinheiro que está na caixa. Saldo teórico: {v}.', { v: kz(teorico) }), (b, ft, fechar) => {
+        const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
+        q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
+        const ex = el('textarea');
+        ex.rows = 2;
+        ex.maxLength = 300;
+        ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
+        ex.setAttribute('aria-label', t('Explicação da diferença'));
+        const dif = el('p', 'note');
+        q.addEventListener('input', () => {
+          dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
+        });
+        const e2 = msgErro();
+        b.append(q, dif, ex, e2);
+        ft.append(
+          botao(t('Cancelar'), 'ghost', fechar),
+          botao(t('Fechar a caixa'), null, () => {
+            // grava primeiro o que está no ecrã e depois fecha com a contagem
+            const fechar2 = () =>
+              postJson('caixa', { accao: 'fechar', dia, versao: D.caixa.versao, contagem: q.value === '' ? null : Number(q.value), explicacao: ex.value }).then(
+                (x) => {
+                  if (!x.ok) {
+                    e2.hidden = false;
+                    e2.textContent = t(x.erro || 'Não foi possível gravar.');
+                    return;
+                  }
+                  fechar();
+                  D.caixa = x.caixa;
+                  ed = copia(x.caixa);
+                  marcarPorGravar('caixa', false);
+                  toast(t('Caixa fechada. Falta a aprovação por outra pessoa.'), 5000);
+                  draw();
+                },
+              );
+            if (ed.mudou)
+              enviar({ accao: 'gravar', ...ed }, e2).then((x) => {
+                if (x) fechar2();
+              });
+            else fechar2();
+          }),
+        );
+      }),
+    );
+    acc.append(g, f);
+  } else if (c.estado === 'fechada' && D.gere) {
+    acc.append(
+      botao(t('Reabrir para corrigir'), 'ghost', () =>
+        janela(
+          t('Reabrir a caixa de {d}?', { d: dl(dia) }),
+          t('A contagem é anulada e a folha volta a ficar aberta. Fica registado, com o motivo.'),
+          (b, ft, fechar) => {
+            const m = el('textarea');
+            m.rows = 2;
+            m.maxLength = 300;
+            m.setAttribute('aria-label', t('Motivo da reabertura'));
+            const e2 = msgErro();
+            b.append(m, e2);
+            ft.append(
+              botao(t('Cancelar'), 'ghost', fechar),
+              botao(t('Reabrir'), null, () =>
+                enviar({ accao: 'reabrir', motivo: m.value }, e2, 'Caixa reaberta.').then((x) => {
+                  if (x) fechar();
+                }),
+              ),
+            );
+          },
+        ),
+      ),
+      botao(t('Aprovar a caixa'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')),
+    );
+    estado.textContent = t('Aprova outra pessoa que não quem registou ou fechou a caixa (segregação de funções).');
+  }
+  pg.append(el('div', 'cx-rodape'), estado, erro, acc);
+};

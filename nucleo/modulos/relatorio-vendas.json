@@ -1,0 +1,16 @@
+{
+  "id": "relatorio-vendas",
+  "nome": "Relatório de Vendas diário",
+  "versao": "1.0.0",
+  "descricao": "Relatório de Vendas do Marketing (resumo, cobranças por promotor, caixa, registo de vendas e stock das carrinhas), gerado só com todas as fontes do dia completas, e folha de caixa da tesouraria.",
+  "nucleo": false,
+  "paginas": ["relatorio-vendas", "caixa-marketing"],
+  "recursos": ["relatorio-vendas", "caixa-marketing"],
+  "api": ["v1/relatorio-vendas", "v1/caixa"],
+  "conectores": ["pinguim-sql", "sap-odata"],
+  "eventos": {
+    "publica": ["relatorio.vendas_gerado", "caixa.aprovada"],
+    "escuta": []
+  },
+  "depende": ["nucleo"]
+}
