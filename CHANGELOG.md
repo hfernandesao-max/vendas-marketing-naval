@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Requisições de reposição da carrinha ao armazém
+
+- Nova página **Logística › Requisições ao armazém**. Quando quem contou valida a contagem da carrinha, o sistema
+  cria sozinho uma requisição em rascunho com as quantidades vendidas nesse dia (reposição pelo consumo). Só há uma
+  por rota e dia, e a conciliação mostra a ligação para ela.
+- **Rascunho**: o promotor muda as quantidades, retira artigos, junta outros (lista dos armazéns, com o disponível)
+  e escreve uma nota para o armazém. Pode gravar e voltar a editar quantas vezes precisar. Se duas pessoas gravarem
+  ao mesmo tempo, a segunda é avisada e não apaga o trabalho da primeira.
+- **Gravar, emitir e imprimir**: pede confirmação, fecha o documento e abre o PDF para imprimir. Também se pode
+  gravar e emitir mais tarde. Depois de emitida, a requisição já não se altera; para mais mercadoria, faz-se uma
+  nova. Cada reimpressão sai marcada «2.ª via» e fica registada. Um rascunho que não vai ser usado anula-se, com motivo.
+- O PDF tem o número sequencial (RQ-AAAA-000001), a origem, o vendido, o requisitado e uma coluna «Entregue» para o
+  armazém, e as assinaturas de quem requisita, de quem avia e de quem recebe.
+- **Stock por promotor / carrinha**: nova coluna **Requisição ao armazém**. Mostra a âmbar, a tracejado, o que vai
+  ser carregado (requisição emitida) e, depois de o armazém carregar em **Confirmar carga** (com a quantidade
+  entregue de cada artigo), passa a azul com ✓. Os artigos requisitados que ainda não estão na carrinha também
+  aparecem. Quem emitiu a requisição não confirma a sua própria carga.
+- Nova linha na matriz de acessos «Requisições ao armazém»: o promotor e o supervisor gerem as das suas rotas e a
+  logística gere todas; os outros perfis só vêem.
+
 ### Conciliação da carrinha: folha de contagem às cegas, PDF do resultado e aprovação em dois níveis
 
 - **Imprimir folha de contagem** (às cegas): PDF A4 com a referência da contagem (CC-rota-data), os artigos, o código

@@ -16,7 +16,9 @@ import { fetchStock } from '../fontes.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { st } from '../periodo.js';
-import { SESSAO } from '../perfil.js';
+import { SESSAO, podeVer } from '../perfil.js';
+import { apiJson } from '../api.js';
+import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { postJson } from '../servidor.js';
 import { DB, el, sum, toast } from '../util.js';
 import { R } from './registo.js';
@@ -89,6 +91,138 @@ const colsArtigos = () => [
   { key: 'quantidade', label: t('Quantidade'), type: 'n', sum: true, p: 0 },
 ];
 
+// Requisições ao armazém (reposição): o que vai ser carregado em cada carrinha (emitidas, por confirmar) e o que já
+// foi carregado no dia (carga confirmada). Uma leitura por data; só para quem vê as requisições.
+let REQ = { data: '', estado: '', rotas: {}, gere: false, eu: '', em: 0 };
+function garantirRequisicoes(data) {
+  if (!podeVer('requisicoes-carrinha')) return;
+  if (REQ.data === data && (REQ.estado === 'a-ler' || Date.now() - REQ.em < VALIDADE)) return;
+  REQ = { data, estado: 'a-ler', rotas: {}, gere: false, eu: '', em: Date.now() };
+  apiJson('requisicoes?carga=1&data=' + data).then((d) => {
+    if (REQ.data !== data) return;
+    REQ = { data, estado: 'ok', rotas: (d && d.rotas) || {}, gere: !!(d && d.gere), eu: (d && d.eu) || '', em: Date.now() };
+    draw();
+  });
+}
+/** Por artigo: quantidade a carregar (emitidas) e carregada (confirmadas), e as requisições da rota. */
+function requisicoesDaRota(rota) {
+  const rs = REQ.rotas[rota] || [];
+  const porArtigo = {};
+  rs.forEach((r) =>
+    r.linhas.forEach((l) => {
+      const x = (porArtigo[l.codigo] = porArtigo[l.codigo] || { codigo: l.codigo, produto: l.artigo, a_carregar: 0, carregado: 0 });
+      if (r.estado === 'emitida') x.a_carregar += +l.quantidade || 0;
+      else x.carregado += +(l.entregue != null ? l.entregue : l.quantidade) || 0;
+    }),
+  );
+  return { rs, porArtigo };
+}
+/** Coluna da requisição: âmbar enquanto está por carregar; azul depois de confirmada a carga. */
+const colRequisicao = () => ({
+  key: 'requisicao',
+  label: t('Requisição ao armazém'),
+  type: 'n',
+  sum: true,
+  p: 1,
+  get: (r) => (r.a_carregar || 0) + (r.carregado || 0) || null,
+  render: (v, r) => {
+    if (!v) return document.createTextNode('—');
+    const w = el('span', 'req-cel');
+    if (r.a_carregar) {
+      const a = el('span', 'req-a-carregar', n0(r.a_carregar));
+      a.title = t('A carregar: requisição emitida, carga por confirmar');
+      w.append(a);
+    }
+    if (r.carregado) {
+      const c = el('span', 'req-carregado', '✓ ' + n0(r.carregado));
+      c.title = t('Carregado: carga confirmada');
+      w.append(c);
+    }
+    return w;
+  },
+});
+
+/** Janela para o armazém confirmar a carga de uma requisição, com a quantidade entregue de cada artigo. */
+function confirmarCarga(r) {
+  janela(
+    t('Confirmar a carga da requisição {n}', { n: r.numero }),
+    t('Indique o que foi realmente carregado na carrinha (por omissão, o requisitado). Depois de confirmada, a coluna passa a «carregado».'),
+    (b, ft, fechar) => {
+      const tab = el('table', 'cc-tab');
+      const cab = el('tr');
+      [t('Artigo'), t('Requisitado'), t('Entregue')].forEach((x, i) => cab.append(el('th', i ? 'n' : null, x)));
+      tab.append(cab);
+      const campos = {};
+      r.linhas.forEach((l) => {
+        const tr = el('tr');
+        const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
+        i.setAttribute('aria-label', t('Entregue') + ' · ' + l.artigo);
+        campos[l.codigo] = i;
+        const td = el('td', 'n');
+        td.append(i);
+        tr.append(el('td', null, l.artigo + ' · ' + l.codigo), el('td', 'n', n0(l.quantidade)), td);
+        tab.append(tr);
+      });
+      const erro = msgErro();
+      b.append(tab, erro);
+      const ok = botao(t('Confirmar carga'), null, () => {
+        const entregue = {};
+        for (const [c, i] of Object.entries(campos)) {
+          if (i.value === '' || Number(i.value) < 0) {
+            erro.hidden = false;
+            erro.textContent = t('Indique a quantidade entregue de cada artigo (0 se não foi carregado).');
+            return i.focus();
+          }
+          entregue[c] = Number(i.value);
+        }
+        ok.disabled = true;
+        postJson('requisicoes', { accao: 'confirmar_carga', numero: r.numero, entregue }).then((x) => {
+          ok.disabled = false;
+          if (!x.ok) {
+            erro.hidden = false;
+            erro.textContent = t(x.erro || 'Não foi possível gravar.');
+            return;
+          }
+          fechar();
+          toast(t('Carga da requisição {n} confirmada.', { n: r.numero }), 4000);
+          REQ.em = 0;
+          garantirRequisicoes(REQ.data);
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
+    },
+  );
+}
+/** Linha por baixo do título da carrinha: as requisições da rota e o botão de confirmar a carga. */
+function linhaRequisicoes(rs) {
+  const w = el('div', 'req-linha');
+  rs.forEach((r) => {
+    const pend = r.estado === 'emitida';
+    w.append(
+      pill((pend ? t('A carregar') : t('Carregado')) + ' · ' + r.numero, pend ? 'p-warn' : 'p-ok'),
+      el(
+        'span',
+        'note',
+        pend
+          ? t('emitida em {d}', { d: dl(String(r.emitida_em).slice(0, 10)) + ' ' + String(r.emitida_em).slice(11, 16) })
+          : t('carga confirmada por {p} em {d}', {
+              p: r.confirmado_por,
+              d: dl(String(r.confirmado_em).slice(0, 10)) + ' ' + String(r.confirmado_em).slice(11, 16),
+            }),
+      ),
+    );
+    if (pend && REQ.gere) {
+      const b = botao(t('Confirmar carga'), 'sm', () => confirmarCarga(r));
+      if (REQ.eu && String(r.emitida_por || '').toLowerCase() === REQ.eu.toLowerCase()) {
+        b.disabled = true;
+        b.title = t('Quem emitiu a requisição não confirma a carga (segregação de funções).');
+      }
+      w.append(b);
+    }
+  });
+  return w;
+}
+
 const podeConfirmar = () => !!SESSAO && ['SADM', 'TI'].includes(SESSAO.perfil);
 
 /**
@@ -137,6 +271,7 @@ R['stock-carrinha'] = (pg) => {
   const rotasSel = filtroAtivo('stock-carrinha', 'rota') ? new Set(FV.rota.map(String)) : null;
   const okArtigo = artigoOk('stock-carrinha');
   const cargas = DB.cargas || [];
+  garantirRequisicoes(dPos);
 
   const carrinhas = (DB.stock.carrinhas || [])
     .filter((c) => (!c.data || c.data === dPos) && (!rotasSel || rotasSel.has(String(c.rota))))
@@ -155,7 +290,16 @@ R['stock-carrinha'] = (pg) => {
           quantidade: +it.quantidade || 0,
         }))
         .filter((it) => it.quantidade !== 0 && okArtigo(it));
+      // requisição ao armazém: quantidades a carregar e carregadas; artigos requisitados que ainda não estão na carrinha
+      const req = requisicoesDaRota(String(c.rota));
+      itens.forEach((it) =>
+        Object.assign(it, req.porArtigo[it.codigo] ? { a_carregar: req.porArtigo[it.codigo].a_carregar, carregado: req.porArtigo[it.codigo].carregado } : {}),
+      );
+      Object.values(req.porArtigo)
+        .filter((x) => !itens.some((it) => it.codigo === x.codigo) && okArtigo(x))
+        .forEach((x) => itens.push({ ...x, armazem, quantidade: 0 }));
       return {
+        req: req.rs,
         rota: c.rota,
         promotor: promotorRota(c.rota, c.promotor || (DB.mapRota[c.rota] || {}).promotor),
         carrinha: viat !== '—' ? viat + (mat !== '—' ? ' · ' + mat : '') : mat !== '—' ? mat : t('Carrinha {r}', { r: c.rota }),
@@ -200,10 +344,11 @@ R['stock-carrinha'] = (pg) => {
       sort: 'quantidade',
       dir: -1,
       total: true,
-      cols: colsArtigos(),
+      cols: car.req.length ? [...colsArtigos(), colRequisicao()] : colsArtigos(),
     });
     const hl = sec.querySelector('.sec-h > div');
     if (hl) hl.append(origemCarrinha(car));
+    if (hl && car.req.length) hl.append(linhaRequisicoes(car.req));
     secs.append(sec);
   });
   pg.append(secs);

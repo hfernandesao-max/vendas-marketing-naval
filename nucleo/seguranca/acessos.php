@@ -56,6 +56,8 @@ const NAVAL_MATRIZ_TXT = [
     // circuito de aprovação da conciliação (segregação de funções): 1.º nível coordenador, 2.º nível responsável (fecha)
     'conciliacao-coordenacao' => '-  -  -  -  -  -  -  G  -  -  -',
     'conciliacao-fecho'    => '-  G  -  -  -  G  -  -  -  -  -',
+    // requisições de reposição da carrinha ao armazém: o promotor e o supervisor (nas suas rotas) e a logística gerem
+    'requisicoes-carrinha' => 'V  V  V  G  G  V  -  G  -  V  V',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
@@ -194,6 +196,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'V', 'G'];
         case 'pedidos-clientes':
         case 'conciliacao-carrinha':
+        case 'requisicoes-carrinha':
             return ['', 'Vr', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':

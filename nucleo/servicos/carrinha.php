@@ -27,6 +27,7 @@ require_once __DIR__ . '/stock.php';
 require_once __DIR__ . '/vendas.php';
 require_once __DIR__ . '/cargas.php';
 require_once __DIR__ . '/email.php';
+require_once __DIR__ . '/requisicoes.php';
 
 const NAVAL_CARR_MOTIVOS = [
     'avaria' => 'Produto danificado',
@@ -356,7 +357,8 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
             'validado_por' => $reg['validado_por'] ?? null, 'validado_em' => $reg['validado_em'] ?? null,
             'coordenado_por' => $reg['coordenado_por'] ?? null, 'coordenado_em' => $reg['coordenado_em'] ?? null,
             'aprovado_por' => $reg['aprovado_por'] ?? null, 'aprovado_em' => $reg['aprovado_em'] ?? null,
-            'motivos' => (object) ($reg['motivos'] ?? []), 'historico' => array_slice((array) $reg['historico'], -20)];
+            'motivos' => (object) ($reg['motivos'] ?? []), 'historico' => array_slice((array) $reg['historico'], -20),
+            'requisicao' => naval_req_da_conciliacao_numero($data, $rota)];
     }
     return ['data' => $data, 'gerado' => $d['gerado'], 'movimentos' => $d['movimentos'], 'rotas' => $out, 'motivos' => NAVAL_CARR_MOTIVOS];
 }
@@ -423,7 +425,15 @@ function naval_carr_validar(string $data, string $rota, array $eu): array
         }
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
         naval_registar('carrinha_validada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'fecho_automatico' => $reg['estado'] === 'aprovada']);
-        return ['linhas' => $linhas, 'resumo' => $res];
+        // Reposição: requisição ao armazém com o que foi vendido, em rascunho para o promotor rever (não trava a validação)
+        $req = null;
+        try {
+            $q = naval_req_da_conciliacao($data, $rota, $linhas, (string) $eu['login']);
+            $req = $q ? $q['numero'] : null;
+        } catch (Throwable $e) {
+            error_log('[requisicao conciliacao] ' . $e->getMessage());
+        }
+        return ['linhas' => $linhas, 'resumo' => $res, 'requisicao' => $req];
     });
 }
 

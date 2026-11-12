@@ -134,3 +134,45 @@ test('stock por carrinha: mostra de que armazém vem o stock; SADM confirma o ar
   await expect.poll(() => enviado).toMatchObject({ accao: 'confirmar_carrinha', rota: '1002', codigo: '10001002', csrf: 'x' });
   await expect(page.locator('#s-sc-car-1002 .stock-origem')).toContainText('Armazém confirmado');
 });
+
+test('stock por carrinha: coluna da requisição ao armazém — âmbar a carregar, azul depois de confirmar a carga', async ({ page }) => {
+  await simularStock(page);
+  let estado = 'emitida';
+  const pedidos = [];
+  const req = () => ({
+    numero: 'RQ-2026-000007',
+    estado,
+    emitida_em: '2026-10-26 17:00:00',
+    emitida_por: 'pro',
+    confirmado_em: estado === 'carregada' ? '2026-10-26 18:00:00' : null,
+    confirmado_por: estado === 'carregada' ? 'log' : null,
+    linhas: [
+      { codigo: '10000009', artigo: 'FRALDAS NAVAL MEDIUM', quantidade: 8, entregue: estado === 'carregada' ? 8 : undefined },
+      { codigo: '10000777', artigo: 'DETERGENTE NOVO', quantidade: 3, entregue: estado === 'carregada' ? 2 : undefined },
+    ],
+  });
+  await page.route('**/v1/requisicoes**', (r) => {
+    if (r.request().method() === 'POST') {
+      pedidos.push(JSON.parse(r.request().postData()));
+      estado = 'carregada';
+      return r.fulfill({ json: { ok: true, requisicao: req() } });
+    }
+    return r.fulfill({ json: { ok: true, gere: true, eu: 'log', rotas: { 1001: [req()] } } });
+  });
+  const erros = await abrir(page, '#stock-carrinha');
+  const sec = page.locator('#s-sc-car-1001');
+  await expect(sec.locator('th', { hasText: 'Requisição ao armazém' })).toBeVisible();
+  await expect(sec.locator('.req-a-carregar')).toHaveCount(2);
+  await expect(sec.locator('tr', { hasText: 'DETERGENTE NOVO' })).toContainText('3'); // requisitado, ainda não está na carrinha
+  await expect(sec.locator('.req-linha')).toContainText('A carregar · RQ-2026-000007');
+  await expect(page.locator('#s-sc-car-1002 th', { hasText: 'Requisição ao armazém' })).toHaveCount(0);
+  await sec.getByRole('button', { name: 'Confirmar carga' }).click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByLabel('Entregue · DETERGENTE NOVO').fill('2');
+  await dlg.getByRole('button', { name: 'Confirmar carga' }).click();
+  await expect(sec.locator('.req-carregado')).toHaveCount(2);
+  await expect(sec.locator('.req-a-carregar')).toHaveCount(0);
+  await expect(sec.locator('.req-linha')).toContainText('Carregado · RQ-2026-000007');
+  expect(pedidos[0]).toMatchObject({ accao: 'confirmar_carga', numero: 'RQ-2026-000007', entregue: { 10000009: 8, 10000777: 2 } });
+  expect(erros).toEqual([]);
+});

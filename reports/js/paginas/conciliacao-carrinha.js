@@ -289,7 +289,9 @@ function tabelaRota(r) {
     if (fui('contado_por')) {
       acc.append(
         recontar,
-        botao(t('Validar contagem'), null, () => enviar({ accao: 'validar' }, 'Contagem validada; segue para o coordenador.')),
+        botao(t('Validar contagem'), null, () =>
+          enviar({ accao: 'validar' }, 'Contagem validada; segue para o coordenador. Foi criada a requisição de reposição com o que foi vendido.'),
+        ),
       );
       espera(t('Confira os números: se estiverem certos, valide; se não, reconte. Depois de validada segue para o coordenador.'));
     } else espera(t('Aguarda a validação de {p}, que fez a contagem.', { p: r.contado_por || '—' }));
@@ -376,6 +378,19 @@ R['conciliacao-carrinha'] = (pg) => {
       () => ((aberta = aberta === r.rota ? null : r.rota), draw()),
     );
     c.append(abrir);
+    // requisição de reposição criada pela conciliação (o que foi vendido), para o promotor rever e emitir
+    if (r.requisicao) {
+      const a = el('a', 'btn ghost sm cc-req', t('Requisição de reposição {n}', { n: r.requisicao }));
+      a.href = '#requisicoes-carrinha';
+      a.addEventListener('click', () => {
+        try {
+          sessionStorage.setItem('vm-requisicao-abrir', r.requisicao);
+        } catch (e) {
+          /* sem armazenamento: abre a lista */
+        }
+      });
+      c.append(a);
+    }
     if (aberta === r.rota) c.append(r.cega ? formContagem(r) : tabelaRota(r));
     lista.append(c);
   });

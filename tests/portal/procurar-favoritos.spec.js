@@ -72,7 +72,7 @@ test('estado do sistema e alertas na barra superior, em texto (não só por cor)
   await expect(page.locator('#sino-n')).toHaveText('2');
   await expect(page.locator('#sino')).toHaveAttribute('aria-label', '2 alertas por tratar');
   await page.click('#sino');
-  await expect(page).toHaveURL(/#alertas$/);
+  await expect(page).toHaveURL(/#alertas(\/[\w-]+)?$/); // a página pode abrir já na sua primeira secção
   await expect(page.locator('#eyebrow')).not.toContainText('›');
   expect(erros).toEqual([]);
 });

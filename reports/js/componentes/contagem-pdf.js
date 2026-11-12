@@ -11,7 +11,7 @@ import { LANG, t } from '../i18n/i18n.js';
 import { carregarScript } from '../servidor.js';
 
 // As letras-base do PDF (Helvetica) só têm o alfabeto latino: em tigrínia o documento sai em português
-const tp = (s, p) => {
+export const tp = (s, p) => {
   if (LANG !== 'ti') return t(s, p);
   let r = s;
   Object.keys(p || {}).forEach((k) => (r = r.split('{' + k + '}').join(p[k])));
@@ -37,7 +37,7 @@ const horaTxt = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(1
 
 let emblema;
 /** Emblema da Naval como data URL (uma vez); sem ele, o documento sai só com o nome. */
-function lerEmblema() {
+export function lerEmblema() {
   if (emblema !== undefined) return Promise.resolve(emblema);
   return fetch('../assets/naval-emblema.png')
     .then((r) => (r.ok ? r.blob() : null))
@@ -55,7 +55,7 @@ function lerEmblema() {
     .then((u) => (emblema = u || null));
 }
 
-async function novoDoc(orientacao) {
+export async function novoDoc(orientacao) {
   await carregarScript('jspdf.umd.min.js', 'jspdf');
   await carregarScript('jspdf.plugin.autotable.min.js');
   const { jsPDF } = window.jspdf;
@@ -63,7 +63,7 @@ async function novoDoc(orientacao) {
 }
 
 /** Cabeçalho: emblema e empresa à esquerda; título, referência e estado à direita; dados da contagem por baixo. */
-function cabecalho(doc, img, titulo, ref, campos) {
+export function cabecalho(doc, img, titulo, ref, campos) {
   const W = doc.internal.pageSize.getWidth(),
     M = 14;
   if (img) doc.addImage(img, 'PNG', M, 10, 12, 12);
@@ -93,6 +93,7 @@ function cabecalho(doc, img, titulo, ref, campos) {
     .setLineWidth(0.6)
     .line(M, 25, W - M, 25);
   const larg = (W - 2 * M) / campos.length;
+  let linhas = 1;
   campos.forEach(([k, v], i) => {
     const x = M + i * larg;
     doc
@@ -105,12 +106,14 @@ function cabecalho(doc, img, titulo, ref, campos) {
       .setFontSize(10)
       .setTextColor(...TINTA)
       .text(doc.splitTextToSize(String(v == null || v === '' ? '—' : v), larg - 3), x, 36);
+    linhas = Math.max(linhas, doc.splitTextToSize(String(v == null || v === '' ? '—' : v), larg - 3).length);
   });
-  return 42;
+  // valores longos (várias linhas): a tabela começa por baixo deles
+  return 42 + (linhas - 1) * 4.5;
 }
 
 /** Rodapé de todas as páginas: origem, data e hora em que foi gerado e «Página x de y». */
-function rodapes(doc, ref) {
+export function rodapes(doc, ref) {
   const n = doc.getNumberOfPages(),
     W = doc.internal.pageSize.getWidth(),
     H = doc.internal.pageSize.getHeight(),
@@ -132,7 +135,7 @@ function rodapes(doc, ref) {
 }
 
 /** Assinaturas no fim (mudam de página se não couberem). */
-function assinaturas(doc, y, blocos) {
+export function assinaturas(doc, y, blocos) {
   const W = doc.internal.pageSize.getWidth(),
     H = doc.internal.pageSize.getHeight(),
     M = 14;
@@ -161,7 +164,7 @@ function assinaturas(doc, y, blocos) {
   return y + 22;
 }
 
-const estiloTabela = {
+export const estiloTabela = {
   font: 'helvetica',
   fontSize: 9,
   cellPadding: 2.2,
@@ -170,10 +173,10 @@ const estiloTabela = {
   lineWidth: 0.2,
   valign: 'middle',
 };
-const estiloCabeca = { fillColor: [234, 240, 249], textColor: AZUL, fontStyle: 'bold' };
+export const estiloCabeca = { fillColor: [234, 240, 249], textColor: AZUL, fontStyle: 'bold' };
 
 /** Entrega o PDF: para imprimir abre-o noutro separador com a impressão pedida; senão (ou se bloqueado) descarrega. */
-function entregar(doc, nome, imprimir) {
+export function entregar(doc, nome, imprimir) {
   if (imprimir) {
     doc.autoPrint();
     const w = window.open(doc.output('bloburl'), '_blank');
