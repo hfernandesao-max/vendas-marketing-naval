@@ -262,6 +262,10 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         'serie' => $serie,
         'ultima_venda' => $ultimaVenda,
         'compras' => ['hoje' => $compras($hoje, $hoje), 'mes' => $compras($iniMes, $hoje), 'mes_anterior' => $compras($iniMesAnt, $fimMesAnt)],
+        'controlo' => (function () use ($ag, $agora, $promotores) {
+            naval_servico('controlo');
+            return naval_controlo($ag, $agora, $promotores);
+        })(),
     ];
 }
 

@@ -1072,3 +1072,30 @@ article.ag-al {
     transition: none;
   }
 }
+.ag-rec {
+  box-sizing: border-box;
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ag-feed-t {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ag-feed-l > .ag-valor {
+  flex: none;
+}
+.ag-feed-t > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ag-feed-t strong {
+  max-width: 100%;
+}
+.ag-feed-l {
+  min-width: 0;
+}

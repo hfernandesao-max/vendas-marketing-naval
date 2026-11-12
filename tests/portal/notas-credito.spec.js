@@ -142,3 +142,26 @@ test('meios de cobrança: a nota de crédito devolvida em Multicaixa debita a Mu
   await expect(page.locator('#page')).not.toContainText('não fecham com o recebido');
   expect(erros).toEqual([]);
 });
+
+test('recebido por promotor: quanto cada um recebeu, em dinheiro e em Multicaixa, e o que falta receber', async ({ page }) => {
+  const mc = (v) => ({ pagamentos: [{ codigo: 'MC', meio: 'Multicaixa', valor: v }], meio_pagamento: 'Multicaixa' });
+  const din = (v) => ({ pagamentos: [{ codigo: 'NU', meio: 'Numerário', valor: v }], meio_pagamento: 'Numerário' });
+  const V = [
+    factura(4000, { rota: '1001', documento: 'FR 1/1', ...din(4000) }),
+    factura(10000, { rota: '1001', documento: 'FR 1/2', ...mc(10000) }),
+    factura(6000, { rota: '1002', documento: 'FR 2/1', ...din(6000) }),
+    factura(3000, { rota: '1002', documento: 'FR 2/2', liquidado: false, valor_pago: 0, pagamentos: [] }),
+  ];
+  const erros = await abrir(page, '#pagamentos', { api: api(V) });
+  const t = page.locator('#s-pg-recebido-rota');
+  await expect(t.locator('h2')).toHaveText('Recebido por promotor');
+  const l1 = t.locator('tbody tr', { hasText: '1001' });
+  await expect(l1).toContainText(/14\s000,00/);
+  await expect(l1).toContainText('4000,00');
+  await expect(l1).toContainText(/10\s000,00/);
+  const l2 = t.locator('tbody tr', { hasText: '1002' });
+  await expect(l2).toContainText('6000,00');
+  await expect(l2).toContainText('3000,00'); // por receber
+  await expect(t.locator('tfoot, tr.total').last()).toContainText(/20\s000,00/);
+  expect(erros).toEqual([]);
+});

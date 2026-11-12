@@ -16,6 +16,7 @@ import { dl, n0, n1, setFmt } from './formatos.js';
 import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
+import { eNC, pendenteDe, recebidoDe, recebidoPorCategoria } from './meios.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -49,7 +50,7 @@ const E = {
   aPensar: false,
   aLer: false,
 };
-const ICONE = { hoje: 'home', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
+const ICONE = { hoje: 'home', rotas: 'trophy', controlo: 'kpi', alertas: 'sino', assistente: 'ia' };
 const SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
 // ───────────── peças ─────────────
@@ -431,6 +432,12 @@ function folhaRota(rota) {
     cartaoKpi(t('Mês passado'), kzc(r.mes_anterior || 0), undefined, t('mesmos dias')),
   );
   corpo.append(g);
+  // recebido hoje: dinheiro (a entregar) e Multicaixa
+  const vr = E.ao && E.ao.vendas ? E.ao.vendas.filter((v) => String(v.rota) === String(rota)) : [];
+  if (vr.length) {
+    const rr = recebido(vr);
+    corpo.append(titulo(t('Recebido hoje') + ' · ' + kzc(rr.total)), grelhaRecebido(rr));
+  }
   // stock na carrinha neste momento
   if (pode('stock-carrinha')) {
     const st = stockDaRota(rota);
@@ -880,7 +887,7 @@ function carregarAgora(forcar) {
     if (v === null && !E.ao) E.ao = { erro: true };
     else if (v !== null) E.ao = { vendas: v, carrinhas: c, stock: st, hora: new Date() };
     E.aoEm = Date.now();
-    if (E.sep === 'hoje' || E.sep === 'rotas') desenhar();
+    if (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') desenhar();
     const f = $('ag-folha');
     if (f && f.open && f.dataset.rota) folhaRota(f.dataset.rota);
   });
@@ -916,6 +923,36 @@ const ESTADO_ROTA = {
   fora: ['Sem vendas', 'neutra'],
 };
 
+/** Recebido de um conjunto de documentos: total líquido, em dinheiro, em Multicaixa, outros e por receber. */
+function recebido(V) {
+  const c = recebidoPorCategoria(V);
+  const nc = -V.filter(eNC).reduce((a, x) => a + (+x.total || 0), 0);
+  const total = V.reduce((a, x) => a + recebidoDe(x), 0) - nc;
+  return {
+    total,
+    dinheiro: c.dinheiro,
+    multicaixa: c.multicaixa,
+    outros: c.transferencia + c.outro + c.sem_meio,
+    por_receber: V.reduce((a, x) => a + pendenteDe(x), 0),
+  };
+}
+/** Grelha «Recebido»: dinheiro, Multicaixa, outros e por receber (o que cada promotor tem de entregar e o que entrou no terminal). */
+function grelhaRecebido(r) {
+  const g = el('div', 'ag-grelha');
+  g.append(
+    cartaoKpi(t('Em dinheiro'), kzc(r.dinheiro), undefined, r.total > 0 ? t('{p} do recebido', { p: Math.round((r.dinheiro / r.total) * 100) + '%' }) : ''),
+    cartaoKpi(
+      t('Em Multicaixa'),
+      kzc(r.multicaixa),
+      undefined,
+      r.total > 0 ? t('{p} do recebido', { p: Math.round((r.multicaixa / r.total) * 100) + '%' }) : '',
+    ),
+    cartaoKpi(t('Outros meios'), kzc(r.outros), undefined, t('transferências e sem meio')),
+    cartaoKpi(t('Por receber'), kzc(r.por_receber), undefined, t('facturas por liquidar')),
+  );
+  return g;
+}
+
 /** Cartão «Ao vivo» do separador Hoje: vendas de hoje a entrar, documentos, valor médio e a última venda. */
 function cartaoVivo() {
   if (!pode('inicio')) return null;
@@ -941,6 +978,10 @@ function cartaoVivo() {
     mini(t('última venda'), ult ? haQuanto(minutosDesde(ult)) : '—'),
   );
   c.append(g);
+  const r = recebido(vendas);
+  const g2 = el('div', 'ag-mini');
+  g2.append(mini(t('recebido'), kzc(r.total)), mini(t('em dinheiro'), kzc(r.dinheiro)), mini(t('em Multicaixa'), kzc(r.multicaixa)));
+  c.append(g2);
   return c;
 }
 
@@ -1012,9 +1053,144 @@ function rotasAoVivo() {
   return out;
 }
 
+// ───────────── Controlo de gestão ─────────────
+// O que as equipas de controlo das grandes empresas seguem todos os dias: fecho previsto do mês, recebido por rota e
+// por meio, clientes (activos, novos, por recuperar), artigos, produtividade das rotas e riscos de concentração.
+const pc = (v) => (v == null ? '—' : Math.round(v * 100) + '%');
+function controlo() {
+  const C = E.ind.controlo;
+  const out = [];
+  if (!C) return [el('p', 'ag-vazio', t('Sem dados de controlo neste período.'))];
+  // 1. fecho previsto do mês
+  const f = C.fecho;
+  const c = cartao('ag-heroi');
+  c.append(
+    el('div', 'ag-rotulo', t('Fecho previsto do mês')),
+    el('div', 'ag-grande', kz(f.previsto)),
+    linhaVar(f.variacao, t('face ao mês passado ({v})', { v: kzc(f.mes_anterior) })),
+  );
+  c.append(barra(f.progresso), el('p', 'ag-nota', t('{v} já vendidos · dia {d} de {n}', { v: kzc(f.ate_hoje), d: f.dias_passados, n: f.dias_mes })));
+  out.push(c);
+  // 2. recebido hoje por rota (dinheiro e Multicaixa), ao vivo
+  if (pode('inicio')) {
+    carregarAgora(false);
+    if (E.ao && E.ao.vendas) {
+      const V = E.ao.vendas;
+      const r = recebido(V);
+      out.push(titulo(t('Recebido hoje') + ' · ' + kzc(r.total)), grelhaRecebido(r));
+      const porRota = {};
+      V.forEach((v) => (porRota[v.rota] = porRota[v.rota] || []).push(v));
+      const l = el('div', 'ag-lista ag-feed');
+      Object.entries(porRota)
+        .map(([rt, vs]) => ({ rota: rt, promotor: vs[0].promotor || '', ...recebido(vs) }))
+        .sort((a, b) => b.total - a.total)
+        .forEach((x) => {
+          const li = el('button', 'ag-feed-l ag-rec');
+          li.type = 'button';
+          const tx = el('span', 'ag-feed-t');
+          tx.append(
+            el('strong', null, x.rota + (x.promotor ? ' · ' + x.promotor : '')),
+            el(
+              'span',
+              null,
+              t('Dinheiro {d} · Multicaixa {m}', { d: kzc(x.dinheiro), m: kzc(x.multicaixa) }) +
+                (x.por_receber > 0.5 ? ' · ' + t('por receber {v}', { v: kzc(x.por_receber) }) : ''),
+            ),
+          );
+          li.append(tx, el('span', 'ag-valor', kzc(x.total)));
+          li.addEventListener('click', () => folhaRota(x.rota));
+          l.append(li);
+        });
+      out.push(l);
+    }
+  }
+  // 3. clientes
+  const k = C.clientes;
+  out.push(titulo(t('Clientes do mês')));
+  const g = el('div', 'ag-grelha');
+  g.append(
+    cartaoKpi(t('Com compras'), n0(k.activos), k.activos_anterior ? k.activos / k.activos_anterior - 1 : null, t('face ao mês passado')),
+    cartaoKpi(t('Novos'), n0(k.novos), undefined, t('sem compras nos 60 dias antes')),
+    cartaoKpi(t('Por recuperar'), n0(k.por_recuperar), undefined, t('compraram no mês passado, ainda não este')),
+    cartaoKpi(t('Valor em risco'), kzc(k.valor_por_recuperar), undefined, t('o que compraram no mês passado')),
+  );
+  out.push(g);
+  if (k.recuperar && k.recuperar.length) {
+    const l = el('div', 'ag-lista ag-feed');
+    k.recuperar.forEach((x) => {
+      const li = el('div', 'ag-feed-l');
+      const tx = el('span', 'ag-feed-t');
+      tx.append(
+        el('strong', null, x.nome || x.codigo),
+        el('span', null, t('Rota {r}', { r: x.rota }) + ' · ' + t('{n} compras no mês passado', { n: x.compras })),
+      );
+      li.append(tx, el('span', 'ag-valor', kzc(x.valor)));
+      l.append(li);
+    });
+    out.push(el('p', 'ag-resumo', t('Maiores clientes por recuperar')), l);
+  }
+  // 4. artigos que mais vendem
+  if (C.artigos && C.artigos.length) {
+    out.push(titulo(t('Artigos que mais vendem')));
+    const l = el('div', 'ag-lista ag-feed');
+    C.artigos.forEach((a) => {
+      const li = el('div', 'ag-feed-l');
+      const tx = el('span', 'ag-feed-t');
+      const sub = el('span');
+      sub.append(
+        document.createTextNode(n0(a.quantidade) + ' ' + (a.unidade || t('un.')) + ' · ' + pc(a.peso) + ' ' + t('das vendas') + ' '),
+        pastilha(a.variacao),
+      );
+      tx.append(el('strong', null, a.nome || a.codigo), sub);
+      li.append(tx, el('span', 'ag-valor', kzc(a.valor)));
+      l.append(li);
+    });
+    out.push(l);
+  }
+  // 5. produtividade das rotas
+  if (C.rotas && C.rotas.length) {
+    out.push(titulo(t('Produtividade das rotas')));
+    const l = el('div', 'ag-lista ag-feed');
+    C.rotas.forEach((r) => {
+      const li = el('button', 'ag-feed-l ag-rec');
+      li.type = 'button';
+      const tx = el('span', 'ag-feed-t');
+      tx.append(
+        el('strong', null, r.rota + (r.promotor ? ' · ' + r.promotor : '')),
+        el(
+          'span',
+          null,
+          t('{d} dias · {p} doc./dia · valor médio {v} · {c} clientes', {
+            d: r.dias,
+            p: String(r.docs_dia).replace('.', ','),
+            v: kzc(r.valor_medio),
+            c: n0(r.clientes),
+          }) + (r.peso_nc > 0.05 ? ' · ' + t('notas de crédito {p}', { p: pc(r.peso_nc) }) : ''),
+        ),
+      );
+      li.append(tx, el('span', 'ag-valor', kzc(r.total)));
+      li.addEventListener('click', () => folhaRota(r.rota));
+      l.append(li);
+    });
+    out.push(l);
+  }
+  // 6. riscos
+  const R0 = C.riscos;
+  out.push(titulo(t('Riscos')));
+  const gr = el('div', 'ag-grelha');
+  gr.append(
+    cartaoKpi(t('5 maiores clientes'), pc(R0.top5_clientes), undefined, t('das vendas do mês')),
+    cartaoKpi(t('Maior rota'), R0.maior_rota ? pc(R0.maior_rota.peso) : '—', undefined, R0.maior_rota ? t('Rota {r}', { r: R0.maior_rota.rota }) : ''),
+    cartaoKpi(t('Notas de crédito'), n0(R0.notas_credito), undefined, t('{p} dos documentos', { p: pc(R0.peso_notas_credito) })),
+  );
+  out.push(gr);
+  return out;
+}
+
 const SEPARADORES = [
   ['hoje', 'Hoje', hoje],
   ['rotas', 'Rotas', rotas],
+  ['controlo', 'Controlo', controlo],
   ['alertas', 'Alertas', alertas],
   ['assistente', 'Assistente', assistente],
 ];
@@ -1176,7 +1352,7 @@ apiJson('sessao').then((s) => {
   });
 });
 $('ag-actualizar').addEventListener('click', () => {
-  if (E.sep === 'hoje' || E.sep === 'rotas') carregarAgora(true);
+  if (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') carregarAgora(true);
   carregar(true);
 });
 puxarParaActualizar();
@@ -1184,7 +1360,7 @@ window.addEventListener('online', desenhar);
 window.addEventListener('offline', desenhar);
 // separador «Agora»: a cada minuto, só com ele aberto e a app no ecrã
 setInterval(() => {
-  if (document.visibilityState === 'visible' && (E.sep === 'hoje' || E.sep === 'rotas') && E.ind && pode('inicio')) carregarAgora(true);
+  if (document.visibilityState === 'visible' && (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') && E.ind && pode('inicio')) carregarAgora(true);
 }, 60000);
 // actualiza a cada 5 minutos enquanto a app está visível
 setInterval(() => {

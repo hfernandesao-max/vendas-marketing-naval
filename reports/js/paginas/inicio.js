@@ -29,6 +29,7 @@ import { FV, filtroAtivo } from '../filtros.js';
 import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
+import { recebidoPorCategoria } from '../meios.js';
 
 // Gráficos de gestão (v1/painel, perfis com «painel-gestao» na matriz): lidos e desenhados a pedido; enquanto não chegam,
 // ou sem acesso, o Início mostra a grelha de sempre.
@@ -189,9 +190,11 @@ function painelInicio(pg) {
   }
   // 2. Vendas por promotor (clicar abre os documentos da rota)
   if (pode('vendas-promotor') && V.length) {
+    const comMeio = pode('pagamentos') && temMeio();
     const P = porPromotor(V)
       .filter((x) => x.total > 0)
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => b.total - a.total)
+      .map((x) => (comMeio ? { ...x, ...recebidoPorCategoria(V.filter((v) => v.rota === x.rota)) } : x));
     const top = P[0];
     cards.push(
       nomear(
@@ -209,13 +212,30 @@ function painelInicio(pg) {
                 linhas: [
                   [kz(x.total), t('vendido')],
                   [kz(x.recebido), t('recebido')],
+                  ...(comMeio
+                    ? [
+                        [kz(x.dinheiro), t('em dinheiro')],
+                        [kz(x.multicaixa), t('em Multicaixa')],
+                      ]
+                    : []),
                   [n0(x.docs), t('documentos')],
                 ],
                 href: podeVer('documentos') ? `documentos/dc?rota=${x.rota}` : null,
               })),
             }),
-          colunas: [[t('Promotor')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
-          linhas: P.map((x) => [x.promotor, kz(x.total), kz(x.recebido), n0(x.docs)]),
+          colunas: [
+            [t('Promotor')],
+            [t('Vendido'), 1],
+            [t('Recebido'), 1],
+            ...(comMeio
+              ? [
+                  [t('Em dinheiro'), 1],
+                  [t('Em Multicaixa'), 1],
+                ]
+              : []),
+            [t('Documentos'), 1],
+          ],
+          linhas: P.map((x) => [x.promotor, kz(x.total), kz(x.recebido), ...(comMeio ? [kz(x.dinheiro), kz(x.multicaixa)] : []), n0(x.docs)]),
         }),
       ),
     );

@@ -25,6 +25,7 @@ import { R } from './registo.js';
 import { hoje, st } from '../periodo.js';
 import { el, group, sum } from '../util.js';
 import { colDocumento } from '../componentes/documento.js';
+import { recebidoPorCategoria } from '../meios.js';
 
 // Facturas por receber, com a antiguidade da dívida (dias desde a emissão até hoje, em escalões de 30 dias) e o prazo
 // médio de recebimento (PMR, em inglês DSO = dívida por receber ÷ vendas facturadas no período × dias do período)
@@ -209,6 +210,51 @@ R.pagamentos = (pg) => {
     );
     secs.append(secBox(t('Falta o meio de cobrança'), t('Assim que a exportação incluir esta coluna, os valores aparecem aqui sem mais alterações.'), box));
   }
+  // Recebido por promotor / rota: quanto cada um recebeu, e quanto em dinheiro e em Multicaixa (o que tem de entregar
+  // em numerário e o que entra pelo terminal), com o que ficou por receber
+  if (meio) {
+    const linhasRota = Object.values(group(V, 'rota')).map((rs) => {
+      const c = recebidoPorCategoria(rs);
+      const rec = recebidoLiquido(rs);
+      return {
+        chave: rs[0].rota,
+        rota: rs[0].rota,
+        promotor: promotorRota(rs[0].rota),
+        vendido: sum(rs, 'total'),
+        recebido: rec,
+        dinheiro: c.dinheiro,
+        multicaixa: c.multicaixa,
+        outros: c.transferencia + c.outro + c.sem_meio,
+        por_receber: sum(rs, pendenteDe),
+        quota_dinheiro: c.dinheiro + c.multicaixa > 0 ? c.dinheiro / (c.dinheiro + c.multicaixa) : null,
+        docs: rs.filter((x) => !eNC(x)).length,
+      };
+    });
+    secs.append(
+      tabela({
+        id: 'pg-recebido-rota',
+        titulo: t('Recebido por promotor'),
+        nota: t(
+          'Quanto cada promotor recebeu no período e como: em dinheiro (a entregar em numerário) e em Multicaixa (terminal). Os outros meios incluem transferências e documentos liquidados sem meio indicado.',
+        ),
+        rows: linhasRota,
+        sort: 'recebido',
+        total: true,
+        cols: [
+          { key: 'promotor', label: t('Promotor') },
+          { key: 'rota', label: t('Rota'), p: 0 },
+          { key: 'vendido', label: t('Vendido'), type: 'kz', sum: true, p: 1 },
+          { key: 'recebido', label: t('Recebido'), type: 'kz', sum: true },
+          { key: 'dinheiro', label: t('Em dinheiro'), type: 'kz', sum: true },
+          { key: 'multicaixa', label: t('Em Multicaixa'), type: 'kz', sum: true },
+          { key: 'outros', label: t('Outros meios'), type: 'kz', sum: true, p: 1 },
+          { key: 'quota_dinheiro', label: t('% em dinheiro'), type: 'pct', p: 1 },
+          { key: 'por_receber', label: t('Por receber'), type: 'kz', sum: true, p: 1 },
+          { key: 'docs', label: t('Documentos'), type: 'n', sum: true, p: 1 },
+        ],
+      }),
+    );
+  }
   // Meios de pagamento tal como vêm do Pinguim BO
   const PM = porMeio(V);
   const fecho = sum(PM, 'valor') - ncSemMeio - liq;
@@ -294,7 +340,7 @@ R.pagamentos = (pg) => {
     { key: 'por_liquidar', label: t('Facturas pendentes'), type: 'kz', sum: true },
   ];
   const pp = Object.values(group(V, 'rota')).map((rs) => linha(rs, { chave: rs[0].rota, rota: rs[0].rota, promotor: promotorRota(rs[0].rota) }));
-  secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
+  secs.append(tabela({ id: 'pg-prom', titulo: t('Por promotor e meio de cobrança'), rows: pp, sort: 'total', total: true, cols: cols('promotor') }));
   const pd = Object.values(group(V, 'data')).map((rs) => linha(rs, { chave: rs[0].data, data: rs[0].data }));
   secs.append(tabela({ id: 'pg-dia', titulo: t('Por dia'), rows: pd, sort: 'data', total: true, search: false, cols: cols('data') }));
   secs.append(
