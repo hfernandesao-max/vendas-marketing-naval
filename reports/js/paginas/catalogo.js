@@ -29,6 +29,7 @@ export const PAGES = [
   { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
   { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação' },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
+  { id: 'relatorio-vendas', grupo: 'Vendas', icon: 'relatorio', nome: 'Relatório de Vendas' },
   { id: 'clientes', grupo: 'Clientes', icon: 'lista', nome: 'Carteira de clientes' },
   { id: 'cadastros', grupo: 'Clientes', icon: 'kpi', nome: 'Cadastros · indicadores' },
   { id: 'cadastros-analise', grupo: 'Clientes', icon: 'pizza', nome: 'Análise de cadastros' },
@@ -37,6 +38,7 @@ export const PAGES = [
   { id: 'clientes-qr', grupo: 'Clientes', icon: 'qr', nome: 'Cartazes QR dos clientes' },
   { id: 'pagamentos', grupo: 'Cobranças', icon: 'card', nome: 'Cobranças' },
   { id: 'pendentes', grupo: 'Cobranças', icon: 'clock', nome: 'Facturas pendentes' },
+  { id: 'caixa-marketing', grupo: 'Cobranças', icon: 'caixa', nome: 'Folha de caixa' },
   // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
   { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
   { id: 'plano-visitas', grupo: 'Terreno', icon: 'agenda', nome: 'Plano de visitas' },

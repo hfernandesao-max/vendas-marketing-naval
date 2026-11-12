@@ -58,6 +58,9 @@ const NAVAL_MATRIZ_TXT = [
     'conciliacao-fecho'    => '-  G  -  -  -  G  -  -  -  -  -',
     // requisições de reposição da carrinha ao armazém: o promotor e o supervisor (nas suas rotas) e a logística gerem
     'requisicoes-carrinha' => 'V  V  V  G  G  V  -  G  -  V  V',
+    // Relatório de Vendas diário (gerar e exportar: E) e folha de caixa do Marketing (tesouraria e apoio RTM registam: G)
+    'relatorio-vendas'     => 'V  E  E  -  -  E  V  -  -  E  -',
+    'caixa-marketing'      => 'V  V  V  -  -  G  G  -  -  V  -',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
     'cadastros'            => 'V  V  E  Vr Vr -  E  -  V  V  V',
@@ -198,6 +201,10 @@ function naval_niveis_recurso(string $rec): array
         case 'conciliacao-carrinha':
         case 'requisicoes-carrinha':
             return ['', 'Vr', 'V', 'G'];
+        case 'relatorio-vendas':
+            return ['', 'V', 'E'];
+        case 'caixa-marketing':
+            return ['', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':
         case 'exportar-dados':

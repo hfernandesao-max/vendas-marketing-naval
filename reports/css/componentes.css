@@ -4443,3 +4443,70 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgb(var(--az1-rgb) / 0.22);
 }
+
+/* Relatório de Vendas: lista de controlos do fecho do dia e diferenças */
+.rv-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.rv-lista li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.rv-lista li .note {
+  grid-column: 2;
+}
+.rv-lista li.rv-pendente,
+.rv-lista li.rv-erro {
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+.rv-lista li.rv-ok {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+.rv-cab,
+.cx-cab,
+.cx-sec {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+.cx-sec {
+  display: grid;
+  gap: 10px;
+}
+.rv-dif {
+  color: var(--bad);
+  font-weight: 700;
+}
+.cx-tab input,
+.cx-tab select {
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgb(var(--veu-rgb) / 0.05);
+  color: var(--fg);
+  padding: 0 8px;
+  font: inherit;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.cx-tab input[type='number'] {
+  width: 140px;
+  text-align: right;
+}
+.cx-tab tr.cx-total td {
+  font-weight: 700;
+  border-top: 1px solid var(--line2);
+}
+.cx-sec > .btn {
+  justify-self: start;
+}

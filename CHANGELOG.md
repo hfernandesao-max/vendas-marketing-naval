@@ -4,6 +4,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Relatório de Vendas diário e folha de caixa no portal
+
+- Nova página **Vendas › Relatório de Vendas**. Junta num só documento o que vinha em quatro ficheiros (resumo de
+  vendas, registo de vendas, folha de caixa e stock), sempre lido das bases de dados:
+  - resumo de vendas e cobranças (dinheiro, Multicaixa, por receber, notas de crédito);
+  - **vendas e cobranças por promotor**, com a conciliação Pinguim BO × caixa × TPA (diferença do dinheiro e do
+    Multicaixa a vermelho);
+  - caixa do dia, Multicaixa por banco, registo de vendas linha a linha e stock das carrinhas (inicial, carregado,
+    vendido, devolvido, final, contado e diferença);
+  - facturação SAP de todas as empresas (Naval, Foodtec, Higitec, Refitech), quando o conector SAP estiver ligado.
+- **Fecho do dia antes do relatório**: o relatório só se gera quando todas as fontes do dia estão completas:
+  - todos os telemóveis das rotas com vendas sincronizaram depois da hora de fecho (`RELATORIO_HORA_FECHO`, 18:00);
+  - todas as carrinhas estão conciliadas e fechadas;
+  - todas as vendas do dia estão num ficheiro marcado «carregado no SAP»;
+  - a folha de caixa está fechada e aprovada.
+
+  O ecrã mostra o que falta em cada fonte. O conector SAP por ligar não impede a geração.
+
+- Depois de gerado, o relatório fica **congelado**, com número (RV-AAAAMMDD-v1), impressão digital SHA-256 e quem o
+  gerou. O PDF sai sempre dessa versão e leva os controlos e as assinaturas. Uma correcção gera uma nova versão, com
+  motivo, e a anterior fica guardada.
+- Nova página **Cobranças › Folha de caixa** (substitui a folha Excel da tesouraria):
+  - dinheiro entregue por promotor, talões do TPA por banco e saídas (depósito, fundo de maneio por empresa,
+    transferência para a gestão, outras);
+  - saldo inicial igual ao saldo aprovado do dia anterior, e saldo teórico calculado ao vivo;
+  - fecho com a contagem física, em que uma diferença tem de ser explicada;
+  - aprovação por outra pessoa que não quem registou ou fechou; reabertura com motivo enquanto não estiver aprovada.
+- **Conector SAP S/4HANA (OData, só leitura)** preparado, com a facturação do dia de todas as empresas pelo serviço
+  normalizado `API_BILLING_DOCUMENT_SRV`. Fica «por ligar» até a equipa SAP dar um utilizador técnico só de leitura
+  (`SAP_ODATA_URL`, `SAP_ODATA_UTILIZADOR`, `SAP_ODATA_SENHA`, opcional `SAP_ODATA_CLIENTE`, no `.env`).
+- Matriz de acessos: «Relatório de Vendas» (Direcção, Comercial, Financeiro e Auditoria geram e exportam) e «Folha de
+  caixa» (Financeiro e Apoio RTM registam; Direcção, Comercial e Auditoria vêem).
+
 ### Requisições de reposição da carrinha ao armazém
 
 - Nova página **Logística › Requisições ao armazém**. Quando quem contou valida a contagem da carrinha, o sistema
