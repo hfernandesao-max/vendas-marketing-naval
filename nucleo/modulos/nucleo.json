@@ -2,7 +2,7 @@
   "id": "nucleo",
   "nome": "Núcleo da plataforma",
   "versao": "1.0.0",
-  "descricao": "Entrada, sessão, página principal, alertas, apresentação, exportações e preferências. Não se desliga.",
+  "descricao": "Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, exportações e preferências. Não se desliga.",
   "nucleo": true,
   "paginas": ["inicio", "alertas", "apresentacao"],
   "recursos": ["pagina-principal", "inicio", "alertas", "apresentacao", "nif", "excel-completo", "exportar-dados", "estrutura-dados"],
@@ -24,11 +24,12 @@
     "v1/preferencias",
     "v1/apresentacao",
     "v1/alertas",
-    "v1/app-telemovel"
+    "v1/app-telemovel",
+    "v1/notificacoes"
   ],
   "conectores": ["pinguim-sql", "pinguim-rest"],
   "eventos": {
-    "publica": ["sessao.aberta"],
+    "publica": ["sessao.aberta", "notificacao.enviada"],
     "escuta": []
   },
   "depende": []

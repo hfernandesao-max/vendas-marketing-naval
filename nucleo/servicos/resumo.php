@@ -269,6 +269,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conformidade] ' . $e->getMessage());
     }
+    // notificações no telemóvel: rotas paradas, vendas anuladas, carrinhas por aprovar e resumo do dia (NOTIFICACOES)
+    try {
+        naval_servico('notificacoes');
+        $n = naval_notif_ciclo($agora);
+        if ($n !== null) $feito['notificacoes'] = $n;
+    } catch (Throwable $e) {
+        error_log('[notificações] ' . $e->getMessage());
+    }
     // vigilância em produção: falhas do código, verificações de negócio, GitHub e reposição automática (VIGIA_ACTIVA)
     try {
         naval_servico('vigia');

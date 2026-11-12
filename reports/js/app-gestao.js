@@ -430,7 +430,7 @@ function alertas() {
     x.append(el('strong', null, n0(n)), el('span', null, nome));
     resumo.append(x);
   });
-  const out = [resumo];
+  const out = [cartaoNotificacoes(), ...caixaNotificacoes(), titulo(t('Alertas de hoje')), resumo];
   if (!a.principais.length) out.push(el('p', 'ag-vazio', t('Sem alertas: tudo dentro do habitual.')));
   const l = el('div', 'ag-lista');
   a.principais.forEach((x) => l.append(linhaAlerta(x, false)));
@@ -438,6 +438,210 @@ function alertas() {
   const ver = el('a', 'ag-ligacao', t('Ver todos os alertas no portal'));
   ver.href = '../reports/#alertas';
   out.push(ver);
+  return out;
+}
+
+// ───────────── Notificações no telemóvel ─────────────
+// Como nas apps de referência (WhatsApp, apps dos bancos): pede a autorização só quando a pessoa carrega no botão,
+// explica antes para que serve, deixa escolher o que recebe e as horas de silêncio, e mostra o número de por ler no
+// ícone da app. No iPhone só funciona com a app no ecrã principal (iOS 16.4 ou mais recente).
+const temPush = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const instalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const ios = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const chaveBin = (s64) => Uint8Array.from(atob(s64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s64.length + 3) % 4)), (c) => c.charCodeAt(0));
+const registo = () => (temPush() ? navigator.serviceWorker.getRegistration('../').then((r) => r || navigator.serviceWorker.ready) : Promise.resolve(null));
+function numeroNoIcone(n) {
+  try {
+    if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
+    else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch (e) {
+    /* sem suporte */
+  }
+}
+function carregarNotif() {
+  const sub = registo().then(
+    (r) => (r && r.pushManager ? r.pushManager.getSubscription() : null),
+    () => null,
+  );
+  return sub.then((s) => {
+    E.notifEndpoint = s ? s.endpoint : '';
+    return apiJson('notificacoes' + (E.notifEndpoint ? '?endpoint=' + encodeURIComponent(E.notifEndpoint) : '')).then(
+      (d) => {
+        if (d && d.ok) {
+          E.notif = d;
+          numeroNoIcone(d.nao_lidas);
+        }
+        desenhar();
+      },
+      () => {},
+    );
+  });
+}
+function accaoNotif(corpo) {
+  return postJson('notificacoes', { endpoint: E.notifEndpoint, ...corpo }).then((d) => {
+    if (d && d.ok) {
+      E.notif = d;
+      E.notifErro = '';
+    } else E.notifErro = (d && d.erro) || 'Sem resposta do servidor.';
+    E.notifEstado = '';
+    desenhar();
+    return d;
+  });
+}
+async function ligarNotif() {
+  E.notifEstado = 'a-ligar';
+  E.notifErro = '';
+  desenhar();
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') {
+      E.notifEstado = '';
+      E.notifErro = perm === 'denied' ? 'As notificações estão bloqueadas nas definições do telefone para esta app.' : 'As notificações não foram autorizadas.';
+      desenhar();
+      return;
+    }
+    const r = await registo();
+    let s = await r.pushManager.getSubscription();
+    if (!s) s = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveBin(E.notif.chave) });
+    E.notifEndpoint = s.endpoint;
+    const d = await accaoNotif({ accao: 'subscrever', subscricao: s.toJSON() });
+    if (d && d.ok) accaoNotif({ accao: 'testar' });
+  } catch (e) {
+    E.notifEstado = '';
+    E.notifErro = 'Não foi possível ligar as notificações neste telefone.';
+    desenhar();
+  }
+}
+async function desligarNotif() {
+  const r = await registo();
+  const s = r && r.pushManager ? await r.pushManager.getSubscription() : null;
+  const ep = s ? s.endpoint : E.notifEndpoint;
+  if (s) await s.unsubscribe().catch(() => {});
+  E.notifEndpoint = '';
+  accaoNotif({ accao: 'cancelar', endpoint: ep });
+}
+function interruptor(ligado, rotulo, fn) {
+  const b = el('button', 'ag-int');
+  b.type = 'button';
+  b.setAttribute('role', 'switch');
+  b.setAttribute('aria-checked', String(!!ligado));
+  b.setAttribute('aria-label', rotulo);
+  b.append(el('span', 'ag-int-bola'));
+  b.addEventListener('click', () => fn(!ligado));
+  return b;
+}
+function cartaoNotificacoes() {
+  const c = cartao('ag-notif');
+  const cab = el('div', 'ag-notif-cab');
+  const ic = el('span', 'ag-notif-ic');
+  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+  const tx = el('div');
+  tx.append(el('strong', null, t('Notificações neste telefone')));
+  c.append(cab);
+  const N = E.notif;
+  const sub = N && N.subscrito && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  if (!temPush() || (ios() && !instalada())) {
+    tx.append(
+      el(
+        'span',
+        null,
+        ios() && !instalada()
+          ? t('No iPhone, as notificações precisam da app no ecrã principal: Partilhar › Adicionar ao ecrã principal.')
+          : t('Este navegador não recebe notificações.'),
+      ),
+    );
+    cab.append(ic, tx);
+    return c;
+  }
+  if (!N) {
+    tx.append(el('span', null, t('A carregar…')));
+    cab.append(ic, tx);
+    return c;
+  }
+  tx.append(
+    el(
+      'span',
+      null,
+      sub ? t('Ligadas. Recebe os alertas mesmo com a app fechada.') : t('Receba os alertas importantes mesmo com a app fechada, como no WhatsApp.'),
+    ),
+  );
+  cab.append(ic, tx);
+  if (!sub) {
+    const b = el('button', 'ag-botao', E.notifEstado === 'a-ligar' ? t('A ligar…') : t('Ligar notificações'));
+    b.type = 'button';
+    b.disabled = E.notifEstado === 'a-ligar';
+    b.addEventListener('click', ligarNotif);
+    c.append(b);
+  }
+  if (E.notifErro) c.append(el('p', 'ag-notif-erro', t(E.notifErro)));
+  if (sub) {
+    const l = el('div', 'ag-notif-tipos');
+    N.tipos.forEach((x) => {
+      const li = el('div', 'ag-notif-tipo');
+      const d = el('div');
+      d.append(el('strong', null, t(x.nome)), el('span', null, t(x.descricao)));
+      li.append(
+        d,
+        interruptor(x.activo, t(x.nome), (v) => accaoNotif({ accao: 'preferencias', tipos: { [x.id]: v } })),
+      );
+      l.append(li);
+    });
+    const sil = el('div', 'ag-notif-tipo');
+    const d = el('div');
+    d.append(el('strong', null, t('Horas de silêncio')), el('span', null, t('Das 20:00 às 07:00 só chegam as críticas; as outras ficam na lista abaixo.')));
+    sil.append(
+      d,
+      interruptor(!!N.silencio, t('Horas de silêncio'), (v) => accaoNotif({ accao: 'preferencias', silencio: v ? { de: '20:00', ate: '07:00' } : false })),
+    );
+    l.append(sil);
+    c.append(l);
+    const acc = el('div', 'ag-notif-acc');
+    const teste = el('button', 'ag-mais', t('Enviar um teste'));
+    teste.type = 'button';
+    teste.addEventListener('click', () => accaoNotif({ accao: 'testar' }));
+    const desl = el('button', 'ag-mais', t('Desligar neste telefone'));
+    desl.type = 'button';
+    desl.addEventListener('click', desligarNotif);
+    acc.append(teste, desl);
+    c.append(acc);
+  }
+  return c;
+}
+const quando = (d) => {
+  const x = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(String(d || ''));
+  if (!x) return '';
+  const hojeD = new Date();
+  const mesmo = +x[1] === hojeD.getFullYear() && +x[2] === hojeD.getMonth() + 1 && +x[3] === hojeD.getDate();
+  return (mesmo ? '' : x[3] + '-' + x[2] + ' ') + x[4] + ':' + x[5];
+};
+function caixaNotificacoes() {
+  const N = E.notif;
+  if (!N || !N.caixa || !N.caixa.length) return [];
+  const l = el('div', 'ag-lista ag-feed');
+  N.caixa.slice(0, 20).forEach((m) => {
+    const li = el(m.url ? 'a' : 'div', 'ag-feed-l ag-msg' + (m.lida ? '' : ' nova') + ' ' + (m.gravidade || ''));
+    if (m.url) li.href = m.url;
+    const tx = el('span', 'ag-feed-t');
+    tx.append(el('strong', null, m.titulo), el('span', null, m.corpo));
+    li.append(tx, el('span', 'ag-msg-h', quando(m.data)));
+    l.append(li);
+  });
+  const out = [
+    titulo(t('Notificações recebidas'), N.nao_lidas ? el('span', 'ag-var neutra', t(N.nao_lidas === 1 ? '{n} nova' : '{n} novas', { n: N.nao_lidas })) : null),
+    l,
+  ];
+  // ao ver a lista, ficam lidas (o número no ícone da app volta a zero)
+  if (N.nao_lidas && !E.aMarcar) {
+    E.aMarcar = true;
+    setTimeout(
+      () =>
+        accaoNotif({ accao: 'lidas' }).then(() => {
+          E.aMarcar = false;
+          numeroNoIcone(0);
+        }),
+      2500,
+    );
+  }
   return out;
 }
 
@@ -687,6 +891,11 @@ const disponiveis = () => SEPARADORES.filter(([id]) => (id !== 'assistente' || p
 
 function mudar(id) {
   E.sep = id;
+  try {
+    history.replaceState(null, '', '#' + id);
+  } catch (e) {
+    /* sem histórico */
+  }
   desenhar();
   window.scrollTo(0, 0);
 }
@@ -825,6 +1034,9 @@ apiJson('sessao').then((s) => {
     return;
   }
   E.sessao = s;
+  const pedido = location.hash.replace('#', '');
+  if (SEPARADORES.some(([id]) => id === pedido)) E.sep = pedido;
+  carregarNotif();
   const l = s.idioma && s.idioma !== LANG ? mudarIdioma(s.idioma).then(setFmt) : Promise.resolve();
   l.then(() => {
     document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';
@@ -846,8 +1058,14 @@ setInterval(() => {
 setInterval(() => {
   if (document.visibilityState === 'visible' && E.ind) carregar();
 }, 300000);
+// ao tocar numa notificação com a app aberta, o telefone muda o endereço: abre o separador certo
+window.addEventListener('hashchange', () => {
+  const id = location.hash.replace('#', '');
+  if (id !== E.sep && SEPARADORES.some(([x]) => x === id)) mudar(id);
+});
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
+  if (E.sessao) carregarNotif();
   versaoNova();
   if (E.ind && Date.now() - new Date(E.ind.hora.replace(' ', 'T')).getTime() > 300000) carregar();
 });

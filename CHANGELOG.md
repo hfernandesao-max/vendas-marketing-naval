@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Notificações no telemóvel, como no WhatsApp, mesmo com a app fechada
+
+- Web Push com as normas abertas (RFC 8030, 8291 e 8292): o servidor do portal cifra e assina cada mensagem e entrega-a
+  ao serviço de push do próprio telefone (Apple, Google, Microsoft, Mozilla), sem serviços de terceiros. A cifra foi
+  conferida com a biblioteca de referência. No iPhone, com a app no ecrã principal (iOS 16.4 ou mais recente).
+- Tipos: rota parada (mais de uma hora sem vender, ou sem vendas às 10:30), venda anulada, carrinha por aprovar,
+  diferença na conferência com o Pinguim BO, problema em produção, actualizações do portal e resumo do dia às 18:30.
+  Cada pessoa só recebe o que a matriz de acessos lhe permite ver, e quem trabalha por rota só as das suas rotas.
+- Na app, em Alertas: ligar com um toque (a autorização só é pedida nesse momento), escolher o que recebe, horas de
+  silêncio (20:00–07:00, excepto as críticas), enviar um teste e desligar neste telefone. As recebidas ficam numa
+  caixa, com o número de por ler no ícone da app; ao tocar numa notificação a app abre no separador certo.
+- Nunca repete a mesma notificação; subscrições retiradas pelo telefone saem sozinhas; só aceita serviços de push
+  conhecidos em HTTPS.
+
 ### App «Naval Gestão» no telemóvel: separador «Agora» com a operação em tempo real
 
 - Novo separador **Agora**, entre «Hoje» e «Rotas», como nos painéis ao vivo das apps de referência (Shopify Live View,

@@ -265,3 +265,106 @@ test('app de gestão: «Agora» com vendas ao vivo, rotas paradas primeiro, fech
   expect(await semCorte(page)).toEqual([]);
   expect(erros).toEqual([]);
 });
+
+test('app de gestão: notificações — ligar com um toque, escolher o que recebe, teste e caixa de recebidas', async ({ page }) => {
+  // telefone simulado: app no ecrã principal, autorização e serviço de push
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'standalone', { value: true });
+    let sub = null;
+    const fake = {
+      endpoint: 'https://web.push.apple.com/QGuQ-teste',
+      toJSON: () => ({ endpoint: 'https://web.push.apple.com/QGuQ-teste', keys: { p256dh: 'BPub', auth: 'Auth' } }),
+      unsubscribe: async () => {
+        sub = null;
+        return true;
+      },
+    };
+    const reg = { pushManager: { getSubscription: async () => sub, subscribe: async (o) => ((window.__chave = o.applicationServerKey.length), (sub = fake)) } };
+    Object.defineProperty(navigator, 'serviceWorker', { value: { getRegistration: async () => reg, ready: Promise.resolve(reg), register: async () => reg } });
+    window.PushManager = function () {};
+    window.Notification = { permission: 'default', requestPermission: async () => ((window.Notification.permission = 'granted'), 'granted') };
+    navigator.setAppBadge = async (n) => (window.__badge = n);
+    navigator.clearAppBadge = async () => (window.__badge = 0);
+  });
+  const posts = [];
+  let subscrito = false;
+  const vista = () => ({
+    ok: true,
+    chave: 'BOr6ZK4mGKVqcz6m1WXbP4Fq0lwxgFC9YUAZ3GQhlF8mJx7oVEP3sU8gcZJ0Oy3l8w7m3d8Fh1sXm2qJ0vBf0aA',
+    subscrito,
+    equipamentos: subscrito ? 1 : 0,
+    silencio: { de: '20:00', ate: '07:00' },
+    tipos: [
+      {
+        id: 'rota_parada',
+        nome: 'Rota parada',
+        descricao: 'Uma rota com vendas hoje está há mais de uma hora sem vender, ou ainda não vendeu às 10:30.',
+        activo: true,
+      },
+      { id: 'resumo_dia', nome: 'Resumo do dia', descricao: 'Às 18:30: vendas do dia, documentos e a melhor rota.', activo: true },
+    ],
+    caixa: [
+      {
+        id: 'a',
+        titulo: 'Rota 1011 · Robel parada',
+        corpo: 'Sem vendas há 1 h 10 min.',
+        data: HOJE + ' 11:00:00',
+        url: '../gestao/#agora',
+        gravidade: 'aviso',
+        lida: false,
+      },
+      {
+        id: 'b',
+        titulo: 'Resumo de hoje: 1 340 000 Kz',
+        corpo: '88 documentos.',
+        data: '2026-11-05 18:30:00',
+        url: '../gestao/#hoje',
+        gravidade: 'info',
+        lida: true,
+      },
+    ],
+    nao_lidas: posts.some((p) => p.accao === 'lidas') ? 0 : 1,
+  });
+  await page.route('**/v1/notificacoes**', (r) => {
+    if (r.request().method() === 'POST') {
+      const p = r.request().postDataJSON();
+      posts.push(p);
+      if (p.accao === 'subscrever') subscrito = true;
+      if (p.accao === 'cancelar') subscrito = false;
+    }
+    return r.fulfill({ json: vista() });
+  });
+  const erros = await abrirApp(page);
+  expect(await page.evaluate(() => window.__badge)).toBe(1); // número de por ler no ícone da app
+  await page.locator('.ag-separadores button', { hasText: 'Alertas' }).click();
+  const c = page.locator('.ag-notif');
+  await expect(c).toContainText('como no WhatsApp');
+  await c.locator('button', { hasText: 'Ligar notificações' }).click();
+  await expect.poll(() => posts.map((p) => p.accao)).toEqual(expect.arrayContaining(['subscrever', 'testar']));
+  expect(posts.find((p) => p.accao === 'subscrever').subscricao.endpoint).toBe('https://web.push.apple.com/QGuQ-teste');
+  expect(await page.evaluate(() => window.__chave)).toBe(65); // chave pública VAPID (ponto P-256)
+  await expect(c).toContainText('Ligadas');
+  await expect(c.locator('[role=switch]')).toHaveCount(3); // 2 tipos + horas de silêncio
+  await c.locator('.ag-notif-tipo', { hasText: 'Resumo do dia' }).locator('[role=switch]').click();
+  await expect.poll(() => posts.find((p) => p.accao === 'preferencias')).toMatchObject({ tipos: { resumo_dia: false } });
+  // caixa: a nova realçada; ao fim de uns segundos fica lida e o número no ícone volta a zero
+  await expect(page.locator('.ag-msg.nova')).toContainText('Rota 1011 · Robel parada');
+  await expect(page.locator('.ag-msg').first()).toHaveAttribute('href', '../gestao/#agora');
+  await expect.poll(() => posts.some((p) => p.accao === 'lidas'), { timeout: 6000 }).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__badge)).toBe(0);
+  // desligar neste telefone
+  await c.locator('button', { hasText: 'Desligar neste telefone' }).click();
+  await expect.poll(() => posts.some((p) => p.accao === 'cancelar' && p.endpoint === 'https://web.push.apple.com/QGuQ-teste')).toBe(true);
+  await expect(c.locator('button', { hasText: 'Ligar notificações' })).toBeVisible();
+  expect(erros).toEqual([]);
+});
+
+test('app de gestão: ao tocar numa notificação abre o separador certo (#agora)', async ({ page }) => {
+  await page.route('**/v1/sessao**', (r) => r.fulfill({ json: { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V' } } }));
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
+  await page.route('**/v1/vendas**', (r) => r.fulfill({ json: { ok: true, vendas: [] } }));
+  await page.goto('/gestao/index.html#agora');
+  await expect(page.locator('#ag-h1')).toHaveText('Agora');
+  await page.evaluate(() => (location.hash = '#alertas'));
+  await expect(page.locator('#ag-h1')).toHaveText('Alertas');
+});
