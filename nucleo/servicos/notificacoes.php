@@ -473,21 +473,21 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
                 $min = (int) round(($agora - strtotime($dia . ' ' . $x['ultima'])) / 60);
                 if ($min < 60) continue;
                 $feito[] = naval_notificar('rota_parada', 'Rota ' . $nome((string) $r) . ' parada', 'Sem vendas há ' . intdiv($min, 60) . ' h ' . ($min % 60) . ' min (última às ' . substr($x['ultima'], 0, 5) . '). Hoje: ' . $x['docs'] . ' documentos.',
-                    ['chave' => 'parada|' . $dia . '|' . $r . '|' . $x['ultima'], 'rota' => (string) $r, 'url' => '../gestao/#agora'], $agora);
+                    ['chave' => 'parada|' . $dia . '|' . $r . '|' . $x['ultima'], 'rota' => (string) $r, 'url' => '../gestao/#rotas'], $agora);
             }
             // às 10:30 sem nenhuma venda (rotas do portal)
             if ($hm >= '10:30') {
                 foreach (array_keys($prom) as $r) {
                     if (!empty($d['rotas'][$r]['docs'])) continue;
                     $feito[] = naval_notificar('rota_parada', 'Rota ' . $nome((string) $r) . ' sem vendas', 'Ainda não há nenhuma venda hoje.',
-                        ['chave' => 'semvendas|' . $dia . '|' . $r, 'rota' => (string) $r, 'url' => '../gestao/#agora'], $agora);
+                        ['chave' => 'semvendas|' . $dia . '|' . $r, 'rota' => (string) $r, 'url' => '../gestao/#rotas'], $agora);
                 }
             }
         }
         foreach ((array) $d['anulados'] as $a) {
             $doc = (string) $a['DOCUMENTO'];
             $feito[] = naval_notificar('venda_anulada', 'Venda anulada · rota ' . $nome((string) $a['ROTA']), $doc . ' de ' . number_format((float) $a['TOTAL'], 0, ',', ' ') . ' Kz foi anulado no Pinguim BO.',
-                ['chave' => 'anulada|' . $doc, 'rota' => (string) $a['ROTA'], 'url' => '../gestao/#agora'], $agora);
+                ['chave' => 'anulada|' . $doc, 'rota' => (string) $a['ROTA'], 'url' => '../gestao/#rotas'], $agora);
         }
         // resumo do dia às 18:30
         if ($hm >= '18:30' && $e['resumo'] !== $dia) {
