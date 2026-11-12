@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Recebido por promotor em dinheiro e em Multicaixa, e separador «Controlo» na app
+
+- Portal › Pagamentos: nova tabela **Recebido por promotor** (vendido, recebido, em dinheiro, em Multicaixa, outros
+  meios, % em dinheiro, por receber e documentos). O cartão «Vendas por promotor» do Início mostra também o dinheiro
+  e a Multicaixa de cada um. A tabela por meio passa a chamar-se «Por promotor e meio de cobrança».
+- As regras dos meios de cobrança ficam num só módulo (`reports/js/meios.js`), partilhado pelo portal, pela app e
+  pelo ficheiro para o SAP (sem alterar o ficheiro: o teste de referência confirma).
+- App: o cartão «Ao vivo» mostra o recebido de hoje, em dinheiro e em Multicaixa; a ficha da rota mostra o recebido
+  hoje dessa rota por meio e o que falta receber.
+- App: novo separador **Controlo** com o fecho previsto do mês (vendido + habitual dos dias que faltam, face ao mês
+  passado), o recebido hoje por rota em dinheiro e Multicaixa, os clientes do mês (com compras, novos, por recuperar e
+  valor em risco, com os maiores), os artigos que mais vendem, a produtividade de cada rota (dias, documentos por
+  dia, valor médio, clientes, notas de crédito) e os riscos (peso dos 5 maiores clientes, da maior rota e das notas
+  de crédito). Calculado no servidor (`nucleo/servicos/controlo.php`) a partir dos mesmos dados do Pinguim BO.
+
 ### App «Naval Gestão»: rotas ao vivo com o stock de cada carrinha, organização e ícone novos
 
 - Corrigido: o separador «Agora» mostrava «Tentar de novo» porque esperava as vendas num formato diferente do que o

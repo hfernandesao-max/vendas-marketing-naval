@@ -266,7 +266,7 @@ test('app de gestão: ao vivo em Hoje; Rotas «Agora» com paradas primeiro, sto
   const vivo = page.locator('.ag-vivo');
   await expect(vivo).toContainText('Ao vivo');
   await expect(vivo).toContainText('410 000 Kz');
-  await expect(vivo.locator('.ag-mini')).toContainText('há 9 min');
+  await expect(vivo.locator('.ag-mini').first()).toContainText('há 9 min');
   // Rotas abre em «Agora»: 1002 parada (desde as 12:10) e 1001 sem vendas primeiro
   await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
   await expect(page.locator('.ag-seg [aria-selected=true]')).toHaveText('Agora');
@@ -405,4 +405,60 @@ test('app de gestão: ao tocar numa notificação abre o separador certo (#rotas
   await expect(page.locator('#ag-h1')).toHaveText('Rotas');
   await page.evaluate(() => (location.hash = '#alertas'));
   await expect(page.locator('#ag-h1')).toHaveText('Alertas');
+});
+
+test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multicaixa por rota, clientes, artigos e riscos', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-06T14:40:00+01:00'));
+  const sess = { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V' } };
+  const controlo = {
+    fecho: { ate_hoje: 1000000, previsto: 2500000, mes_anterior: 2700000, variacao: -0.074, progresso: 0.4, dias_passados: 6, dias_mes: 30 },
+    clientes: {
+      activos: 42,
+      activos_anterior: 40,
+      novos: 3,
+      por_recuperar: 5,
+      valor_por_recuperar: 300000,
+      recuperar: [{ codigo: 'B', nome: 'Cantina B', rota: '1001', valor: 120000, compras: 4 }],
+    },
+    artigos: [{ codigo: '10000009', nome: 'FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48', unidade: 'CX', quantidade: 120, valor: 900000, peso: 0.36, variacao: 0.12 }],
+    rotas: [{ rota: '1011', promotor: 'Robel', total: 700000, docs: 40, nc: 1, dias: 5, docs_dia: 8, valor_medio: 17500, clientes: 30, peso_nc: 0.024 }],
+    riscos: { top5_clientes: 0.31, maior_rota: { rota: '1011', peso: 0.28 }, notas_credito: 1, peso_notas_credito: 0.024 },
+  };
+  await page.route('**/v1/sessao**', (r) => r.fulfill({ json: sess }));
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: { ...IND, controlo } }));
+  const pg = (codigo, meio, valor) => ({ pagamentos: [{ codigo, meio, valor }], liquidado: true, valor_pago: valor });
+  await page.route(
+    (u) => u.pathname.endsWith('/v1/vendas'),
+    (r) =>
+      r.fulfill({
+        json: [
+          { rota: '1011', promotor: 'Robel', hora: '14:31', total: 90000, cliente: 'A', ...pg('NU', 'Numerário', 90000) },
+          { rota: '1011', promotor: 'Robel', hora: '13:05', total: 70000, cliente: 'B', ...pg('MC', 'Multicaixa', 70000) },
+          { rota: '1002', promotor: 'Cristina', hora: '12:10', total: 140000, cliente: 'C', liquidado: false, valor_pago: 0, pagamentos: [] },
+        ],
+      }),
+  );
+  await page.route('**/v1/vendas/estado**', (r) => r.fulfill({ json: { ok: true } }));
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  await page.goto('/gestao/index.html');
+  // Hoje: recebido, em dinheiro e em Multicaixa no cartão ao vivo
+  await expect(page.locator('.ag-vivo')).toContainText('160 mil Kz');
+  await expect(page.locator('.ag-vivo')).toContainText('em dinheiro');
+  await page.locator('.ag-separadores button', { hasText: 'Controlo' }).click();
+  await expect(page.locator('#ag-h1')).toHaveText('Controlo');
+  await expect(page.locator('.ag-heroi').first()).toContainText('Fecho previsto do mês');
+  await expect(page.locator('.ag-heroi').first()).toContainText('2 500 000 Kz');
+  const rec = page.locator('.ag-rec', { hasText: '1011' }).first();
+  await expect(rec).toContainText('Dinheiro 90 mil Kz · Multicaixa 70 mil Kz');
+  await expect(page.locator('.ag-rec', { hasText: '1002' }).first()).toContainText('por receber 140 mil Kz');
+  await expect(page.locator('body')).toContainText('Cantina B');
+  await expect(page.locator('body')).toContainText('FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48');
+  await expect(page.locator('body')).toContainText('5 maiores clientes');
+  // tocar no recebido de uma rota abre a ficha, com o recebido hoje
+  await rec.click();
+  await expect(page.locator('#ag-folha')).toContainText('Recebido hoje');
+  await expect(page.locator('#ag-folha .ag-kpi', { hasText: 'Em dinheiro' })).toContainText('90 mil Kz');
+  expect(await semCorte(page)).toEqual([]);
+  expect(erros).toEqual([]);
 });
