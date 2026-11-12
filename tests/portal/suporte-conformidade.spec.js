@@ -105,6 +105,15 @@ test('conformidade: estado dos controlos, avisos do que falta configurar e confi
       abertos: 1,
       github_erro: 'A GitHub App do portal não tem permissão para criar «issues» (dar «Issues: Read and write» à App no GitHub).',
       repositorio: 'naval/portal',
+      conferencia: {
+        dia: '2026-11-10',
+        ok: false,
+        diferencas: [{ rota: '1002' }],
+        rotas: [
+          { rota: '1001', pinguim_docs: 4, portal_docs: 4, pinguim_valor: 12000, portal_valor: 12000, ok: true },
+          { rota: '1002', pinguim_docs: 3, portal_docs: 2, pinguim_valor: 9000, portal_valor: 6000, ok: false },
+        ],
+      },
       negocio: {
         pinguim: { ok: true },
         'vendas_2026-11-10': { ok: false, mensagem: 'O Pinguim BO tem 80 documentos de venda em 2026-11-10 e o portal não mostra nenhum.' },
@@ -139,6 +148,9 @@ test('conformidade: estado dos controlos, avisos do que falta configurar e confi
   await expect(page.locator('.tile').filter({ hasText: 'Verificações de negócio' }).locator('.v')).toHaveText('1 / 2');
   await expect(page.locator('main')).toContainText('Issues: Read and write');
   await expect(page.locator('#s-conf-vigia tbody tr')).toHaveCount(2);
+  await expect(page.locator('#s-conf-conferencia h2')).toHaveText('Conferência com o Pinguim BO de 10-11-2026');
+  await expect(page.locator('#s-conf-conferencia tbody tr', { hasText: '1002' })).toContainText('Diferente');
+  await expect(page.locator('#s-conf-conferencia tbody tr', { hasText: '1001' })).toContainText('Igual');
   await expect(page.locator('#s-conf-vigia a', { hasText: '#71' })).toHaveAttribute('href', 'https://github.com/naval/portal/issues/71');
   await page.click('button:has-text("Confirmar a revisão de acessos")');
   await page.locator('dialog.dlg input').fill('revisto com a Direcção');

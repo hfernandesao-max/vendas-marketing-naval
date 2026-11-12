@@ -76,6 +76,39 @@ teste('stock: consulta só de leitura e só com as colunas que existem nesta bas
     igual('10001001', naval_stock_consulta('2026-10-24', '1001', [])[1][':armazem_carrinha']);
 });
 
+teste('stock: armazém da carrinha confirmado — só esse conta; outro com «10NN» no nome fica nos armazéns', function () {
+    @unlink(naval_pasta('stock') . '/carrinhas.json');
+    $rows = [
+        ['COD_ARMAZEM' => '10001011', 'ARMAZEM' => 'Armazém 1011 - FHR PIV', 'CODIGO_PRODUTO' => 'A1', 'PRODUTO' => 'Fraldas', 'QUANTIDADE' => 5],
+        ['COD_ARMAZEM' => 'MR11', 'ARMAZEM' => 'Depósito 1011 antigo', 'CODIGO_PRODUTO' => 'A2', 'PRODUTO' => 'Sabão', 'QUANTIDADE' => 7],
+    ];
+    // sem confirmação: os dois juntos na carrinha 1011, com a origem de cada um e o aviso «por confirmar»
+    $d = naval_stock_organizar($rows, '2026-11-12');
+    igual(1, count($d['carrinhas']));
+    igual(false, $d['carrinhas'][0]['confirmado']);
+    igual(['codigo', 'nome'], array_column($d['carrinhas'][0]['armazens_origem'], 'como'));
+    igual(12.0, $d['carrinhas'][0]['total_quantidade']);
+    // confirmado o 10001011: o outro passa para os armazéns
+    naval_stock_confirmar_carrinha('1011', '10001011', 'Armazém 1011 - FHR PIV', 'teste');
+    $d = naval_stock_organizar($rows, '2026-11-12');
+    igual(true, $d['carrinhas'][0]['confirmado']);
+    igual(5.0, $d['carrinhas'][0]['total_quantidade']);
+    igual(['MR11'], array_column($d['armazens'], 'cod_armazem'));
+    // a consulta de uma rota confirmada usa só o código, sem procurar no nome
+    [$sql, $p] = naval_stock_consulta('2026-11-12', '1011', []);
+    igual('10001011', $p[':armazem_carrinha']);
+    verdade(!isset($p[':armazem_like']), 'sem LIKE no nome');
+    [$sql, $p] = naval_stock_consulta('2026-11-12', 'todos', []);
+    igual('10001011', $p[':conf0']);
+    naval_bd_so_leitura($sql);
+    // o mesmo armazém não pode ser de duas rotas; código vazio retira a confirmação
+    $erro = '';
+    try { naval_stock_confirmar_carrinha('1012', '10001011', '', 'teste'); } catch (NavalErro $e) { $erro = $e->getMessage(); }
+    verdade(strpos($erro, 'rota 1011') !== false, $erro);
+    igual([], naval_stock_confirmar_carrinha('1011', '', '', 'teste'));
+    @unlink(naval_pasta('stock') . '/carrinhas.json');
+});
+
 teste('texto da base de dados em UTF-8: Windows-1252 do ODBC convertido, UTF-8 mantido', function () {
     igual('Armazém 1002 - FHR PIV', naval_bd_utf8("Armaz\xE9m 1002 - FHR PIV"));
     igual('SABÃO VERDE CONFIANÇA', naval_bd_utf8("SAB\xC3O VERDE CONFIAN\xC7A"));

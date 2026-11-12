@@ -8,6 +8,63 @@ defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/rotas.php';
 require_once __DIR__ . '/cargas.php';
 
+/**
+ * Armazém de cada carrinha confirmado pelo administrador ({rota: {codigo, nome, por, em}}). Sem confirmação, a
+ * carrinha da rota NN é o armazém com o código 100010NN ou, em último caso, o que tiver «10NN» no nome — e o portal
+ * avisa que está por confirmar e quantos armazéns juntou. Com confirmação, só esse código conta para a carrinha.
+ */
+function naval_stock_carrinhas_confirmadas(): array
+{
+    $out = [];
+    foreach (naval_json_ler(naval_pasta('stock') . '/carrinhas.json') as $rota => $c) {
+        if (is_array($c) && preg_match('/^\d{3,6}$/', (string) $rota) && trim((string) ($c['codigo'] ?? '')) !== '') $out[(string) $rota] = $c;
+    }
+    return $out;
+}
+
+/** Confirma (ou, com código vazio, retira a confirmação de) o armazém da carrinha de uma rota. */
+function naval_stock_confirmar_carrinha(string $rota, string $codigo, string $nome, string $login): array
+{
+    $rota = trim($rota);
+    $codigo = trim($codigo);
+    if (!preg_match('/^\d{3,6}$/', $rota)) throw new NavalErro('Rota inválida.', 400);
+    if ($codigo !== '' && !preg_match('/^[A-Za-z0-9._-]{1,30}$/', $codigo)) throw new NavalErro('Código de armazém inválido.', 400);
+    return naval_exclusivo('stock-carrinhas', function () use ($rota, $codigo, $nome, $login) {
+        $f = naval_pasta('stock') . '/carrinhas.json';
+        $todas = naval_json_ler($f);
+        if ($codigo !== '') {
+            foreach ($todas as $r => $c) {
+                if ((string) $r !== $rota && (string) ($c['codigo'] ?? '') === $codigo) throw new NavalErro('O armazém ' . $codigo . ' já está confirmado para a rota ' . $r . '.', 409);
+            }
+        }
+        $antes = $todas[$rota]['codigo'] ?? '';
+        if ($codigo === '') unset($todas[$rota]);
+        else $todas[$rota] = ['codigo' => $codigo, 'nome' => mb_substr(trim($nome), 0, 120), 'por' => $login, 'em' => date('Y-m-d H:i:s')];
+        ksort($todas);
+        naval_json_gravar($f, $todas);
+        naval_registar('stock_carrinha_armazem', ['rota' => $rota, 'antes' => $antes, 'depois' => $codigo], $login);
+        return naval_stock_carrinhas_confirmadas();
+    });
+}
+
+/** Rota da carrinha a que pertence um armazém: [rota, como] com como = confirmado | codigo | nome, ou ['', '']. */
+function naval_stock_rota_armazem(string $cod, string $nome, array $conf): array
+{
+    foreach ($conf as $rota => $c) if ((string) $c['codigo'] === $cod) return [(string) $rota, 'confirmado'];
+    $rota = '';
+    $como = '';
+    if (preg_match('/^100010(\d{2})$/', $cod, $m)) {
+        $rota = '10' . $m[1];
+        $como = 'codigo';
+    } elseif (preg_match('/10\d{2}/', $nome, $m)) {
+        $rota = $m[0];
+        $como = 'nome';
+    }
+    // a rota tem outro armazém confirmado: este não é a carrinha dela (fica nos armazéns)
+    if ($rota !== '' && isset($conf[$rota])) return ['', ''];
+    return [$rota, $como];
+}
+
 function naval_stock_centro(string $nomeEntidade): string
 {
     $n = function_exists('mb_strtoupper') ? mb_strtoupper($nomeEntidade, 'UTF-8') : strtoupper($nomeEntidade);
@@ -87,11 +144,23 @@ function naval_stock_consulta(string $data, string $armazem, array $col): array
     $filtroArm = trim($armazem);
     if ($filtroArm !== '' && strtolower($filtroArm) !== 'todos' && strtolower($filtroArm) !== 'all') {
         $params[':armazem'] = $filtroArm;
-        $params[':armazem_carrinha'] = '1000' . $filtroArm;
-        $params[':armazem_like'] = '%' . $filtroArm . '%';
-        $condArmazem = "E.CODE = :armazem OR E.CODE = :armazem_carrinha OR E.DESCRIPTION LIKE :armazem_like";
+        $confRota = naval_stock_carrinhas_confirmadas()[$filtroArm]['codigo'] ?? '';
+        if ($confRota !== '') {
+            // rota com o armazém da carrinha confirmado: só esse (e o próprio código pedido, se for um armazém)
+            $params[':armazem_carrinha'] = (string) $confRota;
+            $condArmazem = "E.CODE = :armazem OR E.CODE = :armazem_carrinha";
+        } else {
+            $params[':armazem_carrinha'] = '1000' . $filtroArm;
+            $params[':armazem_like'] = '%' . $filtroArm . '%';
+            $condArmazem = "E.CODE = :armazem OR E.CODE = :armazem_carrinha OR E.DESCRIPTION LIKE :armazem_like";
+        }
     } else {
-        $condArmazem = "E.CODE LIKE '100010%'
+        $conf = [];
+        foreach (array_values(naval_stock_carrinhas_confirmadas()) as $i => $c) {
+            $params[':conf' . $i] = (string) $c['codigo'];
+            $conf[] = ':conf' . $i;
+        }
+        $condArmazem = ($conf ? 'E.CODE IN (' . implode(', ', $conf) . ") OR " : '') . "E.CODE LIKE '100010%'
                     OR E.DESCRIPTION LIKE '%10[0-9][0-9]%'
                     OR E.CODE IN ('1150', '1151')
                     OR E.DESCRIPTION LIKE '%HIGITEC%'
@@ -178,6 +247,7 @@ function naval_stock_sql(string $data, string $armazem = ''): ?array
 function naval_stock_organizar(array $rows, string $dataFim): array
 {
     $promotores = naval_promotores();
+    $conf = naval_stock_carrinhas_confirmadas();
     [$mapCargas, $mapCargasData] = naval_stock_cargas();
     $carrinhas = [];
     $armazens = [];
@@ -189,9 +259,7 @@ function naval_stock_organizar(array $rows, string $dataFim): array
         $codProduto = trim((string) ($r['CODIGO_PRODUTO'] ?? ''));
         $nomeProduto = trim((string) ($r['PRODUTO'] ?? ''));
         $quantidade = (float) ($r['QUANTIDADE'] ?? 0);
-        $rota = '';
-        if (preg_match('/^100010(\d{2})$/', $codArmazem, $m)) $rota = '10' . $m[1];
-        elseif (preg_match('/10\d{2}/', $nomeArmazem, $m)) $rota = $m[0];
+        [$rota, $como] = naval_stock_rota_armazem($codArmazem, $nomeArmazem, $conf);
 
         if ($rota !== '') {
             $promotor = $promotores[$rota] ?? ('Promotor ' . $rota);
@@ -201,9 +269,11 @@ function naval_stock_organizar(array $rows, string $dataFim): array
             if (!isset($carrinhas[$rota])) {
                 $carrinhas[$rota] = ['chave' => $dataFim . '|' . $rota, 'data' => $dataFim, 'rota' => $rota, 'promotor' => $promotor, 'carrinha' => $viaturaMat,
                     'viatura' => $info['viatura'], 'matricula' => $info['matricula'], 'motorista' => $info['motorista'], 'transportadora' => $info['transportadora'],
-                    'armazem' => $nomeArmazem, 'total_quantidade' => 0.0, 'total_caixas' => 0.0, 'n_artigos' => 0, 'itens' => [], 'artigos' => []];
+                    'armazem' => $nomeArmazem, 'total_quantidade' => 0.0, 'total_caixas' => 0.0, 'n_artigos' => 0, 'itens' => [], 'artigos' => [],
+                    'confirmado' => isset($conf[$rota]), 'armazens_origem' => []];
             }
-            $carrinhas[$rota]['itens'][] = ['codigo' => $codProduto, 'produto' => $nomeProduto, 'armazem' => $nomeArmazem, 'quantidade' => $quantidade];
+            $carrinhas[$rota]['armazens_origem'][$codArmazem . '|' . $nomeArmazem] = ['codigo' => $codArmazem, 'nome' => $nomeArmazem, 'como' => $como];
+            $carrinhas[$rota]['itens'][] = ['codigo' => $codProduto, 'produto' => $nomeProduto, 'armazem' => $nomeArmazem, 'cod_armazem' => $codArmazem, 'quantidade' => $quantidade];
             $carrinhas[$rota]['artigos'][] = ['codigo' => $codProduto, 'artigo' => $nomeProduto, 'armazem' => $nomeArmazem, 'quantidade' => $quantidade];
             $carrinhas[$rota]['total_quantidade'] += $quantidade;
             $carrinhas[$rota]['total_caixas'] += $quantidade;
@@ -227,6 +297,8 @@ function naval_stock_organizar(array $rows, string $dataFim): array
             'armazem' => $nomeArmazem, 'codigo' => $codProduto, 'produto' => $nomeProduto, 'artigo' => $nomeProduto, 'quantidade' => $quantidade];
     }
     ksort($carrinhas);
+    foreach ($carrinhas as &$c) $c['armazens_origem'] = array_values($c['armazens_origem']);
+    unset($c);
     return [
         'origem' => 'SQL Server (dbo.GET_STOCK)', 'data' => $dataFim, 'datas_disponiveis' => [$dataFim], 'ultima_data' => $dataFim, 'dados_ate' => $dataFim,
         'carrinhas' => array_values($carrinhas), 'armazens' => array_values($armazens), 'linhas_carrinhas' => $linhasCarrinhas, 'linhas_armazens' => $linhasArmazens,

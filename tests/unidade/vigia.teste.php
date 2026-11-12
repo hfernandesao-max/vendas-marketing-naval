@@ -87,3 +87,29 @@ teste('vigia: poucas falhas, ou fora da primeira hora, não desfazem a versão',
     @rmdir(naval_act_pasta('copias') . '/20261111-0300-teste');
     vigia_limpar_tudo();
 });
+
+teste('vigia: conferência por rota com o Pinguim BO — iguais passam; documento a menos ou valor diferente é problema', function () {
+    $pinguim = [['ROTA' => '1001', 'N' => 2, 'VALOR' => 3000.0], ['ROTA' => '1002', 'N' => 1, 'VALOR' => 500.0], ['ROTA' => '1003', 'N' => 1, 'VALOR' => 100.0]];
+    $vendas = [
+        ['data' => '2026-11-11', 'rota' => '1001', 'total' => 1000.0], ['data' => '2026-11-11', 'rota' => '1001', 'total' => 2000.004],
+        ['data' => '2026-11-11', 'rota' => '1002', 'total' => 450.0], ['data' => '2026-11-10', 'rota' => '1003', 'total' => 100.0],
+    ];
+    $c = naval_vigia_conferencia_comparar('2026-11-11', $pinguim, $vendas);
+    igual(false, $c['ok']);
+    igual(['1002', '1003'], array_column($c['diferencas'], 'rota'));
+    igual(true, $c['rotas'][0]['ok'], 'diferença abaixo de 1 cêntimo não conta');
+    igual(4, $c['pinguim_docs']);
+    igual(3, $c['portal_docs']);
+    vigia_limpar_tudo();
+    $r = naval_vigia_ciclo(time(), ['forcar' => true, 'negocio' => [], 'conferencia' => $c, 'sem_github' => true, 'sem_email' => true]);
+    igual(1, count($r['novos']), 'as diferenças da conferência ficam num só problema (os números não contam para a assinatura)');
+    $p = array_values(naval_vigia_problemas());
+    igual(2, $p[0]['contagem']);
+    verdade(strpos($p[0]['mensagem'], 'Conferência de 2026-11-11') === 0, $p[0]['mensagem']);
+    verdade(is_file(naval_vigia_pasta() . '/conferencia/2026-11-11.json'));
+    igual('2026-11-11', naval_vigia_vista()['conferencia']['dia']);
+    $ok = naval_vigia_conferencia_comparar('2026-11-11', [['ROTA' => '1001', 'N' => 1, 'VALOR' => 10.0]], [['data' => '2026-11-11', 'rota' => '1001', 'total' => 10.0]]);
+    igual(true, $ok['ok']);
+    @unlink(naval_vigia_pasta() . '/conferencia/2026-11-11.json');
+    vigia_limpar_tudo();
+});
