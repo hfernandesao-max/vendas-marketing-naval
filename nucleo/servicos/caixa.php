@@ -22,6 +22,42 @@ const NAVAL_CAIXA_SAIDAS = [
 const NAVAL_CAIXA_BANCOS = ['BPC', 'ATLANTICO', 'BAI', 'BFA', 'BIC', 'SOL', 'KEVE', 'STANDARD', 'OUTRO'];
 const NAVAL_CAIXA_EMPRESAS = ['NAVAL', 'HIGITEC', 'FOODTEC', 'REFITECH'];
 
+/** Notas de kwanza em circulação (série de 2020 do BNA), da maior para a menor; CAIXA_NOTAS muda a lista. */
+function naval_caixa_notas(): array
+{
+    $n = array_values(array_filter(array_map('intval', explode(',', naval_config('CAIXA_NOTAS', '5000,2000,1000,500,200'))), function ($x) { return $x > 0; }));
+    rsort($n);
+    return $n ?: [5000, 2000, 1000, 500, 200];
+}
+
+/**
+ * Contagem por notas ({nota: quantidade, moedas: valor}) validada; devolve [contagem, total] ou [null, null] sem
+ * contagem. Quantidades inteiras, moedas em Kz.
+ */
+function naval_caixa_por_notas($x): array
+{
+    if (!is_array($x) || !$x) return [null, null];
+    $ok = array_flip(array_map('strval', naval_caixa_notas()));
+    $out = [];
+    $total = 0.0;
+    foreach ($x as $k => $q) {
+        $k = (string) $k;
+        if ($q === '' || $q === null) continue;
+        if ($k === 'moedas') {
+            if (!is_numeric($q) || (float) $q < 0 || (float) $q > 1e9) throw new NavalErro('Valor das moedas inválido.', 400);
+            $out['moedas'] = round((float) $q, 2);
+            $total += $out['moedas'];
+            continue;
+        }
+        if (!isset($ok[$k])) throw new NavalErro('Nota desconhecida: ' . $k . ' Kz.', 400);
+        if (!is_numeric($q) || (float) $q < 0 || floor((float) $q) != (float) $q || (float) $q > 1e6) throw new NavalErro('Quantidade de notas inválida (' . $k . ' Kz).', 400);
+        if ((int) $q === 0) continue;
+        $out[$k] = (int) $q;
+        $total += (int) $k * (int) $q;
+    }
+    return $out ? [$out, round($total, 2)] : [null, null];
+}
+
 function naval_caixa_ficheiro(string $dia): string
 {
     if (!naval_data_valida($dia)) throw new NavalErro('Data inválida.', 400);
@@ -80,7 +116,11 @@ function naval_caixa_linhas(array $p): array
         $l = (array) $l;
         $rt = $rota($l['rota'] ?? '');
         if ($rt === '') throw new NavalErro('Escolha o promotor de cada entrega.', 400);
+        // com a contagem por notas, o valor é o total das notas e moedas (não pode haver outro)
+        [$notas, $totalNotas] = naval_caixa_por_notas($l['notas'] ?? null);
+        if ($totalNotas !== null) $l['valor'] = $totalNotas;
         $entregas[] = ['rota' => $rt, 'empresa' => in_array($l['empresa'] ?? '', NAVAL_CAIXA_EMPRESAS, true) ? $l['empresa'] : '', 'valor' => $valor($l['valor'] ?? null, 'entregas'),
+            'notas' => $notas,
             'nota' => naval_texto($l['nota'] ?? '', 120)];
     }
     $tpa = [];
@@ -153,14 +193,18 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
 }
 
 /** Fecha a caixa com a contagem física; uma diferença tem de ser explicada. */
-function naval_caixa_fechar(string $dia, $contagem, string $explicacao, ?int $versao, string $login): array
+function naval_caixa_fechar(string $dia, $contagem, string $explicacao, ?int $versao, string $login, $notas = null): array
 {
+    // contagem física por notas (prática de fecho de caixa): o total vem das notas e moedas contadas
+    [$porNotas, $totalNotas] = naval_caixa_por_notas($notas);
+    if ($totalNotas !== null) $contagem = $totalNotas;
     if (!is_numeric($contagem) || (float) $contagem < 0) throw new NavalErro('Indique o dinheiro contado na caixa.', 400);
     $explicacao = naval_texto($explicacao, 300);
-    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($contagem, $explicacao, $login) {
+    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($contagem, $explicacao, $login, $porNotas) {
         if ($c['estado'] !== 'aberta') throw new NavalErro('A caixa deste dia já está fechada.', 409);
         if ($c['saldo_inicial'] === null) throw new NavalErro('Falta o saldo inicial (o dia anterior ainda não foi aprovado ou é o primeiro dia).', 409);
         $c['contagem_fisica'] = round((float) $contagem, 2);
+        $c['contagem_notas'] = $porNotas;
         $c = naval_caixa_totais($c);
         if (abs((float) $c['diferenca']) >= 0.01 && mb_strlen($explicacao) < 5) {
             throw new NavalErro('A contagem não bate com o saldo teórico: explique a diferença.', 400, ['diferenca' => $c['diferenca']]);
@@ -207,6 +251,7 @@ function naval_caixa_reabrir(string $dia, string $motivo, ?int $versao, string $
         if ($c['estado'] !== 'fechada') throw new NavalErro('A caixa deste dia está aberta.', 409);
         $c['estado'] = 'aberta';
         $c['contagem_fisica'] = null;
+        $c['contagem_notas'] = null;
         naval_caixa_hist($c, 'reaberta', $login, ['motivo' => $motivo]);
         return $c;
     });

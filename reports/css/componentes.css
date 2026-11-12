@@ -4510,3 +4510,46 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
 .cx-sec > .btn {
   justify-self: start;
 }
+/* Folha de caixa: contagem por notas */
+.cx-notas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cx-nota {
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cx-nota input {
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgb(var(--veu-rgb) / 0.05);
+  color: var(--fg);
+  padding: 0 8px;
+  font: inherit;
+  text-align: right;
+}
+.cx-notas-tot {
+  grid-column: 1 / -1;
+  text-align: right;
+}
+.cx-notas-txt {
+  display: block;
+  margin-bottom: 4px;
+}
+.cx-sugerido {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgb(var(--ceu-rgb) / 0.1);
+}
+.cx-tab input[type='text'] {
+  width: 160px;
+}
+.cx-tab select {
+  max-width: 200px;
+}

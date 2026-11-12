@@ -56,11 +56,21 @@ function naval_rv_controlos(string $dia, array $f): array
     if ($f['carrinhas'] === null) {
         $c['conciliacao'] = ['estado' => 'erro', 'detalhe' => 'Não foi possível ler a conciliação das carrinhas.'];
     } else {
+        // só contam as carrinhas que venderam no dia (artigos vendidos na conciliação ou documentos no Pinguim BO);
+        // carrinhas paradas, sem vendas, não impedem o relatório
+        $comVendas = array_flip($rotasVendas);
         $abertas = [];
-        foreach ($f['carrinhas'] as $r) if (($r['resumo']['estado'] ?? '') !== 'aprovada') $abertas[] = $r['rota'];
+        $contam = 0;
+        foreach ($f['carrinhas'] as $r) {
+            $vendeu = isset($comVendas[(string) $r['rota']]);
+            foreach ((array) ($r['linhas'] ?? []) as $l) if ((float) ($l['vendido'] ?? 0) > 0) $vendeu = true;
+            if (!$vendeu) continue;
+            $contam++;
+            if (($r['resumo']['estado'] ?? '') !== 'aprovada') $abertas[] = $r['rota'];
+        }
         $c['conciliacao'] = $abertas
-            ? ['estado' => 'pendente', 'detalhe' => 'Carrinhas por fechar: ' . implode(', ', $abertas) . '.', 'rotas' => $abertas]
-            : ['estado' => 'ok', 'detalhe' => count($f['carrinhas']) . ' carrinhas conciliadas e fechadas.'];
+            ? ['estado' => 'pendente', 'detalhe' => 'Carrinhas com vendas por fechar: ' . implode(', ', $abertas) . '.', 'rotas' => $abertas]
+            : ['estado' => 'ok', 'detalhe' => $contam ? $contam . ' carrinhas com vendas conciliadas e fechadas.' : 'Nenhuma carrinha vendeu neste dia.'];
     }
     // 3. vendas carregadas no SAP
     if ($f['vendas'] !== null) {
@@ -112,6 +122,35 @@ function naval_rv_meio(array $p): string
     if ($c === 'NU' || preg_match('/NUMER|DINHEIRO|CASH/u', $m)) return 'dinheiro';
     if ($c === 'MC' || preg_match('/MULTI|TPA|CART|CARD/u', $m)) return 'multicaixa';
     return 'outro';
+}
+
+/**
+ * O que cada promotor recebeu no dia, segundo o Pinguim BO: {rota: {documentos, dinheiro, multicaixa}} (para a folha
+ * de caixa conferir o que é entregue). null sem ligação ao Pinguim BO.
+ */
+function naval_caixa_esperado(string $dia, ?array $vendas = null): ?array
+{
+    if ($vendas === null) {
+        naval_servico('bd');
+        naval_servico('vendas');
+        naval_servico('rotas');
+        $d8 = str_replace('-', '', $dia);
+        $vendas = (naval_vendas_sql($d8, $d8, naval_promotores(), false) ?? ['vendas' => null])['vendas'];
+        if ($vendas === null) return null;
+    }
+    $out = [];
+    foreach ($vendas as $v) {
+        if (!empty($v['nc'])) continue;
+        $r = (string) $v['rota'];
+        $out[$r] = $out[$r] ?? ['documentos' => 0, 'dinheiro' => 0.0, 'multicaixa' => 0.0];
+        $out[$r]['documentos']++;
+        foreach ((array) ($v['pagamentos'] ?? []) as $pg) {
+            $m = naval_rv_meio((array) $pg);
+            if ($m === 'dinheiro' || $m === 'multicaixa') $out[$r][$m] = round($out[$r][$m] + (float) ($pg['valor'] ?? 0), 2);
+        }
+    }
+    ksort($out);
+    return $out;
 }
 
 /** Conteúdo do relatório (função pura, a partir das fontes já lidas). */

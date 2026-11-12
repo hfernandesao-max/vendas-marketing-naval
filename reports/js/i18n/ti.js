@@ -3297,6 +3297,32 @@ export const TI = {
   'Plano do dia: a lista das Visitas do dia (dia habitual de compra ou compra em atraso), congelada no início do dia. Conversão do plano: planeados que compraram ÷ planeados.':
     'መደብ መዓልቲ፦ ዝርዝር ምብጻሓት ናይታ መዓልቲ (ልሙድ መዓልቲ ዕድጊ ወይ ዝደንጎየ ዕድጊ)፣ ኣብ መጀመርታ መዓልቲ ዝተወሰነ። ለውጢ መደብ፦ ዝዓደጉ ዝተመደቡ ÷ ዝተመደቡ።',
   'Dias sem plano guardado (antes desta medição começar): {n}.': 'መዓልታት ብዘይ ዝተዓቀበ መደብ (ቅድሚ እዚ ምዕቃን ምጅማሩ)፦ {n}።',
+  'por entregar': 'ገና ዘይተረከበ',
+  '{n} promotores venderam neste dia': '{n} ወከልቲ መሸጣ ኣብዛ መዓልቲ ሸይጦም',
+  'Prepara uma linha por promotor; escreva em cada uma o dinheiro que lhe foi entregue (e os talões do TPA).':
+    "ንነፍሲ ወከፍ ወኪል መሸጣ ሓደ መስመር የዳሉ፤ ኣብ ነፍሲ ወከፍ ዝተረከበ ገንዘብ (ከምኡ'ውን ቅብላት TPA) ጸሓፉ።",
+  'Preparar as linhas dos promotores': 'መስመራት ወከልቲ መሸጣ ኣዳሉ',
+  'Conferência por promotor': 'ምርግጋጽ ብወኪል መሸጣ',
+  'Entregue na caixa × recebido no Pinguim BO. O valor esperado aparece depois de escrever o que foi entregue.':
+    'ናብ ካዝና ዝተረከበ × ኣብ Pinguim BO ዝተቐበለ። እቲ ዝድለ ዋጋ ድሕሪ ዝተረከበ ምጽሓፍ ይርአ።',
+  'Dinheiro no Pinguim BO': 'ጥረ ገንዘብ ኣብ Pinguim BO',
+  'Multicaixa no Pinguim BO': 'Multicaixa ኣብ Pinguim BO',
+  'Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.': 'ምትእስሳር ምስ Pinguim BO የለን፦ ምርግጋጽ ብወኪል መሸጣ ምትእስሳር ምስ ተመልሰ ይርአ።',
+  'moedas {v}': 'ሳንቲማት {v}',
+  'Total: {v}': 'ድምር፦ {v}',
+  'Moedas (valor em Kz)': 'ሳንቲማት (ዋጋ ብKz)',
+  'Notas de {v}': 'ወረቓቕቲ ገንዘብ ናይ {v}',
+  'Moedas (Kz)': 'ሳንቲማት (Kz)',
+  'Notas entregues': 'ዝተረከቡ ወረቓቕቲ ገንዘብ',
+  'Quantas notas de cada valor e o total das moedas. O valor da entrega passa a ser o total contado.':
+    'ክንደይ ወረቓቕቲ ናይ ነፍሲ ወከፍ ዋጋን ድምር ሳንቲማትን። ዋጋ እቲ ምርካብ እቲ ዝተቘጽረ ድምር ይኸውን።',
+  'Total das notas contadas': 'ድምር ዝተቘጽሩ ወረቓቕቲ ገንዘብ',
+  'Valores sugeridos a partir do que cada promotor recebeu no Pinguim BO. Confirme cada um com o dinheiro contado (use «Contar notas») e grave.':
+    'ዋጋታት ካብቲ ነፍሲ ወከፍ ወኪል መሸጣ ኣብ Pinguim BO ዝተቐበሎ ዝተመርጹ። ነፍሲ ወከፍ ምስ ዝተቘጽረ ገንዘብ ኣረጋግጹ («ወረቓቕቲ ቍጸር» ተጠቐሙ) ዕቀቡ ድማ።',
+  'Corrigir notas': 'ወረቓቕቲ ኣርም',
+  'Contar notas': 'ወረቓቕቲ ቍጸር',
+  'Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.': 'ናብ ካዝና ዝተረከበ × ኣብ Pinguim BO ዝተቐበለ፣ ብወኪል መሸጣ፤ ፍልልያት ብቀይሕ።',
+  'Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.': 'ኣብ ካዝና ዘሎ ገንዘብ ወረቐት ብወረቐት ቍጸሩ። ዝድለ ተረፍ፦ {v}።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

@@ -224,3 +224,84 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   await expect(page.locator('.cx-tab input')).toHaveCount(0);
   expect(erros).toEqual([]);
 });
+
+test('folha de caixa: sugere o que cada promotor recebeu, conta notas e fecha com a contagem por notas', async ({ page }) => {
+  let caixa = {
+    dia: '2026-10-26',
+    estado: 'aberta',
+    versao: 1,
+    saldo_inicial: 0,
+    saldo_inicial_origem: 'dia 2026-10-25',
+    entregas: [],
+    tpa: [],
+    saidas: [],
+    contagem_fisica: null,
+    explicacao: '',
+    total_entregas: 0,
+    total_tpa: 0,
+    total_saidas: 0,
+    saldo_teorico: 0,
+    diferenca: null,
+  };
+  const pedidos = [];
+  await page.route('**/v1/caixa**', (r) => {
+    const req = r.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      if (b.accao === 'gravar') caixa = { ...caixa, entregas: b.entregas, tpa: b.tpa, saidas: b.saidas, versao: caixa.versao + 1 };
+      if (b.accao === 'fechar') caixa = { ...caixa, estado: 'fechada', contagem_fisica: b.contagem, versao: caixa.versao + 1 };
+      return r.fulfill({ json: { ok: true, caixa } });
+    }
+    return r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        caixa,
+        notas: [5000, 2000, 1000, 500, 200],
+        promotores: { 1001: 'Andrea Santos', 1002: 'Cristina Sachuma' },
+        esperado: { 1001: { documentos: 3, dinheiro: 12000, multicaixa: 0 }, 1002: { documentos: 2, dinheiro: 0, multicaixa: 8000 } },
+        saidas: {
+          deposito_banco: 'Depósito no banco',
+          fundo_maneio: 'Fundo de maneio',
+          transferencia_gestao: 'Transferência para a gestão',
+          outro: 'Outra saída',
+        },
+        bancos: ['BPC', 'ATLANTICO'],
+        empresas: ['NAVAL', 'HIGITEC', 'FOODTEC'],
+      },
+    });
+  });
+  const erros = await abrir(page, '#caixa-marketing');
+  await expect(page.locator('.cx-sugerido')).toBeVisible();
+  const ent = page.locator('.cx-sec').filter({ hasText: 'Dinheiro entregue pelos promotores' });
+  await expect(ent.getByLabel('Valor · 1')).toHaveValue('12000');
+  await expect(page.locator('.cx-sec').filter({ hasText: 'Talões do TPA' }).getByLabel('Valor · 1')).toHaveValue('8000');
+  // contar as notas da entrega: 2 × 5000 + 1 × 1000 + 500 em moedas = 11 500 → diferença de 500 na conferência
+  await ent.getByRole('button', { name: 'Contar notas' }).click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByLabel('Notas de 5000 Kz').fill('2');
+  await dlg.getByLabel('Notas de 1000 Kz').fill('1');
+  await dlg.getByLabel('Moedas (valor em Kz)').fill('500');
+  await expect(dlg.locator('.cx-notas-tot')).toContainText(/11\s?500,00/);
+  await dlg.getByRole('button', { name: 'Confirmar' }).click();
+  await expect(ent.getByLabel('Valor · 1')).toHaveValue('11500');
+  await expect(ent).toContainText('2 × 5');
+  const conf = page.locator('.cx-sec').filter({ hasText: 'Conferência por promotor' });
+  await expect(conf.locator('tr', { hasText: '1001' }).locator('.rv-dif')).toContainText('500,00');
+  await page.locator('.cx-sec').filter({ hasText: 'Talões do TPA' }).getByLabel('Banco · 1').selectOption('BPC');
+  await page.getByRole('button', { name: 'Gravar', exact: true }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0].entregas[0]).toMatchObject({ rota: '1001', valor: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
+  // fecho: contagem física por notas
+  await page.getByRole('button', { name: 'Fechar a caixa' }).click();
+  const f = page.locator('dialog[open]');
+  await f.getByLabel('Notas de 5000 Kz').fill('2');
+  await f.getByLabel('Notas de 1000 Kz').fill('1');
+  await f.getByLabel('Moedas (valor em Kz)').fill('500');
+  await expect(f.getByLabel('Dinheiro contado na caixa')).toHaveValue('11500');
+  await f.getByRole('button', { name: 'Fechar a caixa' }).click();
+  await expect.poll(() => pedidos.length).toBe(2);
+  expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
+  expect(erros).toEqual([]);
+});
