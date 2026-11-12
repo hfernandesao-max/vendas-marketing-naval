@@ -18,7 +18,12 @@ let D = null; // resposta do servidor
 let dia = null;
 let ed = null; // cópia em edição
 let aLer = false;
-const ESTADOS = { aberta: ['Aberta', 'p-warn'], fechada: ['Validada, por aprovar', 'p-serio'], aprovada: ['Aprovada', 'p-ok'] };
+const ESTADOS = {
+  aberta: ['Aberta', 'p-warn'],
+  fechada: ['Validada, por aprovar (1.º nível)', 'p-serio'],
+  verificada: ['Aprovada no 1.º nível, falta a aprovação final', 'p-serio'],
+  aprovada: ['Aprovada', 'p-ok'],
+};
 
 function ler() {
   if (aLer) return;
@@ -334,6 +339,7 @@ R['caixa-marketing'] = (pg) => {
   const cab = el('section', 'glass sec cx-cab');
   cab.append(el('b', null, t('Folha de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
   if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: c.fechada_por })));
+  if (c.verificada_por) cab.append(el('span', 'note', t('1.º nível por {p}', { p: c.verificada_por })));
   if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: c.aprovada_por })));
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
@@ -498,7 +504,7 @@ R['caixa-marketing'] = (pg) => {
                   D.caixa = x.caixa;
                   ed = copia(x.caixa);
                   marcarPorGravar('caixa', false);
-                  toast(t('Caixa validada. Falta a aprovação do superior hierárquico.'), 5000);
+                  toast(t('Caixa validada. Falta a aprovação do 1.º nível.'), 5000);
                   draw();
                 });
               if (ed.mudou)
@@ -512,7 +518,8 @@ R['caixa-marketing'] = (pg) => {
       ),
     );
     acc.append(g, f);
-  } else if (c.estado === 'fechada' && (D.gere || D.aprova)) {
+  } else if ((c.estado === 'fechada' || c.estado === 'verificada') && (D.gere || (D.aprova || []).length)) {
+    const nivel = c.estado === 'fechada' ? 1 : 2;
     acc.append(
       botao(t('Reabrir para corrigir'), 'ghost', () =>
         janela(
@@ -537,8 +544,15 @@ R['caixa-marketing'] = (pg) => {
         ),
       ),
     );
-    if (D.aprova) acc.append(botao(t('Aprovar a caixa'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')));
-    estado.textContent = t('Quem lança valida; aprova o superior hierárquico, nunca quem lançou ou validou (segregação de funções).');
+    if ((D.aprova || []).includes(nivel))
+      acc.append(
+        nivel === 1
+          ? botao(t('Aprovar (1.º nível)'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada no 1.º nível.'))
+          : botao(t('Aprovação final'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')),
+      );
+    estado.textContent = t(
+      'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
+    );
   }
   pg.append(el('div', 'cx-rodape'), estado, erro, acc);
 };

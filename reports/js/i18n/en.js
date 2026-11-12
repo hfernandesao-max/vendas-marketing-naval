@@ -3396,6 +3396,17 @@ export const EN = {
   'Quem lança valida; aprova o superior hierárquico, nunca quem lançou ou validou (segregação de funções).':
     'Whoever enters it validates it; the line manager approves, never whoever entered or validated it (segregation of duties).',
   'Folha de caixa · aprovação pelo superior hierárquico de quem a regista': 'Cash sheet · approval by the line manager of whoever enters it',
+  'Validada, por aprovar (1.º nível)': 'Validated, to approve (1st level)',
+  'Aprovada no 1.º nível, falta a aprovação final': 'Approved at 1st level, final approval pending',
+  '1.º nível por {p}': '1st level by {p}',
+  'Aprovar (1.º nível)': 'Approve (1st level)',
+  'Aprovação final': 'Final approval',
+  'Caixa aprovada no 1.º nível.': 'Cash desk approved at 1st level.',
+  'Caixa validada. Falta a aprovação do 1.º nível.': 'Cash desk validated. 1st-level approval is pending.',
+  'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).':
+    "Whoever enters it validates it; the preparer's superior approves (1st level) and, finally, the head of operations. Three different people (segregation of duties).",
+  'Folha de caixa · aprovação do superior de quem a lança (1.º nível)': "Cash sheet · approval by the preparer's superior (1st level)",
+  'Folha de caixa · aprovação final do responsável máximo (2.º nível)': 'Cash sheet · final approval by the head of operations (2nd level)',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

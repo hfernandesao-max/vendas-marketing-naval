@@ -5,7 +5,7 @@
   "descricao": "Relatório de Vendas do Marketing (resumo, cobranças por promotor, caixa, registo de vendas e stock das carrinhas), gerado só com todas as fontes do dia completas, e folha de caixa da tesouraria.",
   "nucleo": false,
   "paginas": ["relatorio-vendas", "caixa-marketing"],
-  "recursos": ["relatorio-vendas", "caixa-marketing", "caixa-aprovacao"],
+  "recursos": ["relatorio-vendas", "caixa-marketing", "caixa-aprovacao", "caixa-aprovacao-final"],
   "api": ["v1/relatorio-vendas", "v1/caixa"],
   "conectores": ["pinguim-sql", "sap-odata"],
   "eventos": {

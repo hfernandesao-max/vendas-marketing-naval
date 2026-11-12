@@ -7,8 +7,9 @@
  *   - saídas: depósito no banco, fundo de maneio de cada empresa, transferência para a gestão e outras, com descrição;
  *   - saldo final teórico = inicial + dinheiro entregue − saídas; a contagem física fecha a caixa e a diferença
  *     (falta ou sobra) fica registada e tem de ser explicada;
- *   - ciclo: aberta (regista-se) → fechada (com a contagem) → aprovada (por outra pessoa: segregação de funções).
- *     Fechada pode reabrir-se para corrigir (com motivo); aprovada fica imutável.
+ *   - ciclo (segregação de funções, três pessoas diferentes): aberta (quem lança regista) → fechada/validada (quem
+ *     lança valida, com a contagem) → verificada (1.º nível: o superior de quem lança) → aprovada (2.º nível: o
+ *     responsável máximo). Validada ou verificada pode reabrir-se para corrigir (com motivo); aprovada fica imutável.
  * Valores em Kz, arredondados a 2 casas. Ficheiros: dados-privados/caixa/AAAA-MM-DD.json.
  */
 defined('NAVAL_NUCLEO') || exit;
@@ -223,36 +224,56 @@ function naval_caixa_fechar(string $dia, $contagem, string $explicacao, ?int $ve
     return $c;
 }
 
-/** Aprova a caixa fechada (outra pessoa que não quem registou nem quem fechou). Fica imutável. */
-function naval_caixa_aprovar(string $dia, ?int $versao, string $login): array
+/**
+ * Aprova a caixa no nível seguinte: validada → verificada (1.º nível) → aprovada (2.º nível, fica imutável).
+ * $niveis: os níveis que quem aprova tem (permissões «caixa-aprovacao» e «caixa-aprovacao-final»). Quem lançou ou
+ * validou não aprova, e quem aprovou o 1.º nível não aprova o 2.º.
+ */
+function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $niveis = [1, 2]): array
 {
-    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($login) {
+    $nivel = 0;
+    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($login, $niveis, &$nivel) {
         if ($c['estado'] === 'aprovada') throw new NavalErro('A caixa deste dia já foi aprovada.', 409);
-        if ($c['estado'] !== 'fechada') throw new NavalErro('Valide a caixa antes de a aprovar.', 409);
+        if (!in_array($c['estado'], ['fechada', 'verificada'], true)) throw new NavalErro('Valide a caixa antes de a aprovar.', 409);
+        $nivel = $c['estado'] === 'fechada' ? 1 : 2;
+        if (!in_array($nivel, $niveis, true)) {
+            throw new NavalErro($nivel === 1 ? 'O 1.º nível de aprovação da caixa é do superior de quem a lança.' : 'A aprovação final da caixa é do responsável máximo.', 403);
+        }
         if (naval_config('CAIXA_SEGREGACAO', '1') !== '0') {
-            foreach (['fechada_por', 'alterado_por'] as $k) {
-                if (strcasecmp((string) ($c[$k] ?? ''), $login) === 0) throw new NavalErro('Segregação de funções: quem lançou ou validou a caixa não a aprova.', 403);
+            foreach ($nivel === 1 ? ['fechada_por', 'alterado_por'] : ['fechada_por', 'alterado_por', 'verificada_por'] as $k) {
+                if (strcasecmp((string) ($c[$k] ?? ''), $login) === 0) {
+                    throw new NavalErro($k === 'verificada_por' ? 'Segregação de funções: quem aprovou o 1.º nível não faz a aprovação final.' : 'Segregação de funções: quem lançou ou validou a caixa não a aprova.', 403);
+                }
             }
         }
-        $c['estado'] = 'aprovada';
-        $c['aprovada_por'] = $login;
-        $c['aprovada_em'] = date('Y-m-d H:i:s');
-        naval_caixa_hist($c, 'aprovada', $login);
+        if ($nivel === 1) {
+            $c['estado'] = 'verificada';
+            $c['verificada_por'] = $login;
+            $c['verificada_em'] = date('Y-m-d H:i:s');
+            naval_caixa_hist($c, 'verificada', $login);
+        } else {
+            $c['estado'] = 'aprovada';
+            $c['aprovada_por'] = $login;
+            $c['aprovada_em'] = date('Y-m-d H:i:s');
+            naval_caixa_hist($c, 'aprovada', $login);
+        }
         return $c;
     });
-    naval_registar('caixa_aprovada', ['dia' => $dia]);
+    naval_registar($nivel === 1 ? 'caixa_verificada' : 'caixa_aprovada', ['dia' => $dia]);
     return $c;
 }
 
-/** Reabre uma caixa fechada (ainda não aprovada) para corrigir, com motivo. */
+/** Reabre uma caixa validada ou verificada (ainda sem a aprovação final) para corrigir, com motivo. */
 function naval_caixa_reabrir(string $dia, string $motivo, ?int $versao, string $login): array
 {
     $motivo = naval_texto($motivo, 300);
     if (mb_strlen($motivo) < 5) throw new NavalErro('Indique o motivo da reabertura.', 400);
     $c = naval_caixa_alterar($dia, $versao, function ($c) use ($motivo, $login) {
         if ($c['estado'] === 'aprovada') throw new NavalErro('A caixa aprovada não se reabre.', 409);
-        if ($c['estado'] !== 'fechada') throw new NavalErro('A caixa deste dia está aberta.', 409);
+        if (!in_array($c['estado'], ['fechada', 'verificada'], true)) throw new NavalErro('A caixa deste dia está aberta.', 409);
         $c['estado'] = 'aberta';
+        $c['verificada_por'] = null;
+        $c['verificada_em'] = null;
         $c['contagem_fisica'] = null;
         $c['contagem_notas'] = null;
         naval_caixa_hist($c, 'reaberta', $login, ['motivo' => $motivo]);
