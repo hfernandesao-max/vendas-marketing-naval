@@ -167,9 +167,94 @@ function verResumo() {
 
 // ───────────────────────── Previsão ─────────────────────────
 
+// Objectivos automáticos do mês: base estatística + crescimento, nunca abaixo do ritmo do mês anterior + mínimo;
+// congelados no início do mês (o servidor calcula e guarda; aqui só se mostram e acompanham)
+const ESTADO_OBJ = { acima: ['Acima do objectivo', 'p-ok'], no_caminho: ['No caminho', 'p-warn'], abaixo: ['Abaixo do objectivo', 'p-bad'] };
+const pctObj = (v) => (v == null ? '—' : n0(Math.round(v * 100)) + '%');
+function objectivos(pg, o) {
+  if (!o || !o.total) return;
+  const T = o.total;
+  const mes = new Date(o.mes + '-15T12:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' });
+  pg.append(
+    tiles([
+      { l: t('Objectivo de {m}', { m: mes }), v: kz(T.objectivo), s: t('{n} dias úteis · congelado no início do mês', { n: n0(T.dias_uteis) }) },
+      { l: t('Realizado no mês'), v: kz(T.realizado), s: t('cumprimento: {p}', { p: pctObj(T.cumprimento) }) },
+      {
+        l: t('Ritmo face ao objectivo até hoje'),
+        v: pctObj(T.ritmo),
+        s: t('desvio: {v}', { v: kz(T.desvio) }),
+        tone: T.estado === 'abaixo' ? 'bad' : T.estado === 'no_caminho' ? 'warn' : null,
+      },
+      { l: t('Necessário por dia útil'), v: kz(T.necessario_dia), s: t('{n} dias úteis por vender', { n: n0(T.dias_restantes) }) },
+      {
+        l: t('Projecção do fecho'),
+        v: kz(T.projeccao),
+        s: t('ao ritmo actual: {p} do objectivo', { p: pctObj(T.objectivo ? T.projeccao / T.objectivo : null) }),
+      },
+    ]),
+  );
+  const tw = el('div', 'tw');
+  const tab = el('table');
+  const hr = el('tr');
+  [
+    t('Rota'),
+    t('Objectivo do mês'),
+    t('Crescimento'),
+    t('Realizado'),
+    t('Cumprimento'),
+    t('Objectivo até hoje'),
+    t('Ritmo'),
+    t('Necessário por dia'),
+    t('Projecção'),
+    t('Estado'),
+  ].forEach((x, i) => hr.append(el('th', i ? 'n' : null, x)));
+  const th = el('thead');
+  th.append(hr);
+  const tb = el('tbody');
+  o.rotas.forEach((r) => {
+    const tr = el('tr');
+    const [txt, cls] = ESTADO_OBJ[r.estado] || [r.estado, 'p-mut'];
+    const cresc = el('td', 'n', r.crescimento == null ? '—' : sinal(r.crescimento));
+    cresc.title =
+      r.criterio === 'minimo' ? t('Pelo mínimo crescente: ritmo do mês anterior + crescimento mínimo') : t('Pela tendência das vendas + crescimento');
+    const est = el('td', 'n');
+    est.append(pill(t(txt), cls));
+    tr.append(
+      el('td', null, r.rota + (r.promotor ? ' · ' + r.promotor : '')),
+      el('td', 'n', n0(r.objectivo)),
+      cresc,
+      el('td', 'n', n0(r.realizado)),
+      el('td', 'n', pctObj(r.cumprimento)),
+      el('td', 'n', n0(r.objectivo_ate_hoje)),
+      el('td', 'n', pctObj(r.ritmo)),
+      el('td', 'n', r.necessario_dia == null ? '—' : n0(r.necessario_dia)),
+      el('td', 'n', n0(r.projeccao)),
+      est,
+    );
+    tb.append(tr);
+  });
+  tab.append(th, tb);
+  tw.append(tab);
+  const corpo = el('div');
+  const par = o.parametros || {};
+  corpo.append(
+    tw,
+    el(
+      'p',
+      'note',
+      t(
+        'Calculados sozinhos no início de cada mês a partir das vendas diárias: previsão do mês (mesmo dia da semana × tendência) + {a}% de crescimento, e nunca abaixo do ritmo por dia útil do mês anterior (realizado ou objectivo, o maior) + {m}%. Repartidos pelos dias úteis e congelados durante o mês.',
+        { a: n0(Math.round((par.crescimento_alvo || 0) * 100)), m: n0(Math.round((par.crescimento_min || 0) * 100)) },
+      ),
+    ),
+  );
+  pg.append(secBox(t('Objectivos do mês por rota (Kz)'), t('Ordenados do mais atrasado para o mais adiantado.'), corpo));
+}
+
 R.previsao = (pg) => {
   const d = esperar(pg, 'previsao', 'previsao', 'previsao');
   if (!d) return;
+  objectivos(pg, d.objectivos);
   const tot = d.total;
   if (!tot) {
     pg.append(el('div', 'glass empty', t('Ainda não há histórico suficiente para prever (são precisas pelo menos 3 semanas de vendas).')));

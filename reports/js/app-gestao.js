@@ -1074,6 +1074,33 @@ function controlo() {
   );
   c.append(barra(f.progresso), el('p', 'ag-nota', t('{v} já vendidos · dia {d} de {n}', { v: kzc(f.ate_hoje), d: f.dias_passados, n: f.dias_mes })));
   out.push(c);
+  // 1b. objectivo automático do mês (sempre a crescer) e o ritmo para lá chegar
+  const O = E.ind.objectivos && E.ind.objectivos.total;
+  if (O) {
+    const co = cartao('ag-objectivo');
+    co.append(
+      el('div', 'ag-rotulo', t('Objectivo do mês')),
+      el('div', 'ag-grande', kz(O.objectivo)),
+      el(
+        'p',
+        'ag-nota',
+        t('{v} realizados · {p} do objectivo', { v: kzc(O.realizado), p: O.cumprimento == null ? '—' : Math.round(O.cumprimento * 100) + '%' }),
+      ),
+      barra(O.cumprimento),
+      el(
+        'p',
+        'ag-nota' + (O.estado === 'abaixo' ? ' ag-mau' : ''),
+        O.dias_restantes
+          ? t('Para lá chegar: {v} por dia útil ({n} dias) · ao ritmo actual fecha em {p}', {
+              v: kzc(O.necessario_dia),
+              n: O.dias_restantes,
+              p: kzc(O.projeccao),
+            })
+          : t('Mês fechado: {p} do objectivo', { p: O.cumprimento == null ? '—' : Math.round(O.cumprimento * 100) + '%' }),
+      ),
+    );
+    out.push(co);
+  }
   // 2. recebido hoje por rota (dinheiro e Multicaixa), ao vivo
   if (pode('inicio')) {
     carregarAgora(false);

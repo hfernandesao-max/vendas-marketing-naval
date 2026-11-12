@@ -1099,3 +1099,9 @@ article.ag-al {
 .ag-feed-l {
   min-width: 0;
 }
+
+/* objectivo do mês: abaixo do ritmo necessário em destaque */
+.ag-nota.ag-mau {
+  color: var(--mau);
+  font-weight: 600;
+}

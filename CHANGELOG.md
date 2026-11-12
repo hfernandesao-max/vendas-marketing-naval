@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Objectivos de vendas automáticos, sempre a crescer
+
+- Os objectivos de cada rota calculam-se sozinhos no início de cada mês, a partir das vendas diárias do Pinguim BO
+  (planeamento comercial com base estatística):
+  - **base**: previsão de cada dia útil do mês (mesmo dia da semana × tendência), só com os dados até ao fim do mês
+    anterior;
+  - **crescimento**: base + 5% (`OBJECTIVOS_CRESCIMENTO_ALVO`);
+  - **nunca descem**: o ritmo por dia útil nunca fica abaixo do maior entre o realizado e o objectivo do mês
+    anterior, mais 3% (`OBJECTIVOS_CRESCIMENTO_MIN`). O ritmo por dia útil torna justa a comparação entre meses com
+    números de dias úteis diferentes;
+  - arredondados ao milhar e repartidos pelos dias úteis segundo o padrão de cada dia da semana;
+  - **congelados** durante o mês (são um compromisso, não um alvo móvel) e guardados para auditoria.
+- Página **Previsão de vendas**: objectivo do mês, realizado, ritmo face ao objectivo até hoje, necessário por dia
+  útil, projecção do fecho e estado de cada rota (acima, no caminho, abaixo), do mais atrasado para o mais
+  adiantado.
+- App «Naval Gestão» › Controlo: cartão do objectivo do mês, com o que falta por dia útil e o fecho ao ritmo actual.
+
 ### Relatório de Vendas diário e folha de caixa no portal
 
 - Nova página **Vendas › Relatório de Vendas**. Junta num só documento o que vinha em quatro ficheiros (resumo de
