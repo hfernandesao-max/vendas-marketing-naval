@@ -337,7 +337,7 @@ export async function resultadoContagem(r, dia, motivos) {
   // Circuito de aprovação (quem e quando, em cada passo)
   const auto = r.aprovado_por === 'automatico';
   const passos = [
-    [tp('Contada'), r.contado_por, r.contado_em],
+    [tp('Contado'), r.contado_por, r.contado_em],
     [tp('Validada por quem contou'), r.validado_por, r.validado_em],
     ...(auto ? [] : [[tp('Aprovada pelo coordenador'), r.coordenado_por, r.coordenado_em]]),
     [auto ? tp('Fechada sozinha (sem diferenças)') : tp('Aprovada pelo responsável · fechada'), auto ? tp('automático') : r.aprovado_por, r.aprovado_em],

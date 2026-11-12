@@ -4,7 +4,7 @@
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
-import { botao, entrada, msgErro } from '../componentes/janelas.js';
+import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
@@ -177,7 +177,7 @@ const quando = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11
 function circuito(r) {
   const auto = r.aprovado_por === 'automatico';
   const passos = [
-    ['Contada', r.contado_por, r.contado_em],
+    ['Contado', r.contado_por, r.contado_em],
     ['Validada por quem contou', r.validado_por, r.validado_em],
     ['Aprovada pelo coordenador', auto ? null : r.coordenado_por, auto ? null : r.coordenado_em],
     [auto ? 'Fechada sozinha (sem diferenças)' : 'Aprovada pelo responsável · fechada', auto ? t('automático') : r.aprovado_por, r.aprovado_em],
@@ -394,5 +394,75 @@ R['conciliacao-carrinha'] = (pg) => {
     if (aberta === r.rota) c.append(r.cega ? formContagem(r) : tabelaRota(r));
     lista.append(c);
   });
-  pg.append(secBox(t('Carrinhas do dia'), t('Carregado, vendido e devolvido por artigo; diferenças entre o que tinha de voltar e o que foi contado.'), lista));
+  const caixaDia = secBox(
+    t('Carrinhas do dia'),
+    t('Carregado, vendido e devolvido por artigo; diferenças entre o que tinha de voltar e o que foi contado.'),
+    lista,
+  );
+  const contadas = rs.filter((r) => r.resumo.estado !== 'por_contar');
+  if (CC.pode && CC.pode.corrigir && contadas.length)
+    lista.before(botao(t('Corrigir quem contou / validou'), 'ghost sm cc-corrigir', () => corrigirRegisto(contadas)));
+  pg.append(caixaDia);
 };
+
+/**
+ * Correcção do registo de quem contou e de quem validou (super administrador): não muda números nem aprovações,
+ * exige motivo e fica no histórico de cada carrinha.
+ */
+function corrigirRegisto(contadas) {
+  janela(
+    t('Corrigir quem contou / validou'),
+    t('Só muda os nomes registados; os números, o estado e as aprovações ficam como estão. O que estava antes e o motivo ficam no histórico de cada carrinha.'),
+    (b, ft, fechar) => {
+      const campo = (rotulo) => {
+        const i = entrada('text', '', { maxLength: 60 });
+        i.setAttribute('aria-label', rotulo);
+        const l = el('label', 'cc-campo');
+        l.append(el('span', null, rotulo), i);
+        b.append(l);
+        return i;
+      };
+      const cont = campo(t('Contado por'));
+      const val = campo(t('Validada por'));
+      const marcas = contadas.map((r) => {
+        const c = entrada('checkbox', '');
+        c.checked = true;
+        c.setAttribute('aria-label', r.rota + ' · ' + r.promotor);
+        const l = el('label', 'cc-campo-rota');
+        l.append(c, el('span', null, r.rota + ' · ' + r.promotor + (r.contado_por ? ' (' + r.contado_por + ')' : '')));
+        b.append(l);
+        return [r.rota, c];
+      });
+      const m = el('textarea');
+      m.rows = 2;
+      m.maxLength = 300;
+      m.setAttribute('aria-label', t('Motivo da correcção'));
+      const e2 = msgErro();
+      b.append(el('span', 'note', t('Motivo da correcção')), m, e2);
+      ft.append(
+        botao(t('Cancelar'), 'ghost', fechar),
+        botao(t('Corrigir'), null, () =>
+          postJson('conciliacao-carrinha', {
+            accao: 'corrigir_registo',
+            data: dia,
+            rotas: marcas.filter(([, c]) => c.checked).map(([r]) => r),
+            contado_por: cont.value,
+            validado_por: val.value,
+            motivo: m.value,
+          }).then((x) => {
+            if (!x.ok) {
+              e2.hidden = false;
+              e2.textContent = t(x.erro || 'Não foi possível gravar.');
+              return;
+            }
+            toast(t('Registo corrigido em {n} carrinha(s).', { n: n0((x.rotas || []).length) }), 5000);
+            fechar();
+            CC = null;
+            ler();
+            draw();
+          }),
+        ),
+      );
+    },
+  );
+}

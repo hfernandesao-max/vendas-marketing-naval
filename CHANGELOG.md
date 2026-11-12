@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Conciliação da carrinha: correcção do registo de quem contou e validou
+
+- O primeiro passo da conciliação passa a chamar-se «Contado» (no ecrã, no painel e no PDF).
+- O super administrador pode corrigir **quem contou** e **quem validou** as contagens de um dia («Corrigir quem
+  contou / validou»), por exemplo quando a contagem foi feita por uma pessoa e lançada na conta de outra, ou nas
+  contagens anteriores ao passo «Validar».
+- Só mudam os nomes: os números, o estado e as aprovações ficam como estão. O motivo é obrigatório e o que estava
+  antes fica no histórico de cada carrinha e no registo de auditoria.
+
 ### Folha de caixa: quem lança valida, aprovação em dois níveis
 
 - Circuito com segregação de funções, três pessoas diferentes:
