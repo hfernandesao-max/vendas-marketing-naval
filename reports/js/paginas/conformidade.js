@@ -333,6 +333,16 @@ function confirmar(tri) {
   );
 }
 
+/** Grupo de relatórios da página (ver organizarGrupos em navegacao.js). junto = os relatórios lêem-se seguidos. */
+function grupo(pg, chave, titulo, junto) {
+  const g = el('div', 'rel-grupo');
+  g.dataset.chave = chave;
+  g.dataset.titulo = titulo;
+  if (junto) g.dataset.junto = '1';
+  pg.append(g);
+  return g;
+}
+
 R.conformidade = (pg) => {
   if (!CF) {
     pg.append(el('div', 'glass empty', t('A carregar…')));
@@ -348,7 +358,12 @@ R.conformidade = (pg) => {
   const cop = e.copia || {};
   const con = e.contas || {};
   const rev = CF.revisoes.find((r) => r.trimestre === CF.revisao_actual);
-  pg.append(
+  // quatro grupos de relatórios (separadores primários); o SGSI tem os seus documentos em separadores secundários
+  const gResumo = grupo(pg, 'resumo', t('Resumo'), true);
+  const gSgsi = grupo(pg, 'sgsi', t('Sistema de gestão (SGSI)'), false);
+  const gVigia = grupo(pg, 'vigilancia', t('Vigilância e conferência'), true);
+  const gDados = grupo(pg, 'contas-dados', t('Contas e dados'), true);
+  gResumo.append(
     tiles([
       {
         l: t('Registos de auditoria'),
@@ -384,13 +399,13 @@ R.conformidade = (pg) => {
   const acc = el('section', 'glass sec conf-barra');
   acc.append(botao(t('Verificar os registos agora'), 'ghost', () => ler(true)));
   if (CF.pode_confirmar && rev && !rev.confirmada) acc.append(botao(t('Confirmar a revisão de acessos'), '', () => confirmar(rev.trimestre)));
-  pg.append(acc);
-  sgsi(pg);
-  vigia(pg);
+  gResumo.append(acc);
+  sgsi(gSgsi);
+  vigia(gVigia);
   if ((e.problemas || []).length) {
     const ul = el('ul');
     e.problemas.forEach((x) => ul.append(el('li', null, x)));
-    pg.append(secBox(t('Problemas na última verificação'), dh(e.inicio), ul));
+    gResumo.append(secBox(t('Problemas na última verificação'), dh(e.inicio), ul));
   }
   const avisos = [];
   if (!CF.cifra) avisos.push(t('Cópias sem cifra: definir COPIAS_CHAVE no .env do servidor.'));
@@ -399,14 +414,14 @@ R.conformidade = (pg) => {
   if (avisos.length) {
     const ul = el('ul');
     avisos.forEach((x) => ul.append(el('li', null, x)));
-    pg.append(secBox(t('Por configurar no servidor'), t('Uma vez, pela Informática; o resto é automático.'), ul));
+    gResumo.append(secBox(t('Por configurar no servidor'), t('Uma vez, pela Informática; o resto é automático.'), ul));
   }
   const contas = [
     ...(con.desligadas || []).map((c) => ({ ...c, estado: 'desligada' })),
     ...(con.a_desligar || []).map((c) => ({ ...c, estado: 'a_desligar' })),
   ];
   if (contas.length)
-    pg.append(
+    gDados.append(
       tabela({
         id: 'conf-contas',
         titulo: t('Contas sem uso (mais de {d} dias desligam-se sozinhas)', { d: CF.contas_dias }),
@@ -420,7 +435,7 @@ R.conformidade = (pg) => {
         ],
       }),
     );
-  pg.append(
+  gDados.append(
     tabela({
       id: 'conf-retencao',
       titulo: t('Prazos de retenção'),
@@ -434,7 +449,7 @@ R.conformidade = (pg) => {
       ],
     }),
   );
-  pg.append(
+  gDados.append(
     tabela({
       id: 'conf-copias',
       titulo: t('Cópias dos dados'),

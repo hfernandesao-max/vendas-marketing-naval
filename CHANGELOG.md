@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Organização das páginas de administração (Conformidade e Módulos)
+
+- Páginas com muitos relatórios passam a ter dois níveis de separadores (arquitectura da informação: no máximo 5 a 7
+  por nível): grupos em cima e, dentro do grupo, separadores secundários sublinhados. Em ecrãs largos os separadores
+  dobram para a linha seguinte em vez de ficarem escondidos à direita.
+- Conformidade organizada em quatro grupos: Resumo, Sistema de gestão (SGSI), Vigilância e conferência, Contas e
+  dados. Os indicadores e botões de cada grupo só aparecem com ele, sem sobreposições.
+- Módulos em lista, como nas consolas de administração (Microsoft 365, Atlassian, Google Workspace): uma linha por
+  módulo com nome, resumo, versão, estado, páginas, conectores e interruptor; a ficha completa abre ao passar o rato ou
+  com «Detalhes» (teclado e ecrãs tácteis). Pesquisa, filtro por estado e grupos «Base da plataforma» e «Áreas de
+  negócio».
+- Conectores num catálogo de integrações próprio: estado, categoria, fornecedor, protocolo, sentido dos dados, módulos
+  que o usam e, nos que faltam, a definição a configurar no servidor.
+
 ### Fiabilidade dos dados: armazém de cada carrinha, conferência diária e ficheiro para o SAP congelado
 
 - Stock por carrinha: cada carrinha mostra de que armazém(ns) do Pinguim BO vem o stock (código, nome e se foi
