@@ -15,6 +15,7 @@ import { $, DB, el } from './util.js';
 import { iniciarSync } from './smartphones.js';
 import { MODULO_DA_PAGINA, carregarPagina } from './paginas/modulos.js';
 import { apiFetch } from './api.js';
+import { haPorGravar } from './componentes/rascunho.js';
 
 const LD = {
   passos: [
@@ -115,7 +116,7 @@ const lerSessao = () =>
           apiFetch('sessao')
             .then((r) => (r.ok ? r.json() : null))
             .then((s) => {
-              if (s && s.versao && s.versao !== d.versao && !document.querySelector('dialog[open]')) location.reload();
+              if (s && s.versao && s.versao !== d.versao && !document.querySelector('dialog[open]') && !haPorGravar()) location.reload();
             })
             .catch(() => {});
         });

@@ -9,7 +9,12 @@
  *   devolvido saídas da carrinha para o armazém no dia
  *   final     stock da carrinha no fim do dia (dbo.GET_STOCK)
  * Quantidade que tem de voltar na carrinha: inicial + carregado − vendido. O técnico do armazém conta o que voltou
- * (contagem cega: não vê o esperado antes de gravar) e as diferenças ficam a aguardar a sua aprovação, com motivo.
+ * (contagem cega: não vê o esperado antes de gravar) e as diferenças seguem um circuito de aprovação em dois níveis,
+ * com segregação de funções (ninguém aprova o que contou nem aprova duas vezes):
+ *   por_contar → (técnico grava a contagem) por_validar → (o mesmo técnico valida ou reconta) por_aprovar
+ *   → (coordenador aprova, com o motivo de cada diferença) por_fechar → (responsável aprova) aprovada (fechada).
+ * Sem diferenças nem alertas, a contagem validada fecha sozinha (gestão por excepção; CARRINHA_FECHO_AUTOMATICO=0 desliga).
+ * Quem pode: contar e validar «conciliacao-carrinha» G; 1.º nível «conciliacao-coordenacao» G; 2.º nível «conciliacao-fecho» G.
  * Sem os movimentos separados nesta base de dados, carregado e devolvido saem do saldo (final − inicial + vendido) e
  * o esperado é o stock final da carrinha (contagem antes de lançar a devolução).
  *
@@ -33,6 +38,18 @@ const NAVAL_CARR_MOTIVOS = [
     'outro' => 'Outro (explicar na nota)',
 ];
 const NAVAL_CARR_TOLERANCIA = 0.0001;
+const NAVAL_CARR_ESTADOS = ['por_contar', 'por_validar', 'por_aprovar', 'por_fechar', 'aprovada'];
+
+/** Segregação de funções: a mesma pessoa não pode fazer dois passos do circuito (CARRINHA_SEGREGACAO=0 desliga). */
+function naval_carr_segregar(array $reg, string $login, array $campos): void
+{
+    if (naval_config('CARRINHA_SEGREGACAO', '1') === '0') return;
+    foreach ($campos as $c) {
+        if ($login !== '' && strcasecmp((string) ($reg[$c] ?? ''), $login) === 0) {
+            throw new NavalErro('Segregação de funções: quem contou ou já aprovou esta conciliação não pode aprovar este passo.', 403);
+        }
+    }
+}
 
 function naval_carr_pasta(string $data): string
 {
@@ -242,7 +259,7 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
     return $out;
 }
 
-/** Resumo e estado de uma rota: sem_movimento | por_contar | por_aprovar | aprovada. */
+/** Resumo e estado de uma rota: sem_movimento | por_contar | por_validar | por_aprovar | por_fechar | aprovada. */
 function naval_carr_resumo(array $linhas, array $reg): array
 {
     $dif = array_values(array_filter($linhas, function ($l) { return $l['diferenca'] !== null && abs($l['diferenca']) > NAVAL_CARR_TOLERANCIA; }));
@@ -336,13 +353,15 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         $out[] = ['rota' => $rota, 'promotor' => $promotores[$rota] ?? $rota, 'resumo' => $resumo, 'linhas' => $linhas,
             'cega' => $gere && $cega && $resumo['estado'] === 'por_contar',
             'contado_por' => $reg['contado_por'] ?? null, 'contado_em' => $reg['contado_em'] ?? null,
+            'validado_por' => $reg['validado_por'] ?? null, 'validado_em' => $reg['validado_em'] ?? null,
+            'coordenado_por' => $reg['coordenado_por'] ?? null, 'coordenado_em' => $reg['coordenado_em'] ?? null,
             'aprovado_por' => $reg['aprovado_por'] ?? null, 'aprovado_em' => $reg['aprovado_em'] ?? null,
             'motivos' => (object) ($reg['motivos'] ?? []), 'historico' => array_slice((array) $reg['historico'], -20)];
     }
     return ['data' => $data, 'gerado' => $d['gerado'], 'movimentos' => $d['movimentos'], 'rotas' => $out, 'motivos' => NAVAL_CARR_MOTIVOS];
 }
 
-/** Grava a contagem do técnico (estado → por_aprovar) e a fotografia dos números em vigor. */
+/** Grava a contagem do técnico (estado → por_validar) e a fotografia dos números em vigor. */
 function naval_carr_contar(string $data, string $rota, array $contagem, array $eu): array
 {
     if ($data > date('Y-m-d')) throw new NavalErro('Não se conta uma carrinha num dia que ainda não chegou.', 400);
@@ -362,35 +381,65 @@ function naval_carr_contar(string $data, string $rota, array $contagem, array $e
             $c[$cod] = round($q, 3);
         }
         $novo = $reg['contagem'] !== null;
-        $reg = array_merge($reg, ['contagem' => $c, 'base' => $r, 'precos' => $d['precos'], 'estado' => 'por_aprovar', 'motivos' => [],
-            'contado_por' => (string) $eu['login'], 'contado_em' => date('Y-m-d H:i:s')]);
+        $reg = array_merge($reg, ['contagem' => $c, 'base' => $r, 'precos' => $d['precos'], 'estado' => 'por_validar', 'motivos' => [],
+            'contado_por' => (string) $eu['login'], 'contado_em' => date('Y-m-d H:i:s'), 'validado_por' => null, 'validado_em' => null,
+            'coordenado_por' => null, 'coordenado_em' => null, 'aprovado_por' => null, 'aprovado_em' => null]);
         $linhas = naval_carr_linhas($r, $c, $d['precos']);
         $res = naval_carr_resumo($linhas, $reg);
         $reg['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => (string) $eu['login'], 'accao' => $novo ? 'recontagem' : 'contagem',
             'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
-        // Gestão por excepção (fecho de rota da distribuição directa, «route settlement»): contagem igual ao esperado em
-        // todos os artigos e sem alertas → fecha sozinha, sem passo de aprovação; só as diferenças vão a aprovação
-        if (naval_carr_fecha_sozinha($res) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0') {
-            $reg['estado'] = 'aprovada';
-            $reg['aprovado_por'] = 'automatico';
-            $reg['aprovado_em'] = date('Y-m-d H:i:s');
-            $reg['historico'][] = ['em' => $reg['aprovado_em'], 'por' => 'automatico', 'accao' => 'fecho_automatico', 'diferencas' => 0, 'falta_kz' => 0, 'sobra_kz' => 0];
-            $res = naval_carr_resumo($linhas, $reg);
-        }
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
-        naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'],
-            'fecho_automatico' => $reg['estado'] === 'aprovada']);
+        naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
         return ['linhas' => $linhas, 'resumo' => $res];
     });
 }
 
-/** Aprova a conciliação: cada diferença com motivo (e nota em «outro»). Avisa a Direcção se a falta passar o limite. */
+/**
+ * O técnico que contou valida a contagem (estado → por_aprovar). Gestão por excepção (fecho de rota da distribuição
+ * directa, «route settlement»): contagem igual ao esperado em todos os artigos e sem alertas → fecha sozinha.
+ */
+function naval_carr_validar(string $data, string $rota, array $eu): array
+{
+    return naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $eu) {
+        $reg = naval_carr_ler($data, $rota);
+        if ($reg['estado'] !== 'por_validar' || !is_array($reg['base'] ?? null)) throw new NavalErro('Esta contagem não está por validar.', 409);
+        if (strcasecmp((string) ($reg['contado_por'] ?? ''), (string) $eu['login']) !== 0) {
+            throw new NavalErro('Só quem fez a contagem a pode validar.', 403);
+        }
+        $linhas = naval_carr_linhas($reg['base'], $reg['contagem'], (array) ($reg['precos'] ?? []));
+        $agora = date('Y-m-d H:i:s');
+        $reg['estado'] = 'por_aprovar';
+        $reg['validado_por'] = (string) $eu['login'];
+        $reg['validado_em'] = $agora;
+        $res = naval_carr_resumo($linhas, $reg);
+        $reg['historico'][] = ['em' => $agora, 'por' => (string) $eu['login'], 'accao' => 'validada', 'diferencas' => $res['diferencas'],
+            'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
+        if (naval_carr_fecha_sozinha($res) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0') {
+            $reg['estado'] = 'aprovada';
+            $reg['aprovado_por'] = 'automatico';
+            $reg['aprovado_em'] = $agora;
+            $reg['historico'][] = ['em' => $agora, 'por' => 'automatico', 'accao' => 'fecho_automatico', 'diferencas' => 0, 'falta_kz' => 0, 'sobra_kz' => 0];
+            $res = naval_carr_resumo($linhas, $reg);
+        }
+        naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
+        naval_registar('carrinha_validada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'fecho_automatico' => $reg['estado'] === 'aprovada']);
+        return ['linhas' => $linhas, 'resumo' => $res];
+    });
+}
+
+/**
+ * 1.º nível (coordenador): aprova a contagem validada, com o motivo de cada diferença (e nota em «outro»);
+ * estado → por_fechar. Quem contou não aprova (segregação de funções).
+ */
 function naval_carr_aprovar(string $data, string $rota, array $motivos, array $eu): array
 {
     return naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $motivos, $eu) {
         $reg = naval_carr_ler($data, $rota);
         if ($reg['estado'] === 'aprovada') throw new NavalErro('Esta conciliação já foi aprovada.', 409);
         if ($reg['contagem'] === null || !is_array($reg['base'] ?? null)) throw new NavalErro('Conte a carrinha antes de aprovar.', 409);
+        if ($reg['estado'] === 'por_validar') throw new NavalErro('A contagem ainda não foi validada por quem a fez.', 409);
+        if ($reg['estado'] !== 'por_aprovar') throw new NavalErro('Esta conciliação já foi aprovada pelo coordenador.', 409);
+        naval_carr_segregar($reg, (string) $eu['login'], ['contado_por']);
         $linhas = naval_carr_linhas($reg['base'], $reg['contagem'], (array) ($reg['precos'] ?? []));
         $m = [];
         $faltam = [];
@@ -407,6 +456,31 @@ function naval_carr_aprovar(string $data, string $rota, array $motivos, array $e
         }
         if ($faltam) throw new NavalErro('Indique o motivo de cada diferença:', 400, ['erros' => $faltam]);
         $reg['motivos'] = $m;
+        $reg['estado'] = 'por_fechar';
+        $reg['coordenado_por'] = (string) $eu['login'];
+        $reg['coordenado_em'] = date('Y-m-d H:i:s');
+        $res = naval_carr_resumo($linhas, $reg);
+        $reg['historico'][] = ['em' => $reg['coordenado_em'], 'por' => $reg['coordenado_por'], 'accao' => 'aprovada_coordenador', 'diferencas' => $res['diferencas'],
+            'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
+        naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
+        naval_registar('carrinha_aprovada_coordenador', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
+        return ['linhas' => $linhas, 'resumo' => $res];
+    });
+}
+
+/**
+ * 2.º nível (responsável): aprovação final, que fecha a conciliação (estado → aprovada). Nem quem contou nem o
+ * coordenador que aprovou o 1.º nível a podem fazer. Avisa a Direcção se a falta passar o limite.
+ */
+function naval_carr_fechar(string $data, string $rota, array $eu): array
+{
+    return naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $eu) {
+        $reg = naval_carr_ler($data, $rota);
+        if ($reg['estado'] === 'aprovada') throw new NavalErro('Esta conciliação já foi aprovada.', 409);
+        if ($reg['estado'] !== 'por_fechar' || !is_array($reg['base'] ?? null)) throw new NavalErro('Falta a aprovação do coordenador.', 409);
+        naval_carr_segregar($reg, (string) $eu['login'], ['contado_por', 'coordenado_por']);
+        $linhas = naval_carr_linhas($reg['base'], $reg['contagem'], (array) ($reg['precos'] ?? []));
+        $m = (array) ($reg['motivos'] ?? []);
         $reg['estado'] = 'aprovada';
         $reg['aprovado_por'] = (string) $eu['login'];
         $reg['aprovado_em'] = date('Y-m-d H:i:s');
@@ -414,8 +488,7 @@ function naval_carr_aprovar(string $data, string $rota, array $motivos, array $e
         $reg['historico'][] = ['em' => $reg['aprovado_em'], 'por' => $reg['aprovado_por'], 'accao' => 'aprovada', 'diferencas' => $res['diferencas'],
             'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
-        naval_registar('carrinha_aprovada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'],
-            'mesma_pessoa' => ($reg['contado_por'] ?? '') === $reg['aprovado_por']]);
+        naval_registar('carrinha_aprovada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
         $limite = (float) naval_config('CARRINHA_LIMITE_KZ', '50000');
         if ($res['falta_kz'] >= $limite && $limite > 0) {
             try {
@@ -465,7 +538,7 @@ function naval_carr_aviso_diario(int $agora): ?int
     if (date('H:i', $agora) < $hora || is_file($marca)) return null;
     naval_json_gravar($marca, ['em' => date('Y-m-d H:i:s', $agora)]);
     $v = naval_carr_vista($dia, null, false, true);
-    $pend = array_values(array_filter($v['rotas'], function ($r) { return in_array($r['resumo']['estado'], ['por_contar', 'por_aprovar'], true); }));
+    $pend = array_values(array_filter($v['rotas'], function ($r) { return in_array($r['resumo']['estado'], ['por_contar', 'por_validar', 'por_aprovar', 'por_fechar'], true); }));
     if (!$pend) return 0;
     $dest = naval_destinatarios_recurso('conciliacao-carrinha', 'G');
     if (!$dest) return count($pend);
@@ -473,7 +546,9 @@ function naval_carr_aviso_diario(int $agora): ?int
     $li = '';
     foreach ($pend as $r) {
         $li .= '<li>Rota <b>' . $h($r['rota']) . '</b> · ' . $h($r['promotor']) . ' · '
-            . ($r['resumo']['estado'] === 'por_contar' ? 'por contar' : 'contada, por aprovar (' . $r['resumo']['diferencas'] . ' diferença(s))')
+            . (['por_contar' => 'por contar', 'por_validar' => 'contada, por validar por quem contou', 'por_aprovar' => 'por aprovar pelo coordenador',
+                'por_fechar' => 'por aprovar pelo responsável'][$r['resumo']['estado']] ?? $r['resumo']['estado'])
+            . ($r['resumo']['diferencas'] ? ' (' . $r['resumo']['diferencas'] . ' diferença(s))' : '')
             . ($r['resumo']['alertas'] ? ' · <b>' . $r['resumo']['alertas'] . ' artigo(s) com alerta automático</b>' : '') . '</li>';
     }
     $url = rtrim(naval_config('PORTAL_URL'), '/');

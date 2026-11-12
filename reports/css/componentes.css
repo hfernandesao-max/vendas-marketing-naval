@@ -2174,6 +2174,106 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   display: grid;
   gap: 10px;
 }
+.cc-pdf {
+  justify-self: end;
+}
+/* Grupos de colunas da conciliação: sistema (neutro), contagem física (azul), diferença (âmbar); falta e sobra no texto */
+.cc-cores .cc-g-sis {
+  background: rgb(var(--lin2-rgb) / 0.1);
+}
+.cc-cores .cc-g-cont {
+  background: rgb(var(--ceu-rgb) / 0.14);
+  font-weight: 700;
+}
+.cc-cores .cc-g-dif {
+  background: rgb(var(--av1-rgb) / 0.1);
+}
+.cc-cores th.n {
+  text-align: right;
+}
+.cc-cores .cc-grupos th {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cc-cores .cc-neg,
+.cc-legenda .cc-neg {
+  color: var(--bad);
+  font-weight: 700;
+}
+.cc-cores .cc-pos,
+.cc-legenda .cc-pos {
+  color: var(--sky);
+  font-weight: 700;
+}
+.cc-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+}
+.cc-legenda span {
+  padding: 1px 8px;
+  border-radius: 4px;
+}
+.cc-legenda .cc-g-sis {
+  background: rgb(var(--lin2-rgb) / 0.14);
+}
+.cc-legenda .cc-g-cont {
+  background: rgb(var(--ceu-rgb) / 0.18);
+}
+.cc-legenda .cc-g-dif {
+  background: rgb(var(--av1-rgb) / 0.14);
+}
+/* Circuito de aprovação: passos feitos, o passo actual e os que faltam */
+.cc-circuito {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+.cc-circuito li {
+  counter-increment: passo;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 8px 34px;
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cc-circuito li::before {
+  content: counter(passo);
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgb(var(--lin2-rgb) / 0.2);
+}
+.cc-circuito li b {
+  color: var(--fg);
+  font-size: 12.5px;
+}
+.cc-circuito li.feito::before {
+  content: '✓';
+  background: var(--sky);
+  color: #fff;
+}
+.cc-circuito li.actual {
+  border-color: var(--sky);
+  box-shadow: inset 3px 0 0 var(--sky);
+}
 .cc-acc {
   display: flex;
   flex-wrap: wrap;

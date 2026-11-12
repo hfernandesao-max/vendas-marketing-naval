@@ -19,7 +19,9 @@ let dia = null;
 let aLer = false;
 const FECHO = {
   por_contar: ['Por contar', 'p-warn'],
+  por_validar: ['Contada, por validar', 'p-warn'],
   por_aprovar: ['Diferenças por aprovar', 'p-serio'],
+  por_fechar: ['Por aprovação final', 'p-serio'],
   aprovada: ['Aprovada com motivos', 'p-ok'],
   fechada_auto: ['Fechada sozinha (sem diferenças)', 'p-ok'],
 };
@@ -82,7 +84,7 @@ function cartao(r) {
   if (r.contado_em) linha(t('Contada'), String(r.contado_em).slice(11, 16) + ' · ' + r.contado_por);
   if (r.aprovado_em) linha(t('Fechada'), String(r.aprovado_em).slice(11, 16) + ' · ' + (r.aprovado_por === 'automatico' ? t('automático') : r.aprovado_por));
   c.append(det);
-  if (r.fecho === 'por_contar' || r.fecho === 'por_aprovar') {
+  if (['por_contar', 'por_validar', 'por_aprovar', 'por_fechar'].includes(r.fecho)) {
     const a = el('a', 'btn sm', t(r.fecho === 'por_contar' ? 'Contar na conciliação' : 'Ver as diferenças'));
     a.href = '#conciliacao-carrinha';
     c.append(a);
@@ -110,10 +112,14 @@ R['painel-carrinha'] = (pg) => {
       { l: t('Carrinhas com movimento'), v: n0(L.length) },
       { l: t('Fechadas'), v: n0(fechadas), s: t('sem diferenças, fechadas sozinhas: {n}', { n: n0(n('fechada_auto')) }) },
       { l: t('Por contar'), v: n0(n('por_contar')), tone: n('por_contar') ? 'warn' : null },
-      { l: t('Diferenças por aprovar'), v: n0(n('por_aprovar')), tone: n('por_aprovar') ? 'bad' : null },
+      {
+        l: t('Diferenças por aprovar'),
+        v: n0(n('por_validar') + n('por_aprovar') + n('por_fechar')),
+        tone: n('por_validar') + n('por_aprovar') + n('por_fechar') ? 'bad' : null,
+      },
     ]),
   );
-  const ordem = ['por_aprovar', 'por_contar', 'aprovada', 'fechada_auto'];
+  const ordem = ['por_fechar', 'por_aprovar', 'por_validar', 'por_contar', 'aprovada', 'fechada_auto'];
   const grelha = el('div', 'pcar-grelha');
   L.slice()
     .sort((a, b) => ordem.indexOf(a.fecho) - ordem.indexOf(b.fecho) || String(a.rota).localeCompare(String(b.rota)))
