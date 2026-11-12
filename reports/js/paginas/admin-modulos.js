@@ -357,7 +357,7 @@ R.modulos = (pg) => {
   pg.append(tabelaConectores());
 };
 
-const SENTIDO = { entrada: 'Entrada', saida: 'Saída', 'entrada e saída': 'Entrada e saída', saída: 'Saída' };
+const SENTIDO = { entrada: 'Recebe dados', saida: 'Envia dados', saída: 'Envia dados', 'entrada e saída': 'Recebe e envia dados' };
 /** Catálogo de integrações: estado, categoria, fornecedor, protocolo, sentido dos dados e módulos que o usam. */
 function tabelaConectores() {
   const linhas = ESTADO.conectores.map((c) => ({
