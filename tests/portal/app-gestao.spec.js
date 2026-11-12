@@ -203,3 +203,65 @@ test('app de gestão: uma versão nova no servidor aplica-se sozinha quando a ap
   await expect(page.locator('.ag-heroi')).toBeVisible();
   expect(aberturas).toBe(2);
 });
+
+test('app de gestão: «Agora» com vendas ao vivo, rotas paradas primeiro, fecho das carrinhas e últimas vendas', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-06T14:40:00+01:00'));
+  const sess = { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V', 'conciliacao-carrinha': 'V' } };
+  const v = (rota, hora, total, cliente, nc) => ({ rota, hora, total, cliente, nc: !!nc, data: HOJE, documento: 'FR ' + rota + hora });
+  let pedidos = 0;
+  await page.route('**/v1/sessao**', (r) => r.fulfill({ json: sess }));
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
+  await page.route(
+    (u) => u.pathname.endsWith('/v1/vendas'),
+    (r) => {
+      pedidos++;
+      return r.fulfill({
+        json: {
+          vendas: [
+            v('1011', '14:31', 90000, 'Cantina Kilamba'),
+            v('1011', '13:05', 70000, 'Loja Sol'),
+            v('1002', '12:10', 140000, 'Mercado 1'),
+            v('1005', '14:02', 120000, 'Cantina Bela'),
+            v('1005', '14:20', -10000, 'Cantina Bela', true),
+          ],
+        },
+      });
+    },
+  );
+  await page.route('**/v1/vendas/estado**', (r) => r.fulfill({ json: { ok: true } }));
+  await page.route('**/v1/painel-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        rotas: [
+          { rota: '1011', fecho: 'por_contar' },
+          { rota: '1002', fecho: 'fechada_auto' },
+          { rota: '1005', fecho: 'por_aprovar' },
+        ],
+      },
+    }),
+  );
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  await page.goto('/gestao/index.html');
+  await page.locator('.ag-separadores button', { hasText: 'Agora' }).click();
+  await expect(page.locator('#ag-h1')).toHaveText('Agora');
+  const vivo = page.locator('.ag-vivo');
+  await expect(vivo).toContainText('Ao vivo');
+  await expect(vivo).toContainText('410 000 Kz');
+  await expect(vivo.locator('.ag-mini')).toContainText('há 9 min');
+  // 1002 sem vendas desde as 12:10 (parada) e 1001 sem vendas: primeiro; depois as activas
+  const rs = page.locator('.ag-rota-ao');
+  await expect(rs.first()).toContainText('1002');
+  await expect(rs.first()).toContainText('Parada');
+  await expect(rs.nth(1)).toContainText('1001');
+  await expect(rs.nth(1)).toContainText('Sem vendas');
+  await expect(page.locator('.ag-sec', { hasText: 'Rotas agora' })).toContainText('2 a pedir atenção');
+  await expect(page.locator('.ag-kpi', { hasText: 'Por contar' })).toContainText('1');
+  await expect(page.locator('.ag-kpi', { hasText: 'Fechadas' })).toContainText('1');
+  await expect(page.locator('.ag-feed-l').first()).toContainText('Cantina Kilamba');
+  await expect(page.locator('.ag-feed-l', { hasText: 'nota de crédito' })).toHaveCount(1);
+  expect(pedidos).toBe(1);
+  expect(await semCorte(page)).toEqual([]);
+  expect(erros).toEqual([]);
+});

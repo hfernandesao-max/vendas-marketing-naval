@@ -832,3 +832,118 @@ article.ag-al {
     transition: none !important;
   }
 }
+
+/* separador «Agora»: operação em tempo real */
+.ag-vivo-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--azul);
+  margin-bottom: 6px;
+}
+.ag-pulso {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--azul);
+  box-shadow: 0 0 0 0 rgb(35 151 212 / 0.6);
+  animation: ag-pulso 1.8s infinite;
+}
+@keyframes ag-pulso {
+  70% {
+    box-shadow: 0 0 0 8px rgb(35 151 212 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(35 151 212 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-pulso {
+    animation: none;
+  }
+}
+.ag-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.ag-mini div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--ceu);
+}
+.ag-mini b {
+  font-size: 15px;
+  color: var(--texto);
+}
+.ag-mini span {
+  font-size: 12px;
+  color: var(--suave);
+}
+.ag-grelha-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.ag-kpi.aviso .ag-medio {
+  color: var(--aviso);
+}
+.ag-rota-ao {
+  cursor: default;
+}
+.ag-estado-rota {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.ag-estado-rota.ok {
+  color: var(--azul);
+  background: var(--ceu);
+}
+.ag-estado-rota.aviso {
+  color: var(--aviso);
+  background: var(--aviso-f);
+}
+.ag-estado-rota.neutra {
+  color: var(--suave);
+  background: var(--grelha);
+}
+.ag-feed-l {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--linha);
+}
+.ag-feed-l:first-child {
+  border-top: 0;
+}
+.ag-feed-t {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ag-feed-t strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ag-feed-t span {
+  font-size: 12px;
+  color: var(--suave);
+}
+.ag-valor.desce {
+  color: var(--mau);
+}
+.ag-nota-c {
+  text-align: center;
+}

@@ -34,8 +34,22 @@ const postJson = (rota, corpo) =>
     (r) => r.json().catch(() => ({ ok: false, erro: 'Sem resposta do servidor.' })),
     () => ({ ok: false, erro: 'Sem resposta do servidor.' }),
   );
-const E = { sessao: null, ind: null, fonte: null, erro: null, sep: 'hoje', periodo: 'hoje', ordemRotas: 'mes', conversa: [], aPensar: false, aLer: false };
-const ICONE = { hoje: 'home', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
+const E = {
+  sessao: null,
+  ind: null,
+  fonte: null,
+  erro: null,
+  ao: null,
+  aoEm: 0,
+  aoLer: false,
+  sep: 'hoje',
+  periodo: 'hoje',
+  ordemRotas: 'mes',
+  conversa: [],
+  aPensar: false,
+  aLer: false,
+};
+const ICONE = { hoje: 'home', agora: 'radar', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
 const SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
 // ───────────── peças ─────────────
@@ -494,13 +508,182 @@ function assistente() {
 }
 
 // ───────────── estrutura ─────────────
+// ───────────── Agora (operação em tempo real) ─────────────
+// O que está a acontecer no terreno neste momento, como nos painéis «live» das apps de referência (Shopify Live View,
+// Uber Fleet, Salesforce Field Service): vendas do dia a entrar, rotas activas e paradas, últimas vendas e o fecho das
+// carrinhas. Actualiza-se a cada minuto enquanto este separador está aberto e a app está no ecrã.
+const PARADA_MIN = 60; // sem vendas há mais de 60 minutos, em horário de trabalho
+const hojeIso = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+const minutosDesde = (hora) => {
+  if (!hora) return null;
+  const [h, m] = String(hora).split(':').map(Number);
+  const agoraD = new Date();
+  return agoraD.getHours() * 60 + agoraD.getMinutes() - (h * 60 + m);
+};
+const haQuanto = (min) =>
+  min == null ? '—' : min < 1 ? t('agora mesmo') : min < 60 ? t('há {n} min', { n: min }) : t('há {h} h {m} min', { h: Math.floor(min / 60), m: min % 60 });
+
+function carregarAgora(forcar) {
+  if (E.aoLer || (!forcar && E.ao && Date.now() - E.aoEm < 55000)) return;
+  E.aoLer = true;
+  const dia = hojeIso().replace(/-/g, '');
+  const vendas = apiJson('vendas?start_date=' + dia + '&end_date=' + dia).then(
+    (d) => (d && Array.isArray(d.vendas) ? d.vendas : null),
+    () => null,
+  );
+  const carr = pode('conciliacao-carrinha')
+    ? apiJson('painel-carrinha?data=' + hojeIso()).then(
+        (d) => (d && d.ok ? d : null),
+        () => null,
+      )
+    : Promise.resolve(null);
+  Promise.all([vendas, carr]).then(([v, c]) => {
+    E.aoLer = false;
+    if (v === null && !E.ao) E.ao = { erro: true };
+    else if (v !== null) E.ao = { vendas: v, carrinhas: c, hora: new Date() };
+    E.aoEm = Date.now();
+    if (E.sep === 'agora') desenhar();
+  });
+}
+
+/** Rotas do dia a partir das vendas: total, documentos, última venda e estado (activa, parada, sem vendas). */
+function rotasAgora(vendas) {
+  const m = new Map();
+  (E.ind.rotas || []).forEach((r) => m.set(r.rota, { rota: r.rota, promotor: r.promotor, total: 0, docs: 0, ultima: '' }));
+  vendas.forEach((v) => {
+    const x = m.get(v.rota) || { rota: v.rota, promotor: v.promotor || '', total: 0, docs: 0, ultima: '' };
+    x.total += +v.total || 0;
+    if (!v.nc) x.docs++;
+    if ((v.hora || '') > x.ultima) x.ultima = v.hora || '';
+    m.set(v.rota, x);
+  });
+  const h = new Date().getHours();
+  const trabalho = h >= 8 && h < 18;
+  return [...m.values()]
+    .map((x) => {
+      const min = x.ultima ? minutosDesde(x.ultima) : null;
+      x.min = min;
+      x.estado = !x.docs ? (trabalho ? 'sem' : 'fora') : trabalho && min > PARADA_MIN ? 'parada' : 'activa';
+      return x;
+    })
+    .sort((a, b) => ({ parada: 0, sem: 1, activa: 2, fora: 3 })[a.estado] - { parada: 0, sem: 1, activa: 2, fora: 3 }[b.estado] || b.total - a.total);
+}
+
+const ESTADO_ROTA = {
+  activa: ['Activa', 'ok'],
+  parada: ['Parada', 'aviso'],
+  sem: ['Sem vendas', 'aviso'],
+  fora: ['Sem vendas', 'neutra'],
+};
+
+function agora() {
+  carregarAgora(false);
+  if (!E.ao) return [esqueleto()];
+  if (E.ao.erro) {
+    const b = el('button', 'ag-botao', t('Tentar de novo'));
+    b.type = 'button';
+    b.addEventListener('click', () => carregarAgora(true));
+    return [cartao('ag-erro', el('p', null, t('Não foi possível ler as vendas de hoje.')), b)];
+  }
+  const vendas = E.ao.vendas;
+  const total = vendas.reduce((a, v) => a + (+v.total || 0), 0);
+  const docs = vendas.filter((v) => !v.nc).length;
+  const ult = vendas.reduce((a, v) => ((v.hora || '') > a ? v.hora : a), '');
+  const rs = rotasAgora(vendas);
+  const out = [];
+  // 1. ao vivo: total, documentos, ticket médio e a última venda
+  const c = cartao('ag-heroi ag-vivo');
+  const cab = el('div', 'ag-vivo-cab');
+  cab.append(el('i', 'ag-pulso'), el('span', null, t('Ao vivo · actualiza a cada minuto')));
+  c.append(cab, el('div', 'ag-rotulo', t('Vendas de hoje')), el('div', 'ag-grande', kz(total)));
+  const g = el('div', 'ag-mini');
+  const mini = (rot, val) => {
+    const d = el('div');
+    d.append(el('b', null, val), el('span', null, rot));
+    return d;
+  };
+  g.append(
+    mini(t('documentos'), n0(docs)),
+    mini(t('valor médio'), docs ? kzc(total / docs) : '—'),
+    mini(t('última venda'), ult ? haQuanto(minutosDesde(ult)) : '—'),
+  );
+  c.append(g);
+  out.push(c);
+  // 2. rotas agora: paradas primeiro
+  const nPar = rs.filter((r) => r.estado === 'parada' || r.estado === 'sem').length;
+  out.push(titulo(t('Rotas agora'), nPar ? el('span', 'ag-var desce', t('{n} a pedir atenção', { n: nPar })) : null));
+  const l = el('div', 'ag-lista');
+  rs.forEach((r) => {
+    const [rot, cls] = ESTADO_ROTA[r.estado];
+    const b = el('div', 'ag-rota ag-rota-ao');
+    const nome = el('span', 'ag-rota-n');
+    nome.append(el('strong', null, r.rota + (r.promotor ? ' · ' + r.promotor : '')));
+    const sub = el('span', 'ag-rota-s');
+    sub.append(
+      el('span', 'ag-estado-rota ' + cls, t(rot)),
+      document.createTextNode(r.docs ? ' · ' + t('{n} doc.', { n: r.docs }) + ' · ' + t('última {q}', { q: haQuanto(r.min) }) : ''),
+    );
+    nome.append(sub);
+    b.append(nome, el('span', 'ag-valor', kzc(r.total)));
+    b.setAttribute('aria-label', t('Rota {r}', { r: r.rota }) + ': ' + t(rot) + ', ' + kz(r.total));
+    l.append(b);
+  });
+  if (!rs.length) l.append(el('p', 'ag-vazio', t('Sem rotas com vendas hoje.')));
+  out.push(l);
+  // 3. carrinhas: fecho do dia (conciliação)
+  const C = E.ao.carrinhas;
+  if (C && C.rotas) {
+    const n = (e) => C.rotas.filter((r) => r.fecho === e).length;
+    out.push(titulo(t('Fecho das carrinhas')));
+    const k = el('div', 'ag-grelha ag-grelha-3');
+    [
+      [t('Por contar'), n('por_contar'), n('por_contar') ? 'aviso' : ''],
+      [t('Por aprovar'), n('por_aprovar'), n('por_aprovar') ? 'aviso' : ''],
+      [t('Fechadas'), n('aprovada') + n('fechada_auto'), ''],
+    ].forEach(([rot, v, cls]) => {
+      const d = cartao('ag-kpi ' + cls);
+      d.append(el('div', 'ag-rotulo', rot), el('div', 'ag-medio', n0(v)));
+      k.append(d);
+    });
+    out.push(k);
+  }
+  // 4. últimas vendas
+  const ultimas = vendas
+    .filter((v) => v.hora)
+    .slice()
+    .sort((a, b) => String(b.hora).localeCompare(String(a.hora)))
+    .slice(0, 15);
+  if (ultimas.length) {
+    out.push(titulo(t('Últimas vendas')));
+    const f = el('div', 'ag-lista ag-feed');
+    ultimas.forEach((v) => {
+      const li = el('div', 'ag-feed-l');
+      const tx = el('span', 'ag-feed-t');
+      tx.append(
+        el('strong', null, v.cliente || t('Consumidor final')),
+        el('span', null, String(v.hora).slice(0, 5) + ' · ' + t('Rota {r}', { r: v.rota }) + (v.nc ? ' · ' + t('nota de crédito') : '')),
+      );
+      li.append(tx, el('span', 'ag-valor' + (v.nc ? ' desce' : ''), kzc(+v.total || 0)));
+      f.append(li);
+    });
+    out.push(f);
+  }
+  out.push(el('p', 'ag-nota ag-nota-c', t('Actualizado às {h}', { h: E.ao.hora.toTimeString().slice(0, 5) })));
+  return out;
+}
+
 const SEPARADORES = [
   ['hoje', 'Hoje', hoje],
+  ['agora', 'Agora', agora],
   ['rotas', 'Rotas', rotas],
   ['alertas', 'Alertas', alertas],
   ['assistente', 'Assistente', assistente],
 ];
-const disponiveis = () => SEPARADORES.filter(([id]) => id !== 'assistente' || (E.sessao && (E.sessao.permissoes || {}).assistente));
+const pode = (r) => !!(E.sessao && (E.sessao.permissoes || {})[r]);
+const disponiveis = () => SEPARADORES.filter(([id]) => (id !== 'assistente' || pode('assistente')) && (id !== 'agora' || pode('inicio')));
 
 function mudar(id) {
   E.sep = id;
@@ -648,10 +831,17 @@ apiJson('sessao').then((s) => {
     desenhar();
   });
 });
-$('ag-actualizar').addEventListener('click', () => carregar(true));
+$('ag-actualizar').addEventListener('click', () => {
+  if (E.sep === 'agora') carregarAgora(true);
+  carregar(true);
+});
 puxarParaActualizar();
 window.addEventListener('online', desenhar);
 window.addEventListener('offline', desenhar);
+// separador «Agora»: a cada minuto, só com ele aberto e a app no ecrã
+setInterval(() => {
+  if (document.visibilityState === 'visible' && E.sep === 'agora' && E.ind) carregarAgora(true);
+}, 60000);
 // actualiza a cada 5 minutos enquanto a app está visível
 setInterval(() => {
   if (document.visibilityState === 'visible' && E.ind) carregar();

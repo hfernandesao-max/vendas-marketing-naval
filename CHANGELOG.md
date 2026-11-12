@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### App «Naval Gestão» no telemóvel: separador «Agora» com a operação em tempo real
+
+- Novo separador **Agora**, entre «Hoje» e «Rotas», como nos painéis ao vivo das apps de referência (Shopify Live View,
+  Uber Fleet, Salesforce Field Service). Mostra as vendas do dia com documentos, valor médio e tempo desde a última
+  venda; as rotas por estado, com as paradas há mais de 60 minutos e as sem vendas em primeiro; o fecho das carrinhas
+  (por contar, por aprovar, fechadas); e as últimas 15 vendas, com as notas de crédito assinaladas.
+- Actualiza-se a cada minuto enquanto o separador está aberto e a app está no ecrã. Só aparece a quem tem acesso às
+  vendas; o fecho das carrinhas só a quem tem a conciliação.
+
 ### Conciliação da carrinha: só pede contagem quando há alguma coisa para contar
 
 - Um artigo que não devia estar na carrinha no fim do dia e não teve vendas (por exemplo stock do dia anterior
