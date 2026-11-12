@@ -71,3 +71,37 @@ test('conciliação da carrinha: acessos, contagem cega, âmbito, motivo e aprov
   expect(r1.motivos.A1.motivo).toBe('avaria');
   expect(dir.rotas.find((x) => x.rota === '1002').resumo.estado).toBe('por_contar');
 });
+
+test('requisição de reposição: criada pela conciliação, editada e emitida pelo promotor da rota, carga confirmada pelo armazém', async () => {
+  const RQ = API + 'requisicoes';
+  const sup = (await entrar('sup')).ctx;
+  const lista = await (await sup.get(RQ + '?de=' + dia + '&ate=' + dia)).json();
+  const r = lista.requisicoes.find((x) => x.rota === '1001');
+  expect(r).toMatchObject({ estado: 'rascunho', origem: { tipo: 'conciliacao' } });
+  expect(r.linhas.map((l) => [l.codigo, l.quantidade])).toEqual([['A1', 26]]);
+  const post = async (ctx, corpo) => {
+    const x = await ctx.post(RQ, { data: { ...corpo, csrf: await csrf(ctx) } });
+    return { status: x.status(), json: await x.json() };
+  };
+  // fora do âmbito: o promotor da rota 1002 não vê nem altera a requisição da 1001
+  const pro = (await entrar('pro')).ctx;
+  expect((await pro.get(RQ + '?numero=' + r.numero)).status()).toBe(404);
+  expect((await post(pro, { accao: 'gravar', numero: r.numero, versao: r.versao, linhas: [] })).status).toBe(404);
+  expect((await post((await entrar('bo')).ctx, { accao: 'emitir', numero: r.numero })).status).toBe(403);
+  // rascunho: juntar artigo e gravar; versão antiga recusada
+  const g = (
+    await post(sup, { accao: 'gravar', numero: r.numero, versao: r.versao, linhas: [...r.linhas, { codigo: 'B9', artigo: 'Sabão', quantidade: 4 }], nota: '' })
+  ).json.requisicao;
+  expect(g.linhas.length).toBe(2);
+  expect((await post(sup, { accao: 'gravar', numero: r.numero, versao: r.versao, linhas: [] })).status).toBe(409);
+  // emitida: fechada; quem emitiu não confirma a carga; o armazém confirma
+  expect((await post(sup, { accao: 'emitir', numero: r.numero, versao: g.versao })).json.requisicao.estado).toBe('emitida');
+  expect((await post(sup, { accao: 'gravar', numero: r.numero, versao: g.versao + 1, linhas: [] })).status).toBe(409);
+  const log = (await entrar('log')).ctx;
+  const carga = await (await log.get(RQ + '?carga=1&data=' + dia)).json();
+  expect(carga.rotas['1001'][0].estado).toBe('emitida');
+  expect((await post(sup, { accao: 'confirmar_carga', numero: r.numero, entregue: {} })).status).toBe(403);
+  const c = (await post(log, { accao: 'confirmar_carga', numero: r.numero, entregue: { B9: 3 } })).json.requisicao;
+  expect(c.estado).toBe('carregada');
+  expect(c.linhas.map((l) => l.entregue)).toEqual([26, 3]);
+});

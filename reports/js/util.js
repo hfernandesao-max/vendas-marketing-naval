@@ -79,6 +79,7 @@ const ICON = {
   sair: 'M15 4h4v16h-4M10 16l4-4-4-4M14 12H3',
   negocio: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 20h16',
   grelha: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  requisicao: 'M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 11h8M8 15h8M8 19h4',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

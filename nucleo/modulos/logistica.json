@@ -4,9 +4,9 @@
   "versao": "1.0.0",
   "descricao": "Plano de cargas, conciliação e painel da carrinha (fecho de rota), registo de cargas e stock por carrinha e armazém.",
   "nucleo": false,
-  "paginas": ["plano-cargas", "conciliacao-carrinha", "painel-carrinha", "registo-cargas", "stock-carrinha", "stock-armazem"],
-  "recursos": ["plano-cargas", "conciliacao-carrinha", "conciliacao-coordenacao", "conciliacao-fecho", "registo-cargas", "stock-carrinha", "stock-armazem"],
-  "api": ["v1/plano", "v1/plano/historico", "v1/plano/excel", "v1/conciliacao-carrinha", "v1/stock", "v1/stock/estado", "v1/painel-carrinha"],
+  "paginas": ["plano-cargas", "conciliacao-carrinha", "requisicoes-carrinha", "painel-carrinha", "registo-cargas", "stock-carrinha", "stock-armazem"],
+  "recursos": ["plano-cargas", "conciliacao-carrinha", "conciliacao-coordenacao", "conciliacao-fecho", "requisicoes-carrinha", "registo-cargas", "stock-carrinha", "stock-armazem"],
+  "api": ["v1/plano", "v1/plano/historico", "v1/plano/excel", "v1/conciliacao-carrinha", "v1/requisicoes", "v1/stock", "v1/stock/estado", "v1/painel-carrinha"],
   "conectores": ["pinguim-sql", "quatenus", "cctv"],
   "eventos": {
     "publica": ["carrinha.descarga_conciliada", "carrinha.diferenca_detectada"],

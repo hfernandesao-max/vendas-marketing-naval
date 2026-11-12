@@ -4346,3 +4346,100 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   height: 0;
   margin: 0;
 }
+
+/* Requisições ao armazém: a carregar (âmbar, por confirmar) e carregado (azul, carga confirmada) */
+.req-cel {
+  display: inline-flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.req-a-carregar,
+.req-carregado {
+  display: inline-block;
+  min-width: 46px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-align: right;
+}
+.req-a-carregar {
+  color: var(--warn);
+  background: rgb(var(--av1-rgb) / 0.16);
+  border: 1px dashed rgb(var(--av1-rgb) / 0.6);
+}
+.req-carregado {
+  color: var(--sky);
+  background: rgb(var(--ceu-rgb) / 0.16);
+}
+.req-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+.req-nova {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.req-juntar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  gap: 8px;
+  align-items: center;
+}
+.req-juntar input,
+.req-nota,
+.req-tab input {
+  min-width: 0;
+  box-sizing: border-box;
+}
+.req-tab input {
+  width: 110px;
+  text-align: right;
+}
+.req-nota {
+  width: 100%;
+}
+.req-tab tr.req-adicionado td:first-child {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+@media (max-width: 640px) {
+  .req-juntar {
+    grid-template-columns: 1fr 90px;
+  }
+  .req-juntar .btn {
+    grid-column: 1 / -1;
+  }
+}
+.req-tab th.n {
+  text-align: right;
+}
+.req-tab input,
+.req-juntar input,
+.req-nota,
+.req-nova select {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: rgb(var(--veu-rgb) / 0.05);
+  color: var(--fg);
+  padding: 0 10px;
+  font: inherit;
+}
+.req-nota {
+  height: auto;
+  padding: 8px 10px;
+  resize: vertical;
+}
+.req-tab input:focus,
+.req-juntar input:focus,
+.req-nota:focus,
+.req-nova select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--az1-rgb) / 0.22);
+}

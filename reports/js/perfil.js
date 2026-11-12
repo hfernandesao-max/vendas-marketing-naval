@@ -10,6 +10,7 @@ export let SESSAO = null;
 const LINHA_DA_MATRIZ = { 'equipamentos-documentos': 'equipamentos', 'painel-carrinha': 'conciliacao-carrinha' };
 const nivelDe = (id) => (SESSAO ? (SESSAO.permissoes || {})[LINHA_DA_MATRIZ[id] || id] || '' : 'A');
 export const podeVer = (id) => nivelDe(id) !== '';
+export const podeGerir = (id) => ['G', 'A'].includes(nivelDe(id));
 export const podeExportar = (id) => ['E', 'Er', 'G', 'A'].includes(nivelDe(id));
 export const paginasVisiveis = () => PAGES.filter((p) => podeVer(p.id));
 export let atual = 'inicio';
