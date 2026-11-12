@@ -56,6 +56,12 @@ teste('prontidão: só gera com tudo completo; cada fonte em falta diz o que fal
     igual(['1001'], $x['controlos']['conciliacao']['rotas']);
     $x = naval_rv_controlos($dia, $f($dia, ['caixa' => ['estado' => 'fechada']]));
     igual('pendente', $x['controlos']['caixa']['estado']);
+    $x = naval_rv_controlos($dia, $f($dia, ['vendas' => [], 'sync' => []]));
+    igual('erro', $x['controlos']['pinguim']['estado'], 'Pinguim sem documentos mas a carrinha vendeu: falha de dados');
+    $vazio = $f($dia, ['vendas' => [], 'sync' => []]);
+    $vazio['carrinhas'][0]['linhas'][0]['vendido'] = 0;
+    $x = naval_rv_controlos($dia, $vazio);
+    igual(['ok', true], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['sem_vendas']], 'feriado: dia sem vendas');
     $x = naval_rv_controlos($dia, $f($dia, ['vendas' => null]));
     igual('erro', $x['controlos']['pinguim']['estado']);
     lanca(409, function () use ($dia, $f) { naval_rv_gerar($dia, '', 'dir', $f($dia, ['caixa' => ['estado' => 'aberta']])); });

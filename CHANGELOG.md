@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Relatório de Vendas: dia sem vendas ou falha de dados
+
+- O controlo do Pinguim BO passa a distinguir as duas situações:
+  - **dia sem vendas** (feriado, como o 11 de Novembro): aparece «Completo» com essa explicação;
+  - **falha de dados**: se o Pinguim BO não tiver documentos mas as carrinhas tiverem vendido artigos, o controlo
+    fica «Sem ligação» e bloqueia o relatório.
+
 ### Conversão das visitas
 
 - Nova página **Terreno › Conversão das visitas** (indicadores de execução da distribuição directa):
