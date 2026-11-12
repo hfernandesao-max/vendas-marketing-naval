@@ -35,9 +35,22 @@ function naval_rv_controlos(string $dia, array $f): array
         $ultima = [];
         foreach ((array) ($f['sync'] ?? []) as $s) $ultima[(string) $s['rota']] = (string) ($s['ultima'] ?? '');
         $faltam = array_values(array_filter($rotasVendas, function ($r) use ($ultima, $limite) { return ($ultima[$r] ?? '') < $limite; }));
-        $c['pinguim'] = $faltam
-            ? ['estado' => 'pendente', 'detalhe' => 'Rotas sem sincronizar depois das ' . $hora . ': ' . implode(', ', $faltam) . '.', 'rotas' => $faltam]
-            : ['estado' => 'ok', 'detalhe' => count($rotasVendas) . ' rotas com vendas, todas sincronizadas depois das ' . $hora . '.'];
+        // dia sem vendas: só é «completo» se as carrinhas também não venderam nada (feriado ou dia sem actividade);
+        // carrinhas com vendas e o Pinguim BO sem documentos é uma falha de dados, não um dia vazio
+        $vendeuCarrinha = [];
+        foreach ((array) ($f['carrinhas'] ?? []) as $r) {
+            foreach ((array) ($r['linhas'] ?? []) as $l) if ((float) ($l['vendido'] ?? 0) > 0) $vendeuCarrinha[(string) $r['rota']] = true;
+        }
+        if ($faltam) {
+            $c['pinguim'] = ['estado' => 'pendente', 'detalhe' => 'Rotas sem sincronizar depois das ' . $hora . ': ' . implode(', ', $faltam) . '.', 'rotas' => $faltam];
+        } elseif (!$rotasVendas && $vendeuCarrinha) {
+            $c['pinguim'] = ['estado' => 'erro', 'detalhe' => 'Sem documentos de venda no Pinguim BO, mas as carrinhas ' . implode(', ', array_keys($vendeuCarrinha))
+                . ' venderam artigos: confirme a sincronização e a ligação.', 'rotas' => array_keys($vendeuCarrinha)];
+        } elseif (!$rotasVendas) {
+            $c['pinguim'] = ['estado' => 'ok', 'detalhe' => 'Sem vendas neste dia (feriado ou dia sem actividade).', 'sem_vendas' => true];
+        } else {
+            $c['pinguim'] = ['estado' => 'ok', 'detalhe' => count($rotasVendas) . ' rotas com vendas, todas sincronizadas depois das ' . $hora . '.'];
+        }
     }
     // 2. conciliação das carrinhas
     if ($f['carrinhas'] === null) {
@@ -61,10 +74,10 @@ function naval_rv_controlos(string $dia, array $f): array
             if ($l === null) $fora++;
             elseif (($estadoLote[$l] ?? '') !== 'carregado') $porCarregar[$l] = true;
         }
-        $c['sap_ficheiro'] = $fora
+        $c['sap_ficheiro'] = !$f['vendas'] ? ['estado' => 'ok', 'detalhe' => 'Sem documentos de venda para carregar no SAP neste dia.'] : ($fora
             ? ['estado' => 'pendente', 'detalhe' => $fora . ' documento(s) ainda sem ficheiro para o SAP.']
             : ($porCarregar ? ['estado' => 'pendente', 'detalhe' => 'Ficheiro(s) por confirmar como carregados no SAP: lote ' . implode(', ', array_keys($porCarregar)) . '.']
-                : ['estado' => 'ok', 'detalhe' => count($f['vendas']) . ' documentos carregados no SAP.']);
+                : ['estado' => 'ok', 'detalhe' => count($f['vendas']) . ' documentos carregados no SAP.']));
     }
     // 4. caixa
     $cx = $f['caixa'];
