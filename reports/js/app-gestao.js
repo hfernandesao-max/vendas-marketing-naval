@@ -599,7 +599,7 @@ async function ligarNotif() {
     let s = await r.pushManager.getSubscription();
     if (!s) s = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveBin(E.notif.chave) });
     E.notifEndpoint = s.endpoint;
-    const d = await accaoNotif({ accao: 'subscrever', subscricao: s.toJSON() });
+    const d = await accaoNotif({ accao: 'subscrever', subscricao: s.toJSON(), idioma: LANG });
     if (d && d.ok) accaoNotif({ accao: 'testar' });
   } catch (e) {
     E.notifEstado = '';
@@ -752,7 +752,8 @@ function caixaNotificacoes() {
     const li = el(m.url ? 'a' : 'div', 'ag-feed-l ag-msg' + (m.lida ? '' : ' nova') + ' ' + (m.gravidade || ''));
     if (m.url) li.href = m.url;
     const tx = el('span', 'ag-feed-t');
-    tx.append(el('strong', null, m.titulo), el('span', null, m.corpo));
+    const loc = (m.textos && m.textos[LANG]) || [m.titulo, m.corpo];
+    tx.append(el('strong', null, loc[0]), el('span', null, loc[1]));
     li.append(tx, el('span', 'ag-msg-h', quando(m.data)));
     l.append(li);
   });
@@ -1345,11 +1346,43 @@ apiJson('sessao').then((s) => {
   const pedido = location.hash.replace('#', '') === 'agora' ? 'rotas' : location.hash.replace('#', '');
   if (SEPARADORES.some(([id]) => id === pedido)) E.sep = pedido;
   carregarNotif();
-  const l = s.idioma && s.idioma !== LANG ? mudarIdioma(s.idioma).then(setFmt) : Promise.resolve();
-  l.then(() => {
+  aplicarIdioma();
+});
+
+/**
+ * Idioma da app = o do telefone (como nas apps nativas: segue Definições › Geral › Idioma e região), entre os que a
+ * app tem (português, inglês, tigrínia), pela ordem de preferência do telefone. Se o telefone estiver noutro idioma,
+ * fica o da conta no portal e, sem esse, o português. Muda sozinha quando se muda o idioma do telefone.
+ */
+function idiomaDoTelefone() {
+  const lista = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']).map(
+    (x) => String(x).toLowerCase().split(/[-_]/)[0],
+  );
+  return lista.find((x) => x === 'pt' || x === 'en' || x === 'ti') || '';
+}
+function aplicarIdioma() {
+  const l = idiomaDoTelefone() || (E.sessao && E.sessao.idioma) || 'pt';
+  const p = l !== LANG ? mudarIdioma(l).then(setFmt) : Promise.resolve();
+  p.then(() => {
     document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';
     desenhar();
+    actualizarIdiomaNotif();
   });
+}
+/** Este telefone já recebe notificações: o servidor guarda o idioma dele, para as enviar já traduzidas. */
+function actualizarIdiomaNotif() {
+  registo()
+    .then((r) => (r && r.pushManager ? r.pushManager.getSubscription() : null))
+    .then((sub) => {
+      if (!sub || (E.notif && E.notif.idioma === LANG)) return;
+      postJson('notificacoes', { accao: 'subscrever', subscricao: sub.toJSON(), idioma: LANG }).then((d) => {
+        if (d && d.ok) E.notif = d;
+      });
+    })
+    .catch(() => {});
+}
+window.addEventListener('languagechange', () => {
+  if (E.sessao) aplicarIdioma();
 });
 $('ag-actualizar').addEventListener('click', () => {
   if (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') carregarAgora(true);

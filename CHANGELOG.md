@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### App no idioma do telefone, e notificações também
+
+- A app «Naval Gestão» abre no idioma do telefone (Definições › Geral › Idioma e região), entre português, inglês e
+  tigrínia, pela ordem de preferência do telefone; muda sozinha quando o idioma do telefone muda. Num idioma que a app
+  não tem, fica o da conta no portal (e, sem esse, o português).
+- As notificações chegam a cada telefone no idioma dele (o telefone diz ao servidor o idioma ao ligar as
+  notificações e sempre que muda); a caixa de recebidas guarda os textos nos três idiomas e mostra-os no idioma actual.
+
 ### Recebido por promotor em dinheiro e em Multicaixa, e separador «Controlo» na app
 
 - Portal › Pagamentos: nova tabela **Recebido por promotor** (vendido, recebido, em dinheiro, em Multicaixa, outros

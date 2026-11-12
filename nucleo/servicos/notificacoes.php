@@ -25,6 +25,53 @@ const NAVAL_NOTIF_TIPOS = [
     'versao' => ['Actualizações do portal', 'Versão instalada, à espera de aprovação ou reposta.', 'actualizacoes', 'V', 'info'],
     'resumo_dia' => ['Resumo do dia', 'Às 18:30: vendas do dia, documentos e a melhor rota.', 'app-gestao', 'V', 'info'],
 ];
+/** Textos das notificações em português, inglês e tigrínia (o telefone recebe-as no idioma em que está). */
+const NAVAL_NOTIF_TEXTOS = [
+    'parada' => ['pt' => ['Rota {r} parada', 'Sem vendas há {h} h {m} min (última às {u}). Hoje: {n} documentos.'],
+        'en' => ['Route {r} stopped', 'No sales for {h} h {m} min (last at {u}). Today: {n} documents.'],
+        'ti' => ['መስመር {r} ደው ኢሉ', 'ን{h} ሰዓት {m} ደቒቕ መሸጣ የለን (ናይ መወዳእታ ኣብ {u})። ሎሚ፦ {n} ሰነዳት።']],
+    'semvendas' => ['pt' => ['Rota {r} sem vendas', 'Ainda não há nenhuma venda hoje.'],
+        'en' => ['Route {r} has no sales', 'No sales yet today.'],
+        'ti' => ['መስመር {r} መሸጣ የብሉን', 'ሎሚ ገና ዝኾነ መሸጣ የለን።']],
+    'anulada' => ['pt' => ['Venda anulada · rota {r}', '{doc} de {v} Kz foi anulado no Pinguim BO.'],
+        'en' => ['Sale cancelled · route {r}', '{doc} for {v} Kz was cancelled in Pinguim BO.'],
+        'ti' => ['ዝተሰረዘ መሸጣ · መስመር {r}', '{doc} ናይ {v} Kz ኣብ Pinguim BO ተሰሪዙ።']],
+    'resumo' => ['pt' => ['Resumo de hoje: {v} Kz', '{n} documentos. Melhor rota: {r} ({mv} Kz).'],
+        'en' => ["Today's summary: {v} Kz", '{n} documents. Best route: {r} ({mv} Kz).'],
+        'ti' => ['ጽማቝ ሎሚ፦ {v} Kz', '{n} ሰነዳት። ዝበለጸ መስመር፦ {r} ({mv} Kz)።']],
+    'carrinha' => ['pt' => ['Carrinha {r} por aprovar', '{n} diferenças na contagem{falta}.'],
+        'en' => ['Van {r} to approve', '{n} differences in the count{falta}.'],
+        'ti' => ['ቫን {r} ክጸድቕ', '{n} ፍልልያት ኣብ ቆጸራ{falta}።']],
+    'carrinha_falta' => ['pt' => [', falta de {v} Kz'], 'en' => [', {v} Kz short'], 'ti' => ['፣ ጉድለት {v} Kz']],
+    'conferencia' => ['pt' => ['Conferência de {d} com diferenças', '{n} rota(s) com documentos ou valores diferentes do Pinguim BO: {lista}.'],
+        'en' => ['Reconciliation for {d} with differences', '{n} route(s) with documents or amounts different from Pinguim BO: {lista}.'],
+        'ti' => ['ምንጽጻር ናይ {d} ፍልልያት ኣለዎ', '{n} መስመር(ታት) ካብ Pinguim BO ዝተፈልየ ሰነዳት ወይ ዋጋታት፦ {lista}።']],
+    'problema' => ['pt' => ['Problema em produção', '{m}'], 'en' => ['Production problem', '{m}'], 'ti' => ['ጸገም ኣብ ስራሕ', '{m}']],
+    'teste' => ['pt' => ['Notificações ligadas', 'Vai receber aqui os alertas do Portal RTM.'],
+        'en' => ['Notifications on', 'You will receive Portal RTM alerts here.'],
+        'ti' => ['ምልክታታት ተወሊዖም', 'መጠንቀቕታታት Portal RTM ኣብዚ ክትቕበሉ ኢኹም።']],
+];
+
+/** Título e texto de um modelo nos três idiomas: {pt: [título, texto], en: …, ti: …}. */
+function naval_notif_txt(string $modelo, array $v): array
+{
+    $out = [];
+    foreach (NAVAL_NOTIF_TEXTOS[$modelo] as $l => $par) {
+        $out[$l] = array_map(function ($x) use ($v) {
+            return strtr($x, array_combine(array_map(function ($k) { return '{' . $k . '}'; }, array_keys($v)), array_map('strval', array_values($v))));
+        }, $par);
+    }
+    return $out;
+}
+
+/** Idioma de uma subscrição (o do telefone) ou, sem ele, o da conta; só pt, en ou ti. */
+function naval_notif_idioma(?array $sub, array $u): string
+{
+    $l = strtolower(substr((string) ($sub['idioma'] ?? ''), 0, 2));
+    if (!in_array($l, ['pt', 'en', 'ti'], true)) $l = (string) ($u['idioma'] ?? 'pt');
+    return in_array($l, ['pt', 'en', 'ti'], true) ? $l : 'pt';
+}
+
 const NAVAL_NOTIF_SILENCIO = ['de' => '20:00', 'ate' => '07:00'];
 const NAVAL_NOTIF_CAIXA_MAX = 100;
 /** Serviços de push aceites (o endereço vem do telefone: nada de pedidos a outros servidores, OWASP SSRF). */
@@ -202,7 +249,7 @@ function naval_notif_subscricoes(): array
     return naval_json_ler(naval_notif_pasta() . '/subscricoes.json');
 }
 
-function naval_notif_subscrever(string $login, array $s, string $agente): array
+function naval_notif_subscrever(string $login, array $s, string $agente, string $idioma = ''): array
 {
     $e = trim((string) ($s['endpoint'] ?? ''));
     $p = (string) ($s['keys']['p256dh'] ?? '');
@@ -210,12 +257,13 @@ function naval_notif_subscrever(string $login, array $s, string $agente): array
     if (!naval_notif_endpoint_ok($e)) throw new NavalErro('Serviço de notificações não reconhecido.', 400);
     naval_ec_publica(naval_b64u_dec($p));   // valida a chave
     if (strlen(naval_b64u_dec($a)) !== 16) throw new NavalErro('Chave de subscrição inválida.', 400);
-    return naval_exclusivo('notif-subs', function () use ($login, $e, $p, $a, $agente) {
+    $idioma = in_array(strtolower(substr($idioma, 0, 2)), ['pt', 'en', 'ti'], true) ? strtolower(substr($idioma, 0, 2)) : '';
+    return naval_exclusivo('notif-subs', function () use ($login, $e, $p, $a, $agente, $idioma) {
         $f = naval_notif_pasta() . '/subscricoes.json';
         $t = naval_json_ler($f);
         $id = substr(hash('sha256', $e), 0, 24);
         $t[$id] = ['id' => $id, 'login' => $login, 'endpoint' => $e, 'p256dh' => $p, 'auth' => $a, 'criada' => $t[$id]['criada'] ?? date('Y-m-d H:i:s'),
-            'agente' => mb_substr($agente, 0, 160), 'falhas' => 0, 'ultima' => $t[$id]['ultima'] ?? ''];
+            'agente' => mb_substr($agente, 0, 160), 'falhas' => 0, 'ultima' => $t[$id]['ultima'] ?? '', 'idioma' => $idioma];
         naval_json_gravar($f, $t);
         naval_registar('notificacoes_subscritas', ['id' => $id], $login);
         return $t[$id];
@@ -324,7 +372,10 @@ function naval_notificar(string $tipo, string $titulo, string $corpo, array $o =
             if ($dup) return ['repetida' => true] + $r;
         }
         $grav = (string) ($o['gravidade'] ?? NAVAL_NOTIF_TIPOS[$tipo][4]);
+        $textos = (array) ($o['textos'] ?? []);   // {en: [título, texto], ti: …}: cada telefone recebe no seu idioma
+        $textos['pt'] = $textos['pt'] ?? [$titulo, $corpo];
         $msg = ['id' => substr(bin2hex(random_bytes(8)), 0, 16), 'tipo' => $tipo, 'titulo' => mb_substr($titulo, 0, 80), 'corpo' => mb_substr($corpo, 0, 240),
+            'textos' => array_map(function ($p) { return [mb_substr((string) $p[0], 0, 80), mb_substr((string) ($p[1] ?? ''), 0, 240)]; }, $textos),
             'url' => (string) ($o['url'] ?? '../gestao/#alertas'), 'tag' => $tipo . (isset($o['rota']) ? '-' . $o['rota'] : ''), 'gravidade' => $grav,
             'data' => date('Y-m-d H:i:s', $agora)];
         $dest = naval_notif_destinatarios($tipo, isset($o['rota']) ? (string) $o['rota'] : null);
@@ -341,7 +392,11 @@ function naval_notificar(string $tipo, string $titulo, string $corpo, array $o =
             }
             foreach ($subs as $id => $s) {
                 if ($s['login'] !== $login) continue;
-                $c = naval_webpush_entregar($s, $msg + ['nao_lidas' => $naoLidas], $agora);
+                $l = naval_notif_idioma($s, $u);
+                $loc = isset($msg['textos'][$l]) ? ['titulo' => $msg['textos'][$l][0], 'corpo' => $msg['textos'][$l][1]] : [];
+                $env = $loc + $msg;
+                unset($env['textos']);
+                $c = naval_webpush_entregar($s, $env + ['nao_lidas' => $naoLidas], $agora);
                 if ($c >= 200 && $c < 300) $r['entregues']++;
                 elseif (in_array($c, [404, 410], true)) $remover[] = $id;   // o telefone retirou a subscrição
             }
@@ -406,6 +461,7 @@ function naval_notif_vista(array $u, string $endpoint = ''): array
     return [
         'chave' => naval_vapid()[1], 'tipos' => $tipos, 'silencio' => $pref['silencio'],
         'subscrito' => $endpoint !== '' && isset($subs[substr(hash('sha256', trim($endpoint)), 0, 24)]), 'equipamentos' => count($subs),
+        'idioma' => $endpoint !== '' ? (string) ($subs[substr(hash('sha256', trim($endpoint)), 0, 24)]['idioma'] ?? '') : '',
         'caixa' => array_slice($caixa, 0, 50), 'nao_lidas' => count(array_filter($caixa, function ($x) { return empty($x['lida']); })),
     ];
 }
@@ -472,22 +528,25 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
                 if (!$x['docs'] || $x['ultima'] === '') continue;
                 $min = (int) round(($agora - strtotime($dia . ' ' . $x['ultima'])) / 60);
                 if ($min < 60) continue;
-                $feito[] = naval_notificar('rota_parada', 'Rota ' . $nome((string) $r) . ' parada', 'Sem vendas há ' . intdiv($min, 60) . ' h ' . ($min % 60) . ' min (última às ' . substr($x['ultima'], 0, 5) . '). Hoje: ' . $x['docs'] . ' documentos.',
-                    ['chave' => 'parada|' . $dia . '|' . $r . '|' . $x['ultima'], 'rota' => (string) $r, 'url' => '../gestao/#rotas'], $agora);
+                $tx = naval_notif_txt('parada', ['r' => $nome((string) $r), 'h' => intdiv($min, 60), 'm' => $min % 60, 'u' => substr($x['ultima'], 0, 5), 'n' => $x['docs']]);
+                $feito[] = naval_notificar('rota_parada', $tx['pt'][0], $tx['pt'][1],
+                    ['chave' => 'parada|' . $dia . '|' . $r . '|' . $x['ultima'], 'rota' => (string) $r, 'url' => '../gestao/#rotas', 'textos' => $tx], $agora);
             }
             // às 10:30 sem nenhuma venda (rotas do portal)
             if ($hm >= '10:30') {
                 foreach (array_keys($prom) as $r) {
                     if (!empty($d['rotas'][$r]['docs'])) continue;
-                    $feito[] = naval_notificar('rota_parada', 'Rota ' . $nome((string) $r) . ' sem vendas', 'Ainda não há nenhuma venda hoje.',
-                        ['chave' => 'semvendas|' . $dia . '|' . $r, 'rota' => (string) $r, 'url' => '../gestao/#rotas'], $agora);
+                    $tx = naval_notif_txt('semvendas', ['r' => $nome((string) $r)]);
+                    $feito[] = naval_notificar('rota_parada', $tx['pt'][0], $tx['pt'][1],
+                        ['chave' => 'semvendas|' . $dia . '|' . $r, 'rota' => (string) $r, 'url' => '../gestao/#rotas', 'textos' => $tx], $agora);
                 }
             }
         }
         foreach ((array) $d['anulados'] as $a) {
             $doc = (string) $a['DOCUMENTO'];
-            $feito[] = naval_notificar('venda_anulada', 'Venda anulada · rota ' . $nome((string) $a['ROTA']), $doc . ' de ' . number_format((float) $a['TOTAL'], 0, ',', ' ') . ' Kz foi anulado no Pinguim BO.',
-                ['chave' => 'anulada|' . $doc, 'rota' => (string) $a['ROTA'], 'url' => '../gestao/#rotas'], $agora);
+            $tx = naval_notif_txt('anulada', ['r' => $nome((string) $a['ROTA']), 'doc' => $doc, 'v' => number_format((float) $a['TOTAL'], 0, ',', ' ')]);
+            $feito[] = naval_notificar('venda_anulada', $tx['pt'][0], $tx['pt'][1],
+                ['chave' => 'anulada|' . $doc, 'rota' => (string) $a['ROTA'], 'url' => '../gestao/#rotas', 'textos' => $tx], $agora);
         }
         // resumo do dia às 18:30
         if ($hm >= '18:30' && $e['resumo'] !== $dia) {
@@ -496,8 +555,8 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
             $melhor = '';
             $mv = -1;
             foreach ($d['rotas'] as $r => $x) if ($x['total'] > $mv) [$melhor, $mv] = [(string) $r, $x['total']];
-            $feito[] = naval_notificar('resumo_dia', 'Resumo de hoje: ' . number_format($tot, 0, ',', ' ') . ' Kz', $docs . ' documentos' . ($melhor !== '' ? '. Melhor rota: ' . $nome($melhor) . ' (' . number_format($mv, 0, ',', ' ') . ' Kz).' : '.'),
-                ['chave' => 'resumo|' . $dia, 'url' => '../gestao/#hoje'], $agora);
+            $tx = naval_notif_txt('resumo', ['v' => number_format($tot, 0, ',', ' '), 'n' => $docs, 'r' => $melhor !== '' ? $nome($melhor) : '—', 'mv' => number_format(max(0, $mv), 0, ',', ' ')]);
+            $feito[] = naval_notificar('resumo_dia', $tx['pt'][0], $tx['pt'][1], ['chave' => 'resumo|' . $dia, 'url' => '../gestao/#hoje', 'textos' => $tx], $agora);
             $e = naval_json_ler($f, $e);
             $e['resumo'] = $dia;
             naval_json_gravar($f, $e);
@@ -516,8 +575,13 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
     foreach ((array) $car as $r) {
         if (($r['resumo']['estado'] ?? '') !== 'por_aprovar') continue;
         $falta = (float) ($r['resumo']['falta_kz'] ?? 0);
-        $feito[] = naval_notificar('carrinha_aprovar', 'Carrinha ' . $r['rota'] . ' por aprovar', ($r['resumo']['diferencas'] ?? 0) . ' diferenças na contagem' . ($falta ? ', falta de ' . number_format($falta, 0, ',', ' ') . ' Kz' : '') . '.',
-            ['chave' => 'carrinha|' . $dia . '|' . $r['rota'], 'rota' => (string) $r['rota'], 'url' => '../reports/#conciliacao-carrinha'], $agora);
+        $fl = $falta ? naval_notif_txt('carrinha_falta', ['v' => number_format($falta, 0, ',', ' ')]) : ['pt' => [''], 'en' => [''], 'ti' => ['']];
+        $tx = [];
+        foreach (['pt', 'en', 'ti'] as $l) {
+            $tx[$l] = naval_notif_txt('carrinha', ['r' => $r['rota'], 'n' => $r['resumo']['diferencas'] ?? 0, 'falta' => $fl[$l][0]])[$l];
+        }
+        $feito[] = naval_notificar('carrinha_aprovar', $tx['pt'][0], $tx['pt'][1],
+            ['chave' => 'carrinha|' . $dia . '|' . $r['rota'], 'rota' => (string) $r['rota'], 'url' => '../reports/#conciliacao-carrinha', 'textos' => $tx], $agora);
     }
     return ['enviadas' => count(array_filter($feito, function ($x) { return empty($x['repetida']); }))];
 }

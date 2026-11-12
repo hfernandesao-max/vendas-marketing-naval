@@ -24,7 +24,7 @@ naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
 $endpoint = '';
 if ($accao === 'subscrever') {
-    $s = naval_notif_subscrever($login, (array) ($p['subscricao'] ?? []), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    $s = naval_notif_subscrever($login, (array) ($p['subscricao'] ?? []), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['idioma'] ?? ''));
     $endpoint = $s['endpoint'];
 } elseif ($accao === 'cancelar') {
     naval_notif_cancelar($login, (string) ($p['endpoint'] ?? ''));
@@ -34,10 +34,12 @@ if ($accao === 'subscrever') {
 } elseif ($accao === 'testar') {
     $subs = array_filter(naval_notif_subscricoes(), function ($s) use ($login) { return $s['login'] === $login; });
     if (!$subs) throw new NavalErro('Este telefone ainda não tem as notificações ligadas.', 409);
-    $msg = ['id' => substr(bin2hex(random_bytes(8)), 0, 16), 'tipo' => 'teste', 'titulo' => 'Notificações ligadas', 'corpo' => 'Vai receber aqui os alertas do Portal RTM.',
-        'url' => '../gestao/#alertas', 'tag' => 'teste', 'gravidade' => 'info', 'data' => date('Y-m-d H:i:s')];
+    $tx = naval_notif_txt('teste', []);
     $ok = 0;
     foreach ($subs as $s) {
+        $l = naval_notif_idioma($s, $u);
+        $msg = ['id' => substr(bin2hex(random_bytes(8)), 0, 16), 'tipo' => 'teste', 'titulo' => $tx[$l][0], 'corpo' => $tx[$l][1],
+            'url' => '../gestao/#alertas', 'tag' => 'teste', 'gravidade' => 'info', 'data' => date('Y-m-d H:i:s')];
         $c = naval_webpush_entregar($s, $msg + ['nao_lidas' => 0], time());
         if ($c >= 200 && $c < 300) $ok++;
     }
