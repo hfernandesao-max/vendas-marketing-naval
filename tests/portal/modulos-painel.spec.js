@@ -53,8 +53,30 @@ const MOD = {
     },
   ],
   conectores: [
-    { id: 'pinguim-sql', nome: 'Pinguim BO (SQL Server, só leitura)', estado: 'ligado' },
-    { id: 'quatenus', nome: 'Quatenus (GPS das viaturas)', estado: 'por_ligar' },
+    {
+      id: 'pinguim-sql',
+      nome: 'Pinguim BO (SQL Server, só leitura)',
+      estado: 'ligado',
+      categoria: 'Dados de negócio (ERP)',
+      fornecedor: 'Pinguim BO',
+      protocolo: 'SQL Server (ODBC), só leitura',
+      sentido: 'entrada',
+      descricao: 'Vendas, cobranças, clientes, stock e cargas, lidos directamente da base de dados.',
+      definicao: 'DB_HOST',
+      modulos: ['Núcleo da plataforma'],
+    },
+    {
+      id: 'quatenus',
+      nome: 'Quatenus (GPS das viaturas)',
+      estado: 'por_ligar',
+      categoria: 'Localização e mapas',
+      fornecedor: 'Quatenus',
+      protocolo: 'REST (HTTPS)',
+      sentido: 'entrada',
+      descricao: 'Posição GPS e percursos das viaturas.',
+      definicao: 'QUATENUS_API_URL',
+      modulos: ['Logística e carrinhas'],
+    },
   ],
 };
 
@@ -68,27 +90,53 @@ test('módulos: estado de cada peça, núcleo sem botões, piloto pede motivo e 
     return r.fulfill({ json: MOD });
   });
   const erros = await abrir(page, '#modulos');
-  await expect(page.locator('.mod-cartao')).toHaveCount(3);
-  const nucleo = page.locator('.mod-cartao').filter({ has: page.locator('.mod-cab b', { hasText: /^Núcleo da plataforma$/ }) });
-  // o núcleo mostra o interruptor ligado mas bloqueado: nunca se desliga
+  await expect(page.locator('.mod-linha')).toHaveCount(3);
+  // uma linha por módulo, agrupadas: base da plataforma (núcleo) e áreas de negócio
+  await expect(page.locator('.mod-grupo')).toHaveText(['Base da plataforma · 1', 'Áreas de negócio · 2']);
+  const linha = (nome) => page.locator('.mod-linha').filter({ has: page.locator('.mod-nome b', { hasText: new RegExp('^' + nome + '$') }) });
+  const nucleo = linha('Núcleo da plataforma');
+  // o núcleo mostra o interruptor ligado mas bloqueado: nunca se desliga, e a ficha não tem botões de piloto
   await expect(nucleo.locator('[role=switch]')).toHaveAttribute('aria-checked', 'true');
   await expect(nucleo.locator('[role=switch]')).toBeDisabled();
-  await expect(nucleo.locator('button:not([role=switch])')).toHaveCount(0);
-  const sap = page.locator('.mod-cartao').filter({ has: page.locator('.mod-cab b', { hasText: /^Integração SAP$/ }) });
+  await nucleo.hover();
+  await expect(page.locator('#mod-ficha')).toContainText('Entrada, sessão, página principal');
+  await expect(page.locator('#mod-ficha')).toContainText('sessao.aberta');
+  await expect(page.locator('#mod-ficha button')).toHaveCount(0);
+  await page.mouse.move(5, 5);
+  await expect(page.locator('#mod-ficha')).toHaveCount(0);
+  const sap = linha('Integração SAP');
   await expect(sap.locator('.pill').first()).toHaveText('Piloto');
-  await expect(page.locator('.tile').filter({ hasText: 'Conectores por ligar' }).locator('.v')).toHaveText('1');
+  await expect(page.locator('.tile').filter({ hasText: 'Conectores ligados' }).locator('.v')).toHaveText('1 / 2');
   await expect(sap.locator('[role=switch]')).toHaveAttribute('aria-checked', 'true'); // piloto conta como ligado
-  await sap.locator('button', { hasText: 'Ligar para todos' }).click();
+  // filtro por estado e pesquisa (também pelas páginas e conectores)
+  await page.locator('.mod-seg button', { hasText: 'Em piloto' }).click();
+  await expect(page.locator('.mod-linha')).toHaveCount(1);
+  await page.locator('.mod-seg button', { hasText: 'Todos' }).click();
+  await page.locator('.mod-procurar').fill('quatenus');
+  await expect(page.locator('.mod-linha')).toHaveCount(1);
+  await expect(page.locator('.mod-linha .mod-nome b')).toHaveText('Logística e carrinhas');
+  await page.locator('.mod-procurar').fill('');
+  // a ficha fica fixa com «Detalhes» (ecrãs tácteis e teclado) e tem o piloto
+  await sap.locator('.mod-info').click();
+  await expect(sap.locator('.mod-info')).toHaveAttribute('aria-expanded', 'true');
+  await page.locator('#mod-ficha button', { hasText: 'Ligar para todos' }).click();
   await page.locator('dialog.dlg input').fill('validado com a Tesouraria');
   await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();
   await expect.poll(() => corpo).toMatchObject({ id: 'sap', estado: 'ligado', motivo: 'validado com a Tesouraria' });
-  await expect(sap.locator('.pill').first()).toHaveText('Ligado');
+  await expect(linha('Integração SAP').locator('.pill').first()).toHaveText('Ligado');
   // o interruptor desliga (com motivo e confirmação)
-  await sap.locator('[role=switch]').click();
+  await linha('Integração SAP').locator('[role=switch]').click();
   await page.locator('dialog.dlg input').fill('fora de uso');
   await page.locator('dialog.dlg button', { hasText: 'Confirmar' }).click();
   await expect.poll(() => corpo && corpo.estado).toBe('desligado');
-  await expect(sap.locator('[role=switch]')).toHaveAttribute('aria-checked', 'false');
+  await expect(linha('Integração SAP').locator('[role=switch]')).toHaveAttribute('aria-checked', 'false');
+  // catálogo dos conectores (separador próprio): estado, categoria, protocolo e o que falta configurar
+  await page.locator('.rel-tab', { hasText: 'Conectores' }).click();
+  const con = page.locator('#s-mod-conectores');
+  await expect(con.locator('tbody tr')).toHaveCount(2);
+  await expect(con.locator('tbody tr').first()).toContainText('Por ligar');
+  await expect(con.locator('tbody tr').first()).toContainText('Por configurar no servidor: QUATENUS_API_URL');
+  await expect(con.locator('tbody tr', { hasText: 'Pinguim BO' })).toContainText('Dados de negócio (ERP)');
   expect(erros).toEqual([]);
 });
 

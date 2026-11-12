@@ -981,3 +981,160 @@ p.aviso {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* Administração › Módulos: lista com o essencial à vista e a ficha completa num painel flutuante */
+.mod-barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 14px;
+}
+.mod-procurar {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+.mod-grupo {
+  margin: 16px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mod-lista {
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mod-linha {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 64px 150px 90px 170px auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  border-top: 1px solid var(--line2);
+  transition: background 0.12s;
+}
+.mod-linha:first-child {
+  border-top: 0;
+}
+.mod-linha:hover,
+.mod-linha.aberta {
+  background: rgb(var(--cz-rgb) / 0.1);
+}
+.mod-desligado .mod-nome,
+.mod-desligado .mod-ic {
+  opacity: 0.55;
+}
+.mod-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #273777, #2397d4);
+}
+.mod-nome {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.mod-nome b {
+  font-size: 14px;
+}
+.mod-resumo {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mod-est {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mod-pags,
+.mod-con {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.mod-con small {
+  color: var(--warn);
+  font-size: 12px;
+}
+.mod-pop {
+  position: fixed;
+  z-index: 60;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
+  border: 1px solid var(--line2);
+  background: var(--c-th-fixo, var(--bg));
+  animation: mod-pop-entra 0.12s ease-out;
+}
+@keyframes mod-pop-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.mod-pop-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mod-pop-cab b {
+  font-size: 15px;
+  margin-right: auto;
+}
+.mod-pop-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: justify;
+}
+.mod-pop-estado {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (max-width: 1100px) {
+  .mod-linha {
+    grid-template-columns: 36px minmax(0, 1fr) auto auto auto;
+  }
+  .mod-versao,
+  .mod-pags,
+  .mod-con {
+    display: none;
+  }
+  .mod-pop .mod-versao {
+    display: inline;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mod-pop {
+    animation: none;
+  }
+}
+.con-nome {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.con-nome span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.con-nome small {
+  color: var(--warn);
+  font-size: 11.5px;
+}

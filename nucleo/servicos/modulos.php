@@ -39,6 +39,23 @@ const NAVAL_CONECTORES = [
     'cctv' => ['CCTV do parque (gravador NVR)', 'CCTV_NVR_URL'],
 ];
 
+/**
+ * Ficha de cada conector (catálogo de integrações, como nas plataformas de integração — Azure, MuleSoft, Workato):
+ * [categoria, fornecedor, protocolo, sentido dos dados, para que serve].
+ */
+const NAVAL_CONECTORES_FICHA = [
+    'pinguim-sql' => ['Dados de negócio (ERP)', 'Pinguim BO', 'SQL Server (ODBC), só leitura', 'entrada', 'Vendas, cobranças, clientes, stock e cargas, lidos directamente da base de dados.'],
+    'pinguim-rest' => ['Dados de negócio (ERP)', 'Pinguim BO', 'REST (HTTPS)', 'entrada', 'Exportações do Pinguim BO pela API, alternativa à base de dados.'],
+    'olap' => ['Dados de negócio (ERP)', 'Pinguim BO', 'OLAP (XMLA)', 'entrada', 'Localização das visitas dos promotores aos clientes.'],
+    'google-maps' => ['Localização e mapas', 'Google', 'REST (HTTPS)', 'entrada', 'Mapas, moradas e distâncias das rotas.'],
+    'quatenus' => ['Localização e mapas', 'Quatenus', 'REST (HTTPS)', 'entrada', 'Posição GPS e percursos das viaturas.'],
+    'mdm' => ['Gestão de dispositivos', 'ManageEngine', 'REST (OAuth 2.0)', 'entrada e saída', 'Smartphones das rotas: inventário, localização e modo quiosque.'],
+    'cctv' => ['Segurança física', 'Gravador NVR do parque', 'ONVIF / RTSP', 'entrada', 'Imagens do parque nas cargas e descargas das carrinhas.'],
+    'ia' => ['Inteligência artificial', 'Fornecedor de IA', 'REST (HTTPS)', 'entrada e saída', 'Assistente que responde a perguntas sobre os dados do portal.'],
+    'sap' => ['Integração com sistemas', 'SAP', 'Ficheiro Excel (modelo de carregamento)', 'saída', 'Ficheiro de vendas para carregar no SAP, sem alterações à estrutura.'],
+    'github' => ['Plataforma', 'GitHub', 'REST (GitHub App)', 'entrada', 'Versões novas do portal, instaladas pelo actualizador.'],
+];
+
 /** Pasta das fichas dos módulos. */
 function naval_modulos_pasta(): string
 {
@@ -154,7 +171,9 @@ function naval_conectores(): array
 {
     $out = [];
     foreach (NAVAL_CONECTORES as $id => [$nome, $chave]) {
-        $out[$id] = ['id' => $id, 'nome' => $nome, 'estado' => $chave === '' || naval_config($chave) !== '' ? 'ligado' : 'por_ligar'];
+        [$cat, $forn, $prot, $sentido, $desc] = NAVAL_CONECTORES_FICHA[$id];   // todos os conectores têm ficha (verificado pelo PHPStan)
+        $out[$id] = ['id' => $id, 'nome' => $nome, 'estado' => $chave === '' || naval_config($chave) !== '' ? 'ligado' : 'por_ligar',
+            'categoria' => $cat, 'fornecedor' => $forn, 'protocolo' => $prot, 'sentido' => $sentido, 'descricao' => $desc, 'definicao' => $chave];
     }
     return $out;
 }
@@ -173,6 +192,11 @@ function naval_modulos_vista(): array
             'paginas' => $x['paginas'], 'api' => count($x['api']), 'depende' => $x['depende'], 'eventos' => $x['eventos'],
             'conectores' => array_values(array_map(function ($c) use ($con) { return $con[$c] ?? ['id' => $c, 'nome' => $c, 'estado' => 'por_ligar']; }, $x['conectores'])),
         ];
+    }
+    foreach ($con as $id => $c) {
+        $con[$id]['modulos'] = array_values(array_map(function ($m) { return $m['nome']; }, array_filter($lista, function ($m) use ($id) {
+            return in_array($id, array_column($m['conectores'], 'id'), true);
+        })));
     }
     return ['modulos' => $lista, 'conectores' => array_values($con)];
 }

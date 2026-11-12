@@ -17,14 +17,10 @@ const slugRel = (s) =>
   normTxt(s)
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-export function organizarRelatorios(pg, pagina) {
-  RELS = [];
-  REL_ATUAL = '';
-  pg.classList.remove('um-relatorio');
-  if (SEM_DIVISAO.includes(pagina)) return;
-  const secs = [...pg.querySelectorAll('section.sec')].filter((x) => !x.classList.contains('fixo') && !x.parentElement.closest('section.sec'));
-  const vistos = new Set();
-  RELS = secs
+/** Secções de topo de um elemento (não as que estão dentro de outra secção), com título, como relatórios. */
+function relatoriosDe(raiz, vistos) {
+  return [...raiz.querySelectorAll('section.sec')]
+    .filter((x) => !x.classList.contains('fixo') && !x.parentElement.closest('section.sec'))
     .map((x) => {
       const h = x.querySelector('.sec-h h2'),
         titulo = h ? h.textContent.trim() : '';
@@ -34,40 +30,106 @@ export function organizarRelatorios(pg, pagina) {
       return { key, titulo, el: x };
     })
     .filter((r) => r.titulo);
+}
+function lerMemo(pagina) {
+  try {
+    return localStorage.getItem('vm-rel-' + pagina) || '';
+  } catch (e) {
+    return '';
+  }
+}
+function gravarMemo(pagina, key) {
+  try {
+    localStorage.setItem('vm-rel-' + pagina, key);
+  } catch (e) {}
+}
+/** Barra de separadores (primária ou secundária), com o activo à vista em ecrãs estreitos. */
+function barra(cls, rotulo, itens, activo, href) {
+  const tabs = el('nav', cls);
+  tabs.setAttribute('aria-label', rotulo);
+  itens.forEach((x) => {
+    const a = el('a', 'rel-tab' + (x === activo ? ' on' : ''), x.titulo);
+    a.href = href(x);
+    if (x === activo) a.setAttribute('aria-current', 'page');
+    tabs.append(a);
+  });
+  requestAnimationFrame(() => {
+    const on = tabs.querySelector('.on');
+    if (on && tabs.scrollWidth > tabs.clientWidth) tabs.scrollLeft = on.offsetLeft - 16;
+  });
+  return tabs;
+}
+/**
+ * Páginas com muitos relatórios agrupam-nos (arquitectura da informação: no máximo 5 a 7 separadores por nível,
+ * NN/g e Material Design): a página põe cada grupo num `div.rel-grupo` (data-titulo; data-junto = os relatórios do
+ * grupo lêem-se seguidos). Separadores primários = grupos; dentro do grupo, separadores secundários, mais discretos,
+ * para os relatórios. O que está no grupo fora das secções (indicadores, botões) só aparece com o grupo.
+ */
+function organizarGrupos(pg, pagina, caixas) {
+  const vistos = new Set();
+  const grupos = caixas.map((c) => {
+    const titulo = c.dataset.titulo || '';
+    let key = c.dataset.chave || slugRel(titulo);
+    while (vistos.has(key)) key += '-2';
+    vistos.add(key);
+    return { key, titulo, el: c, junto: c.dataset.junto === '1', rels: relatoriosDe(c, vistos) };
+  });
+  const achar = (k) => grupos.find((g) => g.key === k || g.rels.some((r) => r.key === k));
+  const memo = lerMemo(pagina);
+  const g = achar(REL_PEDIDO) || achar(memo) || grupos[0];
+  const pedido = [REL_PEDIDO, memo].find((k) => k && g.rels.some((r) => r.key === k));
+  const sub = !g.junto && g.rels.length > 1 ? g.rels.find((r) => r.key === pedido) || g.rels[0] : null;
+  RELS = grupos.map((x) => ({ key: x.key, titulo: x.titulo, el: x.el, subs: x.rels.map((r) => r.key) }));
+  REL_ATUAL = sub ? sub.key : g.key;
+  REL_PEDIDO = '';
+  gravarMemo(pagina, REL_ATUAL);
+  grupos.forEach((x) => {
+    x.el.hidden = x !== g;
+  });
+  if (sub) g.rels.forEach((r) => (r.el.hidden = r !== sub));
+  pg.classList.add('um-relatorio', 'com-grupos');
+  const q = filtrosURL(pagina);
+  const ref = (k) => '#' + pagina + '/' + k + (q ? '?' + q : '');
+  pg.insertBefore(
+    barra('rel-tabs', t('Relatórios desta página'), grupos, g, (x) => ref(x.key)),
+    caixas[0],
+  );
+  if (sub) {
+    const nav2 = barra('rel-tabs rel-tabs-2', t('Relatórios de {g}', { g: g.titulo }), g.rels, sub, (x) => ref(x.key));
+    let anc = g.rels[0].el;
+    while (anc.parentElement && anc.parentElement !== g.el) anc = anc.parentElement;
+    g.el.insertBefore(nav2, anc);
+  }
+}
+export function organizarRelatorios(pg, pagina) {
+  RELS = [];
+  REL_ATUAL = '';
+  pg.classList.remove('um-relatorio', 'com-grupos');
+  if (SEM_DIVISAO.includes(pagina)) return;
+  // grupos sem conteúdo (ex.: dados que o servidor ainda não tem) não aparecem como separador
+  pg.querySelectorAll(':scope > .rel-grupo:empty').forEach((x) => x.remove());
+  const caixas = [...pg.querySelectorAll(':scope > .rel-grupo')];
+  if (caixas.length > 1) return organizarGrupos(pg, pagina, caixas);
+  const r0 = relatoriosDe(pg, new Set());
+  RELS = r0;
   if (RELS.length < 2) {
     RELS = [];
     return;
   }
-  let memo = '';
-  try {
-    memo = localStorage.getItem('vm-rel-' + pagina) || '';
-  } catch (e) {}
+  const memo = lerMemo(pagina);
   const r = RELS.find((x) => x.key === REL_PEDIDO) || RELS.find((x) => x.key === memo) || RELS[0];
   REL_ATUAL = r.key;
   REL_PEDIDO = '';
-  try {
-    localStorage.setItem('vm-rel-' + pagina, r.key);
-  } catch (e) {}
+  gravarMemo(pagina, r.key);
   RELS.forEach((x) => {
     x.el.hidden = x !== r;
   });
   pg.classList.add('um-relatorio');
   const q = filtrosURL(pagina);
-  const tabs = el('nav', 'rel-tabs');
-  tabs.setAttribute('aria-label', t('Relatórios desta página'));
-  RELS.forEach((x) => {
-    const a = el('a', 'rel-tab' + (x === r ? ' on' : ''), x.titulo);
-    a.href = '#' + pagina + '/' + x.key + (q ? '?' + q : '');
-    if (x === r) a.setAttribute('aria-current', 'page');
-    tabs.append(a);
-  });
+  const tabs = barra('rel-tabs', t('Relatórios desta página'), RELS, r, (x) => '#' + pagina + '/' + x.key + (q ? '?' + q : ''));
   let anc = RELS[0].el;
   while (anc.parentElement && anc.parentElement !== pg) anc = anc.parentElement;
   pg.insertBefore(tabs, anc);
-  requestAnimationFrame(() => {
-    const on = tabs.querySelector('.on');
-    if (on && tabs.scrollWidth > tabs.clientWidth) tabs.scrollLeft = on.offsetLeft - 16;
-  });
 }
 // Menu principal em acordeão (padrão de divulgação da WAI-ARIA): as áreas começam fechadas e só uma
 // fica aberta de cada vez; abrir outra fecha a anterior. A área da página aberta abre-se sozinha e
@@ -228,9 +290,10 @@ export function nav() {
     if (p.id === atual && RELS.length) {
       const sub = el('div', 'nav-sub');
       RELS.forEach((r) => {
-        const x = el('a', r.key === REL_ATUAL ? 'on' : null, r.titulo);
+        const aqui = r.key === REL_ATUAL || (r.subs || []).includes(REL_ATUAL);
+        const x = el('a', aqui ? 'on' : null, r.titulo);
         x.href = '#' + p.id + '/' + r.key + (q ? '?' + q : '');
-        if (r.key === REL_ATUAL) x.setAttribute('aria-current', 'true');
+        if (aqui) x.setAttribute('aria-current', 'true');
         x.addEventListener('click', () => $('#app').classList.remove('open'));
         sub.append(x);
       });

@@ -5,8 +5,9 @@
 // no registo de auditoria (servidor: nucleo/api/v1/modulos.php).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
-import { pill, secBox, tiles } from '../componentes/blocos.js';
+import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, confirmarIdentidade, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { postJson } from '../servidor.js';
@@ -91,14 +92,19 @@ function mudar(m, estado) {
   });
 }
 
-function cartao(m) {
-  const c = el('div', 'glass mod-cartao');
-  const h = el('div', 'mod-cab');
-  const [rot, cls] = ESTADOS[m.estado] || ESTADOS.ligado;
-  h.append(el('b', null, t(m.nome)), el('span', 'mod-versao mono', 'v' + m.versao), pill(t(rot), cls));
-  if (m.nucleo) h.append(pill(t('Núcleo'), 'p-mut'));
-  h.append(interruptor(m));
-  c.append(h, el('p', 'mod-desc', t(m.descricao)));
+// ───────────── Lista dos módulos (padrão das consolas de administração: Microsoft 365, Atlassian, Google Workspace) ─────
+// Uma linha por módulo, com o essencial à vista (nome, resumo numa linha, versão, estado, páginas, conectores e
+// interruptor). A ficha completa (descrição, páginas, conectores, dependências, eventos, última alteração e piloto)
+// abre num painel flutuante ao passar o rato ou ao focar a linha pelo teclado, e fica fixa com um clique em «Detalhes»
+// (ecrãs tácteis). Esc ou um clique fora fecham-na (WAI-ARIA, padrão «disclosure» não modal).
+const FILTRO = { q: '', estado: '' };
+let pop = null,
+  popDe = '',
+  fixo = false,
+  tAbrir = 0,
+  tFechar = 0;
+
+function detalhes(m) {
   const det = el('dl', 'mod-det');
   const linha = (k, v) => {
     if (!v) return;
@@ -110,18 +116,185 @@ function cartao(m) {
   const ev = [...(m.eventos.publica || []).map((x) => '↑ ' + x), ...(m.eventos.escuta || []).map((x) => '↓ ' + x)];
   linha(t('Eventos'), ev.join(' · '));
   if (m.alterado_em) linha(t('Última alteração'), dataHora(m.alterado_em) + ' · ' + m.alterado_por);
-  c.append(det);
-  // o interruptor liga e desliga; o piloto (validar com os administradores antes de ligar para todos) fica ao lado
+  return det;
+}
+
+function fecharFicha() {
+  clearTimeout(tAbrir);
+  if (pop) pop.remove();
+  pop = null;
+  popDe = '';
+  fixo = false;
+  document.querySelectorAll('.mod-linha.aberta').forEach((x) => {
+    x.classList.remove('aberta');
+    const b = x.querySelector('.mod-info');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function abrirFicha(m, linha, fixar) {
+  clearTimeout(tFechar);
+  if (popDe === m.id && pop) {
+    if (fixar) fixo = true;
+    return;
+  }
+  fecharFicha();
+  const [rot, cls, expl] = ESTADOS[m.estado] || ESTADOS.ligado;
+  pop = el('div', 'glass mod-pop');
+  pop.id = 'mod-ficha';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', t('Ficha do módulo «{m}»', { m: t(m.nome) }));
+  const cab = el('div', 'mod-pop-cab');
+  cab.append(el('b', null, t(m.nome)), el('span', 'mod-versao mono', 'v' + m.versao), pill(t(rot), cls));
+  if (m.nucleo) cab.append(pill(t('Núcleo'), 'p-mut'));
+  pop.append(cab, el('p', 'mod-pop-desc', t(m.descricao)), el('p', 'mod-pop-estado', t(expl)), detalhes(m));
   if (!m.nucleo && m.estado !== 'desligado') {
     const acc = el('div', 'mod-acc');
-    if (m.estado === 'piloto') acc.append(botao(t('Ligar para todos'), 'sm ghost', () => mudar(m, 'ligado')));
-    else acc.append(botao(t('Pôr em piloto'), 'sm ghost', () => mudar(m, 'piloto')));
-    c.append(acc);
+    if (m.estado === 'piloto') acc.append(botao(t('Ligar para todos'), 'sm', () => (fecharFicha(), mudar(m, 'ligado'))));
+    else acc.append(botao(t('Pôr em piloto'), 'sm ghost', () => (fecharFicha(), mudar(m, 'piloto'))));
+    pop.append(acc);
   }
-  return c;
+  pop.addEventListener('mouseenter', () => clearTimeout(tFechar));
+  pop.addEventListener('mouseleave', () => {
+    if (!fixo) tFechar = setTimeout(fecharFicha, 200);
+  });
+  document.body.append(pop);
+  popDe = m.id;
+  fixo = !!fixar;
+  linha.classList.add('aberta');
+  const info = linha.querySelector('.mod-info');
+  if (info) info.setAttribute('aria-expanded', 'true');
+  // por baixo da linha, alinhada à direita do nome; sobe se não couber no ecrã
+  const r = linha.getBoundingClientRect();
+  const w = Math.min(460, window.innerWidth - 24);
+  pop.style.width = w + 'px';
+  const left = Math.max(12, Math.min(r.left + 56, window.innerWidth - w - 12));
+  pop.style.left = left + 'px';
+  const h = pop.offsetHeight;
+  const top = r.bottom + 6 + h > window.innerHeight - 12 ? Math.max(12, r.top - h - 6) : r.bottom + 6;
+  pop.style.top = top + 'px';
+}
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && pop) {
+    const de = document.querySelector('.mod-linha.aberta .mod-info');
+    fecharFicha();
+    if (de) de.focus();
+  }
+});
+document.addEventListener('click', (ev) => {
+  if (pop && fixo && !pop.contains(ev.target) && !ev.target.closest('.mod-linha')) fecharFicha();
+});
+window.addEventListener('hashchange', fecharFicha);
+window.addEventListener('scroll', () => pop && !fixo && fecharFicha(), { passive: true });
+
+const iniciais = (nome) =>
+  nome
+    .split(/\s+/)
+    .filter((x) => x.length > 2 || /^[A-Z]{2,}$/.test(x))
+    .slice(0, 2)
+    .map((x) => x[0])
+    .join('')
+    .toUpperCase();
+
+function linhaModulo(m) {
+  const l = el('div', 'mod-linha mod-' + m.estado);
+  l.dataset.id = m.id;
+  const [rot, cls] = ESTADOS[m.estado] || ESTADOS.ligado;
+  const ic = el('span', 'mod-ic', iniciais(t(m.nome)));
+  ic.setAttribute('aria-hidden', 'true');
+  const nome = el('div', 'mod-nome');
+  nome.append(el('b', null, t(m.nome)), el('span', 'mod-resumo', t(m.descricao)));
+  const porLigar = m.conectores.filter((x) => x.estado !== 'ligado').length;
+  const nc = m.conectores.length;
+  const con = el('span', 'mod-con', nc ? t(nc === 1 ? '{n} conector' : '{n} conectores', { n: nc }) : t('sem conectores'));
+  if (porLigar) con.append(el('small', null, ' · ' + t('{n} por ligar', { n: porLigar })));
+  const estado = el('span', 'mod-est');
+  estado.append(pill(t(rot), cls));
+  if (m.nucleo) estado.append(pill(t('Núcleo'), 'p-mut'));
+  const info = el('button', 'btn ghost sm mod-info', t('Detalhes'));
+  info.type = 'button';
+  info.setAttribute('aria-expanded', 'false');
+  info.setAttribute('aria-controls', 'mod-ficha');
+  info.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (popDe === m.id && fixo) fecharFicha();
+    else abrirFicha(m, l, true);
+  });
+  info.addEventListener('focus', () => abrirFicha(m, l, false));
+  l.append(
+    ic,
+    nome,
+    el('span', 'mod-versao mono', 'v' + m.versao),
+    estado,
+    el('span', 'mod-pags', t(m.paginas.length === 1 ? '{n} página' : '{n} páginas', { n: m.paginas.length })),
+    con,
+    info,
+    interruptor(m),
+  );
+  l.addEventListener('mouseenter', () => {
+    clearTimeout(tFechar);
+    clearTimeout(tAbrir);
+    if (!fixo) tAbrir = setTimeout(() => abrirFicha(m, l, false), 350);
+  });
+  l.addEventListener('mouseleave', () => {
+    clearTimeout(tAbrir);
+    if (!fixo) tFechar = setTimeout(fecharFicha, 200);
+  });
+  return l;
+}
+
+function barraFiltros(M, redesenhar) {
+  const b = el('div', 'mod-barra');
+  const q = el('input', 'search mod-procurar');
+  q.type = 'search';
+  q.placeholder = t('Procurar módulo, página ou conector…');
+  q.setAttribute('aria-label', t('Procurar módulo, página ou conector'));
+  q.value = FILTRO.q;
+  q.addEventListener('input', () => {
+    FILTRO.q = q.value;
+    redesenhar();
+  });
+  const seg = el('div', 'seg mod-seg');
+  seg.setAttribute('role', 'group');
+  seg.setAttribute('aria-label', t('Estado'));
+  [
+    ['', t('Todos'), M.length],
+    ['ligado', t('Ligados'), M.filter((m) => m.estado === 'ligado').length],
+    ['piloto', t('Em piloto'), M.filter((m) => m.estado === 'piloto').length],
+    ['desligado', t('Desligados'), M.filter((m) => m.estado === 'desligado').length],
+  ].forEach(([v, rot, n]) => {
+    const x = el('button', FILTRO.estado === v ? 'on' : null, rot + ' ' + n);
+    x.type = 'button';
+    x.setAttribute('aria-pressed', String(FILTRO.estado === v));
+    x.addEventListener('click', () => {
+      FILTRO.estado = v;
+      seg.querySelectorAll('button').forEach((y) => {
+        y.classList.toggle('on', y === x);
+        y.setAttribute('aria-pressed', String(y === x));
+      });
+      redesenhar();
+    });
+    seg.append(x);
+  });
+  b.append(q, seg);
+  return b;
+}
+
+function filtrar(M) {
+  const q = FILTRO.q.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const norm = (x) =>
+    String(x || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+  return M.filter((m) => !FILTRO.estado || m.estado === FILTRO.estado).filter(
+    (m) => !q || norm([t(m.nome), t(m.descricao), ...m.paginas.map(nomePagina), ...m.conectores.map((c) => t(c.nome))].join(' ')).includes(q),
+  );
 }
 
 R.modulos = (pg) => {
+  fecharFicha();
   if (!ESTADO) {
     pg.append(el('div', 'glass empty', t('A carregar…')));
     carregar();
@@ -134,23 +307,91 @@ R.modulos = (pg) => {
   const M = ESTADO.modulos;
   const n = (e) => M.filter((m) => m.estado === e).length;
   const porLigar = ESTADO.conectores.filter((c) => c.estado !== 'ligado');
-  pg.append(
-    tiles([
-      { l: t('Módulos ligados'), v: String(n('ligado')), s: t('{n} módulos no total', { n: M.length }) },
-      { l: t('Em piloto'), v: String(n('piloto')), s: t('só SADM e TI'), tone: n('piloto') ? 'warn' : null },
-      { l: t('Desligados'), v: String(n('desligado')) },
-      { l: t('Conectores por ligar'), v: String(porLigar.length), s: porLigar.map((c) => t(c.nome)).join(', ') },
-    ]),
-  );
-  const grelha = el('div', 'mod-grelha');
-  M.forEach((m) => grelha.append(cartao(m)));
+  const tile = tiles([
+    { l: t('Módulos ligados'), v: String(n('ligado')), s: t('{n} módulos no total', { n: M.length }) },
+    { l: t('Em piloto'), v: String(n('piloto')), s: t('só SADM e TI'), tone: n('piloto') ? 'warn' : null },
+    { l: t('Desligados'), v: String(n('desligado')) },
+    {
+      l: t('Conectores ligados'),
+      v: n0(ESTADO.conectores.length - porLigar.length) + ' / ' + n0(ESTADO.conectores.length),
+      s: t('{n} por ligar', { n: porLigar.length }),
+      tone: porLigar.length ? 'warn' : null,
+    },
+  ]);
+  pg.append(tile);
+  const corpo = el('div', 'mod-corpo');
+  const desenhar = () => {
+    fecharFicha();
+    corpo.replaceChildren();
+    const F = filtrar(M);
+    if (!F.length) corpo.append(el('p', 'note', t('Nenhum módulo com estes filtros.')));
+    [
+      [t('Base da plataforma'), F.filter((m) => m.nucleo)],
+      [t('Áreas de negócio'), F.filter((m) => !m.nucleo)],
+    ].forEach(([titulo, lista]) => {
+      if (!lista.length) return;
+      corpo.append(el('h3', 'mod-grupo', titulo + ' · ' + lista.length));
+      const ls = el('div', 'mod-lista');
+      ls.setAttribute('role', 'list');
+      lista
+        .slice()
+        .sort((a, b) => t(a.nome).localeCompare(t(b.nome), 'pt'))
+        .forEach((m) => {
+          const l = linhaModulo(m);
+          l.setAttribute('role', 'listitem');
+          ls.append(l);
+        });
+      corpo.append(ls);
+    });
+  };
+  const caixa = el('div');
+  caixa.append(barraFiltros(M, desenhar), corpo);
+  desenhar();
   pg.append(
     secBox(
       t('Módulos do portal'),
-      t(
-        'Cada módulo é uma peça independente, com ficha própria. Piloto: só o super administrador e o administrador da plataforma vêem o módulo, para o validar antes de o ligar para todos.',
-      ),
-      grelha,
+      t('Cada módulo é uma peça independente. Passe o rato por um módulo, ou carregue em «Detalhes», para ver a ficha completa.'),
+      caixa,
     ),
   );
+  pg.append(tabelaConectores());
 };
+
+const SENTIDO = { entrada: 'Entrada', saida: 'Saída', 'entrada e saída': 'Entrada e saída', saída: 'Saída' };
+/** Catálogo de integrações: estado, categoria, fornecedor, protocolo, sentido dos dados e módulos que o usam. */
+function tabelaConectores() {
+  const linhas = ESTADO.conectores.map((c) => ({
+    ...c,
+    estado_txt: c.estado === 'ligado' ? t('Ligado') : t('Por ligar'),
+    ordem: (c.estado === 'ligado' ? '1' : '0') + (c.categoria || ''),
+  }));
+  return tabela({
+    id: 'mod-conectores',
+    titulo: t('Conectores'),
+    nota: t('Integrações com outros sistemas, agrupadas por categoria. Um conector fica ligado quando a informática define a sua configuração no servidor.'),
+    rows: linhas,
+    sort: 'ordem',
+    dir: 1,
+    cols: [
+      { key: 'estado_txt', label: t('Estado'), p: 0, render: (v, r) => pill(v, r.estado === 'ligado' ? 'p-ok' : 'p-warn') },
+      {
+        key: 'nome',
+        label: t('Conector'),
+        p: 0,
+        wrap: true,
+        get: (r) => t(r.nome),
+        render: (v, r) => {
+          const d = el('div', 'con-nome');
+          d.append(el('b', null, t(r.nome)), el('span', null, t(r.descricao || '')));
+          if (r.estado !== 'ligado' && r.definicao) d.append(el('small', 'mono', t('Por configurar no servidor: {k}', { k: r.definicao })));
+          return d;
+        },
+      },
+      { key: 'categoria', label: t('Categoria'), get: (r) => t(r.categoria || '') },
+      { key: 'fornecedor', label: t('Fornecedor'), get: (r) => t(r.fornecedor || '') },
+      { key: 'protocolo', label: t('Protocolo'), get: (r) => t(r.protocolo || '') },
+      { key: 'sentido', label: t('Sentido dos dados'), get: (r) => t(SENTIDO[r.sentido] || r.sentido || '') },
+      { key: 'modulos', label: t('Usado por'), wrap: true, get: (r) => (r.modulos || []).map((x) => t(x)).join(', ') },
+    ],
+  });
+}
