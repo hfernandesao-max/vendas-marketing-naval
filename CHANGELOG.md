@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Folha de caixa: aprovação pelo superior hierárquico
+
+- Circuito em três passos, com segregação de funções: **quem lança valida** («Validar a caixa», com a contagem por
+  notas) e **aprova o superior hierárquico**.
+- A aprovação passa a ser uma permissão própria na matriz de acessos («Folha de caixa · aprovação pelo superior
+  hierárquico»). Por omissão é da Direcção; o super administrador marca no portal o perfil do superior.
+- Os colegas da tesouraria e do apoio RTM já não aprovam a caixa uns dos outros. Quem aprova também pode reabrir uma
+  caixa validada para correcção, com motivo.
+
 ### Folha de caixa: contagem às cegas e talão de fecho do TPA
 
 - Segue a prática internacional de **contagem às cegas** (blind count): quem recebe o dinheiro não vê o valor esperado

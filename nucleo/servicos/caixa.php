@@ -228,10 +228,10 @@ function naval_caixa_aprovar(string $dia, ?int $versao, string $login): array
 {
     $c = naval_caixa_alterar($dia, $versao, function ($c) use ($login) {
         if ($c['estado'] === 'aprovada') throw new NavalErro('A caixa deste dia já foi aprovada.', 409);
-        if ($c['estado'] !== 'fechada') throw new NavalErro('Feche a caixa antes de a aprovar.', 409);
+        if ($c['estado'] !== 'fechada') throw new NavalErro('Valide a caixa antes de a aprovar.', 409);
         if (naval_config('CAIXA_SEGREGACAO', '1') !== '0') {
             foreach (['fechada_por', 'alterado_por'] as $k) {
-                if (strcasecmp((string) ($c[$k] ?? ''), $login) === 0) throw new NavalErro('Segregação de funções: quem registou ou fechou a caixa não a aprova.', 403);
+                if (strcasecmp((string) ($c[$k] ?? ''), $login) === 0) throw new NavalErro('Segregação de funções: quem lançou ou validou a caixa não a aprova.', 403);
             }
         }
         $c['estado'] = 'aprovada';

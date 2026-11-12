@@ -18,7 +18,7 @@ let D = null; // resposta do servidor
 let dia = null;
 let ed = null; // cópia em edição
 let aLer = false;
-const ESTADOS = { aberta: ['Aberta', 'p-warn'], fechada: ['Fechada, por aprovar', 'p-serio'], aprovada: ['Aprovada', 'p-ok'] };
+const ESTADOS = { aberta: ['Aberta', 'p-warn'], fechada: ['Validada, por aprovar', 'p-serio'], aprovada: ['Aprovada', 'p-ok'] };
 
 function ler() {
   if (aLer) return;
@@ -333,7 +333,7 @@ R['caixa-marketing'] = (pg) => {
   );
   const cab = el('section', 'glass sec cx-cab');
   cab.append(el('b', null, t('Folha de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
-  if (c.fechada_por) cab.append(el('span', 'note', t('fechada por {p}', { p: c.fechada_por })));
+  if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: c.fechada_por })));
   if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: c.aprovada_por })));
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
@@ -450,9 +450,9 @@ R['caixa-marketing'] = (pg) => {
   const acc = el('div', 'cc-acc');
   if (aberta) {
     const g = botao(t('Gravar'), 'ghost', () => enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
-    const f = botao(t('Fechar a caixa'), null, () =>
+    const f = botao(t('Validar a caixa'), null, () =>
       janela(
-        t('Fechar a caixa de {d}', { d: dl(dia) }),
+        t('Validar a caixa de {d}', { d: dl(dia) }),
         t('Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.', { v: kz(teo()) }),
         (b, ft, fechar) => {
           const teorico = teo();
@@ -478,7 +478,7 @@ R['caixa-marketing'] = (pg) => {
           b.append(g.el, q, dif, ex, e2);
           ft.append(
             botao(t('Cancelar'), 'ghost', fechar),
-            botao(t('Fechar a caixa'), null, () => {
+            botao(t('Validar a caixa'), null, () => {
               // grava primeiro o que está no ecrã e depois fecha com a contagem
               const fechar2 = () =>
                 postJson('caixa', {
@@ -498,7 +498,7 @@ R['caixa-marketing'] = (pg) => {
                   D.caixa = x.caixa;
                   ed = copia(x.caixa);
                   marcarPorGravar('caixa', false);
-                  toast(t('Caixa fechada. Falta a aprovação por outra pessoa.'), 5000);
+                  toast(t('Caixa validada. Falta a aprovação do superior hierárquico.'), 5000);
                   draw();
                 });
               if (ed.mudou)
@@ -512,7 +512,7 @@ R['caixa-marketing'] = (pg) => {
       ),
     );
     acc.append(g, f);
-  } else if (c.estado === 'fechada' && D.gere) {
+  } else if (c.estado === 'fechada' && (D.gere || D.aprova)) {
     acc.append(
       botao(t('Reabrir para corrigir'), 'ghost', () =>
         janela(
@@ -536,9 +536,9 @@ R['caixa-marketing'] = (pg) => {
           },
         ),
       ),
-      botao(t('Aprovar a caixa'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')),
     );
-    estado.textContent = t('Aprova outra pessoa que não quem registou ou fechou a caixa (segregação de funções).');
+    if (D.aprova) acc.append(botao(t('Aprovar a caixa'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')));
+    estado.textContent = t('Quem lança valida; aprova o superior hierárquico, nunca quem lançou ou validou (segregação de funções).');
   }
   pg.append(el('div', 'cx-rodape'), estado, erro, acc);
 };
