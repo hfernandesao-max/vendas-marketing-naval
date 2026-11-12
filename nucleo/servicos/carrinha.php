@@ -664,6 +664,15 @@ function naval_carga_na_carrinha_seguro(): array
     }
 }
 
+/** Utilizadores activos do portal (para escolher quem contou / validou numa correcção), por ordem alfabética. */
+function naval_carr_contas(): array
+{
+    $out = [];
+    foreach (naval_utilizadores() as $login => $u) if (!empty($u['activo']) && ($u['perfil'] ?? '') !== 'EXT') $out[] = (string) $login;
+    sort($out, SORT_NATURAL | SORT_FLAG_CASE);
+    return $out;
+}
+
 /**
  * Correcção do registo de quem contou e de quem validou (só o super administrador), para contagens feitas antes do
  * circuito actual ou registadas na conta de outra pessoa. Não muda números, estado nem aprovações: só os nomes, com
@@ -672,10 +681,12 @@ function naval_carga_na_carrinha_seguro(): array
  */
 function naval_carr_corrigir_registo(string $data, array $rotas, string $contado, string $validado, string $motivo, array $eu): array
 {
-    $nome = function (string $s, string $o) {
-        $s = trim(preg_replace('/\s+/u', ' ', $s));
+    // só contas existentes e activas do portal (utilizador no formato primeiro.último), escolhidas da lista
+    $contas = naval_carr_contas();
+    $nome = function (string $s, string $o) use ($contas) {
+        $s = trim($s);
         if ($s === '') return null;
-        if (!preg_match('/^[\p{L}0-9 .\'_-]{2,60}$/u', $s)) throw new NavalErro('Nome inválido em «' . $o . '».', 400);
+        if (!in_array($s, $contas, true)) throw new NavalErro('Escolha da lista o utilizador em «' . $o . '».', 400);
         return $s;
     };
     $contado = $nome($contado, 'Contado por');

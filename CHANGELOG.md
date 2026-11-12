@@ -4,6 +4,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Cartões empilhados com o espaçamento certo
+
+- A barra do dia, os cabeçalhos e as secções da folha de caixa e do Relatório de Vendas deixam de ficar encostados
+  uns aos outros: 16 px entre cartões, com os cantos arredondados inteiros.
+- Corrigida uma camada invisível no fundo da folha de caixa (herdada do estilo das apresentações) que podia tapar
+  botões ao percorrer a página.
+
+### Folha de caixa: empresa Naval, talão obrigatório e valor do TPA do Pinguim BO
+
+- O dinheiro e os talões dos promotores são sempre da **Naval**: deixa de haver a escolha da empresa nessas linhas
+  (continua só nas saídas, para os fundos de maneio de cada empresa).
+- O **Nº do talão de fecho** está marcado como obrigatório (*), fica realçado enquanto estiver vazio e a folha não
+  grava nem valida sem ele.
+- O **valor de cada talão do TPA vem directamente do Pinguim BO** (Multicaixa recebido pelo promotor no dia) e não
+  se escreve; a Josefa indica só o banco e o número do talão. Um talão por promotor. Sem ligação ao Pinguim BO, o
+  valor escreve-se à mão, para não parar a tesouraria.
+
+### Gráficos em vidro
+
+- Os cartões dos gráficos ganham o acabamento em vidro, ao estilo «Liquid Glass» da Apple: aresta superior
+  iluminada, reflexo diagonal suave, sombra em duas camadas e entrada curta. A dica que aparece ao passar o rato
+  passa também a vidro.
+- Segue as boas práticas de visualização de dados: o vidro fica só na moldura e as barras e linhas continuam sólidas
+  e nítidas, com a grelha mais discreta. Funciona igual no tema escuro e no claro.
+- Acessibilidade: sem animação para quem escolheu reduzir o movimento, sem transparência para quem a desligou no
+  sistema e sem efeitos em cores forçadas; vidro mais leve nos telemóveis.
+
+### Conciliação da carrinha: correcção com a lista de utilizadores
+
+- Em «Corrigir quem contou / validou» já não se escreve nada: escolhe-se o utilizador da lista das contas activas do
+  portal (primeiro.último). O servidor recusa nomes que não sejam de uma conta.
+
 ### Conciliação da carrinha: correcção do registo de quem contou e validou
 
 - O primeiro passo da conciliação passa a chamar-se «Contado» (no ecrã, no painel e no PDF).

@@ -154,7 +154,8 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   s.append(h);
   const tab = el('table', 'cc-tab cx-tab');
   const cab = el('tr');
-  campos.forEach((c) => cab.append(el('th', c.n ? 'n' : null, c.label)));
+  // campos obrigatórios marcados com * (e «aria-required» no campo)
+  campos.forEach((c) => cab.append(el('th', (c.n ? 'n' : '') + (c.obrigatorio ? ' cx-obr' : '') || null, c.label)));
   if (editavel) cab.append(el('th', null, ''));
   tab.append(cab);
   linhas.forEach((l, i) => {
@@ -176,6 +177,11 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
             c.n ? { min: 0, step: '0.01', inputMode: 'decimal' } : { maxLength: c.max || 120 },
           );
         inp.setAttribute('aria-label', c.label + ' · ' + (i + 1));
+        if (c.obrigatorio) {
+          inp.required = true;
+          inp.setAttribute('aria-required', 'true');
+          inp.classList.toggle('cx-falta', !l[c.key]);
+        }
         // valor de uma entrega contada por notas: é o total das notas (muda-se pelas notas)
         if (c.n && l.notas) {
           inp.readOnly = true;
@@ -183,7 +189,9 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
         }
         inp.addEventListener(c.lista ? 'change' : 'input', () => {
           l[c.key] = c.n ? (inp.value === '' ? null : Number(inp.value)) : inp.value;
+          if (c.obrigatorio) inp.classList.toggle('cx-falta', !inp.value.trim());
           mudou();
+          if (c.refaz) draw();
         });
         td.append(inp);
       } else td.textContent = c.ver ? c.ver(l) : c.n ? kz(l[c.key]) : l[c.key] || '—';
@@ -267,6 +275,12 @@ R['caixa-marketing'] = (pg) => {
     pg.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
+  // valor de cada talão do TPA = Multicaixa recebido pelo promotor no Pinguim BO (o servidor confirma ao gravar)
+  if (ed && D.esperado && D.caixa.estado === 'aberta')
+    ed.tpa.forEach((l) => {
+      const v = l.rota && D.esperado[l.rota] ? D.esperado[l.rota].multicaixa : 0;
+      l.valor = v > 0 ? v : null;
+    });
   const c = D.caixa,
     aberta = c.estado === 'aberta' && D.gere,
     mudou = () => {
@@ -372,7 +386,6 @@ R['caixa-marketing'] = (pg) => {
       ed.entregas,
       [
         { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
-        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
         { key: 'valor', label: t('Valor'), n: true, extra: (l, td) => (td.textContent = l.valor == null ? '—' : kz(l.valor)) },
         {
           key: 'notas',
@@ -394,11 +407,18 @@ R['caixa-marketing'] = (pg) => {
       t('Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.'),
       ed.tpa,
       [
-        { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
+        { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom, refaz: true },
         { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha') },
-        { key: 'talao', label: t('Nº do talão de fecho'), max: 30 },
-        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
-        { key: 'valor', label: t('Valor'), n: true },
+        { key: 'talao', label: t('Nº do talão de fecho'), max: 30, obrigatorio: true },
+        // valor do Pinguim BO (Multicaixa recebido pelo promotor); só se escreve sem ligação ao Pinguim BO
+        D.esperado
+          ? {
+              key: 'valor',
+              label: t('Valor (Pinguim BO)'),
+              n: true,
+              extra: (l, td) => (td.textContent = l.valor == null ? '—' : kz(l.valor)),
+            }
+          : { key: 'valor', label: t('Valor'), n: true },
       ],
       () => ({ rota: '', banco: '', talao: '', empresa: '', valor: null }),
       aberta,
@@ -455,67 +475,80 @@ R['caixa-marketing'] = (pg) => {
   if (ed.mudou) estado.textContent = t('Alterações por gravar.');
   const acc = el('div', 'cc-acc');
   if (aberta) {
-    const g = botao(t('Gravar'), 'ghost', () => enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
-    const f = botao(t('Validar a caixa'), null, () =>
-      janela(
-        t('Validar a caixa de {d}', { d: dl(dia) }),
-        t('Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.', { v: kz(teo()) }),
-        (b, ft, fechar) => {
-          const teorico = teo();
-          const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
-          q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
-          // contagem por notas (o total passa para o campo do dinheiro contado)
-          const g = grelhaNotas(null);
-          g.el.addEventListener('input', () => {
-            const tot = g.total();
-            q.value = tot ? String(Math.round(tot * 100) / 100) : '';
-            q.dispatchEvent(new Event('input'));
-          });
-          const ex = el('textarea');
-          ex.rows = 2;
-          ex.maxLength = 300;
-          ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
-          ex.setAttribute('aria-label', t('Explicação da diferença'));
-          const dif = el('p', 'note');
-          q.addEventListener('input', () => {
-            dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
-          });
-          const e2 = msgErro();
-          b.append(g.el, q, dif, ex, e2);
-          ft.append(
-            botao(t('Cancelar'), 'ghost', fechar),
-            botao(t('Validar a caixa'), null, () => {
-              // grava primeiro o que está no ecrã e depois fecha com a contagem
-              const fechar2 = () =>
-                postJson('caixa', {
-                  accao: 'fechar',
-                  dia,
-                  versao: D.caixa.versao,
-                  contagem: q.value === '' ? null : Number(q.value),
-                  notas: g.ler(),
-                  explicacao: ex.value,
-                }).then((x) => {
-                  if (!x.ok) {
-                    e2.hidden = false;
-                    e2.textContent = t(x.erro || 'Não foi possível gravar.');
-                    return;
-                  }
-                  fechar();
-                  D.caixa = x.caixa;
-                  ed = copia(x.caixa);
-                  marcarPorGravar('caixa', false);
-                  toast(t('Caixa validada. Falta a aprovação do 1.º nível.'), 5000);
-                  draw();
-                });
-              if (ed.mudou)
-                enviar({ accao: 'gravar', ...ed }, e2).then((x) => {
-                  if (x) fechar2();
-                });
-              else fechar2();
-            }),
-          );
-        },
-      ),
+    // o número do talão de fecho é obrigatório em cada TPA (o servidor também o exige)
+    const semTalao = () => {
+      if (!ed.tpa.some((l) => !String(l.talao || '').trim())) return false;
+      erro.hidden = false;
+      erro.textContent = t('Indique o número do talão de fecho de cada TPA.');
+      const i = document.querySelector('.cx-falta');
+      if (i) i.focus();
+      return true;
+    };
+    const g = botao(t('Gravar'), 'ghost', () => !semTalao() && enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
+    const f = botao(
+      t('Validar a caixa'),
+      null,
+      () =>
+        !semTalao() &&
+        janela(
+          t('Validar a caixa de {d}', { d: dl(dia) }),
+          t('Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.', { v: kz(teo()) }),
+          (b, ft, fechar) => {
+            const teorico = teo();
+            const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
+            q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
+            // contagem por notas (o total passa para o campo do dinheiro contado)
+            const g = grelhaNotas(null);
+            g.el.addEventListener('input', () => {
+              const tot = g.total();
+              q.value = tot ? String(Math.round(tot * 100) / 100) : '';
+              q.dispatchEvent(new Event('input'));
+            });
+            const ex = el('textarea');
+            ex.rows = 2;
+            ex.maxLength = 300;
+            ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
+            ex.setAttribute('aria-label', t('Explicação da diferença'));
+            const dif = el('p', 'note');
+            q.addEventListener('input', () => {
+              dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
+            });
+            const e2 = msgErro();
+            b.append(g.el, q, dif, ex, e2);
+            ft.append(
+              botao(t('Cancelar'), 'ghost', fechar),
+              botao(t('Validar a caixa'), null, () => {
+                // grava primeiro o que está no ecrã e depois fecha com a contagem
+                const fechar2 = () =>
+                  postJson('caixa', {
+                    accao: 'fechar',
+                    dia,
+                    versao: D.caixa.versao,
+                    contagem: q.value === '' ? null : Number(q.value),
+                    notas: g.ler(),
+                    explicacao: ex.value,
+                  }).then((x) => {
+                    if (!x.ok) {
+                      e2.hidden = false;
+                      e2.textContent = t(x.erro || 'Não foi possível gravar.');
+                      return;
+                    }
+                    fechar();
+                    D.caixa = x.caixa;
+                    ed = copia(x.caixa);
+                    marcarPorGravar('caixa', false);
+                    toast(t('Caixa validada. Falta a aprovação do 1.º nível.'), 5000);
+                    draw();
+                  });
+                if (ed.mudou)
+                  enviar({ accao: 'gravar', ...ed }, e2).then((x) => {
+                    if (x) fechar2();
+                  });
+                else fechar2();
+              }),
+            );
+          },
+        ),
     );
     acc.append(g, f);
   } else if ((c.estado === 'fechada' || c.estado === 'verificada') && (D.gere || (D.aprova || []).length)) {
@@ -554,5 +587,5 @@ R['caixa-marketing'] = (pg) => {
       'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
     );
   }
-  pg.append(el('div', 'cx-rodape'), estado, erro, acc);
+  pg.append(estado, erro, acc);
 };

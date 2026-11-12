@@ -49,6 +49,28 @@ if ($accao === 'reabrir' && !$gere && !$aprova) throw new NavalErro('O seu perfi
 if (in_array($accao, ['gravar', 'fechar'], true) && !$gere) throw new NavalErro('O seu perfil não permite registar a caixa.', 403);
 switch ($accao) {
     case 'gravar':
+        // valor de cada talão do TPA: o Multicaixa que o promotor recebeu no Pinguim BO (a Josefa indica o banco e o
+        // número do talão de fecho); sem ligação ao Pinguim BO fica o valor escrito, para não parar a tesouraria
+        $esperado = null;
+        try {
+            naval_servico('relatorio-vendas');
+            $esperado = naval_caixa_esperado($dia);
+        } catch (Throwable $e) {
+            error_log('[caixa esperado] ' . $e->getMessage());
+        }
+        if ($esperado !== null && isset($p['tpa']) && is_array($p['tpa'])) {
+            $vistos = [];
+            foreach ($p['tpa'] as $i => $l) {
+                $rt = (string) (((array) $l)['rota'] ?? '');
+                if ($rt === '') continue;
+                if (isset($vistos[$rt])) throw new NavalErro('Um talão de fecho do TPA por promotor.', 400);
+                $vistos[$rt] = true;
+                $mc = round((float) ($esperado[$rt]['multicaixa'] ?? 0), 2);
+                if ($mc <= 0) throw new NavalErro('O promotor ' . $rt . ' não tem Multicaixa no Pinguim BO neste dia.', 400);
+                $p['tpa'][$i] = ['valor' => $mc] + (array) $l;
+                $p['tpa'][$i]['valor'] = $mc;
+            }
+        }
         naval_json(['ok' => true, 'caixa' => naval_caixa_gravar($dia, $p, $versao, $login)]);
     case 'fechar':
         naval_json(['ok' => true, 'caixa' => naval_caixa_fechar($dia, $p['contagem'] ?? null, (string) ($p['explicacao'] ?? ''), $versao, $login, $p['notas'] ?? null)]);

@@ -115,19 +115,21 @@ test('correcção do registo de quem contou / validou: só o super administrador
   const corpo = {
     accao: 'corrigir_registo',
     rotas: ['1001', '1002'],
-    contado_por: 'Manuel Queia',
-    validado_por: 'henrique.fernandes',
+    contado_por: 'log',
+    validado_por: 'sadm',
     motivo: 'contagem feita pelo Manuel e lançada na conta do Henrique',
   };
   expect((await post((await entrar('log')).ctx, corpo)).status).toBe(403);
   const sadm = (await entrar('sadm')).ctx;
   expect((await post(sadm, { ...corpo, motivo: 'curto' })).status).toBe(400);
+  expect((await post(sadm, { ...corpo, contado_por: 'Manuel Queia' })).status).toBe(400); // só utilizadores da lista
   const r = await post(sadm, corpo);
   expect(r.json.rotas).toContain('1001');
   const v = await (await sadm.get(URL + '?data=' + dia)).json();
   expect(v.pode.corrigir).toBe(true);
+  expect(v.utilizadores).toEqual(expect.arrayContaining(['log', 'sadm']));
   const x = v.rotas.find((y) => y.rota === '1001');
-  expect(x).toMatchObject({ contado_por: 'Manuel Queia', validado_por: 'henrique.fernandes' });
+  expect(x).toMatchObject({ contado_por: 'log', validado_por: 'sadm' });
   expect(x.historico.at(-1)).toMatchObject({ accao: 'correccao_registo', motivo: corpo.motivo });
   // repetir não muda nada nem duplica o histórico
   expect((await post(sadm, corpo)).json.rotas).toEqual([]);
