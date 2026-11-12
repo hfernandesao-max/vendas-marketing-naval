@@ -3323,6 +3323,15 @@ export const TI = {
   'Contar notas': 'ወረቓቕቲ ቍጸር',
   'Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.': 'ናብ ካዝና ዝተረከበ × ኣብ Pinguim BO ዝተቐበለ፣ ብወኪል መሸጣ፤ ፍልልያት ብቀይሕ።',
   'Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.': 'ኣብ ካዝና ዘሎ ገንዘብ ወረቐት ብወረቐት ቍጸሩ። ዝድለ ተረፍ፦ {v}።',
+  'Nº do talão de fecho': 'ቁ. ደረሰኝ መዕጸዊ',
+  'Uma linha por promotor com recebimentos no Pinguim BO. Conte as notas e moedas de cada um («Contar notas») e indique o talão de fecho de cada TPA; o valor esperado só aparece na conferência.':
+    "ሓደ መስመር ን ነፍሲ ወከፍ ኣስፋሕፋሒ ኣብ Pinguim BO ክፍሊት ዘለዎ። ናይ ነፍሲ ወከፍ ኖታታትን ሳንቲምን ቁጸሩ («ወረቓቕቲ ቍጸር») ከምኡ'ውን ደረሰኝ መዕጸዊ ነፍሲ ወከፍ TPA ኣእትዉ፤ እቲ ዝድለ መጠን ኣብ ምንጽጻር ጥራይ ይርአ።",
+  'Uma linha por entrega; o valor é o total das notas e moedas contadas. Compara-se com o dinheiro recebido no Pinguim BO.':
+    'ሓደ መስመር ን ነፍሲ ወከፍ ኣረካክባ፤ እቲ መጠን ድምር ዝተቖጽሩ ኖታታትን ሳንቲምን እዩ። ምስቲ ኣብ Pinguim BO ዝተቐበለ ገንዘብ ይነጻጸር።',
+  'Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.':
+    'መዕጸዊ ነፍሲ ወከፍ TPA፣ ብባንክ፣ ምስ ቁጽርን መጠንን ደረሰኝ። ምስቲ ኣብ Pinguim BO ዝተቐበለ Multicaixa ይነጻጸር።',
+  'Conte as notas e moedas de cada entrega.': 'ኖታታትን ሳንቲምን ነፍሲ ወከፍ ኣረካክባ ቁጸሩ።',
+  'Indique o número do talão de fecho de cada TPA.': 'ቁጽሪ ደረሰኝ መዕጸዊ ነፍሲ ወከፍ TPA ኣእትዉ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

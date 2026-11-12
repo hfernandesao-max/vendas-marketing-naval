@@ -7,7 +7,7 @@ teste('caixa: saldo do dia anterior, saldo teórico, contagem com diferença exp
     $d2 = date('Y-m-d', time() - 5 * 86400);
     $c = naval_caixa_ler($d1);
     igual('manual', $c['saldo_inicial_origem'], 'primeiro dia: saldo inicial à mão');
-    $c = naval_caixa_gravar($d1, ['saldo_inicial' => 16696620.01, 'entregas' => [['rota' => '1001', 'valor' => 12612050]],
+    $c = naval_caixa_gravar($d1, ['saldo_inicial' => 16696620.01, 'entregas' => [['rota' => '1001', 'notas' => ['5000' => 2522, 'moedas' => 2050]]],
         'saidas' => [['tipo' => 'fundo_maneio', 'empresa' => 'FOODTEC', 'valor' => 6000000], ['tipo' => 'fundo_maneio', 'empresa' => 'HIGITEC', 'valor' => 4000000],
             ['tipo' => 'transferencia_gestao', 'valor' => 5000000]]], 0, 'josefa');
     igual(14308670.01, $c['saldo_teorico'], 'como a folha de 12-11-2026');
@@ -122,7 +122,11 @@ teste('caixa por notas: o valor da entrega e a contagem física saem das notas e
     lanca(400, function () { naval_caixa_por_notas(['3000' => 1]); });
     lanca(400, function () { naval_caixa_por_notas(['5000' => 1.5]); });
     $dia = date('Y-m-d', time() - 9 * 86400);
-    $c = naval_caixa_gravar($dia, ['saldo_inicial' => 0, 'entregas' => [['rota' => '1001', 'valor' => 1, 'notas' => ['5000' => 2, 'moedas' => 50]]]], 0, 'josefa');
+    lanca(400, function () use ($dia) { naval_caixa_gravar($dia, ['entregas' => [['rota' => '1001', 'valor' => 500]]], 0, 'josefa'); });   // sem notas
+    lanca(400, function () use ($dia) { naval_caixa_gravar($dia, ['tpa' => [['rota' => '1001', 'banco' => 'BPC', 'valor' => 500]]], 0, 'josefa'); });   // sem talão
+    $c = naval_caixa_gravar($dia, ['saldo_inicial' => 0, 'entregas' => [['rota' => '1001', 'valor' => 1, 'notas' => ['5000' => 2, 'moedas' => 50]]],
+        'tpa' => [['rota' => '1001', 'banco' => 'BPC', 'talao' => 'L-0042', 'valor' => 3000]]], 0, 'josefa');
+    igual('L-0042', $c['tpa'][0]['talao']);
     igual([10050.0, ['5000' => 2, 'moedas' => 50.0]], [$c['entregas'][0]['valor'], $c['entregas'][0]['notas']], 'o valor escrito à mão cede às notas');
     $c = naval_caixa_fechar($dia, null, '', $c['versao'], 'josefa', ['5000' => 2, 'moedas' => 50]);
     igual([10050.0, 0.0], [$c['contagem_fisica'], $c['diferenca']]);

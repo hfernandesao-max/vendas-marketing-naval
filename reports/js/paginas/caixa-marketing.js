@@ -27,12 +27,13 @@ function ler() {
     aLer = false;
     D = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler os dados.') };
     ed = D.caixa ? copia(D.caixa) : null;
-    // sugestão: numa folha aberta e ainda vazia, uma entrega por promotor com o dinheiro que recebeu no Pinguim BO e
-    // um talão do TPA com o Multicaixa; quem recebe confirma (ou corrige) cada valor com o que contou
+    // contagem às cegas: numa folha aberta e ainda vazia, uma linha por promotor que recebeu dinheiro ou Multicaixa no
+    // Pinguim BO, sem valor; quem recebe só conta as notas e moedas e indica o talão de fecho do TPA, e o valor esperado
+    // só aparece na conferência
     if (ed && D.gere && D.caixa.estado === 'aberta' && D.esperado && !ed.entregas.length && !ed.tpa.length) {
       Object.entries(D.esperado).forEach(([r, x]) => {
-        if (x.dinheiro > 0) ed.entregas.push({ rota: r, empresa: '', valor: x.dinheiro, notas: null, nota: '' });
-        if (x.multicaixa > 0) ed.tpa.push({ rota: r, banco: '', empresa: '', valor: x.multicaixa });
+        if (x.dinheiro > 0) ed.entregas.push({ rota: r, empresa: '', valor: null, notas: null, nota: '' });
+        if (x.multicaixa > 0) ed.tpa.push({ rota: r, banco: '', talao: '', empresa: '', valor: null });
       });
       if (ed.entregas.length || ed.tpa.length) {
         ed.sugerido = true;
@@ -129,7 +130,7 @@ function contarNotas(l, mudou) {
       botao(t('Cancelar'), 'ghost', fechar),
       botao(t('Confirmar'), null, () => {
         l.notas = g.ler();
-        if (l.notas) l.valor = Math.round(g.total() * 100) / 100;
+        l.valor = l.notas ? Math.round(g.total() * 100) / 100 : null;
         fechar();
         mudou();
         draw();
@@ -342,7 +343,9 @@ R['caixa-marketing'] = (pg) => {
       el(
         'p',
         'note cx-sugerido',
-        t('Valores sugeridos a partir do que cada promotor recebeu no Pinguim BO. Confirme cada um com o dinheiro contado (use «Contar notas») e grave.'),
+        t(
+          'Uma linha por promotor com recebimentos no Pinguim BO. Conte as notas e moedas de cada um («Contar notas») e indique o talão de fecho de cada TPA; o valor esperado só aparece na conferência.',
+        ),
       ),
     );
   if (aberta && c.saldo_inicial_origem === 'manual') {
@@ -359,12 +362,12 @@ R['caixa-marketing'] = (pg) => {
   pg.append(
     grelha(
       t('Dinheiro entregue pelos promotores'),
-      t('Uma linha por entrega. Compara-se no Relatório de Vendas com o dinheiro recebido no Pinguim BO.'),
+      t('Uma linha por entrega; o valor é o total das notas e moedas contadas. Compara-se com o dinheiro recebido no Pinguim BO.'),
       ed.entregas,
       [
         { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
         { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
-        { key: 'valor', label: t('Valor'), n: true },
+        { key: 'valor', label: t('Valor'), n: true, extra: (l, td) => (td.textContent = l.valor == null ? '—' : kz(l.valor)) },
         {
           key: 'notas',
           label: t('Notas'),
@@ -382,15 +385,16 @@ R['caixa-marketing'] = (pg) => {
     ),
     grelha(
       t('Talões do TPA (Multicaixa)'),
-      t('Fecho de cada TPA, por banco. Compara-se com o Multicaixa recebido no Pinguim BO.'),
+      t('Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.'),
       ed.tpa,
       [
         { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
         { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha') },
+        { key: 'talao', label: t('Nº do talão de fecho'), max: 30 },
         { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
         { key: 'valor', label: t('Valor'), n: true },
       ],
-      () => ({ rota: '', banco: '', empresa: '', valor: null }),
+      () => ({ rota: '', banco: '', talao: '', empresa: '', valor: null }),
       aberta,
       mudou,
     ),

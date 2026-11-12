@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Folha de caixa: contagem às cegas e talão de fecho do TPA
+
+- Segue a prática internacional de **contagem às cegas** (blind count): quem recebe o dinheiro não vê o valor esperado
+  antes de contar.
+  - Numa folha nova aparece uma linha por promotor com recebimentos no Pinguim BO, **sem valor**.
+  - A Josefa só conta as **notas e moedas** de cada entrega. O valor da entrega é sempre o total contado e já não se
+    escreve à mão; o servidor recusa entregas sem contagem por notas.
+  - Cada talão do TPA exige o **número do talão de fecho**, o banco e o valor, para se conciliar depois com o extracto
+    do banco.
+  - O valor esperado (Pinguim BO) só aparece na **conferência por promotor**, com as diferenças a vermelho.
+
 ### Relatório de Vendas e folha de caixa: carrinhas com vendas, valores sugeridos e contagem por notas
 
 - No Relatório de Vendas, só as carrinhas que **venderam** no dia têm de estar conciliadas e fechadas. As carrinhas
