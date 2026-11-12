@@ -13,6 +13,15 @@ naval_exigir([$vista === 'visitas' ? 'visitas-dia' : 'qualidade-dados']);
 $dia = (string) ($_GET['dia'] ?? date('Y-m-d'));
 if (!naval_data_valida($dia)) throw new NavalErro('Data inválida.', 400);
 $v = naval_cart_vista($dia, naval_rotas());
+// o plano do dia fica congelado na primeira leitura (se o cálculo da manhã ainda não o guardou)
+if ($vista === 'visitas' && $dia === date('Y-m-d')) {
+    try {
+        naval_servico('conversao');
+        naval_conv_plano($dia);
+    } catch (Throwable $e) {
+        error_log('[plano de visitas] ' . $e->getMessage());
+    }
+}
 if ($vista === 'visitas') {
     unset($v['anomalias'], $v['qualidade']);
     // o risco de crédito e os valores em aberto só para quem vê os pendentes

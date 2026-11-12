@@ -30,6 +30,7 @@ const FILTROS_PAGINA = {
   'cadastros-analise': ['rota'],
   'cadastros-clientes': ['rota', 'cliente', 'municipio', 'tipocli'],
   'plano-visitas': ['rota', 'cliente'],
+  'conversao-visitas': ['rota'],
   auditoria: ['rota', 'cliente', 'tipo'],
   'registo-cargas': ['rota'],
   // stock: data = fim do período; rotas/armazéns e artigo pelos filtros gerais (sem filtros próprios na página)

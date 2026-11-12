@@ -41,6 +41,7 @@ export const PAGES = [
   { id: 'caixa-marketing', grupo: 'Cobranças', icon: 'caixa', nome: 'Folha de caixa' },
   // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
   { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
+  { id: 'conversao-visitas', grupo: 'Terreno', icon: 'funil', nome: 'Conversão das visitas' },
   { id: 'plano-visitas', grupo: 'Terreno', icon: 'agenda', nome: 'Plano de visitas' },
   { id: 'geo-terreno', grupo: 'Terreno', icon: 'pin', nome: 'Percurso do dia' },
   { id: 'geo-rotas', grupo: 'Terreno', icon: 'mapa', nome: 'Optimização de rotas' },

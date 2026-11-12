@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Conversão das visitas
+
+- Nova página **Terreno › Conversão das visitas** (indicadores de execução da distribuição directa):
+  - **conversão do plano**: clientes planeados que compraram ÷ clientes planeados, por rota e no total;
+  - **vendas fora do plano**: clientes que compraram sem estarem no plano;
+  - **peso do plano nas vendas**: valor vendido a clientes planeados;
+  - **planeados sem compra**: a lista para o supervisor seguir, os de maior compra média primeiro.
+- O plano de cada dia (a lista das Visitas do dia) fica **congelado logo de manhã**. Assim, a medição compara com
+  o que estava planeado e não com uma lista que muda durante o dia. Os dias anteriores a esta versão não têm plano
+  guardado e ficam assinalados.
+- Com o servidor OLAP ligado (localização das visitas), a página mostra também a **cobertura do plano** (planeados
+  visitados) e a **conversão das visitas** (visitados que compraram).
+- Acesso pela matriz («Conversão das visitas», como as Visitas do dia; supervisores e promotores só nas suas rotas;
+  os valores em Kz só para quem vê as vendas).
+
 ### Objectivos de vendas automáticos, sempre a crescer
 
 - Os objectivos de cada rota calculam-se sozinhos no início de cada mês, a partir das vendas diárias do Pinguim BO

@@ -312,6 +312,13 @@ function naval_cart_noite(int $agora): array
     $cart['anomalias'] = naval_cart_anomalias((array) $recentes['vendas'], (array) $recentes['artigos']);
     $cart['qualidade'] = naval_cart_qualidade($recentes);
     naval_json_gravar($f, $cart, false);
+    // plano de visitas do dia congelado logo de manhã (base da conversão das visitas)
+    try {
+        naval_servico('conversao');
+        naval_conv_plano($hoje, $cart);
+    } catch (Throwable $e) {
+        error_log('[plano de visitas] ' . $e->getMessage());
+    }
     foreach (glob(naval_cart_pasta() . '/????-??-??.json') ?: [] as $x) if (basename($x) < date('Y-m-d', $agora - 15 * 86400) . '.json') @unlink($x);
     return ['clientes' => count($cart['clientes']), 'anomalias' => count($cart['anomalias'])];
 }

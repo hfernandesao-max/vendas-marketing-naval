@@ -70,6 +70,7 @@ function naval_api_rotas(): array
         'v1/requisicoes' => [['GET', 'POST'], 'jwt', 'requisicoes.php', []],
         'v1/relatorio-vendas' => [['GET', 'POST'], 'jwt', 'relatorio-vendas.php', []],
         'v1/caixa' => [['GET', 'POST'], 'jwt', 'caixa.php', []],
+        'v1/conversao' => [['GET'], 'jwt', 'conversao.php', []],
         'v1/carteira' => [['GET'], 'jwt', 'carteira.php', []],
         'v1/apresentacao' => [['GET'], 'jwt', 'apresentacao.php', []],
         'v1/rotas-optimizadas' => [['GET'], 'jwt', 'rotas-optimizadas.php', []],
