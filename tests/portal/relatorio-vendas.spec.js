@@ -287,7 +287,11 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   await expect(ent.getByLabel('Promotor · 1')).toHaveValue('1001');
   await expect(ent.locator('.cx-tab tr').nth(1)).toContainText('—');
   await expect(tpa.getByLabel('Promotor · 1')).toHaveValue('1002');
-  await expect(tpa.getByLabel('Valor · 1')).toHaveValue('');
+  // o valor do talão vem do Pinguim BO (Multicaixa do promotor) e não se escreve; o nº do talão é obrigatório
+  await expect(tpa.getByLabel('Valor · 1')).toHaveCount(0);
+  await expect(tpa.locator('.cx-tab tr').nth(1)).toContainText(/8\s?000,00/);
+  await expect(tpa.locator('th.cx-obr')).toHaveText('Nº do talão de fecho');
+  await expect(ent.getByText('Empresa')).toHaveCount(0);
   // contar as notas da entrega: 2 × 5000 + 1 × 1000 + 500 em moedas = 11 500 → diferença de 500 na conferência
   await ent.getByRole('button', { name: 'Contar notas' }).click();
   const dlg = page.locator('dialog[open]');
@@ -300,9 +304,12 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   await expect(ent).toContainText('2 × 5');
   const conf = page.locator('.cx-sec').filter({ hasText: 'Conferência por promotor' });
   await expect(conf.locator('tr', { hasText: '1001' }).locator('.rv-dif')).toContainText('500,00');
+  // sem o nº do talão não grava
+  await page.getByRole('button', { name: 'Gravar', exact: true }).click();
+  await expect(page.getByText('Indique o número do talão de fecho de cada TPA.')).toBeVisible();
+  expect(pedidos.length).toBe(0);
   await tpa.getByLabel('Banco · 1').selectOption('BPC');
   await tpa.getByLabel('Nº do talão de fecho · 1').fill('0457');
-  await tpa.getByLabel('Valor · 1').fill('8000');
   await page.getByRole('button', { name: 'Gravar', exact: true }).click();
   await expect.poll(() => pedidos.length).toBe(1);
   expect(pedidos[0].entregas[0]).toMatchObject({ rota: '1001', valor: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });

@@ -120,7 +120,8 @@ function naval_caixa_linhas(array $p): array
         // o dinheiro entregue declara-se só por notas e moedas (contagem por denominação): o valor é o total contado
         [$notas, $totalNotas] = naval_caixa_por_notas($l['notas'] ?? null);
         if ($totalNotas === null) throw new NavalErro('Conte as notas e moedas de cada entrega.', 400);
-        $entregas[] = ['rota' => $rt, 'empresa' => in_array($l['empresa'] ?? '', NAVAL_CAIXA_EMPRESAS, true) ? $l['empresa'] : '', 'valor' => $valor($totalNotas, 'entregas'),
+        // o dinheiro e os talões dos promotores são sempre da Naval (a empresa só se escolhe nas saídas)
+        $entregas[] = ['rota' => $rt, 'empresa' => 'NAVAL', 'valor' => $valor($totalNotas, 'entregas'),
             'notas' => $notas,
             'nota' => naval_texto($l['nota'] ?? '', 120)];
     }
@@ -134,7 +135,7 @@ function naval_caixa_linhas(array $p): array
         // talão de fecho do TPA (fecho do lote): o número identifica-o na conferência com o extracto do banco
         $talao = naval_texto($l['talao'] ?? '', 30);
         if ($talao === '' || !preg_match('/^[\w.\-\/ ]{1,30}$/u', $talao)) throw new NavalErro('Indique o número do talão de fecho de cada TPA.', 400);
-        $tpa[] = ['rota' => $rt, 'banco' => $banco, 'talao' => $talao, 'empresa' => in_array($l['empresa'] ?? '', NAVAL_CAIXA_EMPRESAS, true) ? $l['empresa'] : '',
+        $tpa[] = ['rota' => $rt, 'banco' => $banco, 'talao' => $talao, 'empresa' => 'NAVAL',
             'valor' => $valor($l['valor'] ?? null, 'talões do TPA'), 'nota' => naval_texto($l['nota'] ?? '', 120)];
     }
     $saidas = [];

@@ -11,6 +11,11 @@
   --veu-rgb: 255 255 255;
   --sombra-rgb: 0 0 0;
   --sombra-k: 1;
+  /* vidro dos gráficos: brilho da aresta superior e reflexo (Liquid Glass) */
+  --brilho-rgb: 255 255 255;
+  --brilho-a: 0.14;
+  --reflexo-a: 0.06;
+  --vidro-a: 0.82;
   --modal-rgb: 2 6 16;
   --tip-rgb: 44 44 46;
   --c-tip-fg: var(--fg);
@@ -104,6 +109,10 @@
   --veu-rgb: 10 42 82;
   --sombra-rgb: 10 30 60;
   --sombra-k: 0.32;
+  --brilho-rgb: 255 255 255;
+  --brilho-a: 0.95;
+  --reflexo-a: 0.55;
+  --vidro-a: 0.86;
   --modal-rgb: 10 22 44;
   --tip-rgb: 22 34 54;
   --c-tip-fg: #f5f8fc;

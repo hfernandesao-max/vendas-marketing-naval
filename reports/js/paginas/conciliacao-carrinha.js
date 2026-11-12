@@ -414,8 +414,11 @@ function corrigirRegisto(contadas) {
     t('Corrigir quem contou / validou'),
     t('Só muda os nomes registados; os números, o estado e as aprovações ficam como estão. O que estava antes e o motivo ficam no histórico de cada carrinha.'),
     (b, ft, fechar) => {
+      // escolha da lista de utilizadores do portal (primeiro.último); vazio mantém o que está registado
       const campo = (rotulo) => {
-        const i = entrada('text', '', { maxLength: 60 });
+        const i = el('select');
+        i.append(new Option(t('— manter como está —'), ''));
+        (CC.utilizadores || []).forEach((u) => i.append(new Option(u, u)));
         i.setAttribute('aria-label', rotulo);
         const l = el('label', 'cc-campo');
         l.append(el('span', null, rotulo), i);

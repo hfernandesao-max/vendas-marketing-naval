@@ -20,7 +20,9 @@ $eu = (array) naval_utilizador();
 if (!naval_e_post()) {
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
-    naval_json(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => naval_perfil() === 'SADM'], 'eu' => (string) ($eu['login'] ?? '')] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
+    $corrigir = naval_perfil() === 'SADM';
+    naval_json(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
+        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
 }
 
 $p = naval_pedido();

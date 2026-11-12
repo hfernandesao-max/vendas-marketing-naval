@@ -4553,3 +4553,117 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
 .cx-tab select {
   max-width: 200px;
 }
+
+/*
+ * Gráficos em vidro (ao estilo «Liquid Glass» da Apple, seguindo as boas práticas de visualização de dados):
+ *   - o vidro fica na moldura (cartão, dica e legenda); as marcas de dados ficam sólidas e nítidas;
+ *   - profundidade suave: aresta superior iluminada, reflexo diagonal, sombra em duas camadas;
+ *   - entrada curta das marcas (desligada com «reduzir movimento»);
+ *   - sem transparência para quem a desliga no sistema, em cores forçadas e mais leve nos telemóveis.
+ * Só tokens do tema (cores.css): funciona igual no tema escuro e no claro.
+ */
+.viz-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgb(var(--brilho-rgb) / calc(var(--brilho-a) * 0.55));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--brilho-rgb) / var(--brilho-a)),
+    inset 0 -1px 0 rgb(var(--veu-rgb) / 0.03),
+    0 1px 2px rgb(var(--sombra-rgb) / calc(0.22 * var(--sombra-k))),
+    0 22px 44px -24px rgb(var(--sombra-rgb) / calc(0.7 * var(--sombra-k)));
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+.viz-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(155deg, rgb(var(--brilho-rgb) / var(--reflexo-a)) 0%, transparent 34%),
+    radial-gradient(90% 55% at 100% 0%, rgb(var(--az1-rgb) / 0.07), transparent 70%);
+}
+.viz-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--brilho-rgb) / var(--brilho-a)),
+    inset 0 -1px 0 rgb(var(--veu-rgb) / 0.03),
+    0 1px 2px rgb(var(--sombra-rgb) / calc(0.22 * var(--sombra-k))),
+    0 28px 54px -24px rgb(var(--sombra-rgb) / calc(0.85 * var(--sombra-k)));
+}
+.viz-card .vx-grid {
+  stroke: rgb(var(--veu-rgb) / 0.06);
+  stroke-dasharray: 2 4;
+}
+.viz-tip {
+  background: rgb(var(--p3-rgb) / var(--vidro-a));
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border-color: rgb(var(--brilho-rgb) / calc(var(--brilho-a) * 0.7));
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgb(var(--brilho-rgb) / var(--brilho-a)),
+    0 16px 36px -10px rgb(var(--sombra-rgb) / calc(0.5 * var(--sombra-k)));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .viz-corpo > svg,
+  .viz-corpo > .gwrap > svg {
+    animation: vx-entrar 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+@keyframes vx-entrar {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 640px) {
+  .viz-tip {
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+    backdrop-filter: saturate(160%) blur(10px);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .viz-card::before {
+    display: none;
+  }
+  .viz-tip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(var(--p3-rgb));
+  }
+}
+@media (forced-colors: active) {
+  .viz-card::before {
+    display: none;
+  }
+  .viz-card,
+  .viz-tip {
+    box-shadow: none;
+  }
+}
+
+/* Folha de caixa: campos obrigatórios (asterisco no cabeçalho e realce enquanto estiverem vazios) */
+.cx-tab th.cx-obr::after {
+  content: ' *';
+  color: var(--bad);
+}
+.cx-tab input.cx-falta {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad);
+}
+
+/* Ritmo vertical entre cartões empilhados (barra do dia, cabeçalhos e secções): 16 px, sem cartões encostados */
+.pc-barra,
+.rv-ctl,
+.rv-cab,
+.cx-cab,
+.cx-sec,
+.cx-sugerido {
+  margin-bottom: 16px;
+}
