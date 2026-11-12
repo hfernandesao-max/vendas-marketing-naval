@@ -3379,6 +3379,15 @@ export const EN = {
   'Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.':
     'Handed in to the cash desk × received in Pinguim BO, by promoter; differences in red.',
   'Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.': 'Count the cash in the cash desk, note by note. Expected balance: {v}.',
+  'Nº do talão de fecho': 'Closing slip no.',
+  'Uma linha por promotor com recebimentos no Pinguim BO. Conte as notas e moedas de cada um («Contar notas») e indique o talão de fecho de cada TPA; o valor esperado só aparece na conferência.':
+    "One row per promoter with receipts in Pinguim BO. Count each one's notes and coins («Count notes») and enter each POS terminal's closing slip; the expected amount only appears in the reconciliation.",
+  'Uma linha por entrega; o valor é o total das notas e moedas contadas. Compara-se com o dinheiro recebido no Pinguim BO.':
+    'One row per hand-in; the amount is the total of the notes and coins counted. It is compared with the cash received in Pinguim BO.',
+  'Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.':
+    'Closing of each POS terminal, by bank, with the slip number and amount. It is compared with the Multicaixa received in Pinguim BO.',
+  'Conte as notas e moedas de cada entrega.': 'Count the notes and coins of each hand-in.',
+  'Indique o número do talão de fecho de cada TPA.': 'Enter the closing slip number of each POS terminal.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

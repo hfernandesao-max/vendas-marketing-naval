@@ -192,10 +192,16 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   const secs = page.locator('.cx-sec');
   await secs.nth(0).getByRole('button', { name: 'Juntar linha' }).click();
   await page.getByLabel('Promotor · 1').first().selectOption('1001');
-  await page.locator('.cx-sec').nth(0).getByLabel('Valor · 1').fill('500');
+  // contagem às cegas: o valor da entrega é o total das notas contadas (não se escreve)
+  await expect(secs.nth(0).getByLabel('Valor · 1')).toHaveCount(0);
+  await secs.nth(0).getByRole('button', { name: 'Contar notas' }).click();
+  await page.locator('dialog[open]').getByLabel('Notas de 500 Kz').fill('1');
+  await page.locator('dialog[open]').getByRole('button', { name: 'Confirmar' }).click();
+  await expect(secs.nth(0)).toContainText('500,00');
   await page.locator('.cx-sec').nth(1).getByRole('button', { name: 'Juntar linha' }).click();
   await page.locator('.cx-sec').nth(1).getByLabel('Promotor · 1').selectOption('1002');
   await page.locator('.cx-sec').nth(1).getByLabel('Banco · 1').selectOption('BPC');
+  await page.locator('.cx-sec').nth(1).getByLabel('Nº do talão de fecho · 1').fill('TPA-0457');
   await page.locator('.cx-sec').nth(1).getByLabel('Valor · 1').fill('300');
   await page.locator('.cx-sec').nth(2).getByRole('button', { name: 'Juntar linha' }).click();
   await page.locator('.cx-sec').nth(2).getByLabel('Tipo · 1').selectOption('transferencia_gestao');
@@ -208,8 +214,8 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
     accao: 'gravar',
     dia: expect.any(String),
     versao: 1,
-    entregas: [{ rota: '1001', valor: 500 }],
-    tpa: [{ rota: '1002', banco: 'BPC', valor: 300 }],
+    entregas: [{ rota: '1001', valor: 500, notas: { 500: 1 } }],
+    tpa: [{ rota: '1002', banco: 'BPC', talao: 'TPA-0457', valor: 300 }],
     saidas: [{ tipo: 'transferencia_gestao', valor: 200 }],
   });
   await page.getByRole('button', { name: 'Fechar a caixa' }).click();
@@ -225,7 +231,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   expect(erros).toEqual([]);
 });
 
-test('folha de caixa: sugere o que cada promotor recebeu, conta notas e fecha com a contagem por notas', async ({ page }) => {
+test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas por notas, talão do TPA e fecho por notas', async ({ page }) => {
   let caixa = {
     dia: '2026-10-26',
     estado: 'aberta',
@@ -275,8 +281,12 @@ test('folha de caixa: sugere o que cada promotor recebeu, conta notas e fecha co
   const erros = await abrir(page, '#caixa-marketing');
   await expect(page.locator('.cx-sugerido')).toBeVisible();
   const ent = page.locator('.cx-sec').filter({ hasText: 'Dinheiro entregue pelos promotores' });
-  await expect(ent.getByLabel('Valor · 1')).toHaveValue('12000');
-  await expect(page.locator('.cx-sec').filter({ hasText: 'Talões do TPA' }).getByLabel('Valor · 1')).toHaveValue('8000');
+  const tpa = page.locator('.cx-sec').filter({ hasText: 'Talões do TPA' });
+  // às cegas: as linhas vêm do Pinguim BO sem valor; o esperado só aparece na conferência
+  await expect(ent.getByLabel('Promotor · 1')).toHaveValue('1001');
+  await expect(ent.locator('.cx-tab tr').nth(1)).toContainText('—');
+  await expect(tpa.getByLabel('Promotor · 1')).toHaveValue('1002');
+  await expect(tpa.getByLabel('Valor · 1')).toHaveValue('');
   // contar as notas da entrega: 2 × 5000 + 1 × 1000 + 500 em moedas = 11 500 → diferença de 500 na conferência
   await ent.getByRole('button', { name: 'Contar notas' }).click();
   const dlg = page.locator('dialog[open]');
@@ -285,14 +295,17 @@ test('folha de caixa: sugere o que cada promotor recebeu, conta notas e fecha co
   await dlg.getByLabel('Moedas (valor em Kz)').fill('500');
   await expect(dlg.locator('.cx-notas-tot')).toContainText(/11\s?500,00/);
   await dlg.getByRole('button', { name: 'Confirmar' }).click();
-  await expect(ent.getByLabel('Valor · 1')).toHaveValue('11500');
+  await expect(ent.locator('.cx-tab tr').nth(1)).toContainText(/11\s?500,00/);
   await expect(ent).toContainText('2 × 5');
   const conf = page.locator('.cx-sec').filter({ hasText: 'Conferência por promotor' });
   await expect(conf.locator('tr', { hasText: '1001' }).locator('.rv-dif')).toContainText('500,00');
-  await page.locator('.cx-sec').filter({ hasText: 'Talões do TPA' }).getByLabel('Banco · 1').selectOption('BPC');
+  await tpa.getByLabel('Banco · 1').selectOption('BPC');
+  await tpa.getByLabel('Nº do talão de fecho · 1').fill('0457');
+  await tpa.getByLabel('Valor · 1').fill('8000');
   await page.getByRole('button', { name: 'Gravar', exact: true }).click();
   await expect.poll(() => pedidos.length).toBe(1);
   expect(pedidos[0].entregas[0]).toMatchObject({ rota: '1001', valor: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
+  expect(pedidos[0].tpa[0]).toMatchObject({ rota: '1002', banco: 'BPC', talao: '0457', valor: 8000 });
   // fecho: contagem física por notas
   await page.getByRole('button', { name: 'Fechar a caixa' }).click();
   const f = page.locator('dialog[open]');

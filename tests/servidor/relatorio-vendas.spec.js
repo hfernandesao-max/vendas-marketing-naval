@@ -25,7 +25,7 @@ test('folha de caixa: quem regista e fecha não aprova; perfis sem acesso não v
     accao: 'gravar',
     versao: v.caixa.versao,
     saldo_inicial: 1000,
-    entregas: [{ rota: '1001', valor: 500 }],
+    entregas: [{ rota: '1001', notas: { 500: 1 } }],
     saidas: [{ tipo: 'deposito_banco', valor: 300 }],
   });
   expect(g.json.caixa.saldo_teorico).toBe(1200);
