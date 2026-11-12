@@ -223,6 +223,10 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         $dif = $contado === null ? null : round($contado - $esperado, 3);
         $preco = (float) ($precos[$c] ?? (($v[$c]['q'] ?? 0) > 0 ? $v[$c]['t'] / $v[$c]['q'] : 0));
         if (!$ini && !$fim && !$ven && !$car && !$dev && !$contado) continue;
+        // nada para contar: o artigo não devia estar na carrinha no fim do dia e não houve vendas (ex.: stock do dia
+        // anterior retirado ou corrigido no Pinguim BO). Sem alertas e sem contagem feita, não entra na conciliação.
+        $zero = function (float $x): bool { return abs($x) <= NAVAL_CARR_TOLERANCIA; };
+        if (!$alertas && $zero($esperado) && $zero($fim) && $zero($ven) && !$contado) continue;
         $out[] = [
             'codigo' => $c,
             'artigo' => (string) ($v[$c]['n'] ?? $s1[$c]['n'] ?? $s0[$c]['n'] ?? $c),
