@@ -236,6 +236,10 @@ function naval_vigia_avisar(array $novos): void
     $linhas[] = 'A correcção automática da madrugada trata dos que estiverem no GitHub; o estado está em Administração › Conformidade.';
     naval_servico('actualizacao');
     naval_act_avisar('vigilância: ' . count($novos) . ' problema(s) novo(s)', $linhas);
+    naval_servico('notificacoes');
+    foreach ($novos as $p) {
+        naval_notificar('problema', 'Problema em produção', mb_substr($p['mensagem'], 0, 200), ['chave' => 'problema|' . $p['id'] . '|' . $p['primeiro'], 'url' => '../reports/#conformidade/vigilancia']);
+    }
 }
 
 /**
@@ -287,6 +291,12 @@ function naval_vigia_ciclo(int $agora, array $o = []): ?array
                 $dirC = naval_vigia_pasta() . '/conferencia';
                 if (!is_dir($dirC)) @mkdir($dirC, 0770, true);
                 naval_json_gravar($dirC . '/' . $conf['dia'] . '.json', $conf);
+                if ($conf['diferencas'] && empty($o['sem_email'])) {
+                    naval_servico('notificacoes');
+                    naval_notificar('conferencia', 'Conferência de ' . date('d-m-Y', strtotime($conf['dia'])) . ' com diferenças',
+                        count($conf['diferencas']) . ' rota(s) com documentos ou valores diferentes do Pinguim BO: ' . implode(', ', array_column($conf['diferencas'], 'rota')) . '.',
+                        ['chave' => 'conferencia|' . $conf['dia'], 'url' => '../reports/#conformidade/vigilancia'], $agora);
+                }
                 foreach ($conf['diferencas'] as $d) {
                     $ocorr[] = ['tipo' => 'conferencia', 'ficheiro' => '', 'linha' => 0, 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora),
                         'mensagem' => 'Conferência de ' . $conf['dia'] . ', rota ' . $d['rota'] . ': o Pinguim BO tem ' . $d['pinguim_docs'] . ' documentos ('

@@ -675,6 +675,16 @@ function naval_act_ultima_copia(): ?string
 
 function naval_act_avisar(string $assunto, array $linhas): void
 {
+    // também no telemóvel dos administradores (tipo «versao»; os problemas da vigilância têm o seu próprio tipo)
+    if (strpos($assunto, 'vigilância') !== 0) {
+        try {
+            naval_servico('notificacoes');
+            naval_notificar('versao', mb_strtoupper(mb_substr($assunto, 0, 1)) . mb_substr($assunto, 1), (string) ($linhas[0] ?? ''),
+                ['chave' => 'versao|' . md5($assunto . '|' . implode('|', $linhas)), 'url' => '../reports/#actualizacoes']);
+        } catch (Throwable $e) {
+            // a notificação é um extra: o correio segue na mesma
+        }
+    }
     $para = array_filter(array_map('trim', explode(',', naval_config('ACTUALIZACAO_EMAIL'))));
     if (!$para) return;
     try {
