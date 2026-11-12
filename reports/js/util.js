@@ -82,6 +82,7 @@ const ICON = {
   requisicao: 'M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 11h8M8 15h8M8 19h4',
   relatorio: 'M6 3h9l4 4v14H6zM15 3v4h4M9 17v-3M12 17v-6M15 17v-4',
   caixa: 'M3 8h18v11H3zM3 12h18M7 8V5h10v3M10 15.5h4',
+  funil: 'M3 4h18l-7 8v6l-4 2v-8z',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

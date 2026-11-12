@@ -22,6 +22,7 @@ const PAGINAS = [
   'registo-cargas',
   'stock-carrinha',
   'stock-armazem',
+  'conversao-visitas',
 ];
 const ECRAS = [
   [360, 740],

@@ -4,9 +4,10 @@
   "versao": "1.0.0",
   "descricao": "Visitas do dia, plano de visitas, percurso do dia, optimização de rotas, prospecção, zonas e distribuidores.",
   "nucleo": false,
-  "paginas": ["visitas-dia", "plano-visitas", "geo-terreno", "geo-rotas", "geo-prospeccao", "geo-zonas", "geo-distribuidores"],
+  "paginas": ["visitas-dia", "conversao-visitas", "plano-visitas", "geo-terreno", "geo-rotas", "geo-prospeccao", "geo-zonas", "geo-distribuidores"],
   "recursos": [
     "visitas-dia",
+    "conversao-visitas",
     "plano-visitas",
     "geo-terreno",
     "geo-rotas",
@@ -16,7 +17,7 @@
     "geo-zonas-gerir",
     "geo-distribuidores"
   ],
-  "api": ["v1/terreno", "v1/rotas-optimizadas", "v1/geo-clientes", "v1/geo-zonas", "v1/prospeccao"],
+  "api": ["v1/terreno", "v1/rotas-optimizadas", "v1/geo-clientes", "v1/geo-zonas", "v1/prospeccao", "v1/conversao"],
   "conectores": ["olap", "google-maps"],
   "eventos": {
     "publica": [],

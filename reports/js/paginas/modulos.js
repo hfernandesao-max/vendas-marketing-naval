@@ -76,6 +76,7 @@ export const MODULO_DA_PAGINA = {
   'valor-portal': 'valor-portal',
   'painel-carrinha': 'painel-carrinha',
   'visitas-dia': 'carteira',
+  'conversao-visitas': 'carteira',
   'qualidade-dados': 'carteira',
   alertas: 'gestao',
   previsao: 'gestao',

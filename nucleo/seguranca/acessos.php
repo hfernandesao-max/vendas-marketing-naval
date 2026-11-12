@@ -71,6 +71,7 @@ const NAVAL_MATRIZ_TXT = [
     'clientes'             => 'V  -  E  Er Vr V  E  -  V  V  V',
     // carteira: visitas do dia com a ficha de preparação; anomalias de vendas e qualidade dos dados
     'visitas-dia'          => 'V  V  V  Vr Vr -  V  -  V  V  V',
+    'conversao-visitas'    => 'V  V  V  Vr Vr -  V  -  V  V  V',
     'qualidade-dados'      => 'V  V  V  Vr -  V  V  V  V  V  V',
     'plano-visitas'        => 'V  V  E  Vr Vr -  V  -  V  V  V',
     'sincronizacao'        => 'V  E  E  Er -  -  V  E  -  E  V',
