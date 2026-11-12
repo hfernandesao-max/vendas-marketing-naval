@@ -120,6 +120,68 @@ function naval_vigia_negocio(int $agora): array
     return $r;
 }
 
+/**
+ * Compara, por rota, os totais do Pinguim BO (contagem e valor dos documentos de venda válidos, numa consulta própria
+ * e simples) com o que o portal mostra (o mesmo serviço de vendas das páginas). Diferenças de mais de 1 cêntimo ou de
+ * um documento são problemas: o portal tem de mostrar exactamente o que está no Pinguim BO.
+ */
+function naval_vigia_conferencia_comparar(string $dia, array $pinguim, array $vendas): array
+{
+    $rotas = [];
+    foreach ($pinguim as $r) {
+        $k = trim((string) ($r['ROTA'] ?? '')) ?: '—';
+        $rotas[$k] = ($rotas[$k] ?? ['rota' => $k, 'pinguim_docs' => 0, 'pinguim_valor' => 0.0, 'portal_docs' => 0, 'portal_valor' => 0.0]);
+        $rotas[$k]['pinguim_docs'] += (int) $r['N'];
+        $rotas[$k]['pinguim_valor'] += (float) $r['VALOR'];
+    }
+    foreach ($vendas as $v) {
+        if (($v['data'] ?? '') !== $dia) continue;
+        $k = trim((string) ($v['rota'] ?? '')) ?: '—';
+        $rotas[$k] = ($rotas[$k] ?? ['rota' => $k, 'pinguim_docs' => 0, 'pinguim_valor' => 0.0, 'portal_docs' => 0, 'portal_valor' => 0.0]);
+        $rotas[$k]['portal_docs']++;
+        $rotas[$k]['portal_valor'] += (float) ($v['total'] ?? 0);
+    }
+    ksort($rotas, SORT_NATURAL);
+    $dif = [];
+    foreach ($rotas as &$r) {
+        $r['pinguim_valor'] = round($r['pinguim_valor'], 2);
+        $r['portal_valor'] = round($r['portal_valor'], 2);
+        $r['ok'] = $r['pinguim_docs'] === $r['portal_docs'] && abs($r['pinguim_valor'] - $r['portal_valor']) <= 0.01;
+        if (!$r['ok']) $dif[] = $r;
+    }
+    unset($r);
+    return ['dia' => $dia, 'feita_em' => date('Y-m-d H:i:s'), 'ok' => !$dif, 'rotas' => array_values($rotas), 'diferencas' => $dif,
+        'pinguim_docs' => array_sum(array_column($rotas, 'pinguim_docs')), 'portal_docs' => array_sum(array_column($rotas, 'portal_docs')),
+        'pinguim_valor' => round(array_sum(array_column($rotas, 'pinguim_valor')), 2), 'portal_valor' => round(array_sum(array_column($rotas, 'portal_valor')), 2)];
+}
+
+/** Conferência de um dia (AAAA-MM-DD) com o Pinguim BO; null sem base de dados ou se a consulta falhar. */
+function naval_vigia_conferencia(string $dia): ?array
+{
+    if (!function_exists('naval_bd_configurada')) naval_servico('bd');
+    if (!naval_bd_configurada()) return null;
+    naval_servico('vendas');
+    naval_servico('rotas');
+    try {
+        $pinguim = naval_bd_consultar("
+            SELECT COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4)) AS ROTA, COUNT(*) AS N,
+                   CAST(SUM(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DH.CALC_TOTAL_W_TAX) ELSE DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL END) AS FLOAT) AS VALOR
+            FROM DOCHEADER DH
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
+            LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
+            WHERE " . naval_vendas_condicao_validos() . "
+              AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
+              AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate
+            GROUP BY COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4))", [':de' => $dia, ':ate' => $dia]);
+        $v = naval_vendas_sql(str_replace('-', '', $dia), str_replace('-', '', $dia), naval_promotores(), false);
+        if ($v === null) return null;
+        return naval_vigia_conferencia_comparar($dia, $pinguim, $v['vendas']);
+    } catch (Throwable $ex) {
+        error_log('[vigilância conferência] ' . $ex->getMessage());
+        return null;
+    }
+}
+
 /** Cria a «issue» no GitHub (ou acrescenta um comentário). Devolve o número, ou null; nunca lança excepções. */
 function naval_vigia_github(array $p, ?int $issue, string &$erro): ?int
 {
@@ -215,6 +277,22 @@ function naval_vigia_ciclo(int $agora, array $o = []): ?array
                 if (empty($r['ok'])) $ocorr[] = ['tipo' => 'negocio_' . preg_replace('/_\d{4}-\d{2}-\d{2}$/', '', $k), 'ficheiro' => '', 'linha' => 0, 'mensagem' => (string) $r['mensagem'], 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora)];
             }
             $e['negocio'] = $negocio;
+        }
+        // 2b. conferência do dia anterior com o Pinguim BO, uma vez por dia depois das 02:00
+        $ontem = date('Y-m-d', $agora - 86400);
+        if (array_key_exists('conferencia', $o) || (date('H', $agora) >= '02' && ($e['conferencia']['dia'] ?? '') !== $ontem)) {
+            $conf = array_key_exists('conferencia', $o) ? $o['conferencia'] : naval_vigia_conferencia($ontem);
+            if (is_array($conf)) {
+                $e['conferencia'] = $conf;
+                $dirC = naval_vigia_pasta() . '/conferencia';
+                if (!is_dir($dirC)) @mkdir($dirC, 0770, true);
+                naval_json_gravar($dirC . '/' . $conf['dia'] . '.json', $conf);
+                foreach ($conf['diferencas'] as $d) {
+                    $ocorr[] = ['tipo' => 'conferencia', 'ficheiro' => '', 'linha' => 0, 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora),
+                        'mensagem' => 'Conferência de ' . $conf['dia'] . ', rota ' . $d['rota'] . ': o Pinguim BO tem ' . $d['pinguim_docs'] . ' documentos ('
+                            . number_format($d['pinguim_valor'], 2, ',', ' ') . ' Kz) e o portal ' . $d['portal_docs'] . ' (' . number_format($d['portal_valor'], 2, ',', ' ') . ' Kz).'];
+                }
+            }
         }
         // 3. agrupar, guardar, enviar
         $probs = naval_vigia_problemas();
@@ -329,6 +407,7 @@ function naval_vigia_vista(): array
         'activa' => naval_config('VIGIA_ACTIVA', '1') !== '0',
         'ultimo' => $e['ultimo'] ? date('Y-m-d H:i:s', (int) $e['ultimo']) : null,
         'negocio' => $e['negocio'],
+        'conferencia' => $e['conferencia'] ?? null,
         'abertos' => count(array_filter($p, function ($x) { return $x['estado'] === 'aberto'; })),
         'problemas' => array_slice($p, 0, 100),
         'github_erro' => $erroGithub,

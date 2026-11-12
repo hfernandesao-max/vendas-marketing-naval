@@ -102,6 +102,30 @@ function vigia(pg) {
     negFalha.forEach(([, r]) => ul.append(el('li', null, r.mensagem)));
     pg.append(secBox(t('Atenção da vigilância'), '', ul));
   }
+  const C = V.conferencia;
+  if (C && C.rotas) {
+    pg.append(
+      tabela({
+        id: 'conf-conferencia',
+        titulo: t('Conferência com o Pinguim BO de {d}', { d: dh(C.dia) }),
+        nota: C.ok
+          ? t('Documentos e valores iguais em todas as rotas.')
+          : t('{n} rota(s) com diferenças: o portal tem de mostrar exactamente o que está no Pinguim BO.', { n: C.diferencas.length }),
+        search: false,
+        rows: C.rotas,
+        sort: 'rota',
+        total: true,
+        cols: [
+          { key: 'rota', label: t('Rota'), p: 0 },
+          { key: 'pinguim_docs', label: t('Documentos no Pinguim BO'), type: 'n', sum: true },
+          { key: 'portal_docs', label: t('Documentos no portal'), type: 'n', sum: true },
+          { key: 'pinguim_valor', label: t('Valor no Pinguim BO'), type: 'kz', sum: true, p: 0 },
+          { key: 'portal_valor', label: t('Valor no portal'), type: 'kz', sum: true },
+          { key: 'ok', label: t('Estado'), p: 0, render: (v) => pill(v ? t('Igual') : t('Diferente'), v ? 'p-ok' : 'p-bad') },
+        ],
+      }),
+    );
+  }
   pg.append(
     tabela({
       id: 'conf-vigia',

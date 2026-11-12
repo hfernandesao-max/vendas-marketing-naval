@@ -98,3 +98,39 @@ test('erro da base de dados: mostra o motivo e permite tentar de novo; nunca dad
   await page.click('#page button:has-text("Tentar de novo")');
   await expect.poll(() => n).toBe(2);
 });
+
+test('stock por carrinha: mostra de que armazém vem o stock; SADM confirma o armazém certo com um clique', async ({ page }) => {
+  await page.route('**/v1/sessao*', (r) =>
+    r.fulfill({ json: { login: 'henrique', perfil: 'SADM', csrf: 'x', permissoes: { 'stock-carrinha': 'A', inicio: 'A' } } }),
+  );
+  let enviado = null;
+  let confirmado = false;
+  await page.route('**/v1/stock**', (r) => {
+    if (r.request().method() === 'POST') {
+      enviado = r.request().postDataJSON();
+      confirmado = true;
+      return r.fulfill({ json: { ok: true, confirmadas: { 1002: { codigo: '10001002' } } } });
+    }
+    const d = stockDe('2026-10-26');
+    d.carrinhas[0].confirmado = true;
+    d.carrinhas[0].armazens_origem = [{ codigo: '10001001', nome: 'Armazém 1001 - FHR PIV', como: 'confirmado' }];
+    d.carrinhas[1].confirmado = confirmado;
+    d.carrinhas[1].armazens_origem = confirmado
+      ? [{ codigo: '10001002', nome: 'Armazém 1002 - FHR PIV', como: 'confirmado' }]
+      : [
+          { codigo: '10001002', nome: 'Armazém 1002 - FHR PIV', como: 'codigo' },
+          { codigo: 'MR02', nome: 'Depósito 1002 antigo', como: 'nome' },
+        ];
+    return r.fulfill({ json: d });
+  });
+  await abrir(page, '#stock-carrinha');
+  await expect(page.locator('#s-sc-car-1001 .stock-origem')).toContainText('Armazém confirmado');
+  await expect(page.locator('#s-sc-car-1001 .stock-origem button')).toHaveCount(0);
+  const o2 = page.locator('#s-sc-car-1002 .stock-origem');
+  await expect(o2).toContainText('Armazém por confirmar');
+  await expect(o2).toContainText('MR02 · Depósito 1002 antigo (pelo nome)');
+  await expect(o2).toContainText('junta 2 armazéns');
+  await o2.locator('.stock-origem-arm', { hasText: '10001002' }).locator('button').click();
+  await expect.poll(() => enviado).toMatchObject({ accao: 'confirmar_carrinha', rota: '1002', codigo: '10001002', csrf: 'x' });
+  await expect(page.locator('#s-sc-car-1002 .stock-origem')).toContainText('Armazém confirmado');
+});

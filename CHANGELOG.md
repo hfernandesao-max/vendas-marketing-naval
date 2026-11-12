@@ -2,6 +2,20 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 12-11-2026
+
+### Fiabilidade dos dados: armazém de cada carrinha, conferência diária e ficheiro para o SAP congelado
+
+- Stock por carrinha: cada carrinha mostra de que armazém(ns) do Pinguim BO vem o stock (código, nome e se foi
+  reconhecido pelo código 100010NN ou pelo nome) e avisa quando junta mais do que um. O super administrador e a
+  informática confirmam o armazém certo com um clique; a partir daí só esse código conta para a carrinha, sem procurar
+  no nome, e qualquer outro armazém com «10NN» no nome passa para o stock por armazém.
+- Conferência diária com o Pinguim BO: todas as madrugadas, para o dia anterior, a vigilância compara por rota o
+  número de documentos e o valor de venda do Pinguim BO com o que o portal mostra. Uma diferença de um documento ou de
+  mais de 1 cêntimo abre um problema (GitHub e correio); o resultado fica em Administração › Conformidade.
+- Ficheiro para o SAP congelado: um teste gera o livro com dados fixos e compara cada parte, carácter a carácter, com o
+  ficheiro de referência (`tests/referencia/sap/`). Qualquer alteração à estrutura trava a versão nas verificações.
+
 ## 11-11-2026
 
 ### Vigilância em produção e reposição automática

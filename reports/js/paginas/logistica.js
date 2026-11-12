@@ -10,13 +10,15 @@
 // filtra no portal, sem nova consulta à base de dados.
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
-import { tabela, tiles } from '../componentes/blocos.js';
+import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV, filtroAtivo, normTxt } from '../filtros.js';
 import { fetchStock } from '../fontes.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { st } from '../periodo.js';
-import { DB, el, sum } from '../util.js';
+import { SESSAO } from '../perfil.js';
+import { postJson } from '../servidor.js';
+import { DB, el, sum, toast } from '../util.js';
 import { R } from './registo.js';
 
 // Estado do pedido de stock para a data do período: '' | 'a-carregar' | 'ok' | 'erro'
@@ -87,6 +89,42 @@ const colsArtigos = () => [
   { key: 'quantidade', label: t('Quantidade'), type: 'n', sum: true, p: 0 },
 ];
 
+const podeConfirmar = () => !!SESSAO && ['SADM', 'TI'].includes(SESSAO.perfil);
+
+/**
+ * De onde vem o stock da carrinha: o(s) armazém(ns) do Pinguim BO que o portal juntou e se o armazém da carrinha já
+ * foi confirmado. Sem confirmação conta o código 100010NN ou, em último caso, «10NN» no nome do armazém — e mais do
+ * que um armazém na mesma carrinha é sinal de que algum não é dela. SADM e TI confirmam o certo com um clique.
+ */
+function origemCarrinha(car) {
+  const box = el('div', 'stock-origem');
+  const ori = car.origem || [];
+  if (car.confirmado === undefined) return box; // ficheiro sem esta informação
+  box.append(pill(car.confirmado ? t('Armazém confirmado') : t('Armazém por confirmar'), car.confirmado ? 'p-ok' : 'p-warn'));
+  ori.forEach((a) => {
+    const como = a.como === 'confirmado' ? t('confirmado') : a.como === 'codigo' ? t('pelo código') : t('pelo nome');
+    const linha = el('span', 'stock-origem-arm', a.codigo + ' · ' + a.nome + ' (' + como + ')');
+    if (podeConfirmar() && (!car.confirmado || ori.length > 1)) {
+      const b = el('button', 'btn ghost sm', ori.length > 1 ? t('Só este é a carrinha') : t('Confirmar'));
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        b.disabled = true;
+        postJson('stock', { accao: 'confirmar_carrinha', rota: car.rota, codigo: a.codigo, nome: a.nome }).then((d) => {
+          b.disabled = false;
+          if (!d || !d.ok) return toast(t((d && d.erro) || 'Sem resposta do servidor.'), 6000);
+          toast(t('Armazém da carrinha {r} confirmado.', { r: car.rota }), 4000);
+          pedido = { data: '', estado: '', erro: '', em: 0 };
+          draw();
+        });
+      });
+      linha.append(' ', b);
+    }
+    box.append(linha);
+  });
+  if (ori.length > 1) box.append(el('p', 'aviso', t('Esta carrinha junta {n} armazéns do Pinguim BO: confirme qual é o dela.', { n: ori.length })));
+  return box;
+}
+
 const vazio = (txt) => {
   const v = el('div', 'glass empty');
   v.append(el('p', null, txt));
@@ -125,6 +163,8 @@ R['stock-carrinha'] = (pg) => {
         armazem,
         itens,
         total_quantidade: sum(itens, 'quantidade'),
+        confirmado: c.confirmado,
+        origem: c.armazens_origem || [],
       };
     })
     .filter((c) => c.itens.length)
@@ -140,31 +180,32 @@ R['stock-carrinha'] = (pg) => {
   );
   const secs = el('div', 'secs');
   if (!carrinhas.length) secs.append(vazio(t('Sem carrinhas com stock para os filtros escolhidos.')));
-  carrinhas.forEach((car) =>
-    secs.append(
-      tabela({
-        id: 'sc-car-' + car.rota,
-        titulo: t('Carrinha') + ': ' + car.carrinha,
-        nota:
-          t('Promotor') +
-          ': ' +
-          car.promotor +
-          ' (' +
-          t('Rota') +
-          ' ' +
-          car.rota +
-          ')' +
-          (car.motorista !== '—' ? ' · ' + t('Motorista') + ': ' + car.motorista : '') +
-          ' · ' +
-          car.armazem,
-        rows: car.itens,
-        sort: 'quantidade',
-        dir: -1,
-        total: true,
-        cols: colsArtigos(),
-      }),
-    ),
-  );
+  carrinhas.forEach((car) => {
+    const sec = tabela({
+      id: 'sc-car-' + car.rota,
+      titulo: t('Carrinha') + ': ' + car.carrinha,
+      nota:
+        t('Promotor') +
+        ': ' +
+        car.promotor +
+        ' (' +
+        t('Rota') +
+        ' ' +
+        car.rota +
+        ')' +
+        (car.motorista !== '—' ? ' · ' + t('Motorista') + ': ' + car.motorista : '') +
+        ' · ' +
+        car.armazem,
+      rows: car.itens,
+      sort: 'quantidade',
+      dir: -1,
+      total: true,
+      cols: colsArtigos(),
+    });
+    const hl = sec.querySelector('.sec-h > div');
+    if (hl) hl.append(origemCarrinha(car));
+    secs.append(sec);
+  });
   pg.append(secs);
 };
 
