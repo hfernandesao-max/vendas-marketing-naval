@@ -11,7 +11,7 @@ $ambAtv = sys_get_temp_dir() . '/naval-atv-' . getmypid();
 $cenario = __DIR__ . '/equipamentos/cenario.php';
 foreach (['preparar', 'log', 'pro', 'sup'] as $atvFase) {
     $atvSaida = [];
-    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($ambAtv) . ' ' . $atvFase . ' 2>&1', $atvSaida, $atvCodigo);
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($ambAtv) . ' ' . $atvFase . ' 2>&1', $atvSaida, $atvCodigo);  // nosemgrep: exec-use -- fase de uma lista fixa; restantes argumentos com escapeshellarg (só testes)
     $atvN = 0;
     foreach ($atvSaida as $atvLinha) {
         if (preg_match('/^(ok|FALHA) (.+?)(?: :: (.*))?$/u', $atvLinha, $m)) {

@@ -10,7 +10,7 @@ $ok = 0;
 $falhas = 0;
 foreach (['preparar', 'log', 'pro', 'sup'] as $fase) {
     $saida = [];
-    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($amb) . ' ' . $fase . ' 2>&1', $saida, $codigo);
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($amb) . ' ' . $fase . ' 2>&1', $saida, $codigo);  // nosemgrep: exec-use -- fase de uma lista fixa; restantes argumentos com escapeshellarg (só testes)
     foreach ($saida as $l) {
         echo "[$fase] $l\n";
         if (strpos($l, 'ok ') === 0) $ok++;
