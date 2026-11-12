@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+  <linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe7f3"/>
+  </linearGradient>
+  <linearGradient id="faixa" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#48b0e8"/>
+    <stop offset="0.35" stop-color="#2397d4"/>
+    <stop offset="0.72" stop-color="#273777"/>
+    <stop offset="1" stop-color="#18224f"/>
+  </linearGradient>
+  <linearGradient id="reflexo" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+    <stop offset="0.3" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient>
+  <radialGradient id="volume" cx="38%" cy="28%" r="80%">
+    <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+    <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+    <stop offset="1" stop-color="#0a1340" stop-opacity="0.45"/>
+  </radialGradient>
+  <linearGradient id="anel" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6ccaf7"/>
+    <stop offset="0.4" stop-color="#2c63b8"/>
+    <stop offset="1" stop-color="#16225a"/>
+  </linearGradient>
+  <radialGradient id="sombra" cx="50%" cy="50%" r="50%">
+    <stop offset="0" stop-color="#1b2a66" stop-opacity="0.35"/>
+    <stop offset="1" stop-color="#1b2a66" stop-opacity="0"/>
+  </radialGradient>
+  <clipPath id="esfera"><circle cx="512" cy="470" r="270"/></clipPath>
+  <mask id="crescente">
+    <rect width="1024" height="1024" fill="black"/>
+    <circle cx="504" cy="480" r="332" fill="white"/>
+    <circle cx="534" cy="452" r="310" fill="black"/>
+    <path d="M572,80 L922,80 L922,430 Z" fill="black"/>
+  </mask>
+  <filter id="relevo" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#0b1a4d" flood-opacity="0.35"/>
+  </filter>
+</defs>
+<rect width="1024" height="1024" fill="url(#fundo)"/>
+<ellipse cx="512" cy="835" rx="260" ry="36" fill="url(#sombra)"/>
+<g filter="url(#relevo)">
+  <rect width="1024" height="1024" fill="url(#anel)" mask="url(#crescente)"/>
+</g>
+<g filter="url(#relevo)">
+  <g clip-path="url(#esfera)">
+    <path d="M222,150 Q512,150 802,150 L802,360 Q512,220 222,360 Z" fill="url(#faixa)"/>
+<path d="M222,382 Q512,254 802,382 L802,452 Q512,324 222,452 Z" fill="url(#faixa)"/>
+<path d="M222,472 Q512,356 802,472 L802,540 Q512,424 222,540 Z" fill="url(#faixa)"/>
+<path d="M222,558 Q512,454 802,558 L802,622 Q512,518 222,622 Z" fill="url(#faixa)"/>
+<path d="M222,638 Q512,546 802,638 L802,694 Q512,602 222,694 Z" fill="url(#faixa)"/>
+<path d="M222,708 Q512,628 802,708 L802,800 Q512,800 222,800 Z" fill="url(#faixa)"/>
+    <path d="M222,150 Q512,150 802,150 L802,360 Q512,220 222,360 Z" fill="url(#reflexo)"/>
+<path d="M222,382 Q512,254 802,382 L802,452 Q512,324 222,452 Z" fill="url(#reflexo)"/>
+<path d="M222,472 Q512,356 802,472 L802,540 Q512,424 222,540 Z" fill="url(#reflexo)"/>
+<path d="M222,558 Q512,454 802,558 L802,622 Q512,518 222,622 Z" fill="url(#reflexo)"/>
+<path d="M222,638 Q512,546 802,638 L802,694 Q512,602 222,694 Z" fill="url(#reflexo)"/>
+<path d="M222,708 Q512,628 802,708 L802,800 Q512,800 222,800 Z" fill="url(#reflexo)"/>
+  </g>
+</g>
+<g clip-path="url(#esfera)"><circle cx="512" cy="470" r="270" fill="url(#volume)" style="mix-blend-mode:soft-light"/></g>
+</svg>

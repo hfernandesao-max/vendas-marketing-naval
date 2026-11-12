@@ -44,12 +44,12 @@ const E = {
   aoLer: false,
   sep: 'hoje',
   periodo: 'hoje',
-  ordemRotas: 'mes',
+  ordemRotas: 'agora',
   conversa: [],
   aPensar: false,
   aLer: false,
 };
-const ICONE = { hoje: 'home', agora: 'radar', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
+const ICONE = { hoje: 'home', rotas: 'trophy', alertas: 'sino', assistente: 'ia' };
 const SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
 // ───────────── peças ─────────────
@@ -303,7 +303,7 @@ function linhaRota(r, i, max, ordem) {
   b.append(el('span', 'ag-pos', String(i + 1)), nome, el('span', 'ag-valor', kzc(v)));
   b.insertAdjacentHTML('beforeend', SETA);
   b.setAttribute('aria-label', t('Rota {r}', { r: r.rota }) + ': ' + kz(v));
-  b.addEventListener('click', () => folhaRota(r));
+  b.addEventListener('click', () => folhaRota(r.rota));
   return b;
 }
 function hoje() {
@@ -322,8 +322,10 @@ function hoje() {
       },
       t('Período'),
     ),
-    heroi(),
   ];
+  const vivo = E.periodo === 'hoje' ? cartaoVivo() : null;
+  if (vivo) out.push(vivo);
+  else out.push(heroi());
   const a = d.alertas;
   if (a && a.principais && a.principais.length) {
     out.push(
@@ -354,22 +356,26 @@ function hoje() {
 
 // ───────────── Rotas ─────────────
 function rotas() {
+  if (E.ordemRotas === 'agora' && !pode('inicio')) E.ordemRotas = 'mes';
   const ordem = E.ordemRotas;
-  const rs = E.ind.rotas.slice().sort((a, b) => (ordem === 'hoje' ? b.hoje - a.hoje : b.mes - a.mes));
+  const opcoes = [
+    ['hoje', t('Hoje')],
+    ['mes', t('Mês até hoje')],
+  ];
+  if (pode('inicio')) opcoes.unshift(['agora', t('Agora')]);
   const out = [
     segmentos(
-      [
-        ['mes', t('Mês até hoje')],
-        ['hoje', t('Hoje')],
-      ],
+      opcoes,
       ordem,
       (id) => {
         E.ordemRotas = id;
         desenhar();
       },
-      t('Ordenar por'),
+      t('Ver'),
     ),
   ];
+  if (ordem === 'agora') return out.concat(rotasAoVivo());
+  const rs = E.ind.rotas.slice().sort((a, b) => (ordem === 'hoje' ? b.hoje - a.hoje : b.mes - a.mes));
   if (!rs.length) return out.concat(el('p', 'ag-vazio', t('Sem vendas no período.')));
   const cresce = rs.filter((r) => r.variacao_mes > 0.005).length,
     cai = rs.filter((r) => r.variacao_mes < -0.005).length;
@@ -381,7 +387,13 @@ function rotas() {
   return out;
 }
 /** Detalhe da rota numa folha que sobe do fundo (padrão das apps iOS e Android). */
-function folhaRota(r) {
+/**
+ * Ficha da rota (folha que sobe do fundo, como no iOS): estado agora, vendas, stock na carrinha neste momento,
+ * fecho do dia, últimas vendas e os últimos 14 dias. Actualiza-se sozinha com os dados ao vivo.
+ */
+function folhaRota(rota) {
+  const r = (E.ind.rotas || []).find((x) => String(x.rota) === String(rota)) || { rota, promotor: '' };
+  const vivo = E.ao && E.ao.vendas ? rotasAgora(E.ao.vendas).find((x) => String(x.rota) === String(rota)) : null;
   let f = $('ag-folha');
   if (!f) {
     f = el('dialog', 'ag-folha');
@@ -391,29 +403,103 @@ function folhaRota(r) {
     });
     document.body.append(f);
   }
+  f.dataset.rota = String(rota);
   const cab = el('div', 'ag-folha-cab');
   const fechar = el('button', 'ag-mais', t('Fechar'));
   fechar.type = 'button';
   fechar.addEventListener('click', () => f.close());
-  cab.append(el('h2', null, t('Rota {r}', { r: r.rota })), fechar);
+  const tit = el('div');
+  tit.append(el('h2', null, t('Rota {r}', { r: r.rota })));
+  if (r.promotor || (vivo && vivo.promotor)) tit.append(el('p', 'ag-nota', r.promotor || vivo.promotor));
+  cab.append(tit, fechar);
   const corpo = el('div', 'ag-folha-corpo');
-  if (r.promotor) corpo.append(el('p', 'ag-nota', r.promotor));
+  // agora
+  if (vivo) {
+    const [rot, cls] = ESTADO_ROTA[vivo.estado];
+    const e = el('div', 'ag-folha-estado');
+    e.append(
+      el('span', 'ag-estado-rota ' + cls, t(rot)),
+      document.createTextNode(vivo.docs ? ' ' + t('{n} doc.', { n: vivo.docs }) + ' · ' + t('última {q}', { q: haQuanto(vivo.min) }) : ''),
+    );
+    corpo.append(e);
+  }
   const g = el('div', 'ag-grelha');
   g.append(
-    cartaoKpi(t('Hoje'), kzc(r.hoje), undefined, r.previsto_hoje ? t('previsto {v}', { v: kzc(r.previsto_hoje) }) : t('sem previsão')),
-    cartaoKpi(t('Ontem'), kzc(r.ontem), r.habitual_ontem ? r.ontem / r.habitual_ontem - 1 : null, t('face ao habitual')),
-    cartaoKpi(t('Mês até hoje'), kzc(r.mes), r.variacao_mes, t('face ao mês passado')),
-    cartaoKpi(t('Mês passado'), kzc(r.mes_anterior), undefined, t('mesmos dias')),
+    cartaoKpi(t('Hoje'), kzc(vivo ? vivo.total : r.hoje || 0), undefined, r.previsto_hoje ? t('previsto {v}', { v: kzc(r.previsto_hoje) }) : t('sem previsão')),
+    cartaoKpi(t('Ontem'), kzc(r.ontem || 0), r.habitual_ontem ? r.ontem / r.habitual_ontem - 1 : null, t('face ao habitual')),
+    cartaoKpi(t('Mês até hoje'), kzc(r.mes || 0), r.variacao_mes, t('face ao mês passado')),
+    cartaoKpi(t('Mês passado'), kzc(r.mes_anterior || 0), undefined, t('mesmos dias')),
   );
   corpo.append(g);
+  // stock na carrinha neste momento
+  if (pode('stock-carrinha')) {
+    const st = stockDaRota(rota);
+    corpo.append(titulo(t('Stock na carrinha agora')));
+    if (!E.ao) corpo.append(esqueleto());
+    else if (!st || !(st.itens || []).length) corpo.append(el('p', 'ag-vazio', t('Sem stock na carrinha no Pinguim BO.')));
+    else {
+      const res = el(
+        'p',
+        'ag-resumo',
+        t('{a} artigos · {q} unidades', { a: n0((st.itens || []).length), q: n0(st.total_quantidade || 0) }) +
+          (st.total_caixas ? ' · ' + t('{c} caixas', { c: n0(st.total_caixas) }) : '') +
+          (st.armazem ? ' · ' + st.armazem : ''),
+      );
+      const l = el('div', 'ag-lista ag-feed');
+      st.itens
+        .slice()
+        .sort((a, b) => (+b.quantidade || 0) - (+a.quantidade || 0))
+        .forEach((x) => {
+          const li = el('div', 'ag-feed-l');
+          const tx = el('span', 'ag-feed-t');
+          tx.append(el('strong', null, x.produto || x.codigo), el('span', null, x.codigo || ''));
+          li.append(tx, el('span', 'ag-valor' + ((+x.quantidade || 0) < 0 ? ' desce' : ''), n0(+x.quantidade || 0)));
+          l.append(li);
+        });
+      corpo.append(res, l);
+    }
+  }
+  // fecho do dia (conciliação)
+  const fe = fechoDaRota(rota);
+  if (fe && FECHO[fe.fecho]) {
+    const [rot, cls] = FECHO[fe.fecho];
+    const p = el('div', 'ag-folha-estado');
+    p.append(el('strong', null, t('Fecho do dia') + ': '), el('span', 'ag-estado-rota ' + cls, t(rot)));
+    corpo.append(p);
+  }
+  // últimas vendas da rota
+  const us =
+    E.ao && E.ao.vendas
+      ? E.ao.vendas
+          .filter((v) => String(v.rota) === String(rota) && v.hora)
+          .sort((a, b) => String(b.hora).localeCompare(String(a.hora)))
+          .slice(0, 10)
+      : [];
+  if (us.length) {
+    corpo.append(titulo(t('Últimas vendas')));
+    const l = el('div', 'ag-lista ag-feed');
+    us.forEach((v) => {
+      const li = el('div', 'ag-feed-l');
+      const tx = el('span', 'ag-feed-t');
+      tx.append(
+        el('strong', null, v.cliente || t('Consumidor final')),
+        el('span', null, String(v.hora).slice(0, 5) + (v.nc ? ' · ' + t('nota de crédito') : '')),
+      );
+      li.append(tx, el('span', 'ag-valor' + (v.nc ? ' desce' : ''), kzc(+v.total || 0)));
+      l.append(li);
+    });
+    corpo.append(l);
+  }
   if (r.serie && r.serie.length) {
     const dias = Array.from({ length: r.serie.length }, (_, i) => somaDias(E.ind.hoje.dia, i - r.serie.length + 1));
-    const c = cartao('ag-heroi', el('div', 'ag-rotulo', t('Últimos 14 dias')), barras(r.serie, dias.map(dl), null, t('Últimos 14 dias')));
-    corpo.append(c);
+    corpo.append(cartao('ag-heroi', el('div', 'ag-rotulo', t('Últimos 14 dias')), barras(r.serie, dias.map(dl), null, t('Últimos 14 dias'))));
   }
   if (r.sequencia >= 3) corpo.append(el('p', 'ag-selo', t('{n} dias acima do habitual', { n: r.sequencia })));
   f.replaceChildren(cab, corpo);
-  if (!f.open) f.showModal();
+  if (!f.open) {
+    f.showModal();
+    if (!E.ao) carregarAgora(true);
+  }
 }
 
 // ───────────── Alertas ─────────────
@@ -430,7 +516,7 @@ function alertas() {
     x.append(el('strong', null, n0(n)), el('span', null, nome));
     resumo.append(x);
   });
-  const out = [cartaoNotificacoes(), ...caixaNotificacoes(), titulo(t('Alertas de hoje')), resumo];
+  const out = [linhaNotificacoes(), ...caixaNotificacoes(), titulo(t('Alertas de hoje')), resumo];
   if (!a.principais.length) out.push(el('p', 'ag-vazio', t('Sem alertas: tudo dentro do habitual.')));
   const l = el('div', 'ag-lista');
   a.principais.forEach((x) => l.append(linhaAlerta(x, false)));
@@ -485,6 +571,8 @@ function accaoNotif(corpo) {
     } else E.notifErro = (d && d.erro) || 'Sem resposta do servidor.';
     E.notifEstado = '';
     desenhar();
+    const fn = $('ag-folha-notif');
+    if (fn && fn.open) folhaNotificacoes();
     return d;
   });
 }
@@ -529,6 +617,41 @@ function interruptor(ligado, rotulo, fn) {
   b.append(el('span', 'ag-int-bola'));
   b.addEventListener('click', () => fn(!ligado));
   return b;
+}
+/** Linha «Notificações» (como nas Definições do iPhone): estado à direita; abre a folha com as opções. */
+function linhaNotificacoes() {
+  const N = E.notif;
+  const sub = N && N.subscrito && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const b = el('button', 'ag-rota ag-notif-linha');
+  b.type = 'button';
+  const ic = el('span', 'ag-notif-ic');
+  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+  const nome = el('span', 'ag-rota-n');
+  nome.append(el('strong', null, t('Notificações')), el('span', 'ag-rota-s', sub ? t('Ligadas neste telefone') : t('Desligadas · toque para ligar')));
+  b.append(ic, nome);
+  b.insertAdjacentHTML('beforeend', SETA);
+  b.addEventListener('click', folhaNotificacoes);
+  return b;
+}
+function folhaNotificacoes() {
+  let f = $('ag-folha-notif');
+  if (!f) {
+    f = el('dialog', 'ag-folha');
+    f.id = 'ag-folha-notif';
+    f.addEventListener('click', (e) => {
+      if (e.target === f) f.close();
+    });
+    document.body.append(f);
+  }
+  const cab = el('div', 'ag-folha-cab');
+  const fechar = el('button', 'ag-mais', t('Fechar'));
+  fechar.type = 'button';
+  fechar.addEventListener('click', () => f.close());
+  cab.append(el('h2', null, t('Notificações')), fechar);
+  const corpo = el('div', 'ag-folha-corpo');
+  corpo.append(cartaoNotificacoes());
+  f.replaceChildren(cab, corpo);
+  if (!f.open) f.showModal();
 }
 function cartaoNotificacoes() {
   const c = cartao('ag-notif');
@@ -734,22 +857,32 @@ function carregarAgora(forcar) {
   if (E.aoLer || (!forcar && E.ao && Date.now() - E.aoEm < 55000)) return;
   E.aoLer = true;
   const dia = hojeIso().replace(/-/g, '');
+  // v1/vendas devolve a lista de documentos (ou {vendas} quando vêm também as linhas de artigos)
   const vendas = apiJson('vendas?start_date=' + dia + '&end_date=' + dia).then(
-    (d) => (d && Array.isArray(d.vendas) ? d.vendas : null),
+    (d) => (Array.isArray(d) ? d : d && Array.isArray(d.vendas) ? d.vendas : null),
     () => null,
   );
+  // stock de cada carrinha neste momento (Pinguim BO, dbo.GET_STOCK)
+  const stock = pode('stock-carrinha')
+    ? apiJson('stock?data=' + hojeIso()).then(
+        (d) => (d && Array.isArray(d.carrinhas) ? d.carrinhas : null),
+        () => null,
+      )
+    : Promise.resolve(null);
   const carr = pode('conciliacao-carrinha')
     ? apiJson('painel-carrinha?data=' + hojeIso()).then(
         (d) => (d && d.ok ? d : null),
         () => null,
       )
     : Promise.resolve(null);
-  Promise.all([vendas, carr]).then(([v, c]) => {
+  Promise.all([vendas, carr, stock]).then(([v, c, st]) => {
     E.aoLer = false;
     if (v === null && !E.ao) E.ao = { erro: true };
-    else if (v !== null) E.ao = { vendas: v, carrinhas: c, hora: new Date() };
+    else if (v !== null) E.ao = { vendas: v, carrinhas: c, stock: st, hora: new Date() };
     E.aoEm = Date.now();
-    if (E.sep === 'agora') desenhar();
+    if (E.sep === 'hoje' || E.sep === 'rotas') desenhar();
+    const f = $('ag-folha');
+    if (f && f.open && f.dataset.rota) folhaRota(f.dataset.rota);
   });
 }
 
@@ -783,22 +916,15 @@ const ESTADO_ROTA = {
   fora: ['Sem vendas', 'neutra'],
 };
 
-function agora() {
+/** Cartão «Ao vivo» do separador Hoje: vendas de hoje a entrar, documentos, valor médio e a última venda. */
+function cartaoVivo() {
+  if (!pode('inicio')) return null;
   carregarAgora(false);
-  if (!E.ao) return [esqueleto()];
-  if (E.ao.erro) {
-    const b = el('button', 'ag-botao', t('Tentar de novo'));
-    b.type = 'button';
-    b.addEventListener('click', () => carregarAgora(true));
-    return [cartao('ag-erro', el('p', null, t('Não foi possível ler as vendas de hoje.')), b)];
-  }
+  if (!E.ao || E.ao.erro) return null;
   const vendas = E.ao.vendas;
   const total = vendas.reduce((a, v) => a + (+v.total || 0), 0);
   const docs = vendas.filter((v) => !v.nc).length;
   const ult = vendas.reduce((a, v) => ((v.hora || '') > a ? v.hora : a), '');
-  const rs = rotasAgora(vendas);
-  const out = [];
-  // 1. ao vivo: total, documentos, ticket médio e a última venda
   const c = cartao('ag-heroi ag-vivo');
   const cab = el('div', 'ag-vivo-cab');
   cab.append(el('i', 'ag-pulso'), el('span', null, t('Ao vivo · actualiza a cada minuto')));
@@ -815,79 +941,85 @@ function agora() {
     mini(t('última venda'), ult ? haQuanto(minutosDesde(ult)) : '—'),
   );
   c.append(g);
-  out.push(c);
-  // 2. rotas agora: paradas primeiro
+  return c;
+}
+
+const stockDaRota = (rota) => ((E.ao && E.ao.stock) || []).find((c) => String(c.rota) === String(rota)) || null;
+const fechoDaRota = (rota) => ((E.ao && E.ao.carrinhas && E.ao.carrinhas.rotas) || []).find((c) => String(c.rota) === String(rota)) || null;
+const FECHO = {
+  por_contar: ['Por contar', 'aviso'],
+  contagem_parcial: ['Contagem a meio', 'aviso'],
+  por_aprovar: ['Por aprovar', 'aviso'],
+  aprovada: ['Fechada', 'ok'],
+  fechada_auto: ['Fechada', 'ok'],
+};
+
+/** Rotas em tempo real (segmento «Agora» do separador Rotas): estado, última venda, stock na carrinha e fecho. */
+function rotasAoVivo() {
+  carregarAgora(false);
+  if (!E.ao) return [esqueleto()];
+  if (E.ao.erro) {
+    const b = el('button', 'ag-botao', t('Tentar de novo'));
+    b.type = 'button';
+    b.addEventListener('click', () => {
+      E.ao = null;
+      carregarAgora(true);
+      desenhar();
+    });
+    return [cartao('ag-erro', el('p', null, t('Não foi possível ler as vendas de hoje.')), b)];
+  }
+  const rs = rotasAgora(E.ao.vendas);
+  const out = [];
   const nPar = rs.filter((r) => r.estado === 'parada' || r.estado === 'sem').length;
-  out.push(titulo(t('Rotas agora'), nPar ? el('span', 'ag-var desce', t('{n} a pedir atenção', { n: nPar })) : null));
+  const C = E.ao.carrinhas;
+  const porContar = C && C.rotas ? C.rotas.filter((r) => r.fecho === 'por_contar' || r.fecho === 'por_aprovar').length : 0;
+  out.push(
+    el(
+      'p',
+      'ag-resumo',
+      t('{n} rotas · {a} activas · {p} a pedir atenção', { n: n0(rs.length), a: n0(rs.filter((r) => r.estado === 'activa').length), p: n0(nPar) }) +
+        (C && C.rotas ? ' · ' + t('{c} carrinhas por fechar', { c: n0(porContar) }) : ''),
+    ),
+  );
   const l = el('div', 'ag-lista');
   rs.forEach((r) => {
     const [rot, cls] = ESTADO_ROTA[r.estado];
-    const b = el('div', 'ag-rota ag-rota-ao');
+    const b = el('button', 'ag-rota ag-rota-ao');
+    b.type = 'button';
     const nome = el('span', 'ag-rota-n');
     nome.append(el('strong', null, r.rota + (r.promotor ? ' · ' + r.promotor : '')));
     const sub = el('span', 'ag-rota-s');
-    sub.append(
-      el('span', 'ag-estado-rota ' + cls, t(rot)),
-      document.createTextNode(r.docs ? ' · ' + t('{n} doc.', { n: r.docs }) + ' · ' + t('última {q}', { q: haQuanto(r.min) }) : ''),
-    );
+    sub.append(el('span', 'ag-estado-rota ' + cls, t(rot)));
+    if (r.docs) sub.append(document.createTextNode(' ' + t('{n} doc.', { n: r.docs }) + ' · ' + t('última {q}', { q: haQuanto(r.min) })));
+    const st = stockDaRota(r.rota);
+    if (st)
+      sub.append(
+        el(
+          'span',
+          'ag-rota-stock',
+          t('Na carrinha: {a} artigos · {q} un.', { a: n0(st.n_artigos || (st.itens || []).length), q: n0(st.total_quantidade || 0) }),
+        ),
+      );
     nome.append(sub);
     b.append(nome, el('span', 'ag-valor', kzc(r.total)));
+    b.insertAdjacentHTML('beforeend', SETA);
     b.setAttribute('aria-label', t('Rota {r}', { r: r.rota }) + ': ' + t(rot) + ', ' + kz(r.total));
+    b.addEventListener('click', () => folhaRota(r.rota));
     l.append(b);
   });
   if (!rs.length) l.append(el('p', 'ag-vazio', t('Sem rotas com vendas hoje.')));
-  out.push(l);
-  // 3. carrinhas: fecho do dia (conciliação)
-  const C = E.ao.carrinhas;
-  if (C && C.rotas) {
-    const n = (e) => C.rotas.filter((r) => r.fecho === e).length;
-    out.push(titulo(t('Fecho das carrinhas')));
-    const k = el('div', 'ag-grelha ag-grelha-3');
-    [
-      [t('Por contar'), n('por_contar'), n('por_contar') ? 'aviso' : ''],
-      [t('Por aprovar'), n('por_aprovar'), n('por_aprovar') ? 'aviso' : ''],
-      [t('Fechadas'), n('aprovada') + n('fechada_auto'), ''],
-    ].forEach(([rot, v, cls]) => {
-      const d = cartao('ag-kpi ' + cls);
-      d.append(el('div', 'ag-rotulo', rot), el('div', 'ag-medio', n0(v)));
-      k.append(d);
-    });
-    out.push(k);
-  }
-  // 4. últimas vendas
-  const ultimas = vendas
-    .filter((v) => v.hora)
-    .slice()
-    .sort((a, b) => String(b.hora).localeCompare(String(a.hora)))
-    .slice(0, 15);
-  if (ultimas.length) {
-    out.push(titulo(t('Últimas vendas')));
-    const f = el('div', 'ag-lista ag-feed');
-    ultimas.forEach((v) => {
-      const li = el('div', 'ag-feed-l');
-      const tx = el('span', 'ag-feed-t');
-      tx.append(
-        el('strong', null, v.cliente || t('Consumidor final')),
-        el('span', null, String(v.hora).slice(0, 5) + ' · ' + t('Rota {r}', { r: v.rota }) + (v.nc ? ' · ' + t('nota de crédito') : '')),
-      );
-      li.append(tx, el('span', 'ag-valor' + (v.nc ? ' desce' : ''), kzc(+v.total || 0)));
-      f.append(li);
-    });
-    out.push(f);
-  }
-  out.push(el('p', 'ag-nota ag-nota-c', t('Actualizado às {h}', { h: E.ao.hora.toTimeString().slice(0, 5) })));
+  out.push(l, el('p', 'ag-nota ag-nota-c', t('Actualizado às {h}', { h: E.ao.hora.toTimeString().slice(0, 5) })));
   return out;
 }
 
 const SEPARADORES = [
   ['hoje', 'Hoje', hoje],
-  ['agora', 'Agora', agora],
   ['rotas', 'Rotas', rotas],
   ['alertas', 'Alertas', alertas],
   ['assistente', 'Assistente', assistente],
 ];
 const pode = (r) => !!(E.sessao && (E.sessao.permissoes || {})[r]);
-const disponiveis = () => SEPARADORES.filter(([id]) => (id !== 'assistente' || pode('assistente')) && (id !== 'agora' || pode('inicio')));
+const disponiveis = () => SEPARADORES.filter(([id]) => id !== 'assistente' || pode('assistente'));
 
 function mudar(id) {
   E.sep = id;
@@ -1034,7 +1166,7 @@ apiJson('sessao').then((s) => {
     return;
   }
   E.sessao = s;
-  const pedido = location.hash.replace('#', '');
+  const pedido = location.hash.replace('#', '') === 'agora' ? 'rotas' : location.hash.replace('#', '');
   if (SEPARADORES.some(([id]) => id === pedido)) E.sep = pedido;
   carregarNotif();
   const l = s.idioma && s.idioma !== LANG ? mudarIdioma(s.idioma).then(setFmt) : Promise.resolve();
@@ -1044,7 +1176,7 @@ apiJson('sessao').then((s) => {
   });
 });
 $('ag-actualizar').addEventListener('click', () => {
-  if (E.sep === 'agora') carregarAgora(true);
+  if (E.sep === 'hoje' || E.sep === 'rotas') carregarAgora(true);
   carregar(true);
 });
 puxarParaActualizar();
@@ -1052,7 +1184,7 @@ window.addEventListener('online', desenhar);
 window.addEventListener('offline', desenhar);
 // separador «Agora»: a cada minuto, só com ele aberto e a app no ecrã
 setInterval(() => {
-  if (document.visibilityState === 'visible' && E.sep === 'agora' && E.ind) carregarAgora(true);
+  if (document.visibilityState === 'visible' && (E.sep === 'hoje' || E.sep === 'rotas') && E.ind && pode('inicio')) carregarAgora(true);
 }, 60000);
 // actualiza a cada 5 minutos enquanto a app está visível
 setInterval(() => {
@@ -1060,7 +1192,7 @@ setInterval(() => {
 }, 300000);
 // ao tocar numa notificação com a app aberta, o telefone muda o endereço: abre o separador certo
 window.addEventListener('hashchange', () => {
-  const id = location.hash.replace('#', '');
+  const id = location.hash.replace('#', '') === 'agora' ? 'rotas' : location.hash.replace('#', '');
   if (id !== E.sep && SEPARADORES.some(([x]) => x === id)) mudar(id);
 });
 document.addEventListener('visibilitychange', () => {

@@ -204,27 +204,26 @@ test('app de gestão: uma versão nova no servidor aplica-se sozinha quando a ap
   expect(aberturas).toBe(2);
 });
 
-test('app de gestão: «Agora» com vendas ao vivo, rotas paradas primeiro, fecho das carrinhas e últimas vendas', async ({ page }) => {
+test('app de gestão: ao vivo em Hoje; Rotas «Agora» com paradas primeiro, stock na carrinha e ficha da rota', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-11-06T14:40:00+01:00'));
-  const sess = { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V', 'conciliacao-carrinha': 'V' } };
+  const sess = { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V', 'conciliacao-carrinha': 'V', 'stock-carrinha': 'V' } };
   const v = (rota, hora, total, cliente, nc) => ({ rota, hora, total, cliente, nc: !!nc, data: HOJE, documento: 'FR ' + rota + hora });
   let pedidos = 0;
   await page.route('**/v1/sessao**', (r) => r.fulfill({ json: sess }));
   await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
+  // v1/vendas devolve a LISTA de documentos (é assim no servidor: em 12-11-2026 a app esperava {vendas} e falhava)
   await page.route(
     (u) => u.pathname.endsWith('/v1/vendas'),
     (r) => {
       pedidos++;
       return r.fulfill({
-        json: {
-          vendas: [
-            v('1011', '14:31', 90000, 'Cantina Kilamba'),
-            v('1011', '13:05', 70000, 'Loja Sol'),
-            v('1002', '12:10', 140000, 'Mercado 1'),
-            v('1005', '14:02', 120000, 'Cantina Bela'),
-            v('1005', '14:20', -10000, 'Cantina Bela', true),
-          ],
-        },
+        json: [
+          v('1011', '14:31', 90000, 'Cantina Kilamba'),
+          v('1011', '13:05', 70000, 'Loja Sol'),
+          v('1002', '12:10', 140000, 'Mercado 1'),
+          v('1005', '14:02', 120000, 'Cantina Bela'),
+          v('1005', '14:20', -10000, 'Cantina Bela', true),
+        ],
       });
     },
   );
@@ -241,26 +240,60 @@ test('app de gestão: «Agora» com vendas ao vivo, rotas paradas primeiro, fech
       },
     }),
   );
+  await page.route('**/v1/stock**', (r) =>
+    r.fulfill({
+      json: {
+        carrinhas: [
+          {
+            rota: '1011',
+            armazem: 'Armazém 1011 - FHR PIV',
+            total_quantidade: 85,
+            n_artigos: 2,
+            itens: [
+              { codigo: '10000009', produto: 'FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48', quantidade: 65 },
+              { codigo: '10000386', produto: 'SABÃO VERDE 6 BARRAS', quantidade: 20 },
+            ],
+          },
+        ],
+        armazens: [],
+      },
+    }),
+  );
   const erros = [];
   page.on('pageerror', (e) => erros.push(e.message));
   await page.goto('/gestao/index.html');
-  await page.locator('.ag-separadores button', { hasText: 'Agora' }).click();
-  await expect(page.locator('#ag-h1')).toHaveText('Agora');
+  // Hoje: cartão ao vivo no topo
   const vivo = page.locator('.ag-vivo');
   await expect(vivo).toContainText('Ao vivo');
   await expect(vivo).toContainText('410 000 Kz');
   await expect(vivo.locator('.ag-mini')).toContainText('há 9 min');
-  // 1002 sem vendas desde as 12:10 (parada) e 1001 sem vendas: primeiro; depois as activas
+  // Rotas abre em «Agora»: 1002 parada (desde as 12:10) e 1001 sem vendas primeiro
+  await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
+  await expect(page.locator('.ag-seg [aria-selected=true]')).toHaveText('Agora');
   const rs = page.locator('.ag-rota-ao');
   await expect(rs.first()).toContainText('1002');
   await expect(rs.first()).toContainText('Parada');
   await expect(rs.nth(1)).toContainText('1001');
   await expect(rs.nth(1)).toContainText('Sem vendas');
-  await expect(page.locator('.ag-sec', { hasText: 'Rotas agora' })).toContainText('2 a pedir atenção');
-  await expect(page.locator('.ag-kpi', { hasText: 'Por contar' })).toContainText('1');
-  await expect(page.locator('.ag-kpi', { hasText: 'Fechadas' })).toContainText('1');
-  await expect(page.locator('.ag-feed-l').first()).toContainText('Cantina Kilamba');
-  await expect(page.locator('.ag-feed-l', { hasText: 'nota de crédito' })).toHaveCount(1);
+  await expect(page.locator('.ag-resumo').first()).toContainText('2 a pedir atenção');
+  await expect(page.locator('.ag-resumo').first()).toContainText('2 carrinhas por fechar');
+  await expect(rs.filter({ hasText: '1011' })).toContainText('Na carrinha: 2 artigos · 85 un.');
+  // ficha da rota: stock na carrinha agora, fecho e últimas vendas
+  await rs.filter({ hasText: '1011' }).click();
+  const f = page.locator('#ag-folha');
+  await expect(f).toBeVisible();
+  await expect(f).toContainText('Stock na carrinha agora');
+  await expect(f).toContainText('2 artigos · 85 unidades');
+  await expect(f).toContainText('FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48');
+  await expect(f).toContainText('Fecho do dia');
+  await expect(f).toContainText('Por contar');
+  await expect(f.locator('.ag-feed-l', { hasText: 'Cantina Kilamba' })).toHaveCount(1);
+  await f.locator('button', { hasText: 'Fechar' }).click();
+  // a 1005 tem nota de crédito e não tem stock no Pinguim BO
+  await rs.filter({ hasText: '1005' }).click();
+  await expect(f).toContainText('Sem stock na carrinha no Pinguim BO.');
+  await expect(f.locator('.ag-feed-l', { hasText: 'nota de crédito' })).toHaveCount(1);
+  await f.locator('button', { hasText: 'Fechar' }).click();
   expect(pedidos).toBe(1);
   expect(await semCorte(page)).toEqual([]);
   expect(erros).toEqual([]);
@@ -309,7 +342,7 @@ test('app de gestão: notificações — ligar com um toque, escolher o que rece
         titulo: 'Rota 1011 · Robel parada',
         corpo: 'Sem vendas há 1 h 10 min.',
         data: HOJE + ' 11:00:00',
-        url: '../gestao/#agora',
+        url: '../gestao/#rotas',
         gravidade: 'aviso',
         lida: false,
       },
@@ -337,7 +370,9 @@ test('app de gestão: notificações — ligar com um toque, escolher o que rece
   const erros = await abrirApp(page);
   expect(await page.evaluate(() => window.__badge)).toBe(1); // número de por ler no ícone da app
   await page.locator('.ag-separadores button', { hasText: 'Alertas' }).click();
-  const c = page.locator('.ag-notif');
+  await expect(page.locator('.ag-notif-linha')).toContainText('Desligadas');
+  await page.locator('.ag-notif-linha').click();
+  const c = page.locator('#ag-folha-notif .ag-notif');
   await expect(c).toContainText('como no WhatsApp');
   await c.locator('button', { hasText: 'Ligar notificações' }).click();
   await expect.poll(() => posts.map((p) => p.accao)).toEqual(expect.arrayContaining(['subscrever', 'testar']));
@@ -347,24 +382,27 @@ test('app de gestão: notificações — ligar com um toque, escolher o que rece
   await expect(c.locator('[role=switch]')).toHaveCount(3); // 2 tipos + horas de silêncio
   await c.locator('.ag-notif-tipo', { hasText: 'Resumo do dia' }).locator('[role=switch]').click();
   await expect.poll(() => posts.find((p) => p.accao === 'preferencias')).toMatchObject({ tipos: { resumo_dia: false } });
+  await page.locator('#ag-folha-notif button', { hasText: 'Fechar' }).click();
+  await expect(page.locator('.ag-notif-linha')).toContainText('Ligadas neste telefone');
   // caixa: a nova realçada; ao fim de uns segundos fica lida e o número no ícone volta a zero
   await expect(page.locator('.ag-msg.nova')).toContainText('Rota 1011 · Robel parada');
-  await expect(page.locator('.ag-msg').first()).toHaveAttribute('href', '../gestao/#agora');
+  await expect(page.locator('.ag-msg').first()).toHaveAttribute('href', '../gestao/#rotas');
   await expect.poll(() => posts.some((p) => p.accao === 'lidas'), { timeout: 6000 }).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__badge)).toBe(0);
   // desligar neste telefone
+  await page.locator('.ag-notif-linha').click();
   await c.locator('button', { hasText: 'Desligar neste telefone' }).click();
   await expect.poll(() => posts.some((p) => p.accao === 'cancelar' && p.endpoint === 'https://web.push.apple.com/QGuQ-teste')).toBe(true);
   await expect(c.locator('button', { hasText: 'Ligar notificações' })).toBeVisible();
   expect(erros).toEqual([]);
 });
 
-test('app de gestão: ao tocar numa notificação abre o separador certo (#agora)', async ({ page }) => {
+test('app de gestão: ao tocar numa notificação abre o separador certo (#rotas; o antigo #agora também)', async ({ page }) => {
   await page.route('**/v1/sessao**', (r) => r.fulfill({ json: { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V' } } }));
   await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
-  await page.route('**/v1/vendas**', (r) => r.fulfill({ json: { ok: true, vendas: [] } }));
+  await page.route('**/v1/vendas**', (r) => r.fulfill({ json: [] }));
   await page.goto('/gestao/index.html#agora');
-  await expect(page.locator('#ag-h1')).toHaveText('Agora');
+  await expect(page.locator('#ag-h1')).toHaveText('Rotas');
   await page.evaluate(() => (location.hash = '#alertas'));
   await expect(page.locator('#ag-h1')).toHaveText('Alertas');
 });

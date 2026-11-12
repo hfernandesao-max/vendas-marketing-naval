@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### App «Naval Gestão»: rotas ao vivo com o stock de cada carrinha, organização e ícone novos
+
+- Corrigido: o separador «Agora» mostrava «Tentar de novo» porque esperava as vendas num formato diferente do que o
+  servidor devolve. O teste passa a usar a resposta real do servidor.
+- Organização como nas apps de referência (quatro separadores, conteúdo onde se procura):
+  - **Hoje** abre com o cartão «Ao vivo» (vendas de hoje, documentos, valor médio, última venda);
+  - **Rotas** abre em «Agora» (também «Hoje» e «Mês até hoje»): estado de cada rota, paradas primeiro, stock na
+    carrinha e quantas carrinhas faltam fechar;
+  - tocar numa rota abre a **ficha da rota**: estado, vendas de hoje, ontem e do mês, **stock na carrinha neste
+    momento** (artigo a artigo, do Pinguim BO), fecho do dia, últimas vendas e os últimos 14 dias;
+  - **Alertas** com uma linha «Notificações» que abre as opções numa folha própria, e as recebidas por baixo.
+- Ícone novo da app no estilo da Apple: o mesmo logótipo da Naval (globo de faixas e crescente) em 3D, com volume,
+  reflexos e sombra suave sobre fundo claro (versões para iPhone, Android e ícone adaptável; fonte em
+  `app/icones/icone-fonte.svg`). No iPhone, o ícone de uma app já no ecrã principal só muda ao voltar a adicioná-la.
+
 ### Notificações no telemóvel, como no WhatsApp, mesmo com a app fechada
 
 - Web Push com as normas abertas (RFC 8030, 8291 e 8292): o servidor do portal cifra e assina cada mensagem e entrega-a

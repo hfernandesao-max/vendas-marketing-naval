@@ -5,7 +5,7 @@
  * Páginas PHP, a API, fichas, documentos e assinaturas vão SEMPRE à rede e nunca ficam guardados no telefone.
  * Sem rede, mostra-se a página «Sem ligação» e não se assina.
  */
-const VERSAO = 'rtm-app-v2';
+const VERSAO = 'rtm-app-v3';
 const BASE = new URL('./', self.location).href;
 const ESTATICOS = ['app/offline.html', 'app/offline.js', 'app/icones/icone-192.png', 'app/icones/apple-touch-icon-180.png'].map((p) => BASE + p);
 
