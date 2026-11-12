@@ -11,6 +11,7 @@ $ambAtv = sys_get_temp_dir() . '/naval-atv-' . getmypid();
 $cenario = __DIR__ . '/equipamentos/cenario.php';
 foreach (['preparar', 'log', 'pro', 'sup'] as $atvFase) {
     $atvSaida = [];
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($ambAtv) . ' ' . $atvFase . ' 2>&1', $atvSaida, $atvCodigo);
     $atvN = 0;
     foreach ($atvSaida as $atvLinha) {

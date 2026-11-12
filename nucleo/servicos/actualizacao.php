@@ -485,6 +485,7 @@ function naval_act_sintaxe(string $dir, array $ficheiros): array
     foreach ($ficheiros as $c) {
         if (substr($c, -4) !== '.php') continue;
         $saida = [];
+        // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
         exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($dir . '/' . $c) . ' 2>&1', $saida, $r);
         if ($r !== 0) $erros[] = $c . ': ' . trim(implode(' ', $saida));
     }
@@ -504,6 +505,7 @@ function naval_act_recarregar_php(): string
     $servico = naval_config('ACTUALIZACAO_APACHE_SERVICO');
     if ($servico !== '' && (!$carimbos || naval_config('ACTUALIZACAO_REINICIAR_APACHE') === '1')) {
         if (!preg_match('/^[\w.\- ]{1,60}$/', $servico)) return 'ACTUALIZACAO_APACHE_SERVICO inválido.';
+        // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
         exec('net stop "' . $servico . '" 2>&1 && net start "' . $servico . '" 2>&1', $o, $r);
         sleep(3);
         return $r === 0 ? '' : 'Não foi possível reiniciar o serviço ' . $servico . ': ' . trim(implode(' ', $o));
@@ -539,6 +541,7 @@ function naval_act_verificar_http(string $base): array
 function naval_act_verificar_cli(string $raiz): array
 {
     $saida = [];
+    // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($raiz . '/ferramentas/actualizar.php') . ' verificar-instalacao 2>&1', $saida, $r);
     return $r === 0 ? [] : ['verificação interna: ' . trim(implode(' | ', array_slice($saida, -5)))];
 }
@@ -1385,6 +1388,7 @@ function naval_act_php_ini(): string
 function naval_act_modulos_php(string $ini): array
 {
     $o = [];
+    // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
     exec(escapeshellarg(PHP_BINARY) . ($ini !== '' ? ' -c ' . escapeshellarg($ini) : '') . ' -m 2>&1', $o);
     return array_map('strtolower', array_filter(array_map('trim', $o), function ($l) { return $l !== '' && $l[0] !== '['; }));
 }
@@ -1452,6 +1456,7 @@ function naval_act_ini_ler(string $ini, array $chaves): ?array
     // script num ficheiro: evita aspas na linha de comandos (no Windows o escapeshellarg troca as aspas por espaços)
     file_put_contents($f, '<?php $o = []; foreach (array_slice($argv, 1) as $k) { $v = ini_get($k); $o[$k] = $v === false ? null : $v; } echo json_encode(["ok" => 1, "v" => $o, "m" => get_loaded_extensions(true)]);');
     $o = [];
+    // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
     exec(escapeshellarg(PHP_BINARY) . ($ini !== '' ? ' -c ' . escapeshellarg($ini) : '') . ' ' . escapeshellarg($f) . ' ' . implode(' ', array_map('escapeshellarg', $chaves)) . ' 2>&1', $o);
     @unlink($f);
     $d = json_decode((string) end($o), true);
@@ -1536,6 +1541,7 @@ function naval_act_apache_testar(): string
     $cmd = naval_act_apache_cmd();
     if ($cmd === null) return '';
     $o = [];
+    // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
     exec($cmd . ' -t 2>&1', $o, $r);
     return $r === 0 ? '' : trim(implode(' ', array_slice($o, -3)));
 }
@@ -1547,6 +1553,7 @@ function naval_act_apache_reiniciar(): string
     if ($cmd === null) return 'O Apache não foi encontrado (ACTUALIZACAO_APACHE_BIN): reiniciar o serviço à mão para aplicar a configuração nova.';
     $servico = naval_config('ACTUALIZACAO_APACHE_SERVICO', DIRECTORY_SEPARATOR === '\\' ? 'Apache2.4' : '');
     $o = [];
+    // nosemgrep: exec-use -- só na tarefa agendada (CLI), sem caminho a partir da web; argumentos com escapeshellarg, validados ou do .env
     exec($cmd . ' -k restart' . ($servico !== '' ? ' -n ' . escapeshellarg($servico) : '') . ' 2>&1', $o, $r);
     sleep(5);
     return $r === 0 ? '' : 'O Apache não reiniciou: ' . trim(implode(' ', $o));

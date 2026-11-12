@@ -64,6 +64,7 @@ function naval_vigia_registar_falha(string $origem, string $tipo, string $mensag
 function naval_vigia_assinatura(array $f): string
 {
     $m = (string) preg_replace('/\d+/', '#', (string) ($f['mensagem'] ?? ''));
+    // nosemgrep: weak-crypto -- resumo não criptográfico (identificador/versão), sem uso de segurança
     return substr(sha1(($f['tipo'] ?? '') . '|' . ($f['ficheiro'] ?? '') . '|' . ($f['linha'] ?? '') . '|' . $m), 0, 16);
 }
 

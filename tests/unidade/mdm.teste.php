@@ -23,6 +23,7 @@ $mdmAmb = sys_get_temp_dir() . '/naval-mdm-' . getmypid();
 @mkdir($mdmAmb . '/privado', 0770, true);
 $mdmPorta = 18000 + getmypid() % 1000;
 // comando em texto (o proc_open com lista só existe a partir do PHP 7.4); exec para o processo ser o próprio servidor
+// nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
 $mdmSrv = proc_open('exec ' . escapeshellarg(PHP_BINARY) . ' -S 127.0.0.1:' . $mdmPorta . ' ' . escapeshellarg(dirname(__DIR__) . '/dados/mdm-simulado.php'), [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $mdmTubos);
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $mdmPorta); $i++) usleep(100000);
 $bdMdm = $mdmAmb . '/atv.sqlite';
@@ -40,6 +41,7 @@ $correrMdm = function (string $refresh, ?string $tokenGuardado = null) use ($mdm
         'MDM_URL_EQUIPAMENTO=https://mdm.manageengine.com/webclient#/dispositivo/{id}',
     ]) . "\n");
     $saida = [];
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec('NAVAL_ENV=' . escapeshellarg($mdmAmb . '/.env') . ' ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/ferramentas/verificar-mdm.php') . ' 2>&1', $saida, $codigo);
     return [$codigo, implode("\n", $saida)];
 };
@@ -70,6 +72,7 @@ teste('MDM: configurar troca o código pelo refresh token, grava o .env com cóp
         'MDM_API_BASE=http://127.0.0.1:' . $mdmPorta, 'MDM_ACCOUNTS_BASE=http://127.0.0.1:' . $mdmPorta, '# MDM_OAUTH_CLIENT_ID=', 'OUTRA=1']) . "\n");
     $correr = function (string $codigo) use ($env) {
         $saida = [];
+        // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
         exec('NAVAL_ENV=' . escapeshellarg($env) . ' MDM_CONFIG_CLIENT_ID=cliente-teste MDM_CONFIG_CLIENT_SECRET=segredo-xyz MDM_CONFIG_CODIGO=' . escapeshellarg($codigo)
             . ' ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/ferramentas/configurar-mdm.php') . ' 2>&1', $saida, $c);
         return [$c, implode("\n", $saida)];

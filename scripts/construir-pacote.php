@@ -19,6 +19,7 @@ require $raiz . '/nucleo/config.php';
 require $raiz . '/nucleo/servicos/actualizacao.php';
 
 $lista = [];
+// nosemgrep: exec-use -- linha de comandos (CI): argumentos com escapeshellarg
 exec('git -C ' . escapeshellarg($raiz) . ' ls-files -z', $saidaGit, $r);
 if ($r !== 0) {
     fwrite(STDERR, "git ls-files falhou\n");

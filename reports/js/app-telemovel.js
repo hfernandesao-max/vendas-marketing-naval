@@ -63,7 +63,7 @@ export function abrirAppTelemovel() {
             q.make();
             zona.replaceChildren();
             const img = el('div', 'app-qr-img');
-            img.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); // nosemgrep: insecure-innerhtml -- SVG gerado pela biblioteca de QR a partir do endereço
+            img.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG gerado pela biblioteca de QR a partir do endereço
             img.setAttribute('role', 'img');
             img.setAttribute('aria-label', t('Código QR para instalar a app'));
             const prazo = el('p', 'app-prazo');
