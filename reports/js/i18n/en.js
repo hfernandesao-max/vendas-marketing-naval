@@ -3351,6 +3351,34 @@ export const EN = {
   'Plano do dia: a lista das Visitas do dia (dia habitual de compra ou compra em atraso), congelada no início do dia. Conversão do plano: planeados que compraram ÷ planeados.':
     'Day plan: the Visits of the day list (usual purchase day or overdue purchase), fixed at the start of the day. Plan conversion: planned who bought ÷ planned.',
   'Dias sem plano guardado (antes desta medição começar): {n}.': 'Days without a saved plan (before this measurement started): {n}.',
+  'por entregar': 'not yet handed in',
+  '{n} promotores venderam neste dia': '{n} promoters sold on this day',
+  'Prepara uma linha por promotor; escreva em cada uma o dinheiro que lhe foi entregue (e os talões do TPA).':
+    'Prepares one line per promoter; enter in each the cash handed in (and the card terminal slips).',
+  'Preparar as linhas dos promotores': "Prepare the promoters' lines",
+  'Conferência por promotor': 'Check by promoter',
+  'Entregue na caixa × recebido no Pinguim BO. O valor esperado aparece depois de escrever o que foi entregue.':
+    'Handed in to the cash desk × received in Pinguim BO. The expected value appears after you enter what was handed in.',
+  'Dinheiro no Pinguim BO': 'Cash in Pinguim BO',
+  'Multicaixa no Pinguim BO': 'Multicaixa in Pinguim BO',
+  'Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.':
+    'No connection to Pinguim BO: the check by promoter appears when the connection is back.',
+  'moedas {v}': 'coins {v}',
+  'Total: {v}': 'Total: {v}',
+  'Moedas (valor em Kz)': 'Coins (value in Kz)',
+  'Notas de {v}': '{v} notes',
+  'Moedas (Kz)': 'Coins (Kz)',
+  'Notas entregues': 'Notes handed in',
+  'Quantas notas de cada valor e o total das moedas. O valor da entrega passa a ser o total contado.':
+    'How many notes of each value and the total of the coins. The hand-in value becomes the counted total.',
+  'Total das notas contadas': 'Total of the counted notes',
+  'Valores sugeridos a partir do que cada promotor recebeu no Pinguim BO. Confirme cada um com o dinheiro contado (use «Contar notas») e grave.':
+    'Values suggested from what each promoter received in Pinguim BO. Confirm each one against the cash counted (use «Count notes») and save.',
+  'Corrigir notas': 'Correct notes',
+  'Contar notas': 'Count notes',
+  'Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.':
+    'Handed in to the cash desk × received in Pinguim BO, by promoter; differences in red.',
+  'Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.': 'Count the cash in the cash desk, note by note. Expected balance: {v}.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

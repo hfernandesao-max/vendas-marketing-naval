@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Relatório de Vendas e folha de caixa: carrinhas com vendas, valores sugeridos e contagem por notas
+
+- No Relatório de Vendas, só as carrinhas que **venderam** no dia têm de estar conciliadas e fechadas. As carrinhas
+  paradas, sem vendas, já não impedem a emissão.
+- A folha de caixa preenche-se toda no portal:
+  - numa folha nova, **sugere** uma entrega por promotor com o dinheiro que recebeu no Pinguim BO, e um talão do
+    TPA com o Multicaixa. Quem recebe confirma ou corrige cada valor e grava;
+  - **contagem por notas** em cada entrega (5000, 2000, 1000, 500 e 200 Kz, mais o valor das moedas; a lista muda
+    em `CAIXA_NOTAS`). O valor da entrega passa a ser o total das notas e fica registado quantas notas de cada valor
+    se receberam;
+  - **conferência por promotor**, ao vivo: dinheiro entregue × dinheiro no Pinguim BO e talões do TPA × Multicaixa,
+    com as diferenças a vermelho;
+  - o **fecho da caixa** conta também nota a nota: o total passa para o dinheiro contado e a diferença calcula-se
+    sozinha.
+
 ### Relatório de Vendas: dia sem vendas ou falha de dados
 
 - O controlo do Pinguim BO passa a distinguir as duas situações:

@@ -4,9 +4,9 @@
  * fechar, aprovar e reabrir (a aprovação por outra pessoa que não quem registou ou fechou).
  *
  * GET  v1/caixa?dia=AAAA-MM-DD
- * POST {accao: gravar, dia, versao, saldo_inicial?, entregas: [{rota, empresa, valor, nota}], tpa: [{rota, banco, empresa, valor}],
+ * POST {accao: gravar, dia, versao, saldo_inicial?, entregas: [{rota, empresa, valor, notas?: {nota: quantidade, moedas}, nota}], tpa: [{rota, banco, empresa, valor}],
  *       saidas: [{tipo, empresa, descricao, valor}], csrf}
- * POST {accao: fechar, dia, versao, contagem, explicacao, csrf}
+ * POST {accao: fechar, dia, versao, contagem, notas?: {5000: n, …, moedas: valor}, explicacao, csrf}
  * POST {accao: aprovar, dia, versao, csrf}
  * POST {accao: reabrir, dia, versao, motivo, csrf}
  */
@@ -19,7 +19,16 @@ $gere = naval_pode('caixa-marketing', 'G');
 if (!naval_e_post()) {
     $dia = (string) ($_GET['dia'] ?? date('Y-m-d'));
     if (!naval_data_valida($dia) || $dia > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
-    naval_json(['ok' => true, 'gere' => $gere, 'caixa' => naval_caixa_ler($dia), 'promotores' => (object) naval_promotores(),
+    // o que cada promotor recebeu no Pinguim BO (dinheiro e Multicaixa), para conferir as entregas
+    $esperado = null;
+    try {
+        naval_servico('relatorio-vendas');
+        $esperado = naval_caixa_esperado($dia);
+    } catch (Throwable $e) {
+        error_log('[caixa esperado] ' . $e->getMessage());
+    }
+    naval_json(['ok' => true, 'gere' => $gere, 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
+        'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
         'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS]);
 }
 
@@ -35,7 +44,7 @@ switch ((string) ($p['accao'] ?? '')) {
     case 'gravar':
         naval_json(['ok' => true, 'caixa' => naval_caixa_gravar($dia, $p, $versao, $login)]);
     case 'fechar':
-        naval_json(['ok' => true, 'caixa' => naval_caixa_fechar($dia, $p['contagem'] ?? null, (string) ($p['explicacao'] ?? ''), $versao, $login)]);
+        naval_json(['ok' => true, 'caixa' => naval_caixa_fechar($dia, $p['contagem'] ?? null, (string) ($p['explicacao'] ?? ''), $versao, $login, $p['notas'] ?? null)]);
     case 'aprovar':
         naval_json(['ok' => true, 'caixa' => naval_caixa_aprovar($dia, $versao, $login)]);
     case 'reabrir':

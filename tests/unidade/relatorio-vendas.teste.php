@@ -53,7 +53,10 @@ teste('prontidão: só gera com tudo completo; cada fonte em falta diz o que fal
     $x = naval_rv_controlos($dia, $f($dia, ['lotes' => [['numero' => 4, 'estado' => 'emitido', 'documentos' => ['FR A/1', 'FR A/2', 'NC B/1']]]]));
     igual('pendente', $x['controlos']['sap_ficheiro']['estado'], 'lote emitido mas não confirmado no SAP');
     $x = naval_rv_controlos($dia, $f($dia, ['carrinhas' => [['rota' => '1001', 'resumo' => ['estado' => 'por_fechar'], 'linhas' => []]]]));
-    igual(['1001'], $x['controlos']['conciliacao']['rotas']);
+    igual(['1001'], $x['controlos']['conciliacao']['rotas'], 'carrinha com documentos de venda por fechar');
+    $x = naval_rv_controlos($dia, $f($dia, ['carrinhas' => [$f($dia)['carrinhas'][0], ['rota' => '1011', 'resumo' => ['estado' => 'por_contar'],
+        'linhas' => [['codigo' => 'A1', 'vendido' => 0, 'carregado' => 0]]]]]));
+    igual('ok', $x['controlos']['conciliacao']['estado'], 'carrinha sem vendas não impede o relatório');
     $x = naval_rv_controlos($dia, $f($dia, ['caixa' => ['estado' => 'fechada']]));
     igual('pendente', $x['controlos']['caixa']['estado']);
     $x = naval_rv_controlos($dia, $f($dia, ['vendas' => [], 'sync' => []]));
@@ -106,4 +109,21 @@ teste('SAP OData: facturação paginada, empresas e meios pelo tipo de factura',
         $erro = $e->getMessage();
     }
     verdade(strpos($erro, 'HTTP 401') !== false, 'SAP sem autorização: erro claro');
+});
+
+teste('caixa: o que cada promotor recebeu em dinheiro e Multicaixa no Pinguim BO (notas de crédito de fora)', function () {
+    $e = naval_caixa_esperado('2026-11-12', $GLOBALS['rv_fontes']('2026-11-12')['vendas']);
+    igual(['1001' => ['documentos' => 2, 'dinheiro' => 600.0, 'multicaixa' => 400.0]], $e);
+});
+
+teste('caixa por notas: o valor da entrega e a contagem física saem das notas e moedas contadas', function () {
+    igual([['5000' => 3, '1000' => 2, 'moedas' => 150.0], 17150.0], naval_caixa_por_notas(['5000' => '3', '2000' => '', '1000' => 2, '500' => 0, 'moedas' => '150']));
+    igual([null, null], naval_caixa_por_notas([]));
+    lanca(400, function () { naval_caixa_por_notas(['3000' => 1]); });
+    lanca(400, function () { naval_caixa_por_notas(['5000' => 1.5]); });
+    $dia = date('Y-m-d', time() - 9 * 86400);
+    $c = naval_caixa_gravar($dia, ['saldo_inicial' => 0, 'entregas' => [['rota' => '1001', 'valor' => 1, 'notas' => ['5000' => 2, 'moedas' => 50]]]], 0, 'josefa');
+    igual([10050.0, ['5000' => 2, 'moedas' => 50.0]], [$c['entregas'][0]['valor'], $c['entregas'][0]['notas']], 'o valor escrito à mão cede às notas');
+    $c = naval_caixa_fechar($dia, null, '', $c['versao'], 'josefa', ['5000' => 2, 'moedas' => 50]);
+    igual([10050.0, 0.0], [$c['contagem_fisica'], $c['diferenca']]);
 });

@@ -6,7 +6,7 @@ import { draw } from '../app.js';
 import { pill, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
-import { dl, ds, kz } from '../formatos.js';
+import { dl, ds, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { hoje } from '../periodo.js';
@@ -27,11 +27,23 @@ function ler() {
     aLer = false;
     D = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler os dados.') };
     ed = D.caixa ? copia(D.caixa) : null;
+    // sugestão: numa folha aberta e ainda vazia, uma entrega por promotor com o dinheiro que recebeu no Pinguim BO e
+    // um talão do TPA com o Multicaixa; quem recebe confirma (ou corrige) cada valor com o que contou
+    if (ed && D.gere && D.caixa.estado === 'aberta' && D.esperado && !ed.entregas.length && !ed.tpa.length) {
+      Object.entries(D.esperado).forEach(([r, x]) => {
+        if (x.dinheiro > 0) ed.entregas.push({ rota: r, empresa: '', valor: x.dinheiro, notas: null, nota: '' });
+        if (x.multicaixa > 0) ed.tpa.push({ rota: r, banco: '', empresa: '', valor: x.multicaixa });
+      });
+      if (ed.entregas.length || ed.tpa.length) {
+        ed.sugerido = true;
+        ed.mudou = true;
+      }
+    }
     if (atual === 'caixa-marketing') draw();
   });
 }
 const copia = (c) => ({
-  entregas: c.entregas.map((x) => ({ ...x })),
+  entregas: c.entregas.map((x) => ({ ...x, notas: x.notas ? { ...x.notas } : null })),
   tpa: c.tpa.map((x) => ({ ...x })),
   saidas: c.saidas.map((x) => ({ ...x })),
   saldo_inicial: c.saldo_inicial,
@@ -59,6 +71,72 @@ const opcoes = (s, lista, valor, vazio) => {
   return s;
 };
 const somaDe = (l) => l.reduce((a, x) => a + (+x.valor || 0), 0);
+const notasTxt = (n) =>
+  n
+    ? Object.entries(n)
+        .filter(([k]) => k !== 'moedas')
+        .sort((a, b) => b[0] - a[0])
+        .map(([k, q]) => q + ' × ' + n0(+k))
+        .concat(n.moedas ? [t('moedas {v}', { v: kz(n.moedas) })] : [])
+        .join(' · ')
+    : '';
+
+/** Grelha de contagem por notas (e moedas), com o total ao vivo. Devolve {el, ler()}. */
+function grelhaNotas(inicial) {
+  const w = el('div', 'cx-notas');
+  const campos = {};
+  const tot = el('b', 'cx-notas-tot');
+  const somar = () => {
+    let s0 = 0;
+    Object.entries(campos).forEach(([k, i]) => (s0 += k === 'moedas' ? +i.value || 0 : (+k || 0) * (parseInt(i.value, 10) || 0)));
+    tot.textContent = t('Total: {v}', { v: kz(s0) });
+    return s0;
+  };
+  [...(D.notas || [5000, 2000, 1000, 500, 200]).map(String), 'moedas'].forEach((k) => {
+    const l = el('label', 'cx-nota');
+    const i = entrada(
+      'number',
+      inicial && inicial[k] != null ? inicial[k] : '',
+      k === 'moedas' ? { min: 0, step: '0.01', inputMode: 'decimal' } : { min: 0, step: 1, inputMode: 'numeric' },
+    );
+    i.setAttribute('aria-label', k === 'moedas' ? t('Moedas (valor em Kz)') : t('Notas de {v}', { v: n0(+k) + ' Kz' }));
+    i.addEventListener('input', somar);
+    campos[k] = i;
+    l.append(el('span', null, k === 'moedas' ? t('Moedas (Kz)') : n0(+k) + ' Kz ×'), i);
+    w.append(l);
+  });
+  w.append(tot);
+  somar();
+  return {
+    el: w,
+    total: somar,
+    ler: () => {
+      const o = {};
+      Object.entries(campos).forEach(([k, i]) => {
+        if (i.value !== '' && +i.value > 0) o[k] = k === 'moedas' ? +i.value : parseInt(i.value, 10);
+      });
+      return Object.keys(o).length ? o : null;
+    },
+  };
+}
+
+/** Janela para contar as notas de uma entrega; ao confirmar, o valor da entrega passa a ser o total contado. */
+function contarNotas(l, mudou) {
+  janela(t('Notas entregues'), t('Quantas notas de cada valor e o total das moedas. O valor da entrega passa a ser o total contado.'), (b, ft, fechar) => {
+    const g = grelhaNotas(l.notas);
+    b.append(g.el);
+    ft.append(
+      botao(t('Cancelar'), 'ghost', fechar),
+      botao(t('Confirmar'), null, () => {
+        l.notas = g.ler();
+        if (l.notas) l.valor = Math.round(g.total() * 100) / 100;
+        fechar();
+        mudou();
+        draw();
+      }),
+    );
+  });
+}
 
 /** Tabela editável de linhas (entregas, talões, saídas). */
 function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
@@ -77,6 +155,11 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
     const tr = el('tr');
     campos.forEach((c) => {
       const td = el('td', c.n ? 'n' : null);
+      if (c.extra) {
+        c.extra(l, td, editavel);
+        tr.append(td);
+        return;
+      }
       if (editavel) {
         let inp;
         if (c.lista) inp = opcoes(el('select'), c.lista(), l[c.key], c.vazio);
@@ -87,6 +170,11 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
             c.n ? { min: 0, step: '0.01', inputMode: 'decimal' } : { maxLength: c.max || 120 },
           );
         inp.setAttribute('aria-label', c.label + ' · ' + (i + 1));
+        // valor de uma entrega contada por notas: é o total das notas (muda-se pelas notas)
+        if (c.n && l.notas) {
+          inp.readOnly = true;
+          inp.title = t('Total das notas contadas');
+        }
         inp.addEventListener(c.lista ? 'change' : 'input', () => {
           l[c.key] = c.n ? (inp.value === '' ? null : Number(inp.value)) : inp.value;
           mudou();
@@ -192,6 +280,34 @@ R['caixa-marketing'] = (pg) => {
     document.querySelectorAll('#page .tiles .tile .v').forEach((x, i) => {
       if (i < v.length) x.textContent = kz(v[i]);
     });
+    conferir();
+  };
+  // Conferência por promotor: entregue na caixa × recebido no Pinguim BO, ao vivo
+  const confCorpo = el('tbody');
+  const conferir = () => {
+    if (!D.esperado) return;
+    confCorpo.textContent = '';
+    const rotas = [...new Set([...Object.keys(D.esperado), ...ed.entregas.map((x) => x.rota), ...ed.tpa.map((x) => x.rota)])].filter(Boolean).sort();
+    rotas.forEach((r) => {
+      const esp = D.esperado[r] || { dinheiro: 0, multicaixa: 0 };
+      const ent = somaDe(ed.entregas.filter((x) => x.rota === r)),
+        tpa = somaDe(ed.tpa.filter((x) => x.rota === r));
+      const tr = el('tr');
+      const celDif = (feito, v) => {
+        const td = el('td', 'n' + (feito && Math.abs(v) >= 0.01 ? ' rv-dif' : ''), feito ? kz(v) : '—');
+        return td;
+      };
+      tr.append(
+        el('td', null, r + (D.promotores && D.promotores[r] ? ' · ' + D.promotores[r] : '')),
+        el('td', 'n', kz(ent)),
+        el('td', 'n', kz(esp.dinheiro)),
+        celDif(true, ent - esp.dinheiro),
+        el('td', 'n', kz(tpa)),
+        el('td', 'n', kz(esp.multicaixa)),
+        celDif(true, tpa - esp.multicaixa),
+      );
+      confCorpo.append(tr);
+    });
   };
   if (ed.mudou) marcarPorGravar('caixa', true);
   const promotores = () => Object.entries(D.promotores || {}).map(([r, p]) => [r, r + ' · ' + p]);
@@ -199,6 +315,7 @@ R['caixa-marketing'] = (pg) => {
   const bancos = () => (D.bancos || []).map((b) => [b, b]);
   const saidasTipos = () => Object.entries(D.saidas || {}).map(([k, v]) => [k, t(v)]);
   const prom = (l) => (D.promotores && D.promotores[l.rota] ? l.rota + ' · ' + D.promotores[l.rota] : l.rota);
+  const teo = () => (ed.saldo_inicial == null ? null : +ed.saldo_inicial + somaDe(ed.entregas) - somaDe(ed.saidas));
   const ent = somaDe(ed.entregas),
     sai = somaDe(ed.saidas),
     si = ed.saldo_inicial == null ? null : +ed.saldo_inicial,
@@ -220,6 +337,14 @@ R['caixa-marketing'] = (pg) => {
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
   pg.append(cab);
+  if (aberta && ed.sugerido)
+    pg.append(
+      el(
+        'p',
+        'note cx-sugerido',
+        t('Valores sugeridos a partir do que cada promotor recebeu no Pinguim BO. Confirme cada um com o dinheiro contado (use «Contar notas») e grave.'),
+      ),
+    );
   if (aberta && c.saldo_inicial_origem === 'manual') {
     const s = el('section', 'glass sec cx-sec');
     const i = entrada('number', ed.saldo_inicial == null ? '' : ed.saldo_inicial, { min: 0, step: '0.01', inputMode: 'decimal' });
@@ -240,9 +365,18 @@ R['caixa-marketing'] = (pg) => {
         { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom },
         { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
         { key: 'valor', label: t('Valor'), n: true },
+        {
+          key: 'notas',
+          label: t('Notas'),
+          extra: (l, td, editavel) => {
+            if (l.notas) td.append(el('span', 'note cx-notas-txt', notasTxt(l.notas)));
+            if (editavel) td.append(botao(l.notas ? t('Corrigir notas') : t('Contar notas'), 'ghost sm', () => contarNotas(l, mudou)));
+            else if (!l.notas) td.textContent = '—';
+          },
+        },
         { key: 'nota', label: t('Nota') },
       ],
-      () => ({ rota: '', empresa: '', valor: null, nota: '' }),
+      () => ({ rota: '', empresa: '', valor: null, notas: null, nota: '' }),
       aberta,
       mudou,
     ),
@@ -275,6 +409,35 @@ R['caixa-marketing'] = (pg) => {
       mudou,
     ),
   );
+  if (D.esperado) {
+    const s = el('section', 'glass sec cx-sec');
+    const h = el('div', 'sec-h');
+    const hl = el('div');
+    hl.append(
+      el('h2', null, t('Conferência por promotor')),
+      el('p', null, t('Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.')),
+    );
+    h.append(hl);
+    const tab = el('table', 'cc-tab cx-tab');
+    const cab2 = el('tr');
+    [
+      t('Promotor'),
+      t('Dinheiro entregue'),
+      t('Dinheiro no Pinguim BO'),
+      t('Diferença'),
+      t('Talões do TPA'),
+      t('Multicaixa no Pinguim BO'),
+      t('Diferença'),
+    ].forEach((x, i) => cab2.append(el('th', i ? 'n' : null, x)));
+    const th = el('thead');
+    th.append(cab2);
+    tab.append(th, confCorpo);
+    const w = el('div', 'cc-scroll');
+    w.append(tab);
+    s.append(h, w);
+    pg.append(s);
+    conferir();
+  } else if (c.estado === 'aberta') pg.append(el('p', 'note', t('Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.')));
   const erro = msgErro();
   const estado = el('p', 'note');
   estado.id = 'cx-estado';
@@ -284,27 +447,44 @@ R['caixa-marketing'] = (pg) => {
   if (aberta) {
     const g = botao(t('Gravar'), 'ghost', () => enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
     const f = botao(t('Fechar a caixa'), null, () =>
-      janela(t('Fechar a caixa de {d}', { d: dl(dia) }), t('Conte o dinheiro que está na caixa. Saldo teórico: {v}.', { v: kz(teorico) }), (b, ft, fechar) => {
-        const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
-        q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
-        const ex = el('textarea');
-        ex.rows = 2;
-        ex.maxLength = 300;
-        ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
-        ex.setAttribute('aria-label', t('Explicação da diferença'));
-        const dif = el('p', 'note');
-        q.addEventListener('input', () => {
-          dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
-        });
-        const e2 = msgErro();
-        b.append(q, dif, ex, e2);
-        ft.append(
-          botao(t('Cancelar'), 'ghost', fechar),
-          botao(t('Fechar a caixa'), null, () => {
-            // grava primeiro o que está no ecrã e depois fecha com a contagem
-            const fechar2 = () =>
-              postJson('caixa', { accao: 'fechar', dia, versao: D.caixa.versao, contagem: q.value === '' ? null : Number(q.value), explicacao: ex.value }).then(
-                (x) => {
+      janela(
+        t('Fechar a caixa de {d}', { d: dl(dia) }),
+        t('Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.', { v: kz(teo()) }),
+        (b, ft, fechar) => {
+          const teorico = teo();
+          const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
+          q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
+          // contagem por notas (o total passa para o campo do dinheiro contado)
+          const g = grelhaNotas(null);
+          g.el.addEventListener('input', () => {
+            const tot = g.total();
+            q.value = tot ? String(Math.round(tot * 100) / 100) : '';
+            q.dispatchEvent(new Event('input'));
+          });
+          const ex = el('textarea');
+          ex.rows = 2;
+          ex.maxLength = 300;
+          ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
+          ex.setAttribute('aria-label', t('Explicação da diferença'));
+          const dif = el('p', 'note');
+          q.addEventListener('input', () => {
+            dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
+          });
+          const e2 = msgErro();
+          b.append(g.el, q, dif, ex, e2);
+          ft.append(
+            botao(t('Cancelar'), 'ghost', fechar),
+            botao(t('Fechar a caixa'), null, () => {
+              // grava primeiro o que está no ecrã e depois fecha com a contagem
+              const fechar2 = () =>
+                postJson('caixa', {
+                  accao: 'fechar',
+                  dia,
+                  versao: D.caixa.versao,
+                  contagem: q.value === '' ? null : Number(q.value),
+                  notas: g.ler(),
+                  explicacao: ex.value,
+                }).then((x) => {
                   if (!x.ok) {
                     e2.hidden = false;
                     e2.textContent = t(x.erro || 'Não foi possível gravar.');
@@ -316,16 +496,16 @@ R['caixa-marketing'] = (pg) => {
                   marcarPorGravar('caixa', false);
                   toast(t('Caixa fechada. Falta a aprovação por outra pessoa.'), 5000);
                   draw();
-                },
-              );
-            if (ed.mudou)
-              enviar({ accao: 'gravar', ...ed }, e2).then((x) => {
-                if (x) fechar2();
-              });
-            else fechar2();
-          }),
-        );
-      }),
+                });
+              if (ed.mudou)
+                enviar({ accao: 'gravar', ...ed }, e2).then((x) => {
+                  if (x) fechar2();
+                });
+              else fechar2();
+            }),
+          );
+        },
+      ),
     );
     acc.append(g, f);
   } else if (c.estado === 'fechada' && D.gere) {
