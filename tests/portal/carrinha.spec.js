@@ -120,7 +120,8 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await rota.getByRole('button', { name: 'Gravar contagem' }).click();
   await expect.poll(() => pedidos.length).toBe(1);
   expect(pedidos[0]).toMatchObject({ accao: 'contar', rota: '1001', contagem: { A1: 3, B2: 2 } });
-  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('vm-rascunho-')))).toEqual([]); // gravado: rascunho apagado
+  // gravado: o rascunho apaga-se quando chega a resposta do servidor
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('vm-rascunho-')))).toEqual([]);
 
   // 1. quem contou confere (colunas por cor: sistema, contagem física, diferença) e valida
   await expect(rota).toContainText('Por validar');
