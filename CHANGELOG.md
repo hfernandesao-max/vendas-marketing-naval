@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 12-11-2026
 
+### Conciliação da carrinha: só pede contagem quando há alguma coisa para contar
+
+- Um artigo que não devia estar na carrinha no fim do dia e não teve vendas (por exemplo stock do dia anterior
+  retirado ou corrigido no Pinguim BO) deixa de entrar na conciliação. Uma carrinha só com esses artigos fica «sem
+  movimento» e deixa de aparecer «Por contar» com o botão «Contar na conciliação». Artigos com alertas ou já contados
+  continuam sempre.
+
 ### Organização das páginas de administração (Conformidade e Módulos)
 
 - Páginas com muitos relatórios passam a ter dois níveis de separadores (arquitectura da informação: no máximo 5 a 7

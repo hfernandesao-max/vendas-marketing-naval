@@ -52,6 +52,20 @@ teste('sem movimentos separados: carregado e devolvido pelo saldo; tem de voltar
     igual(0.0, $l['B2']['esperado']);
 });
 
+teste('nada para contar: stock do dia anterior retirado ou corrigido no Pinguim BO, sem vendas, não pede contagem', function () {
+    // rota 1011 em 12-11-2026: 90 caixas no fim do dia 11, corrigidas no Pinguim BO para zero, nenhuma venda
+    $r = ['s0' => ['10000009' => ['n' => 'Fraldas', 'q' => 65.0], '10000386' => ['n' => 'Sabão', 'q' => 15.0]], 's1' => [], 'v' => [], 'mov' => null];
+    igual([], naval_carr_linhas($r, null));
+    igual('sem_movimento', naval_carr_resumo([], ['estado' => '', 'contagem' => null])['estado']);
+    // com movimentos separados e a devolução registada, também não há nada para contar
+    $r['mov'] = ['10000009' => ['c' => 0.0, 'd' => 65.0], '10000386' => ['c' => 0.0, 'd' => 15.0]];
+    $l = naval_carr_linhas($r, null);
+    igual(2, count($l), 'tem de voltar = 65 e 15: o que saiu para o armazém tem de ser contado');
+    // havendo stock no fim ou vendas, a linha fica
+    $r = ['s0' => ['A' => ['n' => 'A', 'q' => 5.0]], 's1' => ['A' => ['n' => 'A', 'q' => 2.0]], 'v' => [], 'mov' => null];
+    igual(1, count(naval_carr_linhas($r, null)));
+});
+
 teste('contagem cega: sem os números do sistema', function () {
     $c = naval_carr_cega(naval_carr_linhas($GLOBALS['cc_rota'], null));
     igual(['codigo', 'artigo', 'unidade', 'contado', 'alertas'], array_keys($c[0]));
