@@ -25,6 +25,7 @@ export const PAGES = [
   { id: 'vendas-dia', grupo: 'Vendas', icon: 'cal', nome: 'Vendas por dia' },
   { id: 'vendas-cliente', grupo: 'Vendas', icon: 'loja', nome: 'Vendas por cliente' },
   { id: 'vendas-artigo', grupo: 'Vendas', icon: 'box', nome: 'Vendas por artigo' },
+  { id: 'vendas-promotor-artigo', grupo: 'Vendas', icon: 'grelha', nome: 'Vendas por promotor e artigo' },
   { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
   { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação' },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },

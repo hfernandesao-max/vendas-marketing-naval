@@ -1104,7 +1104,7 @@
         idiomaDaConta(d);
         const P = d.permissoes, tem = (id) => !!P[id];
         const relatorios = ['inicio', 'vendas-promotor', 'vendas-dia', 'vendas-cliente', 'ranking', 'documentos', 'pagamentos', 'auditoria', 'stock-carrinha', 'stock-armazem',
-          'vendas-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'plano-cargas', 'sap-exportar', 'pendentes', 'acessos'].some(tem);
+          'vendas-artigo', 'vendas-promotor-artigo', 'vendas-marca', 'cadastros', 'cadastros-analise', 'cadastros-clientes', 'clientes', 'plano-visitas', 'plano-cargas', 'sap-exportar', 'pendentes', 'acessos'].some(tem);
         const geo = ['geo-rotas', 'geo-zonas', 'geo-distribuidores'].some(tem);
         const ATALHO = { 'reports/#exportar': () => ['E', 'Er', 'G', 'A'].includes(P['excel-completo']), 'reports/#ranking': () => tem('ranking'), 'reports/#auditoria': () => tem('auditoria'),
           'reports/#geo-rotas': () => tem('geo-rotas'), 'reports/#geo-zonas': () => tem('geo-zonas'), 'reports/#geo-distribuidores': () => tem('geo-distribuidores') };

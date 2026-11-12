@@ -40,6 +40,7 @@ export const MODULO_DA_PAGINA = {
   'vendas-dia': 'vendas',
   'vendas-cliente': 'vendas',
   'vendas-artigo': 'vendas',
+  'vendas-promotor-artigo': 'vendas',
   'vendas-marca': 'vendas',
   ranking: 'vendas',
   documentos: 'vendas',

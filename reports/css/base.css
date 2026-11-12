@@ -994,6 +994,16 @@ tfoot td {
   min-width: 2px;
 }
 
+/* Matriz de valores (mapa de calor numa só cor, do claro ao escuro): a intensidade vem de --a, entre 0 e 1 */
+.pa-cel {
+  display: block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: right;
+  white-space: nowrap;
+  background: rgb(var(--ceu-rgb) / var(--a, 0));
+}
+
 .heat td.h {
   text-align: right;
   min-width: 74px;

@@ -78,6 +78,7 @@ const ICON = {
   estrela: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z',
   sair: 'M15 4h4v16h-4M10 16l4-4-4-4M14 12H3',
   negocio: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 20h16',
+  grelha: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

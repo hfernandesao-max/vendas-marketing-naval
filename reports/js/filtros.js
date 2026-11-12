@@ -15,6 +15,7 @@ const FILTROS_PAGINA = {
   'vendas-dia': ['rota', 'cliente', 'tipo', 'meio', 'estado'],
   'vendas-cliente': ['rota', 'cliente', 'tipo', 'meio', 'estado'],
   'vendas-artigo': ['rota', 'cliente', 'artigo', 'tipo'],
+  'vendas-promotor-artigo': ['rota', 'cliente', 'artigo', 'tipo'],
   'vendas-marca': ['rota'],
   ranking: ['rota', 'tipo'],
   documentos: ['rota', 'cliente', 'tipo', 'meio', 'estado'],

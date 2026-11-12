@@ -85,7 +85,7 @@ const SEM_PERIODO = [
   'geo-distribuidores',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
-const COM_ARTIGOS = new Set(['vendas-artigo', 'sap-exportar']);
+const COM_ARTIGOS = new Set(['vendas-artigo', 'vendas-promotor-artigo', 'sap-exportar']);
 const precisaArtigos = (id) => COM_ARTIGOS.has(id) || (filtroAtivo(id, 'artigo') && !!FV.artigo);
 /**
  * O que falta para desenhar a página: o seu módulo (carregado a pedido) e, se precisa delas, as linhas de artigos.
