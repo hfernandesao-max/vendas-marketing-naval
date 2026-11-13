@@ -205,6 +205,8 @@ function relatorio(pg) {
                     ? 'Transferência para a gestão'
                     : 'Outra saída',
             ) +
+            (s.banco ? ' · ' + s.banco : '') +
+            (s.lacre ? ' · ' + t('lacre {l}', { l: s.lacre }) : '') +
             (s.empresa ? ' · ' + s.empresa : '') +
             (s.descricao ? ' · ' + s.descricao : ''),
           valor: -s.valor,

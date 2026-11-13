@@ -1,8 +1,8 @@
 {
   "id": "cobrancas",
-  "nome": "Cobranças",
+  "nome": "Finanças",
   "versao": "1.0.0",
-  "descricao": "Cobranças por meio de pagamento e facturas pendentes.",
+  "descricao": "Cobranças por meio de pagamento, facturas pendentes e folha de caixa.",
   "nucleo": false,
   "paginas": ["pagamentos", "pendentes"],
   "recursos": ["pagamentos", "pendentes"],

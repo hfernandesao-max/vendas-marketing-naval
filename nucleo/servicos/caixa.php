@@ -138,16 +138,20 @@ function naval_caixa_linhas(array $p): array
         $tpa[] = ['rota' => $rt, 'banco' => $banco, 'talao' => $talao, 'empresa' => 'NAVAL',
             'valor' => $valor($l['valor'] ?? null, 'talões do TPA'), 'nota' => naval_texto($l['nota'] ?? '', 120)];
     }
+    // depósitos no banco (as únicas saídas da caixa): banco, código do lacre do saco de segurança e valor
     $saidas = [];
+    $lacres = [];
     foreach (array_slice((array) ($p['saidas'] ?? []), 0, 200) as $l) {
         $l = (array) $l;
-        $tipo = (string) ($l['tipo'] ?? '');
-        if (!isset(NAVAL_CAIXA_SAIDAS[$tipo])) throw new NavalErro('Escolha o tipo de cada saída.', 400);
-        $desc = naval_texto($l['descricao'] ?? '', 160);
-        if ($tipo === 'outro' && mb_strlen($desc) < 5) throw new NavalErro('Descreva cada «Outra saída».', 400);
-        $emp = in_array($l['empresa'] ?? '', NAVAL_CAIXA_EMPRESAS, true) ? $l['empresa'] : '';
-        if ($tipo === 'fundo_maneio' && $emp === '') throw new NavalErro('Indique a empresa de cada fundo de maneio.', 400);
-        $saidas[] = ['tipo' => $tipo, 'empresa' => $emp, 'descricao' => $desc, 'valor' => $valor($l['valor'] ?? null, 'saídas')];
+        if (($l['tipo'] ?? 'deposito_banco') !== 'deposito_banco') continue;   // saídas antigas: ficam como estavam
+        $banco = (string) ($l['banco'] ?? '');
+        if (!in_array($banco, NAVAL_CAIXA_BANCOS, true)) throw new NavalErro('Escolha o banco de cada depósito.', 400);
+        $lacre = strtoupper(naval_texto($l['lacre'] ?? '', 30));
+        if (!preg_match('/^[A-Z0-9][A-Z0-9\-\/.]{2,29}$/', $lacre)) throw new NavalErro('Indique o código do lacre de cada depósito.', 400);
+        if (isset($lacres[$lacre])) throw new NavalErro('O código do lacre ' . $lacre . ' está repetido.', 400);
+        $lacres[$lacre] = true;
+        $saidas[] = ['id' => preg_match('/^DP-[a-f0-9]{12}$/', (string) ($l['id'] ?? '')) ? (string) $l['id'] : '', 'tipo' => 'deposito_banco',
+            'banco' => $banco, 'lacre' => $lacre, 'valor' => $valor($l['valor'] ?? null, 'depósitos')];
     }
     return [$entregas, $tpa, $saidas];
 }
@@ -173,7 +177,78 @@ function naval_caixa_hist(array &$c, string $accao, string $login, array $extra 
     $c['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => $login, 'accao' => $accao] + $extra;
 }
 
-/** Grava a folha aberta (entregas, talões do TPA, saídas e, no primeiro dia, o saldo inicial). */
+/**
+ * Junta os depósitos gravados com os que vêm do ecrã (controlo duplo dos valores em trânsito):
+ *   - um depósito novo fica com o requisitante (quem o lança) e sem aprovação;
+ *   - um depósito aprovado não se altera nem se retira (o aprovador tem primeiro de retirar a aprovação);
+ *   - as saídas antigas de outros tipos (antes dos depósitos) ficam como estavam.
+ */
+function naval_caixa_depositos(array $antes, array $novos, string $login): array
+{
+    $porId = [];
+    $antigas = [];
+    foreach ($antes as $l) {
+        if (($l['tipo'] ?? '') !== 'deposito_banco') $antigas[] = $l;
+        elseif (!empty($l['id'])) $porId[$l['id']] = $l;
+    }
+    $out = [];
+    $vistos = [];
+    foreach ($novos as $l) {
+        $a = $l['id'] !== '' ? ($porId[$l['id']] ?? null) : null;
+        if ($a) {
+            $vistos[$a['id']] = true;
+            if (!empty($a['aprovado_por']) && [$a['banco'], $a['lacre'], (float) $a['valor']] !== [$l['banco'], $l['lacre'], (float) $l['valor']]) {
+                throw new NavalErro('O depósito com o lacre ' . $a['lacre'] . ' já foi aprovado e não se altera. Peça ao aprovador para retirar a aprovação.', 409);
+            }
+            $out[] = $l + ['requisitante' => $a['requisitante'] ?? $login, 'requisitado_em' => $a['requisitado_em'] ?? date('Y-m-d H:i:s'),
+                'aprovado_por' => $a['aprovado_por'] ?? null, 'aprovado_em' => $a['aprovado_em'] ?? null];
+        } else {
+            $l['id'] = 'DP-' . bin2hex(random_bytes(6));
+            $out[] = $l + ['requisitante' => $login, 'requisitado_em' => date('Y-m-d H:i:s'), 'aprovado_por' => null, 'aprovado_em' => null];
+        }
+    }
+    foreach ($porId as $id => $a) {
+        if (!isset($vistos[$id]) && !empty($a['aprovado_por'])) {
+            throw new NavalErro('O depósito com o lacre ' . $a['lacre'] . ' já foi aprovado e não se retira. Peça ao aprovador para retirar a aprovação.', 409);
+        }
+    }
+    return array_merge($out, $antigas);
+}
+
+/**
+ * Aprova (ou retira a aprovação de) um depósito: controlo duplo — quem aprova tem nível de aprovação da caixa e não é
+ * o requisitante; só quem aprovou retira a aprovação, e só antes da aprovação final da folha.
+ */
+function naval_caixa_aprovar_deposito(string $dia, string $id, bool $aprovar, ?int $versao, string $login): array
+{
+    return naval_caixa_alterar($dia, $versao, function ($c) use ($id, $aprovar, $login) {
+        if ($c['estado'] === 'aprovada') throw new NavalErro('A caixa deste dia já foi aprovada.', 409);
+        $achou = false;
+        foreach ($c['saidas'] as &$l) {
+            if (($l['id'] ?? '') !== $id) continue;
+            $achou = true;
+            if ($aprovar) {
+                if (!empty($l['aprovado_por'])) throw new NavalErro('Este depósito já está aprovado.', 409);
+                if (naval_config('CAIXA_SEGREGACAO', '1') !== '0' && strcasecmp((string) ($l['requisitante'] ?? ''), $login) === 0) {
+                    throw new NavalErro('Segregação de funções: quem requisita o depósito não o aprova.', 403);
+                }
+                $l['aprovado_por'] = $login;
+                $l['aprovado_em'] = date('Y-m-d H:i:s');
+                naval_caixa_hist($c, 'deposito_aprovado', $login, ['lacre' => $l['lacre'], 'banco' => $l['banco'], 'valor' => $l['valor']]);
+            } else {
+                if (strcasecmp((string) ($l['aprovado_por'] ?? ''), $login) !== 0) throw new NavalErro('Só quem aprovou o depósito pode retirar a aprovação.', 403);
+                $l['aprovado_por'] = null;
+                $l['aprovado_em'] = null;
+                naval_caixa_hist($c, 'deposito_aprovacao_retirada', $login, ['lacre' => $l['lacre']]);
+            }
+        }
+        unset($l);
+        if (!$achou) throw new NavalErro('Depósito não encontrado. Grave a folha primeiro.', 404);
+        return $c;
+    });
+}
+
+/** Grava a folha aberta (entregas, talões do TPA, depósitos e, no primeiro dia, o saldo inicial). */
 function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login): array
 {
     if ($dia > date('Y-m-d')) throw new NavalErro('Não se regista a caixa de um dia que ainda não chegou.', 400);
@@ -189,7 +264,7 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
         }
         $c['entregas'] = $entregas;
         $c['tpa'] = $tpa;
-        $c['saidas'] = $saidas;
+        $c['saidas'] = naval_caixa_depositos((array) $c['saidas'], $saidas, $login);
         $c['alterado_por'] = $login;
         $c['alterado_em'] = date('Y-m-d H:i:s');
         naval_caixa_hist($c, 'gravada', $login);
@@ -245,6 +320,12 @@ function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $ni
                 if (strcasecmp((string) ($c[$k] ?? ''), $login) === 0) {
                     throw new NavalErro($k === 'verificada_por' ? 'Segregação de funções: quem aprovou o 1.º nível não faz a aprovação final.' : 'Segregação de funções: quem lançou ou validou a caixa não a aprova.', 403);
                 }
+            }
+        }
+        // controlo duplo dos depósitos: todos aprovados antes de a folha ser aprovada
+        foreach ((array) $c['saidas'] as $l) {
+            if (($l['tipo'] ?? '') === 'deposito_banco' && empty($l['aprovado_por'])) {
+                throw new NavalErro('Há depósitos por aprovar (lacre ' . ($l['lacre'] ?? '') . '). Aprove cada depósito antes de aprovar a folha.', 409);
             }
         }
         if ($nivel === 1) {

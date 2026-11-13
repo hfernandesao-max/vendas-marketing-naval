@@ -9,7 +9,7 @@ export const SECCOES = ['Comercial', 'Operações', 'Análise', 'Sistema'];
 export const SECCAO_GRUPO = {
   Vendas: 'Comercial',
   Clientes: 'Comercial',
-  Cobranças: 'Comercial',
+  Finanças: 'Comercial',
   Terreno: 'Operações',
   Logística: 'Operações',
   'Inteligência de negócio': 'Análise',
@@ -36,9 +36,9 @@ export const PAGES = [
   { id: 'cadastros-clientes', grupo: 'Clientes', icon: 'userplus', nome: 'Clientes registados' },
   { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'carrinho', nome: 'Pedidos dos clientes' },
   { id: 'clientes-qr', grupo: 'Clientes', icon: 'qr', nome: 'Cartazes QR dos clientes' },
-  { id: 'pagamentos', grupo: 'Cobranças', icon: 'card', nome: 'Cobranças' },
-  { id: 'pendentes', grupo: 'Cobranças', icon: 'clock', nome: 'Facturas pendentes' },
-  { id: 'caixa-marketing', grupo: 'Cobranças', icon: 'caixa', nome: 'Folha de caixa' },
+  { id: 'pagamentos', grupo: 'Finanças', icon: 'card', nome: 'Cobranças' },
+  { id: 'pendentes', grupo: 'Finanças', icon: 'clock', nome: 'Facturas pendentes' },
+  { id: 'caixa-marketing', grupo: 'Finanças', icon: 'caixa', nome: 'Folha de caixa' },
   // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
   { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
   { id: 'conversao-visitas', grupo: 'Terreno', icon: 'funil', nome: 'Conversão das visitas' },
