@@ -18,6 +18,7 @@ import { montarAjusteMenu } from './barra-lateral.js';
 import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeVer } from './perfil.js';
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
+import { faixaNovo } from './componentes/novo.js';
 
 function textos() {
   document.documentElement.lang = IDIOMAS[LANG];
@@ -188,6 +189,9 @@ export function draw() {
     pg.append(el('div', 'glass empty', t('Não foi possível desenhar esta página.')));
   }
   organizarRelatorios(pg, p.id);
+  // novidade desta página nas últimas 24 h (selo «Novo»): faixa no topo; a página fica vista
+  const fn = faixaNovo(p.id);
+  if (fn) pg.prepend(fn);
   {
     // estado próprio da página no endereço (ex.: a ficha aberta, #equipamentos?id=NAV-SMT-0001)
     const q = [filtrosURL(p.id), R[p.id] && R[p.id].estadoURL ? R[p.id].estadoURL() : ''].filter(Boolean).join('&');

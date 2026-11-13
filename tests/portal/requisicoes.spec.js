@@ -87,6 +87,9 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   const pdf = fs.readFileSync(await d.path(), 'latin1');
   expect(pdf).toContain('Detergente');
   expect(pdf).toContain('Entregue');
+  // requisição automática (conciliação): o promotor da rota já vem preenchido na assinatura de quem requisita
+  expect(pdf).toContain('1001 \u00b7 Andrea Santos');
+  expect(pdf).toContain('Assinatura e data');
   expect(pedidos.map((x) => x.accao)).toEqual(['gravar', 'gravar', 'emitir']);
   await expect(ed).toContainText('Emitida · a carregar');
   await expect(ed.locator('input')).toHaveCount(0);

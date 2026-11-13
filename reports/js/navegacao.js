@@ -6,6 +6,7 @@ import { PAGES, SECCAO_GRUPO } from './paginas/catalogo.js';
 import { carregarPagina } from './paginas/modulos.js';
 import { atual, contarAlertas, paginasVisiveis } from './perfil.js';
 import { $, el, svg } from './util.js';
+import { novoDe, seloNovo } from './componentes/novo.js';
 
 // Cada secção de uma página passa a ser um relatório: mostra-se um de cada vez (separadores no topo e
 // sub-itens no menu), com os indicadores e os filtros da página sempre visíveis.
@@ -209,6 +210,8 @@ export function nav() {
     a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
     a.append(el('span', null, t(p.nome)));
     if (al[p.id] && p.id !== 'pagamentos') a.append(contador('n', al[p.id], rotuloAlerta(p.id, al[p.id])));
+    const sn = seloNovo(p.id);
+    if (sn) a.append(sn);
     if (p.id === atual && comSub) {
       a.className = 'on';
       a.setAttribute('aria-current', 'page');
@@ -245,6 +248,15 @@ export function nav() {
       const comAlerta = visiveis.filter((x) => x.grupo === p.grupo && x.id !== 'pagamentos' && al[x.id]);
       const alertas = comAlerta.reduce((s, x) => s + al[x.id], 0);
       if (alertas) b.append(contador('n navg-n', alertas, comAlerta.map((x) => rotuloAlerta(x.id, al[x.id])).join(' · ')));
+      // área com novidades (24 h): ponto azul com o texto para os leitores de ecrã
+      const novas = visiveis.filter((x) => x.grupo === p.grupo && novoDe(x.id));
+      if (novas.length) {
+        const d = el('span', 'novo-ponto');
+        d.setAttribute('role', 'img');
+        d.setAttribute('aria-label', t('{n} com novidades', { n: novas.length }));
+        d.title = novas.map((x) => t(x.nome)).join(' · ');
+        b.append(d);
+      }
       b.setAttribute('aria-expanded', aberto ? 'true' : 'false');
       b.setAttribute('aria-controls', id);
       const lista = el('div', 'navl' + (aberto ? ' aberta' : ''));

@@ -65,7 +65,8 @@ export async function requisicaoPdf(r, imprimir = true) {
     y,
   );
   y = assinaturas(doc, y + 12, [
-    [tp('Requisitado por (promotor)'), tp('Nome, assinatura e data'), { por: r.emitida_por, em: r.emitida_em }],
+    // o promotor da rota já preenchido (também nas requisições automáticas da conciliação); quem emitiu fica no cabeçalho
+    [tp('Requisitado por (promotor)'), tp('Assinatura e data'), { nome: r.rota + ' · ' + (r.promotor || r.rota) }],
     [tp('Aviado por (armazém)'), tp('Nome, assinatura e data')],
     [tp('Recebido por'), tp('Nome, assinatura e data'), { por: r.confirmado_por, em: r.confirmado_em }],
   ]);

@@ -41,10 +41,15 @@ function naval_nov_seccoes(string $md): array
             $id = substr(hash('sha256', $data . '|' . $m[1]), 0, 16);
             for ($n = 2; isset($ids[$id]); $n++) $id = substr(hash('sha256', $data . '|' . $m[1] . '|' . $n), 0, 16);
             $ids[$id] = true;
-            $actual = ['id' => $id, 'data' => $data, 'titulo' => $m[1], 'itens' => []];
+            $actual = ['id' => $id, 'data' => $data, 'titulo' => $m[1], 'itens' => [], 'paginas' => []];
             continue;
         }
         if ($actual === null) continue;
+        // páginas a que a secção diz respeito (selo «Novo» no menu durante 24 h): <!-- paginas: pagamentos, vendas -->
+        if (preg_match('/^<!--\s*paginas:\s*(.+?)\s*-->$/', trim($l), $m)) {
+            $actual['paginas'] = array_values(array_filter(array_map('trim', explode(',', $m[1]))));
+            continue;
+        }
         if (preg_match('/^[-*]\s+(.*)$/', $l, $m)) {
             $actual['itens'][] = trim($m[1]);
         } elseif (preg_match('/^\s+(\S.*)$/', $l, $m) && $actual['itens']) {
@@ -88,7 +93,12 @@ function naval_nov_detectar(): array
         $seccoes = naval_nov_seccoes($md);
         $conhecidas = array_flip(naval_nov_conhecidas());
         $novas = array_values(array_filter($seccoes, function ($s) use ($conhecidas) { return !isset($conhecidas[$s['id']]); }));
-        if (!$novas) return $lista;
+        if (!$novas) {
+            // marca a leitura (naval_nov_recentes só volta a ler quando o registo mudar)
+            if (is_file($dir . '/actualizacoes.json')) @touch($dir . '/actualizacoes.json');
+            else naval_json_gravar($dir . '/actualizacoes.json', $lista);
+            return $lista;
+        }
         $estado = naval_json_ler(naval_pasta('actualizacoes') . '/estado.json');
         array_unshift($lista, [
             'id' => date('YmdHis') . '-' . substr(hash('sha256', (string) json_encode(array_column($novas, 'id'))), 0, 8),
@@ -102,6 +112,31 @@ function naval_nov_detectar(): array
         naval_registar('novidades_detectadas', ['seccoes' => count($novas), 'versao' => (string) ($estado['versao'] ?? '')], 'portal');
         return $lista;
     });
+}
+
+/**
+ * Novidades das últimas $horas por página, para o selo «Novo» (a mais recente de cada página): [{pagina, titulo,
+ * desde, desde_ts}]. A hora é a da instalação da actualização no servidor (detectada_em). $lista: para os testes.
+ */
+function naval_nov_recentes(int $agora, int $horas = 24, ?array $lista = null): array
+{
+    if ($lista === null) {
+        // rápido (corre em cada sessão): só volta a ler o registo de alterações quando mudou depois da última leitura
+        $f = naval_pasta('novidades') . '/actualizacoes.json';
+        $md = @filemtime(naval_nov_ficheiro_changelog()) ?: 0;
+        $lista = is_file($f) && @filemtime($f) >= $md ? naval_json_ler($f) : naval_nov_detectar();
+    }
+    $out = [];
+    foreach ($lista as $a) {
+        $ts = strtotime((string) ($a['detectada_em'] ?? ''));
+        if (!$ts || $ts > $agora || $agora - $ts >= $horas * 3600) continue;
+        foreach ((array) ($a['seccoes'] ?? []) as $s) {
+            foreach ((array) ($s['paginas'] ?? []) as $p) {
+                if (!isset($out[$p]) || $out[$p]['desde_ts'] < $ts) $out[$p] = ['pagina' => (string) $p, 'titulo' => (string) $s['titulo'], 'desde' => date('Y-m-d H:i', $ts), 'desde_ts' => $ts];
+            }
+        }
+    }
+    return array_values($out);
 }
 
 /** Actualizações que esta conta ainda não fechou. */

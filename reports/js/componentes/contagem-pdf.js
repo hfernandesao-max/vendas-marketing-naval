@@ -137,7 +137,8 @@ export function rodapes(doc, ref) {
 /** Assinaturas no fim (mudam de página se não couberem). */
 /**
  * Blocos de assinatura. Cada bloco: [título, texto por baixo, registo?]. Com registo ({por, em}) de um passo já
- * assinado no portal, o bloco mostra quem assinou (nome e utilizador) e quando, em vez da linha em branco.
+ * assinado no portal, o bloco mostra quem assinou (nome e utilizador) e quando, em vez da linha em branco. Com
+ * {nome}, a linha fica por assinar mas com o nome já preenchido (ex.: o promotor da rota).
  */
 export function assinaturas(doc, y, blocos) {
   const W = doc.internal.pageSize.getWidth(),
@@ -177,6 +178,13 @@ export function assinaturas(doc, y, blocos) {
         .text(quandoAss(reg.em), x, y + 18);
       return;
     }
+    // por assinar, com o nome já preenchido (ex.: o promotor da rota), para assinar à mão
+    if (reg && reg.nome)
+      doc
+        .setFont('helvetica', 'bold')
+        .setFontSize(8)
+        .setTextColor(...AZUL)
+        .text(doc.splitTextToSize(reg.nome, larg)[0], x, y + 7);
     doc
       .setDrawColor(...CINZA)
       .setLineWidth(0.3)
