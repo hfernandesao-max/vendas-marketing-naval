@@ -426,6 +426,16 @@ function naval_conf_noite(int $agora): ?array
         if ($c['externa'] === false) $problemas[] = 'a cópia não chegou à pasta externa (COPIAS_PASTA_EXTERNA)';
         return ['ok' => $t['ok'], 'copia' => $c, 'recuperacao' => $t];
     });
+    $passo('ligacoes', function () use (&$problemas) {
+        $l = naval_conf_ligacoes(true);
+        foreach ($l as $x) {
+            foreach ($x['controlos'] as $c) {
+                if (!$c['ok']) $problemas[] = 'ligação ' . $x['nome'] . ' fora da norma (' . $c['norma'] . '): ' . $c['id'] . ' = ' . $c['valor'];
+            }
+            if (!empty($x['erro'])) $problemas[] = 'ligação ' . $x['nome'] . ' sem resposta: ' . $x['erro'];
+        }
+        return ['ok' => !array_filter($l, function ($x) { return $x['conforme'] === false || !empty($x['erro']); }), 'ligacoes' => $l];
+    });
     $passo('suporte', function () use ($agora) {
         naval_servico('suporte');
         return ['ok' => true, 'fechados' => naval_sup_fechar_antigos($agora)];
@@ -439,6 +449,33 @@ function naval_conf_noite(int $agora): ?array
     naval_json_gravar($marca, ['inicio' => $r['inicio'], 'fim' => $r['fim'], 'problemas' => $problemas]);
     if ($problemas) naval_conf_avisar('problemas na verificação diária da conformidade', array_merge(['A verificação diária encontrou:'], $problemas));
     return ['problemas' => count($problemas)];
+}
+
+/**
+ * Ligações às bases de dados configuradas (Pinguim BO, OLAP, Equipamentos) e a conformidade de cada uma com a
+ * configuração de referência (naval_bd_conformidade). Com $testar, abre cada ligação agora (verificação diária).
+ */
+function naval_conf_ligacoes(bool $testar = false): array
+{
+    naval_servico('bd');
+    $fontes = [];
+    if (naval_bd_configurada()) $fontes['DB'] = 'Pinguim BO';
+    if (naval_config('OLAP_DSN') !== '' || naval_config('OLAP_HOST') !== '') $fontes['OLAP'] = 'OLAP';
+    if (naval_config('ATV_DB_DSN') !== '' || naval_config('ATV_DB_NAME') !== '') $fontes['ATV_DB'] = 'Equipamentos';
+    $out = [];
+    foreach ($fontes as $p => $nome) {
+        $erro = null;
+        if ($testar) {
+            try {
+                if ($p === 'DB') naval_bd();
+                else naval_bd_criar($p, $p === 'ATV_DB')->query('SELECT 1');
+            } catch (Throwable $e) {
+                $erro = mb_substr($e->getMessage(), 0, 300);
+            }
+        }
+        $out[] = ['nome' => $nome, 'erro' => $erro] + naval_bd_conformidade($p);
+    }
+    return $out;
 }
 
 /** Vista da página Administração › Conformidade. */
@@ -463,5 +500,6 @@ function naval_conf_vista(): array
         'registos_externos' => naval_config('REGISTOS_COPIA_PASTA') !== '',
         'retencao' => naval_conf_regras_retencao(),
         'contas_dias' => max(30, (int) naval_config('CONTAS_DIAS_SEM_USO', '90')),
+        'ligacoes' => naval_conf_ligacoes(),
     ];
 }

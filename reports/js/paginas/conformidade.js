@@ -333,6 +333,69 @@ function confirmar(tri) {
   );
 }
 
+const LIG = {
+  controlador: 'Controlador',
+  cifra: 'Cifra da ligação',
+  certificado: 'Certificado do servidor',
+  intencao: 'Intenção só de leitura',
+  aplicacao: 'Nome da aplicação',
+  tempos: 'Tempos limite (ligação / consulta)',
+};
+const ODBC18 = 'Microsoft ODBC Driver 18 for SQL Server';
+const LIG_AJUDA = {
+  controlador: () => t('Instalar o {c} no servidor do portal.', { c: ODBC18 }),
+  cifra: () => t('Retirar {k} do ficheiro de configuração: a ligação tem de ir cifrada.', { k: 'DB_ENCRYPT=0' }),
+  certificado: () =>
+    t(
+      'Instalar no SQL Server um certificado emitido para o nome do servidor (autoridade de certificação da empresa ou pública) e reiniciar o serviço; o portal passa a validá-lo sozinho.',
+    ),
+  intencao: () => t('Instalar o {c} (o controlador antigo não a suporta).', { c: ODBC18 }),
+};
+
+/** Ligações às bases de dados: cada controlo da configuração de referência, com o que falta fazer no servidor. */
+function ligacoes(pg) {
+  const L2 = CF.ligacoes || [];
+  if (!L2.length) return;
+  const rows = [];
+  L2.forEach((x) =>
+    (x.controlos || []).forEach((c) =>
+      rows.push({
+        fonte: x.nome,
+        id: c.id,
+        controlo: t(LIG[c.id] || c.id),
+        valor: c.id === 'certificado' ? (c.ok ? t('validado') : t('não validado')) : c.valor,
+        norma: c.norma,
+        ok: c.ok,
+        accao: c.ok || !LIG_AJUDA[c.id] ? '' : LIG_AJUDA[c.id](),
+      }),
+    ),
+  );
+  if (!rows.length) return;
+  const fora = rows.filter((r) => !r.ok).length;
+  pg.append(
+    tabela({
+      id: 'conf-ligacoes',
+      titulo: t('Ligações às bases de dados'),
+      nota:
+        fora === 1
+          ? t('1 controlo fora da norma: o portal liga-se da forma mais segura que o servidor permite e volta a verificar sozinho.')
+          : fora
+            ? t('{n} controlos fora da norma: o portal liga-se da forma mais segura que o servidor permite e volta a verificar sozinho.', { n: n0(fora) })
+            : t('Todas as ligações cumprem a configuração de referência (ISO/IEC 27001 A.8.24, A.5.15).'),
+      search: false,
+      rows,
+      cols: [
+        { key: 'fonte', label: t('Base de dados'), p: 0 },
+        { key: 'controlo', label: t('Controlo') },
+        { key: 'valor', label: t('Situação') },
+        { key: 'norma', label: t('Norma') },
+        { key: 'ok', label: t('Estado'), render: (v) => pill(v ? t('Conforme') : t('Fora da norma'), v ? 'p-ok' : 'p-serio') },
+        { key: 'accao', label: t('O que falta fazer') },
+      ],
+    }),
+  );
+}
+
 /** Grupo de relatórios da página (ver organizarGrupos em navegacao.js). junto = os relatórios lêem-se seguidos. */
 function grupo(pg, chave, titulo, junto) {
   const g = el('div', 'rel-grupo');
@@ -416,6 +479,7 @@ R.conformidade = (pg) => {
     avisos.forEach((x) => ul.append(el('li', null, x)));
     gResumo.append(secBox(t('Por configurar no servidor'), t('Uma vez, pela Informática; o resto é automático.'), ul));
   }
+  ligacoes(gResumo);
   const contas = [
     ...(con.desligadas || []).map((c) => ({ ...c, estado: 'desligada' })),
     ...(con.a_desligar || []).map((c) => ({ ...c, estado: 'a_desligar' })),

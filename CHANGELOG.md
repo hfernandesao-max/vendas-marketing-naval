@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Ligações às bases de dados conforme a ISO/IEC 27001 (Pinguim BO, OLAP e Equipamentos)
+
+<!-- paginas: conformidade -->
+
+- **Certificado do SQL Server validado primeiro**, sempre. Enquanto o servidor não tiver um certificado válido, a
+  ligação continua cifrada mas fica assinalada como fora da norma; logo que o certificado seja instalado, o portal
+  passa a validá-lo sozinho, sem mexer no .env. `DB_CONFIAR_CERTIFICADO=0` recusa ligar sem certificado válido.
+- **Controlador mais recente**: pdo_sqlsrv ou ODBC Driver 18 → 17, o primeiro instalado; o controlador antigo do
+  Windows fica só como último recurso, assinalado.
+- **Intenção só de leitura** (`ApplicationIntent=ReadOnly`) e **nome da aplicação** (`APP=PortalRTM`), para o DBA
+  ver quem faz cada consulta.
+- **Tempos limite**: 5 s para ligar e 30 s por consulta (`DB_TEMPO_CONSULTA`; no ODBC limita a espera por bloqueios,
+  para nunca atrasar a facturação). Consultas com mais de 5 s ficam registadas para revisão.
+- **Administração › Conformidade**: nova tabela «Ligações às bases de dados» com cada controlo, a norma, o estado e
+  o que falta fazer no servidor. A verificação diária testa cada ligação e envia por correio o que estiver fora da
+  norma.
+
 ### «Fecho de caixa», depósitos só quando há, requisições com stock e quantidades sem setas
 
 <!-- paginas: caixa-marketing, requisicoes-carrinha -->
