@@ -66,6 +66,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
         data: '2026-10-26',
         movimentos: 'separados',
         motivos: MOTIVOS,
+        nomes: { coord: 'Sara Coordenadora', resp: 'Michael Samson' },
         rotas: [
           {
             rota: '1001',
@@ -165,5 +166,9 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   expect(res.texto).toContain('Produto danificado');
   expect(res.texto).toContain('coord');
   expect(res.texto).toContain('resp');
+  // rastreabilidade: nome completo e utilizador de quem assinou, no registo e nos blocos de assinatura
+  expect(res.texto).toContain('Michael Samson \\(resp\\)');
+  expect(res.texto).toContain('Registo das assinaturas');
+  expect(res.texto).toContain('Assinado no portal');
   expect(erros).toEqual([]);
 });

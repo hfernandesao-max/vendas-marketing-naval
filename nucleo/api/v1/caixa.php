@@ -31,7 +31,7 @@ if (!naval_e_post()) {
     } catch (Throwable $e) {
         error_log('[caixa esperado] ' . $e->getMessage());
     }
-    naval_json(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
         'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS]);
 }
@@ -71,12 +71,12 @@ switch ($accao) {
                 $p['tpa'][$i]['valor'] = $mc;
             }
         }
-        naval_json(['ok' => true, 'caixa' => naval_caixa_gravar($dia, $p, $versao, $login)]);
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_gravar($dia, $p, $versao, $login)]);
     case 'fechar':
-        naval_json(['ok' => true, 'caixa' => naval_caixa_fechar($dia, $p['contagem'] ?? null, (string) ($p['explicacao'] ?? ''), $versao, $login, $p['notas'] ?? null)]);
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_fechar($dia, $p['contagem'] ?? null, (string) ($p['explicacao'] ?? ''), $versao, $login, $p['notas'] ?? null)]);
     case 'aprovar':
-        naval_json(['ok' => true, 'caixa' => naval_caixa_aprovar($dia, $versao, $login, $niveis)]);
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_aprovar($dia, $versao, $login, $niveis)]);
     case 'reabrir':
-        naval_json(['ok' => true, 'caixa' => naval_caixa_reabrir($dia, (string) ($p['motivo'] ?? ''), $versao, $login)]);
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_reabrir($dia, (string) ($p['motivo'] ?? ''), $versao, $login)]);
 }
 throw new NavalErro('Acção desconhecida.', 400);

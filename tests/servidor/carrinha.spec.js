@@ -134,3 +134,16 @@ test('correcção do registo de quem contou / validou: só o super administrador
   // repetir não muda nada nem duplica o histórico
   expect((await post(sadm, corpo)).json.rotas).toEqual([]);
 });
+
+test('rastreabilidade: as respostas trazem o nome completo de quem assinou cada passo, só dos utilizadores referidos', async () => {
+  const sadm = (await entrar('sadm')).ctx;
+  const v = await (await sadm.get(API + 'conciliacao-carrinha?data=' + dia)).json();
+  const x = v.rotas.find((y) => y.contado_por);
+  expect(x).toBeTruthy();
+  expect(typeof v.nomes[x.contado_por]).toBe('string');
+  // só quem aparece nos dados, nunca a lista de contas
+  const referidos = new Set(
+    v.rotas.flatMap((y) => [y.contado_por, y.validado_por, y.coordenado_por, y.aprovado_por, ...(y.historico || []).map((h) => h.por)]),
+  );
+  Object.keys(v.nomes).forEach((l) => expect(referidos.has(l)).toBe(true));
+});

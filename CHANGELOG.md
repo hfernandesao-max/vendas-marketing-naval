@@ -2,6 +2,21 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 13-11-2026
+
+### Rastreabilidade de quem assinou
+
+- Cada passo assinado no portal mostra o **nome completo e o utilizador** de quem assinou (ex.: «Michael Samson
+  (michael.samson)»), com a data e a hora:
+  - **Folha de caixa:** nova secção «Rastreabilidade das assinaturas» com todo o histórico (lançada, validada,
+    1.º nível, aprovação final e reaberturas com o motivo); nada se apaga.
+  - **Resultado da contagem (PDF):** «Registo das assinaturas» com cada passo e as correcções do registo (o que estava
+    antes, o que ficou e o motivo); os blocos de assinatura já assinados no portal mostram «Assinado no portal», o
+    nome e a data, em vez da linha em branco.
+  - **Requisição (PDF):** «Requisitado por» e «Recebido por» com quem emitiu e quem confirmou a carga.
+  - **Ecrãs** da conciliação e das requisições com o nome completo.
+- O servidor junta às respostas só os nomes de quem aparece nos dados (nunca a lista de contas).
+
 ## 12-11-2026
 
 ### Cartões empilhados com o espaçamento certo

@@ -3,6 +3,7 @@
 // Servidor: nucleo/api/v1/carrinha.php e nucleo/servicos/carrinha.php.
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
+import { quem as assinante } from '../componentes/assinantes.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
@@ -180,7 +181,7 @@ function circuito(r) {
     ['Contado', r.contado_por, r.contado_em],
     ['Validada por quem contou', r.validado_por, r.validado_em],
     ['Aprovada pelo coordenador', auto ? null : r.coordenado_por, auto ? null : r.coordenado_em],
-    [auto ? 'Fechada sozinha (sem diferenças)' : 'Aprovada pelo responsável · fechada', auto ? t('automático') : r.aprovado_por, r.aprovado_em],
+    [auto ? 'Fechada sozinha (sem diferenças)' : 'Aprovada pelo responsável · fechada', r.aprovado_por, r.aprovado_em],
   ];
   const ol = el('ol', 'cc-circuito');
   ol.setAttribute('aria-label', t('Circuito de aprovação'));
@@ -190,7 +191,7 @@ function circuito(r) {
     const feito = !!em;
     const li = el('li', feito ? 'feito' : !actual ? 'actual' : null);
     if (!feito) actual = true;
-    li.append(el('b', null, t(nome)), el('span', null, feito ? (quem || '') + ' · ' + quando(em) : t('pendente')));
+    li.append(el('b', null, t(nome)), el('span', null, feito ? (assinante(quem) || '') + ' · ' + quando(em) : t('pendente')));
     ol.append(li);
   });
   return ol;
@@ -432,7 +433,7 @@ function corrigirRegisto(contadas) {
         c.checked = true;
         c.setAttribute('aria-label', r.rota + ' · ' + r.promotor);
         const l = el('label', 'cc-campo-rota');
-        l.append(c, el('span', null, r.rota + ' · ' + r.promotor + (r.contado_por ? ' (' + r.contado_por + ')' : '')));
+        l.append(c, el('span', null, r.rota + ' · ' + r.promotor + (r.contado_por ? ' (' + assinante(r.contado_por) + ')' : '')));
         b.append(l);
         return [r.rota, c];
       });

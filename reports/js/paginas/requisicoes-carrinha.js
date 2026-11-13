@@ -4,6 +4,7 @@
 // Servidor: nucleo/api/v1/requisicoes.php e nucleo/servicos/requisicoes.php.
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
+import { quem as assinante } from '../componentes/assinantes.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { botao, confirmarAccao, entrada, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
@@ -283,7 +284,7 @@ function editor() {
           'p',
           'note',
           t('Carga confirmada por {p} em {d}', {
-            p: r.confirmado_por,
+            p: assinante(r.confirmado_por),
             d: dl(String(r.confirmado_em).slice(0, 10)) + ' ' + String(r.confirmado_em).slice(11, 16),
           }),
         ),
@@ -291,7 +292,7 @@ function editor() {
     const quem = el(
       'p',
       'note',
-      t('Emitida por {p} em {d}', { p: r.emitida_por, d: dl(String(r.emitida_em).slice(0, 10)) + ' ' + String(r.emitida_em).slice(11, 16) }),
+      t('Emitida por {p} em {d}', { p: assinante(r.emitida_por), d: dl(String(r.emitida_em).slice(0, 10)) + ' ' + String(r.emitida_em).slice(11, 16) }),
     );
     s.append(quem);
     acc.append(
