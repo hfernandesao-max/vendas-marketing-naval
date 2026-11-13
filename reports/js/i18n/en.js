@@ -3635,6 +3635,12 @@ export const EN = {
     'In SAP the discount is recorded through the credit note and the new invoice, and the adjustment corrects the amount received on the original invoice (the customer paid the discounted amount), with no credit balance.',
   'Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).':
     "Only on the first day; after that it is the previous day's approved balance. With no amount, leave it empty or type 0 (0.00 Kz).",
+  'dd-mm-aaaa': 'dd-mm-yyyy',
+  'Abrir o calendário': 'Open the calendar',
+  'A data não pode ser anterior a {d}.': 'The date cannot be before {d}.',
+  'A data não pode ser posterior a {d}.': 'The date cannot be after {d}.',
+  'Data inválida: escreva dia-mês-ano (ex.: {e}).': 'Invalid date: type day-month-year (e.g. {e}).',
+  'Indique a data.': 'Enter the date.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

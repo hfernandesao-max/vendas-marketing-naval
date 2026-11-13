@@ -3573,6 +3573,12 @@ export const TI = {
     'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ እቲ ምትዕርራይ ድማ ነቲ ኣብ ቀዳማይ ፋክቱራ ዝተቐበለ የስተኻኽል (ዓሚል ነቲ ብቅናሽ ዝኾነ ዋጋ ከፊሉ)፣ ብዘይ ተረፍ ክረዲት።',
   'Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).':
     'ኣብ ቀዳማይ መዓልቲ ጥራይ፤ ድሕሪኡ ናይ ቅድሚኡ መዓልቲ ዝጸደቐ ተረፍ እዩ። ብዘይ ዋጋ፣ ባዶ ግደፍዎ ወይ 0 ጸሓፉ (0,00 Kz)።',
+  'dd-mm-aaaa': 'መዓ-ወር-ዓመ',
+  'Abrir o calendário': 'ዓውደ ኣዋርሕ ክፈት',
+  'A data não pode ser anterior a {d}.': 'እቲ ዕለት ቅድሚ {d} ክኸውን ኣይክእልን።',
+  'A data não pode ser posterior a {d}.': 'እቲ ዕለት ድሕሪ {d} ክኸውን ኣይክእልን።',
+  'Data inválida: escreva dia-mês-ano (ex.: {e}).': 'ዘይቅኑዕ ዕለት፦ መዓልቲ-ወርሒ-ዓመት ጸሓፉ (ንኣብነት {e})።',
+  'Indique a data.': 'ዕለት ኣእትዉ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
