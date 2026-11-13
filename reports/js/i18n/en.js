@@ -3471,6 +3471,9 @@ export const EN = {
   'Cobranças por meio de pagamento, facturas pendentes e folha de caixa.': 'Collections by payment method, outstanding invoices and cash sheet.',
   'Depósito aprovado': 'Deposit approved',
   'Aprovação do depósito retirada': 'Deposit approval withdrawn',
+  'Caixa validada. Falta a aprovação.': 'Cash desk validated. Approval pending.',
+  'Quem lança valida; aprova o responsável, nunca quem lançou ou validou (segregação de funções).':
+    'Whoever enters it validates it; the manager approves, never whoever entered or validated it (segregation of duties).',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

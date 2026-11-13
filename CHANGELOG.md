@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Folha de caixa: circuito de um só nível (Josefa lança e valida, Michael aprova)
+
+- O 1.º nível de aprovação passa a ser opcional e decide-se na matriz de acessos: sem ninguém com «Folha de caixa ·
+  aprovação do superior de quem a lança (1.º nível)», quem tem a aprovação final aprova directamente a folha validada.
+- Fica assim: **quem lança valida** (Josefa) e **o responsável aprova** (Michael Samson) a folha e os depósitos,
+  sempre com segregação de funções (quem lançou ou validou nunca aprova).
+- Para voltar aos dois níveis basta marcar de novo o 1.º nível a um perfil na matriz; nada muda no programa.
+
 ### Finanças e depósitos no banco com controlo duplo
 
 - A área **Cobranças** do menu passa a **Finanças** (Cobranças, Facturas pendentes e Folha de caixa), como nas

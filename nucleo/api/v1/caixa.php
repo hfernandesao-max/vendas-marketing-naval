@@ -32,7 +32,7 @@ if (!naval_e_post()) {
     } catch (Throwable $e) {
         error_log('[caixa esperado] ' . $e->getMessage());
     }
-    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'dois_niveis' => naval_caixa_dois_niveis(), 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
         'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? '')]);
 }
