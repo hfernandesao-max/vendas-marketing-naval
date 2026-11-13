@@ -5,7 +5,7 @@ import { abrir } from './dados.js';
 const linhas = (page, id) => page.locator(`#s-${id} tbody tr`).count();
 
 test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', async ({ page }) => {
-  await abrir(page, '#documentos/dc');
+  await abrir(page, '#documentos');
   await page.click('#filtros2 .fb-ms-btn:has-text("Rotas")');
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1001' }).click();
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1003' }).click();
@@ -13,7 +13,7 @@ test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', as
   await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 seleccionados');
   await expect(page.locator('#filtros2 .fb-etiqueta')).toHaveCount(2);
   expect(await linhas(page, 'dc')).toBe(12);
-  await expect(page).toHaveURL(/#documentos\/dc\?rota=1001,1003$/);
+  await expect(page).toHaveURL(/#documentos\?rota=1001,1003$/);
 
   await page.click('#filtros2 .fb-ms-btn:has-text("Estado")');
   await page.locator('.fb-pop .fb-item', { hasText: 'Pendentes' }).click();

@@ -11,7 +11,7 @@ test('indicadores do início: variação face ao período comparável (azul favo
     return r.fulfill({ json: anterior ? v : { vendas: v, artigos } });
   };
   const erros = await abrir(page, '#inicio', { api });
-  const vendasTile = page.locator('.tiles-kpi .tile', { hasText: 'Vendas RTM' });
+  const vendasTile = page.locator('.tiles-kpi .tile', { hasText: 'Vendas líquidas s/ IVA' });
   await expect(vendasTile.locator('.tile-var')).toHaveText(/^▲ /);
   await expect(vendasTile.locator('.tile-var')).toHaveClass(/bom/);
   await expect(vendasTile.locator('.tile-var')).toHaveAttribute('title', /mesmo período do mês anterior/);

@@ -71,8 +71,8 @@ test('assistente: resposta com os números da ferramenta, fontes, consumo, CSRF 
   const c = await csrf(ctx);
   const r = await (await ctx.post(API + 'assistente', { data: { pergunta: 'Quanto vendemos a 24-10-2026?', historico: [], idioma: 'pt', csrf: c } })).json();
   expect(r.ok).toBe(true);
-  // total da exportação de teste do Pinguim BO em 24-10-2026: 461 400 + 114 000 + 60 000
-  expect(r.resposta).toContain('635 400 Kz');
+  // vendas líquidas sem IVA da exportação de teste do Pinguim BO em 24-10-2026 (635 400 Kz com IVA)
+  expect(r.resposta).toContain('544 737 Kz');
   expect(r.fontes).toEqual(['vendas_resumo']);
   expect(r.tokens.entrada).toBeGreaterThan(0);
   expect((await (await ctx.get(API + 'assistente')).json()).uso.minhas_hoje).toBe(1);

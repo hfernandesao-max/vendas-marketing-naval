@@ -15,9 +15,9 @@ test('mostra um relatório de cada vez e muda pelos separadores', async ({ page 
 });
 
 test('escolher uma página no menu abre o primeiro relatório; abrir uma área abre a primeira página', async ({ page }) => {
-  await abrir(page, '#documentos/dc');
+  await abrir(page, '#vendas-dia/vd-mat');
   await page.click('#nav a[href="#vendas-promotor"]');
-  await page.click('#nav a[href="#documentos"]');
+  await page.click('#nav a[href="#vendas-dia"]');
   const primeiro = await page.locator('.rel-tab').first().textContent();
   await expect(page.locator('.rel-tab.on')).toHaveText(primeiro);
   await expect(page.locator('.nav-sub a.on')).toHaveText(primeiro);
@@ -64,12 +64,16 @@ test('menu organizado por secções da cadeia de valor (Comercial, Operações, 
     'Integrações',
     'Administração',
   ]);
-  // Terreno junta as visitas e os mapas (antes «GeoMobilidade»); auditoria em Administração; sincronização em Equipamentos
+  // Terreno junta as visitas e os mapas; o controlo interno das vendas em Inteligência de negócio; a sincronização em
+  // Integrações; o valor e a apresentação do portal em Administração; Classificação e marca fora do menu
   const naArea = (area, href) => page.locator('.navg', { hasText: area }).locator('xpath=following-sibling::div[1]').locator(`a[href="${href}"]`);
   await expect(naArea('Terreno', '#geo-rotas')).toHaveCount(1);
   await expect(naArea('Terreno', '#visitas-dia')).toHaveCount(1);
-  await expect(naArea('Administração', '#auditoria')).toHaveCount(1);
-  await expect(naArea('Equipamentos', '#sincronizacao')).toHaveCount(1);
+  await expect(naArea('Inteligência de negócio', '#auditoria')).toHaveCount(1);
+  await expect(naArea('Integrações', '#sincronizacao')).toHaveCount(1);
+  await expect(naArea('Administração', '#valor-portal')).toHaveCount(1);
+  await expect(page.locator('#nav a[href="#ranking"]')).toHaveCount(0);
+  await expect(page.locator('#nav a[href="#vendas-marca"]')).toHaveCount(0);
   // os Alertas estão no sino da barra superior, não no menu
   await expect(page.locator('#nav a[href="#alertas"]')).toHaveCount(0);
   await expect(page.locator('#sino')).toHaveAttribute('href', '#alertas');

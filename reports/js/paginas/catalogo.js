@@ -26,10 +26,12 @@ export const PAGES = [
   { id: 'vendas-cliente', grupo: 'Vendas', icon: 'loja', nome: 'Vendas por cliente' },
   { id: 'vendas-artigo', grupo: 'Vendas', icon: 'box', nome: 'Vendas por artigo' },
   { id: 'vendas-promotor-artigo', grupo: 'Vendas', icon: 'grelha', nome: 'Vendas por promotor e artigo' },
-  { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca' },
-  { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação' },
-  { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos' },
-  { id: 'relatorio-vendas', grupo: 'Vendas', icon: 'relatorio', nome: 'Relatório de Vendas' },
+  // fora do menu até o Pinguim BO trazer a marca dos artigos (a página explica o que falta)
+  { id: 'vendas-marca', grupo: 'Vendas', icon: 'tag', nome: 'Vendas por promotor e marca', menu: false },
+  // a Classificação entrou em «Vendas por promotor» e «Vendas por cliente» (posição, quota, classe ABC)
+  { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação', menu: false },
+  { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos de venda' },
+  { id: 'relatorio-vendas', grupo: 'Vendas', icon: 'relatorio', nome: 'Relatório Diário de Vendas' },
   { id: 'clientes', grupo: 'Clientes', icon: 'lista', nome: 'Carteira de clientes' },
   { id: 'cadastros', grupo: 'Clientes', icon: 'kpi', nome: 'Cadastros · indicadores' },
   { id: 'cadastros-analise', grupo: 'Clientes', icon: 'pizza', nome: 'Análise de cadastros' },
@@ -37,7 +39,7 @@ export const PAGES = [
   { id: 'pedidos-clientes', grupo: 'Clientes', icon: 'carrinho', nome: 'Pedidos dos clientes' },
   { id: 'clientes-qr', grupo: 'Clientes', icon: 'qr', nome: 'Cartazes QR dos clientes' },
   { id: 'pagamentos', grupo: 'Finanças', icon: 'card', nome: 'Cobranças' },
-  { id: 'pendentes', grupo: 'Finanças', icon: 'clock', nome: 'Facturas pendentes' },
+  { id: 'pendentes', grupo: 'Finanças', icon: 'clock', nome: 'Contas a receber (antiguidade)' },
   { id: 'caixa-marketing', grupo: 'Finanças', icon: 'caixa', nome: 'Folha de caixa' },
   // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
   { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
@@ -48,32 +50,36 @@ export const PAGES = [
   { id: 'geo-prospeccao', grupo: 'Terreno', icon: 'radar', nome: 'Prospecção de clientes' },
   { id: 'geo-zonas', grupo: 'Terreno', icon: 'zona', nome: 'Zonas de entrega' },
   { id: 'geo-distribuidores', grupo: 'Terreno', icon: 'rede', nome: 'Distribuidores' },
-  { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Plano de cargas' },
-  { id: 'painel-carrinha', grupo: 'Logística', icon: 'carrinhaok', nome: 'Painel da carrinha' },
-  { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
+  // Logística pela ordem do processo: plano → requisição → carga → stock → conciliação
+  { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Cargas planeadas' },
   { id: 'requisicoes-carrinha', grupo: 'Logística', icon: 'requisicao', nome: 'Requisições ao armazém' },
-  { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Registo de cargas' },
+  { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Cargas realizadas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
+  { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
+  { id: 'painel-carrinha', grupo: 'Logística', icon: 'carrinhaok', nome: 'Painel da carrinha' },
   // Análise: indicadores, previsão e inteligência artificial
   { id: 'previsao', grupo: 'Inteligência de negócio', icon: 'grow', nome: 'Previsão de vendas' },
   { id: 'assistente', grupo: 'Inteligência de negócio', icon: 'ia', nome: 'Assistente IA' },
   { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'qualidade-dados', grupo: 'Inteligência de negócio', icon: 'alvo', nome: 'Qualidade dos dados e anomalias' },
-  { id: 'valor-portal', grupo: 'Inteligência de negócio', icon: 'valor', nome: 'Valor do portal' },
-  { id: 'apresentacao', grupo: 'Inteligência de negócio', icon: 'slides', nome: 'Apresentação do portal' },
+  // antes «Histórico de auditoria» em Administração: são controlos às vendas (duplicados, pendentes, cobranças sem
+  // meio, visitas não feitas); o histórico de quem fez o quê está em Acessos › Registos de actividade
+  { id: 'auditoria', grupo: 'Inteligência de negócio', icon: 'historico', nome: 'Controlo interno das vendas' },
   // Sistema: smartphones e impressoras, interfaces com outros sistemas e administração (segregação de funções)
   { id: 'equipamentos', grupo: 'Equipamentos', icon: 'phone', nome: 'Equipamentos' },
-  { id: 'sincronizacao', grupo: 'Equipamentos', icon: 'sync', nome: 'Sincronização dos telemóveis' },
   { id: 'equipamentos-documentos', grupo: 'Equipamentos', icon: 'pasta', nome: 'Documentos dos equipamentos' },
   { id: 'sap-exportar', grupo: 'Integrações', icon: 'upload', nome: 'Vendas para o SAP' },
   { id: 'agt', grupo: 'Integrações', icon: 'shield', nome: 'Comunicação AGT' },
+  { id: 'sincronizacao', grupo: 'Integrações', icon: 'sync', nome: 'Sincronização dos telemóveis' },
   { id: 'acessos', grupo: 'Administração', icon: 'lock', nome: 'Acessos' },
-  { id: 'auditoria', grupo: 'Administração', icon: 'historico', nome: 'Histórico de auditoria' },
   { id: 'actualizacoes', grupo: 'Administração', icon: 'actualizar', nome: 'Actualizações' },
   { id: 'modulos', grupo: 'Administração', icon: 'pecas', nome: 'Módulos' },
   { id: 'conformidade', grupo: 'Administração', icon: 'selo', nome: 'Conformidade' },
   { id: 'suporte', grupo: 'Administração', icon: 'suporte', nome: 'Suporte' },
+  // sobre o próprio portal (não são análise do negócio)
+  { id: 'valor-portal', grupo: 'Administração', icon: 'valor', nome: 'Valor do portal' },
+  { id: 'apresentacao', grupo: 'Administração', icon: 'slides', nome: 'Apresentação do portal' },
 ];
 /** Secção de uma página (Comercial, Operações, Análise, Sistema) ou null (Início, Alertas). */
 export const seccaoDe = (p) => (p && p.grupo ? SECCAO_GRUPO[p.grupo] || null : null);

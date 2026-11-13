@@ -56,3 +56,14 @@ teste('objectivos congelados no mês e acompanhamento: cumprimento, ritmo, falta
     igual((float) $o['objectivo'], (float) $e['total']['objectivo'], 'total = soma das rotas no âmbito');
     igual([], naval_objectivos_estado($g, $junho, '2026-06-15', ['9999'])['rotas'], 'âmbito por rota');
 });
+
+teste('objectivos: base sem IVA nos novos meses; o mês congelado antes da mudança continua a medir-se com IVA', function () {
+    $ag = [];
+    foreach (naval_analise_dias('2026-11-02', '2026-11-03') as $d) $ag[$d] = ['rotas' => ['1001' => ['t' => 1000.0, 'ti' => 1140.0, 'd' => 1, 'nc' => 0]]];
+    $antigo = ['mes' => '2026-11', 'rotas' => ['1001' => ['objectivo' => 5000.0, 'dias_uteis' => 2, 'dias' => ['2026-11-02' => 2500.0, '2026-11-03' => 2500.0]]]];
+    $e = naval_objectivos_estado($antigo, $ag, '2026-11-03', null);
+    igual(['com_iva', 2280.0], [$e['valores'], $e['rotas'][0]['realizado']], 'Novembro: realizado com IVA, como o objectivo');
+    $novo = ['valores' => 'sem_iva'] + $antigo;
+    $e = naval_objectivos_estado($novo, $ag, '2026-11-03', null);
+    igual(['sem_iva', 2000.0], [$e['valores'], $e['rotas'][0]['realizado']], 'a partir da mudança: sem IVA');
+});

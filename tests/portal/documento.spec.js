@@ -47,7 +47,6 @@ const A = [
 
 test('clicar no documento abre o painel com a representação, os artigos e os meios de cobrança', async ({ page }) => {
   const erros = await abrir(page, '#documentos', { api: (r) => r.fulfill({ json: { vendas: V, artigos: A } }) });
-  await page.locator('.rel-tab', { hasText: 'Registo de documentos de venda' }).click();
   await page.getByRole('button', { name: 'Abrir o documento FR 1/7' }).first().click();
   const p = page.locator('dialog.doc-painel');
   await expect(p).toBeVisible();
@@ -88,7 +87,6 @@ test('clicar no documento abre o painel com a representação, os artigos e os m
 test('o documento ajusta-se à janela num ecrã pequeno, sem deslocação horizontal', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await abrir(page, '#documentos', { api: (r) => r.fulfill({ json: { vendas: V, artigos: A } }) });
-  await page.locator('.rel-tab', { hasText: 'Registo de documentos de venda' }).first().click();
   await page.getByRole('button', { name: 'Abrir o documento FR 1/7' }).first().click();
   const p = page.locator('dialog.doc-painel');
   await expect(p.locator('.doc-folha')).toBeVisible();

@@ -1,5 +1,6 @@
 // Início: indicadores e painel de gráficos.
 import {
+  liquidoDe,
   FAIXAS_DIVIDA,
   META_ROTA,
   clientesDe,
@@ -148,8 +149,9 @@ function barraVista(pg) {
 }
 
 function painelInicio(pg) {
+  // desempenho em vendas líquidas sem IVA (base de gestão); cobranças e pendentes com IVA
   const V = vendasR(),
-    tot = sum(V, 'total'),
+    tot = sum(V, liquidoDe),
     liq = recebidoLiquido(V),
     cards = [],
     O = {};
@@ -160,7 +162,7 @@ function painelInicio(pg) {
   if (pode('vendas-dia') && V.length) {
     const dias = Object.values(group(V, 'data'))
       .sort((a, b) => (a[0].data < b[0].data ? -1 : 1))
-      .map((rs) => ({ d: rs[0].data, v: sum(rs, 'total'), r: recebidoLiquido(rs), n: docsVenda(rs).length }));
+      .map((rs) => ({ d: rs[0].data, v: sum(rs, liquidoDe), r: recebidoLiquido(rs), n: docsVenda(rs).length }));
     cards.push(
       nomear(
         'dia',
@@ -313,7 +315,7 @@ function painelInicio(pg) {
         'nif',
       ),
     )
-      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, 'total'), n: docsVenda(rs).length, nif: rs[0].nif }))
+      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, liquidoDe), n: docsVenda(rs).length, nif: rs[0].nif }))
       .sort((a, b) => b.v - a.v)
       .slice(0, 8);
     if (C.length)
@@ -346,9 +348,14 @@ function painelInicio(pg) {
   // 6. Artigos mais vendidos (valor; quantidades para quem não vê valores)
   if (pode('vendas-artigo') && (DB.artigos || []).length) {
     const A = (DB.artigos || []).filter((x) => inR(x.data)),
-      comValor = A.some((x) => x.total != null);
+      comValor = A.some((x) => x.total != null || x.valor_sem_iva != null);
     const rows = Object.values(group(A, (x) => x.codigo + '|' + x.artigo))
-      .map((ls) => ({ nome: ls[0].artigo, cod: ls[0].codigo, q: sum(ls, 'quantidade'), v: sum(ls, 'total') }))
+      .map((ls) => ({
+        nome: ls[0].artigo,
+        cod: ls[0].codigo,
+        q: sum(ls, 'quantidade'),
+        v: sum(ls, (x) => (x.valor_sem_iva != null ? x.valor_sem_iva : x.total)),
+      }))
       .sort((a, b) => (comValor ? b.v - a.v : b.q - a.q))
       .slice(0, 8);
     if (rows.length)
@@ -575,10 +582,11 @@ function lerComparavel(pc) {
   return null;
 }
 const metricas = (V) => {
-  const tot = sum(V, 'total'),
+  const tot = sum(V, liquidoDe),
     liq = recebidoLiquido(V);
   return {
     tot,
+    totIva: sum(V, 'total'),
     liq,
     din: valorCat(V, 'dinheiro'),
     mc: valorCat(V, 'multicaixa'),
@@ -617,7 +625,8 @@ function serie(V, f) {
 
 R.inicio = (pg) => {
   const V = vendasR(),
-    tot = sum(V, 'total'),
+    tot = sum(V, liquidoDe),
+    totIva = sum(V, 'total'),
     liq = recebidoLiquido(V);
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa');
@@ -639,19 +648,22 @@ R.inicio = (pg) => {
     pg.append(
       tiles([
         {
-          l: t('Vendas RTM'),
+          l: t('Vendas líquidas s/ IVA'),
           v: kz2(tot),
-          s: notasCredito(V)
-            ? t('{n} documentos', { n: n0(docsVenda(V).length) }) + ' · ' + t('notas de crédito: −{v}', { v: kz2(notasCredito(V)) })
-            : t('{n} documentos', { n: n0(docsVenda(V).length) }),
+          s:
+            t('com IVA: {v}', { v: kz2(totIva) }) +
+            ' · ' +
+            (notasCredito(V)
+              ? t('{n} documentos', { n: n0(docsVenda(V).length) }) + ' · ' + t('notas de crédito: −{v}', { v: kz2(notasCredito(V)) })
+              : t('{n} documentos', { n: n0(docsVenda(V).length) })),
           cls: 'full-value',
           var: vr('tot', kz2),
-          ...sp((rs) => sum(rs, 'total'), t('vendas')),
+          ...sp((rs) => sum(rs, liquidoDe), t('vendas')),
         },
         {
           l: t('Recebido'),
           v: kz2(liq),
-          s: t('{p} do total', { p: pct(tot ? liq / tot : null) }),
+          s: t('{p} do total com IVA', { p: pct(totIva ? liq / totIva : null) }),
           cls: 'full-value',
           var: vr('liq', kz2),
           ...sp((rs) => recebidoLiquido(rs), t('recebido')),

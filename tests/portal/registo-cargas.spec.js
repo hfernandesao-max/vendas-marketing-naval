@@ -28,7 +28,7 @@ test('registo de cargas: no menu Logística, por rota e viatura, por dia e por v
   await page.route('**/v1/dados/cargas*', (r) => r.fulfill({ json: CARGAS }));
   await page.route('**/cargas.json*', (r) => r.fulfill({ json: CARGAS }));
   const erros = await abrir(page, '#registo-cargas');
-  await expect(page.locator('#nav a[href="#registo-cargas"]').first()).toContainText('Registo de cargas');
+  await expect(page.locator('#nav a[href="#registo-cargas"]').first()).toContainText('Cargas realizadas');
   await expect(page.locator('.rel-tab')).toHaveText(['Cargas por rota e viatura', 'Cargas por dia', 'Cargas por viatura']);
   const cab = await page.locator('#s-rc-saidas thead th').allTextContents();
   for (const c of ['Matrícula', 'Tipo de viatura', 'Transportadora', 'Fraldas (cx)', 'Total (cx)']) expect(cab.join('|')).toContain(c);

@@ -113,13 +113,28 @@ function naval_objectivos_mes(string $mes, array $agregados, array $promotores =
         $g = naval_json_ler($f);
         if ($g) return $g;
         $par = $par ?? naval_obj_parametros();
-        $ant = naval_json_ler(naval_obj_ficheiro(date('Y-m', strtotime($mes . '-01 12:00 -1 month'))));
+        $mesAnt = date('Y-m', strtotime($mes . '-01 12:00 -1 month'));
+        $ant = naval_json_ler(naval_obj_ficheiro($mesAnt));
+        // objectivos antigos (antes da base sem IVA) passam à base sem IVA pela proporção real do mês anterior,
+        // para o mínimo crescente comparar o mesmo tipo de valor
+        if ($ant && ($ant['valores'] ?? '') !== 'sem_iva') {
+            $si = $ci = 0.0;
+            foreach ($agregados as $d => $x) {
+                if (substr((string) $d, 0, 7) !== $mesAnt) continue;
+                foreach ((array) ($x['rotas'] ?? []) as $rr) {
+                    $si += (float) ($rr['t'] ?? 0);
+                    $ci += (float) ($rr['ti'] ?? $rr['t'] ?? 0);
+                }
+            }
+            $f = $ci > 0 ? $si / $ci : 1.0;
+            foreach ((array) ($ant['rotas'] ?? []) as $k => $o) $ant['rotas'][$k]['objectivo'] = round((float) $o['objectivo'] * $f, 2);
+        }
         $rotas = [];
         foreach (naval_analise_rotas($agregados) as $rt) {
             $o = naval_obj_calcular(naval_analise_serie($agregados, $rt), $mes, $ant['rotas'][$rt] ?? null, $par);
             if ($o) $rotas[$rt] = ['rota' => $rt, 'promotor' => $promotores[$rt] ?? ''] + $o;
         }
-        $g = ['mes' => $mes, 'calculado_em' => date('Y-m-d H:i:s'), 'parametros' => $par, 'metodo' => 'previsao-mesmo-dia-semana+crescimento+minimo-crescente',
+        $g = ['mes' => $mes, 'calculado_em' => date('Y-m-d H:i:s'), 'parametros' => $par, 'valores' => 'sem_iva', 'metodo' => 'previsao-mesmo-dia-semana+crescimento+minimo-crescente',
             'rotas' => $rotas];
         if ($rotas) {
             naval_json_gravar($f, $g);
@@ -136,6 +151,8 @@ function naval_objectivos_mes(string $mes, array $agregados, array $promotores =
  */
 function naval_objectivos_estado(array $obj, array $agregados, string $hoje, ?array $rotas): array
 {
+    // base de valor do objectivo congelado: sem IVA (a partir de Dezembro de 2026) ou com IVA (meses anteriores)
+    $campo = ($obj['valores'] ?? '') === 'sem_iva' ? 't' : 'ti';
     $acomp = function (array $o, array $serie) use ($hoje) {
         $real = 0.0;
         foreach ($serie as $d => $v) if (substr($d, 0, 7) === substr($hoje, 0, 7) && $d <= $hoje) $real += (float) $v;
@@ -171,17 +188,18 @@ function naval_objectivos_estado(array $obj, array $agregados, string $hoje, ?ar
     $tot = ['objectivo' => 0.0, 'dias' => [], 'dias_uteis' => 0];
     foreach ($obj['rotas'] ?? [] as $rt => $o) {
         if ($rotas !== null && !in_array((string) $rt, $rotas, true)) continue;
-        $out[] = ['rota' => (string) $rt, 'promotor' => $o['promotor'] ?? ''] + $acomp($o, naval_analise_serie($agregados, (string) $rt));
+        $out[] = ['rota' => (string) $rt, 'promotor' => $o['promotor'] ?? ''] + $acomp($o, naval_analise_serie($agregados, (string) $rt, $campo));
         $tot['objectivo'] += $o['objectivo'];
         foreach ($o['dias'] as $d => $v) $tot['dias'][$d] = ($tot['dias'][$d] ?? 0) + $v;
         $tot['dias_uteis'] = max($tot['dias_uteis'], (int) $o['dias_uteis']);
     }
     usort($out, function ($a, $b) { return [$a['estado'] !== 'abaixo', $a['ritmo']] <=> [$b['estado'] !== 'abaixo', $b['ritmo']]; });
     $serieTot = [];
-    foreach ($out as $r) foreach (naval_analise_serie($agregados, $r['rota']) as $d => $v) $serieTot[$d] = ($serieTot[$d] ?? 0) + $v;
+    foreach ($out as $r) foreach (naval_analise_serie($agregados, $r['rota'], $campo) as $d => $v) $serieTot[$d] = ($serieTot[$d] ?? 0) + $v;
     $tot['dias_uteis'] = count($tot['dias']);
     $total = $out ? $acomp($tot, $serieTot) : null;
     return ['mes' => $obj['mes'] ?? substr($hoje, 0, 7), 'calculado_em' => $obj['calculado_em'] ?? null, 'parametros' => $obj['parametros'] ?? null,
+        'valores' => $campo === 't' ? 'sem_iva' : 'com_iva',
         'rotas' => $out, 'total' => $total];
 }
 

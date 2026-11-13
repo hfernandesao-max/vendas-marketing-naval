@@ -4,6 +4,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Vendas líquidas sem IVA e arrumação dos menus (fase 1)
+
+- **Base de valor:** o desempenho de vendas passa a medir-se em **vendas líquidas sem IVA** (facturas − notas de
+  crédito, já com os descontos), como mandam as normas de reconhecimento de receita (IFRS 15) e a prática das grandes
+  empresas; o valor com IVA aparece ao lado. Cobranças, contas a receber e caixa continuam com IVA (é o que o cliente
+  paga).
+  - Aplica-se ao Início, às páginas de Vendas, à previsão, aos alertas e ao painel de gestão (os agregados diários
+    recalculam-se sozinhos com o valor sem IVA de cada documento, lido das linhas do Pinguim BO).
+  - **Objectivos:** os de Novembro, já congelados com IVA, continuam a medir-se com IVA até ao fim do mês; a partir de
+    Dezembro calculam-se e medem-se sem IVA (o mínimo crescente converte o mês anterior pela proporção real).
+- **Vendas:** a «Classificação» entrou em «Vendas por promotor» (posição, quota, % recebido) e «Vendas por cliente»
+  (posição, quota, **classe ABC**, melhor cliente, peso dos 10 maiores, Consumidor Final); «Documentos» passa a
+  **«Documentos de venda»**, sem o resumo por rota repetido e com a coluna sem IVA; «Relatório de Vendas» passa a
+  **«Relatório Diário de Vendas»**; «Vendas por promotor e marca» sai do menu até haver a marca no Pinguim BO.
+- **Finanças:** «Facturas pendentes» passa a **«Contas a receber (antiguidade)»**.
+- **Logística**, pela ordem do processo: Cargas planeadas → Requisições → Cargas realizadas → Stock → Conciliação →
+  Painel da carrinha («Plano de cargas» e «Registo de cargas» passam a **«Cargas planeadas»** e **«Cargas
+  realizadas»**).
+- **Controlo interno das vendas** (antes «Histórico de auditoria» em Administração) passa para Inteligência de
+  negócio, junto da qualidade dos dados; o histórico de quem fez o quê continua em Acessos › Registos de actividade.
+- «Sincronização dos telemóveis» passa para **Integrações**; «Valor do portal» e «Apresentação do portal» passam para
+  **Administração**.
+
 ### Folha de caixa: circuito de um só nível (Josefa lança e valida, Michael aprova)
 
 - O 1.º nível de aprovação passa a ser opcional e decide-se na matriz de acessos: sem ninguém com «Folha de caixa ·
