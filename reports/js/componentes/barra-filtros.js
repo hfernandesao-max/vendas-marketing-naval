@@ -76,9 +76,9 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
   pop.setAttribute('aria-label', titulo);
   const total = opcoes.length;
   const nenhum = () => sel.includes(NENHUM);
-  // Com «Todos»: nas listas com «Limpar» (stock) todas aparecem marcadas, como no Excel; nas outras
-  // nenhuma aparece marcada e cada clique escolhe só essa opção
-  const marcado = (id) => !nenhum() && (sel.length === 0 ? multipla && permitirNenhum : sel.includes(id));
+  // Com «Todos» todas aparecem marcadas, como no filtro do Excel, no Gmail e no SAP Fiori: desmarcar uma deixa as outras
+  // escolhidas. Nas listas de escolha única (botões de opção) «Todos» é não escolher nenhuma.
+  const marcado = (id) => !nenhum() && (sel.length === 0 ? multipla : sel.includes(id));
 
   const botaoTexto = () => {
     let txt, n;
@@ -140,6 +140,28 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
   function desenharLista() {
     const q = filtro ? filtro.value.trim().toLowerCase() : '';
     lista.replaceChildren();
+    // «Seleccionar todos» com três estados (todos, alguns, nenhum), como o «(Seleccionar tudo)» do Excel
+    if (multipla && !q) {
+      const item = el('label', 'fb-item fb-item-todos');
+      const c = el('input');
+      c.type = 'checkbox';
+      const todos = !nenhum() && (!sel.length || sel.length === total);
+      c.checked = todos;
+      c.indeterminate = !todos && !nenhum() && sel.length > 0;
+      c.setAttribute('aria-checked', c.indeterminate ? 'mixed' : todos ? 'true' : 'false');
+      c.addEventListener('change', (ev) => {
+        ev.stopPropagation();
+        // desmarcar «Seleccionar todos» limpa tudo para escolher só algumas (sem nenhuma ao fechar, volta a «Todos»)
+        mudar(todos ? [NENHUM] : []);
+      });
+      const info = el('div', 'fb-item-info');
+      info.append(
+        el('span', 'fb-item-t', t('Seleccionar todos')),
+        el('span', 'fb-item-s', t('{n} de {t} seleccionados', { n: nenhum() ? 0 : sel.length || total, t: total })),
+      );
+      item.append(c, info);
+      lista.append(item);
+    }
     opcoes
       .filter((o) => !q || (o.titulo + ' ' + (o.subtitulo || '') + ' ' + o.id).toLowerCase().includes(q))
       .forEach((o) => {
@@ -157,7 +179,7 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
           }
           let nova;
           if (nenhum()) nova = c.checked ? [o.id] : [NENHUM];
-          else if (!sel.length) nova = c.checked ? [o.id] : permitirNenhum ? opcoes.map((x) => x.id).filter((id) => id !== o.id) : [];
+          else if (!sel.length) nova = c.checked ? [] : opcoes.map((x) => x.id).filter((id) => id !== o.id);
           else if (c.checked) nova = [...sel, o.id];
           else nova = sel.filter((id) => id !== o.id);
           if (nova.length === total) nova = [];
@@ -172,13 +194,15 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
       });
     if (!lista.childNodes.length) lista.append(el('p', 'fb-vazio', t('Sem resultados.')));
   }
+  // sem «Limpar» na lista, «nenhum» só existe enquanto se escolhe: para fora vale «Todos»
+  const paraFora = () => (!permitirNenhum && nenhum() ? [] : sel.slice());
   function mudar(nova) {
     sel = nova;
     botaoTexto();
     desenharLista();
     if (imediato || !multipla) {
-      inicial = sel.join('\u0001');
-      aoMudar(sel.slice());
+      inicial = paraFora().join('\u0001');
+      aoMudar(paraFora());
     }
   }
   const fora = (ev) => {
@@ -197,6 +221,10 @@ export function escolha({ titulo, icone = 'filtro', opcoes, selecionados = [], m
     document.removeEventListener('mousedown', fora);
     document.removeEventListener('keydown', tecla);
     if (fecharAberto === fechar) fecharAberto = null;
+    if (!permitirNenhum && nenhum()) {
+      sel = [];
+      botaoTexto();
+    }
     if (sel.join('\u0001') !== inicial) {
       inicial = sel.join('\u0001');
       aoMudar(sel.slice());

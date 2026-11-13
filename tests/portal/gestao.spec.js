@@ -77,7 +77,7 @@ test('alertas: texto composto a partir dos parâmetros, gravidade e ligação ao
   await page.getByRole('button', { name: 'Críticos' }).click();
   await expect(page.locator('.gst-alerta')).toHaveCount(1);
   // o botão seleccionado continua legível: texto com cor diferente do fundo e estado em aria-pressed
-  const sel = page.locator('.gst-filtros .btn[aria-pressed="true"]');
+  const sel = page.locator('.gst-filtros .btn[aria-pressed="true"]', { hasText: 'Críticos' });
   await expect(sel).toHaveText('Críticos');
   const [cor, fundo] = await sel.evaluate((b) => [getComputedStyle(b).color, getComputedStyle(b).backgroundColor]);
   expect(cor).not.toBe(fundo);
@@ -286,5 +286,57 @@ test('painel principal: arrastar um quadro muda a ordem só nesta sessão; «Gua
   await page.getByRole('button', { name: 'Guardar vista' }).click();
   await expect.poll(() => gravado && gravado.pagina).toBe('inicio');
   expect(gravado.ordem.indexOf('cobrado')).toBe(antes.indexOf('Como foi cobrado') - 1);
+  expect(erros).toEqual([]);
+});
+
+test('alertas: assumir, resolver com a nota do que foi feito, filtro Activos/Tratados e histórico', async ({ page }) => {
+  await simular(page);
+  const pedidos = [];
+  let estado = { estado: 'novo' };
+  await page.route('**/v1/alertas**', (r) => {
+    const req = r.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      if (b.accao === 'resolver' && b.nota.length < 5)
+        return r.fulfill({ json: { ok: false, erro: 'Diga o que foi feito para resolver (pelo menos 5 caracteres).' } });
+      const novo = { assumir: 'assumido', resolver: 'resolvido' }[b.accao];
+      const hist = [...(estado.hist || []), { accao: b.accao, por: 'michael', em: '2026-10-26 09:0' + pedidos.length + ':00', nota: b.nota }];
+      estado = { estado: novo, por: 'michael', em: hist[hist.length - 1].em, nota: b.nota, hist };
+      return r.fulfill({ json: { ok: true, tratamento: estado } });
+    }
+    const a = ALERTAS.alertas.map((x, i) =>
+      i === 0 ? { ...x, tratamento: estado, activo: estado.estado !== 'resolvido' } : { ...x, tratamento: { estado: 'novo' }, activo: true },
+    );
+    return r.fulfill({ json: { ...ALERTAS, alertas: a, nomes: { michael: 'Michael Samson' } } });
+  });
+  const erros = await abrir(page, '#alertas');
+  const al = page.locator('.gst-alerta').first();
+  await expect(al.locator('.gst-trat')).toContainText('Novo');
+  await al.getByRole('button', { name: 'Assumir' }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'assumir', id: 'a' });
+  await expect(page.locator('.gst-alerta').first().locator('.gst-trat')).toContainText('Em tratamento');
+  await expect(page.locator('.gst-alerta').first().locator('.gst-trat')).toContainText('por Michael Samson (michael)');
+  // resolver: a nota é obrigatória (o servidor recusa sem ela)
+  await page.locator('.gst-alerta').first().getByRole('button', { name: 'Resolver' }).click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByLabel('Acção tomada').fill('ok');
+  await dlg.getByRole('button', { name: 'Resolver' }).click();
+  await expect(dlg).toContainText('Diga o que foi feito para resolver');
+  await dlg.getByLabel('Acção tomada').fill('Promotora contactada: telemóvel sem bateria, vendas sincronizadas.');
+  await dlg.getByRole('button', { name: 'Resolver' }).click();
+  await expect.poll(() => pedidos.length).toBe(3);
+  // resolvido sai dos activos e aparece nos tratados, com o histórico
+  await expect(page.locator('.gst-alerta')).toHaveCount(1);
+  await expect(page.locator('.tile', { hasText: 'Tratados' })).toContainText('1');
+  await page.getByRole('button', { name: 'Tratados' }).click();
+  await expect(page.locator('.gst-alerta')).toHaveCount(1);
+  const tratado = page.locator('.gst-alerta').first();
+  await expect(tratado.locator('.gst-trat')).toContainText('Resolvido');
+  await expect(tratado.locator('.gst-trat')).toContainText('vendas sincronizadas');
+  await expect(tratado.getByRole('button', { name: 'Reabrir' })).toBeVisible();
+  await tratado.locator('summary').click();
+  await expect(tratado.locator('.gst-trat-h li')).toHaveCount(2);
   expect(erros).toEqual([]);
 });

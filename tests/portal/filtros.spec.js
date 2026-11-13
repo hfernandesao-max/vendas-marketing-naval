@@ -7,6 +7,11 @@ const linhas = (page, id) => page.locator(`#s-${id} tbody tr`).count();
 test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', async ({ page }) => {
   await abrir(page, '#documentos');
   await page.click('#filtros2 .fb-ms-btn:has-text("Rotas")');
+  // «Todos»: todas marcadas (como no Excel); desmarcar «Seleccionar todos» limpa para escolher só algumas
+  await expect(page.locator('.fb-pop .fb-item-todos input')).toBeChecked();
+  await expect(page.locator('.fb-pop .fb-item', { hasText: 'Rota 1001' }).locator('input')).toBeChecked();
+  await page.locator('.fb-pop .fb-item-todos').click();
+  await expect(page.locator('.fb-pop .fb-item', { hasText: 'Rota 1001' }).locator('input')).not.toBeChecked();
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1001' }).click();
   await page.locator('.fb-pop .fb-item', { hasText: 'Rota 1003' }).click();
   await page.keyboard.press('Escape');

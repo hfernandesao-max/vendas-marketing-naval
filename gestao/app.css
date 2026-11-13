@@ -1180,3 +1180,65 @@ article.ag-al {
   color: var(--suave);
   font-variant-numeric: tabular-nums;
 }
+/* tratamento dos alertas na app */
+.ag-al-trat {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ag-al-est {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--aviso);
+}
+.ag-al-acc {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ag-al-b {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--grelha);
+  background: var(--ceu);
+  color: var(--navy);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ag-al-form {
+  display: grid;
+  gap: 6px;
+}
+.ag-al-form textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--grelha);
+  background: transparent;
+  color: inherit;
+}
+.ag-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  z-index: 50;
+}
+.ag-toast.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

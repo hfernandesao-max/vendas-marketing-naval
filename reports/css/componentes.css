@@ -4954,3 +4954,55 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   outline: 2px solid #2397d4;
   outline-offset: 1px;
 }
+.fb-item-todos {
+  border-bottom: 1px solid var(--line2);
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+}
+/* código do artigo antes da descrição (mesmo padrão em todas as tabelas) */
+.cc-cod {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+/* tratamento dos alertas (assumir, resolver, silenciar, reabrir) */
+.gst-trat {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line2);
+  display: grid;
+  gap: 8px;
+}
+.gst-trat-l {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  text-align: justify;
+}
+.gst-trat-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gst-trat-h summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.gst-trat-h ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.gst-alerta.tratado {
+  opacity: 0.78;
+}
+.gst-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line2);
+  margin: 0 4px;
+}

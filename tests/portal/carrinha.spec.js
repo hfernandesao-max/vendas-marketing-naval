@@ -110,7 +110,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await expect(rota).toContainText('Fora do prazo do fecho (16:00)');
   await rota.getByRole('button', { name: 'Contar' }).click();
   // cega: só o artigo e a quantidade que voltou
-  await expect(rota.locator('th')).toHaveText(['Artigo', 'Quantidade que voltou']);
+  await expect(rota.locator('th')).toHaveText(['Código', 'Artigo', 'Quantidade que voltou']);
   // folha de contagem às cegas para imprimir: artigos, sem as quantidades do sistema
   const folha = await pdfTexto(rota.getByRole('button', { name: 'Imprimir folha de contagem' }));
   expect(folha.nome).toBe('CC-1001-20261026_folha-de-contagem.pdf');

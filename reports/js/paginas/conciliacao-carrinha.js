@@ -94,7 +94,7 @@ function formContagem(r) {
   const f = el('div', 'cc-contagem');
   const tab = el('table', 'cc-tab');
   const th = el('tr');
-  [t('Artigo'), t('Quantidade que voltou')].forEach((x) => th.append(el('th', null, x)));
+  [t('Código'), t('Artigo'), t('Quantidade que voltou')].forEach((x) => th.append(el('th', null, x)));
   tab.append(th);
   const campos = {};
   // Rascunho da contagem: cada número escrito fica guardado neste navegador até gravar; a página pode actualizar
@@ -122,7 +122,7 @@ function formContagem(r) {
     campos[l.codigo] = i;
     const td = el('td');
     td.append(i, el('span', 'cc-un', l.unidade || ''));
-    tr.append(el('td', null, l.artigo + ' · ' + l.codigo), td);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td);
     tab.append(tr);
   });
   const erro = msgErro();
@@ -209,7 +209,9 @@ function tabelaRota(r) {
   box.append(circuito(r));
   const tab = el('table', 'cc-tab cc-cores');
   const g = el('tr', 'cc-grupos');
-  g.append(el('th', null, ''));
+  const vazio = el('th', null, '');
+  vazio.colSpan = 2;
+  g.append(vazio);
   GRUPOS.forEach((x) => {
     const th = el('th', 'cc-g-' + x.id, t(x.nome));
     th.colSpan = x.cols.length;
@@ -218,7 +220,7 @@ function tabelaRota(r) {
   });
   g.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Justificação')));
   const th = el('tr');
-  th.append(el('th', null, t('Artigo')));
+  th.append(el('th', null, t('Código')), el('th', null, t('Artigo')));
   GRUPOS.forEach((x) => x.cols.forEach((c) => th.append(el('th', 'n cc-g-' + x.id, t(c)))));
   th.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Motivo')));
   const cab = el('thead');
@@ -228,7 +230,7 @@ function tabelaRota(r) {
   const escolhas = {};
   r.linhas.forEach((l) => {
     const tr = el('tr', l.diferenca ? (l.diferenca < 0 ? 'cc-falta' : 'cc-sobra') : l.alertas.length ? 'cc-alerta' : null);
-    tr.append(el('td', null, l.artigo));
+    tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, l.artigo));
     [l.inicial, l.carregado, l.vendido, l.devolvido, l.esperado].forEach((v) => tr.append(el('td', 'n cc-g-sis', q(v))));
     tr.append(el('td', 'n cc-g-cont', q(l.contado)));
     const sinal = l.diferenca ? (l.diferenca < 0 ? ' cc-neg' : ' cc-pos') : '';

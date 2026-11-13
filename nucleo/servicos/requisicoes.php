@@ -94,7 +94,7 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
     // ao gravar com pelo menos um artigo — «Criar» só abre o formulário no ecrã
     if (($origem['tipo'] ?? '') !== 'conciliacao') {
         if (!array_filter($linhas, function ($l) { return (float) (((array) $l)['quantidade'] ?? 0) > 0; })) {
-            throw new NavalErro('Junte pelo menos um artigo com quantidade antes de gravar.', 400);
+            throw new NavalErro('Adicione pelo menos um artigo com quantidade antes de gravar.', 400);
         }
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
         naval_req_validar_stock(naval_req_linhas($linhas));
@@ -105,7 +105,7 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
             foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
                 $x = naval_json_ler((string) $f);
                 if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
-                    throw new NavalErro('Já existe o rascunho ' . $x['numero'] . ' para este promotor neste dia: abra-o para juntar artigos.', 409);
+                    throw new NavalErro('Já existe o rascunho ' . $x['numero'] . ' para este promotor neste dia: abra-o para adicionar artigos.', 409);
                 }
             }
         }
@@ -191,7 +191,7 @@ function naval_req_gravar(string $id, array $linhas, string $nota, ?int $versao,
             return ['sugerida' => $sug[$c] ?? null, 'origem' => $orig[$c] ?? 'adicionado'] + $l;
         }, $linhas));
         if (!array_filter($novas, function ($l) { return (float) $l['quantidade'] > 0; })) {
-            throw new NavalErro('A requisição ficaria sem artigos: junte artigos ou anule-a.', 400);
+            throw new NavalErro('A requisição ficaria sem artigos: adicione artigos ou anule-a.', 400);
         }
         naval_req_validar_stock($novas);
         $r['linhas'] = $novas;
