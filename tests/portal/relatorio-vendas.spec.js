@@ -211,7 +211,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   });
   const erros = await abrir(page, '#caixa-marketing');
   const secs = page.locator('.cx-sec');
-  await secs.nth(0).getByRole('button', { name: 'Juntar linha' }).click();
+  await secs.nth(0).getByRole('button', { name: 'Adicionar entrega' }).click();
   await page.getByLabel('Promotor · 1').first().selectOption('1001');
   // contagem às cegas: o valor da entrega é o total das notas contadas (não se escreve)
   await expect(secs.nth(0).getByLabel('Valor · 1')).toHaveCount(0);
@@ -219,7 +219,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   await page.locator('dialog[open]').getByLabel('Notas de 500 Kz').fill('1');
   await page.locator('dialog[open]').getByRole('button', { name: 'Confirmar' }).click();
   await expect(secs.nth(0)).toContainText('500,00');
-  await page.locator('.cx-sec').nth(1).getByRole('button', { name: 'Juntar linha' }).click();
+  await page.locator('.cx-sec').nth(1).getByRole('button', { name: 'Adicionar talão do TPA' }).click();
   await page.locator('.cx-sec').nth(1).getByLabel('Promotor · 1').selectOption('1002');
   await page.locator('.cx-sec').nth(1).getByLabel('Banco · 1').selectOption('BPC');
   await page.locator('.cx-sec').nth(1).getByLabel('Nº do talão de fecho · 1').fill('TPA-0457');
@@ -227,7 +227,7 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   // depósitos no banco: banco, código do lacre (obrigatório) e valor
   const dep = page.locator('.cx-sec', { hasText: 'Depósitos no banco' });
   await expect(page.locator('.cx-sec', { hasText: 'Saídas da caixa' })).toHaveCount(0);
-  await dep.getByRole('button', { name: 'Juntar linha' }).click();
+  await dep.getByRole('button', { name: 'Adicionar depósito' }).click();
   await dep.getByLabel('Banco · 1').selectOption('BPC');
   await dep.getByLabel('Código do lacre · 1').fill('LAC-77');
   await dep.getByLabel('Valor · 1').fill('200');
@@ -294,7 +294,10 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
           tpa: b.tpa,
           saidas: b.saidas,
           versao: caixa.versao + 1,
-          historico: [{ em: '2026-10-26 17:05:00', por: 'josefa.silva', accao: 'gravada' }],
+          historico: [
+            { em: '2026-10-26 17:00:00', por: 'josefa.silva', accao: 'gravada' },
+            { em: '2026-10-26 17:05:00', por: 'josefa.silva', accao: 'gravada' },
+          ],
         };
       if (b.accao === 'fechar') caixa = { ...caixa, estado: 'fechada', contagem_fisica: b.contagem, versao: caixa.versao + 1 };
       return r.fulfill({ json: { ok: true, caixa, nomes: { 'josefa.silva': 'Josefa Silva' } } });
@@ -356,6 +359,9 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   // rastreabilidade das assinaturas: secção na própria folha
   await expect(page.locator('.cx-rastreio')).toContainText('Josefa Silva (josefa.silva)');
   await expect(page.locator('.cx-rastreio')).toContainText('26-10-2026 17:05');
+  // gravar duas vezes não assina duas vezes: um só «Lançada», com o número de gravações nas notas
+  await expect(page.locator('.cx-rastreio tbody tr', { hasText: 'Lançada' })).toHaveCount(1);
+  await expect(page.locator('.cx-rastreio')).toContainText('2 gravações · primeira 26-10-2026 17:00');
   // fecho: contagem física por notas
   await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const f = page.locator('dialog[open]');

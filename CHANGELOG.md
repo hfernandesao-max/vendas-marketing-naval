@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Folha de caixa: uma assinatura por passo
+
+<!-- paginas: caixa-marketing -->
+
+- Carregar várias vezes em «Gravar» já não assina várias vezes: gravar sem alterações não regista nada (nem muda a
+  versão) e o botão só envia um pedido de cada vez.
+- Na rastreabilidade, as gravações seguidas contam como um só passo «Lançada», com a última hora e o número de
+  gravações nas notas; o histórico completo continua guardado (nada se apaga).
+- «Juntar linha» passa a «Adicionar entrega», «Adicionar talão do TPA» e «Adicionar depósito».
+
 ### Selo «Novo» durante 24 horas no que mudou
 
 - Depois de cada actualização, as páginas que mudaram mostram o selo **«Novo»** no menu (e um ponto azul na área),

@@ -12,6 +12,11 @@ teste('caixa: saldo do dia anterior, saldo teórico, contagem com diferença exp
             ['banco' => 'BFA', 'lacre' => 'LAC-0003', 'valor' => 5000000]]], 0, 'josefa');
     igual(14308670.01, $c['saldo_teorico'], 'como a folha de 12-11-2026');
     igual(['LAC-0001', 'josefa', null], [$c['saidas'][0]['lacre'], $c['saidas'][0]['requisitante'], $c['saidas'][0]['aprovado_por']], 'requisitante = quem lança');
+    // «Gravar» outra vez sem mudar nada: não grava, não muda a versão nem assina outra vez (idempotente)
+    $n = count($c['historico']);
+    $igual = naval_caixa_gravar($d1, ['saldo_inicial' => 16696620.01, 'entregas' => [['rota' => '1001', 'notas' => ['5000' => 2522, 'moedas' => 2050]]],
+        'saidas' => array_map(function ($l) { return ['id' => $l['id'], 'banco' => $l['banco'], 'lacre' => $l['lacre'], 'valor' => $l['valor']]; }, $c['saidas'])], $c['versao'], 'josefa');
+    igual([$c['versao'], $n], [$igual['versao'], count($igual['historico'])], 'segunda gravação igual não conta');
     lanca(400, function () use ($d1, $c) { naval_caixa_gravar($d1, ['saidas' => [['banco' => 'BPC', 'valor' => 1]]], $c['versao'], 'josefa'); }); // sem lacre
     lanca(400, function () use ($d1, $c) { naval_caixa_gravar($d1, ['saidas' => [['banco' => 'BPC', 'lacre' => 'X12', 'valor' => 1], ['banco' => 'BAI', 'lacre' => 'X12', 'valor' => 2]]], $c['versao'], 'josefa'); }); // lacre repetido
     // controlo duplo dos depósitos: quem requisita não aprova; aprovado fica bloqueado; só quem aprovou retira
