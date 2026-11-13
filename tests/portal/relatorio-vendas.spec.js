@@ -420,3 +420,75 @@ test('folha de caixa: saldo inicial do primeiro dia pode ser 0 (campo vazio = 0,
   expect(pedidos[0]).toMatchObject({ accao: 'gravar', saldo_inicial: 0 });
   expect(erros).toEqual([]);
 });
+
+test('fecho de caixa: depois de validado dá o PDF com a reconciliação, o detalhe, as assinaturas e o código de verificação', async ({ page }) => {
+  const caixa = {
+    dia: '2026-10-26',
+    estado: 'fechada',
+    versao: 4,
+    saldo_inicial: 1000,
+    saldo_inicial_origem: 'dia 2026-10-25',
+    entregas: [{ rota: '1001', empresa: 'NAVAL', valor: 500, notas: { 200: 2, moedas: 100 }, nota: '' }],
+    tpa: [{ rota: '1001', banco: 'BPC', talao: 'T-778', empresa: 'NAVAL', valor: 300 }],
+    saidas: [
+      {
+        id: 'DP-1',
+        tipo: 'deposito_banco',
+        banco: 'BPC',
+        lacre: 'L-99',
+        valor: 200,
+        requisitante: 'josefa',
+        requisitado_em: '2026-10-26 15:40:00',
+        aprovado_por: 'sara',
+        aprovado_em: '2026-10-26 15:45:00',
+      },
+    ],
+    contagem_fisica: 1300,
+    explicacao: '',
+    saldo_teorico: 1300,
+    diferenca: 0,
+    fechada_por: 'josefa',
+    fechada_em: '2026-10-26 16:02:00',
+    historico: [
+      { accao: 'gravada', por: 'josefa', em: '2026-10-26 15:40:00' },
+      { accao: 'gravada', por: 'josefa', em: '2026-10-26 15:50:00' },
+      { accao: 'fechada', por: 'josefa', em: '2026-10-26 16:02:00' },
+    ],
+  };
+  await page.route('**/v1/caixa**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        aprova: [],
+        eu: 'sara',
+        caixa,
+        nomes: { josefa: 'Josefa Silva', sara: 'Sara Coordenadora' },
+        promotores: { 1001: 'Andrea Santos' },
+        esperado: { 1001: { dinheiro: 500, multicaixa: 300 } },
+        bancos: ['BPC'],
+        empresas: ['NAVAL'],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#caixa-marketing');
+  const [d] = await Promise.all([page.waitForEvent('download'), page.locator('#cx-pdf').click()]);
+  const fs = await import('node:fs');
+  if (process.env.GUARDAR_PDF) fs.copyFileSync(await d.path(), process.env.GUARDAR_PDF + d.suggestedFilename());
+  expect(d.suggestedFilename()).toBe('FC-20261026_fecho-de-caixa_por-aprovar.pdf');
+  const txt = fs.readFileSync(await d.path(), 'latin1');
+  for (const s of [
+    'Fecho de caixa',
+    'FC-20261026',
+    'Reconciliação do dia',
+    'Saldo final teórico',
+    'Talões de fecho do TPA',
+    'T-778',
+    'L-99',
+    'POR APROVAR',
+    'SHA-256',
+  ])
+    expect(txt, s).toContain(Buffer.from(s, 'latin1').toString('latin1'));
+  expect(txt).toContain('Andrea Santos');
+  expect(erros).toEqual([]);
+});

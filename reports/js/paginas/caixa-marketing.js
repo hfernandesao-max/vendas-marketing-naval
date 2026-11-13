@@ -5,6 +5,7 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { quando, quem } from '../componentes/assinantes.js';
 import { pill, tiles } from '../componentes/blocos.js';
+import { fechoCaixaPdf } from '../componentes/caixa-pdf.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
@@ -746,6 +747,17 @@ R['caixa-marketing'] = (pg) => {
         : t(
             'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
           );
+  }
+  // depois de validado: o fecho em PDF (relatório de caixa do dia, com as assinaturas e o código de verificação)
+  if (c.estado !== 'aberta') {
+    const pdf = botao(t('PDF do fecho de caixa'), 'ghost', () => {
+      pdf.disabled = true;
+      fechoCaixaPdf({ ...c, dia: c.dia || dia }, { promotores: D.promotores, esperado: D.esperado, dois_niveis: D.dois_niveis })
+        .catch(() => toast(t('Não foi possível gerar o PDF.'), 5000))
+        .finally(() => (pdf.disabled = false));
+    });
+    pdf.id = 'cx-pdf';
+    acc.append(pdf);
   }
   pg.append(estado, erro, acc);
 };
