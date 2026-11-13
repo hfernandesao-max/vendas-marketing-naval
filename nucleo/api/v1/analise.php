@@ -86,6 +86,17 @@ if ($f === 'indicadores') {
             error_log('[indicadores alertas] ' . $e->getMessage());
         }
     }
+    // calendário de trabalho do dia (horário das vendas, do fecho e da carga; folgas e feriados)
+    naval_servico('calendario');
+    $r['horario'] = naval_cal_para_pagina(date('Y-m-d'));
+    // «À sua espera»: aprovações e tarefas desta pessoa (só leitura; aprovar faz-se no portal)
+    $r['pendentes'] = null;
+    try {
+        naval_servico('pendentes');
+        $r['pendentes'] = naval_pendentes_conta((string) (((array) naval_utilizador())['login'] ?? ''));
+    } catch (Throwable $e) {
+        error_log('[indicadores pendentes] ' . $e->getMessage());
+    }
     naval_json(['ok' => true] + $r);
 }
 

@@ -19,6 +19,8 @@ defined('NAVAL_NUCLEO') || exit;
 const NAVAL_NOTIF_TIPOS = [
     'rota_parada' => ['Rota parada', 'Uma rota com vendas hoje está há mais de uma hora sem vender, ou ainda não vendeu às 10:30.', 'alertas', 'Vr', 'aviso'],
     'venda_anulada' => ['Venda anulada', 'Um documento de venda de hoje foi anulado no Pinguim BO.', 'alertas', 'Vr', 'aviso'],
+    'caixa_verificar' => ['Caixa por aprovar (1.º nível)', 'Uma folha de caixa validada ou um depósito no banco espera pela aprovação de 1.º nível.', 'caixa-aprovacao', 'G', 'aviso'],
+    'caixa_aprovar' => ['Caixa por aprovação final', 'Uma folha de caixa ou um depósito no banco espera pela aprovação final.', 'caixa-aprovacao-final', 'G', 'aviso'],
     'carrinha_aprovar' => ['Carrinha por aprovar', 'A contagem de uma carrinha tem diferenças à espera de aprovação.', 'conciliacao-carrinha', 'G', 'aviso'],
     'conferencia' => ['Diferença na conferência', 'A conferência diária com o Pinguim BO encontrou diferenças.', 'conformidade', 'V', 'critico'],
     'problema' => ['Problema em produção', 'A vigilância do portal encontrou um problema novo.', 'actualizacoes', 'V', 'critico'],
@@ -42,6 +44,15 @@ const NAVAL_NOTIF_TEXTOS = [
     'carrinha' => ['pt' => ['Carrinha {r} por aprovar', '{n} diferenças na contagem{falta}.'],
         'en' => ['Van {r} to approve', '{n} differences in the count{falta}.'],
         'ti' => ['ቫን {r} ክጸድቕ', '{n} ፍልልያት ኣብ ቆጸራ{falta}።']],
+    'caixa1' => ['pt' => ['Folha de caixa de {d} por aprovar', 'Validada pela tesouraria: falta a aprovação de 1.º nível.'],
+        'en' => ['Cash sheet for {d} to approve', 'Validated by treasury: first-level approval pending.'],
+        'ti' => ['ናይ {d} ወረቐት ገንዘብ ክጸድቕ', 'ብግምጃ ቤት ተረጋጊጹ፤ ናይ ቀዳማይ ደረጃ ምጽዳቕ ይጽበ።']],
+    'caixa2' => ['pt' => ['Folha de caixa de {d} para aprovação final', 'Pronta para a aprovação final do responsável.'],
+        'en' => ['Cash sheet for {d} for final approval', 'Ready for the manager\'s final approval.'],
+        'ti' => ['ናይ {d} ወረቐት ገንዘብ ንመወዳእታ ምጽዳቕ', 'ንናይ ሓላፊ መወዳእታ ምጽዳቕ ድሉው እዩ።']],
+    'deposito' => ['pt' => ['Depósito no banco por aprovar', '{v} Kz no {b} (lacre {l}), folha de {d}.'],
+        'en' => ['Bank deposit to approve', '{v} Kz at {b} (seal {l}), sheet of {d}.'],
+        'ti' => ['ናብ ባንክ ዝኣቱ ገንዘብ ክጸድቕ', '{v} Kz ኣብ {b} (ማሕተም {l})፣ ወረቐት {d}።']],
     'carrinha_falta' => ['pt' => [', falta de {v} Kz'], 'en' => [', {v} Kz short'], 'ti' => ['፣ ጉድለት {v} Kz']],
     'conferencia' => ['pt' => ['Conferência de {d} com diferenças', '{n} rota(s) com documentos ou valores diferentes do Pinguim BO: {lista}.'],
         'en' => ['Reconciliation for {d} with differences', '{n} route(s) with documents or amounts different from Pinguim BO: {lista}.'],
@@ -381,7 +392,9 @@ function naval_notificar(string $tipo, string $titulo, string $corpo, array $o =
         $dest = naval_notif_destinatarios($tipo, isset($o['rota']) ? (string) $o['rota'] : null);
         $subs = naval_notif_subscricoes();
         $remover = [];
+        $excluir = array_map('strtolower', array_filter(array_map('strval', (array) ($o['excluir'] ?? []))));
         foreach ($dest as $login => $u) {
+            if (in_array(strtolower((string) $login), $excluir, true)) continue;   // separação de funções
             $pref = naval_notif_preferencias($login);
             if (empty($pref['tipos'][$tipo])) continue;
             $r['destinatarios']++;
@@ -592,5 +605,46 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
         $feito[] = naval_notificar('carrinha_aprovar', $tx['pt'][0], $tx['pt'][1],
             ['chave' => 'carrinha|' . $dia . '|' . $r['rota'], 'rota' => (string) $r['rota'], 'url' => '../reports/#conciliacao-carrinha', 'textos' => $tx], $agora);
     }
+    // folhas de caixa e depósitos no banco à espera de aprovação (últimos 7 dias), ao nível que falta
+    $caixas = $o['caixas'] ?? null;
+    if ($caixas !== null || !array_key_exists('dados', $o)) {
+        try {
+            $feito = array_merge($feito, naval_notif_folhas_caixa($dia, $agora, $caixas));
+        } catch (Throwable $ex) {
+            error_log('[notificações caixa] ' . $ex->getMessage());
+        }
+    }
     return ['enviadas' => count(array_filter($feito, function ($x) { return empty($x['repetida']); }))];
+}
+
+/**
+ * Folhas de caixa validadas (ou aprovadas no 1.º nível) e depósitos no banco por aprovar: avisa quem aprova o nível
+ * que falta, uma vez por passo. Quem lançou, validou ou requisitou não recebe (separação de funções). $caixas: {dia:
+ * folha} para os testes; sem ele, lê os ficheiros.
+ */
+function naval_notif_folhas_caixa(string $dia, int $agora, ?array $caixas = null, ?bool $dois = null): array
+{
+    naval_servico('caixa');
+    $dois = $dois ?? naval_caixa_dois_niveis();
+    $feito = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $cd = date('Y-m-d', strtotime($dia . ' 12:00') - $i * 86400);
+        $c = $caixas !== null ? ($caixas[$cd] ?? null) : naval_json_ler(naval_caixa_ficheiro($cd));
+        if (!$c || ($c['estado'] ?? '') === 'aprovada') continue;
+        $dl = date('d-m-Y', strtotime($cd . ' 12:00'));
+        foreach ((array) ($c['saidas'] ?? []) as $l) {
+            if (($l['tipo'] ?? '') !== 'deposito_banco' || !empty($l['aprovado_por']) || empty($l['id'])) continue;
+            $tx = naval_notif_txt('deposito', ['d' => $dl, 'v' => number_format((float) ($l['valor'] ?? 0), 0, ',', ' '), 'b' => (string) ($l['banco'] ?? ''), 'l' => (string) ($l['lacre'] ?? '')]);
+            $feito[] = naval_notificar($dois ? 'caixa_verificar' : 'caixa_aprovar', $tx['pt'][0], $tx['pt'][1],
+                ['chave' => 'deposito|' . $l['id'], 'url' => '../gestao/#alertas', 'textos' => $tx, 'excluir' => [(string) ($l['requisitante'] ?? '')]], $agora);
+        }
+        $e = (string) ($c['estado'] ?? '');
+        if (!in_array($e, ['fechada', 'verificada'], true)) continue;
+        $nivel = $e === 'fechada' && $dois ? 1 : 2;
+        $tx = naval_notif_txt($nivel === 1 ? 'caixa1' : 'caixa2', ['d' => $dl]);
+        $feito[] = naval_notificar($nivel === 1 ? 'caixa_verificar' : 'caixa_aprovar', $tx['pt'][0], $tx['pt'][1],
+            ['chave' => 'caixa|' . $cd . '|' . $e, 'url' => '../gestao/#alertas', 'textos' => $tx,
+                'excluir' => [(string) ($c['fechada_por'] ?? ''), (string) ($c['alterado_por'] ?? ''), (string) ($c['verificada_por'] ?? '')]], $agora);
+    }
+    return $feito;
 }

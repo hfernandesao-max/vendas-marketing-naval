@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### App de gestão: alinhada com as melhorias de hoje
+
+- **«À sua espera»** (como as caixas de tarefas SAP Fiori e Microsoft Approvals): no Hoje e nos Alertas, só o que a
+  pessoa pode fazer agora — folhas de caixa ao nível que falta, depósitos no banco, contar, validar, aprovar e fechar
+  as conciliações das carrinhas. Respeita a separação de funções (quem lança, conta ou requisita não aprova); os
+  atrasados primeiro. Aprova-se no portal, com a verificação em dois passos e a assinatura registada.
+- **Notificações no telemóvel** para a folha de caixa e os depósitos por aprovar, a quem aprova o nível que falta e
+  nunca a quem lançou ou requisitou.
+- **Vendas sem IVA** também no «Ao vivo», nas rotas e nas últimas vendas (como os indicadores e o portal); o recebido
+  continua com IVA.
+- **Calendário de trabalho**: horário do dia (ou folga e feriado) no topo; rotas paradas só dentro do horário das
+  vendas; fecho «Fora do prazo» depois das 16:00.
+- **Rastreabilidade**: na ficha da rota, quem contou, validou e aprovou o fecho (nome, conta, data e hora).
+
 ### Requisições: sem rascunhos repetidos nem vazios
 
 - **«Criar» já não regista nada:** só abre o formulário da nova requisição («Por gravar»). A requisição fica registada e

@@ -12,6 +12,7 @@
 //  - variações com seta e sinal, não só com cor (WCAG 1.4.1); alvos de toque com pelo menos 44 px;
 //  - puxar para actualizar, esqueleto durante a primeira leitura e detalhe da rota numa folha que sobe do fundo.
 import { apiFetch, apiJson } from './api.js';
+import { foraDoPrazo, horarioTxt } from './componentes/horario.js';
 import { dl, n0, n1, setFmt } from './formatos.js';
 import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
@@ -29,6 +30,8 @@ const kzc = (v) => {
   if (a >= 1e4) return n0(Math.round(v / 1e3)) + (t('mil') === 'mil' ? '\u00a0mil' : t('mil')) + '\u00a0Kz';
   return kz(v);
 };
+// vendas sem IVA (desempenho, como no portal e nos indicadores); o recebido fica com IVA (é o dinheiro que entra)
+const liq = (v) => (v.total_sem_iva != null ? +v.total_sem_iva : +v.total || 0);
 // POST com o código CSRF da sessão (sem os módulos do portal completo)
 const postJson = (rota, corpo) =>
   apiFetch(rota, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...corpo, csrf: E.sessao && E.sessao.csrf }) }).then(
@@ -246,6 +249,7 @@ function heroi() {
       legenda(['ag-lg-l', t('Este mês')], ['ag-lg-la', t('Mês passado')]),
     );
   }
+  c.append(el('div', 'ag-nota ag-base', t('Valores sem IVA')));
   return c;
 }
 
@@ -324,9 +328,12 @@ function hoje() {
       t('Período'),
     ),
   ];
+  const hor = linhaHorario();
+  if (hor) out.push(hor);
   const vivo = E.periodo === 'hoje' ? cartaoVivo() : null;
   if (vivo) out.push(vivo);
   else out.push(heroi());
+  out.push(...cartaoPendentes(3));
   const a = d.alertas;
   if (a && a.principais && a.principais.length) {
     out.push(
@@ -472,7 +479,10 @@ function folhaRota(rota) {
     const [rot, cls] = FECHO[fe.fecho];
     const p = el('div', 'ag-folha-estado');
     p.append(el('strong', null, t('Fecho do dia') + ': '), el('span', 'ag-estado-rota ' + cls, t(rot)));
+    if (cls !== 'ok' && foraDoPrazo(E.ind.horario, 'fecho')) p.append(' ', el('span', 'ag-estado-rota mau', t('Fora do prazo')));
     corpo.append(p);
+    const asn = assinaturasFecho(fe);
+    if (asn) corpo.append(asn);
   }
   // últimas vendas da rota
   const us =
@@ -492,7 +502,7 @@ function folhaRota(rota) {
         el('strong', null, v.cliente || t('Consumidor final')),
         el('span', null, String(v.hora).slice(0, 5) + (v.nc ? ' · ' + t('nota de crédito') : '')),
       );
-      li.append(tx, el('span', 'ag-valor' + (v.nc ? ' desce' : ''), kzc(+v.total || 0)));
+      li.append(tx, el('span', 'ag-valor' + (v.nc ? ' desce' : ''), kzc(liq(v))));
       l.append(li);
     });
     corpo.append(l);
@@ -509,6 +519,85 @@ function folhaRota(rota) {
   }
 }
 
+/** Quem assinou cada passo do fecho (nome, conta e data e hora), como no portal e no PDF da contagem. */
+const NOMES = () => (E.ao && E.ao.carrinhas && E.ao.carrinhas.nomes) || {};
+const quem = (login, nomes) => (login ? (login === 'automatico' ? t('automático') : (nomes[login] || login) + (nomes[login] ? ' (' + login + ')' : '')) : '');
+const dataHora = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
+function assinaturasFecho(fe) {
+  const passos = [
+    ['contado', t('Contado por')],
+    ['validado', t('Validada por')],
+    ['coordenado', t('Aprovada pelo coordenador')],
+    ['aprovado', t('Aprovação final')],
+  ].filter(([k]) => fe[k + '_por']);
+  if (!passos.length) return null;
+  const l = el('ul', 'ag-assin');
+  l.setAttribute('aria-label', t('Assinaturas'));
+  passos.forEach(([k, rot]) => {
+    const li = el('li');
+    li.append(el('span', null, rot), el('strong', null, quem(fe[k + '_por'], NOMES())), el('span', 'ag-nota', dataHora(fe[k + '_em'])));
+    l.append(li);
+  });
+  return l;
+}
+
+// ───────────── À sua espera (aprovações e tarefas) ─────────────
+// Como as caixas de tarefas das apps de referência (SAP Fiori «My Inbox», Microsoft Approvals): só o que esta pessoa
+// pode fazer agora (nível e separação de funções decididos no servidor), os atrasados primeiro. Aprovar faz-se no
+// portal, com a verificação em dois passos e a assinatura registada (ISO/IEC 27001 A.5.3 e A.8.5).
+function textoPendente(x, nomes) {
+  const d = dl(x.dia);
+  const por = x.por ? quem(x.por, nomes) : '';
+  if (x.tipo === 'caixa')
+    return [
+      x.nivel === 1 ? t('Folha de caixa de {d}: aprovar (1.º nível)', { d }) : t('Folha de caixa de {d}: aprovação final', { d }),
+      [
+        por ? (x.apos === 'verificada' ? t('aprovada no 1.º nível por {n}', { n: por }) : t('validada por {n}', { n: por })) : '',
+        x.diferenca ? t('diferença {v}', { v: kz(x.diferenca) }) : '',
+        x.depositos ? t('primeiro os depósitos ({n})', { n: x.depositos }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ];
+  if (x.tipo === 'deposito')
+    return [
+      t('Depósito no banco de {d}: aprovar', { d }),
+      [x.banco, t('lacre {l}', { l: x.lacre }), kz(x.valor), por ? t('requisitado por {n}', { n: por }) : ''].filter(Boolean).join(' · '),
+    ];
+  const tit = {
+    contar: t('Rota {r}: contar a carrinha', { r: x.rota }),
+    validar: t('Rota {r}: validar a sua contagem', { r: x.rota }),
+    coordenar: t('Rota {r}: aprovar as diferenças (coordenador)', { r: x.rota }),
+    fechar: t('Rota {r}: aprovação final da conciliação', { r: x.rota }),
+  }[x.accao];
+  return [
+    tit,
+    [x.promotor, x.diferencas ? t('{n} diferença(s)', { n: x.diferencas }) : '', por && x.accao !== 'validar' ? t('último passo: {n}', { n: por }) : '']
+      .filter(Boolean)
+      .join(' · '),
+  ];
+}
+function cartaoPendentes(max) {
+  const P = E.ind.pendentes;
+  if (!P || !P.itens || !P.itens.length) return [];
+  const l = el('div', 'ag-lista ag-feed');
+  P.itens.slice(0, max || 50).forEach((x) => {
+    const [tit, det] = textoPendente(x, P.nomes || {});
+    const a = el('a', 'ag-feed-l ag-pend' + (x.atraso ? ' atraso' : ''));
+    a.href = x.url;
+    const tx = el('span', 'ag-feed-t');
+    tx.append(el('strong', null, tit), el('span', null, det));
+    a.append(tx);
+    if (x.atraso) a.append(el('span', 'ag-estado-rota mau', t('Atrasado')));
+    a.insertAdjacentHTML('beforeend', SETA);
+    l.append(a);
+  });
+  const out = [titulo(t('À sua espera'), el('span', 'ag-var neutra', n0(P.total))), l];
+  if (max && P.itens.length > max) out.push(botaoLigacao(t('Ver todos'), () => mudar('alertas')));
+  out.push(el('p', 'ag-nota', t('Aprova-se no portal, com a verificação em dois passos e a assinatura registada.')));
+  return out;
+}
+
 // ───────────── Alertas ─────────────
 function alertas() {
   const a = E.ind.alertas;
@@ -523,7 +612,7 @@ function alertas() {
     x.append(el('strong', null, n0(n)), el('span', null, nome));
     resumo.append(x);
   });
-  const out = [linhaNotificacoes(), ...caixaNotificacoes(), titulo(t('Alertas de hoje')), resumo];
+  const out = [linhaNotificacoes(), ...cartaoPendentes(0), ...caixaNotificacoes(), titulo(t('Alertas de hoje')), resumo];
   if (!a.principais.length) out.push(el('p', 'ag-vazio', t('Sem alertas: tudo dentro do habitual.')));
   const l = el('div', 'ag-lista');
   a.principais.forEach((x) => l.append(linhaAlerta(x, false)));
@@ -848,6 +937,29 @@ function assistente() {
 // Uber Fleet, Salesforce Field Service): vendas do dia a entrar, rotas activas e paradas, últimas vendas e o fecho das
 // carrinhas. Actualiza-se a cada minuto enquanto este separador está aberto e a app está no ecrã.
 const PARADA_MIN = 60; // sem vendas há mais de 60 minutos, em horário de trabalho
+const horaAgora = () => {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+};
+/** Dentro do horário das vendas do calendário de trabalho (07:30–15:00; sábado 07:30–13:00; nada nas folgas). */
+function emVendas() {
+  // sem o calendário do servidor (versão antiga), o horário-base: 07:30–15:00; sábado 07:30–13:00; domingo folga
+  const ds = new Date().getDay();
+  const h = (E.ind && E.ind.horario) || (ds === 0 ? { tipo: 'folga' } : { tipo: 'completo', vendas: ['07:30', ds === 6 ? '13:00' : '15:00'] });
+  if (h.tipo === 'folga' || !h.vendas) return false;
+  const m = horaAgora();
+  return m >= h.vendas[0] && m < h.vendas[1];
+}
+/** Linha compacta do horário do dia (ou da folga), no topo do separador Hoje. */
+function linhaHorario() {
+  const h = E.ind && E.ind.horario;
+  if (!h) return null;
+  const txt =
+    h.tipo === 'folga' ? horarioTxt(h) : t('Vendas {v} · fecho {f} · carga {c}', { v: h.vendas.join('–'), f: h.fecho.join('–'), c: h.carga.join('–') });
+  const p = el('p', 'ag-horario' + (h.tipo === 'folga' ? ' folga' : ''), txt);
+  p.setAttribute('role', 'note');
+  return p;
+}
 const hojeIso = () => {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -900,13 +1012,12 @@ function rotasAgora(vendas) {
   (E.ind.rotas || []).forEach((r) => m.set(r.rota, { rota: r.rota, promotor: r.promotor, total: 0, docs: 0, ultima: '' }));
   vendas.forEach((v) => {
     const x = m.get(v.rota) || { rota: v.rota, promotor: v.promotor || '', total: 0, docs: 0, ultima: '' };
-    x.total += +v.total || 0;
+    x.total += liq(v);
     if (!v.nc) x.docs++;
     if ((v.hora || '') > x.ultima) x.ultima = v.hora || '';
     m.set(v.rota, x);
   });
-  const h = new Date().getHours();
-  const trabalho = h >= 8 && h < 18;
+  const trabalho = emVendas();
   return [...m.values()]
     .map((x) => {
       const min = x.ultima ? minutosDesde(x.ultima) : null;
@@ -960,7 +1071,7 @@ function cartaoVivo() {
   carregarAgora(false);
   if (!E.ao || E.ao.erro) return null;
   const vendas = E.ao.vendas;
-  const total = vendas.reduce((a, v) => a + (+v.total || 0), 0);
+  const total = vendas.reduce((a, v) => a + liq(v), 0);
   const docs = vendas.filter((v) => !v.nc).length;
   const ult = vendas.reduce((a, v) => ((v.hora || '') > a ? v.hora : a), '');
   const c = cartao('ag-heroi ag-vivo');
@@ -982,7 +1093,7 @@ function cartaoVivo() {
   const r = recebido(vendas);
   const g2 = el('div', 'ag-mini');
   g2.append(mini(t('recebido'), kzc(r.total)), mini(t('em dinheiro'), kzc(r.dinheiro)), mini(t('em Multicaixa'), kzc(r.multicaixa)));
-  c.append(g2);
+  c.append(g2, el('div', 'ag-nota', t('Vendas sem IVA · recebido com IVA')));
   return c;
 }
 
@@ -1257,7 +1368,7 @@ function estado() {
 function desenhar() {
   const c = $('ag-conteudo');
   const nav = $('ag-separadores');
-  const nAl = E.ind && E.ind.alertas ? E.ind.alertas.critico + E.ind.alertas.aviso : 0;
+  const nAl = (E.ind && E.ind.alertas ? E.ind.alertas.critico + E.ind.alertas.aviso : 0) + ((E.ind && E.ind.pendentes && E.ind.pendentes.total) || 0);
   nav.replaceChildren(
     ...disponiveis().map(([id, nome]) => {
       const b = el('button');
