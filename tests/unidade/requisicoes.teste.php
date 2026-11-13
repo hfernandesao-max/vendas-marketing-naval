@@ -47,3 +47,24 @@ teste('anular um rascunho exige motivo; a lista do período mostra o estado', fu
     $l = array_column(naval_req_listar(date('Y-m-d'), date('Y-m-d'), ['1004']), 'estado', 'numero');
     igual('anulada', $l[$r['numero']]);
 });
+
+teste('requisições: um só rascunho manual por rota e dia; rascunhos sem artigos anulados (os de dias anteriores sozinhos)', function () {
+    $hoje = date('Y-m-d');
+    $ontem = date('Y-m-d', time() - 86400);
+    $a = naval_req_criar('2001', $hoje, [], 'henrique');
+    $b = naval_req_criar('2001', $hoje, [], 'henrique');
+    igual($a['numero'], $b['numero'], 'carregar outra vez em «Criar» abre o mesmo rascunho');
+    verdade(!empty($b['ja_existia']));
+    $c = naval_req_criar('2002', $ontem, [], 'henrique');
+    naval_req_listar($ontem, $hoje, null);   // a lista anula os vazios de dias anteriores
+    $c = naval_req_ler($c['numero']);
+    igual(['anulada', 'automatico'], [$c['estado'], $c['anulada_por']]);
+    igual('rascunho', naval_req_ler($a['numero'])['estado'], 'o de hoje fica até ao fim do dia');
+    $feitas = naval_req_anular_vazios($hoje, 'henrique', ['2001']);
+    igual([$a['numero']], $feitas);
+    igual('anulada', naval_req_ler($a['numero'])['estado']);
+    // com artigos não se anula
+    $d = naval_req_criar('2003', $hoje, [['codigo' => 'X', 'artigo' => 'Óleo', 'quantidade' => 2]], 'henrique');
+    igual([], naval_req_anular_vazios($hoje, 'henrique', ['2003']));
+    igual('rascunho', naval_req_ler($d['numero'])['estado']);
+});

@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Requisições: sem rascunhos repetidos nem vazios
+
+- **Um só rascunho por promotor e dia:** carregar outra vez em «Criar» abre o rascunho que já existe, em vez de
+  gastar um número novo.
+- A «Nova requisição» deixa de ter o primeiro promotor escolhido por omissão: é preciso escolher o promotor.
+- **Rascunhos sem artigos:** os de dias anteriores ficam anulados sozinhos, com o motivo; os de hoje anulam-se de uma
+  vez com «Anular rascunhos sem artigos». Ficam registados como anulados (a numeração continua completa e
+  auditável).
+
 ### Acessos atribuídos sozinhos pelas funções de cada pessoa
 
 - Em **Acessos › Utilizadores › Gerir**, escolhem-se as **funções da pessoa** (ex.: «Finanças e tesouraria» +

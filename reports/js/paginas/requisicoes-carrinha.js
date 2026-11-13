@@ -345,7 +345,7 @@ function pedirMotivo(r, depois) {
 function nova(rota, erro) {
   return enviar({ accao: 'criar', rota, data: hoje() }, erro).then((x) => {
     if (!x) return;
-    toast(t('Requisição {n} criada.', { n: x.numero }), 4000);
+    toast(x.ja_existia ? t('Já havia um rascunho para esta rota hoje: abri a {n}.', { n: x.numero }) : t('Requisição {n} criada.', { n: x.numero }), 4000);
     actualizarLista();
     abrir(x.numero);
   });
@@ -392,6 +392,8 @@ R['requisicoes-carrinha'] = (pg) => {
     const erro = msgErro();
     const sel = el('select');
     sel.setAttribute('aria-label', t('Rota'));
+    // sem promotor escolhido por omissão: evita requisições para a primeira rota da lista por engano
+    sel.append(new Option(t('Escolha o promotor'), ''));
     rotas.forEach(([r, p]) => {
       const o = el('option', null, r + ' · ' + p);
       o.value = r;
@@ -400,10 +402,33 @@ R['requisicoes-carrinha'] = (pg) => {
     b.append(
       el('b', null, t('Nova requisição')),
       sel,
-      botao(t('Criar'), 'sm', () => nova(sel.value, erro)),
-      el('span', 'note', t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido.')),
+      botao(t('Criar'), 'sm', () => {
+        if (!sel.value) {
+          erro.hidden = false;
+          erro.textContent = t('Escolha o promotor.');
+          return sel.focus();
+        }
+        nova(sel.value, erro);
+      }),
+      el('span', 'note', t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido. Um só rascunho por promotor e dia.')),
       erro,
     );
+    // rascunhos de hoje sem artigos (criados por engano): anulam-se de uma vez, ficam registados como anulados
+    const vazios = rs.filter((r) => r.estado === 'rascunho' && !r.n_linhas && r.data === hoje());
+    if (vazios.length)
+      b.append(
+        botao(t('Anular rascunhos sem artigos ({n})', { n: n0(vazios.length) }), 'ghost sm', () =>
+          postJson('requisicoes', { accao: 'anular_vazios', data: hoje() }).then((x) => {
+            if (!x.ok) {
+              erro.hidden = false;
+              erro.textContent = t(x.erro || 'Não foi possível gravar.');
+              return;
+            }
+            toast(t('{n} rascunho(s) sem artigos anulado(s).', { n: n0((x.anuladas || []).length) }), 5000);
+            actualizarLista();
+          }),
+        ),
+      );
     if (rotas.length) pg.append(b);
   }
   if (aberta) pg.append(editor());

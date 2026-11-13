@@ -51,6 +51,11 @@ if (!$gere) {
     naval_registar('alteracao_recusada', ['accao' => 'requisicao_' . $accao, 'motivo' => 'perfil']);
     throw new NavalErro('O seu perfil não permite criar nem alterar requisições.', 403);
 }
+if ($accao === 'anular_vazios') {
+    $dia = (string) ($p['data'] ?? date('Y-m-d'));
+    if (!naval_data_valida($dia)) throw new NavalErro('Data inválida.', 400);
+    naval_json_assinado(['ok' => true, 'anuladas' => naval_req_anular_vazios($dia, $login, naval_rotas())]);
+}
 // âmbito: as acções sobre uma requisição só nas rotas da pessoa (fora do âmbito, como se não existisse)
 if ($accao !== 'criar') {
     $alvo = naval_req_ler((string) ($p['numero'] ?? ''));

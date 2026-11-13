@@ -95,6 +95,17 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
     }
     return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
+        // um só rascunho manual aberto por rota e dia: carregar outra vez em «Criar» abre o mesmo (sem rascunhos
+        // repetidos nem números gastos por engano)
+        if (($origem['tipo'] ?? '') !== 'conciliacao') {
+            foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+                $x = naval_json_ler((string) $f);
+                if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
+                    $x['ja_existia'] = true;
+                    return $x;
+                }
+            }
+        }
         $agora = date('Y-m-d H:i:s');
         $num = naval_req_proximo($ano);
         $r = [
@@ -231,9 +242,33 @@ function naval_req_anular(string $id, string $motivo, ?int $versao, string $logi
     return $r;
 }
 
+/**
+ * Rascunhos sem artigos: os de dias anteriores anulam-se sozinhos (registados como anulados, com o motivo, para a
+ * numeração continuar completa e auditável); os de hoje anulam-se com «Anular rascunhos sem artigos». Devolve os
+ * números anulados.
+ */
+function naval_req_anular_vazios(?string $dia, string $login, ?array $rotas = null): array
+{
+    $feitas = [];
+    $hoje = date('Y-m-d');
+    foreach ([(int) date('Y') - 1, (int) date('Y')] as $a) {
+        foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {
+            $x = naval_json_ler((string) $f);
+            if (!$x || $x['estado'] !== 'rascunho' || count((array) $x['linhas']) > 0) continue;
+            if ($dia === null ? $x['data'] >= $hoje : $x['data'] !== $dia) continue;
+            if ($rotas !== null && !in_array((string) $x['rota'], $rotas, true)) continue;
+            $motivo = $dia === null ? 'Rascunho sem artigos anulado automaticamente no fim do dia.' : 'Rascunho sem artigos anulado em conjunto.';
+            naval_req_anular((string) $x['numero'], $motivo, null, $login);
+            $feitas[] = (string) $x['numero'];
+        }
+    }
+    return $feitas;
+}
+
 /** Lista das requisições do período (dia do movimento), no âmbito de rotas do utilizador; as mais recentes primeiro. */
 function naval_req_listar(string $de, string $ate, ?array $rotas): array
 {
+    naval_req_anular_vazios(null, 'automatico');
     $out = [];
     for ($a = (int) substr($de, 0, 4); $a <= (int) substr($ate, 0, 4); $a++) {
         foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {
