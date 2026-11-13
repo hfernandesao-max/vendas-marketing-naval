@@ -165,9 +165,11 @@ function naval_matriz(bool $recarregar = false): array
     static $m = null;
     if ($m !== null && !$recarregar) return $m;
     $m = naval_matriz_base();
+    $gerados = array_keys(array_filter(naval_perfis_criados(), function ($x) { return !empty($x['gerado']); }));
     foreach (naval_matriz_alteracoes() as $rec => $col) {
         if (!isset($m[$rec]) || !is_array($col)) continue;
         foreach ($col as $p => $nivel) {
+            if (in_array($p, $gerados, true)) continue;   // perfis gerados pelas funções: só as funções os mudam
             if (in_array($p, naval_colunas(), true) && in_array($nivel, naval_niveis_recurso($rec), true)) $m[$rec][$p] = $nivel;
         }
     }
