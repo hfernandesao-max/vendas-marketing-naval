@@ -4839,3 +4839,7 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
 .art-stock.sem {
   color: #e5484d;
 }
+.cx-saldo {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

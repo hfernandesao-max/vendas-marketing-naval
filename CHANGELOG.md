@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Folha de caixa: saldo inicial pode ser 0
+
+<!-- paginas: caixa-marketing -->
+
+- No primeiro dia, o saldo inicial pode ser 0: campo vazio ou «0» contam como 0,00 Kz (antes, apagar o valor
+  mantinha o anterior).
+- O campo escreve-se (sem setas), aceita vírgula e não aceita valores negativos.
+
 ### Requisições: stock do armazém principal e quantidade sem setas
 
 <!-- paginas: requisicoes-carrinha -->
