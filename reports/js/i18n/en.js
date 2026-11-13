@@ -3620,6 +3620,19 @@ export const EN = {
     'Invoice replacement ({nc} → {f}, discount {v}): no money movement. In Pinguim BO: {o}.',
   'No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.':
     'In SAP the discount is recorded through the credit note and the new invoice, with no cash or Multicaixa amount, because no money moved.',
+  'em stock: {q}': 'in stock: {q}',
+  'Quantidade acima do stock do armazém principal: {l}. Ajuste a quantidade pedida.':
+    'Quantity above the main warehouse stock: {l}. Adjust the requested quantity.',
+  '{a} ({q} pedidos, {s} em stock)': '{a} ({q} requested, {s} in stock)',
+  'Stock (armazém principal)': 'Stock (main warehouse)',
+  'Máximo em stock: {s}': 'Maximum in stock: {s}',
+  'Só há {s} de «{a}» em stock no armazém principal.': 'There are only {s} of «{a}» in stock in the main warehouse.',
+  'Já pediu {q}.': 'You have already requested {q}.',
+  'acerto do recebido na factura original: {l}': 'adjustment to the amount received on the original invoice: {l}',
+  'Sem venda nova nem dinheiro de hoje: ficam fora das vendas e das cobranças deste período; o desconto e o acerto do recebido seguem no ficheiro para o SAP, como no Pinguim BO.':
+    "No new sale and no money today: they are left out of this period's sales and collections; the discount and the adjustment to the amount received go into the SAP file, as in Pinguim BO.",
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova, e o acerto corrige o recebido da factura original (o cliente pagou o valor com desconto), sem saldo a crédito.':
+    'In SAP the discount is recorded through the credit note and the new invoice, and the adjustment corrects the amount received on the original invoice (the customer paid the discounted amount), with no credit balance.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

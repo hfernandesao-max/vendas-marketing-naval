@@ -74,7 +74,7 @@ export function escolherArtigo(artigos, { rotulo, marcador, depois } = {}) {
       li.id = id + '-o' + k;
       li.setAttribute('role', 'option');
       li.append(el('b', null, a.codigo), el('span', null, a.artigo));
-      if (a.disponivel != null) li.append(el('span', 'note', t('disponível: {q}', { q: n0(a.disponivel) })));
+      if (a.disponivel != null) li.append(el('span', 'note art-stock' + (+a.disponivel <= 0 ? ' sem' : ''), t('em stock: {q}', { q: n0(a.disponivel) })));
       // mousedown (não click) para escolher antes de o campo perder o foco
       li.addEventListener('mousedown', (e) => {
         e.preventDefault();

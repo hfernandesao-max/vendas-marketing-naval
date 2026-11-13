@@ -19,17 +19,21 @@ export function avisoRectificacoes() {
   p.append(
     el('b', null, t('Rectificações de documentos anteriores ({n})', { n: R.length }) + ': '),
     document.createTextNode(
-      R.map((x) =>
-        t('rota {r} · {nc} substitui uma factura anterior pela {f} · desconto ao cliente {v}', {
-          r: x.rota,
-          nc: x.substituicao.nota,
-          f: x.substituicao.factura,
-          v: mkz(x.substituicao.desconto),
-        }),
+      R.map(
+        (x) =>
+          t('rota {r} · {nc} substitui uma factura anterior pela {f} · desconto ao cliente {v}', {
+            r: x.rota,
+            nc: x.substituicao.nota,
+            f: x.substituicao.factura,
+            v: mkz(x.substituicao.desconto),
+          }) +
+          ((x.substituicao.acerto || []).length
+            ? ' · ' + t('acerto do recebido na factura original: {l}', { l: x.substituicao.acerto.map((a) => t(a.meio) + ' ' + mkz(a.valor)).join(', ') })
+            : ''),
       ).join('; ') +
         '. ' +
         t(
-          'Sem venda nova nem movimento de dinheiro: ficam fora das vendas e das cobranças deste período e constam dos Documentos de venda e do ficheiro para o SAP.',
+          'Sem venda nova nem dinheiro de hoje: ficam fora das vendas e das cobranças deste período; o desconto e o acerto do recebido seguem no ficheiro para o SAP, como no Pinguim BO.',
         ),
     ),
   );

@@ -17,7 +17,8 @@ teste('substituição: nota de crédito de uma factura anterior e factura nova n
         sb_doc('FR 1008/2026/90', '10:05', 1480000, false, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1480000.0]]),
         sb_doc('FR 1008/2026/91', '11:00', 50000, false, [['codigo' => 'NU', 'meio' => 'Numerário', 'valor' => 50000.0]], 'C200'),
     ]));
-    igual(['nota' => 'NC 1008/2026/3', 'factura' => 'FR 1008/2026/90', 'desconto' => 20000.0, 'desconto_sem_iva' => 17543.86], $v[0]['substituicao']);
+    igual(['nota' => 'NC 1008/2026/3', 'factura' => 'FR 1008/2026/90', 'desconto' => 20000.0, 'desconto_sem_iva' => 17543.86,
+        'acerto' => [['meio' => 'Multicaixa', 'valor' => -20000.0]]], $v[0]['substituicao']);
     igual($v[0]['substituicao'], $v[1]['substituicao']);
     verdade(empty($v[2]['substituicao']), 'outra venda não é tocada');
     // meios de cobrança: tudo compensação (fora do dinheiro e do Multicaixa); o documento fica para o SAP

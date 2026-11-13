@@ -331,7 +331,8 @@ function naval_vendas_devolucoes(array $vendas): array
  * movimento de dinheiro: o cliente pagou com a factura original.
  *
  *   - Os dois documentos ficam como estão no Pinguim BO (lista de documentos, controlo interno, AGT e ficheiro para o
- *     SAP, que usa os pagamentos do documento em 'pagamentos_origem' e não muda) e ficam marcados com 'substituicao'.
+ *     SAP, que usa os pagamentos do documento em 'pagamentos_origem': o acerto dos meios corrige no SAP o recebido da
+ *     factura original) e ficam marcados com 'substituicao' (com o desconto e o acerto por meio).
  *   - Nos meios de cobrança, os pagamentos passam a «Substituição de factura» (código CMP, compensação, fora do
  *     dinheiro e do Multicaixa): o recebido do dia, a folha de caixa e a conferência do TPA não mudam.
  *   - As vendas do dia não os contam (o desempenho é da factura original); o desconto aparece à parte, positivo, nas
@@ -381,7 +382,17 @@ function naval_vendas_substituicoes(array $vendas): array
         $f = $vendas[$r];
         $desc = round($valor - (float) $f['total'], 2);
         $descSi = isset($nc['total_sem_iva'], $f['total_sem_iva']) ? round(abs((float) $nc['total_sem_iva']) - (float) $f['total_sem_iva'], 2) : null;
-        $marca = ['nota' => $nc['documento'], 'factura' => $f['documento'], 'desconto' => $desc, 'desconto_sem_iva' => $descSi];
+        // acerto dos meios: o que os dois documentos movimentam no Pinguim BO (ex.: Multicaixa −1 500 000 + 1 480 000 =
+        // −20 000 quando o cliente só pagou 1 480 000 na factura original). Segue no ficheiro para o SAP (corrige o
+        // recebido da factura original); não é dinheiro de hoje (folha de caixa e terminal do dia não mudam)
+        $porMeio = [];
+        foreach (array_merge((array) ($nc['pagamentos'] ?? []), (array) ($f['pagamentos'] ?? [])) as $p) {
+            $m = (string) ($p['meio'] ?? $p['codigo'] ?? '?');
+            $porMeio[$m] = round(($porMeio[$m] ?? 0) + (float) ($p['valor'] ?? 0), 2);
+        }
+        $acerto = [];
+        foreach ($porMeio as $m => $val) if (abs($val) > 0.005) $acerto[] = ['meio' => $m, 'valor' => $val];
+        $marca = ['nota' => $nc['documento'], 'factura' => $f['documento'], 'desconto' => $desc, 'desconto_sem_iva' => $descSi, 'acerto' => $acerto];
         $meio = 'Substituição de factura';
         $vendas[$r]['pagamentos_origem'] = $f['pagamentos'] ?? [];
         $vendas[$r]['pagamentos'] = [['codigo' => 'CMP', 'meio' => $meio, 'valor' => round((float) $f['total'], 2), 'atribuido' => $nc['documento']]];

@@ -4,6 +4,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Requisições: stock do armazém principal e quantidade sem setas
+
+<!-- paginas: requisicoes-carrinha -->
+
+- A lista de artigos (Enter ou F4) mostra a **quantidade em stock** de cada artigo, a vermelho quando não há.
+- Cada linha da requisição tem a coluna **«Stock (armazém principal)»**; a quantidade pedida **nunca pode ser maior**
+  do que o stock: fica marcada, não se grava nem se emite (o servidor também recusa, ao gravar e ao emitir).
+- O stock é sempre o do **armazém principal** (1150 alimentar e 1151 não alimentar, os do ficheiro para o SAP), nunca
+  o dos armazéns das carrinhas.
+- A requisição automática da conciliação pede o vendido, mas limitado ao stock do armazém principal (o vendido fica
+  como sugerido).
+- A quantidade escreve-se (sem as setas para aumentar ou diminuir).
+
+### Substituições de facturas: o acerto do recebido segue para o SAP
+
+<!-- paginas: sap-exportar -->
+
+- Quando o cliente só pagou o valor com desconto, os pagamentos do Pinguim BO (nota de crédito −1 500 000 e factura
+  nova +1 480 000 em Multicaixa) corrigem o recebido da factura original: o ficheiro para o SAP leva-os tal como
+  estão, sem deixar saldo a crédito ao cliente.
+- Nas Cobranças e no ecrã do SAP o acerto aparece à parte («acerto do recebido na factura original»); o dinheiro e o
+  terminal do dia não mudam.
+
 ### Substituições de facturas: tudo alinhado no portal, na caixa e no ficheiro para o SAP
 
 <!-- paginas: sap-exportar, documentos -->

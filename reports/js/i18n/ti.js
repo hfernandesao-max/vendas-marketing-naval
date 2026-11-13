@@ -3559,6 +3559,18 @@ export const TI = {
     'ምትካእ ፋክቱራ ({nc} → {f}፣ ቅናሽ {v})፦ ምንቅስቓስ ገንዘብ የለን። ኣብ Pinguim BO፦ {o}።',
   'No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.':
     'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ ብዘይ ጥረ ገንዘብ ወይ Multicaixa፣ ምኽንያቱ ምንቅስቓስ ገንዘብ ስለዘየለ።',
+  'em stock: {q}': 'ኣብ መኽዘን፦ {q}',
+  'Quantidade acima do stock do armazém principal: {l}. Ajuste a quantidade pedida.': 'ብዝሒ ካብቲ ኣብ ቀንዲ መኽዘን ዘሎ ይበልጽ፦ {l}። ነቲ ዝተሓተ ብዝሒ ኣስተኻኽሉ።',
+  '{a} ({q} pedidos, {s} em stock)': '{a} ({q} ዝተሓተ፣ {s} ኣብ መኽዘን)',
+  'Stock (armazém principal)': 'ዘሎ (ቀንዲ መኽዘን)',
+  'Máximo em stock: {s}': 'ዝለዓለ ኣብ መኽዘን፦ {s}',
+  'Só há {s} de «{a}» em stock no armazém principal.': 'ኣብ ቀንዲ መኽዘን {s} ጥራይ ካብ «{a}» ኣሎ።',
+  'Já pediu {q}.': 'ድሮ {q} ሓቲትኩም።',
+  'acerto do recebido na factura original: {l}': 'ምትዕርራይ ናይ ዝተቐበለ ኣብቲ ቀዳማይ ፋክቱራ፦ {l}',
+  'Sem venda nova nem dinheiro de hoje: ficam fora das vendas e das cobranças deste período; o desconto e o acerto do recebido seguem no ficheiro para o SAP, como no Pinguim BO.':
+    'ሓድሽ መሸጣ ወይ ገንዘብ ናይ ሎሚ የለን፤ ካብ መሸጣን ኣከፋፍላን ናይዚ እዋን ወጻኢ እዮም፤ እቲ ቅናሽን ምትዕርራይ ናይ ዝተቐበለን ናብቲ ፋይል SAP ይኸዱ፣ ከም ኣብ Pinguim BO።',
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova, e o acerto corrige o recebido da factura original (o cliente pagou o valor com desconto), sem saldo a crédito.':
+    'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ እቲ ምትዕርራይ ድማ ነቲ ኣብ ቀዳማይ ፋክቱራ ዝተቐበለ የስተኻኽል (ዓሚል ነቲ ብቅናሽ ዝኾነ ዋጋ ከፊሉ)፣ ብዘይ ተረፍ ክረዲት።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
