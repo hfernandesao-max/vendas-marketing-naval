@@ -69,7 +69,7 @@ const CENARIOS = [
 for (const c of CENARIOS) {
   test(`total de vendas líquido: ${c.nome}`, async ({ page }) => {
     const erros = await abrir(page, '#documentos', { api: api(c.vendas()) });
-    if (c.esperado) expect(await quadro(page, 'Vendas RTM')).toBeCloseTo(c.esperado, 2);
+    if (c.esperado) expect(await quadro(page, 'Vendas líquidas s/ IVA')).toBeCloseTo(c.esperado, 2);
     else await expect(page.locator('#page')).toContainText(/0,00|Sem dados|sem dados|—/);
     expect(erros).toEqual([]);
   });
@@ -78,13 +78,13 @@ for (const c of CENARIOS) {
 test('notas de crédito: mesmo total em todos os ecrãs; não contam como documentos, recebido nem pendentes', async ({ page }) => {
   const V = [factura(6000), factura(4000, { liquidado: false, valor_pago: 1000, pagamentos: [{ codigo: 'MC', meio: 'Multicaixa', valor: 1000 }] }), nota(1500)];
   await abrir(page, '#documentos', { api: api(V) });
-  expect(await quadro(page, 'Vendas RTM')).toBeCloseTo(8500, 2);
+  expect(await quadro(page, 'Vendas líquidas s/ IVA')).toBeCloseTo(8500, 2);
   expect(await quadro(page, 'Documentos')).toBe(2); // só as facturas
   expect(await quadro(page, 'Recebido')).toBeCloseTo(5500, 2); // 7000 cobrados − 1500 de nota de crédito (debita o recebido)
   expect(await quadro(page, 'Facturas pendentes')).toBeCloseTo(3000, 2); // o que falta na factura de 4000
   expect(await quadro(page, 'Clientes com compras')).toBe(1);
   expect(await quadro(page, 'Média por documento')).toBeCloseTo(4250, 2); // 8500 ÷ 2 facturas
-  await expect(page.locator('.tile', { hasText: 'Vendas RTM' }).first()).toContainText('notas de crédito: −1500,00 Kz');
+  await expect(page.locator('.tile', { hasText: 'Vendas líquidas s/ IVA' }).first()).toContainText('notas de crédito: −1500,00 Kz');
   // A nota de crédito aparece na lista de documentos, com o valor negativo e sem estado de pagamento
   const linhaNC = page.locator('tr', { hasText: 'NC 1/' });
   await expect(linhaNC).toContainText('Nota de crédito');
@@ -93,7 +93,7 @@ test('notas de crédito: mesmo total em todos os ecrãs; não contam como docume
   for (const pagina of ['#inicio', '#vendas-promotor']) {
     await page.evaluate((h) => (location.hash = h), pagina);
     await page.waitForTimeout(400);
-    expect(await quadro(page, 'Vendas RTM'), pagina).toBeCloseTo(8500, 2);
+    expect(await quadro(page, 'Vendas líquidas s/ IVA'), pagina).toBeCloseTo(8500, 2);
   }
   await page.evaluate(() => (location.hash = '#pagamentos'));
   await page.waitForTimeout(400);
@@ -117,7 +117,7 @@ test('vendas por promotor: só as rotas com movimento; as outras indicadas por b
 test('notas de crédito debitam o recebido: com tudo pago, recebido = vendas líquidas (100 %)', async ({ page }) => {
   const V = [factura(10000), nota(2000)];
   const erros = await abrir(page, '#inicio', { api: api(V) });
-  expect(await quadro(page, 'Vendas RTM')).toBeCloseTo(8000, 2);
+  expect(await quadro(page, 'Vendas líquidas s/ IVA')).toBeCloseTo(8000, 2);
   expect(await quadro(page, 'Recebido')).toBeCloseTo(8000, 2);
   await page.evaluate(() => (location.hash = '#pagamentos'));
   await page.waitForTimeout(400);

@@ -112,6 +112,13 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
             : naval_vendas_pagamentos($tx, $total, $meios);
         $pago = $nc ? 0.0 : round(array_sum(array_column($pagamentos, 'valor')), 2);
         $promotor = $promotores[$rota] ?? $rota;
+        // valor sem IVA do documento (vendas líquidas): soma das linhas sem IVA, quando a exportação as traz
+        $semIva = null;
+        if (isset($tx->detail)) {
+            $semIva = 0.0;
+            foreach ($tx->detail->line as $l) $semIva += (float) (string) $l->total;
+            $semIva = round($sinal($semIva), 2);
+        }
 
         $vendas[] = [
             'chave' => $doc,
@@ -128,6 +135,7 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
             'nif' => $nif ?: ($entidades[$entidade]['tax'] ?? ''),
             'liquidado' => $nc || $pago >= round($total, 2),
             'total' => $total,
+            'total_sem_iva' => $semIva,
             'valor_pago' => $pago,
             'pagamentos' => $pagamentos,
             'meio_pagamento' => $pagamentos ? implode(', ', array_column($pagamentos, 'meio')) : null,
@@ -426,7 +434,21 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
               AND DH.DOC_DATE <= :ate
             ORDER BY DH.DOC_DATE DESC, DH.ID DESC", $p);
 
-        // 2. Pagamentos por documento
+        // 2. Valor sem IVA de cada documento (vendas líquidas): soma das linhas sem IVA (DOCMOVDETAIL.TOTAL)
+        $semIvaPorDoc = [];
+        foreach (naval_bd_consultar("
+            SELECT DMD.DOCHEADER_ID, CAST(SUM(DMD.TOTAL) AS FLOAT) AS SEM_IVA
+            FROM DOCMOVDETAIL DMD
+            INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+            WHERE DMD.DELETED = 0
+              AND $validos
+              AND DH.DOC_DATE >= :de
+              AND DH.DOC_DATE <= :ate
+            GROUP BY DMD.DOCHEADER_ID", $p) as $l) {
+            $semIvaPorDoc[$l['DOCHEADER_ID']] = (float) $l['SEM_IVA'];
+        }
+
+        // 3. Pagamentos por documento
         $pagamentosPorDoc = [];
         foreach (naval_bd_consultar("
             SELECT DF.DOCHEADER_ID, PM.CODE AS CODIGO, PM.DESCRIPTION AS MEIO, CAST(DF.PAYVALUE AS FLOAT) AS VALOR
@@ -465,13 +487,14 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
                 'nif' => $d['NIF'],
                 'liquidado' => $nc || (bool) $d['LIQUIDADO'],
                 'total' => $total,
+                'total_sem_iva' => isset($semIvaPorDoc[$d['DOC_ID']]) ? round($nc ? -abs($semIvaPorDoc[$d['DOC_ID']]) : $semIvaPorDoc[$d['DOC_ID']], 2) : null,
                 'valor_pago' => $nc ? 0.0 : (float) $d['TOTAL_PAID'],
                 'pagamentos' => $pags,
                 'meio_pagamento' => $pags ? implode(', ', array_column($pags, 'meio')) : null,
             ];
         }
 
-        // 3. Linhas de artigos (consulta própria: o portal pede-as só quando uma página precisa delas)
+        // 4. Linhas de artigos (consulta própria: o portal pede-as só quando uma página precisa delas)
         $artigos = [];
         if ($itens && $docs) {
             $artigos = naval_vendas_artigos_sql($inicio, $fim, $promotores);

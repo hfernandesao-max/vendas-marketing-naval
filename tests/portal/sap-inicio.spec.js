@@ -18,7 +18,7 @@ const quadro = (page, rotulo) =>
 
 // quadro do SAP → quadro do Início com o mesmo valor
 const PARES = [
-  ['Total facturado', 'Vendas RTM'],
+  ['Total facturado', 'Vendas líquidas s/ IVA'],
   ['Numerário', 'Em dinheiro'],
   ['Multicaixa', 'Em Multicaixa'],
 ];
@@ -64,7 +64,7 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
   for (const [, r] of PARES) ini[r] = await quadro(page, r);
   const subIni = await page
     .locator('.tile')
-    .filter({ has: page.locator('.l:text-is("Vendas RTM"), .l-t:text-is("Vendas RTM")') })
+    .filter({ has: page.locator('.l:text-is("Vendas líquidas s/ IVA"), .l-t:text-is("Vendas líquidas s/ IVA")') })
     .first()
     .locator('.s')
     .innerText();
@@ -73,7 +73,7 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
   for (const [s, r] of PARES) expect(await quadro(page, s), s).toBe(ini[r]);
   // número de documentos e notas de crédito como no Início
   const sap = page.locator('.tile').filter({ has: page.locator('.l:text-is("Documentos a incluir")') });
-  expect(await sap.locator('.v').innerText()).toBe(subIni.match(/^([\d\s]+) documentos/)[1].trim());
+  expect(await sap.locator('.v').innerText()).toBe(subIni.match(/([\d\s]+) documentos/)[1].trim());
   expect(await sap.locator('.s').innerText()).toContain(subIni.match(/notas de crédito: −[^·]+/)[0].trim());
 
   await page.click('.sap-barra button:has-text("Gerar ficheiro")');
@@ -100,7 +100,7 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
         .replace(/[^\d,-]/g, '')
         .replace(',', '.'),
     );
-  expect(kz(docs.reduce((s, r) => s + (+r.M || 0), 0))).toBe(txt(ini['Vendas RTM']));
+  expect(kz(docs.reduce((s, r) => s + (+r.M || 0), 0))).toBe(txt(ini['Vendas líquidas s/ IVA']));
   expect(kz(docs.reduce((s, r) => s + (+r.N || 0), 0))).toBe(txt(ini['Em dinheiro']));
   expect(kz(docs.reduce((s, r) => s + (+r.O || 0), 0))).toBe(txt(ini['Em Multicaixa']));
   const linhaNcXml = dados.find((r) => String(r.A).includes('NC T/1'));

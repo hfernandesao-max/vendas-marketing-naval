@@ -47,7 +47,13 @@ teste('Análise: resumo do dia com notas de crédito, clientes sem NIF e artigos
         ['rota' => '1001', 'total' => -200.0, 'cliente' => 'A', 'cliente_codigo' => 'C1', 'nc' => true],
         ['rota' => '1002', 'total' => 500.0, 'cliente' => 'B', 'cliente_codigo' => 'C2', 'nc' => false],
     ], [['rota' => '1001', 'codigo' => 'X', 'artigo' => 'Sabão', 'unidade' => 'CX', 'quantidade' => 3, 'total' => 300]]);
-    igual(['t' => 800.0, 'd' => 1, 'nc' => 1], $r['rotas']['1001']);
+    igual(['t' => 800.0, 'ti' => 800.0, 'd' => 1, 'nc' => 1], $r['rotas']['1001'], 'sem valor sem IVA no documento, usa-se o total');
+    // base de gestão: vendas líquidas sem IVA (t); com IVA à parte (ti)
+    $s = naval_analise_resumir([['rota' => '1003', 'total' => 1140.0, 'total_sem_iva' => 1000.0, 'cliente' => 'D', 'cliente_codigo' => 'C3', 'nc' => false]],
+        [['rota' => '1003', 'codigo' => 'Y', 'artigo' => 'Óleo', 'unidade' => 'CX', 'quantidade' => 2, 'valor_sem_iva' => 1000.0, 'total' => 1140.0]]);
+    igual([1000.0, 1140.0], [$s['rotas']['1003']['t'], $s['rotas']['1003']['ti']]);
+    igual([1000.0, 1140.0], [$s['clientes']['C3']['t'], $s['clientes']['C3']['ti']]);
+    igual([1000.0, 1140.0], [$s['artigos']['1003']['Y']['t'], $s['artigos']['1003']['Y']['ti']]);
     igual(1000.0, $r['clientes']['C1']['t'], 'notas de crédito não contam como compra do cliente');
     verdade(strpos(json_encode($r), '5000') === false, 'sem NIF nos agregados');
     igual(3.0, $r['artigos']['1001']['X']['q']);

@@ -6,7 +6,6 @@ import { abrir } from './dados.js';
 test('tabelas longas: cabeçalho da tabela e nome das colunas fixos no topo ao descer', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 600 });
   const erros = await abrir(page, '#documentos');
-  await page.locator('.rel-tab', { hasText: 'Registo de documentos de venda' }).click();
   await page.mouse.move(800, 400);
   for (let i = 0; i < 8; i++) await page.mouse.wheel(0, 250);
   const sec = page.locator('.sec-tab:visible').last();

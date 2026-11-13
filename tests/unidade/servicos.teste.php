@@ -262,6 +262,6 @@ teste('vendas: anulados (motivo de cancelamento) e eliminados fora; o 8002 não 
     verdade(strpos($c, '8002') === false, 'sem 8002');
     naval_bd_so_leitura('SELECT 1 FROM DOCHEADER DH WHERE ' . $c);
     $f = file_get_contents(__DIR__ . '/../../nucleo/servicos/vendas.php');
-    // as três consultas (documentos, pagamentos e artigos) usam a condição
-    igual(3, substr_count($f, 'AND $validos') + substr_count($f, 'WHERE $validos'));
+    // as quatro consultas (documentos, valor sem IVA, pagamentos e artigos) usam a condição
+    igual(4, substr_count($f, 'AND $validos') + substr_count($f, 'WHERE $validos'));
 });

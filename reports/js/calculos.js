@@ -77,6 +77,9 @@ export function porMeio(V) {
     .map((o) => ({ ...o, docs: o.docs.size }))
     .sort((a, b) => b.valor - a.valor);
 }
+/** Vendas líquidas sem IVA de um documento (base de gestão); sem esse valor, o total do documento. */
+export const liquidoDe = (x) => (x.liquido != null ? x.liquido : x.total_sem_iva != null ? x.total_sem_iva : x.total) || 0;
+
 export function porPromotor(V) {
   const vendasPorRota = group(V, 'rota');
   const rotas = new Map((DB.rotas || []).map((x) => [x.rota, promotorRota(x.rota, x.promotor)]));
@@ -86,7 +89,9 @@ export function porPromotor(V) {
   return [...rotas.entries()].map(([rota, promotor]) => {
     const rs = vendasPorRota[rota] || [],
       fs = docsVenda(rs);
-    const tot = sum(rs, 'total'),
+    // total: vendas líquidas sem IVA (base de gestão); total_iva: o mesmo com IVA (o que o cliente paga)
+    const tot = sum(rs, liquidoDe),
+      tiva = sum(rs, 'total'),
       liq = recebidoLiquido(rs);
     return {
       rota,
@@ -95,6 +100,8 @@ export function porPromotor(V) {
       clientes: clientesDe(fs),
       dias: new Set(fs.map((x) => x.data)).size,
       total: tot,
+      total_iva: tiva,
+      recebido_pct: tiva ? liq / tiva : null,
       notas_credito: notasCredito(rs),
       recebido: liq,
       por_liquidar: pendentesDe(rs),

@@ -16,7 +16,7 @@ require_once __DIR__ . '/rotas.php';
 
 const NAVAL_ANALISE_DIAS_ABERTOS = 3;    // dias recentes que ainda podem mudar (notas de crédito, sincronização tardia)
 const NAVAL_ANALISE_HISTORICO = 120;     // dias de histórico usados nos alertas e na previsão
-const NAVAL_ANALISE_VERSAO = 2;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
+const NAVAL_ANALISE_VERSAO = 3;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
 
 function naval_analise_pasta(): string
 {
@@ -25,9 +25,11 @@ function naval_analise_pasta(): string
 
 /**
  * Resumo de um dia a partir das vendas e das linhas de artigos (formato de v1/vendas, sem âmbito aplicado).
- * {rotas: {rota: {t: total, d: documentos, nc: notas de crédito}}, clientes: {código: {n, r, t, d}},
- *  artigos: {rota: {código: {n, u, q, t}}}, ca: {cliente: {código: quantidade}}} (ca: compras de cada cliente por artigo,
- *  base das sugestões de encomenda do cartaz QR). Totais líquidos (as notas de crédito já vêm em negativo).
+ * {rotas: {rota: {t, ti, d: documentos, nc: notas de crédito}}, clientes: {código: {n, r, t, ti, d}},
+ *  artigos: {rota: {código: {n, u, q, t, ti}}}, ca: {cliente: {código: quantidade}}} (ca: compras de cada cliente por
+ *  artigo, base das sugestões de encomenda do cartaz QR). Totais líquidos (as notas de crédito já vêm em negativo).
+ * Base de valor (prática internacional, IFRS 15): t = vendas líquidas SEM IVA (o IVA é da AGT, não é receita);
+ * ti = o mesmo com IVA (para comparar com o que o cliente paga). Sem o valor sem IVA do documento, usa-se o total.
  */
 function naval_analise_resumir(array $vendas, array $artigos): array
 {
@@ -37,14 +39,17 @@ function naval_analise_resumir(array $vendas, array $artigos): array
         if (empty($v['nc']) && (string) ($v['cliente_codigo'] ?? '') !== '') $docCliente[(string) ($v['documento'] ?? '')] = (string) $v['cliente_codigo'];
         $rota = (string) ($v['rota'] ?? '');
         if ($rota === '') continue;
-        if (!isset($r['rotas'][$rota])) $r['rotas'][$rota] = ['t' => 0.0, 'd' => 0, 'nc' => 0];
-        $r['rotas'][$rota]['t'] += (float) ($v['total'] ?? 0);
+        $si = isset($v['total_sem_iva']) ? (float) $v['total_sem_iva'] : (float) ($v['total'] ?? 0);
+        if (!isset($r['rotas'][$rota])) $r['rotas'][$rota] = ['t' => 0.0, 'ti' => 0.0, 'd' => 0, 'nc' => 0];
+        $r['rotas'][$rota]['t'] += $si;
+        $r['rotas'][$rota]['ti'] += (float) ($v['total'] ?? 0);
         if (!empty($v['nc'])) $r['rotas'][$rota]['nc']++;
         else $r['rotas'][$rota]['d']++;
         $c = (string) ($v['cliente_codigo'] ?? '');
         if ($c === '' || !empty($v['nc'])) continue;
-        if (!isset($r['clientes'][$c])) $r['clientes'][$c] = ['n' => (string) ($v['cliente'] ?? ''), 'r' => $rota, 't' => 0.0, 'd' => 0];
-        $r['clientes'][$c]['t'] += (float) ($v['total'] ?? 0);
+        if (!isset($r['clientes'][$c])) $r['clientes'][$c] = ['n' => (string) ($v['cliente'] ?? ''), 'r' => $rota, 't' => 0.0, 'ti' => 0.0, 'd' => 0];
+        $r['clientes'][$c]['t'] += $si;
+        $r['clientes'][$c]['ti'] += (float) ($v['total'] ?? 0);
         $r['clientes'][$c]['d']++;
     }
     foreach ($artigos as $a) {
@@ -52,15 +57,16 @@ function naval_analise_resumir(array $vendas, array $artigos): array
         $cod = (string) ($a['codigo'] ?? '');
         if ($rota === '' || $cod === '') continue;
         if (!isset($r['artigos'][$rota][$cod])) {
-            $r['artigos'][$rota][$cod] = ['n' => (string) ($a['artigo'] ?? ''), 'u' => (string) ($a['unidade'] ?? ''), 'q' => 0.0, 't' => 0.0];
+            $r['artigos'][$rota][$cod] = ['n' => (string) ($a['artigo'] ?? ''), 'u' => (string) ($a['unidade'] ?? ''), 'q' => 0.0, 't' => 0.0, 'ti' => 0.0];
         }
         $r['artigos'][$rota][$cod]['q'] += (float) ($a['quantidade'] ?? 0);
-        $r['artigos'][$rota][$cod]['t'] += (float) ($a['total'] ?? 0);
+        $r['artigos'][$rota][$cod]['t'] += (float) ($a['valor_sem_iva'] ?? $a['total'] ?? 0);
+        $r['artigos'][$rota][$cod]['ti'] += (float) ($a['total'] ?? 0);
         $cl = $docCliente[(string) ($a['documento'] ?? '')] ?? '';
         if ($cl !== '' && empty($a['nc'])) $r['ca'][$cl][$cod] = round(($r['ca'][$cl][$cod] ?? 0) + (float) ($a['quantidade'] ?? 0), 3);
     }
-    foreach ($r['rotas'] as $k => $x) $r['rotas'][$k]['t'] = round($x['t'], 2);
-    foreach ($r['clientes'] as $k => $x) $r['clientes'][$k]['t'] = round($x['t'], 2);
+    foreach (['rotas', 'clientes'] as $g) foreach ($r[$g] as $k => $x) [$r[$g][$k]['t'], $r[$g][$k]['ti']] = [round($x['t'], 2), round($x['ti'], 2)];
+    foreach ($r['artigos'] as $rt => $l) foreach ($l as $k => $x) [$r['artigos'][$rt][$k]['t'], $r['artigos'][$rt][$k]['ti']] = [round($x['t'], 2), round($x['ti'], 2)];
     return $r;
 }
 
@@ -175,12 +181,13 @@ function naval_mad(array $v): float
 }
 
 /** Série diária de vendas de uma rota (ou de todas, $rota null): {dia: total}. */
-function naval_analise_serie(array $agregados, ?string $rota): array
+/** Série diária de vendas de uma rota (ou do total): $campo 't' = sem IVA (base de gestão) ou 'ti' = com IVA. */
+function naval_analise_serie(array $agregados, ?string $rota, string $campo = 't'): array
 {
     $s = [];
     foreach ($agregados as $dia => $x) {
         $t = 0.0;
-        foreach (($x['rotas'] ?? []) as $rt => $r) if ($rota === null || (string) $rt === $rota) $t += (float) $r['t'];
+        foreach (($x['rotas'] ?? []) as $rt => $r) if ($rota === null || (string) $rt === $rota) $t += (float) ($r[$campo] ?? $r['t']);
         $s[$dia] = round($t, 2);
     }
     return $s;

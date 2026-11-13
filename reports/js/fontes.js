@@ -251,6 +251,8 @@ function fetchVendasPinguim(de, ate) {
     })
     .then((d) => {
       DB.vendas = Array.isArray(d) ? d : Array.isArray(d.vendas) ? d.vendas : [];
+      // base de gestão das vendas (IFRS 15): vendas líquidas sem IVA; sem esse valor no documento, o total
+      DB.vendas.forEach((x) => (x.liquido = x.total_sem_iva != null ? x.total_sem_iva : x.total));
       periodoVendas = sd + '|' + ed;
       vendasFrescas = fresco;
       // Linhas que vieram já com os documentos (resposta com include_items, ex.: testes): ficam prontas
