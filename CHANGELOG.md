@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Folha de caixa: mudar só o saldo inicial volta a gravar
+
+<!-- paginas: caixa-marketing -->
+
+- Corrigido: ao mudar **só** o saldo inicial (por exemplo para 0), a folha dizia «Sem alterações» e não gravava. A
+  protecção contra assinaturas repetidas comparava já com o saldo novo. Agora grava e assina uma vez; gravar outra vez
+  igual continua a não assinar de novo.
+
 ### Alertas: assumir, resolver, silenciar e reabrir
 
 <!-- paginas: alertas -->

@@ -258,6 +258,8 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
     [$entregas, $tpa, $saidas] = naval_caixa_linhas($p);
     return naval_caixa_alterar($dia, $versao, function ($c) use ($p, $entregas, $tpa, $saidas, $login) {
         if ($c['estado'] !== 'aberta') throw new NavalErro('A caixa deste dia já está fechada. Reabra-a para corrigir.', 409);
+        // o estado de antes, para saber se alguma coisa mudou (incluindo o saldo inicial)
+        $antes = [$c['entregas'], $c['tpa'], $c['saidas'], $c['saldo_inicial']];
         if ($c['saldo_inicial_origem'] === 'manual') {
             $si = $p['saldo_inicial'] ?? null;
             if ($si !== null && $si !== '') {
@@ -265,7 +267,6 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
                 $c['saldo_inicial'] = round((float) $si, 2);
             }
         }
-        $antes = [$c['entregas'], $c['tpa'], $c['saidas'], $c['saldo_inicial']];
         $c['entregas'] = $entregas;
         $c['tpa'] = $tpa;
         $c['saidas'] = naval_caixa_depositos((array) $c['saidas'], $saidas, $login);
