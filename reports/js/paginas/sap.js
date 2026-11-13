@@ -61,11 +61,9 @@ const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Po
  * Multicaixa; nas notas de crédito, a devolução ao cliente a negativo. Assim o ficheiro leva exactamente os valores do
  * Início. A estrutura do ficheiro (folha, colunas, formatos) não muda.
  */
-// substituições de facturas (vendas.php): o ficheiro leva os pagamentos do documento, como sempre levou
-const pagosSap = (v) => v.pagamentos_origem || pagosDe(v);
 const meioDoc = (v, cat) =>
   sum(
-    pagosSap(v).filter((p) => catMeio(p) === cat),
+    pagosDe(v).filter((p) => catMeio(p) === cat),
     'valor',
   );
 const cashSap = (v) => meioDoc(v, 'dinheiro'),
@@ -97,7 +95,7 @@ function linhasSap() {
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
-      const pg = pagosSap(v); // nas notas de crédito, a devolução ao cliente (a negativo)
+      const pg = pagosDe(v); // nas notas de crédito, a devolução ao cliente (a negativo)
       // CASH AMOUNT e CARD AMOUNT: os valores do Início (a estrutura do ficheiro não muda)
       const cash = r2(cashSap(v)),
         card = r2(cardSap(v));
@@ -426,6 +424,11 @@ R['sap-exportar'] = (pg) => {
   // os mesmos documentos e valores do Início, que são os que seguem no ficheiro
   const cash = sum(L.docs, cashSap),
     card = sum(L.docs, cardSap);
+  // substituições de facturas de dias anteriores (vendas.php): os dois documentos seguem no ficheiro (são documentos
+  // fiscais), por isso o total do ficheiro tem o desconto, que as vendas do portal mostram à parte; o numerário e o
+  // Multicaixa são os do portal (compensação: o dinheiro foi recebido com a factura original, não houve movimento)
+  const subst = L.docs.filter((v) => v.substituicao && eNC(v)),
+    descSubst = subst.reduce((a, v) => a + (+v.substituicao.desconto || 0), 0);
   pg.append(
     tiles([
       {
@@ -436,7 +439,12 @@ R['sap-exportar'] = (pg) => {
           (L.docs.some(eNC) ? t('notas de crédito: −{v}', { v: kz2(-sum(L.docs.filter(eNC), 'total')) }) + ' · ' : '') +
           t('{n} linhas de artigo', { n: n0(L.linhas.length) }),
       },
-      { l: t('Total facturado'), v: kz2(sum(L.docs, 'total')), cls: 'full-value' },
+      {
+        l: t('Total facturado'),
+        v: kz2(sum(L.docs, 'total')),
+        cls: 'full-value',
+        s: descSubst ? t('inclui descontos em substituições de facturas: −{v}', { v: kz2(descSubst) }) : '',
+      },
       { l: t('Numerário'), v: kz2(cash), cls: 'full-value' },
       { l: t('Multicaixa'), v: kz2(card), cls: 'full-value' },
       {
@@ -452,6 +460,31 @@ R['sap-exportar'] = (pg) => {
       },
     ]),
   );
+  // conciliação com as vendas do portal (o desconto é real: a nota de crédito e a factura nova vão para o SAP)
+  if (subst.length) {
+    const tf = sum(L.docs, 'total');
+    const p = el('p', 'note aviso-rect');
+    p.setAttribute('role', 'note');
+    p.append(
+      el('b', null, t('Conciliação com as vendas') + ': '),
+      document.createTextNode(
+        t('vendas do portal {a} − descontos em substituições de facturas {d} = total do ficheiro {b}.', {
+          a: kz2(tf + descSubst),
+          d: kz2(descSubst),
+          b: kz2(tf),
+        }) +
+          ' ' +
+          subst
+            .map((v) =>
+              t('rota {r} · {nc} e {f}: desconto {v}', { r: v.rota, nc: v.substituicao.nota, f: v.substituicao.factura, v: kz2(v.substituicao.desconto) }),
+            )
+            .join('; ') +
+          '. ' +
+          t('No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.'),
+      ),
+    );
+    pg.append(p);
+  }
   if (L.erros.length || L.avisos.length) {
     const ul = el('ul', 'pc-lista sap-avisos');
     L.erros.slice(0, 20).forEach((x) => ul.append(el('li', 'pc-err-t', x)));

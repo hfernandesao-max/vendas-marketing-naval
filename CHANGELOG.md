@@ -4,6 +4,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Substituições de facturas: tudo alinhado no portal, na caixa e no ficheiro para o SAP
+
+<!-- paginas: sap-exportar, documentos -->
+
+- **Vendas para o SAP**: os dois documentos (nota de crédito e factura nova) seguem no ficheiro, mas o numerário e o
+  Multicaixa são os do portal — a substituição não é movimento de dinheiro (deixa de aparecer Multicaixa −20 000 Kz).
+  A estrutura do ficheiro não muda.
+- O «Total facturado» do SAP mostra o desconto incluído e uma **conciliação com as vendas**: vendas do portal −
+  descontos em substituições = total do ficheiro.
+- A mesma regra no fecho do dia por correio, nas notificações, no relatório diário de vendas, na carteira de
+  clientes e no dinheiro esperado na folha de caixa.
+- No detalhe do documento, os pagamentos tal como estão no Pinguim BO e a explicação da substituição.
+
 ### Folha de caixa: uma assinatura por passo
 
 <!-- paginas: caixa-marketing -->

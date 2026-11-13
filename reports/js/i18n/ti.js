@@ -3549,6 +3549,16 @@ export const TI = {
   'Sem alterações: nada a gravar.': 'ለውጢ የለን፤ ዝዕቀብ የለን።',
   '{n} gravações · primeira {h}': '{n} ምዕቃባት · ቀዳማይ {h}',
   Lançada: 'ዝተመዝገበ',
+  'inclui descontos em substituições de facturas: −{v}': 'ቅናሽ ኣብ ዝተተክኡ ፋክቱራታት የጠቓልል፦ −{v}',
+  'Conciliação com as vendas': 'ምንጽጻር ምስ መሸጣ',
+  'vendas do portal {a} − descontos em substituições de facturas {d} = total do ficheiro {b}.': 'መሸጣ ፖርታል {a} − ቅናሽ ኣብ ዝተተክኡ ፋክቱራታት {d} = ጠቕላላ ፋይል {b}።',
+  'rota {r} · {nc} e {f}: desconto {v}': 'መስመር {r} · {nc}ን {f}ን፦ ቅናሽ {v}',
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova, como no Pinguim BO.':
+    'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ ከም ኣብ Pinguim BO።',
+  'Substituição de factura ({nc} → {f}, desconto {v}): sem movimento de dinheiro. No Pinguim BO: {o}.':
+    'ምትካእ ፋክቱራ ({nc} → {f}፣ ቅናሽ {v})፦ ምንቅስቓስ ገንዘብ የለን። ኣብ Pinguim BO፦ {o}።',
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.':
+    'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ ብዘይ ጥረ ገንዘብ ወይ Multicaixa፣ ምኽንያቱ ምንቅስቓስ ገንዘብ ስለዘየለ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

@@ -306,8 +306,10 @@ function naval_cart_noite(int $agora): array
     $ag = naval_analise_agregados(date('Y-m-d', $agora - 120 * 86400), date('Y-m-d', $agora - 86400));
     $de = date('Ymd', $agora - 90 * 86400);
     $ate = date('Ymd', $agora - 86400);
-    $vendas = (array) ((naval_vendas_sql($de, $ate, naval_promotores(), false) ?? ['vendas' => []])['vendas']);
+    $vendas = naval_vendas_efectivas((array) ((naval_vendas_sql($de, $ate, naval_promotores(), false) ?? ['vendas' => []])['vendas']));
     $recentes = naval_vendas_sql(date('Ymd', $agora - 7 * 86400), $ate, naval_promotores(), true) ?? ['vendas' => [], 'artigos' => []];
+    $recentes['artigos'] = naval_vendas_efectivas_artigos((array) $recentes['artigos'], (array) $recentes['vendas']);
+    $recentes['vendas'] = naval_vendas_efectivas((array) $recentes['vendas']);
     $cart = naval_cart_calcular($ag, $vendas, $hoje);
     $cart['anomalias'] = naval_cart_anomalias((array) $recentes['vendas'], (array) $recentes['artigos']);
     $cart['qualidade'] = naval_cart_qualidade($recentes);
