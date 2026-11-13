@@ -61,9 +61,17 @@ const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Po
  * Multicaixa; nas notas de crédito, a devolução ao cliente a negativo. Assim o ficheiro leva exactamente os valores do
  * Início. A estrutura do ficheiro (folha, colunas, formatos) não muda.
  */
+// substituições de facturas (vendas.php): os pagamentos do documento como estão no Pinguim BO, que corrigem no SAP o
+// recebido da factura original (ex.: Multicaixa −20 000 quando o cliente só pagou o valor com desconto)
+const pagosSap = (v) => v.pagamentos_origem || pagosDe(v);
+const acertoTxt = (s, fmt) =>
+  (s.acerto || []).length
+    ? ' · ' + t('acerto do recebido na factura original: {l}', { l: s.acerto.map((a) => t(a.meio) + ' ' + fmt(a.valor)).join(', ') })
+    : '';
+
 const meioDoc = (v, cat) =>
   sum(
-    pagosDe(v).filter((p) => catMeio(p) === cat),
+    pagosSap(v).filter((p) => catMeio(p) === cat),
     'valor',
   );
 const cashSap = (v) => meioDoc(v, 'dinheiro'),
@@ -95,7 +103,7 @@ function linhasSap() {
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
-      const pg = pagosDe(v); // nas notas de crédito, a devolução ao cliente (a negativo)
+      const pg = pagosSap(v); // nas notas de crédito, a devolução ao cliente (a negativo)
       // CASH AMOUNT e CARD AMOUNT: os valores do Início (a estrutura do ficheiro não muda)
       const cash = r2(cashSap(v)),
         card = r2(cardSap(v));
@@ -424,9 +432,9 @@ R['sap-exportar'] = (pg) => {
   // os mesmos documentos e valores do Início, que são os que seguem no ficheiro
   const cash = sum(L.docs, cashSap),
     card = sum(L.docs, cardSap);
-  // substituições de facturas de dias anteriores (vendas.php): os dois documentos seguem no ficheiro (são documentos
-  // fiscais), por isso o total do ficheiro tem o desconto, que as vendas do portal mostram à parte; o numerário e o
-  // Multicaixa são os do portal (compensação: o dinheiro foi recebido com a factura original, não houve movimento)
+  // substituições de facturas de dias anteriores (vendas.php): os dois documentos seguem no ficheiro como estão no
+  // Pinguim BO (documentos fiscais): o total tem o desconto e os meios têm o acerto do recebido da factura original,
+  // que as Cobranças mostram à parte (não é dinheiro de hoje)
   const subst = L.docs.filter((v) => v.substituicao && eNC(v)),
     descSubst = subst.reduce((a, v) => a + (+v.substituicao.desconto || 0), 0);
   pg.append(
@@ -475,12 +483,16 @@ R['sap-exportar'] = (pg) => {
         }) +
           ' ' +
           subst
-            .map((v) =>
-              t('rota {r} · {nc} e {f}: desconto {v}', { r: v.rota, nc: v.substituicao.nota, f: v.substituicao.factura, v: kz2(v.substituicao.desconto) }),
+            .map(
+              (v) =>
+                t('rota {r} · {nc} e {f}: desconto {v}', { r: v.rota, nc: v.substituicao.nota, f: v.substituicao.factura, v: kz2(v.substituicao.desconto) }) +
+                acertoTxt(v.substituicao, kz2),
             )
             .join('; ') +
           '. ' +
-          t('No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.'),
+          t(
+            'No SAP o desconto fica registado pela nota de crédito e pela factura nova, e o acerto corrige o recebido da factura original (o cliente pagou o valor com desconto), sem saldo a crédito.',
+          ),
       ),
     );
     pg.append(p);

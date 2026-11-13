@@ -68,3 +68,26 @@ teste('requisições: só se registam ao gravar com artigos; um só rascunho por
     naval_req_gravar_ficheiro($a);
     igual([$a['numero']], naval_req_anular_vazios($hoje, 'henrique', ['2001']));
 });
+
+teste('requisições: nunca mais do que o stock do armazém principal (criar, gravar, emitir); a automática fica limitada', function () {
+    $GLOBALS['naval_req_stock'] = ['A1' => 10.0, 'B2' => 0.0];
+    try {
+        $data = '2026-11-20';
+        // automática: o vendido fica como sugerido e a quantidade limitada ao stock (B2 sem stock sai)
+        $r = naval_req_da_conciliacao($data, '1007', [['codigo' => 'A1', 'artigo' => 'Fraldas', 'vendido' => 25], ['codigo' => 'B2', 'artigo' => 'Sabão', 'vendido' => 4]], 'tec');
+        igual([['A1', 25.0, 10.0]], array_map(function ($l) { return [$l['codigo'], $l['sugerida'], $l['quantidade']]; }, $r['linhas']));
+        // gravar acima do stock: recusado; dentro: aceite
+        lanca(400, function () use ($r) { naval_req_gravar($r['numero'], [['codigo' => 'A1', 'artigo' => 'Fraldas', 'quantidade' => 11]], '', $r['versao'], 'sup'); });
+        $g = naval_req_gravar($r['numero'], [['codigo' => 'A1', 'artigo' => 'Fraldas', 'quantidade' => 8]], '', $r['versao'], 'sup');
+        // manual: artigo sem stock no armazém principal não se pede
+        lanca(400, function () use ($data) { naval_req_criar('1008', $data, [['codigo' => 'B2', 'artigo' => 'Sabão', 'quantidade' => 1]], 'sup'); });
+        // o stock baixou entretanto: emitir recusa
+        $GLOBALS['naval_req_stock'] = ['A1' => 5.0];
+        lanca(400, function () use ($g) { naval_req_emitir($g['numero'], $g['versao'], 'sup'); });
+        // sem ligação ao Pinguim BO (stock desconhecido): não bloqueia a operação
+        $GLOBALS['naval_req_stock'] = null;
+        igual('emitida', naval_req_emitir($g['numero'], $g['versao'], 'sup')['estado']);
+    } finally {
+        unset($GLOBALS['naval_req_stock']);
+    }
+});

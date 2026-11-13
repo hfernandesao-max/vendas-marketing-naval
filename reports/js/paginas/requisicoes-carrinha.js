@@ -43,6 +43,20 @@ function ler() {
     if (atual === 'requisicoes-carrinha') draw();
   });
 }
+/** Stock do artigo no armazém principal (catálogo), ou null se não se souber. */
+const stockDe = (codigo) => {
+  const a = CAT && !CAT.a_ler ? CAT.artigos.find((x) => x.codigo === codigo) : null;
+  return a && a.disponivel != null ? +a.disponivel : CAT && !CAT.a_ler && CAT.artigos.some((x) => x.disponivel != null) ? 0 : null;
+};
+/** Número escrito à mão (aceita vírgula); NaN se não for número. */
+const numero = (s) => (String(s).trim() === '' ? 0 : Number(String(s).replace(/\s/g, '').replace(',', '.')));
+/** Linhas com mais do que o stock do armazém principal: [{l, s}]. */
+const acimaDoStock = () => edicao.linhas.map((l) => ({ l, s: stockDe(l.codigo) })).filter((x) => x.s != null && (+x.l.quantidade || 0) > x.s + 0.0005);
+const textoAcima = (A) =>
+  t('Quantidade acima do stock do armazém principal: {l}. Ajuste a quantidade pedida.', {
+    l: A.map((x) => t('{a} ({q} pedidos, {s} em stock)', { a: x.l.artigo, q: n0(x.l.quantidade), s: n0(x.s) })).join('; '),
+  });
+
 function catalogo() {
   if (CAT) return;
   CAT = { a_ler: true, artigos: [] };
@@ -129,21 +143,38 @@ function editor() {
   const tab = el('table', 'cc-tab req-tab');
   const cab = el('tr');
   const comEntregue = r.estado === 'carregada';
-  [t('Código'), t('Artigo'), t('Un.'), t('Vendido'), t('Quantidade'), ...(comEntregue ? [t('Entregue')] : []), ''].forEach((x, i) =>
-    cab.append(el('th', i >= 3 && x ? 'n' : null, x)),
+  [t('Código'), t('Artigo'), t('Un.'), t('Vendido'), t('Stock (armazém principal)'), t('Quantidade'), ...(comEntregue ? [t('Entregue')] : []), ''].forEach(
+    (x, i) => cab.append(el('th', i >= 3 && x ? 'n' : null, x)),
   );
   tab.append(cab);
   edicao.linhas.forEach((l, i) => {
     const tr = el('tr', l.origem === 'adicionado' ? 'req-adicionado' : null);
-    tr.append(el('td', null, l.codigo), el('td', null, l.artigo), el('td', null, l.unidade || ''), el('td', 'n', l.sugerida == null ? '—' : n0(l.sugerida)));
+    const sk = stockDe(l.codigo);
+    tr.append(
+      el('td', null, l.codigo),
+      el('td', null, l.artigo),
+      el('td', null, l.unidade || ''),
+      el('td', 'n', l.sugerida == null ? '—' : n0(l.sugerida)),
+      el('td', 'n req-stock', sk == null ? (CAT && CAT.a_ler ? '…' : '—') : n0(sk)),
+    );
     const tq = el('td', 'n');
     if (rasc) {
-      const q = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
+      // sem setas (campo de texto numérico): a quantidade escreve-se; nunca mais do que o stock do armazém principal
+      const q = entrada('text', String(l.quantidade).replace('.', ','), { inputMode: 'decimal', autocomplete: 'off' });
+      q.classList.add('req-qtd');
       q.setAttribute('aria-label', t('Quantidade') + ' · ' + l.artigo);
+      const marcar = () => {
+        const ac = sk != null && (+l.quantidade || 0) > sk + 0.0005;
+        q.classList.toggle('cx-falta', ac || isNaN(l.quantidade));
+        q.setAttribute('aria-invalid', ac || isNaN(l.quantidade) ? 'true' : 'false');
+        q.title = ac ? t('Máximo em stock: {s}', { s: n0(sk) }) : '';
+      };
       q.addEventListener('input', () => {
-        l.quantidade = q.value === '' ? 0 : Number(q.value);
+        l.quantidade = numero(q.value);
+        marcar();
         mudou();
       });
+      marcar();
       tq.append(q);
     } else tq.textContent = n0(l.quantidade);
     tr.append(tq);
@@ -164,7 +195,7 @@ function editor() {
   if (!edicao.linhas.length) {
     const tr = el('tr');
     const td = el('td', 'note', t('Sem artigos. Junte os artigos a requisitar.'));
-    td.colSpan = 6;
+    td.colSpan = 7;
     tr.append(td);
     tab.append(tr);
   }
@@ -179,7 +210,8 @@ function editor() {
     const junta = el('div', 'req-juntar');
     // escolha do artigo pelo teclado: Enter ou F4 mostra a lista dos artigos activos, a mesma tecla selecciona e o
     // foco passa à quantidade; Enter na quantidade junta o artigo e volta ao campo do artigo (ver escolher-artigo.js)
-    const qt = entrada('number', '', { min: 0, step: 'any', inputMode: 'decimal', placeholder: t('Qtd.') });
+    const qt = entrada('text', '', { inputMode: 'decimal', autocomplete: 'off', placeholder: t('Qtd.') });
+    qt.classList.add('req-qtd');
     qt.setAttribute('aria-label', t('Quantidade a juntar'));
     const esc = escolherArtigo((CAT && CAT.artigos) || [], {
       rotulo: t('Artigo a juntar'),
@@ -196,21 +228,29 @@ function editor() {
         erro.textContent = t('Escolha um artigo da lista.');
         return esc.input.focus();
       }
-      if (!(Number(qt.value) > 0)) {
+      const qn = numero(qt.value);
+      if (!(qn > 0)) {
         erro.hidden = false;
         erro.textContent = t('Indique a quantidade.');
         return qt.focus();
       }
-      erro.hidden = true;
       const ja = edicao.linhas.find((l) => l.codigo === a.codigo);
-      if (ja) ja.quantidade = (+ja.quantidade || 0) + Number(qt.value);
+      const sk = stockDe(a.codigo);
+      if (sk != null && (ja ? +ja.quantidade || 0 : 0) + qn > sk + 0.0005) {
+        erro.hidden = false;
+        erro.textContent =
+          t('Só há {s} de «{a}» em stock no armazém principal.', { s: n0(sk), a: a.artigo }) + (ja ? ' ' + t('Já pediu {q}.', { q: n0(ja.quantidade) }) : '');
+        return qt.focus();
+      }
+      erro.hidden = true;
+      if (ja) ja.quantidade = (+ja.quantidade || 0) + qn;
       else
         edicao.linhas.push({
           codigo: a.codigo,
           artigo: a.artigo,
           unidade: a.unidade || '',
           sugerida: null,
-          quantidade: Number(qt.value),
+          quantidade: qn,
           origem: 'adicionado',
         });
       mudou();
@@ -260,14 +300,26 @@ function editor() {
   };
   if (rasc) {
     const gravar = botao(t('Gravar'), 'ghost', () => {
+      const A = acimaDoStock();
+      if (A.length) {
+        erro.hidden = false;
+        erro.textContent = textoAcima(A);
+        return;
+      }
       gravar.disabled = true;
       enviar(corpoGravar(), erro).then((x) => {
         gravar.disabled = false;
         depois(x, 'Requisição gravada. Pode voltar a editar até a emitir.');
       });
     });
-    const emitir = botao(t('Gravar, emitir e imprimir'), null, () =>
-      confirmarAccao(
+    const emitir = botao(t('Gravar, emitir e imprimir'), null, () => {
+      const A = acimaDoStock();
+      if (A.length) {
+        erro.hidden = false;
+        erro.textContent = textoAcima(A);
+        return;
+      }
+      return confirmarAccao(
         r.novo ? t('Emitir a nova requisição?') : t('Emitir a requisição {n}?', { n: r.numero }),
         t('Depois de emitida (PDF ou impressora) a requisição fica fechada e não se pode alterar. Para mais mercadoria, faça uma nova requisição.'),
         t('Emitir e imprimir'),
@@ -286,8 +338,8 @@ function editor() {
                 });
             });
           }),
-      ),
-    );
+      );
+    });
     // por gravar: «Descartar» (nada fica registado); já gravada: «Anular» (fica registada como anulada, com motivo)
     const anular = r.novo ? botao(t('Descartar'), 'ghost', fecharEditor) : botao(t('Anular'), 'ghost', () => pedirMotivo(r, depois));
     acc.append(anular, gravar, emitir);

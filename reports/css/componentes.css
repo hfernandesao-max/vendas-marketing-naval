@@ -4818,3 +4818,24 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   border-color: rgba(138, 151, 179, 0.3);
   background: transparent;
 }
+
+/* requisições: quantidade sem setas e stock do armazém principal */
+.req-qtd {
+  width: 96px;
+  text-align: right;
+}
+.req-qtd::-webkit-outer-spin-button,
+.req-qtd::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.req-stock {
+  color: var(--suave, #8a97b3);
+}
+.art-stock {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.art-stock.sem {
+  color: #e5484d;
+}

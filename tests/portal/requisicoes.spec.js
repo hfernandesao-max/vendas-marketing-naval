@@ -36,6 +36,7 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
         json: {
           ok: true,
           artigos: [
+            { codigo: 'A1', artigo: 'Fraldas M', disponivel: 100 },
             { codigo: 'C3', artigo: 'Detergente', disponivel: 40 },
             { codigo: 'D4', artigo: 'Sabonete', disponivel: 12 },
           ],
@@ -53,6 +54,13 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await page.getByRole('button', { name: 'RQ-2026-000012' }).click();
   const ed = page.locator('#req-editor');
   await expect(ed).toContainText('criada pela conciliação da carrinha de 26-10-2026');
+  // stock do armazém principal ao lado; acima do stock fica marcado e não se grava
+  await expect(ed.locator('tr', { hasText: 'Fraldas M' }).locator('.req-stock')).toHaveText('100');
+  await ed.getByLabel('Quantidade · Fraldas M').fill('200');
+  await expect(ed.getByLabel('Quantidade · Fraldas M')).toHaveAttribute('aria-invalid', 'true');
+  await ed.getByRole('button', { name: 'Gravar', exact: true }).click();
+  await expect(ed).toContainText('Quantidade acima do stock do armazém principal: Fraldas M (200 pedidos, 100 em stock)');
+  expect(pedidos.length).toBe(0);
   await ed.getByLabel('Quantidade · Fraldas M').fill('30');
   await expect(ed.locator('.req-estado')).toContainText('Alterações por gravar');
   // só com o teclado: Enter mostra a lista dos artigos activos, Enter selecciona e passa à quantidade, Enter junta
@@ -60,7 +68,9 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await art.focus();
   await art.press('Enter');
   await expect(ed.getByRole('listbox')).toBeVisible();
-  await expect(ed.getByRole('option')).toHaveCount(2);
+  await expect(ed.getByRole('option')).toHaveCount(3);
+  // cada artigo com o stock do armazém principal
+  await expect(ed.getByRole('option', { name: /Detergente/ })).toContainText('em stock: 40');
   await art.pressSequentially('deter');
   await expect(ed.getByRole('option')).toHaveCount(1);
   await expect(ed.getByRole('option', { name: /Detergente/ })).toHaveAttribute('aria-selected', 'true');

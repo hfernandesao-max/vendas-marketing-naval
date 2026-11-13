@@ -4,7 +4,13 @@
 import { test, expect } from '@playwright/test';
 import { abrir, artigos, vendas } from './dados.js';
 
-const marca = { nota: 'NC R1004/2026/3', factura: 'FR R1004/2026/90', desconto: 20000, desconto_sem_iva: 17543.86 };
+const marca = {
+  nota: 'NC R1004/2026/3',
+  factura: 'FR R1004/2026/90',
+  desconto: 20000,
+  desconto_sem_iva: 17543.86,
+  acerto: [{ meio: 'Multicaixa', valor: -20000 }],
+};
 const base = {
   data: '2026-10-25',
   hora: '10:00',
@@ -58,6 +64,7 @@ test('substituição de factura: fora das cobranças e das vendas, desconto em p
   const aviso = page.locator('.aviso-rect');
   await expect(aviso).toContainText('Rectificações de documentos anteriores (1)');
   await expect(aviso).toContainText('rota 1004 · NC R1004/2026/3 substitui uma factura anterior pela FR R1004/2026/90 · desconto ao cliente 20 000');
+  await expect(aviso).toContainText('acerto do recebido na factura original: Multicaixa -20 000');
   // Vendas por promotor: idem
   await page.goto('/reports/index.html#vendas-promotor');
   await expect(page.locator('.aviso-rect')).toContainText('desconto ao cliente 20 000');
@@ -89,11 +96,11 @@ test('substituição de factura no ficheiro para o SAP: os dois documentos segue
   );
   const erros = await abrir(page, '#sap-exportar', { api: (r) => r.fulfill({ json: { vendas: [...vendas, ...SUBST], artigos: [...artigos, ...L] } }) });
   await expect(page.locator('.tile', { hasText: 'Total facturado' })).toContainText('inclui descontos em substituições de facturas: −20 000,00 Kz');
-  // numerário e Multicaixa sem a substituição (como nas Cobranças): nada a negativo
-  await expect(page.locator('.tile', { hasText: 'Multicaixa' })).not.toContainText('−');
   const nota = page.locator('#page .aviso-rect');
   await expect(nota).toContainText('Conciliação com as vendas');
   await expect(nota).toContainText('descontos em substituições de facturas 20 000,00 Kz');
   await expect(nota).toContainText('rota 1004 · NC R1004/2026/3 e FR R1004/2026/90: desconto 20 000,00 Kz');
+  // Multicaixa como no Pinguim BO: o acerto do recebido na factura original segue para o SAP (sem saldo a crédito)
+  await expect(nota).toContainText('acerto do recebido na factura original: Multicaixa -20 000,00 Kz');
   expect(erros).toEqual([]);
 });

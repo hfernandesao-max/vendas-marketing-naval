@@ -97,6 +97,7 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
             throw new NavalErro('Junte pelo menos um artigo com quantidade antes de gravar.', 400);
         }
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
+        naval_req_validar_stock(naval_req_linhas($linhas));
     }
     return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
         // um só rascunho manual aberto por rota e dia (sem rascunhos repetidos nem números gastos por engano)
@@ -135,11 +136,14 @@ function naval_req_da_conciliacao(string $data, string $rota, array $linhasConci
         $k = $data . '|' . $rota;
         if (!empty($idx[$k])) return naval_req_ler((string) $idx[$k]);
         $linhas = [];
+        $stock = naval_req_stock_principal();
         foreach ($linhasConciliacao as $l) {
             $q = (float) ($l['vendido'] ?? 0);
             if ($q <= 0) continue;
+            // reposição pelo vendido, mas nunca mais do que o stock do armazém principal (o vendido fica como sugerido)
+            $pede = $stock !== null ? min($q, max(0.0, (float) ($stock[(string) $l['codigo']] ?? 0))) : $q;
             $linhas[] = ['codigo' => (string) $l['codigo'], 'artigo' => (string) $l['artigo'], 'unidade' => (string) ($l['unidade'] ?? ''),
-                'sugerida' => $q, 'quantidade' => $q, 'origem' => 'vendido'];
+                'sugerida' => $q, 'quantidade' => $pede, 'origem' => 'vendido'];
         }
         if (!$linhas) return null;
         $r = naval_req_criar($rota, $data, $linhas, 'automatico', ['tipo' => 'conciliacao', 'data' => $data, 'rota' => $rota, 'validada_por' => $login]);
@@ -189,6 +193,7 @@ function naval_req_gravar(string $id, array $linhas, string $nota, ?int $versao,
         if (!array_filter($novas, function ($l) { return (float) $l['quantidade'] > 0; })) {
             throw new NavalErro('A requisição ficaria sem artigos: junte artigos ou anule-a.', 400);
         }
+        naval_req_validar_stock($novas);
         $r['linhas'] = $novas;
         $r['nota'] = naval_texto($nota, 500);
         $r['alterado_por'] = $login;
@@ -203,6 +208,7 @@ function naval_req_emitir(string $id, ?int $versao, string $login): array
 {
     $r = naval_req_alterar($id, $versao, function ($r) use ($login) {
         if (!$r['linhas']) throw new NavalErro('A requisição não tem artigos.', 400);
+        naval_req_validar_stock((array) $r['linhas']);   // o stock pode ter mudado desde a gravação
         $r['estado'] = 'emitida';
         $r['emitida_por'] = $login;
         $r['emitida_em'] = date('Y-m-d H:i:s');
@@ -300,11 +306,15 @@ function naval_req_catalogo(): array
     try {
         naval_servico('stock');
         $d = naval_stock(date('Y-m-d'), '');
+        $principais = naval_req_armazens_principais();
         foreach ((array) ($d['armazens'] ?? []) as $a) {
+            // só o armazém principal (nunca os armazéns das carrinhas nem outros armazéns)
+            if (!isset($principais[(string) ($a['cod_armazem'] ?? '')])) continue;
             foreach ((array) ($a['itens'] ?? []) as $i) {
                 $c = (string) ($i['codigo'] ?? '');
                 if ($c === '') continue;
-                $art[$c] = ['codigo' => $c, 'artigo' => (string) ($i['produto'] ?? $c), 'disponivel' => ($art[$c]['disponivel'] ?? 0) + (float) ($i['quantidade'] ?? 0)];
+                $art[$c] = ['codigo' => $c, 'artigo' => (string) ($i['produto'] ?? $c), 'armazem' => (string) ($a['armazem'] ?? ''),
+                    'disponivel' => round(($art[$c]['disponivel'] ?? 0) + (float) ($i['quantidade'] ?? 0), 3)];
             }
         }
     } catch (Throwable $e) {
@@ -321,6 +331,42 @@ function naval_req_catalogo(): array
     }
     uasort($art, function ($a, $b) { return strcmp($a['artigo'], $b['artigo']); });
     return array_values($art);
+}
+
+/** Armazéns principais (os do ficheiro para o SAP: 1150 alimentar e 1151 não alimentar, por omissão). */
+function naval_req_armazens_principais(): array
+{
+    naval_servico('sap');
+    $a = (array) (naval_sap_config()['armazens'] ?? []);
+    return $a ?: NAVAL_ARMAZENS_PRINCIPAIS;
+}
+
+/**
+ * Stock de cada artigo no armazém principal {código: quantidade}, ou null se não se souber (sem ligação ao Pinguim
+ * BO): nesse caso não se bloqueia a operação, mas o ecrã avisa. $GLOBALS['naval_req_stock'] substitui-o nos testes.
+ */
+function naval_req_stock_principal(): ?array
+{
+    if (array_key_exists('naval_req_stock', $GLOBALS)) return $GLOBALS['naval_req_stock'];
+    static $m = null;
+    if ($m !== null) return $m ?: null;
+    $m = [];
+    foreach (naval_req_catalogo() as $a) if ($a['disponivel'] !== null) $m[(string) $a['codigo']] = (float) $a['disponivel'];
+    return $m ?: null;
+}
+
+/** Nunca mais do que o stock do armazém principal (ao criar, gravar e emitir). */
+function naval_req_validar_stock(array $linhas): void
+{
+    $stock = naval_req_stock_principal();
+    if ($stock === null) return;
+    $acima = [];
+    foreach ($linhas as $l) {
+        $q = (float) ($l['quantidade'] ?? 0);
+        $s = max(0.0, (float) ($stock[(string) $l['codigo']] ?? 0));
+        if ($q > $s + 0.0005) $acima[] = $l['artigo'] . ' (' . rtrim(rtrim(number_format($q, 3, ',', ' '), '0'), ',') . ' pedidos, ' . rtrim(rtrim(number_format($s, 3, ',', ' '), '0'), ',') . ' em stock)';
+    }
+    if ($acima) throw new NavalErro('Quantidade acima do stock do armazém principal: ' . implode('; ', $acima) . '.', 400, ['codigo' => 'stock']);
 }
 
 /** Confirma a carga de uma requisição emitida: quantidade entregue por artigo (por omissão, a requisitada). */
