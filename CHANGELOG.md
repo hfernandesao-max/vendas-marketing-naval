@@ -4,6 +4,35 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Requisição: escolher o artigo só com o teclado
+
+- No campo do artigo, **Enter ou F4 mostra a lista dos artigos activos** (código, nome e disponível no armazém);
+  escrever filtra por código ou nome; ↑ ↓ percorrem; **a mesma tecla (Enter ou F4) selecciona**; Esc fecha. Segue o
+  padrão «combobox» da WAI-ARIA e a ajuda de valores F4 dos ERP.
+- Depois de seleccionar, o cursor passa à quantidade; Enter junta o artigo e volta ao campo do artigo, pronto para o
+  seguinte: lança-se a requisição inteira sem tirar as mãos do teclado. O rato continua a funcionar.
+
+### Calendário de trabalho das vendas
+
+- Novo calendário de trabalho, fonte única para os objectivos, as previsões, o relatório, as notificações e os prazos
+  do fecho:
+  - **segunda a sexta:** vendas das 07:30 às 15:00; fecho de contas com a tesouraria, contagem das carrinhas e
+    requisição ao armazém das 15:30 às 16:00; carregamento da mercadoria das 16:00 às 17:00;
+  - **sábado:** vendas das 07:30 às 13:00 (meio dia), com o fecho e a carga logo a seguir (13:30–14:00 e
+    14:00–15:00); **sábado à tarde e domingo são folga**;
+  - **feriados nacionais de Angola** (incluindo Carnaval e Sexta-feira Santa, calculados pela Páscoa) são folga; as
+    pontes e outras folgas da empresa configuram-se no servidor.
+- **Objectivos:** só contam os dias de trabalho; o sábado vale meio dia (≈ 0,73 de um dia completo) e o ritmo
+  compara-se por dia completo equivalente, para um mês com mais sábados ou feriados não parecer mais fraco. O
+  «necessário por dia» e a projecção do fecho do mês seguem os mesmos pesos. O objectivo de Novembro, já congelado,
+  mantém-se; o novo cálculo aplica-se a partir de Dezembro.
+- **Previsões:** dia de folga prevê zero e os feriados passados já não puxam a média do mesmo dia da semana para baixo.
+- **Relatório de Vendas:** os telemóveis têm de sincronizar depois do fim das vendas do dia (15:00; 13:00 ao sábado).
+- **Notificações:** alertas das rotas só durante as vendas e nunca em dias de folga; resumo do dia depois do fim da
+  carga; carrinhas por aprovar a partir do fecho.
+- **Prazos no ecrã:** a conciliação mostra o horário do dia e assinala «Fora do prazo do fecho» as carrinhas por contar
+  ou validar depois das 16:00; o Stock por carrinha assinala a vermelho a carga por confirmar depois das 17:00.
+
 ### Rastreabilidade de quem assinou
 
 - Cada passo assinado no portal mostra o **nome completo e o utilizador** de quem assinou (ex.: «Michael Samson

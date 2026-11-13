@@ -147,3 +147,11 @@ test('rastreabilidade: as respostas trazem o nome completo de quem assinou cada 
   );
   Object.keys(v.nomes).forEach((l) => expect(referidos.has(l)).toBe(true));
 });
+
+test('calendário de trabalho: a conciliação de hoje traz o horário do dia', async () => {
+  const sadm = (await entrar('sadm')).ctx;
+  const v = await (await sadm.get(API + 'conciliacao-carrinha?data=' + dia)).json();
+  expect(v.horario.dia).toBe(dia);
+  expect(['completo', 'meio', 'folga']).toContain(v.horario.tipo);
+  expect(v.horario.agora.slice(0, 10)).toBe(dia);
+});

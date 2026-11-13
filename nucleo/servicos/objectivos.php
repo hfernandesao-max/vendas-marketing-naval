@@ -10,6 +10,9 @@
  *      o ritmo realizado e o ritmo do objectivo do mês anterior, mais OBJECTIVOS_CRESCIMENTO_MIN (por omissão 3%).
  *      O ritmo por dia útil torna justa a comparação entre meses com números de dias úteis diferentes;
  *   4. arredondado para cima ao milhar de Kz e repartido pelos dias úteis segundo o padrão de cada dia da semana;
+ *   Dias úteis e ritmo seguem o calendário de trabalho (calendario.php): segunda a sexta dia completo, sábado meio dia
+ *   (≈ 0,73 de um dia completo), sábado à tarde, domingo e feriados de folga. O ritmo compara-se por «dia completo
+ *   equivalente», para que um mês com mais sábados ou feriados não pareça mais fraco;
  *   5. congelado no início do mês (dados-privados/objectivos/AAAA-MM.json): não muda durante o mês, para ser um
  *      compromisso e não um alvo móvel. O mês seguinte calcula-se sozinho.
  * Acompanhamento: realizado no mês, objectivo até hoje, cumprimento, desvio, ritmo diário necessário para chegar ao
@@ -17,6 +20,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/previsao.php';
+require_once __DIR__ . '/calendario.php';
 
 function naval_obj_parametros(): array
 {
@@ -33,19 +37,6 @@ function naval_obj_dias(string $mes): array
     return naval_analise_dias($mes . '-01', date('Y-m-t', strtotime($mes . '-01 12:00')));
 }
 
-/** Dias da semana com trabalho (1..7): os que têm vendas habituais (mediana das últimas 6 semanas) antes de $ate. */
-function naval_obj_dias_semana(array $serie, string $ate): array
-{
-    $w = [];
-    for ($k = 0; $k < 7; $k++) {
-        $d = date('Y-m-d', strtotime($ate . ' 12:00') - $k * 86400);
-        $v = naval_mesmos_dias($serie, date('Y-m-d', strtotime($d . ' 12:00') + 7 * 86400), 6);
-        if ($v && naval_mediana(array_values($v)) > 0) $w[naval_dia_semana($d)] = true;
-    }
-    if (!$w) $w = [1 => true, 2 => true, 3 => true, 4 => true, 5 => true, 6 => true];   // sem histórico: segunda a sábado
-    return $w;
-}
-
 /**
  * Objectivo de uma série (uma rota ou o total) para o mês. $anterior: objectivo guardado do mês anterior (ou null).
  * Devolve null sem histórico nenhum.
@@ -56,8 +47,10 @@ function naval_obj_calcular(array $serie, string $mes, ?array $anterior, array $
     $ultimo = date('Y-m-d', strtotime($ini . ' 12:00') - 86400);
     $serie = array_filter($serie, function ($d) use ($ultimo) { return $d <= $ultimo; }, ARRAY_FILTER_USE_KEY);
     if (!$serie || array_sum($serie) <= 0) return null;
-    $W = naval_obj_dias_semana($serie, $ultimo);
-    $uteis = array_values(array_filter(naval_obj_dias($mes), function ($d) use ($W) { return isset($W[naval_dia_semana($d)]); }));
+    // dias de trabalho do mês e o seu peso (calendário de trabalho: sábado meio dia; domingos e feriados de folga)
+    $uteis = array_values(array_filter(naval_obj_dias($mes), function ($d) { return !naval_cal_folga($d); }));
+    $equiv = array_sum(array_map('naval_cal_peso', $uteis));
+    if (!$uteis || $equiv <= 0) return null;
     // 1. base: previsão de cada dia útil do mês
     $baseDia = [];
     foreach ($uteis as $d) {
@@ -70,30 +63,34 @@ function naval_obj_calcular(array $serie, string $mes, ?array $anterior, array $
     $mesAnt = substr($ultimo, 0, 7);
     $realAnt = 0.0;
     $diasAnt = 0;
+    $equivAnt = 0.0;
     foreach (naval_obj_dias($mesAnt) as $d) {
-        if (!array_key_exists($d, $serie) || !isset($W[naval_dia_semana($d)])) continue;
+        if (!array_key_exists($d, $serie) || naval_cal_folga($d)) continue;
         $realAnt += (float) $serie[$d];
         $diasAnt++;
+        $equivAnt += naval_cal_peso($d);
     }
-    $ritmoReal = $diasAnt ? $realAnt / $diasAnt : 0.0;
-    $ritmoObj = $anterior && !empty($anterior['dias_uteis']) ? (float) $anterior['objectivo'] / (int) $anterior['dias_uteis'] : 0.0;
-    $minimo = max($ritmoReal, $ritmoObj) * (1 + $par['crescimento_min']) * count($uteis);
+    // ritmo por dia completo equivalente (objectivos antigos, sem equivalentes: por dia útil)
+    $ritmoReal = $equivAnt > 0 ? $realAnt / $equivAnt : 0.0;
+    $eqObjAnt = $anterior ? (float) ($anterior['dias_equivalentes'] ?? $anterior['dias_uteis'] ?? 0) : 0.0;
+    $ritmoObj = $eqObjAnt > 0 ? (float) $anterior['objectivo'] / $eqObjAnt : 0.0;
+    $minimo = max($ritmoReal, $ritmoObj) * (1 + $par['crescimento_min']) * $equiv;
     $alvo = $base !== null ? $base * (1 + $par['crescimento_alvo']) : 0.0;
     $obj = max($alvo, $minimo);
     if ($obj <= 0) return null;
     $obj = ceil($obj / 1000) * 1000;
     // 4. repartição pelos dias úteis, com o peso de cada dia na previsão (sem previsão: por igual)
     $pesos = [];
-    foreach ($uteis as $d) $pesos[$d] = $base !== null && $base > 0 ? max(0.0, (float) $baseDia[$d]) : 1.0;
+    foreach ($uteis as $d) $pesos[$d] = $base !== null && $base > 0 ? max(0.0, (float) $baseDia[$d]) : naval_cal_peso($d);
     $sp = array_sum($pesos) ?: 1.0;
     $dias = [];
     foreach ($uteis as $d) $dias[$d] = round($obj * $pesos[$d] / $sp, 2);
     return [
-        'objectivo' => $obj, 'dias_uteis' => count($uteis), 'dias' => $dias,
+        'objectivo' => $obj, 'dias_uteis' => count($uteis), 'dias_equivalentes' => round($equiv, 3), 'dias' => $dias,
         'base' => $base !== null ? round($base, 2) : null, 'mes_anterior' => round($realAnt, 2), 'dias_anterior' => $diasAnt,
         'objectivo_anterior' => $anterior['objectivo'] ?? null,
         'criterio' => $alvo >= $minimo ? 'tendencia' : 'minimo',
-        'crescimento' => $ritmoReal > 0 ? round(($obj / count($uteis)) / $ritmoReal - 1, 3) : null,
+        'crescimento' => $ritmoReal > 0 ? round(($obj / $equiv) / $ritmoReal - 1, 3) : null,
     ];
 }
 
@@ -144,19 +141,28 @@ function naval_objectivos_estado(array $obj, array $agregados, string $hoje, ?ar
         foreach ($serie as $d => $v) if (substr($d, 0, 7) === substr($hoje, 0, 7) && $d <= $hoje) $real += (float) $v;
         $ateHoje = 0.0;
         $restantes = 0;
+        $eqFeito = $eqFalta = 0.0;
         foreach ($o['dias'] as $d => $v) {
-            if ($d <= $hoje) $ateHoje += $v;
-            else $restantes++;
+            // pesos do calendário de trabalho (sábado meio dia); um feriado decidido depois do cálculo não conta
+            $w = naval_cal_peso($d);
+            if ($d <= $hoje) {
+                $ateHoje += $v;
+                $eqFeito += $w;
+            } elseif ($w > 0) {
+                $restantes++;
+                $eqFalta += $w;
+            }
         }
         $falta = max(0.0, $o['objectivo'] - $real);
         $ritmo = $ateHoje > 0 ? $real / $ateHoje : null;
-        $porDia = $o['dias_uteis'] - $restantes > 0 ? $real / ($o['dias_uteis'] - $restantes) : 0.0;
-        $proj = $real + $porDia * $restantes;
+        // projecção: ritmo por dia completo já feito, aplicado aos dias completos equivalentes que faltam
+        $porDia = $eqFeito > 0 ? $real / $eqFeito : 0.0;
+        $proj = $real + $porDia * $eqFalta;
         return [
             'objectivo' => $o['objectivo'], 'dias_uteis' => (int) $o['dias_uteis'], 'realizado' => round($real, 2), 'objectivo_ate_hoje' => round($ateHoje, 2),
             'cumprimento' => $o['objectivo'] > 0 ? round($real / $o['objectivo'], 3) : null, 'ritmo' => $ritmo !== null ? round($ritmo, 3) : null,
             'desvio' => round($real - $ateHoje, 2), 'falta' => round($falta, 2), 'dias_restantes' => $restantes,
-            'necessario_dia' => $restantes ? round($falta / $restantes, 2) : null, 'projeccao' => round($proj, 2),
+            'necessario_dia' => $eqFalta > 0 ? round($falta / $eqFalta, 2) : null, 'projeccao' => round($proj, 2),
             'estado' => $ritmo === null ? 'no_caminho' : ($ritmo >= 1 ? 'acima' : ($ritmo >= 0.95 ? 'no_caminho' : 'abaixo')),
             'criterio' => $o['criterio'] ?? null, 'crescimento' => $o['crescimento'] ?? null, 'mes_anterior' => $o['mes_anterior'] ?? null,
         ];

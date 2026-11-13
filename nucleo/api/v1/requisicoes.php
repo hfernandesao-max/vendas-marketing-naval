@@ -26,7 +26,8 @@ if (!naval_e_post()) {
     if (($_GET['carga'] ?? '') === '1') {
         $data = (string) ($_GET['data'] ?? date('Y-m-d'));
         if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
-        naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
+        naval_servico('calendario');
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'horario' => naval_cal_para_pagina($data), 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
     }
     if (($_GET['catalogo'] ?? '') === '1') naval_json_assinado(['ok' => true, 'artigos' => naval_req_catalogo()]);
     if (isset($_GET['numero'])) {

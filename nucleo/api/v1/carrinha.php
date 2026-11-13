@@ -21,8 +21,9 @@ if (!naval_e_post()) {
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
     $corrigir = naval_perfil() === 'SADM';
+    naval_servico('calendario');
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
-        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
+        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + ['horario' => naval_cal_para_pagina($data)] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
 }
 
 $p = naval_pedido();
