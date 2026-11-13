@@ -504,7 +504,9 @@ function naval_notif_dados_dia(string $dia): ?array
 
 /**
  * Ciclo das notificações de negócio. $o: dados (para os testes), carrinhas (idem), forcar. Devolve o que enviou ou
- * null se ainda não era altura. Horário de trabalho: segunda a sábado, 08:00–18:00.
+ * null se ainda não era altura. Horário do calendário de trabalho (calendario.php): alertas das rotas só durante as
+ * vendas (07:30–15:00 de segunda a sexta, 07:30–13:00 ao sábado), nada nos dias de folga (domingos e feriados);
+ * resumo do dia depois do fim da carga; carrinhas por aprovar a partir do fecho.
  */
 function naval_notif_ciclo(int $agora, array $o = []): ?array
 {
@@ -516,13 +518,20 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
     naval_json_gravar($f, $e);
     $dia = date('Y-m-d', $agora);
     $hm = date('H:i', $agora);
-    $util = (int) date('N', $agora) <= 6;
+    naval_servico('calendario');
+    $cal = naval_cal_dia($dia);
+    $util = $cal['tipo'] !== 'folga';
+    $vIni = $cal['vendas'][0] ?? '07:30';
+    $vFim = $cal['vendas'][1] ?? '15:00';
+    $fIni = $cal['fecho'][0] ?? '15:30';
+    // resumo do dia: meia hora depois do fim da carga (17:30 de segunda a sexta; 15:30 ao sábado)
+    $resumoHora = date('H:i', strtotime($dia . ' ' . ($cal['carga'][1] ?? '17:00')) + 1800);
     $feito = [];
-    $d = array_key_exists('dados', $o) ? $o['dados'] : (($util && $hm >= '08:00' && $hm <= '19:00') ? naval_notif_dados_dia($dia) : null);
+    $d = array_key_exists('dados', $o) ? $o['dados'] : (($util && $hm >= $vIni && $hm <= '19:00') ? naval_notif_dados_dia($dia) : null);
     if (is_array($d)) {
         $prom = $d['promotores'] ?? [];
         $nome = function (string $r) use ($prom) { return $r . (isset($prom[$r]) && $prom[$r] !== $r ? ' · ' . $prom[$r] : ''); };
-        if ($util && $hm >= '08:00' && $hm < '18:00') {
+        if ($util && $hm >= $vIni && $hm < $vFim) {
             // rota com vendas hoje e sem vender há mais de 60 minutos (uma vez por paragem)
             foreach ($d['rotas'] as $r => $x) {
                 if (!$x['docs'] || $x['ultima'] === '') continue;
@@ -548,8 +557,8 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
             $feito[] = naval_notificar('venda_anulada', $tx['pt'][0], $tx['pt'][1],
                 ['chave' => 'anulada|' . $doc, 'rota' => (string) $a['ROTA'], 'url' => '../gestao/#rotas', 'textos' => $tx], $agora);
         }
-        // resumo do dia às 18:30
-        if ($hm >= '18:30' && $e['resumo'] !== $dia) {
+        // resumo do dia depois do fim da carga
+        if ($util && $hm >= $resumoHora && $e['resumo'] !== $dia) {
             $tot = array_sum(array_column($d['rotas'], 'total'));
             $docs = array_sum(array_column($d['rotas'], 'docs'));
             $melhor = '';
@@ -564,7 +573,7 @@ function naval_notif_ciclo(int $agora, array $o = []): ?array
     }
     // carrinhas com diferenças à espera de aprovação
     $car = $o['carrinhas'] ?? null;
-    if ($car === null && $util && $hm >= '12:00' && $hm <= '21:00') {
+    if ($car === null && $util && $hm >= $fIni && $hm <= '21:00') {
         try {
             naval_servico('carrinha');
             $car = naval_carr_vista($dia, null, true)['rotas'] ?? [];

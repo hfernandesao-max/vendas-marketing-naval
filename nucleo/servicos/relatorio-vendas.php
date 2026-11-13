@@ -5,7 +5,8 @@
  *
  * Fecho do dia antes do relatório (prática de «close readiness» / controlo de completude dos dados): o relatório só
  * se gera quando todas as fontes do dia estão completas e fechadas:
- *   1. Pinguim BO: todos os telemóveis das rotas com vendas sincronizaram depois da hora de fecho (RELATORIO_HORA_FECHO);
+ *   1. Pinguim BO: todos os telemóveis das rotas com vendas sincronizaram depois do fim das vendas do dia (calendário de
+ *      trabalho: 15:00 de segunda a sexta, 13:00 ao sábado; RELATORIO_HORA_FECHO no .env substitui-o);
  *   2. conciliação de todas as carrinhas com movimento fechada (contagem, validação e aprovações);
  *   3. vendas do dia no SAP: todos os documentos estão num ficheiro de carregamento marcado «carregado no SAP»;
  *   4. folha de caixa do dia validada e aprovada nos dois níveis;
@@ -29,8 +30,7 @@ function naval_rv_controlos(string $dia, array $f): array
     if ($f['vendas'] === null) {
         $c['pinguim'] = ['estado' => 'erro', 'detalhe' => 'Sem ligação ao Pinguim BO.'];
     } else {
-        $hora = naval_config('RELATORIO_HORA_FECHO', '18:00');
-        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $hora = '18:00';
+        $hora = naval_rv_hora_fecho($dia);
         $limite = $dia . ' ' . $hora . ':00';
         $ultima = [];
         foreach ((array) ($f['sync'] ?? []) as $s) $ultima[(string) $s['rota']] = (string) ($s['ultima'] ?? '');
@@ -308,10 +308,22 @@ function naval_rv_ler(string $dia, int $versao): ?array
  * Gera (congela) o relatório do dia, só com todas as fontes completas. Uma segunda versão precisa de motivo.
  * $fontes permite os testes; em produção lê-se tudo das bases de dados.
  */
+/**
+ * Hora de fecho das vendas do dia: a do calendário de trabalho (15:00 de segunda a sexta, 13:00 ao sábado), salvo
+ * RELATORIO_HORA_FECHO no .env (HH:MM), que a substitui em todos os dias.
+ */
+function naval_rv_hora_fecho(string $dia): string
+{
+    $h = naval_config('RELATORIO_HORA_FECHO', '');
+    if (preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $h)) return $h;
+    naval_servico('calendario');
+    return naval_cal_fim_vendas($dia);
+}
+
 function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $fontes = null): array
 {
-    if ($dia >= date('Y-m-d') && date('H:i') < naval_config('RELATORIO_HORA_FECHO', '18:00')) {
-        throw new NavalErro('O dia ainda não fechou: o relatório gera-se depois das ' . naval_config('RELATORIO_HORA_FECHO', '18:00') . '.', 409);
+    if ($dia >= date('Y-m-d') && date('H:i') < naval_rv_hora_fecho($dia)) {
+        throw new NavalErro('O dia ainda não fechou: o relatório gera-se depois das ' . naval_rv_hora_fecho($dia) . '.', 409);
     }
     $f = $fontes ?? naval_rv_fontes($dia);
     $ctl = naval_rv_controlos($dia, $f);

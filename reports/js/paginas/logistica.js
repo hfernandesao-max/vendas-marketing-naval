@@ -10,6 +10,7 @@
 // filtra no portal, sem nova consulta à base de dados.
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
+import { foraDoPrazo } from '../componentes/horario.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { FV, filtroAtivo, normTxt } from '../filtros.js';
 import { fetchStock } from '../fontes.js';
@@ -100,7 +101,7 @@ function garantirRequisicoes(data) {
   REQ = { data, estado: 'a-ler', rotas: {}, gere: false, eu: '', em: Date.now() };
   apiJson('requisicoes?carga=1&data=' + data).then((d) => {
     if (REQ.data !== data) return;
-    REQ = { data, estado: 'ok', rotas: (d && d.rotas) || {}, gere: !!(d && d.gere), eu: (d && d.eu) || '', em: Date.now() };
+    REQ = { data, estado: 'ok', rotas: (d && d.rotas) || {}, gere: !!(d && d.gere), eu: (d && d.eu) || '', horario: (d && d.horario) || null, em: Date.now() };
     draw();
   });
 }
@@ -129,8 +130,12 @@ const colRequisicao = () => ({
     if (!v) return document.createTextNode('—');
     const w = el('span', 'req-cel');
     if (r.a_carregar) {
-      const a = el('span', 'req-a-carregar', n0(r.a_carregar));
-      a.title = t('A carregar: requisição emitida, carga por confirmar');
+      // depois do fim da janela de carregamento (17:00 de segunda a sexta) fica assinalado como fora do prazo
+      const atraso = foraDoPrazo(REQ.horario, 'carga');
+      const a = el('span', 'req-a-carregar' + (atraso ? ' req-atraso' : ''), n0(r.a_carregar));
+      a.title = atraso
+        ? t('Carga fora do prazo ({h}): requisição emitida, carga por confirmar', { h: REQ.horario.carga[1] })
+        : t('A carregar: requisição emitida, carga por confirmar');
       w.append(a);
     }
     if (r.carregado) {

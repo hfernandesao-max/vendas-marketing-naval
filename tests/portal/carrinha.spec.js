@@ -67,6 +67,14 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
         movimentos: 'separados',
         motivos: MOTIVOS,
         nomes: { coord: 'Sara Coordenadora', resp: 'Michael Samson' },
+        horario: {
+          dia: '2026-10-26',
+          tipo: 'completo',
+          vendas: ['07:30', '15:00'],
+          fecho: ['15:30', '16:00'],
+          carga: ['16:00', '17:00'],
+          agora: '2026-10-26 16:10',
+        },
         rotas: [
           {
             rota: '1001',
@@ -97,6 +105,9 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   const erros = await abrir(page, '#conciliacao-carrinha');
   const rota = page.locator('.cc-rota', { hasText: '1001' });
   await expect(rota).toContainText('Por contar');
+  // calendário de trabalho: horário do dia e prazo do fecho (16:00) ultrapassado
+  await expect(page.locator('.cc-horario')).toContainText('fecho de contas com a tesouraria, contagem das carrinhas e requisição ao armazém 15:30–16:00');
+  await expect(rota).toContainText('Fora do prazo do fecho (16:00)');
   await rota.getByRole('button', { name: 'Contar' }).click();
   // cega: só o artigo e a quantidade que voltou
   await expect(rota.locator('th')).toHaveText(['Artigo', 'Quantidade que voltou']);

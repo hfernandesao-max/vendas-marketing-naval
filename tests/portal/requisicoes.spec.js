@@ -31,7 +31,16 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
       return rt.fulfill({ json: { ok: true, requisicao: { ...r } } });
     }
     const u = new URL(req.url());
-    if (u.searchParams.get('catalogo')) return rt.fulfill({ json: { ok: true, artigos: [{ codigo: 'C3', artigo: 'Detergente', disponivel: 40 }] } });
+    if (u.searchParams.get('catalogo'))
+      return rt.fulfill({
+        json: {
+          ok: true,
+          artigos: [
+            { codigo: 'C3', artigo: 'Detergente', disponivel: 40 },
+            { codigo: 'D4', artigo: 'Sabonete', disponivel: 12 },
+          ],
+        },
+      });
     if (u.searchParams.get('numero')) return rt.fulfill({ json: { ok: true, gere: true, requisicao: { ...r } } });
     return rt.fulfill({
       json: { ok: true, gere: true, rotas: { 1001: 'Andrea Santos' }, requisicoes: [{ ...r, n_linhas: r.linhas.length, quantidade: 26 }] },
@@ -46,9 +55,22 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await expect(ed).toContainText('criada pela conciliação da carrinha de 26-10-2026');
   await ed.getByLabel('Quantidade · Fraldas M').fill('30');
   await expect(ed.locator('.req-estado')).toContainText('Alterações por gravar');
-  await ed.getByLabel('Artigo a juntar').fill('C3 · Detergente');
-  await ed.getByLabel('Quantidade a juntar').fill('5');
-  await ed.getByRole('button', { name: 'Juntar artigo' }).click();
+  // só com o teclado: Enter mostra a lista dos artigos activos, Enter selecciona e passa à quantidade, Enter junta
+  const art = ed.getByRole('combobox', { name: 'Artigo a juntar' });
+  await art.focus();
+  await art.press('Enter');
+  await expect(ed.getByRole('listbox')).toBeVisible();
+  await expect(ed.getByRole('option')).toHaveCount(2);
+  await art.pressSequentially('deter');
+  await expect(ed.getByRole('option')).toHaveCount(1);
+  await expect(ed.getByRole('option', { name: /Detergente/ })).toHaveAttribute('aria-selected', 'true');
+  await art.press('Enter');
+  await expect(art).toHaveValue('C3 · Detergente');
+  await expect(ed.getByLabel('Quantidade a juntar')).toBeFocused();
+  await page.keyboard.type('5');
+  await page.keyboard.press('Enter');
+  // volta ao artigo, pronto para o seguinte
+  await expect(ed.getByRole('combobox', { name: 'Artigo a juntar' })).toBeFocused();
   await expect(ed.locator('tr', { hasText: 'Detergente' })).toBeVisible();
   await ed.getByRole('button', { name: 'Gravar', exact: true }).click();
   await expect.poll(() => pedidos.length).toBe(1);

@@ -13,6 +13,7 @@
  * (as unidades são as do plano, não as das vendas) × a tendência de vendas da rota. A Logística confirma sempre.
  */
 defined('NAVAL_NUCLEO') || exit;
+require_once __DIR__ . '/calendario.php';
 require_once __DIR__ . '/analise.php';
 
 const NAVAL_PREVISAO_PESOS = [6, 5, 4, 3, 2, 1];
@@ -46,6 +47,9 @@ function naval_previsao_tendencia(array $serie, string $dia): float
  */
 function naval_previsao_dia(array $serie, string $alvo, string $ultimo): ?array
 {
+    // calendário de trabalho: num dia de folga (domingo, feriado, folga da empresa) não há vendas a prever;
+    // e os feriados do passado não entram na média (o zero desse dia não é o habitual)
+    if (naval_cal_folga($alvo)) return ['previsto' => 0.0, 'minimo' => 0.0, 'maximo' => 0.0, 'base' => 0.0, 'tendencia' => 1.0, 'n' => 0, 'folga' => true];
     $vals = [];
     $soma = $pesos = 0.0;
     $t = strtotime($alvo . ' 12:00');
@@ -55,7 +59,7 @@ function naval_previsao_dia(array $serie, string $alvo, string $ultimo): ?array
         $tt = $t - $s * 7 * 86400;
         if ($tt > $lim) continue;
         $d = date('Y-m-d', $tt);
-        if (!array_key_exists($d, $serie)) continue;
+        if (!array_key_exists($d, $serie) || naval_cal_folga($d)) continue;
         $w = NAVAL_PREVISAO_PESOS[$k++];
         $vals[] = (float) $serie[$d];
         $soma += $w * $serie[$d];

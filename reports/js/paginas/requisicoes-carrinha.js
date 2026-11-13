@@ -8,6 +8,7 @@ import { quem as assinante } from '../componentes/assinantes.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { botao, confirmarAccao, entrada, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
+import { escolherArtigo } from '../componentes/escolher-artigo.js';
 import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -173,27 +174,24 @@ function editor() {
   if (rasc) {
     // Juntar artigo (do catálogo dos armazéns, com o disponível)
     const junta = el('div', 'req-juntar');
-    const dlId = 'req-cat';
-    const lista = el('datalist');
-    lista.id = dlId;
-    ((CAT && CAT.artigos) || []).forEach((a) => {
-      const o = el('option');
-      o.value = a.codigo + ' · ' + a.artigo;
-      if (a.disponivel != null) o.label = t('disponível no armazém: {q}', { q: n0(a.disponivel) });
-      lista.append(o);
-    });
-    const art = entrada('text', '', { placeholder: t('Artigo (nome ou código)') });
-    art.setAttribute('list', dlId);
-    art.setAttribute('aria-label', t('Artigo a juntar'));
+    // escolha do artigo pelo teclado: Enter ou F4 mostra a lista dos artigos activos, a mesma tecla selecciona e o
+    // foco passa à quantidade; Enter na quantidade junta o artigo e volta ao campo do artigo (ver escolher-artigo.js)
     const qt = entrada('number', '', { min: 0, step: 'any', inputMode: 'decimal', placeholder: t('Qtd.') });
     qt.setAttribute('aria-label', t('Quantidade a juntar'));
+    const esc = escolherArtigo((CAT && CAT.artigos) || [], {
+      rotulo: t('Artigo a juntar'),
+      depois: () => {
+        erro.hidden = true;
+        qt.focus();
+        qt.select();
+      },
+    });
     const juntar = () => {
-      const v = art.value.trim();
-      const a = ((CAT && CAT.artigos) || []).find((x) => v === x.codigo + ' · ' + x.artigo || v === x.codigo);
+      const a = esc.escolhido();
       if (!a) {
         erro.hidden = false;
         erro.textContent = t('Escolha um artigo da lista.');
-        return art.focus();
+        return esc.input.focus();
       }
       if (!(Number(qt.value) > 0)) {
         erro.hidden = false;
@@ -214,9 +212,18 @@ function editor() {
         });
       mudou();
       draw();
+      // pronto para o artigo seguinte
+      setTimeout(() => {
+        const i = document.querySelector('#req-editor .art-combo input');
+        if (i) i.focus();
+      }, 0);
     };
-    qt.addEventListener('keydown', (e) => e.key === 'Enter' && juntar());
-    junta.append(lista, art, qt, botao(t('Juntar artigo'), 'ghost sm', juntar));
+    qt.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      juntar();
+    });
+    junta.append(esc.caixa, qt, botao(t('Juntar artigo'), 'ghost sm', juntar));
     if (CAT && CAT.a_ler) junta.append(el('span', 'note', t('A carregar…')));
     s.append(junta);
     const nota = el('textarea', 'req-nota');

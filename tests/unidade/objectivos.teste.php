@@ -12,13 +12,15 @@ function obj_ag(string $de, string $ate, callable $valor, string $rota = '1001')
     return $ag;
 }
 
-teste('objectivo: previsão do mês + crescimento, nunca abaixo do ritmo do mês anterior + 3%; dias úteis sem domingos', function () {
+teste('objectivo: previsão do mês + crescimento, nunca abaixo do ritmo do mês anterior + 3%; calendário de trabalho (sábado meio dia, domingos e feriados de folga)', function () {
     $par = ['crescimento_min' => 0.03, 'crescimento_alvo' => 0.05];
     $ag = obj_ag('2026-06-01', '2026-08-31', function () { return 100000.0; });
     $o = naval_obj_calcular(naval_analise_serie($ag, '1001'), '2026-09', null, $par);
-    igual(26, $o['dias_uteis'], 'setembro de 2026: 30 dias − 4 domingos');
+    igual(25, $o['dias_uteis'], 'setembro de 2026: 30 dias − 4 domingos − 17-09 (Dia do Herói Nacional)');
+    igual(round(21 + 4 * round(5.5 / 7.5, 3), 3), $o['dias_equivalentes'], '21 dias completos + 4 sábados de meio dia');
+    verdade(!isset($o['dias']['2026-09-17']), 'feriado sem objectivo');
     igual(0, (int) round(array_sum($o['dias']) - $o['objectivo']), 'a soma dos dias dá o objectivo');
-    verdade($o['objectivo'] >= 100000 * 1.05 * 26 - 1000, 'base × 1,05');
+    verdade($o['objectivo'] >= 100000 * 1.05 * 25 - 1000, 'base × 1,05');
     igual(0.0, fmod($o['objectivo'], 1000.0), 'arredondado ao milhar');
     igual(null, naval_obj_calcular([], '2026-09', null, $par), 'sem histórico, sem objectivo');
 });
@@ -30,8 +32,8 @@ teste('objectivo sobe sempre: mês fraco não baixa o objectivo seguinte (ritmo 
     // setembro corre mal: metade das vendas
     $ag2 = $ag + obj_ag('2026-09-01', '2026-09-30', function () { return 50000.0; });
     $out = naval_obj_calcular(naval_analise_serie($ag2, '1001'), '2026-10', $set, $par);
-    $ritmoSet = $set['objectivo'] / $set['dias_uteis'];
-    $ritmoOut = $out['objectivo'] / $out['dias_uteis'];
+    $ritmoSet = $set['objectivo'] / $set['dias_equivalentes'];
+    $ritmoOut = $out['objectivo'] / $out['dias_equivalentes'];
     verdade($ritmoOut >= $ritmoSet * 1.03 - 40, 'ritmo do objectivo de outubro ≥ ritmo de setembro + 3%');
     igual('minimo', $out['criterio'], 'foi a regra do mínimo crescente que decidiu');
 });
@@ -47,7 +49,10 @@ teste('objectivos congelados no mês e acompanhamento: cumprimento, ritmo, falta
     $r = $e['rotas'][0];
     igual('acima', $r['estado'], 'a vender acima do objectivo diário');
     verdade($r['ritmo'] > 1, 'ritmo acima de 100%');
-    igual(round($r['falta'] / $r['dias_restantes'], 2), $r['necessario_dia']);
+    // necessário por dia completo equivalente (um sábado conta ≈ 0,73)
+    $eq = 0.0;
+    foreach ($o['dias'] as $d => $v) if ($d > '2026-06-15') $eq += naval_cal_peso($d);
+    igual(round($r['falta'] / $eq, 2), $r['necessario_dia']);
     igual((float) $o['objectivo'], (float) $e['total']['objectivo'], 'total = soma das rotas no âmbito');
     igual([], naval_objectivos_estado($g, $junho, '2026-06-15', ['9999'])['rotas'], 'âmbito por rota');
 });

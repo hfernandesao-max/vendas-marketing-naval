@@ -4389,7 +4389,7 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 110px auto;
   gap: 8px;
-  align-items: center;
+  align-items: start;
 }
 .req-juntar input,
 .req-nota,
@@ -4666,4 +4666,72 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
 .cx-sec,
 .cx-sugerido {
   margin-bottom: 16px;
+}
+/* carga por confirmar depois do fim da janela de carregamento (calendário de trabalho) */
+.req-a-carregar.req-atraso {
+  color: var(--bad);
+  background: rgb(var(--er1-rgb) / 0.12);
+  border: 1px solid var(--bad);
+}
+
+/* Escolha de artigo pelo teclado (combobox com lista): lista por baixo do campo, linha activa realçada */
+.art-combo {
+  position: relative;
+  min-width: 0;
+}
+.art-combo input {
+  width: 100%;
+}
+.art-lista {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  /* quase opaca: o texto por baixo não pode atrapalhar a leitura da lista */
+  background: rgb(var(--p3-rgb) / 0.97);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border: 1px solid rgb(var(--brilho-rgb) / calc(var(--brilho-a) * 0.7));
+  border-radius: 12px;
+  box-shadow: 0 16px 36px -10px rgb(var(--sombra-rgb) / calc(0.5 * var(--sombra-k)));
+}
+.art-op {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.art-op b {
+  font-variant-numeric: tabular-nums;
+}
+.art-op.on,
+.art-op:hover {
+  background: rgb(var(--az1-rgb) / 0.18);
+}
+.art-op.on {
+  outline: 1px solid rgb(var(--az1-rgb) / 0.55);
+}
+.art-vazio {
+  padding: 8px 10px;
+}
+.art-ajuda {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .art-lista {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(var(--p3-rgb));
+  }
 }

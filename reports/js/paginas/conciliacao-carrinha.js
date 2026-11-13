@@ -4,6 +4,7 @@
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { quem as assinante } from '../componentes/assinantes.js';
+import { foraDoPrazo, horarioTxt } from '../componentes/horario.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
@@ -362,12 +363,17 @@ R['conciliacao-carrinha'] = (pg) => {
     return;
   }
   const lista = el('div', 'gst-lista');
+  // calendário de trabalho: horário do dia e prazo do fecho (contagem e validação até ao fim da janela do fecho)
+  if (CC.horario) pg.append(el('p', 'note cc-horario', horarioTxt(CC.horario)));
+  const atrasoFecho = foraDoPrazo(CC.horario, 'fecho');
   rs.forEach((r) => {
     const [txt, cls] = ESTADOS[r.resumo.estado] || [r.resumo.estado, 'p-mut'];
     const c = el('article', 'gst-alerta cc-rota g-' + (r.resumo.estado === 'aprovada' ? 'info' : r.resumo.alertas || r.resumo.diferencas ? 'aviso' : 'info'));
     c.dataset.rota = r.rota;
     const h = el('div', 'cc-cab');
     h.append(el('b', null, r.rota + ' · ' + r.promotor), pill(t(txt), cls));
+    if (atrasoFecho && ['por_contar', 'por_validar'].includes(r.resumo.estado))
+      h.append(pill(t('Fora do prazo do fecho ({h})', { h: CC.horario.fecho[1] }), 'p-bad'));
     const det = [t('{n} artigos', { n: n0(r.resumo.artigos) })];
     if (r.resumo.alertas) det.push(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }));
     if (r.resumo.estado !== 'por_contar') det.push(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }));
