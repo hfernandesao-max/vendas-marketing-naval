@@ -486,13 +486,27 @@ R['caixa-marketing'] = (pg) => {
     );
   if (aberta && c.saldo_inicial_origem === 'manual') {
     const s = el('section', 'glass sec cx-sec');
-    const i = entrada('number', ed.saldo_inicial == null ? '' : ed.saldo_inicial, { min: 0, step: '0.01', inputMode: 'decimal' });
+    // campo de texto numérico (sem setas; aceita vírgula); vazio = 0 Kz (sem saldo inicial)
+    const i = entrada('text', ed.saldo_inicial == null ? '' : String(ed.saldo_inicial).replace('.', ','), {
+      inputMode: 'decimal',
+      autocomplete: 'off',
+      placeholder: '0,00',
+    });
+    i.classList.add('cx-saldo');
     i.setAttribute('aria-label', t('Saldo inicial'));
     i.addEventListener('input', () => {
-      ed.saldo_inicial = i.value === '' ? null : Number(i.value);
+      const v = i.value.trim() === '' ? 0 : Number(i.value.replace(/\s/g, '').replace(',', '.'));
+      const ok = !isNaN(v) && v >= 0;
+      i.classList.toggle('cx-falta', !ok);
+      i.setAttribute('aria-invalid', ok ? 'false' : 'true');
+      if (ok) ed.saldo_inicial = Math.round(v * 100) / 100;
       mudou();
     });
-    s.append(el('b', null, t('Saldo inicial')), i, el('span', 'note', t('Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior.')));
+    s.append(
+      el('b', null, t('Saldo inicial')),
+      i,
+      el('span', 'note', t('Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).')),
+    );
     pg.append(s);
   }
   pg.append(

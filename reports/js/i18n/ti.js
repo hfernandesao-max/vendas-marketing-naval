@@ -3571,6 +3571,8 @@ export const TI = {
     'ሓድሽ መሸጣ ወይ ገንዘብ ናይ ሎሚ የለን፤ ካብ መሸጣን ኣከፋፍላን ናይዚ እዋን ወጻኢ እዮም፤ እቲ ቅናሽን ምትዕርራይ ናይ ዝተቐበለን ናብቲ ፋይል SAP ይኸዱ፣ ከም ኣብ Pinguim BO።',
   'No SAP o desconto fica registado pela nota de crédito e pela factura nova, e o acerto corrige o recebido da factura original (o cliente pagou o valor com desconto), sem saldo a crédito.':
     'ኣብ SAP እቲ ቅናሽ ብናይ ክረዲት ሰነድን ብሓድሽ ፋክቱራን ይምዝገብ፣ እቲ ምትዕርራይ ድማ ነቲ ኣብ ቀዳማይ ፋክቱራ ዝተቐበለ የስተኻኽል (ዓሚል ነቲ ብቅናሽ ዝኾነ ዋጋ ከፊሉ)፣ ብዘይ ተረፍ ክረዲት።',
+  'Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).':
+    'ኣብ ቀዳማይ መዓልቲ ጥራይ፤ ድሕሪኡ ናይ ቅድሚኡ መዓልቲ ዝጸደቐ ተረፍ እዩ። ብዘይ ዋጋ፣ ባዶ ግደፍዎ ወይ 0 ጸሓፉ (0,00 Kz)።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

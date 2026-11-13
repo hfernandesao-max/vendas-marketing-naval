@@ -3633,6 +3633,8 @@ export const EN = {
     "No new sale and no money today: they are left out of this period's sales and collections; the discount and the adjustment to the amount received go into the SAP file, as in Pinguim BO.",
   'No SAP o desconto fica registado pela nota de crédito e pela factura nova, e o acerto corrige o recebido da factura original (o cliente pagou o valor com desconto), sem saldo a crédito.':
     'In SAP the discount is recorded through the credit note and the new invoice, and the adjustment corrects the amount received on the original invoice (the customer paid the discounted amount), with no credit balance.',
+  'Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).':
+    "Only on the first day; after that it is the previous day's approved balance. With no amount, leave it empty or type 0 (0.00 Kz).",
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

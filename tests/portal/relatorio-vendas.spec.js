@@ -374,3 +374,46 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
   expect(erros).toEqual([]);
 });
+
+test('folha de caixa: saldo inicial do primeiro dia pode ser 0 (campo vazio = 0,00 Kz), sem setas', async ({ page }) => {
+  let caixa = {
+    dia: '2026-10-26',
+    estado: 'aberta',
+    versao: 1,
+    saldo_inicial: 1426000,
+    saldo_inicial_origem: 'manual',
+    entregas: [],
+    tpa: [],
+    saidas: [],
+    contagem_fisica: null,
+    explicacao: '',
+    total_entregas: 0,
+    total_tpa: 0,
+    total_saidas: 0,
+    saldo_teorico: 1426000,
+    diferenca: null,
+  };
+  const pedidos = [];
+  await page.route('**/v1/caixa**', (r) => {
+    const req = r.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      caixa = { ...caixa, saldo_inicial: b.saldo_inicial, saldo_teorico: b.saldo_inicial, versao: caixa.versao + 1 };
+      return r.fulfill({ json: { ok: true, caixa, nomes: {} } });
+    }
+    return r.fulfill({
+      json: { ok: true, gere: true, aprova: [], eu: 'josefa', caixa, promotores: { 1001: 'Andrea Santos' }, saidas: {}, bancos: ['BPC'], empresas: ['NAVAL'] },
+    });
+  });
+  const erros = await abrir(page, '#caixa-marketing');
+  const si = page.getByLabel('Saldo inicial', { exact: true });
+  await expect(si).toHaveAttribute('type', 'text');
+  await expect(si).toHaveValue('1426000');
+  await si.fill('');
+  await expect(page.locator('.tile', { hasText: 'Saldo inicial' })).toContainText('0,00 Kz');
+  await page.getByRole('button', { name: 'Gravar', exact: true }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'gravar', saldo_inicial: 0 });
+  expect(erros).toEqual([]);
+});
