@@ -64,7 +64,7 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await ed.getByLabel('Quantidade · Fraldas M').fill('30');
   await expect(ed.locator('.req-estado')).toContainText('Alterações por gravar');
   // só com o teclado: Enter mostra a lista dos artigos activos, Enter selecciona e passa à quantidade, Enter junta
-  const art = ed.getByRole('combobox', { name: 'Artigo a juntar' });
+  const art = ed.getByRole('combobox', { name: 'Artigo a adicionar' });
   await art.focus();
   await art.press('Enter');
   await expect(ed.getByRole('listbox')).toBeVisible();
@@ -76,11 +76,11 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await expect(ed.getByRole('option', { name: /Detergente/ })).toHaveAttribute('aria-selected', 'true');
   await art.press('Enter');
   await expect(art).toHaveValue('C3 · Detergente');
-  await expect(ed.getByLabel('Quantidade a juntar')).toBeFocused();
+  await expect(ed.getByLabel('Quantidade a adicionar')).toBeFocused();
   await page.keyboard.type('5');
   await page.keyboard.press('Enter');
   // volta ao artigo, pronto para o seguinte
-  await expect(ed.getByRole('combobox', { name: 'Artigo a juntar' })).toBeFocused();
+  await expect(ed.getByRole('combobox', { name: 'Artigo a adicionar' })).toBeFocused();
   await expect(ed.locator('tr', { hasText: 'Detergente' })).toBeVisible();
   await ed.getByRole('button', { name: 'Gravar', exact: true }).click();
   await expect.poll(() => pedidos.length).toBe(1);
@@ -158,7 +158,7 @@ test('nova requisição: «Criar» só abre o formulário (nada se regista); esc
   await nova.getByLabel('Rota').selectOption('1005');
   await nova.getByRole('button', { name: 'Criar' }).click();
   await expect(ed.getByRole('button', { name: 'Anular' })).toHaveCount(0);
-  const art = ed.getByRole('combobox', { name: 'Artigo a juntar' });
+  const art = ed.getByRole('combobox', { name: 'Artigo a adicionar' });
   await art.focus();
   await art.press('Enter');
   await art.press('Enter');

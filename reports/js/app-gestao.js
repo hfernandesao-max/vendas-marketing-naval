@@ -298,7 +298,65 @@ function linhaAlerta(x, compacta) {
   if (!compacta && det) tx.append(el('span', null, det));
   b.append(ic, tx);
   if (compacta) b.insertAdjacentHTML('beforeend', SETA);
+  else if (x.id) tx.append(tratamentoApp(x));
   return b;
+}
+/** Mensagem curta no fundo do ecrã (anunciada aos leitores de ecrã). */
+function toastApp(m) {
+  let x = document.getElementById('ag-toast');
+  if (!x) {
+    x = el('div', 'ag-toast');
+    x.id = 'ag-toast';
+    x.setAttribute('role', 'status');
+    x.setAttribute('aria-live', 'polite');
+    document.body.append(x);
+  }
+  x.textContent = m;
+  x.classList.add('on');
+  clearTimeout(toastApp.h);
+  toastApp.h = setTimeout(() => x.classList.remove('on'), 3500);
+}
+// Tratamento do alerta no telemóvel (como no PagerDuty e no ServiceNow): assumir e resolver com a nota do que foi
+// feito; silenciar até uma data faz-se no portal. Tudo fica registado com o nome de quem o fez.
+function tratamentoApp(x) {
+  const tr = x.tratamento || { estado: 'novo' };
+  const w = el('span', 'ag-al-trat');
+  if (tr.estado === 'assumido')
+    w.append(el('span', 'ag-al-est', tr.por === (E.sessao && E.sessao.login) ? t('Em tratamento por si') : t('Em tratamento por {p}', { p: tr.por })));
+  if (tr.estado === 'reaberto') w.append(el('span', 'ag-al-est', t('Reaberto: continua depois de resolvido')));
+  const acc = el('span', 'ag-al-acc');
+  const enviar = (accao, nota) =>
+    postJson('alertas', { accao, id: x.id, nota: nota || '' }).then((d) => {
+      if (!d || !d.ok) return toastApp(t((d && d.erro) || 'Não foi possível gravar.'));
+      toastApp(t(accao === 'resolver' ? 'Alerta resolvido.' : 'Alerta assumido.'));
+      carregar(true);
+    });
+  const bt = (txt, f) => {
+    const b = el('button', 'ag-al-b', txt);
+    b.type = 'button';
+    b.addEventListener('click', f);
+    return b;
+  };
+  if (tr.estado !== 'assumido' || tr.por !== (E.sessao && E.sessao.login)) acc.append(bt(t('Assumir'), () => enviar('assumir')));
+  acc.append(
+    bt(t('Resolver'), () => {
+      if (w.querySelector('textarea')) return;
+      const f = el('span', 'ag-al-form');
+      const nota = el('textarea');
+      nota.rows = 2;
+      nota.maxLength = 500;
+      nota.placeholder = t('O que foi feito?');
+      nota.setAttribute('aria-label', t('Acção tomada'));
+      f.append(
+        nota,
+        bt(t('Resolver'), () => enviar('resolver', nota.value)),
+      );
+      w.append(f);
+      nota.focus();
+    }),
+  );
+  w.append(acc);
+  return w;
 }
 function linhaRota(r, i, max, ordem) {
   const b = el('button', 'ag-rota');

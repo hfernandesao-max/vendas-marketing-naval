@@ -182,6 +182,9 @@ function naval_resumo_enviar(?string $dia = null, ?string $apenas = null): array
         $alertas = [];
         try {
             $alertas = naval_alertas($dia, $rotas, true, $g[0]['fontes'])['alertas'];
+            // só os que continuam por tratar (os resolvidos e silenciados já têm dono)
+            naval_servico('alertas-tratamento');
+            $alertas = array_values(array_filter(naval_alt_aplicar($alertas, time()), function ($x) { return !empty($x['activo']); }));
         } catch (Throwable $e) {
             error_log('[resumo alertas] ' . $e->getMessage());
         }

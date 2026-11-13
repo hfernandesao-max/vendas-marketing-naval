@@ -4,6 +4,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Alertas: assumir, resolver, silenciar e reabrir
+
+<!-- paginas: alertas -->
+
+- Cada alerta passa a ter **tratamento** (gestão de alarmes ISA-18.2 e de eventos ITIL 4, como no ServiceNow e no
+  PagerDuty): **assumir** («em tratamento por…», para ninguém fazer o trabalho a dobrar), **resolver** com a nota do
+  que foi feito (obrigatória), **silenciar** até uma data (no máximo 30 dias, com o motivo) e **reabrir**.
+- Um alerta resolvido cujo problema continua **reabre sozinho** ao fim de 24 horas; o silêncio acaba sozinho na data.
+- Filtro **Activos / Tratados / Todos os estados**, e o **histórico** de cada alerta (quem, quando, nota); nada se apaga.
+- Na app: assumir e resolver directamente no telemóvel; os números e a lista só contam os alertas por tratar. O resumo
+  diário por correio também.
+
+### Termos e listas como nas aplicações de referência
+
+<!-- paginas: requisicoes-carrinha, conciliacao-carrinha, stock-carrinha -->
+
+- «Juntar artigo» passa a **«Adicionar artigo»** (e o mesmo nas mensagens das requisições).
+- Nas listas de escolha (rotas, estados…), **«Todos» deixa todas as caixas marcadas**, como no filtro do Excel: desmarcar
+  uma deixa as outras. Há uma linha **«Seleccionar todos»** com três estados (todos, alguns, nenhum).
+- **Código primeiro e descrição a seguir** em todas as tabelas de artigos (conciliação das carrinhas e o seu PDF,
+  stock, confirmação da carga e relatório de vendas), com os mesmos nomes de coluna: «Código» e «Artigo».
+
 ### Campos de data: escrever à mão ou escolher no calendário (ISO 8601)
 
 <!-- paginas: inicio, caixa-marketing, conciliacao-carrinha, relatorio-vendas, plano-cargas, carteira -->

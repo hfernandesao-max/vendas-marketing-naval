@@ -20,7 +20,7 @@ import { arrastavel } from '../componentes/arrastar.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, ds, kz, n0, n1 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
-import { atual, podeVer } from '../perfil.js';
+import { SESSAO, atual, podeVer } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { R } from './registo.js';
@@ -63,16 +63,150 @@ const actualizarBtn = (chave, rota, pagina) =>
 
 const GRAV = { critico: ['Crítico', 'p-bad'], aviso: ['Aviso', 'p-warn'], info: ['Destaque', 'p-ok'] };
 let filtroGrav = '';
+let filtroEstado = 'activos';
+// Tratamento dos alertas (ISA-18.2 / ITIL 4): assumir, resolver com nota, silenciar até uma data com motivo, reabrir.
+// O servidor guarda quem, quando e a nota (alertas-tratamento.php); um resolvido que continua reabre sozinho em 24 h.
+const ESTADO_AL = {
+  novo: ['Novo', 'p-bad'],
+  assumido: ['Em tratamento', 'p-warn'],
+  reaberto: ['Reaberto', 'p-bad'],
+  resolvido: ['Resolvido', 'p-ok'],
+  silenciado: ['Silenciado', 'p-ok'],
+};
+const NOMES_AL = {};
+const quemAl = (l) => (l ? (NOMES_AL[l] || l) + (NOMES_AL[l] ? ' (' + l + ')' : '') : '');
+const quandoAl = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
+const ACCAO_AL = { assumir: 'Assumido', resolver: 'Resolvido', silenciar: 'Silenciado', reabrir: 'Reaberto', largar: 'Largado' };
+function tratarAlerta(a, accao, fechar, erro, extra = {}) {
+  return postJson('alertas', { accao, id: a.id, ...extra }).then((x) => {
+    if (!x || !x.ok) {
+      if (erro) {
+        erro.hidden = false;
+        erro.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+      } else toast(t((x && x.erro) || 'Não foi possível gravar.'), 5000);
+      return;
+    }
+    if (fechar) fechar();
+    toast(
+      t(
+        { assumir: 'Alerta assumido.', resolver: 'Alerta resolvido.', silenciar: 'Alerta silenciado.', reabrir: 'Alerta reaberto.', largar: 'Alerta largado.' }[
+          accao
+        ],
+      ),
+      3500,
+    );
+    delete DADOS.alertas;
+    draw();
+  });
+}
+function janelaAlerta(a, accao) {
+  const [titulo] = textoAlerta(a);
+  const cfg = {
+    resolver: [
+      t('Resolver o alerta'),
+      t('O que foi feito para resolver? Fica registado com o seu nome. Se o problema continuar, o alerta reabre sozinho em 24 horas.'),
+      t('Resolver'),
+    ],
+    silenciar: [t('Silenciar o alerta'), t('Até quando e porquê? No máximo 30 dias; depois volta sozinho.'), t('Silenciar')],
+    reabrir: [t('Reabrir o alerta'), t('Porque reabre este alerta?'), t('Reabrir')],
+  }[accao];
+  janela(cfg[0], titulo, (b, ft, fechar) => {
+    b.append(el('p', 'note', cfg[1]));
+    const nota = el('textarea');
+    nota.rows = 3;
+    nota.maxLength = 500;
+    nota.setAttribute('aria-label', accao === 'resolver' ? t('Acção tomada') : t('Motivo'));
+    let ate = null;
+    if (accao === 'silenciar') {
+      const hojeIso = new Date().toISOString().slice(0, 10);
+      const max = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      ate = entrada('date', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), { min: hojeIso, max });
+      ate.setAttribute('aria-label', t('Silenciado até'));
+      b.append(campo(t('Silenciado até'), ate));
+    }
+    b.append(campo(accao === 'resolver' ? t('Acção tomada') : t('Motivo'), nota));
+    const erro = msgErro();
+    b.append(erro);
+    ft.append(
+      botao(t('Cancelar'), 'ghost', fechar),
+      botao(cfg[2], null, () => tratarAlerta(a, accao, fechar, erro, { nota: nota.value, ...(ate ? { ate: ate.value } : {}) })),
+    );
+    setTimeout(() => nota.focus(), 0);
+  });
+}
+/** Estado, acções e histórico do tratamento de um alerta. */
+function blocoTratamento(a) {
+  const tr = a.tratamento || { estado: 'novo' };
+  const w = el('div', 'gst-trat');
+  const est = ESTADO_AL[tr.estado] || ESTADO_AL.novo;
+  const linha = el('div', 'gst-trat-l');
+  linha.append(pill(t(est[0]), est[1]));
+  const txt =
+    tr.estado === 'assumido'
+      ? t('por {p} · {q}', { p: quemAl(tr.por), q: quandoAl(tr.em) })
+      : tr.estado === 'resolvido'
+        ? t('por {p} · {q}', { p: quemAl(tr.por), q: quandoAl(tr.em) }) + (tr.nota ? ' · ' + tr.nota : '')
+        : tr.estado === 'silenciado'
+          ? t('até {d}, por {p}', { d: dl(tr.ate), p: quemAl(tr.por) }) + (tr.nota ? ' · ' + tr.nota : '')
+          : tr.estado === 'reaberto'
+            ? t('continua depois de resolvido por {p}', { p: quemAl(tr.por) })
+            : '';
+  if (txt) linha.append(el('span', 'note', txt));
+  w.append(linha);
+  const acc = el('div', 'gst-trat-acc');
+  const eu = atualLogin();
+  const activo = ['novo', 'assumido', 'reaberto'].includes(tr.estado);
+  if (activo && tr.estado !== 'assumido') acc.append(botao(t('Assumir'), 'sec sm', () => tratarAlerta(a, 'assumir')));
+  if (tr.estado === 'assumido' && tr.por === eu) acc.append(botao(t('Largar'), 'ghost sm', () => tratarAlerta(a, 'largar')));
+  if (tr.estado === 'assumido' && tr.por !== eu) acc.append(botao(t('Assumir'), 'ghost sm', () => tratarAlerta(a, 'assumir')));
+  if (activo)
+    acc.append(
+      botao(t('Resolver'), 'sec sm', () => janelaAlerta(a, 'resolver')),
+      botao(t('Silenciar'), 'ghost sm', () => janelaAlerta(a, 'silenciar')),
+    );
+  else acc.append(botao(t('Reabrir'), 'ghost sm', () => janelaAlerta(a, 'reabrir')));
+  w.append(acc);
+  if (tr.hist && tr.hist.length) {
+    const det = el('details', 'gst-trat-h');
+    det.append(el('summary', null, t('Histórico ({n})', { n: tr.hist.length })));
+    const ul = el('ul');
+    tr.hist
+      .slice()
+      .reverse()
+      .forEach((h) =>
+        ul.append(
+          el(
+            'li',
+            null,
+            quandoAl(h.em) +
+              ' · ' +
+              t(ACCAO_AL[h.accao] || h.accao) +
+              ' · ' +
+              quemAl(h.por) +
+              (h.ate ? ' · ' + t('até {d}', { d: dl(h.ate) }) : '') +
+              (h.nota ? ' · ' + h.nota : ''),
+          ),
+        ),
+      );
+    det.append(ul);
+    w.append(det);
+  }
+  return w;
+}
+const atualLogin = () => (SESSAO && SESSAO.login) || '';
 
 R.alertas = (pg) => {
   const d = esperar(pg, 'alertas', 'alertas', 'alertas');
   if (!d) return;
-  const n = (g) => d.alertas.filter((a) => a.gravidade === g).length;
+  Object.assign(NOMES_AL, d.nomes || {});
+  const activos = d.alertas.filter((a) => a.activo !== false);
+  const n = (g) => activos.filter((a) => a.gravidade === g).length;
+  const tratados = d.alertas.length - activos.length;
   pg.append(
     tiles([
       { l: t('Críticos'), v: n0(n('critico')), s: t('a tratar hoje'), tone: n('critico') ? 'bad' : null },
       { l: t('Avisos'), v: n0(n('aviso')), s: t('a acompanhar') },
-      { l: t('Destaques'), v: n0(n('info')), s: t('boas notícias a partilhar') },
+      { l: t('Tratados'), v: n0(tratados), s: t('resolvidos ou silenciados') },
       { l: t('Dia analisado'), v: dl(d.dia), s: t('calculado às {h}', { h: String(d.gerado || '').slice(11, 16) }) },
     ]),
   );
@@ -92,9 +226,26 @@ R.alertas = (pg) => {
     b.setAttribute('aria-pressed', filtroGrav === g ? 'true' : 'false');
     barra.append(b);
   });
+  const sep = el('span', 'gst-sep');
+  sep.setAttribute('aria-hidden', 'true');
+  barra.append(sep);
+  [
+    ['activos', 'Activos'],
+    ['tratados', 'Tratados'],
+    ['todos', 'Todos os estados'],
+  ].forEach(([e, txt]) => {
+    const b = botao(t(txt), 'sec' + (filtroEstado === e ? ' on' : ''), () => {
+      filtroEstado = e;
+      draw();
+    });
+    b.setAttribute('aria-pressed', filtroEstado === e ? 'true' : 'false');
+    barra.append(b);
+  });
   barra.append(actualizarBtn('alertas', 'alertas', 'alertas'));
   const lista = el('div', 'gst-lista');
-  const vis = d.alertas.filter((a) => !filtroGrav || a.gravidade === filtroGrav);
+  const vis = d.alertas.filter(
+    (a) => (!filtroGrav || a.gravidade === filtroGrav) && (filtroEstado === 'todos' || (filtroEstado === 'activos' ? a.activo !== false : a.activo === false)),
+  );
   if (!vis.length) lista.append(el('p', 'note', t('Sem alertas: tudo dentro do habitual.')));
   vis.forEach((a) => {
     const [titulo, detalhe] = textoAlerta(a);
@@ -107,6 +258,8 @@ R.alertas = (pg) => {
       ir.href = '#' + a.pagina;
       c.append(ir);
     }
+    if (a.id) c.append(blocoTratamento(a));
+    c.classList.toggle('tratado', a.activo === false);
     lista.append(c);
   });
   const corpo = el('div');

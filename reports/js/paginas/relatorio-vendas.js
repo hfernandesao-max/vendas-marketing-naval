@@ -267,6 +267,7 @@ function relatorio(pg) {
       total: true,
       cols: [
         { key: 'nome', label: t('Promotor'), p: 1 },
+        { key: 'codigo', label: t('Código'), p: 5 },
         { key: 'artigo', label: t('Artigo'), wrap: true, p: 0 },
         { key: 'inicial', label: t('Inicial'), type: 'n', sum: true, p: 3 },
         { key: 'carregado', label: t('Carregado'), type: 'n', sum: true, p: 2 },

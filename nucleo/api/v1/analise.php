@@ -22,6 +22,16 @@ $veValores = naval_ve_vendas();
 if ($f === 'alertas') {
     naval_exigir(['alertas']);
     naval_servico('alertas');
+    naval_servico('alertas-tratamento');
+    // tratamento de um alerta (assumir, resolver, silenciar, reabrir, largar): quem vê o alerta trata-o, assinado
+    if (naval_e_post()) {
+        $p = naval_pedido();
+        naval_exigir_csrf($p);
+        $eu = (array) naval_utilizador();
+        $reg = naval_alt_tratar((string) ($p['id'] ?? ''), (string) ($p['accao'] ?? ''), (string) ($p['nota'] ?? ''),
+            isset($p['ate']) ? (string) $p['ate'] : null, (string) ($eu['login'] ?? ''), time());
+        naval_json_assinado(['ok' => true, 'tratamento' => $reg]);
+    }
     $dia = (string) ($_GET['dia'] ?? '');
     if ($dia !== '' && (!naval_data_valida($dia) || $dia >= date('Y-m-d'))) throw new NavalErro('Dia inválido (AAAA-MM-DD, até ontem).', 400);
     $chave = 'alertas|' . ($dia ?: date('Y-m-d', time() - 86400)) . '|' . json_encode($rotas) . '|' . (int) $veValores . '|' . implode(',', naval_alertas_fontes());
@@ -29,7 +39,9 @@ if ($f === 'alertas') {
     $r = naval_cache($chave, 600, function () use ($dia, $rotas, $veValores) {
         return naval_alertas($dia ?: null, $rotas, $veValores, naval_alertas_fontes());
     }, $fresco);
-    naval_json(['ok' => true] + $r);
+    // o tratamento não fica em cache: cada pessoa vê logo o que os outros fizeram
+    $r['alertas'] = naval_alt_aplicar($r['alertas'], time());
+    naval_json_assinado(['ok' => true] + $r);
 }
 
 if ($f === 'previsao') {
@@ -78,10 +90,15 @@ if ($f === 'indicadores') {
             $a = naval_cache('alertas|' . date('Y-m-d', time() - 86400) . '|' . json_encode($rotas) . '|1|' . implode(',', naval_alertas_fontes()), 600, function () use ($rotas) {
                 return naval_alertas(null, $rotas, true, naval_alertas_fontes());
             });
+            naval_servico('alertas-tratamento');
+            $todos = naval_alt_aplicar($a['alertas'], time());
+            $activos = array_values(array_filter($todos, function ($x) { return !empty($x['activo']); }));
             $cont = ['critico' => 0, 'aviso' => 0, 'info' => 0];
-            foreach ($a['alertas'] as $x) $cont[$x['gravidade']]++;
-            $r['alertas'] = $cont + ['principais' => array_map(function ($x) { return ['gravidade' => $x['gravidade'], 'titulo' => $x['titulo'], 'tipo' => $x['tipo'], 'p' => $x['p'] ?? []]; },
-                array_slice(array_values(array_filter($a['alertas'], function ($x) { return $x['gravidade'] !== 'info'; })), 0, 5))];
+            foreach ($activos as $x) $cont[$x['gravidade']]++;
+            $r['alertas'] = $cont + ['tratados' => count($todos) - count($activos), 'principais' => array_map(function ($x) {
+                return ['id' => $x['id'], 'gravidade' => $x['gravidade'], 'titulo' => $x['titulo'], 'tipo' => $x['tipo'], 'p' => $x['p'] ?? [],
+                    'tratamento' => array_diff_key($x['tratamento'], ['hist' => 1])];
+            }, array_slice(array_values(array_filter($activos, function ($x) { return $x['gravidade'] !== 'info'; })), 0, 8))];
         } catch (Throwable $e) {
             error_log('[indicadores alertas] ' . $e->getMessage());
         }

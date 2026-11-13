@@ -354,7 +354,11 @@ R.actualizacoes = (pg) => {
       }
     }, 15000);
   pg.append(
-    secBox(t('Versões por instalar'), t('As versões por instalar juntam-se num pacote único: uma decisão instala tudo, com uma só cópia de segurança.'), lista),
+    secBox(
+      t('Versões por instalar'),
+      t('As versões por instalar agrupam-se num pacote único: uma decisão instala tudo, com uma só cópia de segurança.'),
+      lista,
+    ),
   );
 
   const hist = el('div', 'act-hist');

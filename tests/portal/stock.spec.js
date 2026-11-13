@@ -129,7 +129,7 @@ test('stock por carrinha: mostra de que armazém vem o stock; SADM confirma o ar
   const o2 = page.locator('#s-sc-car-1002 .stock-origem');
   await expect(o2).toContainText('Armazém por confirmar');
   await expect(o2).toContainText('MR02 · Depósito 1002 antigo (pelo nome)');
-  await expect(o2).toContainText('junta 2 armazéns');
+  await expect(o2).toContainText('tem 2 armazéns');
   await o2.locator('.stock-origem-arm', { hasText: '10001002' }).locator('button').click();
   await expect.poll(() => enviado).toMatchObject({ accao: 'confirmar_carrinha', rota: '1002', codigo: '10001002', csrf: 'x' });
   await expect(page.locator('#s-sc-car-1002 .stock-origem')).toContainText('Armazém confirmado');

@@ -194,7 +194,7 @@ function editor() {
   });
   if (!edicao.linhas.length) {
     const tr = el('tr');
-    const td = el('td', 'note', t('Sem artigos. Junte os artigos a requisitar.'));
+    const td = el('td', 'note', t('Sem artigos. Adicione os artigos a requisitar.'));
     td.colSpan = 7;
     tr.append(td);
     tab.append(tr);
@@ -206,15 +206,15 @@ function editor() {
   s.append(el('p', 'note', t('{n} artigos · quantidade total {q}', { n: n0(edicao.linhas.length), q: n0(total) })));
 
   if (rasc) {
-    // Juntar artigo (do catálogo dos armazéns, com o disponível)
+    // Adicionar artigo (do catálogo dos armazéns, com o disponível)
     const junta = el('div', 'req-juntar');
     // escolha do artigo pelo teclado: Enter ou F4 mostra a lista dos artigos activos, a mesma tecla selecciona e o
     // foco passa à quantidade; Enter na quantidade junta o artigo e volta ao campo do artigo (ver escolher-artigo.js)
     const qt = entrada('text', '', { inputMode: 'decimal', autocomplete: 'off', placeholder: t('Qtd.') });
     qt.classList.add('req-qtd');
-    qt.setAttribute('aria-label', t('Quantidade a juntar'));
+    qt.setAttribute('aria-label', t('Quantidade a adicionar'));
     const esc = escolherArtigo((CAT && CAT.artigos) || [], {
-      rotulo: t('Artigo a juntar'),
+      rotulo: t('Artigo a adicionar'),
       depois: () => {
         erro.hidden = true;
         qt.focus();
@@ -266,7 +266,7 @@ function editor() {
       e.preventDefault();
       juntar();
     });
-    junta.append(esc.caixa, qt, botao(t('Juntar artigo'), 'ghost sm', juntar));
+    junta.append(esc.caixa, qt, botao(t('Adicionar artigo'), 'ghost sm', juntar));
     if (CAT && CAT.a_ler) junta.append(el('span', 'note', t('A carregar…')));
     s.append(junta);
     const nota = el('textarea', 'req-nota');

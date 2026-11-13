@@ -86,8 +86,8 @@ const artigoOk = (pagina) => {
 };
 
 const colsArtigos = () => [
-  { key: 'codigo', label: t('Código do Produto'), p: 0 },
-  { key: 'produto', label: t('Produto'), wrap: true, p: 0 },
+  { key: 'codigo', label: t('Código'), p: 0 },
+  { key: 'produto', label: t('Artigo'), wrap: true, p: 0 },
   { key: 'armazem', label: t('Armazém'), p: 1 },
   { key: 'quantidade', label: t('Quantidade'), type: 'n', sum: true, p: 0 },
 ];
@@ -155,7 +155,7 @@ function confirmarCarga(r) {
     (b, ft, fechar) => {
       const tab = el('table', 'cc-tab');
       const cab = el('tr');
-      [t('Artigo'), t('Requisitado'), t('Entregue')].forEach((x, i) => cab.append(el('th', i ? 'n' : null, x)));
+      [t('Código'), t('Artigo'), t('Requisitado'), t('Entregue')].forEach((x, i) => cab.append(el('th', i > 1 ? 'n' : null, x)));
       tab.append(cab);
       const campos = {};
       r.linhas.forEach((l) => {
@@ -165,7 +165,7 @@ function confirmarCarga(r) {
         campos[l.codigo] = i;
         const td = el('td', 'n');
         td.append(i);
-        tr.append(el('td', null, l.artigo + ' · ' + l.codigo), el('td', 'n', n0(l.quantidade)), td);
+        tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
         tab.append(tr);
       });
       const erro = msgErro();
@@ -260,7 +260,7 @@ function origemCarrinha(car) {
     }
     box.append(linha);
   });
-  if (ori.length > 1) box.append(el('p', 'aviso', t('Esta carrinha junta {n} armazéns do Pinguim BO: confirme qual é o dela.', { n: ori.length })));
+  if (ori.length > 1) box.append(el('p', 'aviso', t('Esta carrinha tem {n} armazéns no Pinguim BO: confirme qual é o dela.', { n: ori.length })));
   return box;
 }
 

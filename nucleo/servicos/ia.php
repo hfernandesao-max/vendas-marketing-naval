@@ -194,7 +194,13 @@ function naval_ia_executar(string $nome, array $q, ?callable $agregados = null):
             naval_servico('alertas');
             $dia = isset($q['dia']) && $q['dia'] !== '' ? naval_ia_data($q['dia'], 'dia') : null;
             $a = naval_alertas($dia, naval_rotas(), naval_ve_vendas(), naval_alertas_fontes());
-            $a['alertas'] = array_map(function ($x) { unset($x['p'], $x['id']); return $x; }, $a['alertas']);
+            // com o tratamento (assumido, resolvido, silenciado), para o assistente responder «quem está a tratar»
+            naval_servico('alertas-tratamento');
+            $a['alertas'] = array_map(function ($x) {
+                $x['tratamento'] = array_intersect_key($x['tratamento'], ['estado' => 1, 'por' => 1, 'nota' => 1, 'ate' => 1]);
+                unset($x['p'], $x['id']);
+                return $x;
+            }, naval_alt_aplicar($a['alertas'], time()));
             return $a;
 
         case 'previsao':

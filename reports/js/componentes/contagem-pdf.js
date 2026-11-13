@@ -322,7 +322,7 @@ export async function resultadoContagem(r, dia, motivos) {
     [tp('Sobras'), kz(res.sobra_kz || 0)],
   ]);
   const NUM = { halign: 'right' };
-  const cols = { 1: NUM, 2: NUM, 3: NUM, 4: NUM, 5: NUM, 6: NUM, 7: NUM, 8: NUM };
+  const cols = { 2: NUM, 3: NUM, 4: NUM, 5: NUM, 6: NUM, 7: NUM, 8: NUM, 9: NUM };
   const motivo = (l) => {
     if (!l.diferenca) return '';
     const m = (r.motivos || {})[l.codigo];
@@ -333,13 +333,14 @@ export async function resultadoContagem(r, dia, motivos) {
     margin: { left: 14, right: 14, bottom: 16 },
     head: [
       [
-        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', colSpan: 2, styles: { fillColor: [255, 255, 255] } },
         { content: tp('Sistema · Pinguim BO'), colSpan: 5, styles: { halign: 'center', fillColor: COR.sis } },
         { content: tp('Contagem física'), styles: { halign: 'center', fillColor: COR.cont } },
         { content: tp('Diferença'), colSpan: 2, styles: { halign: 'center', fillColor: COR.dif } },
         { content: tp('Justificação'), styles: { fillColor: [255, 255, 255] } },
       ],
       [
+        tp('Código'),
         tp('Artigo'),
         tp('Inicial'),
         tp('Carregado'),
@@ -353,7 +354,8 @@ export async function resultadoContagem(r, dia, motivos) {
       ],
     ],
     body: r.linhas.map((l) => [
-      l.artigo + (l.codigo ? ' · ' + l.codigo : ''),
+      l.codigo || '—',
+      l.artigo || '—',
       q(l.inicial),
       q(l.carregado),
       q(l.vendido),
@@ -367,17 +369,17 @@ export async function resultadoContagem(r, dia, motivos) {
     styles: { ...estiloTabela, fontSize: 8.5 },
     headStyles: estiloCabeca,
     theme: 'grid',
-    columnStyles: { 0: { cellWidth: 72 }, ...cols, 8: { halign: 'right', cellWidth: 30 }, 9: { cellWidth: 44 } },
+    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 60 }, ...cols, 9: { halign: 'right', cellWidth: 28 }, 10: { cellWidth: 40 } },
     didParseCell: (d) => {
       const i = d.column.index,
-        grupo = i >= 1 && i <= 5 ? COR.sis : i === 6 ? COR.cont : i === 7 || i === 8 ? COR.dif : null;
+        grupo = i >= 2 && i <= 6 ? COR.sis : i === 7 ? COR.cont : i === 8 || i === 9 ? COR.dif : null;
       if (d.section === 'head' && d.row.index === 1) {
         if (cols[i]) d.cell.styles.halign = 'right';
         if (grupo) d.cell.styles.fillColor = grupo;
       }
       if (d.section === 'body' && grupo) d.cell.styles.fillColor = grupo.map((c) => Math.round(c + (255 - c) * 0.45));
-      if (d.section === 'body' && i === 6) d.cell.styles.fontStyle = 'bold';
-      if (d.section === 'body' && (d.column.index === 7 || d.column.index === 8)) {
+      if (d.section === 'body' && i === 7) d.cell.styles.fontStyle = 'bold';
+      if (d.section === 'body' && (d.column.index === 8 || d.column.index === 9)) {
         const dif = r.linhas[d.row.index].diferenca;
         if (dif < 0) d.cell.styles.textColor = [178, 34, 34];
         else if (dif > 0) d.cell.styles.textColor = AZUL;
