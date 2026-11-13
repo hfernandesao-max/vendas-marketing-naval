@@ -21,6 +21,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O campo do saldo inicial passa a ter o tamanho do valor (até 15 algarismos), com «Kz» ao lado, em vez de ocupar a
   largura toda.
 
+### App no telemóvel: Face ID sozinho, datas certas e valores com e sem IVA
+
+- **Entrada**: o Face ID (ou a impressão digital) é pedido sozinho ao abrir a app e sempre que ela volta a ficar à
+  frente, sem botão. Se o telemóvel não deixar pedir sem um toque (iPhone ao voltar de segundo plano), basta tocar em
+  qualquer sítio do ecrã.
+- **Aviso «sem vendas desde…»**: compara com o último dia de trabalho do calendário (não com «ontem»), por isso já não
+  aparece depois de um domingo, de um sábado à tarde ou de um feriado, nem quando já há vendas hoje.
+- **«Última venda»** nunca mostra tempos negativos.
+- **IVA como no portal**: o valor principal é sem IVA (desempenho) e por baixo aparece o valor com IVA (facturado ao
+  cliente), no dia, na semana, no mês e no «Ao vivo»; o recebido continua com IVA.
+
 ### Folha de caixa: saldo inicial pode ser 0
 
 <!-- paginas: caixa-marketing -->

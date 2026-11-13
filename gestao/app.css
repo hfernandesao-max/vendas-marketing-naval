@@ -1173,3 +1173,10 @@ article.ag-al {
   overflow: visible;
   text-overflow: clip;
 }
+.ag-iva {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--suave);
+  font-variant-numeric: tabular-nums;
+}

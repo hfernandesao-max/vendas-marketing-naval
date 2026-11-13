@@ -276,3 +276,14 @@ ol.passos li::before {
     animation: none;
   }
 }
+.estado-bio {
+  margin: 14px 0 6px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+/* sem toque no ecrã o telemóvel não deixa pedir a biometria: o ecrã inteiro é o alvo do toque */
+.caixa.toque {
+  cursor: pointer;
+}
