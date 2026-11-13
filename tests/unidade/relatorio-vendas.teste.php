@@ -8,10 +8,25 @@ teste('caixa: saldo do dia anterior, saldo teórico, contagem com diferença exp
     $c = naval_caixa_ler($d1);
     igual('manual', $c['saldo_inicial_origem'], 'primeiro dia: saldo inicial à mão');
     $c = naval_caixa_gravar($d1, ['saldo_inicial' => 16696620.01, 'entregas' => [['rota' => '1001', 'notas' => ['5000' => 2522, 'moedas' => 2050]]],
-        'saidas' => [['tipo' => 'fundo_maneio', 'empresa' => 'FOODTEC', 'valor' => 6000000], ['tipo' => 'fundo_maneio', 'empresa' => 'HIGITEC', 'valor' => 4000000],
-            ['tipo' => 'transferencia_gestao', 'valor' => 5000000]]], 0, 'josefa');
+        'saidas' => [['banco' => 'BPC', 'lacre' => 'lac-0001', 'valor' => 6000000], ['banco' => 'BAI', 'lacre' => 'LAC-0002', 'valor' => 4000000],
+            ['banco' => 'BFA', 'lacre' => 'LAC-0003', 'valor' => 5000000]]], 0, 'josefa');
     igual(14308670.01, $c['saldo_teorico'], 'como a folha de 12-11-2026');
-    lanca(400, function () use ($d1, $c) { naval_caixa_gravar($d1, ['saidas' => [['tipo' => 'fundo_maneio', 'valor' => 1]]], $c['versao'], 'josefa'); });
+    igual(['LAC-0001', 'josefa', null], [$c['saidas'][0]['lacre'], $c['saidas'][0]['requisitante'], $c['saidas'][0]['aprovado_por']], 'requisitante = quem lança');
+    lanca(400, function () use ($d1, $c) { naval_caixa_gravar($d1, ['saidas' => [['banco' => 'BPC', 'valor' => 1]]], $c['versao'], 'josefa'); }); // sem lacre
+    lanca(400, function () use ($d1, $c) { naval_caixa_gravar($d1, ['saidas' => [['banco' => 'BPC', 'lacre' => 'X12', 'valor' => 1], ['banco' => 'BAI', 'lacre' => 'X12', 'valor' => 2]]], $c['versao'], 'josefa'); }); // lacre repetido
+    // controlo duplo dos depósitos: quem requisita não aprova; aprovado fica bloqueado; só quem aprovou retira
+    $dep = array_column($c['saidas'], 'id');
+    lanca(403, function () use ($d1, $c, $dep) { naval_caixa_aprovar_deposito($d1, $dep[0], true, $c['versao'], 'josefa'); });
+    foreach ($dep as $id) $c = naval_caixa_aprovar_deposito($d1, $id, true, $c['versao'], 'sara');
+    igual('sara', $c['saidas'][0]['aprovado_por']);
+    $mudado = $c['saidas'];
+    $mudado[0]['valor'] = 1;
+    lanca(409, function () use ($d1, $c, $mudado) { naval_caixa_gravar($d1, ['entregas' => $c['entregas'], 'saidas' => $mudado], $c['versao'], 'josefa'); });
+    lanca(409, function () use ($d1, $c) { naval_caixa_gravar($d1, ['entregas' => $c['entregas'], 'saidas' => []], $c['versao'], 'josefa'); }); // não se retira
+    lanca(403, function () use ($d1, $c, $dep) { naval_caixa_aprovar_deposito($d1, $dep[0], false, $c['versao'], 'michael'); });
+    $c = naval_caixa_aprovar_deposito($d1, $dep[0], false, $c['versao'], 'sara');
+    igual(null, $c['saidas'][0]['aprovado_por'], 'aprovação retirada por quem aprovou');
+    $c = naval_caixa_aprovar_deposito($d1, $dep[0], true, $c['versao'], 'sara');
     lanca(400, function () use ($d1, $c) { naval_caixa_fechar($d1, 14308000, '', $c['versao'], 'josefa'); });
     $c = naval_caixa_fechar($d1, 14308000, 'falta de troco no fim do dia', $c['versao'], 'josefa');
     igual(-670.01, $c['diferenca']);

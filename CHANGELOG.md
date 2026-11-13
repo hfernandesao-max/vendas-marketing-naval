@@ -4,6 +4,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Finanças e depósitos no banco com controlo duplo
+
+- A área **Cobranças** do menu passa a **Finanças** (Cobranças, Facturas pendentes e Folha de caixa), como nas
+  estruturas de processos de referência (finanças e tesouraria como processo próprio).
+- Folha de caixa:
+  - o painel «Saídas da caixa» dá lugar a **Depósitos no banco**: banco, **código do lacre** do saco de segurança
+    (obrigatório, sem repetições no dia) e valor;
+  - **controlo duplo** (prática de tesouraria para valores em trânsito; ISO/IEC 27001 A.5.3, segregação de funções):
+    o **requisitante** é quem lança o depósito; o **aprovador** é outra pessoa com nível de aprovação da caixa;
+    um depósito aprovado fica bloqueado (não se altera nem se retira) e só quem aprovou pode retirar a aprovação;
+  - a folha só é aprovada com todos os depósitos aprovados; cada aprovação fica na rastreabilidade das assinaturas,
+    com o banco, o lacre e o valor;
+  - a coluna «Nota» passa a **«Nota informativa (facultativa)»**.
+- O Relatório de Vendas mostra cada depósito com o banco e o lacre; as saídas antigas de outros tipos ficam como
+  estavam.
+
 ### Requisição: escolher o artigo só com o teclado
 
 - No campo do artigo, **Enter ou F4 mostra a lista dos artigos activos** (código, nome e disponível no armazém);

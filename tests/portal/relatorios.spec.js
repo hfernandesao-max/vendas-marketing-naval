@@ -21,8 +21,8 @@ test('escolher uma página no menu abre o primeiro relatório; abrir uma área a
   const primeiro = await page.locator('.rel-tab').first().textContent();
   await expect(page.locator('.rel-tab.on')).toHaveText(primeiro);
   await expect(page.locator('.nav-sub a.on')).toHaveText(primeiro);
-  // abrir a área Cobranças selecciona a primeira página dela (Cobranças)
-  await page.locator('.navg', { hasText: 'Cobranças' }).click();
+  // abrir a área Finanças selecciona a primeira página dela (Cobranças)
+  await page.locator('.navg', { hasText: 'Finanças' }).click();
   await expect(page).toHaveURL(/#pagamentos/);
   await expect(page.locator('#nav a[href="#pagamentos"]')).toHaveClass(/on/);
   // o Início continua a fechar as áreas sem seleccionar nada
@@ -45,8 +45,8 @@ test('menu em acordeão: áreas fechadas, só uma aberta de cada vez, a da pági
   await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(0);
   // ao abrir uma página por endereço, a sua área abre e fica destacada
   await page.goto(page.url().replace(/#.*$/, '#pendentes'));
-  await expect(grupo('Cobranças')).toHaveAttribute('aria-expanded', 'true');
-  await expect(grupo('Cobranças')).toHaveClass(/atual/);
+  await expect(grupo('Finanças')).toHaveAttribute('aria-expanded', 'true');
+  await expect(grupo('Finanças')).toHaveClass(/atual/);
   await expect(page.locator('.navg[aria-expanded="true"]')).toHaveCount(1);
 });
 
@@ -56,7 +56,7 @@ test('menu organizado por secções da cadeia de valor (Comercial, Operações, 
   await expect(page.locator('#nav .navg .navg-t')).toHaveText([
     'Vendas',
     'Clientes',
-    'Cobranças',
+    'Finanças',
     'Terreno',
     'Logística',
     'Inteligência de negócio',

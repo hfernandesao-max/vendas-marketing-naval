@@ -1,4 +1,4 @@
-// Cobranças › Folha de caixa (tesouraria do Marketing): dinheiro entregue por promotor, talões do TPA por banco, saídas
+// Finanças › Folha de caixa (tesouraria do Marketing): dinheiro entregue por promotor, talões do TPA por banco, saídas
 // (depósito, fundo de maneio, transferência para a gestão), saldo inicial e final, contagem física, fecho e aprovação.
 // Substitui a folha Excel «Cash control». Servidor: nucleo/api/v1/caixa.php e nucleo/servicos/caixa.php.
 import { apiJson } from '../api.js';
@@ -146,6 +146,35 @@ function contarNotas(l, mudou) {
 }
 
 /** Tabela editável de linhas (entregas, talões, saídas). */
+/** Coluna «Aprovador» de um depósito: quem aprovou e quando; ou o botão para aprovar / retirar a aprovação. */
+function aprovadorDeposito(l, td) {
+  const aprova = (D.aprova || []).length && D.caixa.estado !== 'aprovada';
+  if (l.aprovado_por) {
+    td.append(el('span', null, quem(l.aprovado_por) + ' · ' + quando(l.aprovado_em)));
+    if (aprova && l.aprovado_por === D.eu)
+      td.append(
+        botao(t('Retirar aprovação'), 'ghost sm', () =>
+          enviar({ accao: 'retirar_aprovacao_deposito', id: l.id }, msgErroPagina(), 'Aprovação do depósito retirada.'),
+        ),
+      );
+    return;
+  }
+  if (!l.id) return (td.textContent = t('grave a folha para aprovar'));
+  if (aprova && l.requisitante !== D.eu)
+    return td.append(botao(t('Aprovar depósito'), 'sm', () => enviar({ accao: 'aprovar_deposito', id: l.id }, msgErroPagina(), 'Depósito aprovado.')));
+  td.append(pill(t('Por aprovar'), 'p-serio'));
+}
+/** Mensagem de erro da página (a do rodapé), para as acções feitas dentro das tabelas. */
+function msgErroPagina() {
+  let e = document.getElementById('cx-erro');
+  if (!e) {
+    e = msgErro();
+    e.id = 'cx-erro';
+    document.body.append(e);
+  }
+  return e;
+}
+
 function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   const s = el('section', 'glass sec cx-sec');
   const h = el('div', 'sec-h');
@@ -161,6 +190,8 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   tab.append(cab);
   linhas.forEach((l, i) => {
     const tr = el('tr');
+    // depósito aprovado: a linha fica só de leitura e não se retira (o servidor também o impede)
+    const linhaEditavel = editavel && !l.aprovado_por;
     campos.forEach((c) => {
       const td = el('td', c.n ? 'n' : null);
       if (c.extra) {
@@ -168,7 +199,7 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
         tr.append(td);
         return;
       }
-      if (editavel) {
+      if (linhaEditavel) {
         let inp;
         if (c.lista) inp = opcoes(el('select'), c.lista(), l[c.key], c.vazio);
         else
@@ -198,7 +229,8 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
       } else td.textContent = c.ver ? c.ver(l) : c.n ? kz(l[c.key]) : l[c.key] || '—';
       tr.append(td);
     });
-    if (editavel) {
+    if (editavel && !linhaEditavel) tr.append(el('td'));
+    if (linhaEditavel) {
       const td = el('td');
       const b = botao('×', 'ghost sm', () => {
         linhas.splice(i, 1);
@@ -260,6 +292,8 @@ const ACCOES = {
   verificada: 'Aprovada no 1.º nível',
   aprovada: 'Aprovação final',
   reaberta: 'Reaberta para corrigir',
+  deposito_aprovado: 'Depósito aprovado',
+  deposito_aprovacao_retirada: 'Aprovação do depósito retirada',
 };
 function rastreio(c) {
   const s = el('section', 'glass sec cx-sec cx-rastreio');
@@ -286,7 +320,14 @@ function rastreio(c) {
   }
   linhas.forEach((x) => {
     const tr = el('tr');
-    const nota = x.accao === 'reaberta' ? x.motivo || '' : x.accao === 'fechada' && x.diferenca ? t('diferença {v}', { v: kz(x.diferenca) }) : '';
+    const nota =
+      x.accao === 'reaberta'
+        ? x.motivo || ''
+        : x.accao === 'fechada' && x.diferenca
+          ? t('diferença {v}', { v: kz(x.diferenca) })
+          : x.lacre
+            ? [x.banco, t('lacre {l}', { l: x.lacre }), x.valor != null ? kz(x.valor) : ''].filter(Boolean).join(' · ')
+            : '';
     tr.append(el('td', null, t(ACCOES[x.accao])), el('td', null, quem(x.por)), el('td', null, quando(x.em)), el('td', 'note', nota));
     tb.append(tr);
   });
@@ -379,9 +420,7 @@ R['caixa-marketing'] = (pg) => {
   };
   if (ed.mudou) marcarPorGravar('caixa', true);
   const promotores = () => Object.entries(D.promotores || {}).map(([r, p]) => [r, r + ' · ' + p]);
-  const empresas = () => (D.empresas || []).map((e) => [e, e]);
   const bancos = () => (D.bancos || []).map((b) => [b, b]);
-  const saidasTipos = () => Object.entries(D.saidas || {}).map(([k, v]) => [k, t(v)]);
   const prom = (l) => (D.promotores && D.promotores[l.rota] ? l.rota + ' · ' + D.promotores[l.rota] : l.rota);
   const teo = () => (ed.saldo_inicial == null ? null : +ed.saldo_inicial + somaDe(ed.entregas) - somaDe(ed.saidas));
   const ent = somaDe(ed.entregas),
@@ -393,7 +432,15 @@ R['caixa-marketing'] = (pg) => {
     tiles([
       { l: t('Saldo inicial'), v: kz(si), s: c.saldo_inicial_origem === 'manual' ? t('primeiro dia: escrito à mão') : t('saldo aprovado do dia anterior') },
       { l: t('Dinheiro entregue'), v: kz(ent), s: t('{n} entregas', { n: ed.entregas.length }) },
-      { l: t('Saídas'), v: kz(sai), s: t('depósitos, fundos de maneio e transferências') },
+      {
+        l: t('Depósitos no banco'),
+        v: kz(sai),
+        s: t('{n} depósito(s) · {a} aprovado(s)', {
+          n: n0(ed.saidas.filter((x) => x.tipo === 'deposito_banco').length),
+          a: n0(ed.saidas.filter((x) => x.tipo === 'deposito_banco' && x.aprovado_por).length),
+        }),
+        tone: ed.saidas.some((x) => x.tipo === 'deposito_banco' && !x.aprovado_por) ? 'warn' : null,
+      },
       { l: t('Saldo final teórico'), v: kz(teorico), s: c.contagem_fisica != null ? t('contado: {v}', { v: kz(c.contagem_fisica) }) : t('por contar') },
       { l: t('Multicaixa (talões do TPA)'), v: kz(somaDe(ed.tpa)), s: t('não entra no saldo da caixa') },
     ]),
@@ -444,7 +491,7 @@ R['caixa-marketing'] = (pg) => {
             else if (!l.notas) td.textContent = '—';
           },
         },
-        { key: 'nota', label: t('Nota') },
+        { key: 'nota', label: t('Nota informativa (facultativa)') },
       ],
       () => ({ rota: '', empresa: '', valor: null, notas: null, nota: '' }),
       aberta,
@@ -472,17 +519,24 @@ R['caixa-marketing'] = (pg) => {
       aberta,
       mudou,
     ),
+    // depósitos no banco (controlo duplo dos valores em trânsito): quem lança é o requisitante; aprova outra pessoa
+    // com nível de aprovação da caixa; depósito aprovado fica bloqueado (só quem aprovou retira a aprovação)
     grelha(
-      t('Saídas da caixa'),
-      t('Depósitos no banco, fundos de maneio de cada empresa, transferências para a gestão e outras saídas (com descrição).'),
+      t('Depósitos no banco'),
+      t('Cada depósito com o banco, o código do lacre do saco de segurança e o valor. Quem lança é o requisitante; aprova outra pessoa (controlo duplo).'),
       ed.saidas,
       [
-        { key: 'tipo', label: t('Tipo'), lista: saidasTipos, vazio: t('Escolha'), ver: (l) => t((D.saidas || {})[l.tipo] || l.tipo) },
-        { key: 'empresa', label: t('Empresa'), lista: empresas, vazio: '—' },
-        { key: 'descricao', label: t('Descrição'), max: 160 },
+        { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha'), obrigatorio: true },
+        { key: 'lacre', label: t('Código do lacre'), max: 30, obrigatorio: true },
         { key: 'valor', label: t('Valor'), n: true },
+        {
+          key: 'requisitante',
+          label: t('Requisitante'),
+          extra: (l, td) => (td.textContent = l.requisitante ? quem(l.requisitante) + ' · ' + quando(l.requisitado_em) : t('ao gravar')),
+        },
+        { key: 'aprovado_por', label: t('Aprovador'), extra: (l, td) => aprovadorDeposito(l, td) },
       ],
-      () => ({ tipo: '', empresa: '', descricao: '', valor: null }),
+      () => ({ tipo: 'deposito_banco', banco: '', lacre: '', valor: null }),
       aberta,
       mudou,
     ),
@@ -518,6 +572,7 @@ R['caixa-marketing'] = (pg) => {
   } else if (c.estado === 'aberta') pg.append(el('p', 'note', t('Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.')));
   pg.append(rastreio(c));
   const erro = msgErro();
+  erro.id = 'cx-erro';
   const estado = el('p', 'note');
   estado.id = 'cx-estado';
   estado.setAttribute('aria-live', 'polite');

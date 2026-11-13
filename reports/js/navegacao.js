@@ -139,7 +139,7 @@ export function organizarRelatorios(pg, pagina) {
 const ICONE_GRUPO = {
   Vendas: 'chart',
   Clientes: 'users',
-  Cobranças: 'card',
+  Finanças: 'card',
   Terreno: 'route',
   Logística: 'truck',
   'Inteligência de negócio': 'negocio',

@@ -7,7 +7,8 @@
  *
  * GET  v1/caixa?dia=AAAA-MM-DD
  * POST {accao: gravar, dia, versao, saldo_inicial?, entregas: [{rota, empresa, valor, notas?: {nota: quantidade, moedas}, nota}], tpa: [{rota, banco, empresa, valor}],
- *       saidas: [{tipo, empresa, descricao, valor}], csrf}
+ *       saidas (depósitos no banco): [{id?, banco, lacre, valor}], csrf}
+ * POST {accao: aprovar_deposito | retirar_aprovacao_deposito, dia, versao, id, csrf}   (níveis de aprovação da caixa)
  * POST {accao: fechar, dia, versao, contagem, notas?: {5000: n, …, moedas: valor}, explicacao, csrf}
  * POST {accao: aprovar, dia, versao, csrf}
  * POST {accao: reabrir, dia, versao, motivo, csrf}
@@ -33,7 +34,7 @@ if (!naval_e_post()) {
     }
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
-        'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS]);
+        'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? '')]);
 }
 
 $p = naval_pedido();
@@ -45,9 +46,14 @@ $login = (string) ($eu['login'] ?? '');
 $versao = isset($p['versao']) && is_numeric($p['versao']) ? (int) $p['versao'] : null;
 $accao = (string) ($p['accao'] ?? '');
 if ($accao === 'aprovar' && !$aprova) throw new NavalErro('O seu perfil não aprova a caixa.', 403);
+if (in_array($accao, ['aprovar_deposito', 'retirar_aprovacao_deposito'], true) && !$aprova) throw new NavalErro('O seu perfil não aprova depósitos.', 403);
 if ($accao === 'reabrir' && !$gere && !$aprova) throw new NavalErro('O seu perfil não permite reabrir a caixa.', 403);
 if (in_array($accao, ['gravar', 'fechar'], true) && !$gere) throw new NavalErro('O seu perfil não permite registar a caixa.', 403);
 switch ($accao) {
+    case 'aprovar_deposito':
+    case 'retirar_aprovacao_deposito':
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_aprovar_deposito($dia, (string) ($p['id'] ?? ''), $accao === 'aprovar_deposito', $versao, $login)]);
+        break;
     case 'gravar':
         // valor de cada talão do TPA: o Multicaixa que o promotor recebeu no Pinguim BO (a Josefa indica o banco e o
         // número do talão de fecho); sem ligação ao Pinguim BO fica o valor escrito, para não parar a tesouraria

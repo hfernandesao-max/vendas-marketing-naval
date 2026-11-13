@@ -26,7 +26,7 @@ test('folha de caixa: quem lança valida; 1.º nível e aprovação final por pe
     versao: v.caixa.versao,
     saldo_inicial: 1000,
     entregas: [{ rota: '1001', notas: { 500: 1 } }],
-    saidas: [{ tipo: 'deposito_banco', valor: 300 }],
+    saidas: [{ banco: 'BPC', lacre: 'LAC-123', valor: 300 }],
   });
   expect(g.json.caixa.saldo_teorico).toBe(1200);
   expect((await post(fin, { accao: 'fechar', versao: g.json.caixa.versao, contagem: 1100, explicacao: '' })).status).toBe(400); // diferença por explicar
@@ -38,6 +38,13 @@ test('folha de caixa: quem lança valida; 1.º nível e aprovação final por pe
   expect((await dir.get(API + 'caixa?dia=' + dia).then((r) => r.json())).aprova).toEqual([2]);
   expect((await post(dir, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403); // só tem a aprovação final
   const sadm = (await entrar('sadm')).ctx;
+  // depósito por aprovar impede a aprovação da folha; quem lançou não aprova o depósito
+  expect((await post(sadm, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(409);
+  const id = f.json.caixa.saidas[0].id;
+  expect((await post(fin, { accao: 'aprovar_deposito', id, versao: f.json.caixa.versao })).status).toBe(403);
+  const d = await post(sadm, { accao: 'aprovar_deposito', id, versao: f.json.caixa.versao });
+  expect(d.json.caixa.saidas[0]).toMatchObject({ lacre: 'LAC-123', aprovado_por: 'sadm' });
+  f.json.caixa.versao = d.json.caixa.versao;
   const n1 = await post(sadm, { accao: 'aprovar', versao: f.json.caixa.versao });
   expect(n1.json.caixa.estado).toBe('verificada');
   expect((await post(sadm, { accao: 'aprovar', versao: n1.json.caixa.versao })).status).toBe(403); // quem aprovou o 1.º nível não faz a final

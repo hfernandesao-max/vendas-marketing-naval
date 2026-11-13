@@ -148,7 +148,12 @@ export async function relatorioVendasPdf(R, imprimir = false) {
       [tp('Saldo inicial'), kz(cx.saldo_inicial)],
       [tp('Dinheiro entregue pelos promotores'), kz(cx.entregas)],
       ...cx.saidas.map((s) => [
-        '- ' + tp(SAIDA[s.tipo] || s.tipo) + (s.empresa ? ' · ' + s.empresa : '') + (s.descricao ? ' · ' + s.descricao : ''),
+        '- ' +
+          tp(SAIDA[s.tipo] || s.tipo) +
+          (s.banco ? ' · ' + s.banco : '') +
+          (s.lacre ? ' · ' + tp('lacre {l}', { l: s.lacre }) : '') +
+          (s.empresa ? ' · ' + s.empresa : '') +
+          (s.descricao ? ' · ' + s.descricao : ''),
         kz(-s.valor),
       ]),
       [tp('Saldo final teórico'), kz(cx.saldo_teorico)],

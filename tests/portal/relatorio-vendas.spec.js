@@ -158,7 +158,26 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
     if (req.method() === 'POST') {
       const b = JSON.parse(req.postData());
       pedidos.push(b);
-      if (b.accao === 'gravar') caixa = { ...caixa, entregas: b.entregas, tpa: b.tpa, saidas: b.saidas, versao: caixa.versao + 1 };
+      if (b.accao === 'gravar')
+        caixa = {
+          ...caixa,
+          entregas: b.entregas,
+          tpa: b.tpa,
+          saidas: b.saidas.map((x, i) => ({
+            ...x,
+            id: 'DP-00000000000' + (i + 1),
+            requisitante: 'josefa',
+            requisitado_em: '2026-10-26 15:40:00',
+            aprovado_por: null,
+          })),
+          versao: caixa.versao + 1,
+        };
+      if (b.accao === 'aprovar_deposito')
+        caixa = {
+          ...caixa,
+          saidas: caixa.saidas.map((x) => (x.id === b.id ? { ...x, aprovado_por: 'sara', aprovado_em: '2026-10-26 15:45:00' } : x)),
+          versao: caixa.versao + 1,
+        };
       if (b.accao === 'fechar')
         caixa = {
           ...caixa,
@@ -169,13 +188,14 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
           explicacao: b.explicacao,
           versao: caixa.versao + 1,
         };
-      return r.fulfill({ json: { ok: true, caixa } });
+      return r.fulfill({ json: { ok: true, caixa, nomes: { josefa: 'Josefa Silva', sara: 'Sara Coordenadora' } } });
     }
     return r.fulfill({
       json: {
         ok: true,
         gere: true,
         aprova: [1],
+        eu: 'sara',
         caixa,
         promotores: { 1001: 'Andrea Santos', 1002: 'Cristina Sachuma' },
         saidas: {
@@ -204,9 +224,13 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   await page.locator('.cx-sec').nth(1).getByLabel('Banco · 1').selectOption('BPC');
   await page.locator('.cx-sec').nth(1).getByLabel('Nº do talão de fecho · 1').fill('TPA-0457');
   await page.locator('.cx-sec').nth(1).getByLabel('Valor · 1').fill('300');
-  await page.locator('.cx-sec').nth(2).getByRole('button', { name: 'Juntar linha' }).click();
-  await page.locator('.cx-sec').nth(2).getByLabel('Tipo · 1').selectOption('transferencia_gestao');
-  await page.locator('.cx-sec').nth(2).getByLabel('Valor · 1').fill('200');
+  // depósitos no banco: banco, código do lacre (obrigatório) e valor
+  const dep = page.locator('.cx-sec', { hasText: 'Depósitos no banco' });
+  await expect(page.locator('.cx-sec', { hasText: 'Saídas da caixa' })).toHaveCount(0);
+  await dep.getByRole('button', { name: 'Juntar linha' }).click();
+  await dep.getByLabel('Banco · 1').selectOption('BPC');
+  await dep.getByLabel('Código do lacre · 1').fill('LAC-77');
+  await dep.getByLabel('Valor · 1').fill('200');
   await expect(page.locator('#cx-estado')).toContainText('Alterações por gravar');
   await expect(page.locator('.tile', { hasText: 'Saldo final teórico' })).toContainText(/1\s?300,00/);
   await page.getByRole('button', { name: 'Gravar', exact: true }).click();
@@ -217,8 +241,15 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
     versao: 1,
     entregas: [{ rota: '1001', valor: 500, notas: { 500: 1 } }],
     tpa: [{ rota: '1002', banco: 'BPC', talao: 'TPA-0457', valor: 300 }],
-    saidas: [{ tipo: 'transferencia_gestao', valor: 200 }],
+    saidas: [{ tipo: 'deposito_banco', banco: 'BPC', lacre: 'LAC-77', valor: 200 }],
   });
+  // controlo duplo: requisitante = quem lançou; outra pessoa com nível de aprovação aprova o depósito
+  await expect(dep).toContainText('Josefa');
+  await dep.getByRole('button', { name: 'Aprovar depósito' }).click();
+  await expect.poll(() => pedidos.length).toBe(2);
+  expect(pedidos[1]).toMatchObject({ accao: 'aprovar_deposito', id: 'DP-000000000001' });
+  await expect(dep).toContainText('Sara');
+  pedidos.splice(1, 1);
   await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByLabel('Dinheiro contado na caixa').fill('1290');
