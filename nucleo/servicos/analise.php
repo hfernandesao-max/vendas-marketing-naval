@@ -16,7 +16,7 @@ require_once __DIR__ . '/rotas.php';
 
 const NAVAL_ANALISE_DIAS_ABERTOS = 3;    // dias recentes que ainda podem mudar (notas de crédito, sincronização tardia)
 const NAVAL_ANALISE_HISTORICO = 120;     // dias de histórico usados nos alertas e na previsão
-const NAVAL_ANALISE_VERSAO = 3;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
+const NAVAL_ANALISE_VERSAO = 4;          // muda quando o formato dos agregados muda (os antigos voltam a calcular-se)
 
 function naval_analise_pasta(): string
 {
@@ -35,6 +35,11 @@ function naval_analise_resumir(array $vendas, array $artigos): array
 {
     $r = ['rotas' => [], 'clientes' => [], 'artigos' => [], 'ca' => []];
     $docCliente = [];
+    // substituições de facturas de dias anteriores: não são vendas do dia (ver naval_vendas_substituicoes)
+    $fora = [];
+    foreach ($vendas as $v) if (!empty($v['substituicao'])) $fora[(string) ($v['documento'] ?? '')] = true;
+    $vendas = array_filter($vendas, function ($v) { return empty($v['substituicao']); });
+    $artigos = array_filter($artigos, function ($a) use ($fora) { return !isset($fora[(string) ($a['documento'] ?? '')]); });
     foreach ($vendas as $v) {
         if (empty($v['nc']) && (string) ($v['cliente_codigo'] ?? '') !== '') $docCliente[(string) ($v['documento'] ?? '')] = (string) $v['cliente_codigo'];
         $rota = (string) ($v['rota'] ?? '');

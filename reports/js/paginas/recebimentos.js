@@ -26,6 +26,7 @@ import { hoje, st } from '../periodo.js';
 import { el, group, sum } from '../util.js';
 import { colDocumento } from '../componentes/documento.js';
 import { recebidoPorCategoria } from '../meios.js';
+import { avisoRectificacoes } from '../componentes/rectificacoes.js';
 
 // Facturas por receber, com a antiguidade da dívida (dias desde a emissão até hoje, em escalões de 30 dias) e o prazo
 // médio de recebimento (PMR, em inglês DSO = dívida por receber ÷ vendas facturadas no período × dias do período)
@@ -196,6 +197,8 @@ R.pagamentos = (pg) => {
       },
     ]),
   );
+  const rect = avisoRectificacoes();
+  if (rect) pg.append(rect);
   const secs = el('div', 'secs');
   if (!meio) {
     const box = el('div');

@@ -165,7 +165,7 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
             }
         }
     }
-    return ['vendas' => naval_vendas_devolucoes($vendas), 'artigos' => $artigos];
+    return ['vendas' => naval_vendas_substituicoes(naval_vendas_devolucoes($vendas)), 'artigos' => $artigos];
 }
 
 /**
@@ -320,6 +320,79 @@ function naval_vendas_devolucoes(array $vendas): array
         if ($falta > 0.005) $novos[] = ['codigo' => 'NU', 'meio' => $nomes['NU'] ?? NAVAL_MEIOS_PAGAMENTO['NU'], 'valor' => -$falta, 'presumido' => true];
         $vendas[$n]['pagamentos'] = array_merge($nc['pagamentos'] ?? [], $novos);
         $vendas[$n]['meio_pagamento'] = implode(', ', array_unique(array_column($vendas[$n]['pagamentos'], 'meio')));
+    }
+    return $vendas;
+}
+
+/**
+ * Substituição de uma factura de um dia anterior (rectificação): nota de crédito que anula uma factura de outro dia e,
+ * no mesmo dia, uma factura nova ao mesmo cliente e na mesma rota que a substitui (por exemplo, com um desconto que
+ * não tinha sido feito). A lei não deixa alterar uma factura emitida; corrige-se assim. Não há venda nova nem
+ * movimento de dinheiro: o cliente pagou com a factura original.
+ *
+ *   - Os dois documentos ficam como estão no Pinguim BO (lista de documentos, controlo interno, AGT e ficheiro para o
+ *     SAP, que usa os pagamentos do documento em 'pagamentos_origem' e não muda) e ficam marcados com 'substituicao'.
+ *   - Nos meios de cobrança, os pagamentos passam a «Substituição de factura» (código CMP, compensação, fora do
+ *     dinheiro e do Multicaixa): o recebido do dia, a folha de caixa e a conferência do TPA não mudam.
+ *   - As vendas do dia não os contam (o desempenho é da factura original); o desconto aparece à parte, positivo, nas
+ *     «Rectificações de documentos anteriores» (prática IFRS 15: ajuste de preço de uma venda já reconhecida,
+ *     apresentado separadamente e conciliável com o Pinguim BO).
+ *
+ * Não é substituição: nota de crédito de uma factura do mesmo dia, do mesmo valor e emitida antes dela (anulação
+ * normal), consumidor final (sem cliente identificado) ou factura nova com menos de metade ou mais do valor da nota.
+ */
+function naval_vendas_substituicoes(array $vendas): array
+{
+    $cli = function (array $v): ?string {
+        $nif = (string) ($v['nif'] ?? '');
+        $cod = (string) ($v['cliente_codigo'] ?? '');
+        if ($cod === '' && ($nif === '' || preg_match('/^9{9,}$/', $nif))) return null;
+        return $v['rota'] . '|' . ($cod !== '' ? $cod : $nif);
+    };
+    $porCli = [];
+    foreach ($vendas as $i => $v) {
+        $k = $cli($v);
+        if ($k !== null) $porCli[$k][] = $i;
+    }
+    $usada = [];
+    foreach ($vendas as $n => $nc) {
+        if (empty($nc['nc']) || ($k = $cli($nc)) === null) continue;
+        $valor = abs((float) $nc['total']);
+        if ($valor < 0.005) continue;
+        $mesmoDia = array_filter($porCli[$k], function ($i) use ($vendas, $nc) { return empty($vendas[$i]['nc']) && $vendas[$i]['data'] === $nc['data']; });
+        // factura do próprio dia, do mesmo valor e emitida antes da nota: é a anulação normal, não uma substituição
+        $antes = function ($i) use ($vendas, $nc) { return ($vendas[$i]['hora'] ?? '') <= ($nc['hora'] ?? ''); };
+        $igual = function ($i) use ($vendas, $valor) { return abs((float) $vendas[$i]['total'] - $valor) < 0.005; };
+        if (array_filter($mesmoDia, function ($i) use ($antes, $igual) { return $igual($i) && $antes($i); })) continue;
+        $cands = array_values(array_filter($mesmoDia, function ($i) use ($vendas, $valor, $usada) {
+            $t = (float) $vendas[$i]['total'];
+            return !isset($usada[$i]) && $t >= $valor * 0.5 && $t <= $valor + 0.005;
+        }));
+        if (!$cands) continue;
+        // a de valor mais próximo; empate: a emitida depois da nota
+        usort($cands, function ($a, $b) use ($vendas, $valor, $nc) {
+            $da = $valor - (float) $vendas[$a]['total'];
+            $db = $valor - (float) $vendas[$b]['total'];
+            if (abs($da - $db) > 0.005) return $da <=> $db;
+            return (int) (($vendas[$b]['hora'] ?? '') >= ($nc['hora'] ?? '')) <=> (int) (($vendas[$a]['hora'] ?? '') >= ($nc['hora'] ?? ''));
+        });
+        $r = $cands[0];
+        $usada[$r] = true;
+        $f = $vendas[$r];
+        $desc = round($valor - (float) $f['total'], 2);
+        $descSi = isset($nc['total_sem_iva'], $f['total_sem_iva']) ? round(abs((float) $nc['total_sem_iva']) - (float) $f['total_sem_iva'], 2) : null;
+        $marca = ['nota' => $nc['documento'], 'factura' => $f['documento'], 'desconto' => $desc, 'desconto_sem_iva' => $descSi];
+        $meio = 'Substituição de factura';
+        $vendas[$r]['pagamentos_origem'] = $f['pagamentos'] ?? [];
+        $vendas[$r]['pagamentos'] = [['codigo' => 'CMP', 'meio' => $meio, 'valor' => round((float) $f['total'], 2), 'atribuido' => $nc['documento']]];
+        $vendas[$n]['pagamentos_origem'] = $nc['pagamentos'] ?? [];
+        $pn = [['codigo' => 'CMP', 'meio' => $meio, 'valor' => -round((float) $f['total'], 2), 'atribuido' => $f['documento']]];
+        if ($desc > 0.005) $pn[] = ['codigo' => 'CMP', 'meio' => 'Desconto na substituição (sem movimento de dinheiro)', 'valor' => -$desc];
+        $vendas[$n]['pagamentos'] = $pn;
+        foreach ([$r, $n] as $i) {
+            $vendas[$i]['substituicao'] = $marca;
+            $vendas[$i]['meio_pagamento'] = implode(', ', array_unique(array_column($vendas[$i]['pagamentos'], 'meio')));
+        }
     }
     return $vendas;
 }
@@ -500,7 +573,7 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             $artigos = naval_vendas_artigos_sql($inicio, $fim, $promotores);
             if ($artigos === null) return null;
         }
-        return ['vendas' => naval_vendas_devolucoes($vendas), 'artigos' => $artigos];
+        return ['vendas' => naval_vendas_substituicoes(naval_vendas_devolucoes($vendas)), 'artigos' => $artigos];
     } catch (Throwable $e) {
         error_log('[vendas SQL] ' . $e->getMessage());
         return null;

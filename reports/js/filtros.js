@@ -89,6 +89,8 @@ export function lerFiltrosURL(qs) {
   });
   guardarFiltros();
 }
+// Páginas que mostram os documentos exactamente como estão no Pinguim BO (incluindo as substituições de facturas)
+const PAGINAS_DOCUMENTOS = ['documentos', 'auditoria', 'sap-exportar', 'agt', 'conformidade'];
 // Os dados de cada página (DB.vendas, DB.artigos, ...) passam a ser a vista filtrada; os dados completos ficam em DADOS_COMPLETOS
 const DADOS_COMPLETOS = {},
   VISTA = {};
@@ -116,6 +118,8 @@ export function prepararDados(pagina) {
     tc = at('tipocli') ? FV.tipocli : '',
     ec = at('estadocli') ? FV.estadocli : '';
   const okRota = (x) => !rs || rs.has(String(x.rota));
+  // substituições de facturas de dias anteriores: só nas páginas que mostram os documentos tal como estão no Pinguim BO
+  const verSubst = PAGINAS_DOCUMENTOS.includes(pagina);
   const docsArtigo = qa && C.artigos ? new Set(C.artigos.filter((a) => normTxt(a.codigo + ' ' + a.artigo).includes(qa)).map((a) => a.documento)) : null;
   const okVenda = (v) =>
     okRota(v) &&
@@ -124,7 +128,8 @@ export function prepararDados(pagina) {
     (!me || (me === '-' ? !(v.pagamentos || []).length : (v.pagamentos || []).some((x) => x.codigo === me))) &&
     (!es || (es === 'pendente') === pendenteDe(v) > 0.005) &&
     (!docsArtigo || docsArtigo.has(v.documento));
-  VISTA.vendas = Array.isArray(C.vendas) ? C.vendas.filter(okVenda) : C.vendas;
+  VISTA.vendas = Array.isArray(C.vendas) ? C.vendas.filter((v) => okVenda(v) && (verSubst || !v.substituicao)) : C.vendas;
+  DB.rectificacoes = Array.isArray(C.vendas) ? C.vendas.filter((v) => v.substituicao && v.nc && okVenda(v)) : [];
   const docsOk = new Set((VISTA.vendas || []).map((v) => v.documento));
   VISTA.artigos = Array.isArray(C.artigos)
     ? C.artigos.filter((a) => docsOk.has(a.documento) && (!qa || normTxt(a.codigo + ' ' + a.artigo).includes(qa)))

@@ -4,6 +4,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Substituição de facturas de dias anteriores (nota de crédito + factura nova com desconto)
+
+- Uma nota de crédito que anula uma factura de outro dia, com uma factura nova ao mesmo cliente no mesmo dia (por
+  exemplo, com um desconto que não tinha sido feito), é reconhecida como **substituição**: não é venda nova nem
+  movimento de dinheiro.
+- Fica **fora das vendas e das cobranças do dia** (deixa de aparecer −20 000 Kz em vendas, recebido e Multicaixa) e
+  o desconto aparece **em positivo** em «Rectificações de documentos anteriores», nas Cobranças e nas Vendas por
+  promotor, para conciliar com o Pinguim BO.
+- Indicadores, app de gestão, previsão e objectivos seguem a mesma regra (agregados recalculados).
+- Os dois documentos continuam nos Documentos de venda, no controlo interno e na AGT tal como no Pinguim BO; o
+  **ficheiro para o SAP não muda** (estrutura e valores).
+
 ### App de gestão: alinhada com as melhorias de hoje
 
 - **«À sua espera»** (como as caixas de tarefas SAP Fiori e Microsoft Approvals): no Hoje e nos Alertas, só o que a
