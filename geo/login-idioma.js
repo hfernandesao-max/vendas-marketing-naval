@@ -81,6 +81,10 @@
       'Terminar sessão': 'Sign out',
       'ou entre com a palavra-passe': 'or sign in with your password',
       'Entrar com Face ID': 'Sign in with Face ID',
+      'A olhar para si (Face ID)…': 'Looking at you (Face ID)…',
+      'A ler a sua impressão digital…': 'Reading your fingerprint…',
+      'Toque no ecrã para entrar com Face ID.': 'Tap the screen to sign in with Face ID.',
+      'Toque no ecrã para entrar com a impressão digital.': 'Tap the screen to sign in with your fingerprint.',
       'Entrar com a impressão digital': 'Sign in with fingerprint',
       'Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.':
         "This app was not installed with the portal's QR code. Delete it and, in the portal (on a computer), open «Mobile app» and scan the QR code with the camera.",
@@ -254,6 +258,10 @@
       'Terminar sessão': 'ውዕል ዛዝም',
       'ou entre com a palavra-passe': 'ወይ ብቓል ምሕላፍ እተዉ',
       'Entrar com Face ID': 'ብገጽ እቶ',
+      'A olhar para si (Face ID)…': 'ገጽኩም ይርአ ኣሎ…',
+      'A ler a sua impressão digital…': 'ኣሻራ ኣጻብዕኩም ይንበብ ኣሎ…',
+      'Toque no ecrã para entrar com Face ID.': 'ብገጽ ንምእታው ነቲ ስክሪን ተንክፍዎ።',
+      'Toque no ecrã para entrar com a impressão digital.': 'ብኣሻራ ኣጻብዕ ንምእታው ነቲ ስክሪን ተንክፍዎ።',
       'Entrar com a impressão digital': 'ብኣሻራ ኣጻብዕ እቶ',
       'Esta app não foi instalada pelo código QR do portal. Apague-a e, no portal (num computador), abra «App no telemóvel» e leia o código QR com a câmara.':
         'እዚ ኣፕ ብQR ኮድ ናይቲ ፖርታል ኣይተጻዕነን። ሰርዝዎ እሞ ኣብ ፖርታል (ብኮምፒተር) «ኣፕ ኣብ ሞባይል» ከፊትኩም ነቲ QR ኮድ ብካሜራ ኣንብቡ።',

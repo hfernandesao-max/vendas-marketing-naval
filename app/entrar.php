@@ -52,7 +52,8 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
     <p class="quem"><?= htmlspecialchars((string) ($u['nome'] ?? $eq['login']), ENT_QUOTES, 'UTF-8') ?></p>
     <div class="msg erro" role="alert" id="ent-erro" hidden></div>
     <div class="bio" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16c1.7 1.3 4.3 1.3 6 0"/></svg></div>
-    <button type="button" class="botao" id="ent-bio" data-t><?= $ios ? 'Entrar com Face ID' : 'Entrar com a impressão digital' ?></button>
+    <p class="estado-bio" id="ent-estado" role="status" aria-live="polite" data-t><?= $ios ? 'A olhar para si (Face ID)…' : 'A ler a sua impressão digital…' ?></p>
+    <button type="button" class="botao" id="ent-bio" hidden data-t><?= $ios ? 'Entrar com Face ID' : 'Entrar com a impressão digital' ?></button>
     <p class="validade" data-t>Se a biometria falhar, o telemóvel pede o seu código de bloqueio.</p>
     <?php naval_app_escrever_json('ent-opcoes', $pre); ?>
 <?php endif; ?>
@@ -70,10 +71,24 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
       };
       NavalApp.guardarEquipamento(pre.equipamento);
       var aPedir = false;
+      var estado = document.getElementById('ent-estado');
+      // sem botão: a biometria pede-se sozinha ao abrir e sempre que a app volta a ficar à frente (como nas apps dos
+      // bancos). Se o telemóvel não deixar pedir sem um toque (iPhone ao voltar de segundo plano), qualquer toque no
+      // ecrã serve — e o botão aparece como alternativa acessível.
+      function precisaToque() {
+        b.hidden = false;
+        estado.textContent = tr(<?= json_encode($ios ? 'Toque no ecrã para entrar com Face ID.' : 'Toque no ecrã para entrar com a impressão digital.') ?>);
+        m.classList.add('toque');
+      }
+      m.addEventListener('click', function (e) {
+        if (m.classList.contains('toque') && e.target !== b) entrar(false);
+      });
       function entrar(auto) {
         if (aPedir) return;
         aPedir = true;
         b.disabled = true;
+        m.classList.remove('toque');
+        estado.textContent = tr(<?= json_encode($ios ? 'A olhar para si (Face ID)…' : 'A ler a sua impressão digital…') ?>);
         document.getElementById('app-logo').classList.remove('parado');
         // o desafio vem na página; se já foi usado (segunda tentativa), pede outro
         var usar = pre;
@@ -85,9 +100,10 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
           if (r.desactivada || r.sem_chave) return location.reload(); // a página explica o que fazer
           document.getElementById('app-logo').classList.add('parado');
           if (r.cancelado && auto) {
-            pre = usar; // o telemóvel não deixou pedir sem toque: o mesmo desafio serve para o botão
-            return;
+            pre = usar; // o telemóvel não deixou pedir sem toque: o mesmo desafio serve para o toque
+            return precisaToque();
           }
+          if (r.cancelado) return precisaToque();
           if (!r.cancelado) {
             var e = document.getElementById('ent-erro');
             e.textContent = tr(r.erro || 'Sem resposta do servidor.');
@@ -98,8 +114,15 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
       b.addEventListener('click', function () {
         entrar(false);
       });
-      // como nas apps dos bancos: a biometria aparece logo ao abrir (quando o telemóvel o permite)
+      // como nas apps dos bancos: a biometria aparece logo ao abrir e ao voltar à app (quando o telemóvel o permite)
       entrar(true);
+      var voltar = function () {
+        if (document.visibilityState === 'visible' && !aPedir) entrar(true);
+      };
+      document.addEventListener('visibilitychange', voltar);
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) voltar();
+      });
     })();
   </script>
 </body>

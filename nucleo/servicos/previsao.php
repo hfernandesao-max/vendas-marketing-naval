@@ -190,6 +190,17 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
         foreach (($ag[$d]['rotas'] ?? []) as $rt => $r) if ($rota === null || (string) $rt === $rota) $s += (float) $r['t'];
         return $s;
     };
+    // com IVA (como no portal: vendas sem IVA e, ao lado, com IVA)
+    $ti = function (string $d) use ($ag) {
+        $s = 0.0;
+        foreach (($ag[$d]['rotas'] ?? []) as $r) $s += (float) ($r['ti'] ?? $r['t']);
+        return $s;
+    };
+    $periodoIva = function (string $de, string $ate) use ($ti) {
+        $s = 0.0;
+        foreach (naval_analise_dias($de, $ate) as $d) $s += $ti($d);
+        return round($s, 2);
+    };
     $docs = function (string $d) use ($ag) {
         $n = 0;
         foreach (($ag[$d]['rotas'] ?? []) as $r) $n += (int) $r['d'];
@@ -255,16 +266,26 @@ function naval_indicadores(int $agora, ?array $rotas, ?array $agregados = null, 
     $habOntem = naval_mediana(naval_mesmos_dias($serieTot, $ontem, 6));
     return [
         'hora' => date('Y-m-d H:i', $agora),
-        'hoje' => ['dia' => $hoje, 'total' => round($hojeT, 2), 'documentos' => $docs($hoje), 'previsto' => $prevHoje ? $prevHoje['previsto'] : null,
+        'hoje' => ['dia' => $hoje, 'total' => round($hojeT, 2), 'total_iva' => round($ti($hoje), 2), 'documentos' => $docs($hoje), 'previsto' => $prevHoje ? $prevHoje['previsto'] : null,
             'progresso' => $prevHoje && $prevHoje['previsto'] > 0 ? round($hojeT / $prevHoje['previsto'], 3) : null],
-        'ontem' => ['dia' => $ontem, 'total' => round($ontemT, 2), 'documentos' => $docs($ontem), 'habitual' => round($habOntem, 2), 'variacao' => $var($ontemT, $habOntem)],
-        'semana' => ['de' => $iniSem, 'total' => round($periodo($iniSem, $hoje), 2), 'anterior' => round($periodo($iniSemAnt, $hojeSemAnt), 2),
+        'ontem' => ['dia' => $ontem, 'total' => round($ontemT, 2), 'total_iva' => round($ti($ontem), 2), 'documentos' => $docs($ontem), 'habitual' => round($habOntem, 2), 'variacao' => $var($ontemT, $habOntem)],
+        'semana' => ['de' => $iniSem, 'total' => round($periodo($iniSem, $hoje), 2), 'total_iva' => $periodoIva($iniSem, $hoje), 'anterior' => round($periodo($iniSemAnt, $hojeSemAnt), 2),
             'variacao' => $var($periodo($iniSem, $hoje), $periodo($iniSemAnt, $hojeSemAnt))],
-        'mes' => ['de' => $iniMes, 'total' => round($periodo($iniMes, $hoje), 2), 'anterior' => round($periodo($iniMesAnt, $fimMesAnt), 2),
+        'mes' => ['de' => $iniMes, 'total' => round($periodo($iniMes, $hoje), 2), 'total_iva' => $periodoIva($iniMes, $hoje), 'anterior' => round($periodo($iniMesAnt, $fimMesAnt), 2),
             'variacao' => $var($periodo($iniMes, $hoje), $periodo($iniMesAnt, $fimMesAnt))],
         'rotas' => $rank,
         'serie' => $serie,
         'ultima_venda' => $ultimaVenda,
+        // último dia de trabalho antes de hoje (calendário: sem domingos, sábados à tarde nem feriados), para o aviso
+        // «sem vendas desde…» não disparar depois de uma folga
+        'dia_util_anterior' => (function () use ($hoje) {
+            naval_servico('calendario');
+            for ($i = 1; $i <= 14; $i++) {
+                $d = date('Y-m-d', strtotime($hoje . ' 12:00') - $i * 86400);
+                if ((naval_cal_dia($d)['tipo'] ?? '') !== 'folga') return $d;
+            }
+            return date('Y-m-d', strtotime($hoje . ' 12:00') - 86400);
+        })(),
         'compras' => ['hoje' => $compras($hoje, $hoje), 'mes' => $compras($iniMes, $hoje), 'mes_anterior' => $compras($iniMesAnt, $fimMesAnt)],
         'controlo' => (function () use ($ag, $agora, $promotores) {
             naval_servico('controlo');

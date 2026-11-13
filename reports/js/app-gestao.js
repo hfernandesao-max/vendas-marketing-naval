@@ -185,7 +185,11 @@ function avisoDados() {
   if (!d) return null;
   const ult = d.ultima_venda;
   const habitual = (d.ontem && d.ontem.habitual) || (d.mes && d.mes.anterior);
-  if (habitual && (!ult || ult < d.ontem.dia))
+  // com vendas hoje (indicadores ou ao vivo) não há aviso; a referência é o último dia de trabalho (calendário), não
+  // «ontem» (depois de um domingo ou de um feriado o último dia com vendas é anterior, e está certo)
+  const hojeComVendas = (d.hoje && d.hoje.documentos > 0) || (E.ao && !E.ao.erro && E.ao.vendas && E.ao.vendas.length > 0);
+  const ref = d.dia_util_anterior || (d.ontem && d.ontem.dia);
+  if (!hojeComVendas && habitual && (!ult || ult < ref))
     return ult
       ? t('Sem vendas registadas desde {d}. Confirme a sincronização dos telemóveis e a ligação ao Pinguim BO.', { d: dl(ult) })
       : t('Sem vendas registadas este mês. Confirme a sincronização dos telemóveis e a ligação ao Pinguim BO.');
@@ -199,7 +203,7 @@ function heroi() {
   const c = cartao('ag-heroi');
   if (p === 'hoje') {
     const h = d.hoje;
-    c.append(el('div', 'ag-rotulo', t('Vendas de hoje')), el('div', 'ag-grande', kz(h.total)));
+    c.append(el('div', 'ag-rotulo', t('Vendas de hoje · sem IVA')), el('div', 'ag-grande', kz(h.total)), comIva(h));
     if (h.previsto) {
       const prog = h.total / h.previsto;
       c.append(barra(prog), el('div', 'ag-nota', t('{p} da previsão do dia ({v})', { p: n0(Math.round(prog * 100)) + '%', v: kz(h.previsto) })));
@@ -217,7 +221,7 @@ function heroi() {
     );
   } else if (p === 'semana') {
     const w = d.semana;
-    c.append(el('div', 'ag-rotulo', t('Vendas da semana')), el('div', 'ag-grande', kz(w.total)));
+    c.append(el('div', 'ag-rotulo', t('Vendas da semana · sem IVA')), el('div', 'ag-grande', kz(w.total)), comIva(w));
     c.append(linhaVar(w.variacao, t('face aos mesmos dias da semana passada ({v})', { v: kzc(w.anterior) })));
     const dias = Array.from({ length: 7 }, (_, i) => somaDias(w.de, i));
     const hoje = d.hoje.dia;
@@ -234,7 +238,7 @@ function heroi() {
     c.append(eixo, legenda(['ag-lg-on', t('Esta semana')], ['ag-lg-f', t('Semana passada')]));
   } else {
     const m = d.mes;
-    c.append(el('div', 'ag-rotulo', t('Vendas do mês')), el('div', 'ag-grande', kz(m.total)));
+    c.append(el('div', 'ag-rotulo', t('Vendas do mês · sem IVA')), el('div', 'ag-grande', kz(m.total)), comIva(m));
     c.append(linhaVar(m.variacao, t('face aos mesmos dias do mês passado ({v})', { v: kzc(m.anterior) })));
     const acum = (de, ate) => {
       let a = 0;
@@ -249,9 +253,11 @@ function heroi() {
       legenda(['ag-lg-l', t('Este mês')], ['ag-lg-la', t('Mês passado')]),
     );
   }
-  c.append(el('div', 'ag-nota ag-base', t('Valores sem IVA')));
+  c.append(el('div', 'ag-nota ag-base', t('Vendas sem IVA (desempenho) · com IVA (facturado ao cliente)')));
   return c;
 }
+/** Linha «com IVA» por baixo do valor sem IVA (como no portal). */
+const comIva = (x) => (x && x.total_iva != null ? el('div', 'ag-iva', t('com IVA: {v}', { v: kz(x.total_iva) })) : document.createTextNode(''));
 
 function cartaoKpi(rotulo, valor, v, txt) {
   const c = cartao('ag-kpi', el('div', 'ag-rotulo', rotulo), el('div', 'ag-medio', valor));
@@ -967,8 +973,10 @@ const hojeIso = () => {
 const minutosDesde = (hora) => {
   if (!hora) return null;
   const [h, m] = String(hora).split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
   const agoraD = new Date();
-  return agoraD.getHours() * 60 + agoraD.getMinutes() - (h * 60 + m);
+  const min = agoraD.getHours() * 60 + agoraD.getMinutes() - (h * 60 + m);
+  return min < 0 ? 0 : min;
 };
 const haQuanto = (min) =>
   min == null ? '—' : min < 1 ? t('agora mesmo') : min < 60 ? t('há {n} min', { n: min }) : t('há {h} h {m} min', { h: Math.floor(min / 60), m: min % 60 });
@@ -1081,7 +1089,13 @@ function cartaoVivo() {
   const c = cartao('ag-heroi ag-vivo');
   const cab = el('div', 'ag-vivo-cab');
   cab.append(el('i', 'ag-pulso'), el('span', null, t('Ao vivo · actualiza a cada minuto')));
-  c.append(cab, el('div', 'ag-rotulo', t('Vendas de hoje')), el('div', 'ag-grande', kz(total)));
+  const totalIva = vendas.reduce((a, v) => a + (+v.total || 0), 0);
+  c.append(
+    cab,
+    el('div', 'ag-rotulo', t('Vendas de hoje · sem IVA')),
+    el('div', 'ag-grande', kz(total)),
+    el('div', 'ag-iva', t('com IVA: {v}', { v: kz(totalIva) })),
+  );
   const g = el('div', 'ag-mini');
   const mini = (rot, val) => {
     const d = el('div');
@@ -1097,7 +1111,7 @@ function cartaoVivo() {
   const r = recebido(vendas);
   const g2 = el('div', 'ag-mini');
   g2.append(mini(t('recebido'), kzc(r.total)), mini(t('em dinheiro'), kzc(r.dinheiro)), mini(t('em Multicaixa'), kzc(r.multicaixa)));
-  c.append(g2, el('div', 'ag-nota', t('Vendas sem IVA · recebido com IVA')));
+  c.append(g2, el('div', 'ag-nota', t('Vendas sem IVA (desempenho) · recebido com IVA (dinheiro que entra)')));
   return c;
 }
 

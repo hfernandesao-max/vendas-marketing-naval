@@ -576,7 +576,8 @@ test('app de gestão: horário do dia, «À sua espera» (aprovações), vendas 
   await expect(page.locator('.ag-horario')).toHaveText('Vendas 07:30–15:00 · fecho 15:30–16:00 · carga 16:00–17:00');
   const vivo = page.locator('.ag-vivo');
   await expect(vivo).toContainText('100 000 Kz');
-  await expect(vivo).toContainText('Vendas sem IVA · recebido com IVA');
+  await expect(vivo).toContainText('Vendas sem IVA (desempenho) · recebido com IVA (dinheiro que entra)');
+  await expect(vivo).toContainText('com IVA: 114 000');
   // «À sua espera»: os três primeiros, atrasados marcados, com ligação ao portal
   const p = page.locator('.ag-pend');
   await expect(p).toHaveCount(3);

@@ -85,7 +85,8 @@
       try {
         c = await navigator.credentials.get({ publicKey: p });
       } catch (e) {
-        return { ok: false, cancelado: true, erro: 'A biometria foi cancelada.' };
+        // NotAllowedError: cancelada ou o telemóvel não deixou pedir sem um toque (iPhone ao voltar à app)
+        return { ok: false, cancelado: true, nome: (e && e.name) || '', erro: 'A biometria foi cancelada.' };
       }
       return A.pedir({
         f: 'entrar',
