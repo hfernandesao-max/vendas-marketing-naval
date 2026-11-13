@@ -90,11 +90,24 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
     if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota)) throw new NavalErro('Rota inválida.', 400);
     if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
     $ano = substr($data, 0, 4);
-    // num pedido manual, a quantidade sugerida e a origem nunca vêm do navegador
+    // num pedido manual, a quantidade sugerida e a origem nunca vêm do navegador; e só se regista (e ganha número)
+    // ao gravar com pelo menos um artigo — «Criar» só abre o formulário no ecrã
     if (($origem['tipo'] ?? '') !== 'conciliacao') {
+        if (!array_filter($linhas, function ($l) { return (float) (((array) $l)['quantidade'] ?? 0) > 0; })) {
+            throw new NavalErro('Junte pelo menos um artigo com quantidade antes de gravar.', 400);
+        }
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
     }
     return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
+        // um só rascunho manual aberto por rota e dia (sem rascunhos repetidos nem números gastos por engano)
+        if (($origem['tipo'] ?? '') !== 'conciliacao') {
+            foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+                $x = naval_json_ler((string) $f);
+                if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
+                    throw new NavalErro('Já existe o rascunho ' . $x['numero'] . ' para este promotor neste dia: abra-o para juntar artigos.', 409);
+                }
+            }
+        }
         $agora = date('Y-m-d H:i:s');
         $num = naval_req_proximo($ano);
         $r = [
@@ -173,6 +186,9 @@ function naval_req_gravar(string $id, array $linhas, string $nota, ?int $versao,
             // a quantidade sugerida e a origem não vêm do navegador: ficam as do sistema
             return ['sugerida' => $sug[$c] ?? null, 'origem' => $orig[$c] ?? 'adicionado'] + $l;
         }, $linhas));
+        if (!array_filter($novas, function ($l) { return (float) $l['quantidade'] > 0; })) {
+            throw new NavalErro('A requisição ficaria sem artigos: junte artigos ou anule-a.', 400);
+        }
         $r['linhas'] = $novas;
         $r['nota'] = naval_texto($nota, 500);
         $r['alterado_por'] = $login;
@@ -231,9 +247,33 @@ function naval_req_anular(string $id, string $motivo, ?int $versao, string $logi
     return $r;
 }
 
+/**
+ * Rascunhos sem artigos: os de dias anteriores anulam-se sozinhos (registados como anulados, com o motivo, para a
+ * numeração continuar completa e auditável); os de hoje anulam-se com «Anular rascunhos sem artigos». Devolve os
+ * números anulados.
+ */
+function naval_req_anular_vazios(?string $dia, string $login, ?array $rotas = null): array
+{
+    $feitas = [];
+    $hoje = date('Y-m-d');
+    foreach ([(int) date('Y') - 1, (int) date('Y')] as $a) {
+        foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {
+            $x = naval_json_ler((string) $f);
+            if (!$x || $x['estado'] !== 'rascunho' || count((array) $x['linhas']) > 0) continue;
+            if ($dia === null ? $x['data'] >= $hoje : $x['data'] !== $dia) continue;
+            if ($rotas !== null && !in_array((string) $x['rota'], $rotas, true)) continue;
+            $motivo = $dia === null ? 'Rascunho sem artigos anulado automaticamente no fim do dia.' : 'Rascunho sem artigos anulado em conjunto.';
+            naval_req_anular((string) $x['numero'], $motivo, null, $login);
+            $feitas[] = (string) $x['numero'];
+        }
+    }
+    return $feitas;
+}
+
 /** Lista das requisições do período (dia do movimento), no âmbito de rotas do utilizador; as mais recentes primeiro. */
 function naval_req_listar(string $de, string $ate, ?array $rotas): array
 {
+    naval_req_anular_vazios(null, 'automatico');
     $out = [];
     for ($a = (int) substr($de, 0, 4); $a <= (int) substr($ate, 0, 4); $a++) {
         foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {

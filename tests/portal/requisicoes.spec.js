@@ -96,3 +96,63 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await expect(ed.getByRole('button', { name: 'Nova requisição para esta rota' })).toBeVisible();
   expect(erros).toEqual([]);
 });
+
+test('nova requisição: «Criar» só abre o formulário (nada se regista); escolher o promotor; regista-se ao gravar com artigos', async ({ page }) => {
+  const pedidos = [];
+  await page.route('**/v1/requisicoes**', (rt) => {
+    const req = rt.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      return rt.fulfill({
+        json: {
+          ok: true,
+          requisicao: {
+            numero: 'RQ-2026-000020',
+            ano: '2026',
+            rota: b.rota,
+            promotor: 'Olindo Baião',
+            data: b.data,
+            origem: { tipo: 'manual' },
+            estado: 'rascunho',
+            versao: 1,
+            nota: '',
+            criado_por: 'sup',
+            impressoes: [],
+            linhas: b.linhas,
+          },
+        },
+      });
+    }
+    const u = new URL(req.url());
+    if (u.searchParams.get('catalogo')) return rt.fulfill({ json: { ok: true, artigos: [{ codigo: 'C3', artigo: 'Detergente', disponivel: 40 }] } });
+    return rt.fulfill({ json: { ok: true, gere: true, rotas: { 1001: 'Andrea Santos', 1005: 'Olindo Baião' }, requisicoes: [] } });
+  });
+  await abrir(page, '#requisicoes-carrinha');
+  const nova = page.locator('.req-nova');
+  await nova.getByRole('button', { name: 'Criar' }).click();
+  await expect(nova).toContainText('Escolha o promotor.');
+  await nova.getByLabel('Rota').selectOption('1005');
+  await nova.getByRole('button', { name: 'Criar' }).click();
+  const ed = page.locator('#req-editor');
+  await expect(ed).toContainText('Nova requisição');
+  await expect(ed).toContainText('Por gravar');
+  // descartar: nada foi registado
+  await ed.getByRole('button', { name: 'Descartar' }).click();
+  await expect(page.locator('#req-editor')).toHaveCount(0);
+  expect(pedidos.length).toBe(0);
+  // de novo: com um artigo regista e ganha número
+  await nova.getByLabel('Rota').selectOption('1005');
+  await nova.getByRole('button', { name: 'Criar' }).click();
+  await expect(ed.getByRole('button', { name: 'Anular' })).toHaveCount(0);
+  const art = ed.getByRole('combobox', { name: 'Artigo a juntar' });
+  await art.focus();
+  await art.press('Enter');
+  await art.press('Enter');
+  await page.keyboard.type('3');
+  await page.keyboard.press('Enter');
+  await ed.getByRole('button', { name: 'Gravar', exact: true }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'criar', rota: '1005', linhas: [{ codigo: 'C3', quantidade: 3 }] });
+  await expect(ed).toContainText('Requisição RQ-2026-000020');
+});

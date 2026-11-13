@@ -47,3 +47,24 @@ teste('anular um rascunho exige motivo; a lista do período mostra o estado', fu
     $l = array_column(naval_req_listar(date('Y-m-d'), date('Y-m-d'), ['1004']), 'estado', 'numero');
     igual('anulada', $l[$r['numero']]);
 });
+
+teste('requisições: só se registam ao gravar com artigos; um só rascunho por rota e dia; vazios antigos anulados', function () {
+    $hoje = date('Y-m-d');
+    $ontem = date('Y-m-d', time() - 86400);
+    $art = [['codigo' => 'X', 'artigo' => 'Óleo', 'quantidade' => 2]];
+    lanca(400, function () use ($hoje) { naval_req_criar('2001', $hoje, [], 'henrique'); });   // «Criar» sem artigos não regista nada
+    lanca(400, function () use ($hoje) { naval_req_criar('2001', $hoje, [['codigo' => 'X', 'artigo' => 'Óleo', 'quantidade' => 0]], 'henrique'); });
+    $a = naval_req_criar('2001', $hoje, $art, 'henrique');
+    lanca(409, function () use ($hoje, $art) { naval_req_criar('2001', $hoje, $art, 'henrique'); });   // já há rascunho
+    // rascunhos vazios antigos (de versões anteriores): a lista anula-os sozinha
+    $c = naval_req_criar('2002', $ontem, $art, 'henrique');
+    lanca(400, function () use ($c) { naval_req_gravar($c['numero'], [], '', $c['versao'], 'henrique'); });   // não grava vazia
+    $c['linhas'] = [];
+    naval_req_gravar_ficheiro($c);   // como os rascunhos vazios criados antes desta versão
+    naval_req_listar($ontem, $hoje, null);
+    igual(['anulada', 'automatico'], [naval_req_ler($c['numero'])['estado'], naval_req_ler($c['numero'])['anulada_por']]);
+    igual('rascunho', naval_req_ler($a['numero'])['estado'], 'com artigos não se anula');
+    $a['linhas'] = [];
+    naval_req_gravar_ficheiro($a);
+    igual([$a['numero']], naval_req_anular_vazios($hoje, 'henrique', ['2001']));
+});

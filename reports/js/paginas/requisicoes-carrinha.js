@@ -96,13 +96,16 @@ function editor() {
   const h = el('div', 'sec-h');
   const hl = el('div');
   const [txt, cls] = ESTADOS_REQ[r.estado] || [r.estado, 'p-mut'];
-  const tit = el('h2', null, t('Requisição {n}', { n: r.numero }) + ' ');
-  tit.append(pill(t(txt), cls));
+  // nova requisição ainda não gravada: só existe no ecrã; ganha número ao gravar com pelo menos um artigo
+  const tit = el('h2', null, (r.novo ? t('Nova requisição') : t('Requisição {n}', { n: r.numero })) + ' ');
+  tit.append(pill(r.novo ? t('Por gravar') : t(txt), r.novo ? 'p-warn' : cls));
   hl.append(tit);
   const origem =
     r.origem && r.origem.tipo === 'conciliacao'
       ? t('criada pela conciliação da carrinha de {d}', { d: dl(r.origem.data) })
-      : t('criada por {p}', { p: r.criado_por });
+      : r.novo
+        ? t('o número é atribuído ao gravar; sem gravar, nada fica registado')
+        : t('criada por {p}', { p: assinante(r.criado_por) });
   hl.append(el('p', null, [r.rota + ' · ' + r.promotor, t('dia {d}', { d: dl(r.data) }), origem].join(' · ')));
   h.append(hl);
   const tools = el('div', 'sec-tools');
@@ -241,7 +244,10 @@ function editor() {
 
   s.append(estadoGravacao, erro);
   const acc = el('div', 'cc-acc');
-  const corpoGravar = () => ({ accao: 'gravar', numero: r.numero, versao: r.versao, linhas: edicao.linhas, nota: edicao.nota });
+  const corpoGravar = () =>
+    r.novo
+      ? { accao: 'criar', rota: r.rota, data: r.data, linhas: edicao.linhas, nota: edicao.nota }
+      : { accao: 'gravar', numero: r.numero, versao: r.versao, linhas: edicao.linhas, nota: edicao.nota };
   const depois = (x, msg) => {
     if (!x) return null;
     aberta = x;
@@ -262,7 +268,7 @@ function editor() {
     });
     const emitir = botao(t('Gravar, emitir e imprimir'), null, () =>
       confirmarAccao(
-        t('Emitir a requisição {n}?', { n: r.numero }),
+        r.novo ? t('Emitir a nova requisição?') : t('Emitir a requisição {n}?', { n: r.numero }),
         t('Depois de emitida (PDF ou impressora) a requisição fica fechada e não se pode alterar. Para mais mercadoria, faça uma nova requisição.'),
         t('Emitir e imprimir'),
         () =>
@@ -282,7 +288,8 @@ function editor() {
           }),
       ),
     );
-    const anular = botao(t('Anular'), 'ghost', () => pedirMotivo(r, depois));
+    // por gravar: «Descartar» (nada fica registado); já gravada: «Anular» (fica registada como anulada, com motivo)
+    const anular = r.novo ? botao(t('Descartar'), 'ghost', fecharEditor) : botao(t('Anular'), 'ghost', () => pedirMotivo(r, depois));
     acc.append(anular, gravar, emitir);
   } else if (r.estado === 'emitida' || r.estado === 'carregada') {
     if (r.estado === 'carregada')
@@ -311,7 +318,7 @@ function editor() {
         }),
       ),
     );
-    if (L && L.gere) acc.append(botao(t('Nova requisição para esta rota'), null, () => nova(r.rota, erro)));
+    if (L && L.gere) acc.append(botao(t('Nova requisição para esta rota'), null, () => nova(r.rota)));
   } else if (r.estado === 'anulada') s.append(el('p', 'note', t('Anulada por {p}: {m}', { p: r.anulada_por, m: r.motivo_anulacao })));
   s.append(acc);
   return s;
@@ -342,13 +349,36 @@ function pedirMotivo(r, depois) {
   );
 }
 
-function nova(rota, erro) {
-  return enviar({ accao: 'criar', rota, data: hoje() }, erro).then((x) => {
-    if (!x) return;
-    toast(t('Requisição {n} criada.', { n: x.numero }), 4000);
-    actualizarLista();
-    abrir(x.numero);
-  });
+/**
+ * «Criar» abre o formulário de uma nova requisição só no ecrã (nada fica registado nem se gasta um número): é ao
+ * gravar com pelo menos um artigo que se regista. Se já houver um rascunho deste promotor hoje, abre esse.
+ */
+function nova(rota) {
+  const ja = ((L && L.requisicoes) || []).find(
+    (x) => x.estado === 'rascunho' && x.rota === rota && x.data === hoje() && !(x.origem && x.origem.tipo === 'conciliacao'),
+  );
+  if (ja) {
+    toast(t('Já havia um rascunho para esta rota hoje: abri a {n}.', { n: ja.numero }), 4000);
+    return abrir(ja.numero);
+  }
+  aberta = {
+    novo: true,
+    numero: null,
+    rota,
+    promotor: ((L && L.rotas) || {})[rota] || rota,
+    data: hoje(),
+    estado: 'rascunho',
+    origem: { tipo: 'manual' },
+    linhas: [],
+    nota: '',
+  };
+  edicao = { linhas: [], nota: '', mudou: false };
+  catalogo();
+  draw();
+  setTimeout(() => {
+    const s = document.getElementById('req-editor');
+    if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
 }
 
 R['requisicoes-carrinha'] = (pg) => {
@@ -392,6 +422,8 @@ R['requisicoes-carrinha'] = (pg) => {
     const erro = msgErro();
     const sel = el('select');
     sel.setAttribute('aria-label', t('Rota'));
+    // sem promotor escolhido por omissão: evita requisições para a primeira rota da lista por engano
+    sel.append(new Option(t('Escolha o promotor'), ''));
     rotas.forEach(([r, p]) => {
       const o = el('option', null, r + ' · ' + p);
       o.value = r;
@@ -400,10 +432,33 @@ R['requisicoes-carrinha'] = (pg) => {
     b.append(
       el('b', null, t('Nova requisição')),
       sel,
-      botao(t('Criar'), 'sm', () => nova(sel.value, erro)),
-      el('span', 'note', t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido.')),
+      botao(t('Criar'), 'sm', () => {
+        if (!sel.value) {
+          erro.hidden = false;
+          erro.textContent = t('Escolha o promotor.');
+          return sel.focus();
+        }
+        nova(sel.value);
+      }),
+      el('span', 'note', t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido. Um só rascunho por promotor e dia.')),
       erro,
     );
+    // rascunhos de hoje sem artigos (criados por engano): anulam-se de uma vez, ficam registados como anulados
+    const vazios = rs.filter((r) => r.estado === 'rascunho' && !r.n_linhas && r.data === hoje());
+    if (vazios.length)
+      b.append(
+        botao(t('Anular rascunhos sem artigos ({n})', { n: n0(vazios.length) }), 'ghost sm', () =>
+          postJson('requisicoes', { accao: 'anular_vazios', data: hoje() }).then((x) => {
+            if (!x.ok) {
+              erro.hidden = false;
+              erro.textContent = t(x.erro || 'Não foi possível gravar.');
+              return;
+            }
+            toast(t('{n} rascunho(s) sem artigos anulado(s).', { n: n0((x.anuladas || []).length) }), 5000);
+            actualizarLista();
+          }),
+        ),
+      );
     if (rotas.length) pg.append(b);
   }
   if (aberta) pg.append(editor());
