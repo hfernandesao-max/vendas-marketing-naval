@@ -6,6 +6,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ### Requisições: sem rascunhos repetidos nem vazios
 
+- **«Criar» já não regista nada:** só abre o formulário da nova requisição («Por gravar»). A requisição fica registada e
+  ganha número apenas ao «Gravar» com pelo menos um artigo com quantidade; «Descartar» fecha sem deixar rasto.
 - **Um só rascunho por promotor e dia:** carregar outra vez em «Criar» abre o rascunho que já existe, em vez de
   gastar um número novo.
 - A «Nova requisição» deixa de ter o primeiro promotor escolhido por omissão: é preciso escolher o promotor.

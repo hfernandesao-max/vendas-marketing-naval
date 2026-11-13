@@ -90,19 +90,21 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
     if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota)) throw new NavalErro('Rota inválida.', 400);
     if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
     $ano = substr($data, 0, 4);
-    // num pedido manual, a quantidade sugerida e a origem nunca vêm do navegador
+    // num pedido manual, a quantidade sugerida e a origem nunca vêm do navegador; e só se regista (e ganha número)
+    // ao gravar com pelo menos um artigo — «Criar» só abre o formulário no ecrã
     if (($origem['tipo'] ?? '') !== 'conciliacao') {
+        if (!array_filter($linhas, function ($l) { return (float) (((array) $l)['quantidade'] ?? 0) > 0; })) {
+            throw new NavalErro('Junte pelo menos um artigo com quantidade antes de gravar.', 400);
+        }
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
     }
     return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
-        // um só rascunho manual aberto por rota e dia: carregar outra vez em «Criar» abre o mesmo (sem rascunhos
-        // repetidos nem números gastos por engano)
+        // um só rascunho manual aberto por rota e dia (sem rascunhos repetidos nem números gastos por engano)
         if (($origem['tipo'] ?? '') !== 'conciliacao') {
             foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
                 $x = naval_json_ler((string) $f);
                 if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
-                    $x['ja_existia'] = true;
-                    return $x;
+                    throw new NavalErro('Já existe o rascunho ' . $x['numero'] . ' para este promotor neste dia: abra-o para juntar artigos.', 409);
                 }
             }
         }
@@ -184,6 +186,9 @@ function naval_req_gravar(string $id, array $linhas, string $nota, ?int $versao,
             // a quantidade sugerida e a origem não vêm do navegador: ficam as do sistema
             return ['sugerida' => $sug[$c] ?? null, 'origem' => $orig[$c] ?? 'adicionado'] + $l;
         }, $linhas));
+        if (!array_filter($novas, function ($l) { return (float) $l['quantidade'] > 0; })) {
+            throw new NavalErro('A requisição ficaria sem artigos: junte artigos ou anule-a.', 400);
+        }
         $r['linhas'] = $novas;
         $r['nota'] = naval_texto($nota, 500);
         $r['alterado_por'] = $login;
