@@ -38,6 +38,8 @@ const NAVAL_RETENCAO = [
     'operacao' => ['operacao', '*', 'RETENCAO_OPERACAO_DIAS', 90, 'Marcas da rotina diária'],
     'resumo' => ['resumo', '*', 'RETENCAO_RESUMO_DIAS', 365, 'Resumos diários enviados'],
     'conformidade' => ['conformidade', 'dia-*.json', 'RETENCAO_CONFORMIDADE_DIAS', 1095, 'Prova diária da conformidade'],
+    'fontes' => ['fontes', 'conferencia-*.json', 'RETENCAO_FONTES_DIAS', 365, 'Conferências diárias OLAP × Pinguim BO'],
+    'fontes_noite' => ['fontes', 'noite-*.json', 'RETENCAO_FONTES_DIAS', 365, 'Resumos da conferência diária das fontes'],
 ];
 
 function naval_conf_pasta(): string
@@ -501,5 +503,9 @@ function naval_conf_vista(): array
         'retencao' => naval_conf_regras_retencao(),
         'contas_dias' => max(30, (int) naval_config('CONTAS_DIAS_SEM_USO', '90')),
         'ligacoes' => naval_conf_ligacoes(),
+        'fontes' => (function () {
+            naval_servico('fontes');
+            return naval_fontes_estado(true);
+        })(),
     ];
 }

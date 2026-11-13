@@ -12,6 +12,7 @@ import { inR, st } from '../periodo.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { DB, b64, el, sum, toast } from '../util.js';
 import { apiDescarregar, apiFetch } from '../api.js';
+import { fetchVendas, fonteServe } from '../fontes.js';
 
 let SAPD = null;
 function carregarSap() {
@@ -406,6 +407,14 @@ function gerarFicheiroSap() {
   );
 }
 R['sap-exportar'] = (pg) => {
+  // o ficheiro para o SAP sai sempre da fonte fiscal (Pinguim BO): com o histórico do OLAP carregado, lê-se de novo
+  if (!fonteServe()) {
+    pg.append(el('div', 'glass empty', t('A ler as vendas do Pinguim BO (fonte fiscal)…')));
+    fetchVendas(st.de, st.ate).then(() => {
+      if (atual === 'sap-exportar') draw();
+    });
+    return;
+  }
   if (!SAPD) {
     pg.append(el('div', 'glass empty', t('A carregar…')));
     carregarSap().then(() => {

@@ -5,7 +5,7 @@ import { t } from './i18n/i18n.js';
 import { definirDiasSap, definirDiasTodos, diasSap, diasTodos, hoje } from './periodo.js';
 import { $, DB, el, toast } from './util.js';
 import { apiDescarregar, apiFetch } from './api.js';
-import { SESSAO } from './perfil.js';
+import { SESSAO, atual } from './perfil.js';
 
 // Pinguim BO: resultado da última consulta de vendas e verificação curta (ping) a cada 5 minutos.
 // Stock de artigos (Pinguim BO): data da posição carregada.
@@ -14,7 +14,14 @@ export const LIGACOES = {
   pinguim: { estado: '?', txt: 'A verificar…' },
   stock: { estado: '?', txt: '' },
 };
-const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)', stock: 'Stock de artigos (BO)' };
+const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)', stock: 'Stock de artigos (BO)', olap: 'OLAP (histórico)' };
+// Páginas fiscais (ficheiro para o SAP): as vendas vêm sempre do Pinguim BO, a fonte de registo fiscal
+const PAGINAS_FISCAIS = ['sap-exportar'];
+const fiscal = () => (PAGINAS_FISCAIS.includes(atual) ? '&fiscal=1' : '');
+/** As vendas carregadas servem a página actual? (numa página fiscal, só as lidas do Pinguim BO) */
+export const fonteServe = () => !fiscal() || !DADOS.fonte || DADOS.fonte === 'pinguim';
+/** Actualidade das vendas carregadas (cabeçalhos da API): hora a que foram lidas da fonte e a fonte. */
+export const DADOS = { ate: null, fonte: null };
 const desde = (ms) => {
   const m = Math.round((Date.now() - ms) / 60000);
   return m < 1 ? t('agora') : m < 60 ? t('há {n} min', { n: m }) : t('há {n} h', { n: Math.round(m / 60) });
@@ -24,6 +31,25 @@ function marcarPinguim(ok, erro) {
   LIGACOES.pinguim = ok
     ? { estado: 'ok', txt: t('consulta directa'), hora: Date.now() }
     : { estado: 'erro', txt: erro ? t(erro) : t('sem ligação'), hora: Date.now() };
+  mostrarFontes();
+}
+/** OLAP (histórico): só aparece quando está configurado no servidor; diz até que dia o histórico está conferido. */
+function marcarOlap(f) {
+  if (!f.olap) {
+    delete LIGACOES.olap;
+    return mostrarFontes();
+  }
+  const c = f.conferido_ate;
+  LIGACOES.olap = f.disjuntor
+    ? { estado: 'erro', txt: t('em pausa depois de falhas; lê-se do Pinguim BO') }
+    : c
+      ? {
+          estado: f.vendas === 'olap' ? 'ok' : 'aviso',
+          txt:
+            t('conferido até {d} · carga {h}', { d: dl(c.dia), h: String(c.carga_fim || '').slice(11, 16) }) +
+            (f.vendas === 'olap' ? '' : ' · ' + t('em conferência (ainda não usado)')),
+        }
+      : { estado: 'aviso', txt: t('sem dias conferidos; lê-se do Pinguim BO') };
   mostrarFontes();
 }
 export function avaliarFontes() {
@@ -78,6 +104,7 @@ function pingPinguim() {
     .then((r) => (r.status === 401 ? null : r.json()))
     .then((d) => {
       if (d) marcarPinguim(!!d.ok, d.erro);
+      if (d && d.fontes) marcarOlap(d.fontes);
     })
     .catch(() => marcarPinguim(false, t('sem ligação ao servidor')));
 }
@@ -188,7 +215,7 @@ export function garantirArtigos() {
   const chave = periodoVendas;
   if (artigosPedido && artigosPedido.chave === chave) return artigosPedido.p;
   const [sd, ed] = chave.split('|');
-  const p = apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + '&include_items=only' + (vendasFrescas ? '&fresco=1' : ''))
+  const p = apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + '&include_items=only' + fiscal() + (vendasFrescas ? '&fresco=1' : ''))
     .then((r) =>
       r
         .json()
@@ -219,7 +246,7 @@ function fetchVendasPinguim(de, ate) {
   const sd = de.replace(/-/g, ''),
     ed = ate.replace(/-/g, '');
   const fresco = frescoPedido();
-  return apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + (fresco ? '&fresco=1' : ''))
+  return apiFetch('vendas?start_date=' + sd + '&end_date=' + ed + fiscal() + (fresco ? '&fresco=1' : ''))
     .then((r) =>
       r
         .json()
@@ -240,6 +267,8 @@ function fetchVendasPinguim(de, ate) {
             return [];
           }
           marcarPinguim(true);
+          DADOS.ate = r.headers.get('X-Dados-Ate');
+          DADOS.fonte = r.headers.get('X-Dados-Fonte');
           marcarActualizado();
           return d;
         }),

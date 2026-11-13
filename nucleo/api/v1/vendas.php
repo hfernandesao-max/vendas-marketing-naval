@@ -28,7 +28,8 @@ naval_pinguim_requisitos();
 if (($_GET['ping'] ?? '') === '1') {
     if (naval_bd_configurada()) {
         try {
-            naval_json(naval_bd_estado() + ['erro' => null, 'hora' => date('Y-m-d H:i:s')]);
+            naval_servico('fontes');
+            naval_json(naval_bd_estado() + ['erro' => null, 'hora' => date('Y-m-d H:i:s'), 'fontes' => naval_fontes_estado()]);
         } catch (Throwable $e) {
             if (!naval_pinguim_configurado()) naval_json(['ok' => false, 'erro' => 'Sem ligação ao SQL Server: ' . $e->getMessage()]);
         }
@@ -83,7 +84,10 @@ naval_validar_periodo($de, $ate);
 // entradas próprias (as linhas só se consultam quando pedidas). O âmbito do perfil (rotas, NIF) aplica-se depois,
 // a cada pedido.
 $prom = naval_promotores();
-$base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom));
+// fiscal=1 (ficheiro para o SAP): sempre do Pinguim BO, a fonte de registo fiscal, até a fase do SAP pelo OLAP
+$fiscal = ($_GET['fiscal'] ?? '') === '1';
+if ($fiscal) $GLOBALS['naval_fontes_fiscal'] = true;
+$base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom)) . ($fiscal ? '|fiscal' : '');
 $chaves = [];
 if (!$soArtigos) $chaves['vendas'] = 'vendas2|' . $base;
 if ($itens || $soArtigos) $chaves['artigos'] = 'artigos|' . $base;
@@ -99,8 +103,20 @@ $metas = function () use ($chaves, $tempo) {
     }
     return $m;
 };
+// Actualidade dos dados (ISO/IEC 25012): hora a que os dados foram lidos da fonte (a entrada da cache) e a fonte
+// (pinguim, olap ou misto), em cabeçalhos, para cada ecrã mostrar «Dados até hh:mm»
+naval_servico('fontes');
+$cabecalhosFonte = function () use ($chaves, $tempo, $de, $ate) {
+    if (headers_sent()) return;
+    $m = naval_cache_meta((string) reset($chaves), $tempo);
+    header('X-Dados-Ate: ' . date('Y-m-d H:i:s', $m !== null ? (int) explode('|', $m)[0] : time()));
+    header('X-Dados-Fonte: ' . naval_fontes_resumo($de, $ate));
+};
 // Pedido condicional: se as entradas da cache não mudaram, 304 sem ler nem converter os dados
-if (!$fresco) naval_etag_antecipado($metas(), $codigo);
+if (!$fresco) {
+    $cabecalhosFonte();
+    naval_etag_antecipado($metas(), $codigo);
+}
 
 $d = ['vendas' => [], 'artigos' => []];
 if (isset($chaves['vendas'])) {
@@ -119,6 +135,7 @@ if (isset($chaves['artigos'])) {
     }, $fresco);
 }
 // ETag da resposta a partir das entradas agora gravadas: o pedido seguinte pode acabar logo no 304
+$cabecalhosFonte();
 naval_etag_antecipado($metas(), $codigo);
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());
 if ($soArtigos) naval_json(['artigos' => $d['artigos']]);
