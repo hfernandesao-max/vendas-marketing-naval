@@ -257,7 +257,7 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   s.append(wrap);
   if (editavel)
     s.append(
-      botao(t('Juntar linha'), 'ghost sm', () => {
+      botao(linhas === ed.entregas ? t('Adicionar entrega') : linhas === ed.tpa ? t('Adicionar talão do TPA') : t('Adicionar depósito'), 'ghost sm', () => {
         linhas.push(nova());
         mudou();
         draw();
@@ -266,20 +266,27 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   return s;
 }
 
+let aEnviar = false;
 function enviar(corpo, erro, ok) {
-  return postJson('caixa', { dia, versao: D.caixa.versao, ...corpo }).then((x) => {
-    if (!x.ok) {
-      erro.hidden = false;
-      erro.textContent = t(x.erro || 'Não foi possível gravar.');
-      return null;
-    }
-    D.caixa = x.caixa;
-    ed = copia(x.caixa);
-    marcarPorGravar('caixa', false);
-    if (ok) toast(t(ok), 4000);
-    draw();
-    return x.caixa;
-  });
+  // um pedido de cada vez: dois cliques seguidos não gravam (nem assinam) duas vezes
+  if (aEnviar) return Promise.resolve(null);
+  aEnviar = true;
+  const versao = D.caixa.versao;
+  return postJson('caixa', { dia, versao, ...corpo })
+    .finally(() => (aEnviar = false))
+    .then((x) => {
+      if (!x || !x.ok) {
+        erro.hidden = false;
+        erro.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+        return null;
+      }
+      D.caixa = x.caixa;
+      ed = copia(x.caixa);
+      marcarPorGravar('caixa', false);
+      if (ok) toast(corpo.accao === 'gravar' && x.caixa.versao === versao ? t('Sem alterações: nada a gravar.') : t(ok), 4000);
+      draw();
+      return x.caixa;
+    });
 }
 
 /**
@@ -287,7 +294,7 @@ function enviar(corpo, erro, ok) {
  * assinou cada passo (nome e utilizador) e quando, e o histórico completo (gravações, reaberturas com motivo).
  */
 const ACCOES = {
-  gravada: 'Lançada / gravada',
+  gravada: 'Lançada',
   fechada: 'Validada (contagem por notas)',
   verificada: 'Aprovada no 1.º nível',
   aprovada: 'Aprovação final',
@@ -310,7 +317,19 @@ function rastreio(c) {
   const th = el('thead');
   th.append(cab);
   const tb = el('tbody');
-  const linhas = (c.historico || []).filter((x) => ACCOES[x.accao]);
+  // uma assinatura por passo: gravações seguidas da folha (antes de a validar) contam como um só «Lançada», com quem
+  // gravou e a última hora; o número de gravações fica nas notas (o histórico completo continua guardado)
+  const linhas = [];
+  (c.historico || [])
+    .filter((x) => ACCOES[x.accao])
+    .forEach((x) => {
+      const ult = linhas[linhas.length - 1];
+      if (x.accao === 'gravada' && ult && ult.accao === 'gravada') {
+        ult.n++;
+        if (!ult.pors.includes(x.por)) ult.pors.push(x.por);
+        ult.em = x.em;
+      } else linhas.push({ ...x, n: 1, pors: [x.por], primeira: x.em });
+    });
   if (!linhas.length) {
     const tr = el('tr');
     const td = el('td', 'note', t('Ainda sem assinaturas: a folha ainda não foi gravada.'));
@@ -321,14 +340,16 @@ function rastreio(c) {
   linhas.forEach((x) => {
     const tr = el('tr');
     const nota =
-      x.accao === 'reaberta'
-        ? x.motivo || ''
-        : x.accao === 'fechada' && x.diferenca
-          ? t('diferença {v}', { v: kz(x.diferenca) })
-          : x.lacre
-            ? [x.banco, t('lacre {l}', { l: x.lacre }), x.valor != null ? kz(x.valor) : ''].filter(Boolean).join(' · ')
-            : '';
-    tr.append(el('td', null, t(ACCOES[x.accao])), el('td', null, quem(x.por)), el('td', null, quando(x.em)), el('td', 'note', nota));
+      x.accao === 'gravada' && x.n > 1
+        ? t('{n} gravações · primeira {h}', { n: x.n, h: quando(x.primeira) })
+        : x.accao === 'reaberta'
+          ? x.motivo || ''
+          : x.accao === 'fechada' && x.diferenca
+            ? t('diferença {v}', { v: kz(x.diferenca) })
+            : x.lacre
+              ? [x.banco, t('lacre {l}', { l: x.lacre }), x.valor != null ? kz(x.valor) : ''].filter(Boolean).join(' · ')
+              : '';
+    tr.append(el('td', null, t(ACCOES[x.accao])), el('td', null, x.pors.map(quem).join(' · ')), el('td', null, quando(x.em)), el('td', 'note', nota));
     tb.append(tr);
   });
   tab.append(th, tb);

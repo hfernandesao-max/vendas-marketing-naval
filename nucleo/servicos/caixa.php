@@ -163,7 +163,10 @@ function naval_caixa_alterar(string $dia, ?int $versao, callable $f): array
         if ($versao !== null && $versao !== (int) $c['versao']) {
             throw new NavalErro('A folha de caixa foi alterada por outra pessoa entretanto. Volte a abrir para ver a versão actual.', 409, ['codigo' => 'versao']);
         }
-        $c = naval_caixa_totais($f($c));
+        $novo = $f($c);
+        // sem alterações (ex.: «Gravar» carregado duas vezes): nada se grava nem se assina outra vez
+        if ($novo === null) return $c;
+        $c = naval_caixa_totais($novo);
         $c['versao'] = (int) $c['versao'] + 1;
         $grava = $c;
         foreach (['total_entregas', 'total_tpa', 'total_saidas', 'saldo_teorico', 'diferenca'] as $k) unset($grava[$k]);
@@ -262,9 +265,12 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
                 $c['saldo_inicial'] = round((float) $si, 2);
             }
         }
+        $antes = [$c['entregas'], $c['tpa'], $c['saidas'], $c['saldo_inicial']];
         $c['entregas'] = $entregas;
         $c['tpa'] = $tpa;
         $c['saidas'] = naval_caixa_depositos((array) $c['saidas'], $saidas, $login);
+        // idempotente: gravar o mesmo conteúdo não regista outra gravação nem outra assinatura
+        if (json_encode($antes) === json_encode([$c['entregas'], $c['tpa'], $c['saidas'], $c['saldo_inicial']])) return null;
         $c['alterado_por'] = $login;
         $c['alterado_em'] = date('Y-m-d H:i:s');
         naval_caixa_hist($c, 'gravada', $login);
