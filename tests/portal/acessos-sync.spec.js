@@ -46,7 +46,7 @@ test('Acessos: separadores e activação da gestão de contas com email, perfil 
   const erros = await abrir(page, '#acessos');
   await expect(page.locator('.ac-activar')).toContainText('Activar a gestão de contas no portal');
   // os separadores dos relatórios (iguais aos das outras páginas) ficam por baixo do aviso de activação
-  await expect(page.locator('.rel-tab')).toHaveText(['Utilizadores', 'Perfis', 'Matriz de acessos', 'Registos de actividade']);
+  await expect(page.locator('.rel-tab')).toHaveText(['Utilizadores', 'Funções', 'Perfis', 'Matriz de acessos', 'Registos de actividade']);
   await page.locator('.rel-tab', { hasText: 'Matriz de acessos' }).click();
   await expect(page.locator('#s-ac-m')).toBeVisible();
   await expect(page.locator('#s-ac-u')).toBeHidden();

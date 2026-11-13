@@ -11,6 +11,7 @@ import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
+import { blocoFuncoes, seccaoFuncoes } from './acessos-funcoes.js';
 
 const NOMES_ACCAO = {
   entrada: 'Entrada',
@@ -251,6 +252,10 @@ function janelaConta(u) {
       if (!novo) iLogin.disabled = true;
       const iEmail = entrada('email', u.email, { autocomplete: 'off', placeholder: 'nome@naval.co.ao' });
       const sPerfil = el('select');
+      // funções da pessoa: com funções escolhidas, o perfil é gerado pelo portal (o manual fica escondido)
+      let funcoes = (u.funcoes || []).slice(),
+        conflitos = [];
+      const caixaPerfil = el('div');
       Object.entries(G.perfis).forEach(([k, v]) => {
         const o = el('option', null, k + ' · ' + t(v));
         o.value = k;
@@ -303,7 +308,9 @@ function janelaConta(u) {
       const erro = msgErro();
       const actualizar = () => {
         const p = sPerfil.value;
-        caixaRotas.hidden = !G.por_rota.includes(p);
+        const F = G.funcoes || {};
+        caixaPerfil.hidden = funcoes.length > 0;
+        caixaRotas.hidden = funcoes.length ? !funcoes.some((c) => F[c] && F[c].por_rota) : !G.por_rota.includes(p);
         const precisa = (p === 'SADM' && (novo || u.perfil !== 'SADM' || (cAct.checked && !u.ligada))) || (!novo && u.perfil === 'SADM' && p !== 'SADM');
         caixaAprov.hidden = notaAprov.hidden = !precisa;
       };
@@ -312,8 +319,14 @@ function janelaConta(u) {
       const l2 = el('div', 'campos2');
       l2.append(campo(t('Utilizador'), iLogin), campo(t('Correio electrónico (obrigatório)'), iEmail));
       const l3 = el('div', 'campos2');
-      l3.append(campo(t('Perfil'), sPerfil), campo(t('Idioma do portal (obrigatório)'), sIdioma));
-      b.append(campo(t('Nome'), iNome), l2, l3, campo(t('Válida até (opcional)'), iAte), caixaRotas, lAct, notaAprov, caixaAprov);
+      caixaPerfil.append(campo(t('Perfil manual (sem funções)'), sPerfil));
+      l3.append(caixaPerfil, campo(t('Idioma do portal (obrigatório)'), sIdioma));
+      const bf = blocoFuncoes(G, funcoes, (c, conf) => {
+        funcoes = c;
+        conflitos = conf;
+        actualizar();
+      });
+      b.append(campo(t('Nome'), iNome), l2, bf.el, l3, campo(t('Válida até (opcional)'), iAte), caixaRotas, lAct, notaAprov, caixaAprov);
       if (!novo) {
         const acc = el('div', 'dlg-accoes');
         acc.append(
@@ -400,6 +413,11 @@ function janelaConta(u) {
               .filter(Boolean),
           );
         const login = novo ? iLogin.value.trim() : u.login;
+        if (conflitos.length) {
+          erro.textContent = t('Retire uma das funções incompatíveis (separação de funções).');
+          erro.hidden = false;
+          return;
+        }
         if (!sIdioma.value) {
           erro.textContent = t('Indique o idioma do portal.');
           erro.hidden = false;
@@ -415,6 +433,7 @@ function janelaConta(u) {
           nome: iNome.value.trim(),
           email: iEmail.value.trim(),
           perfil: sPerfil.value,
+          funcoes,
           rotas,
           valido_ate: iAte.value,
           activo: cAct.checked,
@@ -591,7 +610,8 @@ R.acessos = (pg) => {
   if (gerir) secU.querySelector('.sec-tools').prepend(botao(t('Nova conta'), 'sm', () => janelaConta(null)));
   pg.append(secU);
 
-  // ---- perfis ----
+  // ---- funções (atribuição automática) e perfis ----
+  pg.append(seccaoFuncoes(GESTAO, gerir, pedirGestao, recarregarGestao));
   pg.append(seccaoPerfis(gerir));
 
   // ---- matriz ----
@@ -611,7 +631,8 @@ R.acessos = (pg) => {
   const celula = (rec, p) => {
     const atual = M[rec][p] || '',
       opts = GESTAO.niveis[rec] || [];
-    if (!gerir || p === 'SADM' || !opts.length) return document.createTextNode(siglaNivel(atual));
+    // perfis gerados pelas funções: só as funções os mudam (na secção Funções)
+    if (!gerir || p === 'SADM' || !opts.length || (GESTAO.gerados || []).includes(p)) return document.createTextNode(siglaNivel(atual));
     const s = el('select', 'nivel');
     opts.forEach((n) => {
       const o = el('option', null, siglaNivel(n));

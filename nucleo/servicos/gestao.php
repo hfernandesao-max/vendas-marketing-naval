@@ -138,6 +138,15 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $nome = trim((string) ($p['nome'] ?? ''));
     $email = trim((string) ($p['email'] ?? ''));
     $perfil = strtoupper(trim((string) ($p['perfil'] ?? '')));
+    // atribuição automática pelas funções: o perfil é gerado a partir das funções (ver seguranca/funcoes.php)
+    $funcoes = array_values(array_filter(array_map('strval', (array) ($p['funcoes'] ?? []))));
+    if ($funcoes) {
+        try {
+            $perfil = naval_funcoes_perfil($funcoes, (string) $eu['login']);
+        } catch (NavalErro $e) {
+            naval_gestao_recusar($e->getMessage(), $accao, ['funcoes' => $funcoes]);
+        }
+    }
     $rotas = array_values(array_unique(array_filter(array_map(function ($x) { return trim((string) $x); }, (array) ($p['rotas'] ?? [])))));
     $ate = trim((string) ($p['valido_ate'] ?? ''));
     $activo = !empty($p['activo']);
@@ -166,6 +175,12 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     $u['nome'] = $nome;
     $u['email'] = $email;
     $u['perfil'] = $perfil;
+    if ($funcoes) {
+        sort($funcoes);
+        $u['funcoes'] = $funcoes;
+    } else {
+        unset($u['funcoes']);
+    }
     $u['rotas'] = in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [];
     $u['activo'] = $activo;
     $u['idioma'] = $idioma;
@@ -184,7 +199,7 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
 
     // Registo: o que mudou
     $mud = [];
-    foreach (['nome', 'email', 'perfil', 'rotas', 'activo', 'valido_ate', 'idioma'] as $k) {
+    foreach (['nome', 'email', 'perfil', 'funcoes', 'rotas', 'activo', 'valido_ate', 'idioma'] as $k) {
         $a = $antes[$k] ?? null;
         $b = $u[$k] ?? null;
         if ($a != $b) $mud[$k] = is_array($b) ? implode(', ', $b) : (is_bool($b) ? ($b ? 'sim' : 'não') : (string) $b);
@@ -276,6 +291,7 @@ function naval_gestao_vista(): array
             'rotas' => in_array($u['perfil'] ?? '', naval_perfis_por_rota(), true) ? array_values($u['rotas'] ?? []) : null,
             'activo' => naval_conta_valida($u), 'ligada' => !empty($u['activo']), 'valido_ate' => $u['valido_ate'] ?? null,
             'idioma' => naval_idioma_conta($u),
+            'funcoes' => array_values((array) ($u['funcoes'] ?? [])),
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
             'senha_temporaria' => !empty($u['trocar_senha']),
             'ultima_entrada' => $ultimas[$login]['data'] ?? null,
@@ -291,6 +307,9 @@ function naval_gestao_vista(): array
     return [
         'perfis' => naval_perfis(),
         'perfis_info' => naval_gestao_perfis_vista(),
+        'funcoes' => (object) naval_funcoes(),
+        'ordem_niveis' => NAVAL_ORDEM_NIVEIS,
+        'gerados' => array_keys(array_filter(naval_perfis_criados(), function ($x) { return !empty($x['gerado']); })),
         'matriz' => naval_matriz(),
         'matriz_base' => naval_matriz_base(),
         'niveis' => $niveis,

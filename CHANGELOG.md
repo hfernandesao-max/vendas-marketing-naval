@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Acessos atribuídos sozinhos pelas funções de cada pessoa
+
+- Em **Acessos › Utilizadores › Gerir**, escolhem-se as **funções da pessoa** (ex.: «Finanças e tesouraria» +
+  «Lançar e validar a folha de caixa») e o portal **atribui as permissões sozinho**: a maior de cada página entre as
+  funções, só o necessário (menor privilégio), com o âmbito (só as suas rotas) e os dois passos que as funções pedem.
+  É o controlo de acessos baseado em funções (RBAC, NIST/INCITS 359) das normas ISO/IEC 27001 (A.5.15, A.5.18).
+- **Separação de funções:** combinações proibidas são recusadas logo no ecrã e no servidor — lançar e aprovar a mesma
+  caixa; contar, coordenar e fechar a mesma conciliação (ISO/IEC 27001 A.5.3).
+- Nova secção **Funções** com o catálogo: as funções principais (uma por perfil do sistema) e as funções de aprovação
+  e controlo, com o que fazem, as páginas, as incompatibilidades e as contas. O super administrador cria e altera
+  funções; ao alterar uma função, **todas as contas com ela ficam actualizadas sozinhas**.
+- O perfil de cada conjunto de funções é gerado pelo portal e não se mexe na matriz (só pelas funções); o perfil
+  manual continua disponível para casos especiais. O nível A (administrar) nunca vem das funções.
+
 ### Vendas líquidas sem IVA e arrumação dos menus (fase 1)
 
 - **Base de valor:** o desempenho de vendas passa a medir-se em **vendas líquidas sem IVA** (facturas − notas de

@@ -67,7 +67,7 @@ function naval_perfil_nome(string $c): string
     return isset($t[$c]) ? $t[$c]['nome'] : $c;
 }
 
-/** Colunas editáveis da matriz: os perfis do sistema (excepto SADM) e os criados activos. */
+/** Colunas da matriz: os perfis do sistema (excepto SADM) e os criados activos (os gerados pelas funções incluídos). */
 function naval_colunas(): array
 {
     $c = NAVAL_COLUNAS;
