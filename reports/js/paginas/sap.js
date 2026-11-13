@@ -61,9 +61,11 @@ const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Po
  * Multicaixa; nas notas de crédito, a devolução ao cliente a negativo. Assim o ficheiro leva exactamente os valores do
  * Início. A estrutura do ficheiro (folha, colunas, formatos) não muda.
  */
+// substituições de facturas (vendas.php): o ficheiro leva os pagamentos do documento, como sempre levou
+const pagosSap = (v) => v.pagamentos_origem || pagosDe(v);
 const meioDoc = (v, cat) =>
   sum(
-    pagosDe(v).filter((p) => catMeio(p) === cat),
+    pagosSap(v).filter((p) => catMeio(p) === cat),
     'valor',
   );
 const cashSap = (v) => meioDoc(v, 'dinheiro'),
@@ -95,7 +97,7 @@ function linhasSap() {
       const ls = porDoc[v.documento] || [],
         m = mapaSap(v.rota),
         docTxt = tipoDoc(v) + ' ' + v.documento;
-      const pg = pagosDe(v); // nas notas de crédito, a devolução ao cliente (a negativo)
+      const pg = pagosSap(v); // nas notas de crédito, a devolução ao cliente (a negativo)
       // CASH AMOUNT e CARD AMOUNT: os valores do Início (a estrutura do ficheiro não muda)
       const cash = r2(cashSap(v)),
         card = r2(cardSap(v));

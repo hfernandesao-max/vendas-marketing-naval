@@ -40,6 +40,7 @@ import { R } from './registo.js';
 import { inR } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
 import { colDocumento } from '../componentes/documento.js';
+import { avisoRectificacoes } from '../componentes/rectificacoes.js';
 
 R['vendas-promotor'] = (pg) => {
   const V = vendasR(),
@@ -60,6 +61,8 @@ R['vendas-promotor'] = (pg) => {
       { l: t('Facturas pendentes'), v: mkz(sum(P, 'por_liquidar')), tone: sum(P, 'por_liquidar') > 0 ? 'warn' : null },
     ]),
   );
+  const rect = avisoRectificacoes();
+  if (rect) pg.append(rect);
   pg.append(
     tabela({
       id: 'vp',

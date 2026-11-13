@@ -4735,3 +4735,13 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
     background: rgb(var(--p3-rgb));
   }
 }
+
+/* rectificações de documentos anteriores (substituições de facturas) */
+.aviso-rect {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--linha, rgba(120, 150, 210, 0.25));
+  background: rgba(35, 151, 212, 0.08);
+  text-align: justify;
+}

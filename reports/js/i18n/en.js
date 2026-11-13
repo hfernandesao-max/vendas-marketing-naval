@@ -3594,6 +3594,11 @@ export const EN = {
   'Uma folha de caixa validada ou um depósito no banco espera pela aprovação de 1.º nível.':
     'A validated cash sheet or a bank deposit is awaiting first-level approval.',
   'Uma folha de caixa ou um depósito no banco espera pela aprovação final.': 'A cash sheet or a bank deposit is awaiting final approval.',
+  'Rectificações de documentos anteriores ({n})': 'Corrections of earlier documents ({n})',
+  'rota {r} · {nc} substitui uma factura anterior pela {f} · desconto ao cliente {v}':
+    'route {r} · {nc} replaces an earlier invoice with {f} · customer discount {v}',
+  'Sem venda nova nem movimento de dinheiro: ficam fora das vendas e das cobranças deste período e constam dos Documentos de venda e do ficheiro para o SAP.':
+    "No new sale and no money movement: they are left out of this period's sales and collections and remain in the Sales documents and in the SAP file.",
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

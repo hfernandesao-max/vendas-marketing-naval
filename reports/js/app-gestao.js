@@ -979,7 +979,11 @@ function carregarAgora(forcar) {
   const dia = hojeIso().replace(/-/g, '');
   // v1/vendas devolve a lista de documentos (ou {vendas} quando vêm também as linhas de artigos)
   const vendas = apiJson('vendas?start_date=' + dia + '&end_date=' + dia).then(
-    (d) => (Array.isArray(d) ? d : d && Array.isArray(d.vendas) ? d.vendas : null),
+    (d) => {
+      const l = Array.isArray(d) ? d : d && Array.isArray(d.vendas) ? d.vendas : null;
+      // substituições de facturas de dias anteriores: sem venda nova nem dinheiro (ver vendas.php)
+      return l && l.filter((v) => !v.substituicao);
+    },
     () => null,
   );
   // stock de cada carrinha neste momento (Pinguim BO, dbo.GET_STOCK)
