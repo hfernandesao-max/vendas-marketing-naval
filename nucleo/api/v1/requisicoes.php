@@ -26,13 +26,13 @@ if (!naval_e_post()) {
     if (($_GET['carga'] ?? '') === '1') {
         $data = (string) ($_GET['data'] ?? date('Y-m-d'));
         if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
-        naval_json(['ok' => true, 'gere' => $gere, 'eu' => $login, 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
     }
-    if (($_GET['catalogo'] ?? '') === '1') naval_json(['ok' => true, 'artigos' => naval_req_catalogo()]);
+    if (($_GET['catalogo'] ?? '') === '1') naval_json_assinado(['ok' => true, 'artigos' => naval_req_catalogo()]);
     if (isset($_GET['numero'])) {
         $r = naval_req_ler((string) $_GET['numero']);
         if (!$r || !naval_rota_permitida($r['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
-        naval_json(['ok' => true, 'gere' => $gere, 'requisicao' => $r]);
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicao' => $r]);
     }
     $de = (string) ($_GET['de'] ?? date('Y-m-d', time() - 30 * 86400));
     $ate = (string) ($_GET['ate'] ?? date('Y-m-d'));
@@ -40,7 +40,7 @@ if (!naval_e_post()) {
     $rotas = naval_rotas();
     $promotores = naval_promotores();
     if ($rotas !== null) $promotores = array_intersect_key($promotores, array_flip($rotas));
-    naval_json(['ok' => true, 'gere' => $gere, 'requisicoes' => naval_req_listar($de, $ate, $rotas), 'rotas' => (object) $promotores]);
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicoes' => naval_req_listar($de, $ate, $rotas), 'rotas' => (object) $promotores]);
 }
 
 $p = naval_pedido();
@@ -63,16 +63,16 @@ switch ($accao) {
         if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || !naval_rota_permitida($rota)) throw new NavalErro('Rota inválida.', 400);
         $data = (string) ($p['data'] ?? date('Y-m-d'));
         if (!naval_data_valida($data) || $data > date('Y-m-d', time() + 7 * 86400)) throw new NavalErro('Data inválida.', 400);
-        naval_json(['ok' => true, 'requisicao' => naval_req_criar($rota, $data, (array) ($p['linhas'] ?? []), $login, ['tipo' => 'manual'], (string) ($p['nota'] ?? ''))]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_criar($rota, $data, (array) ($p['linhas'] ?? []), $login, ['tipo' => 'manual'], (string) ($p['nota'] ?? ''))]);
     case 'gravar':
-        naval_json(['ok' => true, 'requisicao' => naval_req_gravar($numero, (array) ($p['linhas'] ?? []), (string) ($p['nota'] ?? ''), $versao, $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_gravar($numero, (array) ($p['linhas'] ?? []), (string) ($p['nota'] ?? ''), $versao, $login)]);
     case 'emitir':
-        naval_json(['ok' => true, 'requisicao' => naval_req_emitir($numero, $versao, $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_emitir($numero, $versao, $login)]);
     case 'reimprimir':
-        naval_json(['ok' => true, 'requisicao' => naval_req_reimprimir($numero, $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_reimprimir($numero, $login)]);
     case 'confirmar_carga':
-        naval_json(['ok' => true, 'requisicao' => naval_req_confirmar($numero, (array) ($p['entregue'] ?? []), $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_confirmar($numero, (array) ($p['entregue'] ?? []), $login)]);
     case 'anular':
-        naval_json(['ok' => true, 'requisicao' => naval_req_anular($numero, (string) ($p['motivo'] ?? ''), $versao, $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_anular($numero, (string) ($p['motivo'] ?? ''), $versao, $login)]);
 }
 throw new NavalErro('Acção desconhecida.', 400);

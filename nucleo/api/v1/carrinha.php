@@ -21,7 +21,7 @@ if (!naval_e_post()) {
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
     $corrigir = naval_perfil() === 'SADM';
-    naval_json(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
         + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
 }
 
@@ -38,7 +38,7 @@ if ($accao === 'corrigir_registo') {
     if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
     $feitas = naval_carr_corrigir_registo($data, array_slice((array) ($p['rotas'] ?? []), 0, 500), (string) ($p['contado_por'] ?? ''),
         (string) ($p['validado_por'] ?? ''), (string) ($p['motivo'] ?? ''), $eu);
-    naval_json(['ok' => true, 'rotas' => $feitas]);
+    naval_json_assinado(['ok' => true, 'rotas' => $feitas]);
 }
 $precisa = ['contar' => 'contar', 'validar' => 'contar', 'aprovar' => 'coordenar', 'fechar' => 'fechar'][$accao] ?? 'contar';
 if (!$pode[$precisa]) {
@@ -52,12 +52,12 @@ if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
 if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || !naval_rota_permitida($rota)) throw new NavalErro('Rota inválida.', 400);
 switch ($accao) {
     case 'contar':
-        naval_json(['ok' => true] + naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu));
+        naval_json_assinado(['ok' => true] + naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu));
     case 'validar':
-        naval_json(['ok' => true] + naval_carr_validar($data, $rota, $eu));
+        naval_json_assinado(['ok' => true] + naval_carr_validar($data, $rota, $eu));
     case 'aprovar':
-        naval_json(['ok' => true] + naval_carr_aprovar($data, $rota, array_slice((array) ($p['motivos'] ?? []), 0, 2000, true), $eu));
+        naval_json_assinado(['ok' => true] + naval_carr_aprovar($data, $rota, array_slice((array) ($p['motivos'] ?? []), 0, 2000, true), $eu));
     case 'fechar':
-        naval_json(['ok' => true] + naval_carr_fechar($data, $rota, $eu));
+        naval_json_assinado(['ok' => true] + naval_carr_fechar($data, $rota, $eu));
 }
 throw new NavalErro('Acção desconhecida.', 400);

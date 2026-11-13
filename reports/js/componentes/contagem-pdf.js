@@ -9,6 +9,7 @@
 import { dl, kz, n0 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
 import { carregarScript } from '../servidor.js';
+import { quando as quandoAss, quem } from './assinantes.js';
 
 // As letras-base do PDF (Helvetica) só têm o alfabeto latino: em tigrínia o documento sai em português
 export const tp = (s, p) => {
@@ -33,7 +34,6 @@ const agoraTxt = () => {
 };
 const q = (v) => (v == null ? '—' : n0(v));
 const difTxt = (v) => (v == null ? '—' : (v > 0 ? '+' : '') + n0(v));
-const horaTxt = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
 
 let emblema;
 /** Emblema da Naval como data URL (uma vez); sem ele, o documento sai só com o nome. */
@@ -135,6 +135,10 @@ export function rodapes(doc, ref) {
 }
 
 /** Assinaturas no fim (mudam de página se não couberem). */
+/**
+ * Blocos de assinatura. Cada bloco: [título, texto por baixo, registo?]. Com registo ({por, em}) de um passo já
+ * assinado no portal, o bloco mostra quem assinou (nome e utilizador) e quando, em vez da linha em branco.
+ */
 export function assinaturas(doc, y, blocos) {
   const W = doc.internal.pageSize.getWidth(),
     H = doc.internal.pageSize.getHeight(),
@@ -144,13 +148,35 @@ export function assinaturas(doc, y, blocos) {
     y = 20;
   }
   const larg = (W - 2 * M - (blocos.length - 1) * 8) / blocos.length;
-  blocos.forEach(([titulo, sub], i) => {
+  blocos.forEach(([titulo, sub, reg], i) => {
     const x = M + i * (larg + 8);
     doc
       .setFont('helvetica', 'bold')
       .setFontSize(8.5)
       .setTextColor(...TINTA)
       .text(titulo, x, y);
+    if (reg && reg.em) {
+      doc
+        .setFont('helvetica', 'normal')
+        .setFontSize(7)
+        .setTextColor(...CINZA)
+        .text(tp('Assinado no portal'), x, y + 5.5);
+      doc
+        .setFont('helvetica', 'bold')
+        .setFontSize(8)
+        .setTextColor(...AZUL)
+        .text(doc.splitTextToSize(quem(reg.por, tp), larg)[0], x, y + 10);
+      doc
+        .setDrawColor(...AZUL)
+        .setLineWidth(0.3)
+        .line(x, y + 14, x + larg, y + 14);
+      doc
+        .setFont('helvetica', 'normal')
+        .setFontSize(7.5)
+        .setTextColor(...CINZA)
+        .text(quandoAss(reg.em), x, y + 18);
+      return;
+    }
     doc
       .setDrawColor(...CINZA)
       .setLineWidth(0.3)
@@ -162,6 +188,24 @@ export function assinaturas(doc, y, blocos) {
       .text(sub, x, y + 18);
   });
   return y + 22;
+}
+
+/**
+ * Registo das assinaturas (rastreabilidade): cada passo do circuito com quem assinou (nome e utilizador), a data e
+ * hora e notas (motivo de reaberturas e correcções). linhas: [[passo, login, carimbo, nota?]].
+ */
+export function registoAssinaturas(doc, y, linhas) {
+  doc.autoTable({
+    startY: y,
+    margin: { left: 14, right: 14, bottom: 16 },
+    head: [[tp('Registo das assinaturas'), tp('Assinado por'), tp('Data e hora'), tp('Notas')]],
+    body: linhas.map(([passo, por, em, nota]) => [passo, em ? quem(por, tp) || '—' : tp('pendente'), em ? quandoAss(em) : '—', nota || '']),
+    styles: { ...estiloTabela, fontSize: 8 },
+    headStyles: estiloCabeca,
+    theme: 'grid',
+    columnStyles: { 0: { cellWidth: 62 }, 1: { cellWidth: 70 }, 2: { cellWidth: 32 } },
+  });
+  return doc.lastAutoTable.finalY;
 }
 
 export const estiloTabela = {
@@ -342,27 +386,28 @@ export async function resultadoContagem(r, dia, motivos) {
     ...(auto ? [] : [[tp('Aprovada pelo coordenador'), r.coordenado_por, r.coordenado_em]]),
     [auto ? tp('Fechada sozinha (sem diferenças)') : tp('Aprovada pelo responsável · fechada'), auto ? tp('automático') : r.aprovado_por, r.aprovado_em],
   ];
-  doc.autoTable({
-    startY: y,
-    margin: { left: 14, right: 14, bottom: 16 },
-    head: [[tp('Circuito de aprovação'), tp('Por'), tp('Data e hora')]],
-    body: passos.map(([p, quem, em]) => [p, em ? quem || '—' : tp('pendente'), em ? horaTxt(em) : '—']),
-    styles: { ...estiloTabela, fontSize: 8 },
-    headStyles: estiloCabeca,
-    theme: 'grid',
-    tableWidth: 150,
-  });
-  y = doc.lastAutoTable.finalY + 6;
+  // correcções do registo (super administrador), com o que estava antes e o motivo
+  (r.historico || [])
+    .filter((h) => h.accao === 'correccao_registo')
+    .forEach((h) => {
+      const a = h.antes || {},
+        d = h.depois || {};
+      const mud = [];
+      if (a.contado_por !== d.contado_por) mud.push(tp('contado') + ': ' + (quem(a.contado_por, tp) || '—') + ' → ' + quem(d.contado_por, tp));
+      if (a.validado_por !== d.validado_por) mud.push(tp('validada') + ': ' + (quem(a.validado_por, tp) || '—') + ' → ' + quem(d.validado_por, tp));
+      passos.push([tp('Registo corrigido'), h.por, h.em, mud.join('; ') + (h.motivo ? ' · ' + h.motivo : '')]);
+    });
+  y = registoAssinaturas(doc, y, passos) + 6;
   doc
     .setFont('helvetica', 'normal')
     .setFontSize(7.5)
     .setTextColor(...CINZA)
     .text(tp('Diferença = contado - tem de voltar (negativo: falta; positivo: sobra). Valor ao preço médio de venda do dia. Origem: Pinguim BO.'), 14, y);
   assinaturas(doc, y + 10, [
-    [tp('Técnico do armazém (contou e validou)'), tp('Nome, assinatura e data')],
+    [tp('Técnico do armazém (contou e validou)'), tp('Nome, assinatura e data'), { por: r.validado_por || r.contado_por, em: r.validado_em || r.contado_em }],
     [tp('Promotor'), tp('Nome, assinatura e data')],
-    [tp('Coordenador (1.º nível)'), tp('Nome, assinatura e data')],
-    [tp('Responsável (2.º nível)'), tp('Nome, assinatura e data')],
+    [tp('Coordenador (1.º nível)'), tp('Nome, assinatura e data'), auto ? null : { por: r.coordenado_por, em: r.coordenado_em }],
+    [tp('Responsável (2.º nível)'), tp('Nome, assinatura e data'), { por: r.aprovado_por, em: r.aprovado_em }],
   ]);
   rodapes(doc, ref);
   entregar(doc, ref + '_' + tp('resultado-da-contagem') + '.pdf', false);

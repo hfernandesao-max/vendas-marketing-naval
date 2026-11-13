@@ -1,6 +1,6 @@
 // Comunicação com o servidor: pedidos POST com a protecção CSRF da sessão e carregamento,
 // a pedido, das bibliotecas de terceiros (vendor/) que só algumas páginas usam.
-import { apiFetch } from './api.js';
+import { apiFetch, guardarNomes } from './api.js';
 import { SESSAO } from './perfil.js';
 
 const SEM_RESPOSTA = { ok: false, erro: 'Sem resposta do servidor.' };
@@ -12,7 +12,11 @@ export const postJson = (rota, corpo) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...corpo, csrf: SESSAO && SESSAO.csrf }),
   }).then(
-    (r) => r.json().catch(() => ({ ...SEM_RESPOSTA })),
+    (r) =>
+      r
+        .json()
+        .then(guardarNomes)
+        .catch(() => ({ ...SEM_RESPOSTA })),
     () => ({ ...SEM_RESPOSTA }),
   );
 

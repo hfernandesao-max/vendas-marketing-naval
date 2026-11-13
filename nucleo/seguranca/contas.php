@@ -466,3 +466,31 @@ function naval_contas_bloqueadas(): array
     }
     return $out;
 }
+
+/**
+ * Rastreabilidade das assinaturas: nome completo de cada utilizador que assinou um passo nos dados de uma resposta
+ * (chaves «…_por» e «por» do histórico). Só os utilizadores referidos, nunca a lista de contas. {login: nome}.
+ */
+function naval_nomes_assinantes(array $dados): array
+{
+    $logins = [];
+    $recolher = function ($x) use (&$recolher, &$logins) {
+        foreach ((array) $x as $k => $v) {
+            if (is_array($v) || is_object($v)) $recolher($v);
+            elseif (is_string($v) && $v !== '' && is_string($k) && ($k === 'por' || substr($k, -4) === '_por')) $logins[$v] = true;
+        }
+    };
+    $recolher($dados);
+    if (!$logins) return [];
+    $contas = naval_utilizadores();
+    $out = [];
+    foreach (array_keys($logins) as $l) if (isset($contas[$l])) $out[(string) $l] = (string) ($contas[$l]['nome'] ?? $l);
+    return $out;
+}
+
+/** Resposta JSON com os nomes de quem assinou cada passo (ver naval_nomes_assinantes). */
+function naval_json_assinado(array $dados): void
+{
+    $dados['nomes'] = (object) naval_nomes_assinantes($dados);
+    naval_json($dados);
+}

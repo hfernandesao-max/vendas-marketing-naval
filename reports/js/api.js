@@ -135,9 +135,20 @@ export async function apiFetch(rota, init = {}) {
 }
 
 /** GET que devolve o JSON (ou null se falhar). */
+/**
+ * Rastreabilidade das assinaturas: nomes completos de quem assinou cada passo ({login: nome}), que o servidor junta
+ * às respostas das páginas com circuito de aprovação («nomes»). Ver componentes/assinantes.js.
+ */
+export const NOMES = {};
+export function guardarNomes(d) {
+  if (d && d.nomes && typeof d.nomes === 'object') Object.assign(NOMES, d.nomes);
+  return d;
+}
+
 export const apiJson = (rota) =>
   apiFetch(rota)
     .then((r) => (r.ok && (r.headers.get('content-type') || '').includes('application/json') ? r.json() : null))
+    .then(guardarNomes)
     .catch(() => null);
 
 /** Transfere um ficheiro da API (Excel do plano de cargas, segunda via do SAP) com o token. */

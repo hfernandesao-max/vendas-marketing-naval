@@ -256,9 +256,17 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
     if (req.method() === 'POST') {
       const b = JSON.parse(req.postData());
       pedidos.push(b);
-      if (b.accao === 'gravar') caixa = { ...caixa, entregas: b.entregas, tpa: b.tpa, saidas: b.saidas, versao: caixa.versao + 1 };
+      if (b.accao === 'gravar')
+        caixa = {
+          ...caixa,
+          entregas: b.entregas,
+          tpa: b.tpa,
+          saidas: b.saidas,
+          versao: caixa.versao + 1,
+          historico: [{ em: '2026-10-26 17:05:00', por: 'josefa.silva', accao: 'gravada' }],
+        };
       if (b.accao === 'fechar') caixa = { ...caixa, estado: 'fechada', contagem_fisica: b.contagem, versao: caixa.versao + 1 };
-      return r.fulfill({ json: { ok: true, caixa } });
+      return r.fulfill({ json: { ok: true, caixa, nomes: { 'josefa.silva': 'Josefa Silva' } } });
     }
     return r.fulfill({
       json: {
@@ -314,6 +322,9 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   await expect.poll(() => pedidos.length).toBe(1);
   expect(pedidos[0].entregas[0]).toMatchObject({ rota: '1001', valor: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });
   expect(pedidos[0].tpa[0]).toMatchObject({ rota: '1002', banco: 'BPC', talao: '0457', valor: 8000 });
+  // rastreabilidade das assinaturas: secção na própria folha
+  await expect(page.locator('.cx-rastreio')).toContainText('Josefa Silva (josefa.silva)');
+  await expect(page.locator('.cx-rastreio')).toContainText('26-10-2026 17:05');
   // fecho: contagem física por notas
   await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const f = page.locator('dialog[open]');

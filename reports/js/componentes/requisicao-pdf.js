@@ -2,6 +2,7 @@
 // armazém com número sequencial, as quantidades requisitadas, coluna para o armazém escrever o que entregou e as
 // assinaturas de quem requisita, de quem avia e de quem recebe. As reimpressões saem marcadas «2.ª via» (ou seguinte).
 import { dl, n0 } from '../formatos.js';
+import { quem } from './assinantes.js';
 import { assinaturas, cabecalho, entregar, estiloCabeca, estiloTabela, lerEmblema, novoDoc, rodapes, tp } from './contagem-pdf.js';
 
 const CINZA = [86, 101, 124],
@@ -20,7 +21,7 @@ export async function requisicaoPdf(r, imprimir = true) {
     [tp('Promotor'), r.promotor],
     [tp('Dia'), dl(r.data)],
     [tp('Origem'), origem],
-    [tp('Emitida'), quando(r.emitida_em) + (r.emitida_por ? ' · ' + r.emitida_por : '')],
+    [tp('Emitida'), quando(r.emitida_em) + (r.emitida_por ? ' · ' + quem(r.emitida_por, tp) : '')],
   ]);
   const corpo = r.linhas.map((l, i) => [String(i + 1), l.codigo, l.artigo, l.unidade || '', l.sugerida == null ? '—' : n0(l.sugerida), n0(l.quantidade), '']);
   const total = r.linhas.reduce((s, l) => s + (+l.quantidade || 0), 0);
@@ -64,9 +65,9 @@ export async function requisicaoPdf(r, imprimir = true) {
     y,
   );
   y = assinaturas(doc, y + 12, [
-    [tp('Requisitado por (promotor)'), tp('Nome, assinatura e data')],
+    [tp('Requisitado por (promotor)'), tp('Nome, assinatura e data'), { por: r.emitida_por, em: r.emitida_em }],
     [tp('Aviado por (armazém)'), tp('Nome, assinatura e data')],
-    [tp('Recebido por'), tp('Nome, assinatura e data')],
+    [tp('Recebido por'), tp('Nome, assinatura e data'), { por: r.confirmado_por, em: r.confirmado_em }],
   ]);
   // marca de água das reimpressões
   if (via > 1) {

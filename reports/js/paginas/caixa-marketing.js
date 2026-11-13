@@ -3,6 +3,7 @@
 // Substitui a folha Excel «Cash control». Servidor: nucleo/api/v1/caixa.php e nucleo/servicos/caixa.php.
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
+import { quando, quem } from '../componentes/assinantes.js';
 import { pill, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
@@ -249,6 +250,53 @@ function enviar(corpo, erro, ok) {
   });
 }
 
+/**
+ * Rastreabilidade das assinaturas da folha: o circuito (lançada → validada → 1.º nível → aprovação final) com quem
+ * assinou cada passo (nome e utilizador) e quando, e o histórico completo (gravações, reaberturas com motivo).
+ */
+const ACCOES = {
+  gravada: 'Lançada / gravada',
+  fechada: 'Validada (contagem por notas)',
+  verificada: 'Aprovada no 1.º nível',
+  aprovada: 'Aprovação final',
+  reaberta: 'Reaberta para corrigir',
+};
+function rastreio(c) {
+  const s = el('section', 'glass sec cx-sec cx-rastreio');
+  const h = el('div', 'sec-h');
+  const hl = el('div');
+  hl.append(
+    el('h2', null, t('Rastreabilidade das assinaturas')),
+    el('p', null, t('Quem assinou cada passo da folha, com o nome, o utilizador do portal e a data e hora; nada se apaga.')),
+  );
+  h.append(hl);
+  const tab = el('table', 'cc-tab cx-tab');
+  const cab = el('tr');
+  [t('Passo'), t('Assinado por'), t('Data e hora'), t('Notas')].forEach((x) => cab.append(el('th', null, x)));
+  const th = el('thead');
+  th.append(cab);
+  const tb = el('tbody');
+  const linhas = (c.historico || []).filter((x) => ACCOES[x.accao]);
+  if (!linhas.length) {
+    const tr = el('tr');
+    const td = el('td', 'note', t('Ainda sem assinaturas: a folha ainda não foi gravada.'));
+    td.colSpan = 4;
+    tr.append(td);
+    tb.append(tr);
+  }
+  linhas.forEach((x) => {
+    const tr = el('tr');
+    const nota = x.accao === 'reaberta' ? x.motivo || '' : x.accao === 'fechada' && x.diferenca ? t('diferença {v}', { v: kz(x.diferenca) }) : '';
+    tr.append(el('td', null, t(ACCOES[x.accao])), el('td', null, quem(x.por)), el('td', null, quando(x.em)), el('td', 'note', nota));
+    tb.append(tr);
+  });
+  tab.append(th, tb);
+  const w = el('div', 'cc-scroll');
+  w.append(tab);
+  s.append(h, w);
+  return s;
+}
+
 R['caixa-marketing'] = (pg) => {
   dia = dia || hoje();
   const barra = el('section', 'glass sec pc-barra');
@@ -352,9 +400,9 @@ R['caixa-marketing'] = (pg) => {
   );
   const cab = el('section', 'glass sec cx-cab');
   cab.append(el('b', null, t('Folha de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
-  if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: c.fechada_por })));
-  if (c.verificada_por) cab.append(el('span', 'note', t('1.º nível por {p}', { p: c.verificada_por })));
-  if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: c.aprovada_por })));
+  if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: quem(c.fechada_por) })));
+  if (c.verificada_por) cab.append(el('span', 'note', t('1.º nível por {p}', { p: quem(c.verificada_por) })));
+  if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: quem(c.aprovada_por) })));
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
   pg.append(cab);
@@ -468,6 +516,7 @@ R['caixa-marketing'] = (pg) => {
     pg.append(s);
     conferir();
   } else if (c.estado === 'aberta') pg.append(el('p', 'note', t('Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.')));
+  pg.append(rastreio(c));
   const erro = msgErro();
   const estado = el('p', 'note');
   estado.id = 'cx-estado';
