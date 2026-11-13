@@ -16,6 +16,10 @@ import { iniciarSync } from './smartphones.js';
 import { MODULO_DA_PAGINA, carregarPagina } from './paginas/modulos.js';
 import { apiFetch } from './api.js';
 import { haPorGravar } from './componentes/rascunho.js';
+import { vigiarDatas } from './componentes/data.js';
+
+// campos de data: escrever dd-mm-aaaa ou escolher no calendário; ISO 8601 por baixo (componentes/data.js)
+vigiarDatas();
 
 const LD = {
   passos: [

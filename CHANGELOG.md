@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Campos de data: escrever à mão ou escolher no calendário (ISO 8601)
+
+<!-- paginas: inicio, caixa-marketing, conciliacao-carrinha, relatorio-vendas, plano-cargas, carteira -->
+
+- Em todos os campos de data a data **escreve-se** em dia-mês-ano (os hífenes entram sozinhos: 13112026 →
+  13-11-2026; também aceita / e . e datas coladas em ISO, 2026-11-13) **ou escolhe-se no calendário** (botão ao lado,
+  ou Alt+↓ / F4). ↑ e ↓ mudam um dia; PgUp e PgDn um mês.
+- Por baixo, o valor é sempre **ISO 8601** (aaaa-mm-dd), seja qual for o idioma do navegador.
+- Datas que não existem ou fora dos limites (ex.: dias futuros na folha de caixa) ficam marcadas, com a explicação, e
+  não mudam nada.
+- Acessível (WAI-ARIA): o nome do campo, o erro anunciado aos leitores de ecrã e tudo pelo teclado.
+
+### Folha de caixa: campo do saldo inicial do tamanho do valor
+
+- O campo do saldo inicial passa a ter o tamanho do valor (até 15 algarismos), com «Kz» ao lado, em vez de ocupar a
+  largura toda.
+
 ### Folha de caixa: saldo inicial pode ser 0
 
 <!-- paginas: caixa-marketing -->

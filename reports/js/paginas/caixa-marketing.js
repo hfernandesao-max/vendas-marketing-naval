@@ -502,9 +502,11 @@ R['caixa-marketing'] = (pg) => {
       if (ok) ed.saldo_inicial = Math.round(v * 100) / 100;
       mudou();
     });
+    const linha = el('span', 'cx-saldo-l');
+    linha.append(i, el('span', 'cx-moeda', 'Kz'));
     s.append(
       el('b', null, t('Saldo inicial')),
-      i,
+      linha,
       el('span', 'note', t('Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).')),
     );
     pg.append(s);

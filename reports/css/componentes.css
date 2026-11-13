@@ -4843,3 +4843,114 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* saldo inicial: campo do tamanho do valor (até 15 caracteres), com a moeda ao lado */
+.cx-saldo-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cx-saldo-l .cx-saldo {
+  width: 17ch;
+  max-width: 100%;
+}
+.cx-moeda {
+  color: var(--suave, #8a97b3);
+  font-weight: 600;
+}
+
+/* campos de data (componentes/data.js): texto dd-mm-aaaa + botão do calendário; o campo nativo fica escondido */
+.data-iso {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.data-iso .data-txt {
+  width: calc(11ch + 22px);
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.date .data-iso .data-txt {
+  width: 11.5ch;
+  height: 30px;
+  color: var(--fg);
+}
+.data-iso .data-cal {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dim, #9aa6bf);
+  cursor: pointer;
+}
+.data-iso .data-cal:hover,
+.data-iso .data-cal:focus-visible {
+  color: #2397d4;
+  border-color: rgba(35, 151, 212, 0.45);
+  background: rgba(35, 151, 212, 0.1);
+}
+.data-iso .data-cal svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.data-iso .data-nativo {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 30px !important;
+  height: 30px !important;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+.data-iso .data-nativo.data-nativo-visivel {
+  opacity: 1;
+  pointer-events: auto;
+  position: static;
+  width: auto !important;
+}
+.data-iso .data-erro {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 5;
+  white-space: nowrap;
+  color: #e5484d;
+  font-size: 11.5px;
+}
+
+/* o campo de texto da data e o saldo inicial com o mesmo aspecto dos outros campos do portal */
+.pc-dia .data-txt,
+.cx-saldo-l .cx-saldo,
+.data-iso .data-txt:not(.date .data-txt) {
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  background: rgb(var(--veu-rgb) / 0.05);
+  color: var(--fg);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pc-dia .data-txt {
+  width: calc(11ch + 22px);
+}
+.pc-dia .data-txt:focus-visible,
+.cx-saldo-l .cx-saldo:focus-visible {
+  outline: 2px solid #2397d4;
+  outline-offset: 1px;
+}
