@@ -313,7 +313,8 @@ function naval_carr_painel(string $data, ?array $rotas, bool $gere, bool $actual
             'artigos' => $res['artigos'], 'alertas' => $cega ? null : $res['alertas'], 'diferencas' => $cega ? null : $res['diferencas'],
             'falta_kz' => $cega ? null : $res['falta_kz'], 'sobra_kz' => $cega ? null : $res['sobra_kz'],
             'carregado' => $cega ? null : $res['carregado'], 'vendido' => $cega ? null : $res['vendido'],
-            'contado_por' => $r['contado_por'], 'contado_em' => $r['contado_em'], 'aprovado_por' => $r['aprovado_por'], 'aprovado_em' => $r['aprovado_em'],
+            'contado_por' => $r['contado_por'], 'contado_em' => $r['contado_em'], 'validado_por' => $r['validado_por'], 'validado_em' => $r['validado_em'],
+            'coordenado_por' => $r['coordenado_por'], 'coordenado_em' => $r['coordenado_em'], 'aprovado_por' => $r['aprovado_por'], 'aprovado_em' => $r['aprovado_em'],
             'peso_kg' => isset($pesos[$r['rota']]) ? round((float) $pesos[$r['rota']], 1) : null,
         ];
     }

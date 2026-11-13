@@ -492,3 +492,114 @@ test.describe('app de gestão: idioma do telefone', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });
+
+test('app de gestão: horário do dia, «À sua espera» (aprovações), vendas sem IVA e assinaturas do fecho', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-06T16:10:00+01:00'));
+  const sess = { ...SESSAO, permissoes: { ...SESSAO.permissoes, inicio: 'V', 'conciliacao-carrinha': 'V' } };
+  const ind = {
+    ...IND,
+    horario: { dia: HOJE, tipo: 'completo', vendas: ['07:30', '15:00'], fecho: ['15:30', '16:00'], carga: ['16:00', '17:00'], agora: HOJE + ' 16:10' },
+    pendentes: {
+      total: 3,
+      nomes: { josefa: 'Josefa Manuel', coord: 'Sara Coordenadora' },
+      itens: [
+        {
+          tipo: 'caixa',
+          nivel: 2,
+          dia: dia(-1),
+          por: 'josefa',
+          em: dia(-1) + ' 16:00:00',
+          depositos: 0,
+          diferenca: 0,
+          atraso: true,
+          url: '../reports/#caixa-marketing',
+        },
+        { tipo: 'deposito', dia: HOJE, valor: 150000, banco: 'BAI', lacre: 'L77', por: 'josefa', atraso: false, url: '../reports/#caixa-marketing' },
+        {
+          tipo: 'carrinha',
+          accao: 'fechar',
+          dia: HOJE,
+          rota: '1005',
+          promotor: 'Mateus Kiala',
+          diferencas: 2,
+          por: 'coord',
+          atraso: true,
+          url: '../reports/#conciliacao-carrinha',
+        },
+      ],
+    },
+  };
+  await page.route('**/v1/sessao**', (r) => r.fulfill({ json: sess }));
+  await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: ind }));
+  await page.route('**/v1/vendas/estado**', (r) => r.fulfill({ json: { ok: true } }));
+  // com IVA 114 000 Kz; sem IVA 100 000 Kz (o desempenho é sem IVA; o recebido é com IVA)
+  await page.route(
+    (u) => u.pathname.endsWith('/v1/vendas'),
+    (r) =>
+      r.fulfill({
+        json: [
+          {
+            rota: '1005',
+            hora: '14:02',
+            total: 114000,
+            total_sem_iva: 100000,
+            cliente: 'Cantina Bela',
+            nc: false,
+            data: HOJE,
+            pago: 114000,
+            meio: 'Numerário',
+          },
+        ],
+      }),
+  );
+  await page.route('**/v1/painel-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        nomes: { manuel: 'Manuel Queia', 'henrique.fernandes': 'Henrique Fernandes' },
+        rotas: [
+          {
+            rota: '1005',
+            fecho: 'por_fechar',
+            contado_por: 'manuel',
+            contado_em: HOJE + ' 15:40:00',
+            validado_por: 'henrique.fernandes',
+            validado_em: HOJE + ' 15:45:00',
+          },
+        ],
+      },
+    }),
+  );
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  await page.goto('/gestao/index.html');
+  await expect(page.locator('.ag-horario')).toHaveText('Vendas 07:30–15:00 · fecho 15:30–16:00 · carga 16:00–17:00');
+  const vivo = page.locator('.ag-vivo');
+  await expect(vivo).toContainText('100 000 Kz');
+  await expect(vivo).toContainText('Vendas sem IVA · recebido com IVA');
+  // «À sua espera»: os três primeiros, atrasados marcados, com ligação ao portal
+  const p = page.locator('.ag-pend');
+  await expect(p).toHaveCount(3);
+  await expect(p.first()).toContainText('Folha de caixa de 05-11-2026: aprovação final');
+  await expect(p.first()).toContainText('validada por Josefa Manuel (josefa)');
+  await expect(p.first()).toContainText('Atrasado');
+  await expect(p.first()).toHaveAttribute('href', '../reports/#caixa-marketing');
+  await expect(p.nth(1)).toContainText('Depósito no banco de 06-11-2026: aprovar');
+  await expect(p.nth(1)).toContainText('BAI · lacre L77 · 150 000 Kz');
+  await expect(p.nth(2)).toContainText('Rota 1005: aprovação final da conciliação');
+  // o número do separador Alertas junta o que espera pela pessoa (2 críticos + 1 aviso + 3)
+  await expect(page.locator('.ag-separadores .ag-badge')).toHaveText('6');
+  // ficha da rota: quem assinou cada passo e o prazo do fecho
+  await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
+  await page.locator('.ag-rota-ao', { hasText: '1005' }).click();
+  const f = page.locator('#ag-folha');
+  await expect(f).toContainText('Por aprovação final');
+  await expect(f).toContainText('Fora do prazo');
+  const a = f.locator('.ag-assin li');
+  await expect(a).toHaveCount(2);
+  await expect(a.first()).toContainText('Contado por');
+  await expect(a.first()).toContainText('Manuel Queia (manuel)');
+  await expect(a.first()).toContainText('06-11-2026 15:40');
+  await expect(a.nth(1)).toContainText('Henrique Fernandes (henrique.fernandes)');
+  expect(erros).toEqual([]);
+});

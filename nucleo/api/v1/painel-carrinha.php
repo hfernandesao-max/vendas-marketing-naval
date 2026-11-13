@@ -10,4 +10,4 @@ naval_servico('carrinha');
 naval_exigir(['conciliacao-carrinha']);
 $data = (string) ($_GET['data'] ?? date('Y-m-d'));
 if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
-naval_json(['ok' => true] + naval_carr_painel($data, naval_rotas(), naval_pode('conciliacao-carrinha', 'G'), ($_GET['actualizar'] ?? '') === '1'));
+naval_json_assinado(['ok' => true] + naval_carr_painel($data, naval_rotas(), naval_pode('conciliacao-carrinha', 'G'), ($_GET['actualizar'] ?? '') === '1'));
