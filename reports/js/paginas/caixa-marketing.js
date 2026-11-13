@@ -159,7 +159,7 @@ function aprovadorDeposito(l, td) {
       );
     return;
   }
-  if (!l.id) return (td.textContent = t('grave a folha para aprovar'));
+  if (!l.id) return (td.textContent = t('grave o fecho para aprovar'));
   if (aprova && l.requisitante !== D.eu)
     return td.append(botao(t('Aprovar depósito'), 'sm', () => enviar({ accao: 'aprovar_deposito', id: l.id }, msgErroPagina(), 'Depósito aprovado.')));
   td.append(pill(t('Por aprovar'), 'p-serio'));
@@ -182,6 +182,21 @@ function grelha(titulo, nota, linhas, campos, nova, editavel, mudou) {
   hl.append(el('h2', null, titulo), el('p', null, nota));
   h.append(hl);
   s.append(h);
+  // depósitos no banco: só 2 ou 3 vezes por semana (conforme o valor em cofre). Sem depósitos não se mostra a tabela
+  // vazia: só a indicação e o botão para registar
+  if (linhas === ed.saidas && !linhas.length) {
+    s.classList.add('cx-sec-vazia');
+    s.append(el('p', 'note', t('Sem depósitos neste dia. Registe só nos dias em que leva dinheiro do cofre ao banco.')));
+    if (editavel)
+      s.append(
+        botao(t('Registar depósito no banco'), 'ghost sm', () => {
+          linhas.push(nova());
+          mudou();
+          draw();
+        }),
+      );
+    return s;
+  }
   const tab = el('table', 'cc-tab cx-tab');
   const cab = el('tr');
   // campos obrigatórios marcados com * (e «aria-required» no campo)
@@ -308,7 +323,7 @@ function rastreio(c) {
   const hl = el('div');
   hl.append(
     el('h2', null, t('Rastreabilidade das assinaturas')),
-    el('p', null, t('Quem assinou cada passo da folha, com o nome, o utilizador do portal e a data e hora; nada se apaga.')),
+    el('p', null, t('Quem assinou cada passo do fecho, com o nome, o utilizador do portal e a data e hora; nada se apaga.')),
   );
   h.append(hl);
   const tab = el('table', 'cc-tab cx-tab');
@@ -332,7 +347,7 @@ function rastreio(c) {
     });
   if (!linhas.length) {
     const tr = el('tr');
-    const td = el('td', 'note', t('Ainda sem assinaturas: a folha ainda não foi gravada.'));
+    const td = el('td', 'note', t('Ainda sem assinaturas: o fecho ainda não foi gravado.'));
     td.colSpan = 4;
     tr.append(td);
     tb.append(tr);
@@ -467,7 +482,7 @@ R['caixa-marketing'] = (pg) => {
     ]),
   );
   const cab = el('section', 'glass sec cx-cab');
-  cab.append(el('b', null, t('Folha de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
+  cab.append(el('b', null, t('Fecho de caixa de {d}', { d: dl(dia) }) + ' '), pill(t(txt), cls));
   if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: quem(c.fechada_por) })));
   if (c.verificada_por) cab.append(el('span', 'note', t('1.º nível por {p}', { p: quem(c.verificada_por) })));
   if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: quem(c.aprovada_por) })));
@@ -625,7 +640,7 @@ R['caixa-marketing'] = (pg) => {
       if (i) i.focus();
       return true;
     };
-    const g = botao(t('Gravar'), 'ghost', () => !semTalao() && enviar({ accao: 'gravar', ...ed }, erro, 'Folha de caixa gravada.'));
+    const g = botao(t('Gravar'), 'ghost', () => !semTalao() && enviar({ accao: 'gravar', ...ed }, erro, 'Fecho de caixa gravado.'));
     const f = botao(
       t('Validar a caixa'),
       null,
@@ -699,7 +714,7 @@ R['caixa-marketing'] = (pg) => {
       botao(t('Reabrir para corrigir'), 'ghost', () =>
         janela(
           t('Reabrir a caixa de {d}?', { d: dl(dia) }),
-          t('A contagem é anulada e a folha volta a ficar aberta. Fica registado, com o motivo.'),
+          t('A contagem é anulada e o fecho volta a ficar aberto. Fica registado, com o motivo.'),
           (b, ft, fechar) => {
             const m = el('textarea');
             m.rows = 2;

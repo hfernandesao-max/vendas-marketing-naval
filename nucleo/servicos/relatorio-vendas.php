@@ -92,8 +92,8 @@ function naval_rv_controlos(string $dia, array $f): array
     // 4. caixa
     $cx = $f['caixa'];
     $c['caixa'] = ($cx['estado'] ?? '') === 'aprovada'
-        ? ['estado' => 'ok', 'detalhe' => 'Folha de caixa aprovada por ' . ($cx['aprovada_por'] ?? '') . '.']
-        : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Folha de caixa validada, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Folha de caixa aprovada no 1.º nível, falta a aprovação final.' : 'Folha de caixa por lançar e validar.')];
+        ? ['estado' => 'ok', 'detalhe' => 'Fecho de caixa aprovado por ' . ($cx['aprovada_por'] ?? '') . '.']
+        : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Fecho de caixa validado, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Fecho de caixa aprovado no 1.º nível, falta a aprovação final.' : 'Fecho de caixa por lançar e validar.')];
     // 5. SAP (outras empresas)
     $c['sap_odata'] = !($f['sap_configurado'] ?? false)
         ? ['estado' => 'por_ligar', 'detalhe' => 'Conector SAP por ligar: o relatório mostra só as vendas RTM do Pinguim BO.']

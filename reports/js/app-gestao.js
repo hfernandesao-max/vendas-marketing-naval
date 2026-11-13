@@ -614,9 +614,9 @@ function textoPendente(x, nomes) {
   const por = x.por ? quem(x.por, nomes) : '';
   if (x.tipo === 'caixa')
     return [
-      x.nivel === 1 ? t('Folha de caixa de {d}: aprovar (1.º nível)', { d }) : t('Folha de caixa de {d}: aprovação final', { d }),
+      x.nivel === 1 ? t('Fecho de caixa de {d}: aprovar (1.º nível)', { d }) : t('Fecho de caixa de {d}: aprovação final', { d }),
       [
-        por ? (x.apos === 'verificada' ? t('aprovada no 1.º nível por {n}', { n: por }) : t('validada por {n}', { n: por })) : '',
+        por ? (x.apos === 'verificada' ? t('aprovado no 1.º nível por {n}', { n: por }) : t('validado por {n}', { n: por })) : '',
         x.diferenca ? t('diferença {v}', { v: kz(x.diferenca) }) : '',
         x.depositos ? t('primeiro os depósitos ({n})', { n: x.depositos }) : '',
       ]

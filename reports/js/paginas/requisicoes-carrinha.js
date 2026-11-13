@@ -61,7 +61,7 @@ function catalogo() {
   if (CAT) return;
   CAT = { a_ler: true, artigos: [] };
   apiJson('requisicoes?catalogo=1').then((d) => {
-    CAT = { artigos: (d && d.artigos) || [] };
+    CAT = { artigos: (d && d.artigos) || [], erro: d && d.stock_erro };
     if (atual === 'requisicoes-carrinha' && aberta) draw();
   });
 }
@@ -105,7 +105,7 @@ function enviar(corpo, erro) {
 function editor() {
   const r = aberta,
     rasc = r.estado === 'rascunho' && L && L.gere;
-  const s = el('section', 'glass sec req-editor');
+  const s = el('section', 'glass sec req-editor fixo');
   s.id = 'req-editor';
   const h = el('div', 'sec-h');
   const hl = el('div');
@@ -269,6 +269,14 @@ function editor() {
     junta.append(esc.caixa, qt, botao(t('Adicionar artigo'), 'ghost sm', juntar));
     if (CAT && CAT.a_ler) junta.append(el('span', 'note', t('A carregar…')));
     s.append(junta);
+    if (CAT && !CAT.a_ler && CAT.erro)
+      s.append(
+        el(
+          'p',
+          'aviso',
+          t('Stock do armazém principal indisponível neste momento ({e}): as quantidades não são verificadas até a ligação voltar.', { e: t(CAT.erro) }),
+        ),
+      );
     const nota = el('textarea', 'req-nota');
     nota.maxLength = 500;
     nota.rows = 2;

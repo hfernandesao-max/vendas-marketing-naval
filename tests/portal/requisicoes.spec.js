@@ -54,6 +54,9 @@ test('requisição: rever, juntar artigo, gravar, emitir e imprimir (fica fechad
   await page.getByRole('button', { name: 'RQ-2026-000012' }).click();
   const ed = page.locator('#req-editor');
   await expect(ed).toContainText('criada pela conciliação da carrinha de 26-10-2026');
+  // a requisição aberta faz parte da página (com a lista), nunca um submenu
+  await expect(page.locator('#s-req')).toBeVisible();
+  await expect(page.locator('#nav .nav-sub')).toHaveCount(0);
   // stock do armazém principal ao lado; acima do stock fica marcado e não se grava
   await expect(ed.locator('tr', { hasText: 'Fraldas M' }).locator('.req-stock')).toHaveText('100');
   await ed.getByLabel('Quantidade · Fraldas M').fill('200');

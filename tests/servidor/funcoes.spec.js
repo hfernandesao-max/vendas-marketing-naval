@@ -11,7 +11,7 @@ test('conta por funções: permissões calculadas, separação de funções e ac
   const pedir = async (corpo) => (await sadm.post('/api/index.php/v1/gestao', { data: { ...corpo, csrf: c, confirmacao: SENHA } })).json();
   const vista = async () => (await sadm.get('/api/index.php/v1/gestao')).json();
   const v0 = await vista();
-  expect(v0.funcoes['C-CAIXA-LANCAR'].nome).toBe('Lançar e validar a folha de caixa');
+  expect(v0.funcoes['C-CAIXA-LANCAR'].nome).toBe('Lançar e validar o fecho de caixa');
 
   const conta = (funcoes) => ({
     accao: 'guardar_conta',
