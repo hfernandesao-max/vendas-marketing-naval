@@ -238,3 +238,45 @@ test('conformidade › SGSI: documentos com aprovação, objectivos medidos, 93 
   await expect(page.locator('.tile').filter({ hasText: 'Documentos do SGSI aprovados' }).locator('.v')).toHaveText('1 / 7');
   expect(erros).toEqual([]);
 });
+
+test('conformidade: ligações às bases de dados com cada controlo, a norma e o que falta fazer', async ({ page }) => {
+  const ctl = (id, ok, valor, norma) => ({ id, ok, valor, norma });
+  await page.route('**/v1/conformidade**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        revisao_actual: '2026-T4',
+        cifra: true,
+        copia_externa: true,
+        registos_externos: true,
+        contas_dias: 90,
+        estado: {},
+        revisoes: [],
+        copias: [],
+        retencao: [],
+        ligacoes: [
+          {
+            nome: 'Pinguim BO',
+            conforme: false,
+            controlos: [
+              ctl('controlador', true, 'ODBC Driver 18 for SQL Server', 'ISO/IEC 27001 A.8.8'),
+              ctl('cifra', true, 'Encrypt=yes', 'ISO/IEC 27001 A.8.24'),
+              ctl('certificado', false, 'não validado', 'ISO/IEC 27001 A.8.24'),
+              ctl('intencao', true, 'ApplicationIntent=ReadOnly', 'ISO/IEC 27001 A.5.15'),
+            ],
+          },
+        ],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#conformidade');
+  const tab = page.locator('#s-conf-ligacoes');
+  await expect(tab.locator('tbody tr')).toHaveCount(4);
+  await expect(tab).toContainText('1 controlo fora da norma');
+  const cert = tab.locator('tbody tr', { hasText: 'Certificado do servidor' });
+  await expect(cert).toContainText('Fora da norma');
+  await expect(cert).toContainText('não validado');
+  await expect(cert).toContainText('certificado emitido para o nome do servidor');
+  await expect(tab.locator('tbody tr', { hasText: 'Controlador' })).toContainText('Conforme');
+  expect(erros).toEqual([]);
+});

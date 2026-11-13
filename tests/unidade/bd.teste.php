@@ -121,3 +121,32 @@ teste('texto enviado pelo ODBC em Windows-1252 (acentos nas consultas e parâmet
     igual('SELECT 1', naval_bd_para_odbc('SELECT 1'));
     igual('9999-GRUPO NAVAL FORMAÇÃO', naval_bd_utf8(naval_bd_para_odbc('9999-GRUPO NAVAL FORMAÇÃO')));
 });
+
+teste('ligação: DSN de referência (cifra, certificado validado, só leitura, nome da aplicação, tempos)', function () {
+    $c = ['host' => 'srv-sql', 'port' => '1433', 'nome' => 'PingWinBO', 'timeout' => '5', 'app' => 'PortalRTM'];
+    $d18 = naval_bd_dsn($c, 'ODBC Driver 18 for SQL Server', true, true);
+    igual('odbc:Driver={ODBC Driver 18 for SQL Server};Server=srv-sql,1433;Database=PingWinBO;Encrypt=yes;TrustServerCertificate=no;LoginTimeout=5;APP=PortalRTM;ApplicationIntent=ReadOnly;', $d18);
+    verdade(strpos(naval_bd_dsn($c, 'ODBC Driver 17 for SQL Server', true, false), 'TrustServerCertificate=yes') !== false);
+    // o controlador antigo não conhece ApplicationIntent
+    verdade(strpos(naval_bd_dsn($c, 'SQL Server', true, true), 'ApplicationIntent') === false);
+    $s = naval_bd_dsn($c + [], 'sqlsrv', true, true);
+    verdade(strpos($s, 'sqlsrv:Server=srv-sql,1433;Database=PingWinBO;Encrypt=true;TrustServerCertificate=false') === 0);
+    verdade(strpos($s, 'ApplicationIntent=ReadOnly') !== false && strpos($s, 'APP=PortalRTM') !== false);
+    igual('ODBC Driver 18 for SQL Server', NAVAL_BD_ODBC[0]);
+});
+
+teste('ligação: controlos de conformidade (certificado não validado e controlador antigo ficam fora da norma)', function () {
+    $GLOBALS['naval_bd_ligacao']['TESTE'] = ['fonte' => 'TESTE', 'cifra' => true, 'app' => 'PortalRTM', 'tempo_ligacao' => 5, 'tempo_consulta' => 30,
+        'controlador' => 'ODBC Driver 18 for SQL Server', 'certificado_validado' => true, 'intencao' => true];
+    $r = naval_bd_conformidade('TESTE');
+    verdade($r['conforme'] === true);
+    $GLOBALS['naval_bd_ligacao']['TESTE']['certificado_validado'] = false;
+    $GLOBALS['naval_bd_ligacao']['TESTE']['controlador'] = 'SQL Server';
+    $r = naval_bd_conformidade('TESTE');
+    verdade($r['conforme'] === false);
+    $fora = array_column(array_filter($r['controlos'], function ($x) { return !$x['ok']; }), 'id');
+    igual(['controlador', 'certificado', 'intencao'], array_values($fora));
+    unset($GLOBALS['naval_bd_ligacao']['TESTE']);
+    verdade(naval_bd_erro_controlador(new RuntimeException('SQLSTATE[IM002] [Microsoft][ODBC Driver Manager] Data source name not found')));
+    verdade(!naval_bd_erro_controlador(new RuntimeException('SSL Provider: The certificate chain was issued by an authority that is not trusted')));
+});
