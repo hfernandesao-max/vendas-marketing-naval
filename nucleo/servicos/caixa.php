@@ -301,17 +301,35 @@ function naval_caixa_fechar(string $dia, $contagem, string $explicacao, ?int $ve
 }
 
 /**
+ * O circuito tem 1.º nível: algum utilizador activo (fora do super administrador) tem «caixa-aprovacao» G na matriz.
+ * Sem ninguém, o circuito é de um só nível: quem lança valida e o responsável faz a aprovação final. Muda-se no portal,
+ * na matriz de acessos, sem alterar o programa.
+ */
+function naval_caixa_dois_niveis(): bool
+{
+    $m = naval_matriz()['caixa-aprovacao'] ?? [];
+    foreach (naval_utilizadores() as $u) {
+        $p = (string) ($u['perfil'] ?? '');
+        if (empty($u['activo']) || $p === 'SADM') continue;
+        if (in_array($m[$p] ?? '', ['G', 'A'], true)) return true;
+    }
+    return false;
+}
+
+/**
  * Aprova a caixa no nível seguinte: validada → verificada (1.º nível) → aprovada (2.º nível, fica imutável).
  * $niveis: os níveis que quem aprova tem (permissões «caixa-aprovacao» e «caixa-aprovacao-final»). Quem lançou ou
  * validou não aprova, e quem aprovou o 1.º nível não aprova o 2.º.
  */
-function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $niveis = [1, 2]): array
+function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $niveis = [1, 2], ?bool $doisNiveis = null): array
 {
     $nivel = 0;
-    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($login, $niveis, &$nivel) {
+    $doisNiveis = $doisNiveis ?? naval_caixa_dois_niveis();
+    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($login, $niveis, $doisNiveis, &$nivel) {
         if ($c['estado'] === 'aprovada') throw new NavalErro('A caixa deste dia já foi aprovada.', 409);
         if (!in_array($c['estado'], ['fechada', 'verificada'], true)) throw new NavalErro('Valide a caixa antes de a aprovar.', 409);
-        $nivel = $c['estado'] === 'fechada' ? 1 : 2;
+        // sem 1.º nível atribuído na matriz, quem tem a aprovação final aprova directamente a folha validada
+        $nivel = $c['estado'] === 'fechada' && $doisNiveis ? 1 : 2;
         if (!in_array($nivel, $niveis, true)) {
             throw new NavalErro($nivel === 1 ? 'O 1.º nível de aprovação da caixa é do superior de quem a lança.' : 'A aprovação final da caixa é do responsável máximo.', 403);
         }

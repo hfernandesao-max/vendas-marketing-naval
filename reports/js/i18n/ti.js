@@ -3415,6 +3415,9 @@ export const TI = {
   'Cobranças por meio de pagamento, facturas pendentes e folha de caixa.': 'ኣከፋፍላ ብመንገዲ ክፍሊት፣ ዘይተኸፍሉ ፋክቱራታትን ወረቐት ካሳን።',
   'Depósito aprovado': 'ምዕቃብ ጸዲቑ',
   'Aprovação do depósito retirada': 'ምጽዳቕ ምዕቃብ ተላዒሉ',
+  'Caixa validada. Falta a aprovação.': 'ካሳ ተረጋጊጹ። ምጽዳቕ ይጽበ ኣሎ።',
+  'Quem lança valida; aprova o responsável, nunca quem lançou ou validou (segregação de funções).':
+    'ዝመዝገበ የረጋግጽ፤ ሓላፊ የጽድቕ፣ ዝመዝገበ ወይ ዘረጋገጸ ፈጺሙ ኣየጽድቕን (ምፍልላይ ሓላፍነት)።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

@@ -427,7 +427,7 @@ R['caixa-marketing'] = (pg) => {
     sai = somaDe(ed.saidas),
     si = ed.saldo_inicial == null ? null : +ed.saldo_inicial,
     teorico = si == null ? null : si + ent - sai;
-  const [txt, cls] = ESTADOS[c.estado] || [c.estado, 'p-mut'];
+  const [txt, cls] = c.estado === 'fechada' && D.dois_niveis === false ? ['Validada, por aprovar', 'p-serio'] : ESTADOS[c.estado] || [c.estado, 'p-mut'];
   pg.append(
     tiles([
       { l: t('Saldo inicial'), v: kz(si), s: c.saldo_inicial_origem === 'manual' ? t('primeiro dia: escrito à mão') : t('saldo aprovado do dia anterior') },
@@ -641,7 +641,7 @@ R['caixa-marketing'] = (pg) => {
                     D.caixa = x.caixa;
                     ed = copia(x.caixa);
                     marcarPorGravar('caixa', false);
-                    toast(t('Caixa validada. Falta a aprovação do 1.º nível.'), 5000);
+                    toast(t(D.dois_niveis === false ? 'Caixa validada. Falta a aprovação.' : 'Caixa validada. Falta a aprovação do 1.º nível.'), 5000);
                     draw();
                   });
                 if (ed.mudou)
@@ -656,7 +656,8 @@ R['caixa-marketing'] = (pg) => {
     );
     acc.append(g, f);
   } else if ((c.estado === 'fechada' || c.estado === 'verificada') && (D.gere || (D.aprova || []).length)) {
-    const nivel = c.estado === 'fechada' ? 1 : 2;
+    // circuito de um só nível (ninguém com o 1.º nível na matriz): o responsável aprova directamente
+    const nivel = c.estado === 'fechada' && D.dois_niveis !== false ? 1 : 2;
     acc.append(
       botao(t('Reabrir para corrigir'), 'ghost', () =>
         janela(
@@ -687,9 +688,12 @@ R['caixa-marketing'] = (pg) => {
           ? botao(t('Aprovar (1.º nível)'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada no 1.º nível.'))
           : botao(t('Aprovação final'), null, () => enviar({ accao: 'aprovar' }, erro, 'Caixa aprovada.')),
       );
-    estado.textContent = t(
-      'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
-    );
+    estado.textContent =
+      D.dois_niveis === false
+        ? t('Quem lança valida; aprova o responsável, nunca quem lançou ou validou (segregação de funções).')
+        : t(
+            'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
+          );
   }
   pg.append(estado, erro, acc);
 };

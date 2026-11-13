@@ -35,20 +35,18 @@ test('folha de caixa: quem lança valida; 1.º nível e aprovação final por pe
   expect((await post(fin, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403);
   const bo = (await entrar('bo')).ctx;
   expect((await post(bo, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403); // um colega da tesouraria não aprova
-  expect((await dir.get(API + 'caixa?dia=' + dia).then((r) => r.json())).aprova).toEqual([2]);
-  expect((await post(dir, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(403); // só tem a aprovação final
-  const sadm = (await entrar('sadm')).ctx;
+  const vd = await dir.get(API + 'caixa?dia=' + dia).then((r) => r.json());
+  expect(vd.aprova).toEqual([2]);
+  // por omissão ninguém tem o 1.º nível: circuito de um só nível (quem lança valida, o responsável aprova)
+  expect(vd.dois_niveis).toBe(false);
   // depósito por aprovar impede a aprovação da folha; quem lançou não aprova o depósito
-  expect((await post(sadm, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(409);
+  expect((await post(dir, { accao: 'aprovar', versao: f.json.caixa.versao })).status).toBe(409);
   const id = f.json.caixa.saidas[0].id;
   expect((await post(fin, { accao: 'aprovar_deposito', id, versao: f.json.caixa.versao })).status).toBe(403);
-  const d = await post(sadm, { accao: 'aprovar_deposito', id, versao: f.json.caixa.versao });
-  expect(d.json.caixa.saidas[0]).toMatchObject({ lacre: 'LAC-123', aprovado_por: 'sadm' });
-  f.json.caixa.versao = d.json.caixa.versao;
-  const n1 = await post(sadm, { accao: 'aprovar', versao: f.json.caixa.versao });
-  expect(n1.json.caixa.estado).toBe('verificada');
-  expect((await post(sadm, { accao: 'aprovar', versao: n1.json.caixa.versao })).status).toBe(403); // quem aprovou o 1.º nível não faz a final
-  expect((await post(dir, { accao: 'aprovar', versao: n1.json.caixa.versao })).json.caixa.estado).toBe('aprovada');
+  const d = await post(dir, { accao: 'aprovar_deposito', id, versao: f.json.caixa.versao });
+  expect(d.json.caixa.saidas[0]).toMatchObject({ lacre: 'LAC-123', aprovado_por: 'dir' });
+  const a = await post(dir, { accao: 'aprovar', versao: d.json.caixa.versao });
+  expect(a.json.caixa).toMatchObject({ estado: 'aprovada', aprovada_por: 'dir' });
 });
 
 test('relatório de vendas: sem as fontes completas não se gera; perfis sem acesso não vêem', async () => {
