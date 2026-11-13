@@ -78,7 +78,7 @@ export async function relatorioVendasPdf(R, imprimir = false) {
         pinguim: tp('Pinguim BO'),
         conciliacao: tp('Conciliação das carrinhas'),
         sap_ficheiro: tp('Vendas carregadas no SAP'),
-        caixa: tp('Folha de caixa'),
+        caixa: tp('Fecho de caixa'),
         sap_odata: tp('Facturação SAP (conector)'),
       }[k] || k,
       { ok: tp('Completo'), por_ligar: tp('Por ligar'), pendente: tp('Em falta'), erro: tp('Sem ligação') }[x.estado] || x.estado,

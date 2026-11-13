@@ -6,7 +6,7 @@ const CTL = (pronto) => ({
   pinguim: { estado: 'ok', detalhe: '10 rotas com vendas, todas sincronizadas depois das 18:00.' },
   conciliacao: pronto ? { estado: 'ok', detalhe: '10 carrinhas conciliadas e fechadas.' } : { estado: 'pendente', detalhe: 'Carrinhas por fechar: 1006.' },
   sap_ficheiro: { estado: 'ok', detalhe: '40 documentos carregados no SAP.' },
-  caixa: { estado: 'ok', detalhe: 'Folha de caixa aprovada por fin.' },
+  caixa: { estado: 'ok', detalhe: 'Fecho de caixa aprovado por fin.' },
   sap_odata: { estado: 'por_ligar', detalhe: 'Conector SAP por ligar.' },
 });
 const RELATORIO = {
@@ -227,7 +227,10 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   // depósitos no banco: banco, código do lacre (obrigatório) e valor
   const dep = page.locator('.cx-sec', { hasText: 'Depósitos no banco' });
   await expect(page.locator('.cx-sec', { hasText: 'Saídas da caixa' })).toHaveCount(0);
-  await dep.getByRole('button', { name: 'Adicionar depósito' }).click();
+  // sem depósitos não aparece a tabela vazia: só a indicação e o botão
+  await expect(dep).toContainText('Sem depósitos neste dia');
+  await expect(dep.locator('table')).toHaveCount(0);
+  await dep.getByRole('button', { name: 'Registar depósito no banco' }).click();
   await dep.getByLabel('Banco · 1').selectOption('BPC');
   await dep.getByLabel('Código do lacre · 1').fill('LAC-77');
   await dep.getByLabel('Valor · 1').fill('200');

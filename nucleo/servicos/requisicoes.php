@@ -303,22 +303,27 @@ function naval_req_listar(string $de, string $ate, ?array $rotas): array
 function naval_req_catalogo(): array
 {
     $art = [];
-    try {
-        naval_servico('stock');
-        $d = naval_stock(date('Y-m-d'), '');
-        $principais = naval_req_armazens_principais();
-        foreach ((array) ($d['armazens'] ?? []) as $a) {
-            // só o armazém principal (nunca os armazéns das carrinhas nem outros armazéns)
-            if (!isset($principais[(string) ($a['cod_armazem'] ?? '')])) continue;
-            foreach ((array) ($a['itens'] ?? []) as $i) {
-                $c = (string) ($i['codigo'] ?? '');
-                if ($c === '') continue;
-                $art[$c] = ['codigo' => $c, 'artigo' => (string) ($i['produto'] ?? $c), 'armazem' => (string) ($a['armazem'] ?? ''),
-                    'disponivel' => round(($art[$c]['disponivel'] ?? 0) + (float) ($i['quantidade'] ?? 0), 3)];
+    $GLOBALS['naval_req_catalogo_erro'] = null;
+    naval_servico('stock');
+    $principais = naval_req_armazens_principais();
+    // uma consulta por armazém principal (rápida), em vez do stock de todos os armazéns e carrinhas
+    foreach (array_keys($principais) as $cod) {
+        try {
+            $d = naval_stock(date('Y-m-d'), (string) $cod);
+            foreach ((array) ($d['armazens'] ?? []) as $a) {
+                // só o armazém principal (nunca os armazéns das carrinhas nem outros armazéns)
+                if (!isset($principais[(string) ($a['cod_armazem'] ?? '')])) continue;
+                foreach ((array) ($a['itens'] ?? []) as $i) {
+                    $c = (string) ($i['codigo'] ?? '');
+                    if ($c === '') continue;
+                    $art[$c] = ['codigo' => $c, 'artigo' => (string) ($i['produto'] ?? $c), 'armazem' => (string) ($a['armazem'] ?? ''),
+                        'disponivel' => round(($art[$c]['disponivel'] ?? 0) + (float) ($i['quantidade'] ?? 0), 3)];
+                }
             }
+        } catch (Throwable $e) {
+            error_log('[requisicoes catalogo ' . $cod . '] ' . $e->getMessage());
+            $GLOBALS['naval_req_catalogo_erro'] = $e->getMessage();
         }
-    } catch (Throwable $e) {
-        error_log('[requisicoes catalogo] ' . $e->getMessage());
     }
     if (!$art) {
         foreach ([date('Y'), (string) ((int) date('Y') - 1)] as $ano) {

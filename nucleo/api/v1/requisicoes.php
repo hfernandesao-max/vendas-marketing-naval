@@ -29,7 +29,11 @@ if (!naval_e_post()) {
         naval_servico('calendario');
         naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'horario' => naval_cal_para_pagina($data), 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
     }
-    if (($_GET['catalogo'] ?? '') === '1') naval_json_assinado(['ok' => true, 'artigos' => naval_req_catalogo()]);
+    if (($_GET['catalogo'] ?? '') === '1') {
+        $art = naval_req_catalogo();
+        // sem o stock do Pinguim BO: o ecrã diz porquê (em vez de esconder a coluna do stock)
+        naval_json_assinado(['ok' => true, 'artigos' => $art, 'stock_erro' => $GLOBALS['naval_req_catalogo_erro'] ?? null]);
+    }
     if (isset($_GET['numero'])) {
         $r = naval_req_ler((string) $_GET['numero']);
         if (!$r || !naval_rota_permitida($r['rota'])) throw new NavalErro('Requisição não encontrada.', 404);

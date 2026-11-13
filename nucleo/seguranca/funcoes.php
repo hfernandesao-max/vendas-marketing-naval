@@ -36,7 +36,7 @@ function naval_funcoes_iniciais(): array
         'COM' => ['Direcção comercial e marketing', 'Gestão das vendas, clientes, terreno e objectivos.'],
         'SUP' => ['Supervisor de vendas', 'Acompanhamento das suas rotas e promotores.'],
         'PRO' => ['Promotor de vendas', 'As suas vendas, clientes e carrinha.'],
-        'FIN' => ['Finanças e tesouraria', 'Cobranças, contas a receber e folha de caixa.'],
+        'FIN' => ['Finanças e tesouraria', 'Cobranças, contas a receber e fecho de caixa.'],
         'BO' => ['Apoio administrativo RTM', 'Documentos, sincronização e apoio às rotas.'],
         'LOG' => ['Logística', 'Cargas, stock, requisições e contagem das carrinhas.'],
         'GEO' => ['Geomobilidade', 'Mapas, rotas e prospecção.'],
@@ -50,11 +50,11 @@ function naval_funcoes_iniciais(): array
         return ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'complementar', 'permissoes' => $perm, 'por_rota' => false,
             'dois_passos' => $mfa, 'conflitos' => $conflitos, 'activo' => true];
     };
-    $f['C-CAIXA-LANCAR'] = $comp('Lançar e validar a folha de caixa', 'Quem recebe o dinheiro: lança entregas, talões e depósitos e valida com a contagem.',
+    $f['C-CAIXA-LANCAR'] = $comp('Lançar e validar o fecho de caixa', 'Quem recebe o dinheiro: lança entregas, talões e depósitos e valida com a contagem.',
         ['caixa-marketing' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR']);
-    $f['C-CAIXA-APROVAR-1'] = $comp('Aprovar a folha de caixa (1.º nível)', 'Superior de quem lança: aprova os depósitos e a folha validada.',
+    $f['C-CAIXA-APROVAR-1'] = $comp('Aprovar o fecho de caixa (1.º nível)', 'Superior de quem lança: aprova os depósitos e a folha validada.',
         ['caixa-marketing' => 'V', 'caixa-aprovacao' => 'G'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR'], true);
-    $f['C-CAIXA-APROVAR'] = $comp('Aprovar a folha de caixa (final)', 'Responsável máximo: aprovação final da folha e dos depósitos.',
+    $f['C-CAIXA-APROVAR'] = $comp('Aprovar o fecho de caixa (final)', 'Responsável máximo: aprovação final da folha e dos depósitos.',
         ['caixa-marketing' => 'V', 'caixa-aprovacao-final' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1'], true);
     $f['C-CONC-CONTAR'] = $comp('Contar as carrinhas', 'Técnico do armazém: contagem às cegas e validação da conciliação.',
         ['conciliacao-carrinha' => 'G', 'stock-carrinha' => 'V'], ['C-CONC-COORD', 'C-CONC-FECHO']);

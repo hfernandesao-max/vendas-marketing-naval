@@ -161,7 +161,7 @@ function naval_caixa_alterar(string $dia, ?int $versao, callable $f): array
     return naval_exclusivo('caixa-' . $dia, function () use ($dia, $versao, $f) {
         $c = naval_caixa_ler($dia);
         if ($versao !== null && $versao !== (int) $c['versao']) {
-            throw new NavalErro('A folha de caixa foi alterada por outra pessoa entretanto. Volte a abrir para ver a versão actual.', 409, ['codigo' => 'versao']);
+            throw new NavalErro('O fecho de caixa foi alterado por outra pessoa entretanto. Volte a abrir para ver a versão actual.', 409, ['codigo' => 'versao']);
         }
         $novo = $f($c);
         // sem alterações (ex.: «Gravar» carregado duas vezes): nada se grava nem se assina outra vez
@@ -246,7 +246,7 @@ function naval_caixa_aprovar_deposito(string $dia, string $id, bool $aprovar, ?i
             }
         }
         unset($l);
-        if (!$achou) throw new NavalErro('Depósito não encontrado. Grave a folha primeiro.', 404);
+        if (!$achou) throw new NavalErro('Depósito não encontrado. Grave o fecho primeiro.', 404);
         return $c;
     });
 }

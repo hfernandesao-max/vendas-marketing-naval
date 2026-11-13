@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### «Fecho de caixa», depósitos só quando há, requisições com stock e quantidades sem setas
+
+<!-- paginas: caixa-marketing, requisicoes-carrinha -->
+
+- «Folha de caixa» passa a **«Fecho de caixa»** em todo o portal, na app, nas notificações e nos PDF.
+- **Depósitos no banco**: como só acontecem 2 ou 3 vezes por semana, sem depósitos não aparece a tabela vazia, só
+  «Sem depósitos neste dia» e o botão «Registar depósito no banco».
+- **Requisições — stock do armazém principal**: corrigida a leitura do stock (uma consulta rápida por armazém
+  principal, 1150 e 1151, em vez de todos os armazéns e carrinhas, que excedia o tempo); a lista de artigos e cada
+  linha voltam a mostrar a quantidade em stock. Se o Pinguim BO não responder, o ecrã diz porquê.
+- Campos de quantidade da requisição do tamanho do número, com o stock ao lado.
+- **Sem setas** de aumentar e diminuir em nenhum campo numérico do portal e da app.
+- A requisição aberta fica na própria página, junto à lista, e já não aparece no menu como se fosse uma página.
+
 ### Folha de caixa: mudar só o saldo inicial volta a gravar
 
 <!-- paginas: caixa-marketing -->

@@ -86,7 +86,7 @@ teste('notificações: folha de caixa e depósito por aprovar avisam quem aprova
         naval_notif_folhas_caixa('2026-11-13', strtotime('2026-11-13 16:10'), pd_folhas(), false);
         $r = $GLOBALS['pd_ent'];
         sort($r);
-        igual([['michael', 'Depósito no banco por aprovar'], ['michael', 'Folha de caixa de 12-11-2026 para aprovação final']], $r);
+        igual([['michael', 'Depósito no banco por aprovar'], ['michael', 'Fecho de caixa de 12-11-2026 para aprovação final']], $r);
         // não se repete
         $GLOBALS['pd_ent'] = [];
         naval_notif_folhas_caixa('2026-11-13', strtotime('2026-11-13 16:25'), pd_folhas(), false);

@@ -5006,3 +5006,27 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   background: var(--line2);
   margin: 0 4px;
 }
+
+/* campos numéricos sem as setas de aumentar e diminuir (escreve-se o valor), em todo o portal */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* quantidade da requisição: do tamanho do número, com o stock ao lado */
+.cc-tab input.req-qtd,
+.req-juntar input.req-qtd {
+  display: inline-block;
+  min-width: 0;
+  width: 9ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.req-tab td.req-stock {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

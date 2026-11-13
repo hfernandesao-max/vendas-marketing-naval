@@ -581,8 +581,8 @@ test('app de gestão: horário do dia, «À sua espera» (aprovações), vendas 
   // «À sua espera»: os três primeiros, atrasados marcados, com ligação ao portal
   const p = page.locator('.ag-pend');
   await expect(p).toHaveCount(3);
-  await expect(p.first()).toContainText('Folha de caixa de 05-11-2026: aprovação final');
-  await expect(p.first()).toContainText('validada por Josefa Manuel (josefa)');
+  await expect(p.first()).toContainText('Fecho de caixa de 05-11-2026: aprovação final');
+  await expect(p.first()).toContainText('validado por Josefa Manuel (josefa)');
   await expect(p.first()).toContainText('Atrasado');
   await expect(p.first()).toHaveAttribute('href', '../reports/#caixa-marketing');
   await expect(p.nth(1)).toContainText('Depósito no banco de 06-11-2026: aprovar');

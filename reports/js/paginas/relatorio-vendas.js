@@ -24,7 +24,7 @@ export const CONTROLOS = [
   ['pinguim', 'Vendas do Pinguim BO completas (todos os telemóveis sincronizados depois do fecho)'],
   ['conciliacao', 'Conciliação de todas as carrinhas fechada'],
   ['sap_ficheiro', 'Vendas do dia carregadas no SAP'],
-  ['caixa', 'Folha de caixa fechada e aprovada'],
+  ['caixa', 'Fecho de caixa validado e aprovado'],
   ['sap_odata', 'Facturação SAP das outras empresas (conector SAP)'],
 ];
 const ESTADO_CTL = { ok: ['Completo', 'p-ok'], pendente: ['Em falta', 'p-warn'], erro: ['Sem ligação', 'p-bad'], por_ligar: ['Por ligar', 'p-mut'] };
