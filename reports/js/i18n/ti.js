@@ -3539,6 +3539,10 @@ export const TI = {
   'rota {r} · {nc} substitui uma factura anterior pela {f} · desconto ao cliente {v}': 'መስመር {r} · {nc} ንቐዳማይ ፋክቱራ ብ{f} ይትክእ · ቅናሽ ንዓሚል {v}',
   'Sem venda nova nem movimento de dinheiro: ficam fora das vendas e das cobranças deste período e constam dos Documentos de venda e do ficheiro para o SAP.':
     'ሓድሽ መሸጣ ወይ ምንቅስቓስ ገንዘብ የለን፤ ካብ መሸጣን ኣከፋፍላን ናይዚ እዋን ወጻኢ እዮም፣ ኣብ ሰነዳት መሸጣን ኣብቲ ፋይል ናብ SAP ግን ኣለዉ።',
+  'há menos de 1 hora': 'ቅድሚ ሓደ ሰዓት ዘይመልእ',
+  'Novidade: {t} · {h}': 'ሓድሽ፦ {t} · {h}',
+  'actualizado {h}': 'ዝተሓደሰ {h}',
+  '{n} com novidades': '{n} ሓድሽ ዘለዎም',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

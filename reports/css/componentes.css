@@ -4745,3 +4745,76 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   background: rgba(35, 151, 212, 0.08);
   text-align: justify;
 }
+
+/* selo «Novo» durante 24 h (componentes/novo.js): esmorece com o tempo e depois de visto */
+.novo-selo {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  white-space: nowrap;
+  flex: none;
+}
+.novo-selo.f1 {
+  color: #fff;
+  background: linear-gradient(135deg, #2397d4, #273777);
+  box-shadow: 0 0 0 0 rgba(35, 151, 212, 0.5);
+  animation: novo-brilho 2.4s ease-out infinite;
+}
+.novo-selo.f2 {
+  color: #2397d4;
+  border: 1px solid #2397d4;
+  background: rgba(35, 151, 212, 0.1);
+}
+.novo-selo.f3 {
+  color: var(--suave, #8a97b3);
+  border: 1px solid currentColor;
+  background: transparent;
+  opacity: 0.8;
+}
+@keyframes novo-brilho {
+  0% {
+    box-shadow: 0 0 0 0 rgba(35, 151, 212, 0.45);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px rgba(35, 151, 212, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .novo-selo.f1 {
+    animation: none;
+  }
+}
+.novo-ponto {
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #2397d4;
+  flex: none;
+}
+.novo-faixa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: justify;
+  border: 1px solid rgba(35, 151, 212, 0.35);
+  background: rgba(35, 151, 212, 0.1);
+}
+.novo-faixa .novo-selo {
+  margin-left: 0;
+}
+.novo-faixa.f3 {
+  border-color: rgba(138, 151, 179, 0.3);
+  background: transparent;
+}

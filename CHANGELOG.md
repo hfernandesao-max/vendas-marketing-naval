@@ -4,7 +4,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 13-11-2026
 
+### Selo «Novo» durante 24 horas no que mudou
+
+- Depois de cada actualização, as páginas que mudaram mostram o selo **«Novo»** no menu (e um ponto azul na área),
+  com uma faixa no topo da página a dizer o que mudou.
+- O selo **vai esmorecendo**: cheio nas primeiras 6 horas, em contorno até às 12 horas, discreto até às 24 horas, e
+  desaparece. Depois de a pessoa abrir a página, passa logo a discreto.
+- Sempre com o texto «Novo» (não só a cor) e sem animação para quem pede movimento reduzido.
+
+### Requisições automáticas: o promotor já vem preenchido
+
+<!-- paginas: requisicoes-carrinha -->
+
+- No PDF da requisição, «Requisitado por (promotor)» já traz o promotor da rota (também nas requisições criadas
+  pela conciliação da carrinha); fica só a assinatura e a data. Quem emitiu continua no cabeçalho.
+
 ### Substituição de facturas de dias anteriores (nota de crédito + factura nova com desconto)
+
+<!-- paginas: pagamentos, vendas-promotor -->
 
 - Uma nota de crédito que anula uma factura de outro dia, com uma factura nova ao mesmo cliente no mesmo dia (por
   exemplo, com um desconto que não tinha sido feito), é reconhecida como **substituição**: não é venda nova nem

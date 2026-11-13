@@ -3599,6 +3599,10 @@ export const EN = {
     'route {r} · {nc} replaces an earlier invoice with {f} · customer discount {v}',
   'Sem venda nova nem movimento de dinheiro: ficam fora das vendas e das cobranças deste período e constam dos Documentos de venda e do ficheiro para o SAP.':
     "No new sale and no money movement: they are left out of this period's sales and collections and remain in the Sales documents and in the SAP file.",
+  'há menos de 1 hora': 'less than 1 hour ago',
+  'Novidade: {t} · {h}': 'New: {t} · {h}',
+  'actualizado {h}': 'updated {h}',
+  '{n} com novidades': '{n} with new features',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

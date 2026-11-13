@@ -10,6 +10,7 @@ if (!$u) throw new NavalErro('Sessão terminada.', 401);
 naval_servico('preferencias');
 naval_servico('actualizacao');
 naval_servico('app-telemovel');
+naval_servico('novidades');
 /** Versão nova no ensaio, para o menu da conta dos administradores de sistema (null para os outros perfis). */
 function naval_sessao_ensaio(string $perfil): ?array
 {
@@ -43,6 +44,14 @@ naval_json([
     'app' => !empty($_SESSION['app_equipamento']) ? (string) $_SESSION['app_equipamento'] : null,
     // menu da conta: «App no telemóvel» a vermelho quando já tem a app activa num telemóvel, a verde quando não tem
     'app_instalada' => naval_app_tem_activa((string) ($u['login'] ?? '')),
+    // selo «Novo» durante 24 h nas páginas que mudaram na última actualização (registo de alterações)
+    'novo' => (function () {
+        try {
+            return naval_nov_recentes(time());
+        } catch (Throwable $e) {
+            return [];
+        }
+    })(),
     'app_biometria' => !empty($_SESSION['app_equipamento']) && function_exists('naval_app_activo') && !empty((naval_app_activo((string) $_SESSION['app_equipamento']) ?: [])['credenciais']),
     // versão instalada no servidor: a app no telemóvel recarrega-se sozinha quando muda (actualização transparente)
     'versao' => naval_ensaio() ? naval_ensaio_versao() : (string) (naval_act_estado()['versao'] ?? ''),
