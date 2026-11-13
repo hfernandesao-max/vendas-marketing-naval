@@ -2,6 +2,19 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
 
+## 14-11-2026
+
+### Fecho de caixa em PDF
+
+<!-- paginas: caixa-marketing -->
+
+- Depois de validado, o fecho de caixa tem o botão **«PDF do fecho de caixa»**: reconciliação do dia (saldo inicial +
+  dinheiro entregue − depósitos = saldo final teórico, contagem física e diferença; o Multicaixa à parte), o dinheiro
+  entregue por promotor com as notas, os talões de fecho do TPA, os depósitos no banco (lacre, requisitante e
+  aprovador), a conferência por promotor com o Pinguim BO, as assinaturas registadas e o registo de todos os passos.
+- Autenticidade (ISO 15489): referência FC-aaaammdd e versão do fecho, código de verificação SHA-256 dos dados, data e
+  hora em que foi gerado e «Página x de y». Até à aprovação final sai marcado **«POR APROVAR»**.
+
 ## 13-11-2026
 
 ### Ligações às bases de dados conforme a ISO/IEC 27001 (Pinguim BO, OLAP e Equipamentos)
