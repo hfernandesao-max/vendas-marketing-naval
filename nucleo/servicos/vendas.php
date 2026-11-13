@@ -397,6 +397,25 @@ function naval_vendas_substituicoes(array $vendas): array
     return $vendas;
 }
 
+/**
+ * Vendas efectivas: sem as substituições de facturas (naval_vendas_substituicoes). A mesma regra em todos os totais
+ * de vendas (portal, app, indicadores, fecho do dia, notificações, relatório diário e carteira); os documentos completos
+ * ficam para a lista de documentos, a AGT, o controlo interno e o ficheiro para o SAP.
+ */
+function naval_vendas_efectivas(array $vendas): array
+{
+    return array_values(array_filter($vendas, function ($v) { return empty($v['substituicao']); }));
+}
+
+/** Linhas de artigo das vendas efectivas (sem as dos documentos de substituições). */
+function naval_vendas_efectivas_artigos(array $artigos, array $vendas): array
+{
+    $fora = [];
+    foreach ($vendas as $v) if (!empty($v['substituicao'])) $fora[(string) ($v['documento'] ?? '')] = true;
+    if (!$fora) return $artigos;
+    return array_values(array_filter($artigos, function ($a) use ($fora) { return !isset($fora[(string) ($a['documento'] ?? '')]); }));
+}
+
 /** Última chave de um vector (array_key_last só existe a partir do PHP 7.3). */
 function naval_vendas_chave_ultima(array $a)
 {

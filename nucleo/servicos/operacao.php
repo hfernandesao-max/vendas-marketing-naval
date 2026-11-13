@@ -161,7 +161,7 @@ function naval_op_fecho_20h(int $agora): ?array
     naval_servico('email');
     $d = naval_vendas_sql(str_replace('-', '', $dia), str_replace('-', '', $dia), naval_promotores(), false);
     if ($d === null) return ['erro' => 'Sem ligação ao Pinguim BO.'];
-    $fecho = naval_op_fecho((array) $d['vendas']);
+    $fecho = naval_op_fecho(naval_vendas_efectivas((array) $d['vendas']));
     if (!$fecho) return ['rotas' => 0];
     $carr = [];
     try {

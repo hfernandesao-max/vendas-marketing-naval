@@ -140,7 +140,7 @@ function naval_caixa_esperado(string $dia, ?array $vendas = null): ?array
     }
     $out = [];
     foreach ($vendas as $v) {
-        if (!empty($v['nc'])) continue;
+        if (!empty($v['nc']) || !empty($v['substituicao'])) continue;   // substituição: sem venda nem dinheiro
         $r = (string) $v['rota'];
         $out[$r] = $out[$r] ?? ['documentos' => 0, 'dinheiro' => 0.0, 'multicaixa' => 0.0];
         $out[$r]['documentos']++;
@@ -157,8 +157,10 @@ function naval_caixa_esperado(string $dia, ?array $vendas = null): ?array
 function naval_rv_montar(string $dia, array $f, array $promotores): array
 {
     $r2 = function ($v) { return round((float) $v, 2); };
-    $vendas = (array) $f['vendas'];
-    $artigos = (array) ($f['artigos'] ?? []);
+    // substituições de facturas de dias anteriores: não são vendas nem dinheiro do dia (vendas.php)
+    naval_servico('vendas');
+    $artigos = naval_vendas_efectivas_artigos((array) ($f['artigos'] ?? []), (array) $f['vendas']);
+    $vendas = naval_vendas_efectivas((array) $f['vendas']);
     $caixa = (array) $f['caixa'];
     // 1. por promotor: vendas, cobranças por meio (Pinguim BO) e o que foi entregue na caixa e nos talões do TPA
     $prom = [];

@@ -36,10 +36,9 @@ function naval_analise_resumir(array $vendas, array $artigos): array
     $r = ['rotas' => [], 'clientes' => [], 'artigos' => [], 'ca' => []];
     $docCliente = [];
     // substituições de facturas de dias anteriores: não são vendas do dia (ver naval_vendas_substituicoes)
-    $fora = [];
-    foreach ($vendas as $v) if (!empty($v['substituicao'])) $fora[(string) ($v['documento'] ?? '')] = true;
-    $vendas = array_filter($vendas, function ($v) { return empty($v['substituicao']); });
-    $artigos = array_filter($artigos, function ($a) use ($fora) { return !isset($fora[(string) ($a['documento'] ?? '')]); });
+    naval_servico('vendas');
+    $artigos = naval_vendas_efectivas_artigos($artigos, $vendas);
+    $vendas = naval_vendas_efectivas($vendas);
     foreach ($vendas as $v) {
         if (empty($v['nc']) && (string) ($v['cliente_codigo'] ?? '') !== '') $docCliente[(string) ($v['documento'] ?? '')] = (string) $v['cliente_codigo'];
         $rota = (string) ($v['rota'] ?? '');

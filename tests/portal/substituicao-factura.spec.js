@@ -68,3 +68,32 @@ test('substituição de factura: fora das cobranças e das vendas, desconto em p
   await expect(page.locator('#page')).toContainText('FR R1004/2026/90');
   expect(erros).toEqual([]);
 });
+
+test('substituição de factura no ficheiro para o SAP: os dois documentos seguem e a conciliação com as vendas explica o desconto', async ({ page }) => {
+  const la = artigos.find((a) => a.rota === '1004');
+  const linha = (doc, q, v) => ({
+    ...la,
+    chave: doc + '|1',
+    documento: doc,
+    data: '2026-10-25',
+    quantidade: q,
+    valor_sem_iva: v / 1.14,
+    iva: v - v / 1.14,
+    total: v,
+    gross_total: v,
+  });
+  const L = [linha('NC R1004/2026/3', -1, -1500000), linha('FR R1004/2026/90', 1, 1480000)];
+  const rotas = Object.fromEntries([...new Set(vendas.map((v) => v.rota))].map((r) => [r, { local: 'RTM' + r.slice(-1) }]));
+  await page.route('**/v1/sap**', (r) =>
+    r.fulfill({ json: { config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', rotas }, lotes: [], exportados: {}, pode_gerar: true } }),
+  );
+  const erros = await abrir(page, '#sap-exportar', { api: (r) => r.fulfill({ json: { vendas: [...vendas, ...SUBST], artigos: [...artigos, ...L] } }) });
+  await expect(page.locator('.tile', { hasText: 'Total facturado' })).toContainText('inclui descontos em substituições de facturas: −20 000,00 Kz');
+  // numerário e Multicaixa sem a substituição (como nas Cobranças): nada a negativo
+  await expect(page.locator('.tile', { hasText: 'Multicaixa' })).not.toContainText('−');
+  const nota = page.locator('#page .aviso-rect');
+  await expect(nota).toContainText('Conciliação com as vendas');
+  await expect(nota).toContainText('descontos em substituições de facturas 20 000,00 Kz');
+  await expect(nota).toContainText('rota 1004 · NC R1004/2026/3 e FR R1004/2026/90: desconto 20 000,00 Kz');
+  expect(erros).toEqual([]);
+});

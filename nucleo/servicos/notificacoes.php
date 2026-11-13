@@ -491,7 +491,7 @@ function naval_notif_dados_dia(string $dia): ?array
     $v = naval_vendas_sql(str_replace('-', '', $dia), str_replace('-', '', $dia), naval_promotores(), false);
     if ($v === null) return null;
     $rotas = [];
-    foreach ($v['vendas'] as $d) {
+    foreach (naval_vendas_efectivas((array) $v['vendas']) as $d) {
         $r = (string) $d['rota'];
         $x = $rotas[$r] ?? ['docs' => 0, 'total' => 0.0, 'ultima' => ''];
         if (empty($d['nc'])) $x['docs']++;

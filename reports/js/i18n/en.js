@@ -3609,6 +3609,17 @@ export const EN = {
   'Sem alterações: nada a gravar.': 'No changes: nothing to save.',
   '{n} gravações · primeira {h}': '{n} saves · first {h}',
   Lançada: 'Entered',
+  'inclui descontos em substituições de facturas: −{v}': 'includes discounts on replaced invoices: −{v}',
+  'Conciliação com as vendas': 'Reconciliation with sales',
+  'vendas do portal {a} − descontos em substituições de facturas {d} = total do ficheiro {b}.':
+    'portal sales {a} − discounts on replaced invoices {d} = file total {b}.',
+  'rota {r} · {nc} e {f}: desconto {v}': 'route {r} · {nc} and {f}: discount {v}',
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova, como no Pinguim BO.':
+    'In SAP the discount is recorded through the credit note and the new invoice, as in Pinguim BO.',
+  'Substituição de factura ({nc} → {f}, desconto {v}): sem movimento de dinheiro. No Pinguim BO: {o}.':
+    'Invoice replacement ({nc} → {f}, discount {v}): no money movement. In Pinguim BO: {o}.',
+  'No SAP o desconto fica registado pela nota de crédito e pela factura nova; sem numerário nem Multicaixa, porque não houve movimento de dinheiro.':
+    'In SAP the discount is recorded through the credit note and the new invoice, with no cash or Multicaixa amount, because no money moved.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

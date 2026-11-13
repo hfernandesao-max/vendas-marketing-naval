@@ -150,6 +150,22 @@ function folha(v, linhas, pags) {
     ul.append(li);
   });
   esqPe.append(ul);
+  // substituição de factura (vendas.php): pagamentos tal como estão no Pinguim BO e porque não contam como dinheiro
+  if (v.substituicao) {
+    const o = (v.pagamentos_origem || []).map((p) => t(p.meio || p.codigo) + ' ' + kz(p.valor)).join(' · ') || '—';
+    esqPe.append(
+      el(
+        'p',
+        'note',
+        t('Substituição de factura ({nc} → {f}, desconto {v}): sem movimento de dinheiro. No Pinguim BO: {o}.', {
+          nc: v.substituicao.nota,
+          f: v.substituicao.factura,
+          v: kz(v.substituicao.desconto),
+          o,
+        }),
+      ),
+    );
+  }
   const tot = el('dl', 'df-tot');
   const linha = (k, val, cls) => {
     const d = el('div', cls || null);

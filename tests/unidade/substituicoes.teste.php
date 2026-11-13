@@ -50,3 +50,18 @@ teste('substituição: anulação de uma factura do próprio dia e consumidor fi
     $v = naval_vendas_substituicoes([sb_doc('NC 3', '10:00', -500000, true, []), sb_doc('FR 4', '10:05', 120000, false, [])]);
     igual([false, false], array_map(function ($x) { return !empty($x['substituicao']); }, $v));
 });
+
+teste('substituição: fecho do dia, dinheiro esperado na caixa e vendas efectivas alinhados com o portal', function () {
+    naval_servico('operacao');
+    naval_servico('relatorio-vendas');
+    $v = naval_vendas_substituicoes(naval_vendas_devolucoes([
+        sb_doc('NC 1008/2026/3', '10:00', -1500000, true, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => -1500000.0]]),
+        sb_doc('FR 1008/2026/90', '10:05', 1480000, false, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1480000.0]]),
+        sb_doc('FR 1008/2026/91', '11:00', 50000, false, [['codigo' => 'NU', 'meio' => 'Numerário', 'valor' => 50000.0]], 'C200'),
+    ]));
+    igual(['FR 1008/2026/91'], array_column(naval_vendas_efectivas($v), 'documento'));
+    $f = naval_op_fecho(naval_vendas_efectivas($v));
+    igual([1, 50000.0, 0.0, 50000.0], [$f['1008']['docs'], $f['1008']['vendas'], $f['1008']['nc'], $f['1008']['recebido']]);
+    // a folha de caixa espera só o dinheiro que entrou (sem Multicaixa a negativo)
+    igual(['documentos' => 1, 'dinheiro' => 50000.0, 'multicaixa' => 0.0], naval_caixa_esperado('2026-11-13', $v)['1008']);
+});
