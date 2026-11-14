@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Rapidez, Face ID sem toques e telemóvel avisado no modo apresentação
+
+<!-- paginas: inicio -->
+
+- **Portal mais rápido a mudar de página**: aberta a primeira página, os módulos das outras páginas do perfil
+  descarregam-se em segundo plano (um de cada vez, nos tempos livres do navegador), por isso abrir uma página do menu
+  já não espera pela rede. Não corre com a poupança de dados ligada.
+- **App mais rápida a mudar de secção**: com o resumo no ecrã, os dados de Documentos, Vendas, Clientes, Cobranças e
+  Artigos vêm em segundo plano; cada secção abre logo. Os 12 meses lêem-se em duas partes — dias fechados (guardados 1
+  hora) e o dia de hoje (2 minutos) — e não se voltam a pedir inteiros a cada actualização.
+- **Face ID sem tocar em nada**: a entrada na app pede a biometria sozinha ao abrir e ao voltar à app; se o telemóvel
+  recusar no primeiro instante (a app ainda não está à frente), espera e tenta de novo, até três vezes, antes de pedir
+  um toque (iOS 17.4 ou mais recente e Android).
+- **Modo apresentação**: ao mostrar a app no ecrã (só a app ou lado a lado), o telemóvel recebe logo uma notificação e
+  **um toque abre a app no mesmo ecrã** (o iPhone e o Android não deixam uma app abrir-se sozinha). Se o telemóvel já
+  estiver a seguir, nada se envia. Fica registado.
+
 ### App de gestão: menu lateral e consulta completa (vendas de 12 meses, documentos, clientes, artigos, cobranças)
 
 <!-- paginas: inicio -->

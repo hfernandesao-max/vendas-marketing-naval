@@ -223,6 +223,25 @@ const vendas = (st.preset || !st.de || !st.ate ? aplicarPreset(st.preset || 'mes
     LIGACOES.pinguim.estado === 'ok' ? t('{n} documentos', { n: n0(DB.vendas.length) }) : t('sem ligação'),
   ),
 );
+// Velocidade: aberta a primeira página, os módulos das outras páginas do perfil descarregam-se em segundo plano, um de
+// cada vez e nos tempos livres do navegador — mudar de página deixa de esperar pela rede (o navegador guarda-os um
+// ano, com a versão no endereço). Não corre com a poupança de dados ligada.
+function anteciparPaginas() {
+  const ln = navigator.connection;
+  if (ln && (ln.saveData || /2g/.test(ln.effectiveType || ''))) return;
+  const livre = (f) => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 200));
+  const ids = paginasVisiveis()
+    .map((p) => p.id)
+    .filter((id) => MODULO_DA_PAGINA[id]);
+  let i = 0;
+  const passo = () => {
+    if (i >= ids.length) return;
+    carregarPagina(ids[i++])
+      .catch(() => {})
+      .then(() => livre(passo));
+  };
+  setTimeout(() => livre(passo), 1200);
+}
 Promise.all([idioma, sessao, base, cadastros, vendas])
   .then(() => {
     // A carteira mais recente (com o dia de visita) substitui a lista fixa de clientes.json
@@ -238,6 +257,7 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
     montarBarraSup();
     route();
     iniciarSync(); // comunicação dos smartphones (indicador discreto no menu lateral)
+    anteciparPaginas();
     LD.marcar('pronto', 'feito');
     clearTimeout(ldLimite);
     LD.fechar();

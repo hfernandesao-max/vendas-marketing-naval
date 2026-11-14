@@ -121,6 +121,7 @@ async function abrirApp(page, permissoes) {
   await page.clock.setFixedTime(new Date(HOJE + 'T14:40:00'));
   await page.goto('/gestao/index.html');
   await expect(page.locator('#ag-h1')).toHaveText('Hoje');
+  await expect(page.locator('#ag-separadores button').first()).toBeAttached(); // a app já arrancou
   return erros;
 }
 async function ir(page, nome) {
@@ -206,4 +207,27 @@ test('app de gestão: cada secção só aparece com o recurso na matriz de acess
   const m = page.locator('#ag-separadores');
   await expect(m).toContainText('Hoje');
   for (const x of ['Vendas', 'Documentos', 'Clientes', 'Artigos', 'Cobranças']) await expect(m.getByRole('button', { name: x, exact: true })).toHaveCount(0);
+});
+
+test('app de gestão: as secções abrem logo (dados antecipados em segundo plano; 12 meses = dias fechados + hoje)', async ({ page }) => {
+  const pedidos = [];
+  page.on('request', (q) => {
+    if (q.url().includes('/v1/vendas?')) pedidos.push(new URL(q.url()).search);
+  });
+  const erros = await abrirApp(page);
+  // a antecipação pede os dados das secções, um de cada vez
+  await expect.poll(() => pedidos.some((x) => x.includes('start_date=20251115&end_date=20261113'))).toBe(true);
+  await expect.poll(() => pedidos.some((x) => x.includes('start_date=20261114&end_date=20261114&include_items=1'))).toBe(true);
+  await page.waitForTimeout(500);
+  const n = pedidos.length;
+  // ao abrir, nada a carregar: os documentos de hoje já estão na memória
+  await page.locator('#ag-menu-b').click();
+  await page.locator('#ag-separadores button', { hasText: 'Documentos' }).click();
+  await expect(page.locator('.ag-carrega')).toHaveCount(0);
+  await expect(page.locator('.ag-linha')).toHaveCount(3, { timeout: 300 });
+  await page.locator('#ag-menu-b').click();
+  await page.locator('#ag-separadores button', { hasText: 'Clientes' }).click();
+  await expect(page.locator('.ag-linha')).toHaveCount(3, { timeout: 300 });
+  expect(pedidos.length).toBe(n); // não voltou a pedir
+  expect(erros).toEqual([]);
 });

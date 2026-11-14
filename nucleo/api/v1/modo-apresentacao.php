@@ -8,6 +8,8 @@
  * GET  v1/modo-apresentacao                       estado: {activo, ate, minutos}
  * POST {accao: iniciar, minutos: 30|60|120|180|240, csrf}
  * POST {accao: terminar, csrf}
+ * POST {accao: chamar, csrf}   avisa o telemóvel da pessoa (notificação) para seguir a apresentação; um toque abre a
+ *                              app já no mesmo ecrã. Nada se envia se o telemóvel já estiver a seguir.
  */
 defined('NAVAL_API') || exit;
 naval_exigir(['modo-apresentacao']);
@@ -35,6 +37,24 @@ if ($accao === 'iniciar') {
     unset($_SESSION['apresentacao_ate']);
     naval_servico('espelho');
     naval_espelho_activar((string) (((array) naval_utilizador())['login'] ?? ''), 0);
+} elseif ($accao === 'chamar') {
+    if (!naval_apresentacao_ate()) throw new NavalErro('O modo apresentação não está activo.', 409);
+    $login = (string) (((array) naval_utilizador())['login'] ?? '');
+    naval_servico('espelho');
+    if (naval_espelho_telemovel_a_seguir($login)) naval_json($estado() + ['telemovel' => 'a-seguir']);
+    // um aviso a cada 30 segundos, no máximo
+    if ((int) ($_SESSION['apresentacao_chamada'] ?? 0) > time() - 30) naval_json($estado() + ['telemovel' => 'avisado']);
+    $_SESSION['apresentacao_chamada'] = time();
+    naval_servico('notificacoes');
+    $n = naval_notif_pessoal($login, 'Apresentação no computador', 'Toque para mostrar no telemóvel o mesmo ecrã da apresentação.', [
+        'url' => '../gestao/', 'tag' => 'apresentacao',
+        'textos' => [
+            'en' => ['Presentation on the computer', 'Tap to show the same screen as the presentation on your phone.'],
+            'ti' => ['ምቕራብ ኣብ ኮምፒተር', 'ኣብ ሞባይልካ ከምቲ ምቕራብ ሓደ ዓይነት ስክሪን ንምርኣይ ጠውቕ።'],
+        ],
+    ]);
+    naval_registar('modo_apresentacao_telemovel', ['entregues' => $n]);
+    naval_json($estado() + ['telemovel' => $n > 0 ? 'avisado' : 'sem-notificacoes']);
 } else {
     throw new NavalErro('Acção desconhecida.', 400);
 }

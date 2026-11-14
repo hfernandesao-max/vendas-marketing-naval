@@ -15,6 +15,8 @@ if ($login === '') throw new NavalErro('Sessão sem conta.', 401);
 if (!naval_e_post()) {
     $d = naval_espelho_ler($login);
     $activo = (int) $d['ate'] > time();
+    // leitura feita pela app no telemóvel (equipamento registado): o computador sabe que o telemóvel já está a seguir
+    if ($activo && !empty($_SESSION['app_equipamento'])) naval_espelho_marcar_telemovel($login);
     $r = ['ok' => true, 'activo' => $activo, 'ate' => $activo ? (int) $d['ate'] : null, 'seq' => (int) $d['seq']];
     if ($activo && (int) ($_GET['seq'] ?? -1) !== (int) $d['seq']) $r += ['origem' => (string) $d['origem'], 'estado' => $d['estado']];
     header('Cache-Control: no-store');

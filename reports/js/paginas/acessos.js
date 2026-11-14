@@ -28,6 +28,7 @@ const NOMES_ACCAO = {
   sessao_terminada: 'Sessão terminada',
   modo_apresentacao_iniciado: 'Modo apresentação iniciado',
   modo_apresentacao_terminado: 'Modo apresentação terminado',
+  modo_apresentacao_telemovel: 'Telemóvel avisado para seguir a apresentação',
   app_pre_visualizada: 'App mostrada no modo apresentação',
   dois_passos_em_falta: 'Entrada sem dois passos',
   conta_criada: 'Conta criada',

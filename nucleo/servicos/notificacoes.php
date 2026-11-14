@@ -430,6 +430,35 @@ function naval_notificar(string $tipo, string $titulo, string $corpo, array $o =
     return $r;
 }
 
+/**
+ * Notificação pessoal, pedida pela própria pessoa (ex.: «seguir a apresentação no telemóvel»): vai só para os
+ * telemóveis dela, já, sem passar pelas preferências nem pelo silêncio (foi ela que a pediu) e sem ficar na caixa.
+ * Devolve quantos telemóveis a receberam. Nunca lança excepções.
+ */
+function naval_notif_pessoal(string $login, string $titulo, string $corpo, array $o = [], ?int $agora = null): int
+{
+    $agora = $agora ?? time();
+    $n = 0;
+    try {
+        $u = naval_utilizadores()[$login] ?? [];
+        $textos = (array) ($o['textos'] ?? []);
+        $textos['pt'] = $textos['pt'] ?? [$titulo, $corpo];
+        foreach (naval_notif_subscricoes() as $s) {
+            if (strcasecmp((string) $s['login'], $login) !== 0) continue;
+            $l = naval_notif_idioma($s, $u);
+            $tx = $textos[$l] ?? $textos['pt'];
+            $msg = ['id' => substr(bin2hex(random_bytes(8)), 0, 16), 'tipo' => 'pessoal', 'titulo' => mb_substr((string) $tx[0], 0, 80),
+                'corpo' => mb_substr((string) ($tx[1] ?? ''), 0, 240), 'url' => (string) ($o['url'] ?? '../gestao/'), 'tag' => (string) ($o['tag'] ?? 'pessoal'),
+                'gravidade' => 'critico', 'data' => date('Y-m-d H:i:s', $agora)];
+            $c = naval_webpush_entregar($s, $msg, $agora);
+            if ($c >= 200 && $c < 300) $n++;
+        }
+    } catch (Throwable $e) {
+        error_log('[notificações] ' . $e->getMessage());
+    }
+    return $n;
+}
+
 /** Junta a mensagem à caixa da pessoa; devolve quantas estão por ler. */
 function naval_notif_caixa_juntar(string $login, array $msg): int
 {

@@ -46,22 +46,37 @@ export function intervalo(p) {
   return [h.slice(0, 8) + '01', h];
 }
 
-/** Documentos (e, se pedidas, as linhas) de um período, lidos uma vez e guardados só na memória. */
-export function dados(de, ate, linhas) {
+// Validade na memória: com o dia de hoje, 2 minutos (como a cache do servidor); dias já fechados, 1 hora.
+const validade = (ate) => (ate >= hojeIso() ? 120000 : 3600000);
+const fresco = (c, ate) => c && (c.estado === 'a-ler' || (c.estado === 'ok' && Date.now() - c.em < validade(ate)));
+
+/** Lê um período da API (uma vez; pedidos repetidos partilham a mesma leitura). fundo: antecipação, sem redesenhar. */
+function ler(de, ate, linhas, fundo) {
   const k = de + '|' + ate + '|' + (linhas ? 1 : 0);
   let c = C.cache.get(k);
-  const vivo = ate >= hojeIso();
-  if (c && (c.estado === 'a-ler' || (c.estado === 'ok' && Date.now() - c.em < (vivo ? 120000 : 1800000)))) return c;
+  if (fresco(c, ate)) {
+    if (!fundo) c.ecra = true;
+    return c;
+  }
   // as linhas de um período incluem os documentos: serve também quem só precisa destes
   if (!linhas) {
     const l = C.cache.get(de + '|' + ate + '|1');
-    if (l && l.estado === 'ok' && Date.now() - l.em < (vivo ? 120000 : 1800000)) return l;
+    if (l && l.estado === 'ok' && fresco(l, ate)) {
+      if (!fundo) l.ecra = true;
+      return l;
+    }
   }
-  c = { estado: 'a-ler', docs: [], artigos: [], em: Date.now(), erro: '' };
+  c = { estado: 'a-ler', docs: [], artigos: [], em: Date.now(), erro: '', ecra: !fundo };
   C.cache.set(k, c);
   while (C.cache.size > MAX_CACHE) C.cache.delete(C.cache.keys().next().value);
-  const f = (s) => s.replace(/-/g, '');
-  apiJson('vendas?start_date=' + f(de) + '&end_date=' + f(ate) + (linhas ? '&include_items=1' : '')).then(
+  const f = (x) => x.replace(/-/g, '');
+  const fim = () => {
+    c.em = Date.now();
+    // só redesenha se o ecrã estiver à espera destes dados (a antecipação não mexe no que se está a ver)
+    if (c.ecra) H.desenhar();
+    H.aoCarregar();
+  };
+  c.p = apiJson('vendas?start_date=' + f(de) + '&end_date=' + f(ate) + (linhas ? '&include_items=1' : '')).then(
     (d) => {
       const docs = Array.isArray(d) ? d : d && Array.isArray(d.vendas) ? d.vendas : null;
       if (!docs) {
@@ -73,18 +88,59 @@ export function dados(de, ate, linhas) {
         c.artigos = (d && Array.isArray(d.artigos) && d.artigos) || [];
         c.estado = 'ok';
       }
-      c.em = Date.now();
-      H.desenhar();
-      H.aoCarregar();
+      fim();
     },
     () => {
       c.estado = 'erro';
       c.erro = 'Não foi possível ler os dados.';
-      H.desenhar();
-      H.aoCarregar();
+      fim();
     },
   );
   return c;
+}
+
+/**
+ * Documentos (e, se pedidas, as linhas) de um período, só na memória. Um período que chega a hoje lê-se em duas partes:
+ * os dias fechados (guardados 1 hora, aqui e no servidor) e o dia de hoje (2 minutos) — os 12 meses não se voltam a
+ * pedir inteiros a cada actualização.
+ */
+const juntos = new Map();
+export function dados(de, ate, linhas, fundo) {
+  const h = hojeIso();
+  if (!(de < h && ate >= h)) return ler(de, ate, linhas, fundo);
+  const a = ler(de, maisDias(h, -1), linhas, fundo);
+  const b = ler(h, h, linhas, fundo);
+  if (a.estado === 'erro') return a;
+  if (b.estado === 'erro') return b;
+  if (a.estado !== 'ok' || b.estado !== 'ok') return { estado: 'a-ler', docs: [], artigos: [], p: Promise.all([a.p, b.p]) };
+  const k = de + '|' + ate + '|' + (linhas ? 1 : 0);
+  let j = juntos.get(k);
+  if (!j || j.a !== a || j.b !== b || j.ea !== a.em || j.eb !== b.em) {
+    j = { estado: 'ok', docs: a.docs.concat(b.docs), artigos: a.artigos.concat(b.artigos), a, b, ea: a.em, eb: b.em, em: Math.min(a.em, b.em) };
+    juntos.set(k, j);
+    while (juntos.size > MAX_CACHE) juntos.delete(juntos.keys().next().value);
+  }
+  return j;
+}
+
+/**
+ * Antecipa, em segundo plano e um de cada vez, os dados das secções que a pessoa pode abrir — documentos de hoje,
+ * vendas do mês, os 12 meses (clientes e cobranças) e os artigos do mês —, para cada secção abrir logo. Não corre com
+ * a poupança de dados do telefone ligada nem em redes 2G.
+ */
+let antecipado = false;
+export function antecipar(pode) {
+  if (antecipado) return;
+  antecipado = true;
+  const ln = navigator.connection;
+  if (ln && (ln.saveData || /2g/.test(ln.effectiveType || ''))) return;
+  const h = hojeIso();
+  const passos = [];
+  if (pode('documentos')) passos.push(() => dados(h, h, true, true));
+  if (pode('vendas')) passos.push(() => dados(...intervalo(C.pv), false, true));
+  if (pode('clientes') || pode('cobrancas')) passos.push(() => dados(...intervalo('ano'), false, true));
+  if (pode('artigos')) passos.push(() => dados(...intervalo(C.pa), true, true));
+  passos.reduce((p, f) => p.then(() => Promise.resolve(f().p).catch(() => {})), new Promise((r) => setTimeout(r, 800)));
 }
 
 /** Cartão de «a carregar» ou de erro (com «Tentar de novo»); null quando os dados estão prontos. */

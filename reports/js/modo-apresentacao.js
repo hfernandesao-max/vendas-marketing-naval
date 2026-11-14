@@ -173,9 +173,14 @@ function escala() {
 }
 
 /** Mostra a vista escolhida: portal, app de gestão ou portal e app lado a lado. */
-export function mostrar(v) {
+export function mostrar(v, retomar) {
   if (!activo() || embebido()) return;
+  const antes = vista;
   vista = VISTAS[v] ? v : 'portal';
+  // a app aparece no ecrã: o telemóvel recebe logo um aviso e um toque abre-o no mesmo ecrã (o iPhone e o Android não
+  // deixam uma app abrir-se sozinha); se já estiver a seguir, nada se envia
+  if (VISTAS[vista].url && (retomar || !VISTAS[antes] || !VISTAS[antes].url)) chamarTelemovel(!retomar);
+
   try {
     sessionStorage.setItem(CHAVE, vista);
   } catch (e) {
@@ -195,6 +200,15 @@ export function mostrar(v) {
     escala();
   }
   desenharBarra();
+}
+
+function chamarTelemovel(avisar) {
+  postJson('modo-apresentacao', { accao: 'chamar' }).then((d) => {
+    if (!avisar || !d || !d.ok) return;
+    if (d.telemovel === 'avisado') toast(t('Aviso enviado para o telemóvel: um toque abre a app no mesmo ecrã.'), 5000);
+    else if (d.telemovel === 'a-seguir') toast(t('O telemóvel já está a seguir a apresentação.'), 4000);
+    else if (d.telemovel === 'sem-notificacoes') toast(t('O telemóvel não tem as notificações da app ligadas (na app: Alertas › Notificações).'), 7000);
+  });
 }
 
 function desenharBarra() {
@@ -267,5 +281,5 @@ export function iniciarModoApresentacao() {
   } catch (e) {
     /* sem armazenamento */
   }
-  mostrar(v);
+  mostrar(v, true);
 }
