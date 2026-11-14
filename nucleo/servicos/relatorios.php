@@ -11,6 +11,9 @@
  *   - Dados das áreas operacionais que não vêm do Pinguim BO (fecho de caixa, conciliação das carrinhas), lidos dos
  *     registos do portal por período, só de leitura e com o âmbito de rotas de quem pede.
  *
+ *   - Subscrições por correio (todos os dias, às segundas-feiras, no dia 1): o correio leva o aviso e a ligação, nunca
+ *     os números (ISO/IEC 27001 A.5.14, A.8.12); só recebe quem continua a poder ver o relatório e a área.
+ *
  * Ficheiros: dados-privados/relatorios/REL-xxxxxxxxxx.json.
  */
 defined('NAVAL_NUCLEO') || exit;
@@ -56,7 +59,8 @@ function naval_rel_visivel(array $r, string $login): bool
 /** Relatórios que esta pessoa vê, os certificados primeiro e depois por nome. */
 function naval_rel_lista(string $login): array
 {
-    $l = array_values(array_filter(naval_rel_todos(), function ($r) use ($login) { return naval_rel_visivel($r, $login); }));
+    $l = array_values(array_map(function ($r) use ($login) { return naval_rel_publico($r, $login); },
+        array_filter(naval_rel_todos(), function ($r) use ($login) { return naval_rel_visivel($r, $login); })));
     usort($l, function ($a, $b) { return [empty($a['certificado']), mb_strtolower((string) $a['nome'])] <=> [empty($b['certificado']), mb_strtolower((string) $b['nome'])]; });
     return $l;
 }
@@ -235,4 +239,139 @@ function naval_rel_conciliacao(string $de, string $ate, ?array $rotas): array
         }
     }
     return ['rotas' => $res, 'artigos' => $art];
+}
+
+/**
+ * Páginas de origem de cada área do catálogo (reports/js/relatorios/catalogo.js; o teste unitário confirma que as
+ * duas listas são iguais). Quem não vê nenhuma das páginas não recebe as subscrições dessa área.
+ */
+const NAVAL_REL_DOMINIOS = [
+    'vendas' => ['vendas-dia', 'vendas-promotor', 'vendas-cliente'],
+    'artigos' => ['vendas-artigo', 'vendas-promotor-artigo'],
+    'cobrancas' => ['pagamentos'],
+    'carteira' => ['clientes'],
+    'cadastros' => ['cadastros', 'cadastros-clientes'],
+    'cargas' => ['plano-cargas', 'registo-cargas'],
+    'stock' => ['stock-carrinha', 'stock-armazem'],
+    'requisicoes' => ['requisicoes-carrinha'],
+    'caixa' => ['caixa-marketing'],
+    'caixa_movimentos' => ['caixa-marketing'],
+    'conciliacao' => ['conciliacao-carrinha'],
+    'conciliacao_artigos' => ['conciliacao-carrinha'],
+    'pedidos' => ['pedidos-clientes'],
+    'alertas' => ['alertas'],
+    'equipamentos' => ['equipamentos'],
+    'suporte' => ['suporte'],
+];
+const NAVAL_REL_FREQUENCIAS = ['diaria', 'semanal', 'mensal'];
+
+/** O relatório como cada pessoa o vê: a sua própria subscrição, sem as dos outros (privacidade). */
+function naval_rel_publico(array $r, string $login): array
+{
+    $subs = (array) ($r['subscricoes'] ?? []);
+    $minha = null;
+    foreach ($subs as $l => $s) if (strcasecmp((string) $l, $login) === 0) $minha = $s['frequencia'] ?? null;
+    unset($r['subscricoes']);
+    $r['minha_subscricao'] = $minha;
+    if (strcasecmp((string) $r['dono'], $login) === 0) $r['subscritores'] = count($subs);
+    return $r;
+}
+
+/** Subscreve (ou cancela, com frequência «nenhuma») o envio de um relatório por correio. Só a própria pessoa. */
+function naval_rel_subscrever(string $id, string $frequencia, array $eu): array
+{
+    if ($frequencia !== 'nenhuma' && !in_array($frequencia, NAVAL_REL_FREQUENCIAS, true)) throw new NavalErro('Frequência inválida.', 400);
+    $login = (string) $eu['login'];
+    if ($frequencia !== 'nenhuma' && !naval_email_valido($eu['email'] ?? null)) {
+        throw new NavalErro('A sua conta não tem endereço de correio electrónico: peça ao administrador para o acrescentar.', 400);
+    }
+    return naval_exclusivo('relatorios', function () use ($id, $frequencia, $login) {
+        $r = naval_rel_ler($id);
+        if (!$r || !naval_rel_visivel($r, $login)) throw new NavalErro('Relatório desconhecido.', 404);
+        $subs = (array) ($r['subscricoes'] ?? []);
+        foreach (array_keys($subs) as $l) if (strcasecmp((string) $l, $login) === 0) unset($subs[$l]);
+        if ($frequencia !== 'nenhuma') $subs[$login] = ['frequencia' => $frequencia, 'desde' => date('Y-m-d H:i:s')];
+        $r['subscricoes'] = (object) $subs;
+        naval_json_gravar(naval_rel_pasta() . '/' . $id . '.json', $r);
+        naval_registar($frequencia === 'nenhuma' ? 'relatorio_subscricao_cancelada' : 'relatorio_subscrito', ['id' => $id, 'frequencia' => $frequencia]);
+        return $r;
+    });
+}
+
+/** Frequências a enviar neste dia: todos os dias, à segunda-feira (semanal) e no dia 1 (mensal). */
+function naval_rel_frequencias_do_dia(int $agora): array
+{
+    $f = ['diaria'];
+    if (date('N', $agora) === '1') $f[] = 'semanal';
+    if (date('j', $agora) === '1') $f[] = 'mensal';
+    return $f;
+}
+
+/** Pode esta pessoa receber o relatório? Conta válida, correio, vê o relatório, «relatorios» e a página da área. */
+function naval_rel_pode_receber(array $r, string $login, array $u, array $matriz): bool
+{
+    if (!naval_conta_valida($u) || !naval_email_valido($u['email'] ?? null) || !naval_rel_visivel($r, $login)) return false;
+    $perfil = (string) $u['perfil'];
+    $nivel = function (string $rec) use ($matriz, $perfil) { return $perfil === 'SADM' ? 'A' : (string) ($matriz[$rec][$perfil] ?? ''); };
+    if ($nivel('relatorios') === '') return false;
+    $paginas = NAVAL_REL_DOMINIOS[(string) ($r['definicao']['dominio'] ?? '')] ?? [];
+    return (bool) array_filter($paginas, function ($p) use ($nivel) { return $nivel($p) !== ''; });
+}
+
+/** Mensagem da subscrição: aviso e ligação ao relatório (os números ficam no portal, com as permissões de quem abre). */
+function naval_rel_email_html(array $r, string $nome, string $frequencia, string $ligacao): string
+{
+    $e = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); };
+    $azul = '#1E3A8A';
+    $freq = ['diaria' => 'todos os dias', 'semanal' => 'às segundas-feiras', 'mensal' => 'no dia 1 de cada mês'][$frequencia] ?? $frequencia;
+    $txt = 'font-family:Segoe UI,Arial,sans-serif;color:#1C2340;font-size:14px;line-height:1.5;text-align:justify';
+    $h = '<div style="' . $txt . ';max-width:640px">';
+    $h .= '<div style="border-bottom:3px solid ' . $azul . ';padding-bottom:8px;margin-bottom:14px"><div style="font-size:20px;font-weight:700;color:' . $azul . '">'
+        . $e($r['nome']) . '</div><div style="color:#4A5568">Relatório do Portal RTM' . (!empty($r['certificado']) ? ' · certificado' : '') . '</div></div>';
+    $h .= '<p>' . $e($nome) . ', o relatório «' . $e($r['nome']) . '» está actualizado com os dados de hoje.</p>';
+    if (!empty($r['descricao'])) $h .= '<p style="color:#4A5568">' . $e($r['descricao']) . '</p>';
+    $h .= '<p><a href="' . $e($ligacao) . '" style="display:inline-block;background:' . $azul . ';color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-weight:600">Abrir o relatório</a></p>';
+    $h .= '<p style="font-size:12px;color:#4A5568">Por segurança, os números não seguem neste correio: abra o relatório no portal, onde vê os dados com as suas permissões. '
+        . 'Recebe este aviso ' . $e($freq) . '. Para deixar de o receber, abra o relatório e escolha «Não receber» em «Receber por correio».</p>';
+    return $h . '</div>';
+}
+
+/**
+ * Envia os avisos das subscrições do dia (tarefa periódica, uma vez por dia a partir de RELATORIOS_HORA, 07:30).
+ * Um correio por pessoa e relatório; quem deixou de poder ver o relatório ou a área não recebe. Devolve o resumo.
+ */
+function naval_rel_subscricoes_enviar(int $agora): ?array
+{
+    $hora = naval_config('RELATORIOS_HORA', '07:30');
+    if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $hora = '07:30';
+    if (date('H:i', $agora) < $hora) return null;
+    $marca = naval_rel_pasta() . '/envio-' . date('Y-m-d', $agora) . '.json';
+    if (is_file($marca)) return null;
+    return naval_exclusivo('relatorios-envio', function () use ($agora, $marca) {
+        if (is_file($marca)) return null;
+        naval_servico('email');
+        $freqs = naval_rel_frequencias_do_dia($agora);
+        $utilizadores = naval_utilizadores();
+        $matriz = naval_matriz();
+        $base = rtrim(naval_config('PORTAL_URL', 'https://geo.naval.co.ao:2051'), '/') . '/reports/#relatorios?r=';
+        $res = ['enviados' => 0, 'ignorados' => 0, 'falhas' => []];
+        foreach (naval_rel_todos() as $r) {
+            foreach ((array) ($r['subscricoes'] ?? []) as $login => $s) {
+                if (!in_array($s['frequencia'] ?? '', $freqs, true)) continue;
+                $u = $utilizadores[(string) $login] ?? null;
+                if (!$u || !naval_rel_pode_receber($r, (string) $login, $u, $matriz)) {
+                    $res['ignorados']++;
+                    continue;
+                }
+                $nome = (string) ($u['nome'] ?? $login);
+                $x = naval_enviar_email([['email' => trim((string) $u['email']), 'nome' => $nome]], 'Relatório · ' . $r['nome'],
+                    naval_rel_email_html($r, $nome, (string) $s['frequencia'], $base . $r['id']));
+                if ($x['ok']) $res['enviados']++;
+                else $res['falhas'][] = $r['id'] . ' ' . $login . ': ' . $x['erro'];
+            }
+        }
+        naval_json_gravar($marca, $res + ['hora' => date('H:i:s', $agora)]);
+        naval_registar('relatorios_subscricoes', $res, 'sistema');
+        return $res;
+    });
 }

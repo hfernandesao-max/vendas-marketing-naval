@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Relatórios por correio (subscrições)
+
+<!-- paginas: relatorios -->
+
+- Num relatório guardado, **«Receber por correio»**: todos os dias, às segundas-feiras ou no dia 1 de cada mês, às 07:30
+  (`RELATORIOS_HORA`). Cada pessoa gere só a sua subscrição e não vê as dos outros; o autor vê quantas pessoas o
+  recebem.
+- O correio leva **o aviso e a ligação** para o relatório, nunca os números: os dados vêem-se no portal, com as
+  permissões de quem abre (ISO/IEC 27001 A.5.14). Só recebe quem continua com conta activa, correio, acesso aos
+  relatórios e à página da área; cada envio fica registado.
+
 ### Criar relatório: explorador de relatórios para todas as áreas do portal
 
 <!-- paginas: relatorios -->

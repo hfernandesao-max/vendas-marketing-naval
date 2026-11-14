@@ -9,6 +9,7 @@
  * POST {accao: guardar, id?, versao?, nome, descricao, visibilidade: pessoal|partilhado, definicao, csrf}
  * POST {accao: apagar, id, csrf}
  * POST {accao: certificar | retirar_certificacao, id, csrf}
+ * POST {accao: subscrever, id, frequencia: diaria | semanal | mensal | nenhuma, csrf}   aviso por correio com a ligação
  */
 defined('NAVAL_API') || exit;
 naval_exigir(['relatorios']);
@@ -51,7 +52,9 @@ if ($accao === 'guardar') {
 } elseif ($accao === 'certificar' || $accao === 'retirar_certificacao') {
     if (!$pode['certificar']) throw new NavalErro('O seu perfil não permite certificar relatórios.', 403);
     $r = naval_rel_certificar($id, $accao === 'certificar', $eu, $sadm);
+} elseif ($accao === 'subscrever') {
+    $r = naval_rel_subscrever($id, (string) ($p['frequencia'] ?? ''), $eu);
 } else {
     throw new NavalErro('Acção desconhecida.', 400);
 }
-naval_json(['ok' => true, 'relatorio' => $r, 'pode' => $pode, 'relatorios' => naval_rel_lista($login)]);
+naval_json(['ok' => true, 'relatorio' => $r === null ? null : naval_rel_publico($r, $login), 'pode' => $pode, 'relatorios' => naval_rel_lista($login)]);

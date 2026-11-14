@@ -272,6 +272,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conformidade] ' . $e->getMessage());
     }
+    // relatórios subscritos: avisos por correio com a ligação (uma vez por dia, a partir de RELATORIOS_HORA)
+    try {
+        naval_servico('relatorios');
+        $rs = naval_rel_subscricoes_enviar($agora);
+        if ($rs !== null) $feito['relatorios'] = $rs['enviados'];
+    } catch (Throwable $e) {
+        error_log('[relatórios] ' . $e->getMessage());
+    }
     // fontes de dados: conferência diária OLAP × Pinguim BO dos últimos 7 dias (FONTE_VENDAS=paralelo ou olap)
     try {
         naval_servico('fontes');

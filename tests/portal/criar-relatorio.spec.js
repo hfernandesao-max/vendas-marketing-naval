@@ -28,6 +28,10 @@ async function preparar(page, extra = {}) {
         lista.relatorios = [rel];
         return r.fulfill({ json: { ok: true, relatorio: rel, relatorios: lista.relatorios, pode: lista.pode } });
       }
+      if (b.accao === 'subscrever') {
+        lista.relatorios[0] = { ...lista.relatorios[0], minha_subscricao: b.frequencia === 'nenhuma' ? null : b.frequencia };
+        return r.fulfill({ json: { ok: true, relatorio: lista.relatorios[0], relatorios: lista.relatorios, pode: lista.pode } });
+      }
       if (b.accao === 'certificar') {
         lista.relatorios[0] = { ...lista.relatorios[0], certificado: true, certificado_por: 'dir' };
         return r.fulfill({ json: { ok: true, relatorio: lista.relatorios[0], relatorios: lista.relatorios, pode: lista.pode } });
@@ -103,6 +107,11 @@ test('relatórios: guardar envia só a definição; abre pelo endereço; certifi
   });
   expect(JSON.stringify(pedidos[0])).not.toContain('CLIENTE'); // nunca dados, só a definição
   await expect(page).toHaveURL(/#relatorios\?r=REL-0123456789$/);
+  // subscrição por correio: só a frequência, e o aviso de que os números não seguem no correio
+  await expect(page.locator('.rel-subs')).toContainText('os números vêem-se no portal');
+  await page.getByRole('combobox', { name: 'Receber por correio' }).selectOption('semanal');
+  await expect.poll(() => pedidos.find((p) => p.accao === 'subscrever')).toMatchObject({ accao: 'subscrever', id: 'REL-0123456789', frequencia: 'semanal' });
+  await expect(page.getByRole('combobox', { name: 'Receber por correio' })).toHaveValue('semanal');
   await page.getByRole('button', { name: 'Certificar' }).click();
   await expect(page.locator('.rel-lista .rel-selo')).toHaveText('certificado');
   expect(erros).toEqual([]);

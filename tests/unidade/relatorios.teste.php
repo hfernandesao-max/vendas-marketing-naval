@@ -77,3 +77,51 @@ teste('relatórios: fecho de caixa por período lido dos registos (resumo e movi
         else file_put_contents($f, $antes);
     }
 });
+
+teste('relatórios: as áreas e as páginas de origem do servidor são as mesmas do catálogo do portal', function () {
+    $js = (string) file_get_contents(dirname(__DIR__, 2) . '/reports/js/relatorios/catalogo.js');
+    preg_match_all("/\\{\\s*id: '([a-z_]+)',\\s*grupo:[^}]*?pagina: \\[([^\\]]*)\\]/s", $js, $m, PREG_SET_ORDER);
+    $cat = [];
+    foreach ($m as $x) {
+        preg_match_all("/'([a-z0-9-]+)'/", $x[2], $p);
+        $cat[$x[1]] = $p[1];
+    }
+    igual(NAVAL_REL_DOMINIOS, $cat);
+});
+
+teste('relatórios: subscrições — só a própria pessoa, sem ver as dos outros; quem recebe e quando; o correio não leva números', function () {
+    rel_limpar();
+    $hf = ['login' => 'hf', 'nome' => 'Henrique', 'email' => 'hf@naval.co.ao'];
+    $s = naval_rel_guardar(['nome' => 'Vendas partilhadas', 'visibilidade' => 'partilhado',
+        'definicao' => ['dominio' => 'vendas', 'linhas' => ['promotor'], 'medidas' => ['vendas_sem_iva']]], $hf, true);
+    try {
+        lanca(400, function () use ($s, $hf) { naval_rel_subscrever($s['id'], 'horaria', $hf); });
+        lanca(400, function () use ($s) { naval_rel_subscrever($s['id'], 'diaria', ['login' => 'semmail', 'email' => '']); });
+        naval_rel_subscrever($s['id'], 'diaria', $hf);
+        naval_rel_subscrever($s['id'], 'semanal', ['login' => 'dir', 'email' => 'dir@naval.co.ao']);
+        $lista = naval_rel_lista('dir');
+        igual('semanal', $lista[0]['minha_subscricao']);
+        verdade(!isset($lista[0]['subscricoes']) && !isset($lista[0]['subscritores']));   // não vê as dos outros
+        igual(2, naval_rel_lista('hf')[0]['subscritores']);                              // o dono só vê quantas
+        naval_rel_subscrever($s['id'], 'nenhuma', ['login' => 'dir', 'email' => 'dir@naval.co.ao']);
+        igual(null, naval_rel_lista('dir')[0]['minha_subscricao']);
+        // frequências: segunda-feira 16-11-2026 (semanal); dia 1 de Dezembro (mensal, terça)
+        igual(['diaria', 'semanal'], naval_rel_frequencias_do_dia(strtotime('2026-11-16 08:00')));
+        igual(['diaria', 'mensal'], naval_rel_frequencias_do_dia(strtotime('2026-12-01 08:00')));
+        // quem recebe: conta válida, correio, «relatorios» e a página da área
+        $r = naval_rel_ler($s['id']);
+        $matriz = ['relatorios' => ['COM' => 'V', 'LOG' => 'V'], 'vendas-dia' => ['COM' => 'E'], 'vendas-promotor' => [], 'vendas-cliente' => []];
+        $com = ['perfil' => 'COM', 'activo' => true, 'email' => 'c@naval.co.ao'];
+        $log = ['perfil' => 'LOG', 'activo' => true, 'email' => 'l@naval.co.ao'];
+        verdade(naval_rel_pode_receber($r, 'c', $com, $matriz));
+        verdade(!naval_rel_pode_receber($r, 'l', $log, $matriz));                                   // sem páginas de vendas
+        verdade(!naval_rel_pode_receber($r, 'c', ['activo' => false] + $com, $matriz));              // conta desactivada
+        verdade(!naval_rel_pode_receber($r, 'c', ['email' => ''] + $com, $matriz));                  // sem correio
+        // o correio leva o aviso e a ligação, nunca números
+        $h = naval_rel_email_html($r, 'Henrique', 'diaria', 'https://portal/reports/#relatorios?r=' . $r['id']);
+        verdade(strpos($h, '#relatorios?r=' . $r['id']) !== false && strpos($h, 'os números não seguem neste correio') !== false);
+        verdade(!preg_match('/\d[\d ]*,\d{2} ?Kz/', $h));
+    } finally {
+        rel_limpar();
+    }
+});
