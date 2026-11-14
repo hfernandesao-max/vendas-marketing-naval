@@ -73,7 +73,7 @@ teste('fontes: conferência — resumo por rota e diferenças em documentos, tot
 });
 
 teste('fontes: disjuntor — 3 falhas em 5 minutos param o OLAP durante 5 minutos; um sucesso fecha-o', function () {
-    $t = 1_800_000_000;
+    $t = 1800000000;
     naval_fontes_disjuntor(true, '', $t);
     naval_fontes_disjuntor(false, 'tempo esgotado', $t);
     naval_fontes_disjuntor(false, 'tempo esgotado', $t + 10);
