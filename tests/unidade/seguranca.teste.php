@@ -179,3 +179,21 @@ teste('registos: texto escrito numa conta inexistente não é guardado', functio
     $id = naval_id_registo('MinhaSenha#2026');
     verdade(strpos($id, 'desconhecido-') === 0 && strpos($id, 'Senha') === false);
 });
+
+teste('inactividade: 15 minutos; as leituras automáticas (X-Inactivo-S) não renovam a sessão', function () {
+    igual(900, NAVAL_SESSAO_INACTIVA);
+    $agora = 1800000000;
+    // pedido automático 20 minutos depois da última actividade: a última actividade não avança
+    igual($agora - 1200, naval_sessao_ultima($agora - 1200, $agora, 1200));
+    // a pessoa mexeu há 10 s (noutro separador ou sem pedidos): conta essa actividade
+    igual($agora - 10, naval_sessao_ultima($agora - 600, $agora, 10));
+    // sem o cabeçalho (abrir uma página): fica a guardada, e o pedido conta como actividade
+    igual($agora - 600, naval_sessao_ultima($agora - 600, $agora, null));
+    $_SERVER['HTTP_X_INACTIVO_S'] = '42';
+    igual(42, naval_sessao_inactivo_cliente());
+    foreach (['-5', 'abc', '1e3', '9999999', ''] as $v) {
+        $_SERVER['HTTP_X_INACTIVO_S'] = $v;
+        igual(null, naval_sessao_inactivo_cliente(), $v);
+    }
+    unset($_SERVER['HTTP_X_INACTIVO_S']);
+});

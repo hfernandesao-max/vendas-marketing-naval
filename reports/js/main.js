@@ -9,6 +9,7 @@ import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
 import { aplicarPreferencias } from './barra-lateral.js';
 import { montarBarraSup } from './barra-superior.js';
 import { definirFavoritos } from './favoritos.js';
+import { iniciarInactividade } from './inactividade.js';
 import { definirSessao, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
 import { $, DB, el } from './util.js';
@@ -103,6 +104,7 @@ const lerSessao = () =>
         d = null;
       }
       definirSessao(d && d.permissoes ? d : null);
+      iniciarInactividade();
       // aberto como app (ícone no ecrã principal) sem ter sido instalado pelo código QR: não funciona
       const comoApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
       if (d && d.permissoes && comoApp && !d.app) {

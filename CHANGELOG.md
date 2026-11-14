@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Sessão: inactividade real, regresso ao painel e ensaio do OLAP
+
+<!-- paginas: inicio -->
+
+- A sessão termina após **15 minutos sem actividade** (antes 30), com 10 horas no máximo (PCI DSS 4.0 8.2.8; OWASP
+  ASVS V7.3; NIST SP 800-63B-4). Só conta o que a pessoa faz (rato, teclado, toque): as actualizações automáticas dos
+  dados e a renovação do acesso deixam de manter a sessão aberta sozinhas. A actividade vale para todos os separadores.
+- **1 minuto antes**, aviso com contagem decrescente; qualquer gesto mantém a sessão. No fim, a sessão termina no
+  servidor, fica registada com o motivo e a página de entrada diz porquê.
+- **5 minutos sem actividade**: o portal volta ao painel principal (ecrã limpo, ISO/IEC 27001 A.7.7), salvo com
+  trabalho por gravar, uma janela aberta ou a escrever num campo.
+- **Ensaio do OLAP**: `ENSAIO_FONTE_<DOMÍNIO>` muda a fonte só no ambiente de ensaio (ex.: `ENSAIO_FONTE_VENDAS=olap`),
+  para testar o OLAP antes da produção (ISO/IEC 27001 A.8.31); só as chaves `FONTE_*`.
+
 ### Fecho de caixa: contagem final às cegas
 
 <!-- paginas: caixa-marketing -->

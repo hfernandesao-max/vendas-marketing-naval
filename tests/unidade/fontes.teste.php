@@ -98,3 +98,10 @@ teste('fontes: regras dos anulados iguais às do Pinguim BO, nas colunas do cont
     naval_bd_so_leitura('SELECT 1 FROM rtm.f_documento D WHERE ' . $c);
     verdade(true);
 });
+
+teste('ensaio: ENSAIO_FONTE_* substitui só a fonte do domínio; segredos e ligações nunca', function () {
+    $e = naval_env_fontes_ensaio(['FONTE_VENDAS' => 'paralelo', 'ENSAIO_FONTE_VENDAS' => 'olap', 'ENSAIO_OLAP_PASS' => 'x', 'OLAP_PASS' => 'y', 'ENSAIO_FONTE_STOCK' => '']);
+    igual('olap', $e['FONTE_VENDAS']);
+    igual('y', $e['OLAP_PASS']);
+    verdade(!isset($e['FONTE_STOCK']), 'vazio não substitui');
+});

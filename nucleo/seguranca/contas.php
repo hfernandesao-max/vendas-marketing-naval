@@ -9,7 +9,7 @@
  */
 defined('NAVAL_NUCLEO') || exit;
 
-const NAVAL_SESSAO_INACTIVA = 1800;   // 30 minutos sem actividade
+const NAVAL_SESSAO_INACTIVA = 900;    // 15 minutos sem actividade (PCI DSS 4.0 8.2.8; OWASP ASVS V7.3)
 const NAVAL_SESSAO_MAXIMA = 36000;    // 10 horas
 // Bloqueio: à 3.ª tentativa falhada a conta fica bloqueada até o super administrador a desbloquear
 const NAVAL_MAX_TENTATIVAS = 3;
@@ -264,13 +264,36 @@ function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metod
     if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
 }
 
-/** Sessão: termina após 30 minutos sem actividade ou 10 horas, e se a conta deixar de ser válida. */
+/**
+ * Segundos sem actividade da pessoa que o portal indica no pedido (cabeçalho X-Inactivo-S, de reports/js/inactividade.js),
+ * ou null quando o pedido não o traz (abrir uma página, formulários): esses contam como actividade.
+ */
+function naval_sessao_inactivo_cliente(): ?int
+{
+    $v = $_SERVER['HTTP_X_INACTIVO_S'] ?? null;
+    if ($v === null || !preg_match('/^\d{1,6}$/', (string) $v)) return null;
+    return (int) $v;
+}
+
+/** Última actividade real: a guardada ou a que o portal indica (a mais recente, nunca no futuro). */
+function naval_sessao_ultima(int $ultima, int $agora, ?int $cliente): int
+{
+    return $cliente === null ? $ultima : min($agora, max($ultima, $agora - $cliente));
+}
+
+/**
+ * Sessão: termina após 15 minutos sem actividade ou 10 horas, e se a conta deixar de ser válida. As leituras automáticas
+ * do portal (dados actualizados a cada 5 minutos, renovação do token) não contam como actividade: a última actividade
+ * é a que a pessoa fez (OWASP ASVS V7.3.1).
+ */
 function naval_sessao_valida(): bool
 {
     if (empty($_SESSION['usuario_autenticado'])) return false;
     $agora = time();
     $inicio = (int) ($_SESSION['login_time'] ?? $agora);
     $ultima = (int) ($_SESSION['ultima_actividade'] ?? $agora);
+    $cliente = naval_sessao_inactivo_cliente();
+    $ultima = naval_sessao_ultima($ultima, $agora, $cliente);
     $motivo = null;
     if ($agora - $ultima > NAVAL_SESSAO_INACTIVA) $motivo = 'inactividade';
     elseif ($agora - $inicio > NAVAL_SESSAO_MAXIMA) $motivo = 'duracao_maxima';
@@ -287,7 +310,7 @@ function naval_sessao_valida(): bool
         naval_terminar_sessao($motivo);
         return false;
     }
-    $_SESSION['ultima_actividade'] = $agora;
+    $_SESSION['ultima_actividade'] = $cliente === null ? $agora : $ultima;
     return true;
 }
 

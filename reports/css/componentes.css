@@ -5208,3 +5208,14 @@ input[type='number']::-webkit-inner-spin-button {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Inactividade (reports/js/inactividade.js): aviso antes de a sessão terminar e ecrã limpo no fim (ISO/IEC 27001 A.7.7) */
+.ina-aviso .ina-s {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+body.sessao-terminada #page,
+body.sessao-terminada #nav {
+  visibility: hidden;
+}
