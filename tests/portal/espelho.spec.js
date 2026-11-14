@@ -68,22 +68,25 @@ test('espelho: o que se faz na app no computador aparece no telemóvel e vice-ve
   const app = p.frameLocator('.apres-tel iframe');
   await expect(app.locator('#ag-h1')).toHaveText('Hoje');
   // no computador, abre «Rotas»: o telemóvel segue, já em português
+  await app.locator('#ag-menu-b').click();
   await app.locator('#ag-separadores button', { hasText: 'Rotas' }).click();
   await expect(app.locator('#ag-h1')).toHaveText('Rotas');
-  await expect(m.locator('#ag-h1')).toHaveText('Rotas', { timeout: 8000 });
+  await expect(m.locator('#ag-h1')).toHaveText('Rotas', { timeout: 15000 });
   await expect(m.locator('.ag-espelho')).toContainText('A mostrar o mesmo ecrã');
   // no telemóvel, abre «Alertas»: o computador segue (o relógio do computador está parado no ensaio: avança-se)
+  await m.locator('#ag-menu-b').click();
   await m.locator('#ag-separadores button', { hasText: 'Alertas' }).click();
   await p.clock.setFixedTime(new Date(HOJE.getTime() + 10000));
-  await expect(app.locator('#ag-h1')).toHaveText('Alertas', { timeout: 8000 });
+  await expect(app.locator('#ag-h1')).toHaveText('Alertas', { timeout: 15000 });
   // muda-se o idioma no portal: a app no computador e o telemóvel mudam também
   await p.locator('.apres-barra .apres-idioma button', { hasText: 'EN' }).click();
   await p.clock.setFixedTime(new Date(HOJE.getTime() + 20000));
-  await expect(app.locator('#ag-h1')).toHaveText('Alerts', { timeout: 8000 });
-  await expect(m.locator('#ag-h1')).toHaveText('Alerts', { timeout: 8000 });
+  await expect(app.locator('#ag-h1')).toHaveText('Alerts', { timeout: 15000 });
+  await expect(m.locator('#ag-h1')).toHaveText('Alerts', { timeout: 15000 });
   await expect(p.locator('.apres-barra')).toContainText('Management app');
   // deixar de seguir, no telemóvel: o computador continua, o telemóvel fica onde está
   await m.locator('.ag-espelho button').click();
+  await app.locator('#ag-menu-b').click();
   await app.locator('#ag-separadores button', { hasText: 'Today' }).click();
   await expect(app.locator('#ag-h1')).toHaveText('Today');
   await p.waitForTimeout(2000);

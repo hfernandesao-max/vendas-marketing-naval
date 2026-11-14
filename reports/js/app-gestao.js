@@ -1,5 +1,6 @@
-// App de gestão «Naval Gestão» (gestao/index.html): telemóvel, só de leitura. Separadores Hoje, Rotas, Alertas e
-// Assistente; os dados vêm da API central com o âmbito da conta (v1/sessao, v1/indicadores, v1/vendas/estado,
+// App de gestão «Naval Gestão» (gestao/index.html): telemóvel, só de leitura. Todas as secções num menu (gaveta
+// lateral): Hoje; Vendas, Documentos (com as linhas), Clientes, Artigos; Cobranças; Rotas, Controlo; Alertas e
+// Assistente (consulta: app-gestao-consulta.js), cada uma só com o recurso correspondente na matriz de acessos; os dados vêm da API central com o âmbito da conta (v1/sessao, v1/indicadores, v1/vendas/estado,
 // v1/assistente) e actualizam-se a cada 5 minutos enquanto a app está aberta. Nada fica guardado no telefone.
 //
 // Desenho segundo as apps de gestão de referência (Shopify, Stripe, Power BI, Salesforce, SAP Fiori) e as regras da
@@ -19,6 +20,7 @@ import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
 import { eNC, pendenteDe, recebidoDe, recebidoPorCategoria } from './meios.js';
 import { ligarEspelho } from './espelho.js';
+import { C as CONSULTA, artigos, clientes, cobrancas, documentos, folhaCliente, folhaDocumento, ligarConsulta, vendas } from './app-gestao-consulta.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -58,7 +60,18 @@ const E = {
 };
 // dentro do portal, no modo apresentação (moldura de telemóvel no ecrã do computador)
 const EMBEBIDO = window.self !== window.top;
-const ICONE = { hoje: 'home', rotas: 'trophy', controlo: 'kpi', alertas: 'sino', assistente: 'ia' };
+const ICONE = {
+  hoje: 'home',
+  vendas: 'chart',
+  documentos: 'file',
+  clientes: 'users',
+  artigos: 'box',
+  cobrancas: 'card',
+  rotas: 'trophy',
+  controlo: 'kpi',
+  alertas: 'sino',
+  assistente: 'ia',
+};
 const SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
 // ───────────── peças ─────────────
@@ -468,9 +481,50 @@ function rotas() {
  * Ficha da rota (folha que sobe do fundo, como no iOS): estado agora, vendas, stock na carrinha neste momento,
  * fecho do dia, últimas vendas e os últimos 14 dias. Actualiza-se sozinha com os dados ao vivo.
  */
-function folhaRota(rota) {
-  const r = (E.ind.rotas || []).find((x) => String(x.rota) === String(rota)) || { rota, promotor: '' };
-  const vivo = E.ao && E.ao.vendas ? rotasAgora(E.ao.vendas).find((x) => String(x.rota) === String(rota)) : null;
+// Folha de detalhe (rota, documento, cliente), com «Voltar» quando se abre uma a partir de outra (ex.: cliente →
+// documento). A pilha esvazia-se ao fechar.
+const PILHA = [];
+let aReabrir = false;
+const descreverFolha = (f) =>
+  f && f.open
+    ? f.dataset.doc
+      ? { doc: f.dataset.doc, dia: f.dataset.dia }
+      : f.dataset.cliente
+        ? { cliente: f.dataset.cliente }
+        : f.dataset.rota
+          ? { rota: f.dataset.rota }
+          : null
+    : null;
+const mesmaFolha = (a, b) => !!a && !!b && JSON.stringify(a) === JSON.stringify(b);
+function empilhar(nova) {
+  if (aReabrir) return;
+  const actual = descreverFolha($('ag-folha'));
+  if (actual && !mesmaFolha(actual, nova)) PILHA.push(actual);
+}
+function reabrir(d, voltar) {
+  aReabrir = true;
+  try {
+    if (d.doc) folhaDocumento(d.doc, d.dia);
+    else if (d.cliente) folhaCliente(d.cliente);
+    else if (d.rota) folhaRota(d.rota);
+  } finally {
+    aReabrir = false;
+  }
+  if (voltar) {
+    const f = $('ag-folha');
+    if (f) f.scrollTop = 0;
+  }
+}
+function botaoVoltar() {
+  const b = el('button', 'ag-mais ag-voltar', '‹ ' + t('Voltar'));
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    const d = PILHA.pop();
+    if (d) reabrir(d, true);
+  });
+  return b;
+}
+function folhaBase() {
   let f = $('ag-folha');
   if (!f) {
     f = el('dialog', 'ag-folha');
@@ -478,14 +532,56 @@ function folhaRota(rota) {
     f.addEventListener('click', (e) => {
       if (e.target === f) f.close();
     });
+    f.addEventListener('close', () => (PILHA.length = 0));
     document.body.append(f);
   }
+  return f;
+}
+/** Abre (ou actualiza) a folha com um documento ou um cliente. */
+function abrirFolha(chave, titulo, sub, corpo) {
+  empilhar(chave);
+  const f = folhaBase();
+  delete f.dataset.rota;
+  delete f.dataset.doc;
+  delete f.dataset.dia;
+  delete f.dataset.cliente;
+  Object.entries(chave).forEach(([k, v]) => (f.dataset[k] = v));
+  const cab = el('div', 'ag-folha-cab');
+  const fechar = el('button', 'ag-mais', t('Fechar'));
+  fechar.type = 'button';
+  fechar.addEventListener('click', () => f.close());
+  const tit = el('div');
+  if (PILHA.length) tit.append(botaoVoltar());
+  tit.append(el('h2', null, titulo));
+  if (sub) tit.append(el('p', 'ag-nota', sub));
+  cab.append(tit, fechar);
+  f.replaceChildren(cab, corpo);
+  if (!f.open) {
+    f.showModal();
+    f.scrollTop = 0;
+  }
+}
+/** Chegaram dados: a folha aberta (documento ou cliente) mostra-os. */
+function aoCarregar() {
+  const d = descreverFolha($('ag-folha'));
+  if (d && !d.rota) reabrir(d, false);
+}
+
+function folhaRota(rota) {
+  const r = (E.ind.rotas || []).find((x) => String(x.rota) === String(rota)) || { rota, promotor: '' };
+  const vivo = E.ao && E.ao.vendas ? rotasAgora(E.ao.vendas).find((x) => String(x.rota) === String(rota)) : null;
+  empilhar({ rota: String(rota) });
+  const f = folhaBase();
+  delete f.dataset.doc;
+  delete f.dataset.dia;
+  delete f.dataset.cliente;
   f.dataset.rota = String(rota);
   const cab = el('div', 'ag-folha-cab');
   const fechar = el('button', 'ag-mais', t('Fechar'));
   fechar.type = 'button';
   fechar.addEventListener('click', () => f.close());
   const tit = el('div');
+  if (PILHA.length) tit.append(botaoVoltar());
   tit.append(el('h2', null, t('Rota {r}', { r: r.rota })));
   if (r.promotor || (vivo && vivo.promotor)) tit.append(el('p', 'ag-nota', r.promotor || vivo.promotor));
   cab.append(tit, fechar);
@@ -1409,15 +1505,21 @@ function controlo() {
   return out;
 }
 
+// [id, nome, ecrã, grupo do menu, recursos da matriz que dão acesso (um basta; vazio = todos com a app)]
 const SEPARADORES = [
-  ['hoje', 'Hoje', hoje],
-  ['rotas', 'Rotas', rotas],
-  ['controlo', 'Controlo', controlo],
-  ['alertas', 'Alertas', alertas],
-  ['assistente', 'Assistente', assistente],
+  ['hoje', 'Hoje', hoje, 'Resumo', []],
+  ['vendas', 'Vendas', vendas, 'Comercial', ['vendas-dia', 'vendas-promotor']],
+  ['documentos', 'Documentos', documentos, 'Comercial', ['documentos']],
+  ['clientes', 'Clientes', clientes, 'Comercial', ['vendas-cliente']],
+  ['artigos', 'Artigos', artigos, 'Comercial', ['vendas-artigo']],
+  ['cobrancas', 'Cobranças', cobrancas, 'Finanças', ['pendentes', 'pagamentos']],
+  ['rotas', 'Rotas', rotas, 'Operações', []],
+  ['controlo', 'Controlo', controlo, 'Operações', []],
+  ['alertas', 'Alertas', alertas, 'Acompanhamento', []],
+  ['assistente', 'Assistente', assistente, 'Acompanhamento', ['assistente']],
 ];
 const pode = (r) => !!(E.sessao && (E.sessao.permissoes || {})[r]);
-const disponiveis = () => SEPARADORES.filter(([id]) => id !== 'assistente' || pode('assistente'));
+const disponiveis = () => SEPARADORES.filter(([, , , , rec]) => !rec.length || rec.some(pode));
 
 function mudar(id) {
   E.sep = id;
@@ -1426,6 +1528,8 @@ function mudar(id) {
   } catch (e) {
     /* sem histórico */
   }
+  const g = $('ag-gaveta');
+  if (g && g.open) g.close();
   desenhar();
   window.scrollTo(0, 0);
 }
@@ -1450,20 +1554,43 @@ function desenhar() {
   const c = $('ag-conteudo');
   const nav = $('ag-separadores');
   const nAl = (E.ind && E.ind.alertas ? E.ind.alertas.critico + E.ind.alertas.aviso : 0) + ((E.ind && E.ind.pendentes && E.ind.pendentes.total) || 0);
-  nav.replaceChildren(
-    ...disponiveis().map(([id, nome]) => {
-      const b = el('button');
-      b.type = 'button';
-      const ic = el('span', 'ag-tab-ic');
-      ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
-      if (id === 'alertas' && nAl) ic.append(el('b', 'ag-badge', nAl > 99 ? '99+' : String(nAl)));
-      b.append(ic, el('span', null, t(nome)));
-      if (id === E.sep) b.setAttribute('aria-current', 'page');
-      if (id === 'alertas' && nAl) b.setAttribute('aria-label', t(nome) + ': ' + t('{n} por tratar', { n: nAl }));
-      b.addEventListener('click', () => mudar(id));
-      return b;
-    }),
-  );
+  const itens = [];
+  let grupo = '';
+  disponiveis().forEach(([id, nome, , g]) => {
+    if (g !== grupo) {
+      grupo = g;
+      itens.push(el('h2', null, t(g)));
+    }
+    const b = el('button');
+    b.type = 'button';
+    const ic = el('span', 'ag-tab-ic');
+    ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+    b.append(ic, el('span', null, t(nome)));
+    if (id === 'alertas' && nAl) b.append(el('b', 'ag-badge', nAl > 99 ? '99+' : String(nAl)));
+    if (id === E.sep) b.setAttribute('aria-current', 'page');
+    if (id === 'alertas' && nAl) b.setAttribute('aria-label', t(nome) + ': ' + t('{n} por tratar', { n: nAl }));
+    b.addEventListener('click', () => mudar(id));
+    itens.push(b);
+  });
+  nav.replaceChildren(...itens);
+  nav.setAttribute('aria-label', t('Secções'));
+  // botão do menu: rótulo traduzido e número de alertas por tratar
+  const mb = $('ag-menu-b');
+  if (mb) {
+    mb.setAttribute('aria-label', nAl ? t('Menu') + ' · ' + t('{n} por tratar', { n: nAl }) : t('Menu'));
+    const bd = mb.querySelector('.ag-badge');
+    if (nAl && !bd) mb.append(el('b', 'ag-badge', nAl > 99 ? '99+' : String(nAl)));
+    else if (bd) {
+      if (nAl) bd.textContent = nAl > 99 ? '99+' : String(nAl);
+      else bd.remove();
+    }
+  }
+  const fe = $('ag-gaveta-fechar');
+  if (fe) fe.setAttribute('aria-label', t('Fechar'));
+  const ct = $('ag-gaveta-conta');
+  if (ct) ct.textContent = (E.sessao && (E.sessao.nome || E.sessao.login)) || '';
+  const pe = $('ag-gaveta-pe');
+  if (pe) pe.textContent = t('Só de leitura · os dados não ficam no telefone.');
   $('ag-actualizar').setAttribute('aria-label', t('Actualizar'));
   $('ag-actualizar').classList.toggle('a-ler', E.aLer);
   estado();
@@ -1522,7 +1649,11 @@ function ecraActual() {
     sep: E.sep,
     periodo: E.periodo,
     ordem: E.ordemRotas,
-    folha: aberta ? f.dataset.rota || null : null,
+    folha: aberta ? (f.dataset.doc ? 'd:' + f.dataset.doc + '|' + f.dataset.dia : f.dataset.cliente ? 'c:' + f.dataset.cliente : f.dataset.rota || null) : null,
+    menu: !!($('ag-gaveta') && $('ag-gaveta').open),
+    pv: CONSULTA.pv,
+    pa: CONSULTA.pa,
+    dia: CONSULTA.dia || null,
     rolar: max > 0 ? Math.round((alvo.scrollTop / max) * 1000) / 1000 : 0,
     idioma: LANG,
     pensar: !!E.aPensar,
@@ -1540,12 +1671,24 @@ function aplicarEcra(e) {
     if (e.sep && SEPARADORES.some(([x]) => x === e.sep)) E.sep = e.sep;
     if (e.periodo) E.periodo = e.periodo;
     if (e.ordem) E.ordemRotas = e.ordem;
+    if (e.pv) CONSULTA.pv = e.pv;
+    if (e.pa) CONSULTA.pa = e.pa;
+    if (e.dia) CONSULTA.dia = e.dia;
     if (Array.isArray(e.conversa)) E.conversa = e.conversa;
     E.aPensar = !!e.pensar;
     desenhar();
     const f = $('ag-folha');
-    if (e.folha && E.ind) folhaRota(e.folha);
+    const fo = String(e.folha || '');
+    if (fo.startsWith('d:')) {
+      const [n, d] = fo.slice(2).split('|');
+      folhaDocumento(n, d);
+    } else if (fo.startsWith('c:')) folhaCliente(fo.slice(2));
+    else if (fo && E.ind) folhaRota(fo);
     else if (f && f.open) f.close();
+    // menu aberto ou fechado como do outro lado
+    const g = $('ag-gaveta');
+    if (g && e.menu && !g.open && !(f && f.open)) g.showModal();
+    else if (g && !e.menu && g.open) g.close();
     requestAnimationFrame(() => {
       const g = $('ag-folha');
       const alvo = g && g.open ? g : document.scrollingElement || document.documentElement;
@@ -1703,6 +1846,28 @@ $('ag-actualizar').addEventListener('click', () => {
   carregar(true);
 });
 puxarParaActualizar();
+ligarConsulta({ E, desenhar, aoCarregar, abrirFolha, folhaRota, mudar, cartao, cartaoKpi, titulo, barras, barra, segmentos, botaoLigacao, kz, kzc, SETA });
+// menu (gaveta lateral modal): abre no botão do topo; fecha ao escolher, com Esc, no fundo ou em «Fechar»
+(() => {
+  const g = $('ag-gaveta');
+  const b = $('ag-menu-b');
+  if (!g || !b) return;
+  b.addEventListener('click', () => {
+    if (g.open) return;
+    g.showModal();
+    b.setAttribute('aria-expanded', 'true');
+    const a = g.querySelector('[aria-current="page"]');
+    if (a) a.focus();
+  });
+  g.addEventListener('close', () => {
+    b.setAttribute('aria-expanded', 'false');
+    b.focus();
+  });
+  g.addEventListener('click', (e) => {
+    if (e.target === g) g.close();
+  });
+  $('ag-gaveta-fechar').addEventListener('click', () => g.close());
+})();
 window.addEventListener('online', desenhar);
 window.addEventListener('offline', desenhar);
 // separador «Agora»: a cada minuto, só com ele aberto e a app no ecrã

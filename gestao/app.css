@@ -1,6 +1,6 @@
 /* App de gestão «Naval Gestão»: telemóvel primeiro, azuis Naval, tema claro ou escuro conforme o telefone.
-   Regras seguidas: Apple Human Interface Guidelines e Material 3 (alvos de 44 px, barra de separadores em baixo,
-   título grande, folhas que sobem do fundo), WCAG 2.2 AA (contraste, variações com seta e sinal, movimento reduzido). */
+   Regras seguidas: Apple Human Interface Guidelines e Material 3 (alvos de 44 px, menu numa gaveta lateral com todas
+   as secções agrupadas, título grande, folhas que sobem do fundo), WCAG 2.2 AA (contraste, variações com seta e sinal, movimento reduzido). */
 :root {
   --fundo: #f2f4f9;
   --cartao: #ffffff;
@@ -63,7 +63,18 @@ body {
 }
 body {
   min-height: 100vh;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+/* sem barras de deslocamento visíveis (como nas apps nativas): desliza-se com o dedo, a roda ou o teclado */
+html,
+.ag-folha,
+.ag-gaveta {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+.ag-folha::-webkit-scrollbar,
+.ag-gaveta::-webkit-scrollbar {
+  display: none;
 }
 button {
   font: inherit;
@@ -763,48 +774,111 @@ article.ag-al {
   margin: 0;
 }
 
-/* barra de separadores (em baixo, como no iOS e no Android) */
-.ag-separadores {
+/* Menu (gaveta lateral modal, Material 3 «navigation drawer» e iOS «sidebar»): um só sítio com todas as secções,
+   agrupadas; abre no botão do topo e fecha ao escolher, com Esc, no fundo escurecido ou no botão Fechar (WCAG 2.2). */
+.ag-gaveta {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 6;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--cartao) 88%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
-  backdrop-filter: saturate(180%) blur(18px);
-  border-top: 1px solid var(--linha);
-}
-.ag-separadores button {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  min-height: 52px;
-  padding: 4px 0;
+  inset: 0 auto 0 0;
+  width: min(320px, 86vw);
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: calc(10px + env(safe-area-inset-top)) 0 calc(10px + env(safe-area-inset-bottom));
   border: 0;
-  background: none;
+  border-radius: 0 22px 22px 0;
+  background: var(--cartao);
+  color: var(--texto);
+  box-shadow: 8px 0 32px rgb(7 14 34 / 0.25);
+  overflow-y: auto;
+}
+.ag-gaveta::backdrop {
+  background: rgb(7 14 34 / 0.45);
+}
+.ag-gaveta[open] {
+  animation: ag-entra 0.22s ease-out;
+}
+@keyframes ag-entra {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+}
+.ag-gaveta-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 12px;
+  border-bottom: 1px solid var(--linha);
+}
+.ag-gaveta-cab .ag-titulo {
+  flex: 1;
+}
+.ag-menu {
+  display: grid;
+  padding: 6px 10px;
+}
+.ag-menu h2 {
+  margin: 14px 10px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--suave);
-  font-size: 11.5px;
+}
+.ag-menu button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 24px;
+  background: none;
+  color: var(--texto);
+  font-size: 15.5px;
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
+}
+.ag-menu button[aria-current='page'] {
+  background: var(--ceu);
+  color: var(--navy);
+}
+.ag-menu button > span:nth-child(2) {
+  flex: 1;
+}
+.ag-menu svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .ag-tab-ic {
   position: relative;
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 30px;
-  border-radius: 15px;
 }
-.ag-separadores button[aria-current='page'] {
-  color: var(--navy);
+.ag-gaveta-pe {
+  margin: 8px 16px 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--linha);
+  color: var(--suave);
+  font-size: 12.5px;
 }
-.ag-separadores button[aria-current='page'] .ag-tab-ic {
-  background: var(--ceu);
+/* ponto no botão do menu quando há alertas por tratar (não só cor: o número está no menu e no rótulo) */
+.ag-menu-b {
+  position: relative;
+}
+.ag-menu-b .ag-badge {
+  top: 2px;
+  left: 22px;
+}
+.ag-menu .ag-badge {
+  position: static;
 }
 .ag-badge {
   position: absolute;
@@ -1262,4 +1336,114 @@ input[type='number']::-webkit-inner-spin-button {
 }
 .ag-espelho > span:nth-child(2) {
   flex: 1;
+}
+
+/* Consulta (app-gestao-consulta.js): pesquisa, dia, listas com estado, ficha do documento e do cliente */
+.ag-pesquisa {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--texto);
+  font: inherit;
+}
+.ag-dia {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ag-dia-caixa {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--texto);
+  font-weight: 600;
+}
+.ag-dia-caixa input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.ag-dia .ag-icone {
+  font-size: 26px;
+  line-height: 1;
+}
+.ag-dia .ag-icone:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ag-estado-doc {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.ag-estado-doc.ok {
+  background: var(--ceu);
+  color: var(--navy);
+}
+.ag-estado-doc.pend {
+  background: var(--aviso-f);
+  color: var(--aviso);
+}
+.ag-estado-doc.nc {
+  background: var(--mau-f);
+  color: var(--mau);
+}
+.ag-ficha {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+.ag-ficha dt {
+  color: var(--suave);
+  font-size: 13px;
+}
+.ag-ficha dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ag-ficha dd .ag-mais {
+  min-height: 0;
+  padding: 0;
+  text-align: right;
+}
+.ag-totais dd {
+  font-variant-numeric: tabular-nums;
+}
+.ag-doc-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.ag-doc-linha .ag-rota-n,
+.ag-linha .ag-rota-n {
+  flex: 1;
+  min-width: 0;
+}
+.ag-voltar {
+  display: block;
+  margin-top: 10px;
+  padding-left: 0;
+}
+.ag-resumo .ag-medio {
+  margin-top: 2px;
 }

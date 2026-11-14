@@ -20,7 +20,7 @@ const parte = (e, chaves) => JSON.stringify(chaves.map((k) => e[k]));
  */
 export function ligarEspelho({ obter, aplicar, activo, podeUsar, csrf, semGesto = SEM_GESTO }) {
   const id = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => (b % 36).toString(36)).join('');
-  const st = { activo: false, seq: -1, ultimo: '', ultimoSem: '', gestoEm: 0, aplicadoEm: 0, aEnviar: false, parado: false, temporizador: 0 };
+  const st = { activo: false, seq: -1, ultimo: '', ultimoSem: '', gestoEm: 0, aplicadoEm: 0, aEnviar: false, aplicando: false, parado: false, temporizador: 0 };
   const gesto = () => (st.gestoEm = Date.now());
   ['pointerdown', 'touchstart', 'touchmove', 'wheel', 'keydown'].forEach((e) => addEventListener(e, gesto, { passive: true, capture: true }));
 
@@ -31,7 +31,7 @@ export function ligarEspelho({ obter, aplicar, activo, podeUsar, csrf, semGesto 
   };
 
   function enviar() {
-    if (!st.activo || st.parado || st.aEnviar || Date.now() - st.aplicadoEm < 400) return;
+    if (!st.activo || st.parado || st.aEnviar || st.aplicando || Date.now() - st.aplicadoEm < 400) return;
     const e = obter();
     const s = JSON.stringify(e);
     const sem = parte(e, semGesto);
@@ -75,11 +75,17 @@ export function ligarEspelho({ obter, aplicar, activo, podeUsar, csrf, semGesto 
           const em = st.aplicadoEm;
           // depois de aplicado (e de a página assentar), este ecrã passa a ser o «já enviado» — salvo se a pessoa
           // entretanto mexeu deste lado: aí o que fez segue para o outro lado
-          Promise.resolve(aplicar(d.estado)).then(() =>
-            setTimeout(() => {
-              if (st.gestoEm < em) marcar();
-            }, 300),
-          );
+          // enquanto se aplica (o idioma pode ter de se descarregar) este lado não envia nada
+          st.aplicando = true;
+          Promise.resolve(aplicar(d.estado))
+            .catch(() => {})
+            .then(() => {
+              st.aplicando = false;
+              st.aplicadoEm = Date.now();
+              setTimeout(() => {
+                if (st.gestoEm < em) marcar();
+              }, 300);
+            });
         } else if (d.seq > st.seq && (!d.estado || d.origem === id)) st.seq = d.seq;
       })
       .catch(() => {})
