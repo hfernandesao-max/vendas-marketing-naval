@@ -16,6 +16,10 @@ if (!empty($_SESSION['usuario_autenticado']) && naval_sessao_valida()) {
 }
 
 $erro = '';
+// a sessão anterior terminou por inactividade (portal ou servidor): diz porquê
+if (($_GET['saida'] ?? '') === 'inactividade' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+    $erro = 'A sessão terminou por inactividade (15 minutos). Entre de novo.';
+}
 $passo = 'senha';
 $usuarios = naval_utilizadores();
 

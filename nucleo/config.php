@@ -82,6 +82,20 @@ function naval_env(): array
         if (($env['PORTAL_URL'] ?? '') !== '') $env['PORTAL_URL'] = rtrim($env['PORTAL_URL'], '/') . '/ensaio';
         $env['ACTUALIZACAO_AUTOMATICA'] = '0';
         $env['NAVAL_AMBIENTE'] = 'ensaio';
+        $env = naval_env_fontes_ensaio($env);
+    }
+    return $env;
+}
+
+/**
+ * Fontes de dados só do ensaio (ISO/IEC 27001 A.8.31, ambientes separados): ENSAIO_FONTE_<DOMÍNIO> substitui
+ * FONTE_<DOMÍNIO> no ensaio (por exemplo, ENSAIO_FONTE_VENDAS=olap para testar o OLAP antes da produção). Só as
+ * chaves FONTE_*: o ensaio nunca muda segredos, ligações nem outras definições da produção.
+ */
+function naval_env_fontes_ensaio(array $env): array
+{
+    foreach ($env as $k => $v) {
+        if (preg_match('/^ENSAIO_(FONTE_[A-Z_]+)$/', (string) $k, $m) && $v !== '') $env[$m[1]] = $v;
     }
     return $env;
 }

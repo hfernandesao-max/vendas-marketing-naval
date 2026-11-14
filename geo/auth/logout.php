@@ -18,8 +18,9 @@ if (!empty($_SESSION['usuario_autenticado']) && !$valido) {
     exit;
 }
 
-// Registo da saída
-if (!empty($_SESSION['usuario_login'])) naval_registar('saida');
+// Registo da saída (o portal indica «inactividade» quando a termina sozinho, ao fim do tempo sem actividade)
+$inactividade = ($_POST['motivo'] ?? '') === 'inactividade';
+if (!empty($_SESSION['usuario_login'])) naval_registar($inactividade ? 'sessao_terminada' : 'saida', $inactividade ? ['motivo' => 'inactividade'] : []);
 
 // Destruir todas as variáveis de sessão
 $_SESSION = [];
@@ -51,5 +52,5 @@ if (preg_match('#^(.*?/geo/)#i', $scriptDir . '/', $matches)) {
     $basePath = $matches[1];
 }
 
-header('Location: ' . $basePath . 'login.php');
+header('Location: ' . $basePath . 'login.php' . ($inactividade ? '?saida=inactividade' : ''));
 exit;

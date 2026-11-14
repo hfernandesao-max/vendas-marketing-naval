@@ -3955,6 +3955,11 @@ export const EN = {
     'The count does not match the expected balance (difference of {v}). Count the notes again and validate once more; if the difference remains, explain it.',
   'A diferença mantém-se ({v}). Explique-a para validar a caixa; fica registada para a aprovação.':
     'The difference remains ({v}). Explain it to validate the till; it is recorded for approval.',
+  'A sessão termina em {s} s.': 'The session ends in {s} s.',
+  'Sessão sem actividade': 'Inactive session',
+  'Por segurança, a sessão termina após {m} minutos sem actividade.': 'For security, the session ends after {m} minutes of inactivity.',
+  'Tem alterações por gravar: continue ligado e grave-as.': 'You have unsaved changes: stay signed in and save them.',
+  'Continuar ligado': 'Stay signed in',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -3887,6 +3887,11 @@ export const TI = {
   'A contagem não bate com o saldo esperado (diferença de {v}). Conte de novo as notas e volte a validar; se a diferença se mantiver, explique-a.':
     'እቲ ቆጸራ ምስቲ ዝድለ ሕሳብ ኣይሰማማዕን (ፍልልይ {v})። ነቶም ወረቓቕቲ ደጊምካ ቁጸሮም እሞ ደጊምካ ኣረጋግጽ፤ እቲ ፍልልይ እንተቐጸለ ግለጾ።',
   'A diferença mantém-se ({v}). Explique-a para validar a caixa; fica registada para a aprovação.': 'እቲ ፍልልይ ቀጺሉ ኣሎ ({v})። ነቲ ሳጹን ንምርግጋጽ ግለጾ፤ ንምጽዳቕ ይምዝገብ።',
+  'A sessão termina em {s} s.': 'እቲ ክፍለ-ግዜ ኣብ {s} ካልኢት ይዛዘም።',
+  'Sessão sem actividade': 'ክፍለ-ግዜ ብዘይ ምንቅስቓስ',
+  'Por segurança, a sessão termina após {m} minutos sem actividade.': 'ንድሕነት፡ እቲ ክፍለ-ግዜ ድሕሪ {m} ደቓይቕ ዘይምንቅስቓስ ይዛዘም።',
+  'Tem alterações por gravar: continue ligado e grave-as.': 'ዘይተዓቀበ ለውጥታት ኣለኩም፦ ተራኺብኩም ጽንሑ እሞ ዕቀብዎም።',
+  'Continuar ligado': 'ተራኺብካ ጽናሕ',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

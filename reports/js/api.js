@@ -25,6 +25,14 @@ let erroToken = null; // porque é que o servidor não deu o token (configuraç�
   }
 }
 
+// Há quantos segundos a pessoa não mexe no portal (inactividade.js): vai em cada pedido (X-Inactivo-S), para o
+// servidor não contar as leituras automáticas como actividade
+let inactivo = null;
+export function definirInactividade(fn) {
+  inactivo = fn;
+}
+const cabInactivo = () => (inactivo ? { 'X-Inactivo-S': String(inactivo()) } : {});
+
 const csrfPagina = () => {
   const m = document.querySelector('meta[name="csrf-token"]');
   return m ? m.getAttribute('content') || '' : '';
@@ -57,7 +65,7 @@ export function obterToken(novo = false) {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfPagina() },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfPagina(), ...cabInactivo() },
         body: '{}',
       }),
     )
@@ -112,7 +120,7 @@ export async function apiFetch(rota, init = {}) {
       ...init,
       credentials: 'same-origin',
       cache: init.cache || 'no-cache', // valida com ETag (304) em vez de transferir de novo
-      headers: { ...(init.headers || {}), ...(tk ? { Authorization: 'Bearer ' + tk } : {}) },
+      headers: { ...(init.headers || {}), ...cabInactivo(), ...(tk ? { Authorization: 'Bearer ' + tk } : {}) },
     });
   // leituras (GET) repetem-se sozinhas numa falha momentânea da rede; gravações não (poderiam ficar em dobro)
   const pedir = (tk) => (metodo === 'GET' || metodo === 'HEAD' ? comRepeticao(() => uma(tk)) : uma(tk));

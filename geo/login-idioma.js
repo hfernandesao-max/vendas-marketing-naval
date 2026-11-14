@@ -133,6 +133,7 @@
       'Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum.':
         'You signed in with a temporary password. Choose your own password now: at least 12 characters (it can be a phrase), different from the account name and not a common one.',
       'A página de entrada expirou. Tente de novo.': 'The sign-in page has expired. Please try again.',
+      'A sessão terminou por inactividade (15 minutos). Entre de novo.': 'The session ended after 15 minutes of inactivity. Please sign in again.',
       'Demasiadas tentativas falhadas a partir deste endereço. Aguarde 15 minutos e tente de novo.':
         'Too many failed attempts from this address. Wait 15 minutes and try again.',
       'Código inválido. Confirme que a hora do telemóvel está certa. Resta 1 tentativa.':
@@ -308,6 +309,7 @@
       'Entrou com uma palavra-passe temporária. Escolha agora a sua palavra-passe: pelo menos 12 caracteres (pode ser uma frase), diferente do nome da conta e que não seja comum.':
         'ብግዝያዊ መሕለፊ ቃል ኣቲኹም። ሕጂ ናትኩም መሕለፊ ቃል ምረጹ፦ እንተወሓደ 12 ፊደላት (ሓረግ ክኸውን ይኽእል)፡ ካብ ስም ኣካውንት ዝተፈልየን ልሙድ ዘይኮነን።',
       'A página de entrada expirou. Tente de novo.': 'ገጽ ምእታው ግዜኡ ኣኺሉ። እንደገና ፈትኑ።',
+      'A sessão terminou por inactividade (15 minutos). Entre de novo.': 'እቲ ክፍለ-ግዜ ድሕሪ 15 ደቓይቕ ዘይምንቅስቓስ ተዛዚሙ። እንደገና እተዉ።',
       'Demasiadas tentativas falhadas a partir deste endereço. Aguarde 15 minutos e tente de novo.': 'ካብዚ ኣድራሻ ብዙሓት ዘይተዓወቱ ፈተነታት። 15 ደቓይቕ ተጸበዩ እሞ እንደገና ፈትኑ።',
       'Código inválido. Confirme que a hora do telemóvel está certa. Resta 1 tentativa.': 'ዘይቅቡል ኮድ። ሰዓት ሞባይልኩም ልክዕ ምዃኑ ኣረጋግጹ። 1 ፈተነ ተሪፉ።',
       'Código inválido. Confirme que a hora do telemóvel está certa. Restam {n} tentativas.': 'ዘይቅቡል ኮድ። ሰዓት ሞባይልኩም ልክዕ ምዃኑ ኣረጋግጹ። {n} ፈተነታት ተሪፎም።',
