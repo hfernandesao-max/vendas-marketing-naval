@@ -18,6 +18,9 @@
 
   <body>
     <header class="ag-topo">
+      <button type="button" id="ag-menu-b" class="ag-icone ag-menu-b" aria-label="Menu" aria-haspopup="dialog" aria-expanded="false" aria-controls="ag-gaveta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
       <img src="../assets/naval-emblema-64.png" alt="" width="28" height="28" />
       <div class="ag-titulo"><strong>Naval Gestão</strong><span id="ag-estado">…</span></div>
       <button type="button" id="ag-actualizar" class="ag-icone" aria-label="Actualizar">
@@ -29,6 +32,16 @@
     <main id="ag-conteudo" class="ag-conteudo" aria-live="polite">
       <p class="ag-vazio">A carregar…</p>
     </main>
-    <nav class="ag-separadores" id="ag-separadores" aria-label="Secções"></nav>
+    <dialog id="ag-gaveta" class="ag-gaveta" aria-labelledby="ag-gaveta-t">
+      <div class="ag-gaveta-cab">
+        <img src="../assets/naval-emblema-64.png" alt="" width="28" height="28" />
+        <div class="ag-titulo"><strong id="ag-gaveta-t">Naval Gestão</strong><span id="ag-gaveta-conta"></span></div>
+        <button type="button" id="ag-gaveta-fechar" class="ag-icone" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <nav class="ag-menu" id="ag-separadores" aria-label="Secções"></nav>
+      <div class="ag-gaveta-pe" id="ag-gaveta-pe"></div>
+    </dialog>
   </body>
 </html>

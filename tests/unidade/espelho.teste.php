@@ -17,8 +17,11 @@ teste('espelho: só com a apresentação activa; o estado do ecrã é validado e
     igual('pessoa', $d['estado']['conversa'][1]['papel']);
     verdade(!isset($d['estado']['extra']), 'chaves desconhecidas não passam');
     // identificadores inválidos e idioma desconhecido não passam
-    $e = naval_espelho_estado(['sep' => '../x', 'folha' => '<script>', 'idioma' => 'fr']);
-    igual([null, null, 'pt'], [$e['sep'], $e['folha'], $e['idioma']]);
+    $e = naval_espelho_estado(['sep' => '../x', 'folha' => '<script>', 'idioma' => 'fr', 'dia' => '14/11/2026']);
+    igual([null, null, 'pt', null], [$e['sep'], $e['folha'], $e['idioma'], $e['dia']]);
+    // documento e cliente abertos, período e dia
+    $e = naval_espelho_estado(['sep' => 'documentos', 'folha' => 'd:FR A/123|2026-11-14', 'pv' => 'ano', 'dia' => '2026-11-14']);
+    igual(['d:FR A/123|2026-11-14', 'ano', '2026-11-14'], [$e['folha'], $e['pv'], $e['dia']]);
     lanca(400, function () use ($login) { naval_espelho_gravar($login, 'X!', ['sep' => 'hoje']); });
     lanca(400, function () { naval_espelho_estado('texto'); });
     $s2 = naval_espelho_gravar($login, 'outrolado01', ['sep' => 'hoje']);

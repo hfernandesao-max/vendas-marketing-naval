@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### App de gestão: menu lateral e consulta completa (vendas de 12 meses, documentos, clientes, artigos, cobranças)
+
+<!-- paginas: inicio -->
+
+- **Menu numa gaveta lateral** (botão no topo; Material 3 e Apple HIG): todas as secções num só sítio, agrupadas —
+  Resumo, Comercial, Finanças, Operações e Acompanhamento. Fecha ao escolher, com Esc ou no fundo; foco preso enquanto
+  aberto e devolvido ao botão (WCAG 2.2). Sai a barra de separadores em baixo e deixam de se ver barras de deslocamento.
+- **Vendas**: Hoje, Semana, Mês e **12 meses** — vendas sem IVA e com IVA, gráfico por hora, dia ou mês, documentos,
+  valor médio, recebido e por receber, por rota e melhores clientes.
+- **Documentos**: os documentos de qualquer dia, com pesquisa (documento, cliente, NIF, rota) e estado (pago, por pagar,
+  nota de crédito); ao tocar, o **documento com as linhas** (artigo, quantidade, preço, desconto, total), totais com e
+  sem IVA, recebido, por receber e pagamentos.
+- **Clientes**: os últimos 12 meses por cliente, com pesquisa; a ficha tem vendas por mês, compras, valor médio, última
+  compra, por receber e os documentos (abrem com as linhas, com «Voltar»).
+- **Artigos** (hoje, semana, mês) e **Cobranças** (por receber nos últimos 12 meses, por antiguidade e por cliente).
+- Cada secção só aparece com o recurso correspondente na matriz de acessos e com o âmbito da conta; os dados ficam só na
+  memória enquanto a app está aberta. O espelho do modo apresentação acompanha também a secção, o dia, o documento ou o
+  cliente abertos e o menu.
+- Modo apresentação: sai a vista «Portal no telemóvel».
+
 ### Modo apresentação: a app no computador e no telemóvel ao mesmo tempo, no idioma do portal
 
 <!-- paginas: inicio -->

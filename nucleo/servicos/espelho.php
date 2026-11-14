@@ -1,8 +1,8 @@
 <?php
 /**
  * Espelho da apresentação: com o modo apresentação activo, a app de gestão mostrada no ecrã do computador e a app no
- * telemóvel da mesma pessoa mostram o mesmo ecrã ao mesmo tempo (separador, período, rota aberta, posição na página,
- * conversa do assistente e idioma). Quem mexe — no computador ou no telemóvel — conduz; o outro segue.
+ * telemóvel da mesma pessoa mostram o mesmo ecrã ao mesmo tempo (secção, período, dia, rota, documento ou cliente
+ * aberto, posição na página, conversa do assistente e idioma). Quem mexe — no computador ou no telemóvel — conduz; o outro segue.
  *
  * Só o estado do ecrã passa pelo servidor (nunca os dados: cada lado lê os seus com a própria sessão e o próprio
  * âmbito); um ficheiro por conta, só enquanto o modo apresentação estiver activo; nada mais é guardado.
@@ -44,10 +44,15 @@ function naval_espelho_estado($e): array
         'sep' => $id($e['sep'] ?? ''),
         'periodo' => $id($e['periodo'] ?? ''),
         'ordem' => $id($e['ordem'] ?? ''),
-        'folha' => isset($e['folha']) && preg_match('/^[A-Za-z0-9 _.-]{1,20}$/', (string) $e['folha']) ? (string) $e['folha'] : null,
+        // folha aberta: rota («1004»), documento («d:FR A/123|2026-11-14») ou cliente («c:C0042»)
+        'folha' => isset($e['folha']) && preg_match('/^[\p{L}\p{N} _.\/|:#-]{1,80}$/u', (string) $e['folha']) ? (string) $e['folha'] : null,
+        'pv' => $id($e['pv'] ?? ''),
+        'pa' => $id($e['pa'] ?? ''),
+        'dia' => isset($e['dia']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $e['dia']) ? (string) $e['dia'] : null,
         'rolar' => isset($e['rolar']) && is_numeric($e['rolar']) ? max(0.0, min(1.0, round((float) $e['rolar'], 3))) : 0.0,
         'idioma' => in_array($e['idioma'] ?? '', ['pt', 'en', 'ti'], true) ? $e['idioma'] : 'pt',
         'pensar' => !empty($e['pensar']),
+        'menu' => !empty($e['menu']),
         'conversa' => [],
     ];
     foreach (array_slice(is_array($e['conversa'] ?? null) ? $e['conversa'] : [], -12) as $m) {

@@ -85,6 +85,13 @@ const semCorte = (page) =>
       .map((e) => e.className || e.tagName);
   });
 
+// abre uma secção pelo menu (gaveta lateral)
+async function ir(page, nome) {
+  await page.locator('#ag-menu-b').click();
+  await page.locator('#ag-gaveta #ag-separadores button', { hasText: nome }).click();
+  await expect(page.locator('#ag-gaveta')).not.toBeVisible();
+}
+
 // telemóvel (sem mudar de navegador: o perfil do iPhone escolheria o WebKit)
 const IPHONE = { ...devices['iPhone 13'] };
 delete IPHONE.defaultBrowserType;
@@ -117,15 +124,15 @@ test('app de gestão: Hoje com período, gráficos, atenção, indicadores e mel
   await expect(page.locator('.ag-kpi').first()).toContainText('1,3 M Kz');
   await expect(page.locator('.ag-kpi', { hasText: 'Compras de clientes' })).toContainText('301');
   await expect(page.locator('.ag-kpi', { hasText: 'Valor médio por compra' })).toContainText('17 mil Kz');
-  // contador dos alertas na barra de separadores
-  await expect(page.locator('.ag-separadores .ag-badge')).toHaveText('3');
+  // contador dos alertas no botão do menu
+  await expect(page.locator('#ag-menu-b .ag-badge')).toHaveText('3');
   expect(await semCorte(page)).toEqual([]);
   expect(erros).toEqual([]);
 });
 
 test('app de gestão: classificação das rotas e detalhe numa folha que sobe do fundo', async ({ page }) => {
   const erros = await abrirApp(page);
-  await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
+  await ir(page, 'Rotas');
   await expect(page.locator('#ag-h1')).toHaveText('Rotas');
   await expect(page.locator('.ag-resumo')).toHaveText('4 rotas · 3 a crescer · 1 a cair');
   await expect(page.locator('.ag-rota').first()).toContainText('1011 · Robel Tesfamichael');
@@ -268,7 +275,7 @@ test('app de gestão: ao vivo em Hoje; Rotas «Agora» com paradas primeiro, sto
   await expect(vivo).toContainText('410 000 Kz');
   await expect(vivo.locator('.ag-mini').first()).toContainText('há 9 min');
   // Rotas abre em «Agora»: 1002 parada (desde as 12:10) e 1001 sem vendas primeiro
-  await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
+  await ir(page, 'Rotas');
   await expect(page.locator('.ag-seg [aria-selected=true]')).toHaveText('Agora');
   const rs = page.locator('.ag-rota-ao');
   await expect(rs.first()).toContainText('1002');
@@ -369,7 +376,7 @@ test('app de gestão: notificações — ligar com um toque, escolher o que rece
   });
   const erros = await abrirApp(page);
   expect(await page.evaluate(() => window.__badge)).toBe(1); // número de por ler no ícone da app
-  await page.locator('.ag-separadores button', { hasText: 'Alertas' }).click();
+  await ir(page, 'Alertas');
   await expect(page.locator('.ag-notif-linha')).toContainText('Desligadas');
   await page.locator('.ag-notif-linha').click();
   const c = page.locator('#ag-folha-notif .ag-notif');
@@ -460,7 +467,7 @@ test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multic
   // Hoje: recebido, em dinheiro e em Multicaixa no cartão ao vivo
   await expect(page.locator('.ag-vivo')).toContainText('160 mil Kz');
   await expect(page.locator('.ag-vivo')).toContainText('em dinheiro');
-  await page.locator('.ag-separadores button', { hasText: 'Controlo' }).click();
+  await ir(page, 'Controlo');
   await expect(page.locator('#ag-h1')).toHaveText('Controlo');
   await expect(page.locator('.ag-heroi').first()).toContainText('Fecho previsto do mês');
   await expect(page.locator('.ag-heroi').first()).toContainText('2 500 000 Kz');
@@ -488,7 +495,7 @@ test.describe('app de gestão: idioma do telefone', () => {
     await page.route('**/v1/sessao**', (r) => r.fulfill({ json: { ...SESSAO, idioma: 'pt' } }));
     await page.route('**/v1/indicadores**', (r) => r.fulfill({ json: IND }));
     await page.goto('/gestao/index.html');
-    await expect(page.locator('.ag-separadores')).toContainText('Today');
+    await expect(page.locator('#ag-separadores')).toContainText('Today');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });
@@ -589,9 +596,9 @@ test('app de gestão: horário do dia, «À sua espera» (aprovações), vendas 
   await expect(p.nth(1)).toContainText('BAI · lacre L77 · 150 000 Kz');
   await expect(p.nth(2)).toContainText('Rota 1005: aprovação final da conciliação');
   // o número do separador Alertas junta o que espera pela pessoa (2 críticos + 1 aviso + 3)
-  await expect(page.locator('.ag-separadores .ag-badge')).toHaveText('6');
+  await expect(page.locator('#ag-menu-b .ag-badge')).toHaveText('6');
   // ficha da rota: quem assinou cada passo e o prazo do fecho
-  await page.locator('.ag-separadores button', { hasText: 'Rotas' }).click();
+  await ir(page, 'Rotas');
   await page.locator('.ag-rota-ao', { hasText: '1005' }).click();
   const f = page.locator('#ag-folha');
   await expect(f).toContainText('Por aprovação final');

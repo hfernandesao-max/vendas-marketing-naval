@@ -2,8 +2,8 @@
 // Para apresentar à administração com o computador ligado a um projector ou LCD:
 //   - activa-se no menu da conta, por um período escolhido (30 min a 4 h), e acaba sozinho à hora marcada;
 //   - durante esse período a sessão termina só após 60 minutos sem actividade e o portal não volta sozinho ao painel;
-//   - no próprio portal escolhe-se o que se mostra: o portal, a app de gestão, o portal no telemóvel ou o portal e a
-//     app lado a lado. A app corre dentro de uma moldura de telemóvel, ao vivo, com a mesma conta e os mesmos dados;
+//   - no próprio portal escolhe-se o que se mostra: o portal, a app de gestão ou o portal e a app lado a lado. A app
+//     corre dentro de uma moldura de telemóvel, ao vivo, com a mesma conta e os mesmos dados;
 //   - não abrem janelas automáticas (resumo das actualizações) e uma marca discreta mostra que o modo está activo;
 //   - a app de gestão mostrada no computador e a app no telemóvel da mesma conta mostram o mesmo ecrã ao mesmo tempo
 //     (espelho.js), no idioma escolhido no portal;
@@ -18,7 +18,6 @@ import { el, toast } from './util.js';
 export const VISTAS = {
   portal: { nome: 'Portal' },
   gestao: { nome: 'App de gestão', url: '../gestao/' },
-  telemovel: { nome: 'Portal no telemóvel', url: '../reports/#inicio' },
   lado: { nome: 'Portal e app lado a lado', url: '../gestao/' },
 };
 const DURACOES = [
@@ -173,7 +172,7 @@ function escala() {
   palco.style.setProperty('--apres-k', String(Math.round(k * 1000) / 1000));
 }
 
-/** Mostra a vista escolhida: portal, app de gestão, portal no telemóvel ou portal e app lado a lado. */
+/** Mostra a vista escolhida: portal, app de gestão ou portal e app lado a lado. */
 export function mostrar(v) {
   if (!activo() || embebido()) return;
   vista = VISTAS[v] ? v : 'portal';
@@ -184,7 +183,7 @@ export function mostrar(v) {
   }
   document.body.classList.add('apres-activo');
   document.body.classList.toggle('apres-lado', vista === 'lado');
-  document.body.classList.toggle('apres-palco', vista === 'gestao' || vista === 'telemovel');
+  document.body.classList.toggle('apres-palco', vista === 'gestao');
   if (palco) palco.remove();
   palco = null;
   if (VISTAS[vista].url) {
@@ -237,7 +236,7 @@ function desenharBarra() {
 
 addEventListener('resize', escala);
 // Mudar de idioma no portal durante a apresentação: a marca e a legenda mudam logo; a app de gestão muda sozinha
-// (lê o idioma do portal) e o telemóvel que a segue também; o portal no telemóvel recarrega-se no idioma novo.
+// (lê o idioma do portal) e o telemóvel que a segue também.
 document.addEventListener('click', (e) => {
   if (!e.target.closest || !e.target.closest('#lang button') || !activo()) return;
   const antes = LANG;
@@ -246,8 +245,7 @@ document.addEventListener('click', (e) => {
     if (LANG !== antes || ++n > 40) {
       clearInterval(ver);
       if (LANG === antes) return;
-      if (vista === 'telemovel') mostrar(vista);
-      else {
+      {
         desenharBarra();
         const l = palco && palco.querySelector('.apres-legenda');
         if (l) l.textContent = t(VISTAS[vista].nome);
