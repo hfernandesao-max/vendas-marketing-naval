@@ -1,4 +1,4 @@
-# Módulos do portal e ambiente de ensaio
+# Módulos do portal e ambiente de pré-produção
 
 ## 1. Arquitectura: monólito modular
 
@@ -26,7 +26,7 @@ peça com muita carga pode sair para um serviço próprio sem mexer nas outras.
 | `conectores`              | Sistemas externos que usa                                                                                |
 | `eventos`                 | Eventos que publica e que escuta (contratos entre módulos)                                               |
 | `depende`                 | Módulos de que precisa                                                                                   |
-| `ensaio`                  | `normal` ou `so_leitura` (escreve em sistemas partilhados com a produção: no ensaio a API recusa o POST) |
+| `ensaio`                  | `normal` ou `so_leitura` (escreve em sistemas partilhados com a produção: na pré-produção a API recusa o POST) |
 
 Regras (verificadas em `tests/unidade/modulos.teste.php`): cada página, função da matriz e rota da API pertence a um e
 um só módulo; as dependências existem e não têm ciclos; os conectores estão declarados. Um módulo só fala com outro
@@ -43,7 +43,7 @@ pela API ou por eventos, nunca a ler os ficheiros do outro.
 Só o super administrador muda o estado, com confirmação da identidade; cada mudança fica no registo de auditoria
 (`modulo_estado`). Não se desliga um módulo de que outro ligado dependa. O estado fica em `dados-privados/modulos.json`.
 
-## 4. Ambiente de ensaio dentro do portal
+## 4. Ambiente de pré-produção dentro do portal
 
 Instalação azul e verde: cada versão nova instala-se primeiro em `<portal>/ensaio/`, ao lado da produção, sem lhe tocar.
 
@@ -51,28 +51,28 @@ Instalação azul e verde: cada versão nova instala-se primeiro em `<portal>/en
 2. Copia o código para `<portal>/ensaio/` (pasta nova trocada de uma só vez) e os dados privados para
    `<dados-privados>/ensaio/` (sem sessões, cache, limites, registos nem o estado do actualizador).
 3. Corre os testes de fumo: arranque e bases de dados (linha de comandos) e entrada, portal, API e ficheiros (HTTP).
-4. Avisa por correio: «pronta a testar no ensaio» ou «falhou no ensaio».
-5. Na página Actualizações, «Abrir a versão nova (ensaio)»; os botões de aprovação só ficam activos para a versão que
-   passou no ensaio, com o mesmo SHA-256. A aprovação automática das 02:45 segue a mesma regra.
+4. Avisa por correio: «pronta a testar na pré-produção» ou «falhou na pré-produção».
+5. Na página Actualizações, «Abrir a versão nova (pré-produção)»; os botões de aprovação só ficam activos para a versão que
+   passou na pré-produção, com o mesmo SHA-256. A aprovação automática das 02:45 segue a mesma regra.
 6. Aprovada, instala-se na produção às 03:00 (ou já, com «Aprovar e instalar já»), com cópia de segurança e reposição
    automática, como antes.
 
-Regras do ensaio (nunca afecta a produção):
+Regras da pré-produção (nunca afecta a produção):
 
 | Regra                   | Como                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------ |
 | Quem entra              | Só SADM e TI (na entrada, na abertura da sessão e em cada pedido); as tentativas ficam registadas      |
 | Configuração            | O `.env` da produção (os segredos não se copiam), com dados privados próprios e endereço com `/ensaio` |
 | Sessões e cookies       | Cookie de sessão e cookie da app próprios (`NAVALENSAIO`, `naval_eq_ensaio`)                           |
-| Faixa                   | «AMBIENTE DE ENSAIO · versão x · não é a produção» em todas as páginas e na app                        |
+| Faixa                   | «AMBIENTE DE PRÉ-PRODUÇÃO · versão x · não é a produção» em todas as páginas e na app                        |
 | Pinguim BO              | Só leitura, como sempre                                                                                |
-| SAP                     | Ficheiro com `ENSAIO_NAO_CARREGAR_` no nome; os lotes ficam só nos dados do ensaio                     |
-| Correio                 | Só para os administradores de sistema, com «[ENSAIO]» no assunto                                       |
+| SAP                     | Ficheiro com `ENSAIO_NAO_CARREGAR_` no nome; os lotes ficam só nos dados da pré-produção                     |
+| Correio                 | Só para os administradores de sistema, com «[PRÉ-PRODUÇÃO]» no assunto                                       |
 | Equipamentos            | Só leitura (a base de dados do módulo e o MDM são os da produção)                                      |
-| Actualizações           | Desligadas dentro do ensaio                                                                            |
-| Configuração Apache/PHP | Não se testa no ensaio (é partilhada): continua com validação antes de aplicar e reposição automática  |
+| Actualizações           | Desligadas dentro da pré-produção                                                                            |
+| Configuração Apache/PHP | Não se testa na pré-produção (é partilhada): continua com validação antes de aplicar e reposição automática  |
 
-`ENSAIO=0` no `.env` desliga o ensaio e a exigência de passar por ele.
+`ENSAIO=0` no `.env` desliga a pré-produção e a exigência de passar por ela.
 
 ## 5. Painel da carrinha (Logística)
 

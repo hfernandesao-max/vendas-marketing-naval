@@ -2,7 +2,7 @@
 
 Documento de referência para quem mantém o código. O guia de utilização e instalação está no [README](../README.md).
 
-Módulos (monólito modular), estados ligado/piloto/desligado, conectores e ambiente de ensaio dentro do portal: ver
+Módulos (monólito modular), estados ligado/piloto/desligado, conectores e ambiente de pré-produção dentro do portal: ver
 [MODULOS.md](MODULOS.md).
 
 ## Visão geral

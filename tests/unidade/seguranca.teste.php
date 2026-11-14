@@ -197,3 +197,19 @@ teste('inactividade: 15 minutos; as leituras automáticas (X-Inactivo-S) não re
     }
     unset($_SERVER['HTTP_X_INACTIVO_S']);
 });
+
+teste('modo apresentação: 60 min de inactividade só enquanto activo; só o super administrador por omissão', function () {
+    $antes = $_SESSION ?? [];
+    $_SESSION = [];
+    igual(900, naval_sessao_inactiva_s());
+    $_SESSION['apresentacao_ate'] = time() + 600;
+    igual(3600, naval_sessao_inactiva_s());
+    $_SESSION['apresentacao_ate'] = time() - 1;   // passou da hora: volta aos 15 minutos
+    igual(0, naval_apresentacao_ate());
+    igual(900, naval_sessao_inactiva_s());
+    $_SESSION = $antes;
+    igual(['', 'G'], naval_niveis_recurso('modo-apresentacao'));
+    $m = naval_matriz_base()['modo-apresentacao'];
+    igual('A', $m['SADM']);
+    foreach (NAVAL_COLUNAS as $p) igual('', $m[$p], $p);
+});

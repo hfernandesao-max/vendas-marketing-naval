@@ -117,6 +117,7 @@ export const NOMES_RECURSO = {
   'valor-portal': 'Valor do portal (V: ver o cálculo; G: alterar os parâmetros)',
   relatorios: 'Criar relatório (V: criar e guardar os seus; G: também partilhar com todos)',
   'relatorios-certificar': 'Relatórios · certificar (selo «certificado»; outra pessoa que não o autor)',
+  'modo-apresentacao': 'Modo apresentação (projector ou LCD: app no ecrã do computador; sessão até 60 min sem actividade)',
   'admin-utilizadores': 'Utilizadores e perfis',
   'admin-config': 'Configuração e ligações',
   registos: 'Registos de acesso e exportações',

@@ -11,7 +11,7 @@ naval_servico('preferencias');
 naval_servico('actualizacao');
 naval_servico('app-telemovel');
 naval_servico('novidades');
-/** Versão nova no ensaio, para o menu da conta dos administradores de sistema (null para os outros perfis). */
+/** Versão nova na pré-produção, para o menu da conta dos administradores de sistema (null para os outros perfis). */
 function naval_sessao_ensaio(string $perfil): ?array
 {
     if (naval_ensaio() || !in_array($perfil, NAVAL_PERFIS_ADMIN_SISTEMA, true) || !naval_act_ensaio_ligado()) return null;
@@ -39,7 +39,14 @@ naval_json([
     'compatibilidade' => !empty($u['compatibilidade']),
     // preferências pessoais (menu lateral): seguem a conta em qualquer dispositivo
     'preferencias' => naval_pref_ler((string) $u['login']),
-    'sessao' => ['inactiva_s' => NAVAL_SESSAO_INACTIVA, 'maxima_s' => NAVAL_SESSAO_MAXIMA],
+    'sessao' => [
+        'inactiva_s' => naval_sessao_inactiva_s(),
+        'normal_s' => NAVAL_SESSAO_INACTIVA,
+        'apresentacao_s' => NAVAL_SESSAO_APRESENTACAO,
+        'maxima_s' => NAVAL_SESSAO_MAXIMA,
+    ],
+    // modo apresentação activo: hora do fim (Unix) ou null
+    'apresentacao' => naval_apresentacao_ate() ?: null,
     // app instalada pelo código QR (equipamento registado) ou null: fora disso, o portal não funciona como app
     'app' => !empty($_SESSION['app_equipamento']) ? (string) $_SESSION['app_equipamento'] : null,
     // menu da conta: «App no telemóvel» a vermelho quando já tem a app activa num telemóvel, a verde quando não tem
@@ -55,7 +62,7 @@ naval_json([
     'app_biometria' => !empty($_SESSION['app_equipamento']) && function_exists('naval_app_activo') && !empty((naval_app_activo((string) $_SESSION['app_equipamento']) ?: [])['credenciais']),
     // versão instalada no servidor: a app no telemóvel recarrega-se sozinha quando muda (actualização transparente)
     'versao' => naval_ensaio() ? naval_ensaio_versao() : (string) (naval_act_estado()['versao'] ?? ''),
-    // ambiente de ensaio: 'ensaio' dentro de <portal>/ensaio; na produção, a versão nova no ensaio (só SADM e TI)
+    // ambiente de pré-produção: 'ensaio' dentro de <portal>/ensaio; na produção, a versão nova na pré-produção (só SADM e TI)
     'ambiente' => naval_ensaio() ? 'ensaio' : 'producao',
     'ensaio' => naval_sessao_ensaio((string) $u['perfil']),
 ]);

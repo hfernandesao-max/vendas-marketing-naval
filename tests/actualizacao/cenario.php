@@ -73,7 +73,7 @@ file_put_contents($env, implode("\n", [
     'ACTUALIZACAO_GITHUB_TOKEN=github_pat_teste_0123456789abcdefghij',
     // a janela nocturna liga-se só no caso dela (a hora real do teste não pode mudar os outros)
     'ACTUALIZACAO_APROVACAO_AUTOMATICA=0', 'ACTUALIZACAO_INSTALACAO_NOCTURNA=0',
-    // o ensaio liga-se só no caso dele (os outros casos aprovam sem passar pelo ensaio)
+    // a pré-produção liga-se só no caso dele (os outros casos aprovam sem passar pela pré-produção)
     'ENSAIO=0',
 ]) . "\n");
 putenv('NAVAL_ENV=' . $env);
@@ -521,19 +521,19 @@ caso('ensaio: versão nova lado a lado em /ensaio (dados próprios, faixa, teste
     $instalada = h('reports/js/util.js');
     publicar(['v30' => ['reports/js/util.js' => $util . "\n// v30\n"]]);
     $d = svc('naval_act_decidir("v30", "aprovar", "henrique")');
-    confirma(!$d['ok'] && strpos($d['erro'], 'ainda não está no ensaio') !== false, 'aprovou sem ensaio: ' . json_encode($d));
+    confirma(!$d['ok'] && strpos($d['erro'], 'ainda não está na pré-produção') !== false, 'aprovou sem pré-produção: ' . json_encode($d));
     $antesEmails = count(emails());
     [$r, $t] = act('urgente');
     $e = json_decode((string) @file_get_contents($priv . '/actualizacoes/ensaio.json'), true) ?: [];
     confirma($r === 0 && ($e['versao'] ?? '') === 'v30' && ($e['resultado'] ?? '') === 'ok', 'ensaio: ' . $t . ' ' . json_encode($e));
-    confirma(is_file($srv . '/ensaio/.ambiente-ensaio') && hash_file('sha256', $srv . '/ensaio/reports/js/util.js') === hash('sha256', $util . "\n// v30\n"), 'código do ensaio');
+    confirma(is_file($srv . '/ensaio/.ambiente-ensaio') && hash_file('sha256', $srv . '/ensaio/reports/js/util.js') === hash('sha256', $util . "\n// v30\n"), 'código da pré-produção');
     confirma(h('reports/js/util.js') === $instalada, 'o ensaio mexeu na produção');
-    confirma(is_dir($priv . '/ensaio') && !is_dir($priv . '/ensaio/actualizacoes'), 'dados privados do ensaio');
-    confirma(in_array('Portal RTM · versão v30 pronta a testar no ensaio', emails(), true) && count(emails()) === $antesEmails + 1, 'sem aviso do ensaio');
+    confirma(is_dir($priv . '/ensaio') && !is_dir($priv . '/ensaio/actualizacoes'), 'dados privados da pré-produção');
+    confirma(in_array('Portal RTM · versão v30 pronta a testar na pré-produção', emails(), true) && count(emails()) === $antesEmails + 1, 'sem aviso da pré-produção');
     $login = (string) @file_get_contents('http://127.0.0.1:' . $portaWeb . '/ensaio/geo/login.php');
-    confirma(strpos($login, 'AMBIENTE DE ENSAIO') !== false && strpos($login, 'v30') !== false, 'faixa do ensaio em falta');
-    confirma(strpos((string) @file_get_contents('http://127.0.0.1:' . $portaWeb . '/geo/login.php'), 'AMBIENTE DE ENSAIO') === false, 'faixa do ensaio na produção');
-    // dentro do ensaio: só SADM e TI entram, dados privados próprios, dados públicos e .env da produção, cookies próprios
+    confirma(strpos($login, 'AMBIENTE DE PRÉ-PRODUÇÃO') !== false && strpos($login, 'v30') !== false, 'faixa da pré-produção em falta');
+    confirma(strpos((string) @file_get_contents('http://127.0.0.1:' . $portaWeb . '/geo/login.php'), 'AMBIENTE DE PRÉ-PRODUÇÃO') === false, 'faixa da pré-produção na produção');
+    // dentro da pré-produção: só SADM e TI entram, dados privados próprios, dados públicos e .env da produção, cookies próprios
     $f = $srv . '/ensaio-teste.php';
     file_put_contents($f, '<?php require ' . var_export($srv . '/ensaio/nucleo/arranque.php', true) . '; naval_servico("app-telemovel"); echo json_encode([naval_ensaio(), naval_ensaio_permitido(["perfil" => "DIR"]), naval_ensaio_permitido(["perfil" => "TI"]), naval_ensaio_permitido(["perfil" => "SADM"]), naval_pasta_privada(), naval_dados_reports(), naval_app_cookie_nome(), naval_config("ACTUALIZACAO_AUTOMATICA"), naval_ensaio_versao()]);');
     $o = [];
@@ -546,20 +546,20 @@ caso('ensaio: versão nova lado a lado em /ensaio (dados próprios, faixa, teste
         $x[4] = $caminho($x[4]);
         $x[5] = $caminho($x[5]);
     }
-    confirma($x === [true, false, true, true, $caminho($priv . '/ensaio'), $caminho($srv . '/reports/data'), 'naval_eq_ensaio', '0', 'v30'], 'regras do ensaio: ' . implode("\n", $o));
+    confirma($x === [true, false, true, true, $caminho($priv . '/ensaio'), $caminho($srv . '/reports/data'), 'naval_eq_ensaio', '0', 'v30'], 'regras da pré-produção: ' . implode("\n", $o));
     [$r, $t] = act('urgente');
-    confirma($r === 0 && trim($t) === '', 'reinstalou a mesma versão no ensaio: ' . $t);
+    confirma($r === 0 && trim($t) === '', 'reinstalou a mesma versão na pré-produção: ' . $t);
     $v = svc('naval_act_vista_portal()')['r'];
     confirma(($v['ensaio']['versao'] ?? '') === 'v30' && ($v['ensaio']['url'] ?? '') === '../ensaio/reports/', 'vista: ' . json_encode($v['ensaio'] ?? null));
-    confirma(svc('naval_act_decidir("v30", "aprovar", "henrique")')['ok'], 'não aprovou depois do ensaio');
-    // versão que falha nos testes de fumo (erro ao arrancar): fica no ensaio como falhada e não se aprova
+    confirma(svc('naval_act_decidir("v30", "aprovar", "henrique")')['ok'], 'não aprovou depois da pré-produção');
+    // versão que falha nos testes de fumo (erro ao arrancar): fica na pré-produção como falhada e não se aprova
     publicar(['v30' => ['reports/js/util.js' => $util . "\n// v30\n"], 'v31' => ['reports/js/util.js' => $util . "\n// v31\n", 'nucleo/texto.php' => $texto . "\nnaval_funcao_que_nao_existe();\n"]]);
     act('urgente');
     $e = json_decode((string) @file_get_contents($priv . '/actualizacoes/ensaio.json'), true) ?: [];
     confirma(($e['versao'] ?? '') === 'v31' && ($e['resultado'] ?? '') === 'falhou' && $e['falhas'], 'ensaio devia falhar: ' . json_encode($e));
     confirma(h('nucleo/texto.php') !== hash('sha256', $texto . "\nnaval_funcao_que_nao_existe();\n"), 'a falha chegou à produção');
     $d = svc('naval_act_decidir("v31", "aprovar", "henrique")');
-    confirma(!$d['ok'] && strpos($d['erro'], 'falhou nos testes do ensaio') !== false, 'aprovou uma versão falhada: ' . json_encode($d));
+    confirma(!$d['ok'] && strpos($d['erro'], 'falhou nos testes da pré-produção') !== false, 'aprovou uma versão falhada: ' . json_encode($d));
     file_put_contents($env, $antes);
 });
 

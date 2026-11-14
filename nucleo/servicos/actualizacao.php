@@ -730,7 +730,7 @@ function naval_act_aplicar(array $o = []): array
             $origem = 'ficheiro ' . basename($zip);
         } else {
             if (naval_act_exige_aprovacao() && !$o['ensaio']) {
-                // só versões aprovadas no portal (o ensaio «verificar» compara sempre com a mais recente publicada) (página «Actualizações»), presas ao SHA-256 aprovado
+                // só versões aprovadas no portal (a pré-produção «verificar» compara sempre com a mais recente publicada) (página «Actualizações»), presas ao SHA-256 aprovado
                 $versoes = naval_act_versoes();
                 if (!empty($o['avisar_pendentes'])) naval_act_avisar_pendentes($versoes, $estado);
                 $u = naval_act_alvo_aprovado($versoes, $estado, naval_act_aprovacoes());
@@ -996,7 +996,7 @@ function naval_act_decidir(string $versao, string $accao, string $login, string 
         switch ($accao) {
             case 'aprovar':
             case 'forcar':
-                // só a versão que passou no ensaio, com o mesmo pacote (SHA-256)
+                // só a versão que passou na pré-produção, com o mesmo pacote (SHA-256)
                 $sha = naval_act_sha_publicado($v);
                 $bloqueio = naval_act_ensaio_bloqueio($versao, $sha);
                 if ($bloqueio !== '') throw new NavalErro($bloqueio, 409);
@@ -1582,15 +1582,15 @@ function naval_act_apache_incluir(string $raiz): string
     return 'incluída (cópia: ' . basename($copia) . ')';
 }
 
-// ── Ambiente de ensaio dentro do portal (versão nova lado a lado) ──────────────────────────────────────
+// ── Ambiente de pré-produção dentro do portal (versão nova lado a lado) ──────────────────────────────────────
 //
 // Práticas: instalação azul e verde (a versão nova corre ao lado da produção, sem lhe tocar, e só passa a produção
 // depois de aprovada) e lançamento por anéis (anel 0: só os administradores de sistema). A tarefa de 5 em 5 minutos
 // instala a versão publicada mais recente em <portal>/ensaio/, com uma cópia dos dados privados (a produção nunca lê
-// o ensaio), e corre os testes de fumo (arranque, bases de dados e HTTP). A aprovação, manual ou automática às 02:45,
-// só é aceite para a versão que passou no ensaio, com o mesmo SHA-256. ENSAIO=0 desliga o ensaio (e a exigência).
+// a pré-produção), e corre os testes de fumo (arranque, bases de dados e HTTP). A aprovação, manual ou automática às 02:45,
+// só é aceite para a versão que passou na pré-produção, com o mesmo SHA-256. ENSAIO=0 desliga a pré-produção (e a exigência).
 
-/** Pastas da pasta privada que não vão para a cópia do ensaio (sessões, cache, limites, registos e o próprio actualizador). */
+/** Pastas da pasta privada que não vão para a cópia da pré-produção (sessões, cache, limites, registos e o próprio actualizador). */
 const NAVAL_ACT_ENSAIO_SEM_COPIA = ['ensaio', 'sessoes', 'cache', 'limites', 'registos', 'actualizacoes', 'copias-dados', 'conformidade'];
 
 function naval_act_ensaio_ligado(): bool
@@ -1598,7 +1598,7 @@ function naval_act_ensaio_ligado(): bool
     return naval_config('ENSAIO', '1') !== '0' && naval_act_exige_aprovacao();
 }
 
-/** Estado do ensaio: versão, SHA-256, quando, resultado (ok | falhou) e falhas. */
+/** Estado da pré-produção: versão, SHA-256, quando, resultado (ok | falhou) e falhas. */
 function naval_act_ensaio_estado(): array
 {
     return naval_json_ler(naval_act_pasta() . '/ensaio.json', ['versao' => '', 'sha256' => '', 'instalada_em' => '', 'resultado' => '', 'falhas' => []]);
@@ -1620,9 +1620,9 @@ function naval_act_copiar_pasta(string $de, string $para, array $semTopo = []): 
 }
 
 /**
- * Instala no ensaio a versão publicada mais recente ainda não instalada na produção, se ainda não lá estiver. Uma falha
+ * Instala na pré-produção a versão publicada mais recente ainda não instalada na produção, se ainda não lá estiver. Uma falha
  * da instalação (pasta, rede, ficheiros em uso) repete-se sozinha até 3 vezes, de 5 em 5 minutos; uma falha nos testes
- * de fumo não se repete (a versão tem um defeito). «Repetir o ensaio» (Actualizações) recomeça. Devolve o resultado,
+ * de fumo não se repete (a versão tem um defeito). «Repetir na pré-produção» (Actualizações) recomeça. Devolve o resultado,
  * ou null sem nada a fazer.
  * $o: versoes (testes), raiz (testes), sem_http, escrever.
  */
@@ -1692,7 +1692,7 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         if (is_dir($alvo . '.antigo')) throw new NavalActualizacaoErro('Não foi possível apagar a pasta ' . basename($alvo) . '.antigo (ficheiro em uso?).');
         $esperar = $o['esperar'] ?? null;
         if (is_dir($alvo)) naval_act_renomear_pasta($alvo, $alvo . '.antigo', $esperar);
-        elseif (file_exists($alvo)) throw new NavalActualizacaoErro('Existe um ficheiro com o nome da pasta do ensaio: ' . $alvo);
+        elseif (file_exists($alvo)) throw new NavalActualizacaoErro('Existe um ficheiro com o nome da pasta da pré-produção: ' . $alvo);
         naval_act_renomear_pasta($novo, $alvo, $esperar);
         naval_act_limpar_pasta($alvo . '.antigo');
         naval_act_limpar_pasta($dir);
@@ -1712,9 +1712,9 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
         if ($base !== '') $falhas = array_merge($falhas, naval_act_verificar_http($base . '/ensaio'));
         $e = $gravar($falhas ? 'falhou' : 'ok', $falhas, $sha, (bool) $falhas);
         $diz($falhas ? 'Ensaio: FALHA nos testes de fumo: ' . implode('; ', $falhas) : 'Ensaio: testes de fumo passaram.');
-        naval_act_avisar($falhas ? 'versão ' . $v['versao'] . ' falhou no ensaio' : 'versão ' . $v['versao'] . ' pronta a testar no ensaio', $falhas
-            ? array_merge(['A versão ' . $v['versao'] . ' foi instalada no ensaio mas não passou nos testes de fumo; não pode ser aprovada:'], $falhas)
-            : ['A versão ' . $v['versao'] . ' está no ensaio e passou nos testes de fumo.', 'Teste-a em Portal RTM › Administração › Actualizações › «Abrir a versão nova (ensaio)» e aprove ou reprove.']);
+        naval_act_avisar($falhas ? 'versão ' . $v['versao'] . ' falhou na pré-produção' : 'versão ' . $v['versao'] . ' pronta a testar na pré-produção', $falhas
+            ? array_merge(['A versão ' . $v['versao'] . ' foi instalada na pré-produção mas não passou nos testes de fumo; não pode ser aprovada:'], $falhas)
+            : ['A versão ' . $v['versao'] . ' está na pré-produção e passou nos testes de fumo.', 'Teste-a em Portal RTM › Administração › Actualizações › «Abrir a versão nova (pré-produção)» e aprove ou reprove.']);
         return $e;
     } catch (Throwable $ex) {
         return $gravar('falhou', [$ex->getMessage()], (string) ($sha ?? ''));
@@ -1724,18 +1724,18 @@ function naval_act_ensaio_instalar(array $v, array $o = []): array
     }
 }
 
-/** «Repetir o ensaio» (super administrador): a versão volta a instalar-se no ensaio na próxima volta (até 5 minutos). */
+/** «Repetir na pré-produção» (super administrador): a versão volta a instalar-se na pré-produção na próxima volta (até 5 minutos). */
 function naval_act_ensaio_repetir(string $login): void
 {
     $e = naval_act_ensaio_estado();
-    if ($e['versao'] === '' || $e['resultado'] === 'ok') throw new NavalErro('Não há nenhuma instalação falhada no ensaio para repetir.', 409);
+    if ($e['versao'] === '' || $e['resultado'] === 'ok') throw new NavalErro('Não há nenhuma instalação falhada na pré-produção para repetir.', 409);
     naval_json_gravar(naval_act_pasta() . '/ensaio.json', ['versao' => $e['versao'], 'sha256' => '', 'instalada_em' => '', 'resultado' => '', 'falhas' => [], 'tentativas' => 0]);
     naval_act_registar('ensaio_repetir', ['versao' => $e['versao'], 'por' => $login]);
     naval_registar('actualizacao_ensaio_repetir', ['versao' => $e['versao']], $login);
 }
 
 /**
- * Depois de a versão do ensaio chegar à produção, o ensaio já não é preciso: apaga-se o código e a cópia dos dados
+ * Depois de a versão da pré-produção chegar à produção, a pré-produção já não é preciso: apaga-se o código e a cópia dos dados
  * (ISO/IEC 27001, 8.33: os dados de teste apagam-se quando o teste termina). Fica o registo.
  */
 function naval_act_ensaio_limpar(string $raiz): bool
@@ -1752,15 +1752,15 @@ function naval_act_ensaio_limpar(string $raiz): bool
 }
 
 /**
- * Pode aprovar-se esta versão? Com o ensaio ligado: só a que está no ensaio, passou nos testes de fumo e tem o mesmo
+ * Pode aprovar-se esta versão? Com a pré-produção ligada: só a que está na pré-produção, passou nos testes de fumo e tem o mesmo
  * SHA-256 publicado. Devolve o motivo da recusa, ou '' (pode).
  */
 function naval_act_ensaio_bloqueio(string $versao, string $shaPublicado): string
 {
     if (!naval_act_ensaio_ligado()) return '';
     $e = naval_act_ensaio_estado();
-    if ($e['versao'] !== $versao) return 'A versão ' . $versao . ' ainda não está no ensaio: instala-se sozinha nos próximos 5 minutos. Teste-a no ensaio antes de a aprovar.';
-    if ($e['resultado'] !== 'ok') return 'A versão ' . $versao . ' falhou nos testes do ensaio: ' . implode('; ', (array) $e['falhas']);
-    if (!hash_equals((string) $e['sha256'], $shaPublicado)) return 'O pacote da versão ' . $versao . ' mudou depois de instalado no ensaio: aguarde a nova instalação no ensaio.';
+    if ($e['versao'] !== $versao) return 'A versão ' . $versao . ' ainda não está na pré-produção: instala-se sozinha nos próximos 5 minutos. Teste-a na pré-produção antes de a aprovar.';
+    if ($e['resultado'] !== 'ok') return 'A versão ' . $versao . ' falhou nos testes da pré-produção: ' . implode('; ', (array) $e['falhas']);
+    if (!hash_equals((string) $e['sha256'], $shaPublicado)) return 'O pacote da versão ' . $versao . ' mudou depois de instalado na pré-produção: aguarde a nova instalação na pré-produção.';
     return '';
 }

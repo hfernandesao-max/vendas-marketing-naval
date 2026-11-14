@@ -11,6 +11,11 @@ defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_SESSAO_INACTIVA = 900;    // 15 minutos sem actividade (PCI DSS 4.0 8.2.8; OWASP ASVS V7.3)
 const NAVAL_SESSAO_MAXIMA = 36000;    // 10 horas
+// Modo apresentação (projector ou LCD à frente da administração): activado pela própria pessoa, com o recurso
+// «modo-apresentacao» na matriz, por um período limitado e registado. Durante esse período a sessão termina após
+// 60 minutos sem actividade (limite do NIST SP 800-63B-4 para AAL2) e o portal não volta sozinho ao painel.
+const NAVAL_SESSAO_APRESENTACAO = 3600;
+const NAVAL_APRESENTACAO_MINUTOS = [30, 60, 120, 180, 240];
 // Bloqueio: à 3.ª tentativa falhada a conta fica bloqueada até o super administrador a desbloquear
 const NAVAL_MAX_TENTATIVAS = 3;
 // Idioma do portal de cada conta (etiquetas BCP 47 simplificadas): campo obrigatório na ficha; é o idioma em que o
@@ -232,7 +237,7 @@ function naval_otpauth(string $segredo, string $conta): string
  * Abre a sessão autenticada (palavra-passe, chave de acesso ou código QR da app): novo identificador, perfil, registo.
  * $equipamento: app instalada pelo código QR; a sessão só fica ligada a ele se for desta conta e estiver activo.
  */
-/** Ambiente de ensaio: só o super administrador e o administrador da plataforma entram (fora do ensaio: todos). */
+/** Ambiente de pré-produção: só o super administrador e o administrador da plataforma entram (fora da pré-produção: todos). */
 function naval_ensaio_permitido(array $u): bool
 {
     return !naval_ensaio() || in_array((string) ($u['perfil'] ?? ''), NAVAL_PERFIS_ADMIN_SISTEMA, true);
@@ -242,7 +247,7 @@ function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metod
 {
     if (!naval_ensaio_permitido($u)) {
         naval_registar('entrada_recusada', ['motivo' => 'ensaio'], $login);
-        throw new NavalErro('O ambiente de ensaio é só para o super administrador e o administrador da plataforma.', 403);
+        throw new NavalErro('O ambiente de pré-produção é só para o super administrador e o administrador da plataforma.', 403);
     }
     session_regenerate_id(true);
     unset($_SESSION['mfa_pendente'], $_SESSION['csrf'], $_SESSION['app_equipamento_pedido'], $_SESSION['app_equipamento']);   // novo identificador e novo código CSRF
@@ -281,6 +286,19 @@ function naval_sessao_ultima(int $ultima, int $agora, ?int $cliente): int
     return $cliente === null ? $ultima : min($agora, max($ultima, $agora - $cliente));
 }
 
+/** Fim do modo apresentação desta sessão (hora Unix), ou 0 se não estiver activo. */
+function naval_apresentacao_ate(): int
+{
+    $a = (int) ($_SESSION['apresentacao_ate'] ?? 0);
+    return $a > time() ? $a : 0;
+}
+
+/** Tempo de inactividade desta sessão: 15 minutos; 60 durante o modo apresentação. */
+function naval_sessao_inactiva_s(): int
+{
+    return naval_apresentacao_ate() ? NAVAL_SESSAO_APRESENTACAO : NAVAL_SESSAO_INACTIVA;
+}
+
 /**
  * Sessão: termina após 15 minutos sem actividade ou 10 horas, e se a conta deixar de ser válida. As leituras automáticas
  * do portal (dados actualizados a cada 5 minutos, renovação do token) não contam como actividade: a última actividade
@@ -294,8 +312,13 @@ function naval_sessao_valida(): bool
     $ultima = (int) ($_SESSION['ultima_actividade'] ?? $agora);
     $cliente = naval_sessao_inactivo_cliente();
     $ultima = naval_sessao_ultima($ultima, $agora, $cliente);
+    // modo apresentação que chegou ao fim: deixa de valer e fica registado
+    if (!empty($_SESSION['apresentacao_ate']) && (int) $_SESSION['apresentacao_ate'] <= $agora) {
+        unset($_SESSION['apresentacao_ate']);
+        naval_registar('modo_apresentacao_terminado', ['motivo' => 'hora']);
+    }
     $motivo = null;
-    if ($agora - $ultima > NAVAL_SESSAO_INACTIVA) $motivo = 'inactividade';
+    if ($agora - $ultima > naval_sessao_inactiva_s()) $motivo = 'inactividade';
     elseif ($agora - $inicio > NAVAL_SESSAO_MAXIMA) $motivo = 'duracao_maxima';
     elseif (!naval_utilizador()) $motivo = 'conta_invalida';
     elseif ((int) (naval_utilizador()['versao'] ?? 0) !== (int) ($_SESSION['versao_credencial'] ?? 0)) $motivo = 'credenciais_alteradas';

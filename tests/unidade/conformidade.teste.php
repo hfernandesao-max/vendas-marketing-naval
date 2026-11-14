@@ -1,6 +1,6 @@
 <?php
 // Conformidade (ISO/IEC 27001, 27701, ISO 22301): registos invioláveis, contas sem uso, revisão de acessos, cópia
-// cifrada com teste de recuperação, retenção e mascaramento dos dados pessoais do ensaio.
+// cifrada com teste de recuperação, retenção e mascaramento dos dados pessoais da pré-produção.
 naval_servico('conformidade');
 naval_servico('suporte');
 

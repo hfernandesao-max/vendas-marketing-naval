@@ -77,11 +77,11 @@ teste('ensaio no Windows: mudar o nome da pasta tenta de novo com espera; se nun
     naval_act_limpar_pasta($b);
 });
 
-teste('ensaio: «Repetir no ensaio» só depois de uma falha; recomeça as tentativas', function () {
+teste('ensaio: «Repetir na pré-produção» só depois de uma falha; recomeça as tentativas', function () {
     $f = naval_act_pasta() . '/ensaio.json';
     naval_json_gravar($f, ['versao' => 'v9', 'sha256' => 'x', 'instalada_em' => '2026-11-11 21:10:00', 'resultado' => 'ok', 'falhas' => []]);
     lanca(409, function () { naval_act_ensaio_repetir('henrique'); });
-    naval_json_gravar($f, ['versao' => 'v9', 'sha256' => '', 'instalada_em' => '2026-11-11 21:10:00', 'resultado' => 'falhou', 'falhas' => ['Não foi possível activar a pasta nova do ensaio.'], 'tentativas' => 3]);
+    naval_json_gravar($f, ['versao' => 'v9', 'sha256' => '', 'instalada_em' => '2026-11-11 21:10:00', 'resultado' => 'falhou', 'falhas' => ['Não foi possível activar a pasta nova da pré-produção.'], 'tentativas' => 3]);
     naval_act_ensaio_repetir('henrique');
     $e = naval_act_ensaio_estado();
     igual(['v9', '', 0], [$e['versao'], $e['resultado'], $e['tentativas']]);

@@ -2,7 +2,7 @@
  "versao": "1.0",
  "data": "2026-11-09",
  "ambito": {
-  "pt": "Plataforma de Operações Naval (portal Reports e GEO, API, aplicação de equipamentos, ambiente de ensaio e respectivas cópias), as pessoas que a desenvolvem, administram e usam no Grupo Naval Angola, e os fornecedores que a alojam ou com ela se ligam (Cegid Evolution ERP Primavera, Pinguim BO, SAP, Quatenus).",
+  "pt": "Plataforma de Operações Naval (portal Reports e GEO, API, aplicação de equipamentos, ambiente de pré-produção e respectivas cópias), as pessoas que a desenvolvem, administram e usam no Grupo Naval Angola, e os fornecedores que a alojam ou com ela se ligam (Cegid Evolution ERP Primavera, Pinguim BO, SAP, Quatenus).",
   "en": "Naval Operations Platform (Reports and GEO portal, API, equipment app, staging environment and their backups), the people who develop, administer and use it at Grupo Naval Angola, and the suppliers that host it or connect to it (Cegid Evolution ERP Primavera, Pinguim BO, SAP, Quatenus)."
  },
  "normas": [
@@ -86,11 +86,11 @@
    "en": "Retention periods with automatic, logged deletion"
   },
   "MASC": {
-   "pt": "Dados pessoais mascarados no ambiente de ensaio",
+   "pt": "Dados pessoais mascarados no ambiente de pré-produção",
    "en": "Personal data masked in the staging environment"
   },
   "ENSAIO": {
-   "pt": "Ambiente de ensaio separado (só SADM e TI); só se aprova a versão que passou no ensaio com o mesmo SHA",
+   "pt": "Ambiente de pré-produção separado (só SADM e TI); só se aprova a versão que passou na pré-produção com o mesmo SHA",
    "en": "Separate staging environment (SADM and IT only); only the version that passed staging with the same SHA can be approved"
   },
   "CI": {
@@ -1820,7 +1820,7 @@
    "evidencias": [],
    "responsavel": "PD",
    "nota": {
-    "pt": "Não há desenvolvimento subcontratado: o portal é desenvolvido internamente. O código produzido com assistência de IA passa pelas mesmas verificações e pelo ensaio.",
+    "pt": "Não há desenvolvimento subcontratado: o portal é desenvolvido internamente. O código produzido com assistência de IA passa pelas mesmas verificações e pela pré-produção.",
     "en": "There is no outsourced development: the portal is developed in-house. Code produced with AI assistance goes through the same checks and staging."
    }
   },
@@ -1923,7 +1923,7 @@
    },
    "dono": "ADM",
    "nota": {
-    "pt": "Controlos compensatórios: 17 verificações automáticas, ensaio com o mesmo SHA, registos invioláveis e revisão mensal das alterações pela direcção.",
+    "pt": "Controlos compensatórios: 17 verificações automáticas, pré-produção com o mesmo SHA, registos invioláveis e revisão mensal das alterações pela direcção.",
     "en": "Compensating controls: 17 automatic checks, staging with the same SHA, tamper-evident logs and monthly change review by management."
    }
   },

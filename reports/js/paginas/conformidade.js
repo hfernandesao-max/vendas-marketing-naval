@@ -130,7 +130,7 @@ function vigia(pg) {
     tabela({
       id: 'conf-vigia',
       titulo: t('Problemas detectados em produção'),
-      nota: t('Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pelo ensaio.'),
+      nota: t('Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pela pré-produção.'),
       search: false,
       rows: V.problemas || [],
       sort: 'ultimo',

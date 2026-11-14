@@ -234,7 +234,7 @@ function cartaoPendente(v, maisRecente) {
   det.append(el('summary', null, inclui.length > 1 ? t('O que muda neste pacote') : t('O que muda nesta versão')));
   det.append(resumo(inclui.length > 1 ? { ...v, seccoes: v.pacote.seccoes } : v));
   c.append(det);
-  // ensaio (versão nova lado a lado no próprio portal): só se aprova a versão que passou nos testes de fumo do ensaio
+  // pré-produção (versão nova lado a lado no próprio portal): só se aprova a versão que passou nos testes de fumo da pré-produção
   const ens = ESTADO.ensaio;
   const ensaioOk = !ens || (ens.versao === v.versao && ens.resultado === 'ok');
   if (ens && maisRecente) c.append(blocoEnsaio(ens, v));
@@ -243,7 +243,7 @@ function cartaoPendente(v, maisRecente) {
     const aprovar = botao(t('Aprovar'), '', () => decidir(v, 'aprovar', false));
     const ja = botao(t('Aprovar e instalar já'), 'ghost', () => decidir(v, 'aprovar', true));
     aprovar.disabled = ja.disabled = !ensaioOk;
-    if (!ensaioOk) aprovar.title = ja.title = t('Só se aprova depois de a versão passar no ensaio');
+    if (!ensaioOk) aprovar.title = ja.title = t('Só se aprova depois de a versão passar na pré-produção');
     acc.append(
       aprovar,
       ja,
@@ -402,17 +402,17 @@ R.actualizacoes = (pg) => {
   );
 };
 
-/** Estado da versão no ensaio e ligação para a abrir (só SADM e TI entram no ensaio). */
+/** Estado da versão na pré-produção e ligação para a abrir (só SADM e TI entram na pré-produção). */
 function blocoEnsaio(ens, v) {
   const b = el('div', 'act-ensaio');
   b.setAttribute('role', 'status');
   if (ens.versao !== v.versao) {
-    b.append(pill(t('A instalar no ensaio: fica pronta nos próximos 5 minutos'), 'p-serio'));
+    b.append(pill(t('A instalar na pré-produção: fica pronta nos próximos 5 minutos'), 'p-serio'));
     return b;
   }
   if (ens.resultado === 'ok') {
-    b.append(pill(t('No ensaio desde {d} · passou nos testes de fumo', { d: dataHora(ens.instalada_em) }), 'p-ok'));
-    const a = el('a', 'btn sm', t('Abrir a versão nova (ensaio)'));
+    b.append(pill(t('Na pré-produção desde {d} · passou nos testes de fumo', { d: dataHora(ens.instalada_em) }), 'p-ok'));
+    const a = el('a', 'btn sm', t('Abrir a versão nova (pré-produção)'));
     a.href = ens.url;
     a.target = '_blank';
     a.rel = 'noopener';
@@ -422,17 +422,17 @@ function blocoEnsaio(ens, v) {
         'p',
         'note',
         t(
-          'Teste no ensaio o que muda nesta versão (lista em baixo). O ensaio usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.',
+          'Teste na pré-produção o que muda nesta versão (lista em baixo). A pré-produção usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.',
         ),
       ),
     );
   } else if (ens.resultado === '') {
-    b.append(pill(t('A instalar no ensaio: fica pronta nos próximos 5 minutos'), 'p-serio'));
+    b.append(pill(t('A instalar na pré-produção: fica pronta nos próximos 5 minutos'), 'p-serio'));
   } else {
     // falha da instalação (pasta, rede, ficheiro em uso): repete-se sozinha até 3 vezes; falha dos testes: defeito da versão
     b.append(
       pill(
-        t(ens.testes ? 'Falhou nos testes de fumo do ensaio: não pode ser aprovada' : 'A instalação no ensaio falhou: não pode ser aprovada ainda'),
+        t(ens.testes ? 'Falhou nos testes de fumo da pré-produção: não pode ser aprovada' : 'A instalação na pré-produção falhou: não pode ser aprovada ainda'),
         'p-bad',
       ),
     );
@@ -446,13 +446,13 @@ function blocoEnsaio(ens, v) {
           'note',
           (ens.tentativas || 1) < 3
             ? t('Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.', { n: ens.tentativas || 1 })
-            : t('As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».'),
+            : t('As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta da pré-produção em uso) e carregue em «Repetir na pré-produção».'),
         ),
-        botao(t('Repetir no ensaio'), 'sm ghost', () =>
+        botao(t('Repetir na pré-produção'), 'sm ghost', () =>
           pedir({ accao: 'repetir_ensaio' }).then((d) => {
             if (d.cancelado) return;
             if (!d.ok) return toast(t(d.erro || 'Sem resposta do servidor.'), 6000);
-            toast(t('A versão volta a instalar-se no ensaio nos próximos 5 minutos.'), 5000);
+            toast(t('A versão volta a instalar-se na pré-produção nos próximos 5 minutos.'), 5000);
             recarregar();
           }),
         ),

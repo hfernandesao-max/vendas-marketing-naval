@@ -64,14 +64,14 @@ function naval_enviar_email(array $para, string $assunto, string $html, array $a
 {
     $c = naval_email_config();
     $dest = [];
-    // Ambiente de ensaio: o correio só segue para os administradores de sistema, com «[ENSAIO]» no assunto
+    // Ambiente de pré-produção: o correio só segue para os administradores de sistema, com «[PRÉ-PRODUÇÃO]» no assunto
     if (naval_ensaio()) {
         $admin = [];
         foreach (naval_utilizadores() as $u) {
             if (in_array($u['perfil'] ?? '', NAVAL_PERFIS_ADMIN_SISTEMA, true) && naval_email_valido($u['email'] ?? null)) $admin[strtolower((string) $u['email'])] = true;
         }
         $para = array_values(array_filter($para, function ($p) use ($admin) { return isset($admin[strtolower(trim((string) ($p['email'] ?? '')))]); }));
-        $assunto = '[ENSAIO] ' . $assunto;
+        $assunto = '[PRÉ-PRODUÇÃO] ' . $assunto;
     }
     // Domínios autorizados (EMAIL_DOMINIOS_PERMITIDOS no .env, separados por vírgula): impede o envio pela
     // caixa da empresa para endereços externos não previstos. Vazio = qualquer domínio.

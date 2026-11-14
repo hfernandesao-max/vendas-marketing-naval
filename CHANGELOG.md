@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Modo apresentação e ambiente de pré-produção
+
+<!-- paginas: inicio -->
+
+- **Modo apresentação** (menu da conta), para apresentar com o computador ligado a um projector ou LCD: escolhe-se a
+  duração (30 minutos a 4 horas) e o que mostrar — **o portal, a app de gestão, o portal no telemóvel ou o portal e a
+  app lado a lado**. A app corre ao vivo numa moldura de telemóvel no ecrã do computador, com a mesma conta e os mesmos
+  dados; muda-se de vista a qualquer momento na marca discreta do canto do ecrã, que também tem «Ecrã inteiro» e
+  «Terminar».
+- Durante a apresentação, a sessão só termina após 60 minutos sem actividade (NIST SP 800-63B-4, AAL2) e o portal não
+  volta sozinho ao painel; não abrem janelas automáticas. Acaba sozinho à hora marcada.
+- Controlos: recurso «modo-apresentacao» na matriz de acessos (só o super administrador, por omissão); a app no
+  computador só abre dentro do próprio portal e com o modo activo; início, fim e app mostrada ficam registados
+  (ISO/IEC 27001 A.8.15).
+- O ambiente «ensaio» passa a chamar-se **pré-produção** em todo o portal, correios e documentação (ISO/IEC 27001
+  A.8.31). O endereço `/ensaio` e as chaves `ENSAIO` do `.env` mantêm-se, para não mexer na instalação do servidor.
+
 ### Sessão: inactividade real, regresso ao painel e ensaio do OLAP
 
 <!-- paginas: inicio -->

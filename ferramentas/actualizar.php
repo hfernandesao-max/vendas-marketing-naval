@@ -167,7 +167,7 @@ try {
                 $r = naval_act_urgente();
                 // sem pedidos do portal: janela nocturna (aprovação automática às 02:45, instalação às 03:00)
                 if ($r === null) $r = naval_act_noite();
-                // fora disso: a versão nova mais recente instala-se no ensaio (uma vez por versão)
+                // fora disso: a versão nova mais recente instala-se na pré-produção (uma vez por versão)
                 if ($r === null) {
                     try {
                         naval_act_ensaio_ciclo();

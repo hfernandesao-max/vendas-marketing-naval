@@ -17,7 +17,7 @@
  *  5. Retenção (27701, 15489, Lei 22/11): cada tipo de dado tem um prazo; o que passou do prazo é apagado e contado.
  *
  * Problemas (cadeia partida, cópia ou recuperação falhada) vão por correio a ACTUALIZACAO_EMAIL e ficam no registo.
- * Mascaramento dos dados pessoais na cópia do ensaio (27001 8.33): naval_conf_mascarar_pasta.
+ * Mascaramento dos dados pessoais na cópia da pré-produção (27001 8.33): naval_conf_mascarar_pasta.
  */
 defined('NAVAL_NUCLEO') || exit;
 
@@ -320,15 +320,15 @@ function naval_conf_regras_retencao(): array
     return $out;
 }
 
-// ── Ensaio: dados pessoais mascarados ──────────────────────────────────────────────────────────────
+// ── Pré-produção: dados pessoais mascarados ──────────────────────────────────────────────────────────────
 
-/** Campos com dados pessoais que se mascaram na cópia do ensaio. */
+/** Campos com dados pessoais que se mascaram na cópia da pré-produção. */
 const NAVAL_CONF_CAMPOS_PESSOAIS = '/^(nif|nif_cliente|cliente_nif|contribuinte|entity_taxnum|telefone|telemovel|telem|tel|phone|contacto|email|e_mail|morada|endereco)$/i';
 
 /**
- * Mascara os dados pessoais dos JSON de uma pasta (a cópia do ensaio): NIF, telefones, e-mails e moradas passam a um
+ * Mascara os dados pessoais dos JSON de uma pasta (a cópia da pré-produção): NIF, telefones, e-mails e moradas passam a um
  * pseudónimo fixo (as ligações entre ficheiros mantêm-se, o valor real não se recupera). Os e-mails das contas dos
- * administradores de sistema ficam (o ensaio só lhes envia correio a eles). Devolve o número de valores mascarados.
+ * administradores de sistema ficam (a pré-produção só lhes envia correio a eles). Devolve o número de valores mascarados.
  */
 function naval_conf_mascarar_pasta(string $dir): int
 {

@@ -14,7 +14,7 @@ acessos). A rotina corre todas as noites a partir de `CONFORMIDADE_HORA` (02:00)
 | Cópia diária cifrada      | ISO/IEC 27001 8.13, ISO 22301       | Dados privados em AES-256-GCM, 14 dias, cópia para fora do servidor                                                                                |
 | Teste de recuperação      | ISO 22301, ISO/IEC 27001 8.13       | Cada cópia é decifrada e lida de novo: SHA-256 de cada ficheiro, JSON legíveis, cadeia dos registos dentro da cópia                                |
 | Retenção                  | ISO/IEC 27701, ISO 15489, Lei 22/11 | Prazo por tipo de dado; o que passa do prazo é apagado e contado                                                                                   |
-| Dados de teste protegidos | ISO/IEC 27001 8.33                  | No ensaio, NIF, telefones, e-mails e moradas mascarados; o ensaio apaga-se quando a versão chega à produção                                        |
+| Dados de teste protegidos | ISO/IEC 27001 8.33                  | Na pré-produção, NIF, telefones, e-mails e moradas mascarados; a pré-produção apaga-se quando a versão chega à produção                                        |
 | Componentes e licenças    | ISO/IEC 5230 (OpenChain)            | Inventário das bibliotecas (`reports/vendor/componentes.json`), licenças permitidas, SBOM CycloneDX e proveniência em cada versão                  |
 | Suporte e incidentes      | ISO/IEC 20000-1, ISO/IEC 27035      | Pedidos com prioridade e prazo, histórico, causa e lições nos incidentes graves, satisfação; incidente de segurança avisa o SADM de imediato       |
 
