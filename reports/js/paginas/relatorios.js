@@ -366,6 +366,7 @@ function painelDefinicao(doms) {
       ' ' +
       t(d0.desc);
     sec.append(info);
+    if (rel.id) sec.append(subscricao());
   } else sec.append(f);
   return sec;
 }
@@ -427,6 +428,51 @@ function painelFiltros(dom) {
     box.append(det);
   });
   if (!activos.length && !Object.keys(def.filtros || {}).length) box.append(el('p', 'nota', t('Sem filtros: todos os dados da área a que tem acesso.')));
+  return box;
+}
+
+/** «Receber por correio»: aviso com a ligação ao relatório (os números ficam no portal). */
+function subscricao() {
+  const atualF = (rel.r && rel.r.minha_subscricao) || 'nenhuma';
+  const box = el('div', 'rel-subs');
+  box.append(
+    seleccao(
+      t('Receber por correio'),
+      [
+        ['nenhuma', t('Não receber')],
+        ['diaria', t('Todos os dias (07:30)')],
+        ['semanal', t('Às segundas-feiras (07:30)')],
+        ['mensal', t('No dia 1 de cada mês (07:30)')],
+      ],
+      atualF,
+      (v) =>
+        postJson('relatorios', { accao: 'subscrever', id: rel.id, frequencia: v }).then((d) => {
+          if (!d || !d.ok) {
+            toast(t((d && d.erro) || 'Não foi possível concluir a acção.'), 6000);
+            draw();
+            return;
+          }
+          LISTA = { ...LISTA, relatorios: d.relatorios, pode: d.pode };
+          abrirGuardado(rel.id);
+          toast(
+            v === 'nenhuma' ? t('Deixou de receber este relatório por correio.') : t('Vai receber um aviso por correio com a ligação para este relatório.'),
+            4000,
+          );
+          draw();
+        }),
+    ),
+  );
+  box.append(el('p', 'nota', t('O correio leva só o aviso e a ligação: por segurança, os números vêem-se no portal, com as suas permissões.')));
+  if (rel.r && rel.r.subscritores)
+    box.append(
+      el(
+        'p',
+        'nota',
+        rel.r.subscritores === 1
+          ? t('1 pessoa recebe este relatório por correio.')
+          : t('{n} pessoas recebem este relatório por correio.', { n: n0(rel.r.subscritores) }),
+      ),
+    );
   return box;
 }
 

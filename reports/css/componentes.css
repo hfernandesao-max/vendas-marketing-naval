@@ -5193,3 +5193,18 @@ input[type='number']::-webkit-inner-spin-button {
 .rel-lista li .rel-selo {
   margin: 1px 0;
 }
+.rel-subs {
+  margin: 0 18px 14px;
+  display: grid;
+  grid-template-columns: minmax(200px, 320px) minmax(0, 1fr);
+  gap: 4px 16px;
+  align-items: end;
+}
+.rel-subs .nota {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .rel-subs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
