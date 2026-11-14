@@ -83,9 +83,27 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
       m.addEventListener('click', function (e) {
         if (m.classList.contains('toque') && e.target !== b) entrar(false);
       });
+      // Sem toques (iOS 17.4 ou mais recente e Android): a biometria pede-se sozinha. Se o telemóvel recusar logo, sem
+      // mostrar o Face ID (a app ainda não está em primeiro plano ou acabou de voltar), espera que a app fique à frente
+      // e tenta outra vez, até três vezes; só então pede um toque. Um cancelamento da própria pessoa não se repete.
+      var tentativas = 0;
+      function quandoAFrente(f) {
+        if (document.visibilityState === 'visible' && document.hasFocus()) return setTimeout(f, 250);
+        var feito = false;
+        var vai = function () {
+          if (feito || document.visibilityState !== 'visible') return;
+          feito = true;
+          window.removeEventListener('focus', vai);
+          setTimeout(f, 150);
+        };
+        window.addEventListener('focus', vai);
+        document.addEventListener('visibilitychange', vai);
+        setTimeout(vai, 700);
+      }
       function entrar(auto) {
         if (aPedir) return;
         aPedir = true;
+        var inicio = Date.now();
         b.disabled = true;
         m.classList.remove('toque');
         estado.textContent = tr(<?= json_encode($ios ? 'A olhar para si (Face ID)…' : 'A ler a sua impressão digital…') ?>);
@@ -100,7 +118,15 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
           if (r.desactivada || r.sem_chave) return location.reload(); // a página explica o que fazer
           document.getElementById('app-logo').classList.add('parado');
           if (r.cancelado && auto) {
-            pre = usar; // o telemóvel não deixou pedir sem toque: o mesmo desafio serve para o toque
+            pre = usar; // o mesmo desafio serve para a próxima tentativa
+            // recusa imediata (o Face ID nem apareceu): tenta de novo quando a app estiver à frente
+            if (Date.now() - inicio < 800 && tentativas < 3) {
+              tentativas++;
+              estado.textContent = tr(<?= json_encode($ios ? 'A olhar para si (Face ID)…' : 'A ler a sua impressão digital…') ?>);
+              return quandoAFrente(function () {
+                entrar(true);
+              });
+            }
             return precisaToque();
           }
           if (r.cancelado) return precisaToque();
@@ -114,10 +140,18 @@ $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';
       b.addEventListener('click', function () {
         entrar(false);
       });
-      // como nas apps dos bancos: a biometria aparece logo ao abrir e ao voltar à app (quando o telemóvel o permite)
-      entrar(true);
+      // como nas apps dos bancos: a biometria aparece logo ao abrir e ao voltar à app, sem tocar em nada
+      if (document.visibilityState === 'visible' && document.hasFocus()) entrar(true);
+      else
+        quandoAFrente(function () {
+          entrar(true);
+        });
       var voltar = function () {
-        if (document.visibilityState === 'visible' && !aPedir) entrar(true);
+        if (document.visibilityState !== 'visible' || aPedir) return;
+        tentativas = 0;
+        quandoAFrente(function () {
+          entrar(true);
+        });
       };
       document.addEventListener('visibilitychange', voltar);
       window.addEventListener('pageshow', function (e) {

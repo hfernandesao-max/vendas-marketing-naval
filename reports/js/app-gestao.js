@@ -20,7 +20,18 @@ import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
 import { eNC, pendenteDe, recebidoDe, recebidoPorCategoria } from './meios.js';
 import { ligarEspelho } from './espelho.js';
-import { C as CONSULTA, artigos, clientes, cobrancas, documentos, folhaCliente, folhaDocumento, ligarConsulta, vendas } from './app-gestao-consulta.js';
+import {
+  C as CONSULTA,
+  antecipar,
+  artigos,
+  clientes,
+  cobrancas,
+  documentos,
+  folhaCliente,
+  folhaDocumento,
+  ligarConsulta,
+  vendas,
+} from './app-gestao-consulta.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -1721,6 +1732,8 @@ function carregar(fresco) {
   return ind.then(() => {
     E.aLer = false;
     desenhar();
+    // com o resumo no ecrã, os dados das outras secções vêm em segundo plano: cada secção abre logo
+    if (E.ind && E.sessao) antecipar((id) => disponiveis().some(([x]) => x === id));
   });
 }
 
@@ -1774,6 +1787,7 @@ apiJson('sessao').then((s) => {
   if (SEPARADORES.some(([id]) => id === pedido)) E.sep = pedido;
   carregarNotif();
   aplicarIdioma();
+  if (E.ind) antecipar((id) => disponiveis().some(([x]) => x === id));
   // espelho da apresentação: só para quem tem o modo apresentação (no telemóvel e na moldura do portal)
   if (!E.espelho)
     E.espelho = ligarEspelho({

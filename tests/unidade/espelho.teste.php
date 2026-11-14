@@ -33,3 +33,15 @@ teste('espelho: só com a apresentação activa; o estado do ecrã é validado e
     lanca(409, function () use ($login) { naval_espelho_gravar($login, 'abcdefgh12', ['sep' => 'hoje']); });
     @unlink(naval_espelho_ficheiro($login));
 });
+
+teste('espelho: o computador sabe quando o telemóvel já está a seguir (leitura há menos de 6 segundos)', function () {
+    $login = 'teste-espelho-tel';
+    @unlink(naval_espelho_ficheiro($login) . '.tel');
+    verdade(!naval_espelho_telemovel_a_seguir($login), 'sem leituras');
+    naval_espelho_marcar_telemovel($login);
+    verdade(naval_espelho_telemovel_a_seguir($login), 'acabou de ler');
+    @touch(naval_espelho_ficheiro($login) . '.tel', time() - 30);
+    clearstatcache();
+    verdade(!naval_espelho_telemovel_a_seguir($login), 'deixou de ler');
+    @unlink(naval_espelho_ficheiro($login) . '.tel');
+});

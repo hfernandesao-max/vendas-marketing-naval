@@ -4038,6 +4038,11 @@ export const EN = {
   Voltar: 'Back',
   'Só de leitura · os dados não ficam no telefone.': 'Read-only · data is not stored on the phone.',
   '1 nota de crédito': '1 credit note',
+  'Aviso enviado para o telemóvel: um toque abre a app no mesmo ecrã.': 'Notice sent to the phone: one tap opens the app on the same screen.',
+  'O telemóvel já está a seguir a apresentação.': 'The phone is already following the presentation.',
+  'O telemóvel não tem as notificações da app ligadas (na app: Alertas › Notificações).':
+    'The phone does not have the app notifications turned on (in the app: Alerts › Notifications).',
+  'Telemóvel avisado para seguir a apresentação': 'Phone notified to follow the presentation',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

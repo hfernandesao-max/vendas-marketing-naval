@@ -20,6 +20,7 @@ test('modo apresentação: app de gestão no ecrã do computador, lado a lado, s
   await page.route('**/v1/modo-apresentacao*', (r) => {
     const b = r.request().postDataJSON();
     pedidos.push(b);
+    if (b.accao === 'chamar') return r.fulfill({ json: { ok: true, activo: true, ate, inactiva_s: 3600, telemovel: 'avisado' } });
     const activo = b.accao === 'iniciar';
     return r.fulfill({ json: { ok: true, activo, ate: activo ? ate : null, inactiva_s: activo ? 3600 : 900 } });
   });
@@ -31,8 +32,11 @@ test('modo apresentação: app de gestão no ecrã do computador, lado a lado, s
   await dlg.getByLabel('O que mostrar').selectOption('gestao');
   await dlg.getByLabel('Ecrã inteiro').uncheck();
   await dlg.getByRole('button', { name: 'Iniciar apresentação' }).click();
-  await expect.poll(() => pedidos.length).toBe(1);
+  await expect.poll(() => pedidos.length).toBeGreaterThanOrEqual(1);
   expect(pedidos[0]).toMatchObject({ accao: 'iniciar', minutos: 120 });
+  // a app aparece no ecrã: o telemóvel é avisado (um toque abre-o no mesmo ecrã)
+  await expect.poll(() => pedidos.some((x) => x.accao === 'chamar')).toBe(true);
+  await expect(page.locator('#toast')).toContainText('Aviso enviado para o telemóvel');
   // a app ao vivo, numa moldura de telemóvel, no ecrã do computador
   const cena = page.locator('.apres-cena');
   await expect(cena).toBeVisible();
@@ -52,8 +56,7 @@ test('modo apresentação: app de gestão no ecrã do computador, lado a lado, s
   await page.waitForTimeout(1500);
   expect(new URL(page.url()).hash).toMatch(/^#vendas-dia/);
   await barra.getByRole('button', { name: 'Terminar' }).click();
-  await expect.poll(() => pedidos.length).toBe(2);
-  expect(pedidos[1]).toMatchObject({ accao: 'terminar' });
+  await expect.poll(() => pedidos.some((x) => x.accao === 'terminar')).toBe(true);
   await expect(page.locator('.apres-barra')).toHaveCount(0);
   expect(erros).toEqual([]);
 });

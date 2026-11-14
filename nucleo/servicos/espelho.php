@@ -67,6 +67,20 @@ function naval_espelho_estado($e): array
     return $out;
 }
 
+/** O telemóvel da conta está a seguir a apresentação (leu o espelho há menos de 6 segundos)? */
+function naval_espelho_telemovel_a_seguir(string $login): bool
+{
+    $f = naval_espelho_ficheiro($login) . '.tel';
+    return is_file($f) && (int) @filemtime($f) >= time() - 6;
+}
+
+/** Marca que o telemóvel da conta está a ler o espelho (no máximo uma escrita a cada 3 segundos). */
+function naval_espelho_marcar_telemovel(string $login): void
+{
+    $f = naval_espelho_ficheiro($login) . '.tel';
+    if (!is_file($f) || (int) @filemtime($f) < time() - 3) @touch($f);
+}
+
 /** Grava o ecrã de quem está a conduzir; devolve o número de sequência. */
 function naval_espelho_gravar(string $login, string $cliente, $estado): int
 {

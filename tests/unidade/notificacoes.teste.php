@@ -207,3 +207,22 @@ teste('notificações: cada telefone recebe no seu idioma (inglês, tigrínia), 
     nt_limpar();
     unset($GLOBALS['naval_notif_entregar']);
 });
+
+teste('notificações: aviso pessoal (seguir a apresentação) só para os telemóveis da própria pessoa, no idioma de cada um', function () {
+    nt_limpar();
+    $ent = [];
+    $GLOBALS['naval_notif_entregar'] = function ($sub, $msg) use (&$ent) {
+        $ent[] = [$sub['login'], $msg['titulo'], $msg['url'], $msg['tag']];
+        return 201;
+    };
+    [$a] = nt_telefone('a');
+    [$b] = nt_telefone('b');
+    naval_notif_subscrever('chefe', $a, 'iPhone', 'en');
+    naval_notif_subscrever('sup', $b, 'Android', 'pt');
+    // silêncio e preferências não se aplicam: foi a própria pessoa que pediu
+    $n = naval_notif_pessoal('chefe', 'Apresentação no computador', 'Toque…', ['url' => '../gestao/', 'tag' => 'apresentacao',
+        'textos' => ['en' => ['Presentation on the computer', 'Tap…']]], strtotime('2026-11-14 22:30'));
+    igual(1, $n);
+    igual([['chefe', 'Presentation on the computer', '../gestao/', 'apresentacao']], $ent);
+    unset($GLOBALS['naval_notif_entregar']);
+});

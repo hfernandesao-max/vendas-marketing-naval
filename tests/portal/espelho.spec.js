@@ -67,6 +67,9 @@ test('espelho: o que se faz na app no computador aparece no telemóvel e vice-ve
   await p.locator('.apres-barra').getByRole('button', { name: 'App de gestão' }).click();
   const app = p.frameLocator('.apres-tel iframe');
   await expect(app.locator('#ag-h1')).toHaveText('Hoje');
+  // a app já arrancou (o menu tem as secções) — no computador e no telemóvel
+  await expect(app.locator('#ag-separadores button').first()).toBeAttached({ timeout: 15000 });
+  await expect(m.locator('#ag-separadores button').first()).toBeAttached({ timeout: 15000 });
   // no computador, abre «Rotas»: o telemóvel segue, já em português
   await app.locator('#ag-menu-b').click();
   await app.locator('#ag-separadores button', { hasText: 'Rotas' }).click();

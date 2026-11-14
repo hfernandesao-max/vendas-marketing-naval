@@ -36,7 +36,8 @@ export function ligarEspelho({ obter, aplicar, activo, podeUsar, csrf, semGesto 
     const s = JSON.stringify(e);
     const sem = parte(e, semGesto);
     const conduz = Date.now() - st.gestoEm < GESTO;
-    if (s === st.ultimo || (!conduz && sem === st.ultimoSem)) return;
+    // o idioma e a conversa enviam-se sempre que mudam; o resto só quando a pessoa mexe deste lado
+    if (sem === st.ultimoSem && (s === st.ultimo || !conduz)) return;
     st.aEnviar = true;
     st.ultimo = s;
     st.ultimoSem = sem;
@@ -82,8 +83,11 @@ export function ligarEspelho({ obter, aplicar, activo, podeUsar, csrf, semGesto 
             .then(() => {
               st.aplicando = false;
               st.aplicadoEm = Date.now();
+              // o idioma e a conversa ficam como chegaram (o que mudar depois deste lado segue para o outro); o resto
+              // marca-se quando a página assenta (posição)
+              st.ultimoSem = parte(d.estado, semGesto);
               setTimeout(() => {
-                if (st.gestoEm < em) marcar();
+                if (st.gestoEm < em) st.ultimo = JSON.stringify(obter());
               }, 300);
             });
         } else if (d.seq > st.seq && (!d.estado || d.origem === id)) st.seq = d.seq;
