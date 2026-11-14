@@ -178,6 +178,12 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
           saidas: caixa.saidas.map((x) => (x.id === b.id ? { ...x, aprovado_por: 'sara', aprovado_em: '2026-10-26 15:45:00' } : x)),
           versao: caixa.versao + 1,
         };
+      // como o servidor: contagem que não bate sem explicação → 400 com a diferença
+      if (b.accao === 'fechar' && b.contagem !== 1300 && String(b.explicacao || '').length < 5)
+        return r.fulfill({
+          status: 400,
+          json: { ok: false, erro: 'A contagem não bate com o saldo teórico: explique a diferença.', diferenca: b.contagem - 1300 },
+        });
       if (b.accao === 'fechar')
         caixa = {
           ...caixa,
@@ -255,12 +261,23 @@ test('folha de caixa: entregas, talões do TPA e saídas; gravar e fechar com a 
   pedidos.splice(1, 1);
   await page.getByRole('button', { name: 'Validar a caixa' }).click();
   const dlg = page.locator('dialog[open]');
-  await dlg.getByLabel('Dinheiro contado na caixa').fill('1290');
-  await expect(dlg).toContainText('Diferença');
+  // contagem às cegas: nem o saldo esperado nem a diferença aparecem antes de validar; sem campo de valor solto
+  await expect(dlg).not.toContainText(/1\s?300,00/);
+  await expect(dlg.getByLabel('Dinheiro contado na caixa')).toHaveCount(0);
+  await expect(dlg.getByLabel('Explicação da diferença')).toBeHidden();
+  await dlg.getByLabel('Moedas (valor em Kz)').fill('1290');
+  await expect(dlg).not.toContainText('Diferença');
+  await dlg.getByRole('button', { name: 'Validar a caixa' }).click();
+  // não bate: o servidor devolve a diferença; pede-se nova contagem e só então a explicação
+  await expect(dlg).toContainText('Conte de novo as notas');
+  await expect(dlg).toContainText('-10,00');
+  await dlg.getByRole('button', { name: 'Validar a caixa' }).click();
+  await expect(dlg).toContainText('A diferença mantém-se');
   await dlg.getByLabel('Explicação da diferença').fill('troco dado a mais');
   await dlg.getByRole('button', { name: 'Validar a caixa' }).click();
   await expect(page.locator('.cx-cab')).toContainText('Validada, por aprovar (1.º nível)');
-  expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 1290, explicacao: 'troco dado a mais' });
+  expect(pedidos.filter((x) => x.accao === 'fechar').length).toBe(3);
+  expect(pedidos[pedidos.length - 1]).toMatchObject({ accao: 'fechar', contagem: 1290, notas: { moedas: 1290 }, explicacao: 'troco dado a mais' });
   await expect(page.getByRole('button', { name: 'Aprovar (1.º nível)' })).toBeVisible();
   await expect(page.locator('.cx-tab input')).toHaveCount(0);
   expect(erros).toEqual([]);
@@ -371,7 +388,7 @@ test('folha de caixa: uma linha por promotor do Pinguim BO, contagem às cegas p
   await f.getByLabel('Notas de 5000 Kz').fill('2');
   await f.getByLabel('Notas de 1000 Kz').fill('1');
   await f.getByLabel('Moedas (valor em Kz)').fill('500');
-  await expect(f.getByLabel('Dinheiro contado na caixa')).toHaveValue('11500');
+  await expect(f.locator('.cx-notas-tot')).toContainText(/11\s?500,00/);
   await f.getByRole('button', { name: 'Validar a caixa' }).click();
   await expect.poll(() => pedidos.length).toBe(2);
   expect(pedidos[1]).toMatchObject({ accao: 'fechar', contagem: 11500, notas: { 5000: 2, 1000: 1, moedas: 500 } });

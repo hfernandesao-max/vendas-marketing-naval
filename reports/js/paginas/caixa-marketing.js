@@ -459,7 +459,6 @@ R['caixa-marketing'] = (pg) => {
   const promotores = () => Object.entries(D.promotores || {}).map(([r, p]) => [r, r + ' · ' + p]);
   const bancos = () => (D.bancos || []).map((b) => [b, b]);
   const prom = (l) => (D.promotores && D.promotores[l.rota] ? l.rota + ' · ' + D.promotores[l.rota] : l.rota);
-  const teo = () => (ed.saldo_inicial == null ? null : +ed.saldo_inicial + somaDe(ed.entregas) - somaDe(ed.saidas));
   const ent = somaDe(ed.entregas),
     sai = somaDe(ed.saidas),
     si = ed.saldo_inicial == null ? null : +ed.saldo_inicial,
@@ -649,29 +648,26 @@ R['caixa-marketing'] = (pg) => {
         !semTalao() &&
         janela(
           t('Validar a caixa de {d}', { d: dl(dia) }),
-          t('Conte o dinheiro que está na caixa, nota a nota. Saldo teórico: {v}.', { v: kz(teo()) }),
+          t(
+            'Contagem final de todo o dinheiro que está na caixa, nota a nota: saldo do dia anterior + entregas − depósitos. As contagens das entregas conferem cada promotor; esta confere a caixa inteira.',
+          ),
           (b, ft, fechar) => {
-            const teorico = teo();
-            const q = entrada('number', '', { min: 0, step: '0.01', inputMode: 'decimal' });
-            q.setAttribute('aria-label', t('Dinheiro contado na caixa'));
-            // contagem por notas (o total passa para o campo do dinheiro contado)
+            // contagem às cegas (boa prática de controlo de numerário): o valor esperado e a diferença não se mostram
+            // enquanto se conta; o total vem só das notas e moedas. Se não bater, o servidor devolve a diferença:
+            // conta-se de novo e, se se mantiver, explica-se (fica registada no fecho e na aprovação).
+            const aviso = el('p', 'note', t('Contagem às cegas: o saldo esperado só é comparado depois de validar, para a contagem ser independente.'));
             const g = grelhaNotas(null);
-            g.el.addEventListener('input', () => {
-              const tot = g.total();
-              q.value = tot ? String(Math.round(tot * 100) / 100) : '';
-              q.dispatchEvent(new Event('input'));
-            });
             const ex = el('textarea');
             ex.rows = 2;
             ex.maxLength = 300;
             ex.placeholder = t('Explicação da diferença (obrigatória se a contagem não bater)');
             ex.setAttribute('aria-label', t('Explicação da diferença'));
+            ex.hidden = true;
             const dif = el('p', 'note');
-            q.addEventListener('input', () => {
-              dif.textContent = q.value === '' || teorico == null ? '' : t('Diferença: {v}', { v: kz(Number(q.value) - teorico) });
-            });
+            dif.setAttribute('role', 'status');
             const e2 = msgErro();
-            b.append(g.el, q, dif, ex, e2);
+            b.append(aviso, g.el, dif, ex, e2);
+            let tentativas = 0;
             ft.append(
               botao(t('Cancelar'), 'ghost', fechar),
               botao(t('Validar a caixa'), null, () => {
@@ -681,10 +677,24 @@ R['caixa-marketing'] = (pg) => {
                     accao: 'fechar',
                     dia,
                     versao: D.caixa.versao,
-                    contagem: q.value === '' ? null : Number(q.value),
+                    contagem: g.ler() ? Math.round(g.total() * 100) / 100 : null,
                     notas: g.ler(),
-                    explicacao: ex.value,
+                    explicacao: ex.hidden ? '' : ex.value,
                   }).then((x) => {
+                    if (!x.ok && x.diferenca != null) {
+                      tentativas++;
+                      e2.hidden = true;
+                      dif.textContent =
+                        tentativas === 1
+                          ? t(
+                              'A contagem não bate com o saldo esperado (diferença de {v}). Conte de novo as notas e volte a validar; se a diferença se mantiver, explique-a.',
+                              { v: kz(x.diferenca) },
+                            )
+                          : t('A diferença mantém-se ({v}). Explique-a para validar a caixa; fica registada para a aprovação.', { v: kz(x.diferenca) });
+                      ex.hidden = false;
+                      ex.focus();
+                      return;
+                    }
                     if (!x.ok) {
                       e2.hidden = false;
                       e2.textContent = t(x.erro || 'Não foi possível gravar.');
