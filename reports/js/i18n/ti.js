@@ -2409,14 +2409,14 @@ export const TI = {
   Expirada: 'ግዜኡ ሓሊፉ',
   'Já tem a app activa num telemóvel': 'ኣብ ሞባይል ንጡፍ ኣፕ ኣለኩም',
   'Ainda não tem a app no telemóvel': 'ገና ኣብ ሞባይል ኣፕ የብልኩምን',
-  'Versão nova {v} (ensaio)': 'ሓድሽ ስሪት {v} (ፈተነ)',
-  'Só se aprova depois de a versão passar no ensaio': 'እቲ ስሪት ኣብ ፈተነ ምስ ሓለፈ ጥራይ ይጽደቕ',
-  'A instalar no ensaio: fica pronta nos próximos 5 minutos': 'ኣብ ፈተነ ይትከል ኣሎ፡ ኣብ ዝመጽእ 5 ደቒቕ ድሉው ይኸውን',
-  'No ensaio desde {d} · passou nos testes de fumo': 'ካብ {d} ኣብ ፈተነ · ናይ መጀመርታ ፈተናታት ሓሊፉ',
-  'Abrir a versão nova (ensaio)': 'ሓድሽ ስሪት ክፈት (ፈተነ)',
-  'Teste no ensaio o que muda nesta versão (lista em baixo). O ensaio usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.':
+  'Versão nova {v} (pré-produção)': 'ሓድሽ ስሪት {v} (ፈተነ)',
+  'Só se aprova depois de a versão passar na pré-produção': 'እቲ ስሪት ኣብ ፈተነ ምስ ሓለፈ ጥራይ ይጽደቕ',
+  'A instalar na pré-produção: fica pronta nos próximos 5 minutos': 'ኣብ ፈተነ ይትከል ኣሎ፡ ኣብ ዝመጽእ 5 ደቒቕ ድሉው ይኸውን',
+  'Na pré-produção desde {d} · passou nos testes de fumo': 'ካብ {d} ኣብ ፈተነ · ናይ መጀመርታ ፈተናታት ሓሊፉ',
+  'Abrir a versão nova (pré-produção)': 'ሓድሽ ስሪት ክፈት (ፈተነ)',
+  'Teste na pré-produção o que muda nesta versão (lista em baixo). A pré-produção usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.':
     'ኣብዚ ስሪት ዝቕየር ኣብ ፈተነ ፈትኑ (ዝርዝር ኣብ ታሕቲ)። ፈተነ ናይ ሓቂ ሓበሬታ ይጥቀም፡ ኣብ Pinguim BO ንምንባብ ጥራይ፤ ኣብኡ ዝዕቀብ ናብ ስራሕ ኣይሓልፍን።',
-  'Falhou nos testes de fumo do ensaio: não pode ser aprovada': 'ኣብ ናይ መጀመርታ ፈተናታት ፈተነ ኣይሓለፈን፡ ክጽደቕ ኣይክእልን',
+  'Falhou nos testes de fumo da pré-produção: não pode ser aprovada': 'ኣብ ናይ መጀመርታ ፈተናታት ፈተነ ኣይሓለፈን፡ ክጽደቕ ኣይክእልን',
   'Não foi possível ler os módulos.': 'ሞጁላት ክንበቡ ኣይተኻእለን።',
   'Módulo «{m}»: passar a {e}': 'ሞጁል «{m}»፡ ናብ {e} ቀይር',
   'Ex.: piloto com 2 rotas': 'ኣብነት፡ ፈተነ ምስ 2 መስመራት',
@@ -2450,7 +2450,7 @@ export const TI = {
   'Origem dos dados': 'ምንጪ ሓበሬታ',
   'Cada bloco passa a ter dados quando a ligação ao sistema de origem existir. O portal só lê.':
     'ነፍሲ ወከፍ ክፋል ምስ ምንጪ ስርዓት ምርኻብ ምስ ዝህሉ ሓበሬታ የርኢ። እቲ ፖርታል ዘንብብ ጥራይ እዩ።',
-  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e ensaio. Não se desliga.':
+  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e pré-produção. Não se desliga.':
     'መእተዊ (ተጠቀምቲ፡ መገለጺታትን ሰሌዳን)፡ ታሪኽ ምርመራ፡ ምሕዳስ፡ ሞጁላትን ፈተነን። ኣይጠፍእን።',
   'Estado da comunicação dos documentos à AGT, lido do Pinguim BO.': 'ኩነታት ምልኣኽ ሰነዳት ናብ AGT፡ ካብ Pinguim BO ዝተነበ።',
   'Carteira de clientes, cadastros e análise de cadastros.': 'ዝርዝር ዓማዊል፡ ምዝገባታትን ትንተና ምዝገባታትን።',
@@ -2617,7 +2617,7 @@ export const TI = {
   'Conformidade (prova dos controlos ISO; confirmar a revisão de acessos só o super administrador)':
     'ምትእምማን (መረጋገጺ ቁጽጽራት ISO፤ ምርመራ መእተዊታት ልዑል ኣመሓዳሪ ጥራይ የረጋግጽ)',
   'Suporte e incidentes (V: os seus pedidos; G: gerir todos)': 'ደገፍን ፍጻመታትን (V፡ ናቱ ሕቶታት፤ G፡ ኩሉ ምምሕዳር)',
-  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, ensaio e conformidade (prova dos controlos ISO). Não se desliga.':
+  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, pré-produção e conformidade (prova dos controlos ISO). Não se desliga.':
     'መእተዊ (ተጠቀምቲ፡ መገለጺታትን ሰሌዳን)፡ ታሪኽ ምርመራ፡ ምሕዳስ፡ ሞጁላት፡ ፈተነን ምትእምማንን (መረጋገጺ ቁጽጽራት ISO)። ኣይጠፍእን።',
   'Suporte e incidentes': 'ደገፍን ፍጻመታትን',
   'Pedidos de suporte, incidentes e incidentes de segurança, com prioridade, prazo, histórico, causa, lições aprendidas e satisfação (ISO/IEC 20000-1, ISO/IEC 27035).':
@@ -2753,12 +2753,12 @@ export const TI = {
   'Desligar o módulo': 'እቲ ሞጁል ኣጥፍእ',
   'Ligar o módulo para todos': 'እቲ ሞጁል ንኹሉ ኣወልዕ',
   'Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.': 'ፈተነ {n} ካብ 3፦ እቲ ሰርቨር ኣብ ውሽጢ 5 ደቓይቕ ባዕሉ ደጊሙ ክፍትን እዩ።',
-  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».':
+  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta da pré-produção em uso) e carregue em «Repetir na pré-produção».':
     '3 ፈተነታት ፈሺሎም። ነቲ ጠንቂ ኣዕርዩ (ንኣብነት፡ ኣብ ስራሕ ዘሎ ማህደር ፈተነ) ድሕሪኡ «ኣብ ፈተነ ድገሞ» ጠውቑ።',
-  'Repetir no ensaio': 'ኣብ ፈተነ ድገሞ',
-  'A versão volta a instalar-se no ensaio nos próximos 5 minutos.': 'እቲ ሕታም ኣብ ዝመጽእ 5 ደቓይቕ ደጊሙ ኣብ ፈተነ ክጸዓን እዩ።',
-  'A instalação no ensaio falhou: não pode ser aprovada ainda': 'ምጽዓን ኣብ ፈተነ ፈሺሉ፦ ገና ክጸድቕ ኣይክእልን',
-  'Não há nenhuma instalação falhada no ensaio para repetir.': 'ክድገም ዝኽእል ዝፈሸለ ምጽዓን ኣብ ፈተነ የለን።',
+  'Repetir na pré-produção': 'ኣብ ፈተነ ድገሞ',
+  'A versão volta a instalar-se na pré-produção nos próximos 5 minutos.': 'እቲ ሕታም ኣብ ዝመጽእ 5 ደቓይቕ ደጊሙ ኣብ ፈተነ ክጸዓን እዩ።',
+  'A instalação na pré-produção falhou: não pode ser aprovada ainda': 'ምጽዓን ኣብ ፈተነ ፈሺሉ፦ ገና ክጸድቕ ኣይክእልን',
+  'Não há nenhuma instalação falhada na pré-produção para repetir.': 'ክድገም ዝኽእል ዝፈሸለ ምጽዓን ኣብ ፈተነ የለን።',
   Vigilância: 'ምክትታል',
   'última verificação: {d}': 'ናይ መወዳእታ ምርመራ፦ {d}',
   'ainda sem verificações': 'ገና ምርመራ የለን',
@@ -2766,7 +2766,7 @@ export const TI = {
   'Verificações de negócio': 'ምርመራታት ንግዲ',
   'Atenção da vigilância': 'መጠንቀቕታ ምክትታል',
   'Problemas detectados em produção': 'ኣብ ስራሕ ዝተረኽቡ ጸገማት',
-  'Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pelo ensaio.':
+  'Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pela pré-produção.':
     'ብፊርማ ዝተጠርነፉን ብዘይ ውልቃዊ ሓበሬታን። እቶም ኣብ GitHub ዘለዉ ብለይቲ ብፈተነ ይእረሙ፣ ብመንገዲ ፈተነ ድማ ይሓልፉ።',
   Problema: 'ጸገም',
   Última: 'ናይ መወዳእታ',
@@ -3892,6 +3892,37 @@ export const TI = {
   'Por segurança, a sessão termina após {m} minutos sem actividade.': 'ንድሕነት፡ እቲ ክፍለ-ግዜ ድሕሪ {m} ደቓይቕ ዘይምንቅስቓስ ይዛዘም።',
   'Tem alterações por gravar: continue ligado e grave-as.': 'ዘይተዓቀበ ለውጥታት ኣለኩም፦ ተራኺብኩም ጽንሑ እሞ ዕቀብዎም።',
   'Continuar ligado': 'ተራኺብካ ጽናሕ',
+  'Modo apresentação': 'ኣገባብ ምቕራብ',
+  'Para apresentar com o computador ligado a um projector ou LCD. Durante o período escolhido, a sessão só termina após 60 minutos sem actividade e o portal não volta sozinho ao painel. Acaba sozinho à hora marcada e fica registado.':
+    'ኮምፒተር ምስ ፕሮጀክተር ወይ ስክሪን ተራኺቡ ንምቕራብ። ኣብቲ ዝተመርጸ ግዜ፡ እቲ ክፍለ-ግዜ ድሕሪ 60 ደቓይቕ ዘይምንቅስቓስ ጥራይ ይዛዘም፡ እቲ ፖርታል ድማ ባዕሉ ናብ ዳሽቦርድ ኣይምለስን። ኣብቲ ዝተወሰነ ሰዓት ባዕሉ ይውዳእ፡ ይምዝገብ ድማ።',
+  'Duração da apresentação': 'ንውሓት ምቕራብ',
+  'O que mostrar': 'እንታይ ይርአ',
+  '30 minutos': '30 ደቓይቕ',
+  '1 hora': '1 ሰዓት',
+  '2 horas': '2 ሰዓታት',
+  '3 horas': '3 ሰዓታት',
+  '4 horas': '4 ሰዓታት',
+  Portal: 'ፖርታል',
+  'App de gestão': 'ናይ ምሕደራ ኣፕ',
+  'Portal no telemóvel': 'ፖርታል ኣብ ሞባይል',
+  'Portal e app lado a lado': 'ፖርታልን ኣፕን ጎኒ ንጎኒ',
+  'Ecrã inteiro': 'ምሉእ ስክሪን',
+  Duração: 'ንውሓት',
+  'Pode mudar o que mostra a qualquer momento, na marca do modo apresentação.': 'ዝርአ ነገር ኣብ ዝኾነ ግዜ ክትቕይሮ ትኽእል፡ ኣብ ምልክት ኣገባብ ምቕራብ።',
+  'Iniciar apresentação': 'ምቕራብ ጀምር',
+  'Modo apresentação até às {h}.': 'ኣገባብ ምቕራብ ክሳብ {h}።',
+  'O modo apresentação chegou ao fim.': 'ኣገባብ ምቕራብ ተወዲኡ።',
+  'Modo apresentação terminado.': 'ኣገባብ ምቕራብ ተዛዚሙ።',
+  'App no ecrã do computador': 'ኣፕ ኣብ ስክሪን ኮምፒተር',
+  'Apresentação até às {h}': 'ምቕራብ ክሳብ {h}',
+  Terminar: 'ዛዝም',
+  'Modo apresentação (projector ou LCD: app no ecrã do computador; sessão até 60 min sem actividade)':
+    'ኣገባብ ምቕራብ (ፕሮጀክተር ወይ ስክሪን፦ ኣፕ ኣብ ስክሪን ኮምፒተር፤ ክፍለ-ግዜ ክሳብ 60 ደቓይቕ ብዘይ ምንቅስቓስ)',
+  'Modo apresentação iniciado': 'ኣገባብ ምቕራብ ተጀሚሩ',
+  'Modo apresentação terminado': 'ኣገባብ ምቕራብ ተዛዚሙ',
+  'App mostrada no modo apresentação': 'ኣፕ ኣብ ኣገባብ ምቕራብ ተራእዩ',
+  'Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.':
+    'ምእታው፡ ክፍለ-ግዜ፡ ቀንዲ ገጽ፡ መጠንቀቕታታት፡ ምልክታታት ሞባይል፡ ምቕራብ፡ ኣገባብ ምቕራብ፡ ምውጻእን ምርጫታትን። ኣይጠፍእን።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

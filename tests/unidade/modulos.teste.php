@@ -18,7 +18,7 @@ teste('módulos: fichas válidas, versão semântica, dependências que existem 
         verdade($x['nome'] !== '' && $x['descricao'] !== '', 'nome e descrição de ' . $id);
         foreach ($x['depende'] as $d) verdade(isset($m[$d]), $id . ' depende de ' . $d . ', que não existe');
         foreach ($x['conectores'] as $c) verdade(isset(NAVAL_CONECTORES[$c]), $id . ': conector desconhecido ' . $c);
-        verdade(in_array($x['ensaio'], ['normal', 'so_leitura'], true), 'modo do ensaio de ' . $id);
+        verdade(in_array($x['ensaio'], ['normal', 'so_leitura'], true), 'modo da pré-produção de ' . $id);
     }
     // sem ciclos: cada cadeia de dependências termina
     $visitar = function (string $id, array $caminho) use (&$visitar, $m) {
@@ -68,10 +68,10 @@ teste('módulos: ligado para todos, piloto só para SADM e TI, desligado para ni
     igual('ligado', array_column($v['conectores'], 'estado', 'id')['sap'], 'SAP (ficheiro) sempre disponível');
 });
 
-teste('módulos: fora do ensaio, nenhum módulo é só de leitura', function () {
+teste('módulos: fora da pré-produção, nenhum módulo é só de leitura', function () {
     verdade(!naval_ensaio(), 'os testes correm na produção');
-    verdade(!naval_modulo_so_leitura_no_ensaio('equipamentos'), 'equipamentos só lê apenas no ensaio');
+    verdade(!naval_modulo_so_leitura_no_ensaio('equipamentos'), 'equipamentos só lê apenas na pré-produção');
     igual('so_leitura', naval_modulos()['equipamentos']['ensaio']);
-    verdade(naval_ensaio_permitido(['perfil' => 'PRO']), 'fora do ensaio todos entram');
+    verdade(naval_ensaio_permitido(['perfil' => 'PRO']), 'fora da pré-produção todos entram');
     igual('', naval_faixa_ensaio(), 'sem faixa na produção');
 });

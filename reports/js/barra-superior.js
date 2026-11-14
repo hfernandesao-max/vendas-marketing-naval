@@ -9,7 +9,7 @@ import { alternarFavorito, aoMudarFavoritos, eFavorito, MAX_FAVORITOS } from './
 import { normTxt } from './filtros.js';
 import { t, tv } from './i18n/i18n.js';
 import { seccaoDe } from './paginas/catalogo.js';
-import { paginaAtual, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
+import { paginaAtual, paginasVisiveis, podeGerir, podeVer, SESSAO } from './perfil.js';
 import { $, el, svg, toast } from './util.js';
 
 // ───────────── Procurar uma função ─────────────
@@ -212,13 +212,19 @@ function mostrarConta() {
   const tem = !!SESSAO.app_instalada;
   $('#conta-app').classList.toggle('instalada', tem);
   $('#conta-app').title = t(tem ? 'Já tem a app activa num telemóvel' : 'Ainda não tem a app no telemóvel');
-  // ambiente de ensaio (só SADM e TI): a versão nova lado a lado, para testar antes de aprovar
+  // modo apresentação (projector ou LCD): só com o recurso «modo-apresentacao» e fora de uma moldura
+  const ap = $('#conta-apres');
+  if (ap) {
+    ap.hidden = !podeGerir('modo-apresentacao') || window.self !== window.top;
+    $('#conta-apres-t').textContent = t('Modo apresentação');
+  }
+  // ambiente de pré-produção (só SADM e TI): a versão nova lado a lado, para testar antes de aprovar
   const ens = $('#conta-ensaio');
   if (ens) {
     const e = SESSAO.ensaio;
     ens.hidden = !e;
     if (e) {
-      $('#conta-ensaio-t').textContent = t('Versão nova {v} (ensaio)', { v: e.versao });
+      $('#conta-ensaio-t').textContent = t('Versão nova {v} (pré-produção)', { v: e.versao });
       ens.title = t(e.resultado === 'ok' ? 'Passou nos testes de fumo: teste-a antes de a aprovar' : 'Falhou nos testes de fumo');
     }
   }
@@ -286,6 +292,12 @@ export function montarBarraSup() {
     if (!ev.target.closest('#conta')) fecharConta();
   });
   $('#sair').addEventListener('click', sair);
+  const ap = $('#conta-apres');
+  if (ap)
+    ap.addEventListener('click', () => {
+      fecharConta();
+      import('./modo-apresentacao.js').then((m) => m.abrirModoApresentacao());
+    });
   $('#conta-app').addEventListener('click', () => {
     fecharConta();
     import('./app-telemovel.js').then((m) => m.abrirAppTelemovel());

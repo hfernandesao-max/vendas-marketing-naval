@@ -19,7 +19,7 @@
 defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_MODULO_ESTADOS = ['ligado', 'piloto', 'desligado'];
-/** Perfis que vêem os módulos em piloto e o ambiente de ensaio. */
+/** Perfis que vêem os módulos em piloto e o ambiente de pré-produção. */
 const NAVAL_PERFIS_ADMIN_SISTEMA = ['SADM', 'TI'];
 
 /**
@@ -136,7 +136,7 @@ function naval_recurso_disponivel(string $recurso, string $perfil): bool
     return $id === null || naval_modulo_disponivel($id, $perfil);
 }
 
-/** No ensaio, o módulo só lê (escreve em sistemas partilhados com a produção)? */
+/** Na pré-produção, o módulo só lê (escreve em sistemas partilhados com a produção)? */
 function naval_modulo_so_leitura_no_ensaio(string $id): bool
 {
     return naval_ensaio() && (naval_modulos()[$id]['ensaio'] ?? 'normal') === 'so_leitura';

@@ -5219,3 +5219,104 @@ body.sessao-terminada #page,
 body.sessao-terminada #nav {
   visibility: hidden;
 }
+
+/* Modo apresentação (reports/js/modo-apresentacao.js): marca discreta com as vistas, app numa moldura de telemóvel */
+.apres-barra {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147482000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgb(15 29 58 / 0.92);
+  color: #fff;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.apres-barra:hover,
+.apres-barra:focus-within {
+  opacity: 1;
+}
+.apres-barra .btn {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow: none;
+}
+.apres-barra .btn[aria-pressed='true'] {
+  color: #0f1d3a;
+  background: #fff;
+  border-color: #fff;
+}
+.apres-barra .apres-ate {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.apres-cena {
+  --apres-k: 1;
+  position: fixed;
+  inset: 0;
+  z-index: 2147481000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: radial-gradient(ellipse at top, #1e3a78 0%, #0f1d3a 70%);
+}
+.apres-cena-lado {
+  inset: 0 0 0 auto;
+  width: 460px;
+  max-width: 45vw;
+  box-shadow: -8px 0 32px rgb(0 0 0 / 0.3);
+}
+body.apres-lado {
+  padding-right: min(460px, 45vw);
+}
+.apres-tel {
+  width: 418px;
+  height: 872px;
+  padding: 14px;
+  border-radius: 56px;
+  background: #0b1226;
+  box-shadow:
+    0 0 0 2px #3b4d7a,
+    0 24px 60px rgb(0 0 0 / 0.5);
+  transform: scale(var(--apres-k));
+  transform-origin: center;
+  margin: calc((var(--apres-k) - 1) * 436px) calc((var(--apres-k) - 1) * 209px);
+}
+.apres-tel iframe {
+  display: block;
+  width: 390px;
+  height: 844px;
+  border: 0;
+  border-radius: 42px;
+  background: #fff;
+}
+.apres-legenda {
+  margin: 0;
+  color: #dbe6ff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.apres-ec {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+@media print {
+  .apres-barra,
+  .apres-cena {
+    display: none;
+  }
+}

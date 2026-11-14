@@ -27,10 +27,10 @@ function naval_iniciar_sessao(): void
             // sessões activas antes dos 30 minutos, e com muitas pessoas a limpeza corre mais vezes.
             $pastaSessoes = naval_pasta_privada() . '/sessoes';
             if (is_dir($pastaSessoes) || @mkdir($pastaSessoes, 0700, true)) @session_save_path($pastaSessoes);
-            @ini_set('session.gc_maxlifetime', (string) (2 * (defined('NAVAL_SESSAO_INACTIVA') ? NAVAL_SESSAO_INACTIVA : 1800)));
+            @ini_set('session.gc_maxlifetime', (string) (2 * (defined('NAVAL_SESSAO_APRESENTACAO') ? NAVAL_SESSAO_APRESENTACAO : 3600)));
             $seguro = naval_https();
             // Nome próprio do cookie; em HTTPS com o prefixo __Host- (só este site, só HTTPS, caminho /)
-            // (no ensaio, um cookie próprio: a sessão da produção e a do ensaio nunca se misturam)
+            // (na pré-produção, um cookie próprio: a sessão da produção e a da pré-produção nunca se misturam)
             $nome = naval_ensaio() ? 'NAVALENSAIO' : 'NAVALSESS';
             session_name($seguro ? '__Host-' . $nome : $nome);
             if (PHP_VERSION_ID >= 70300) session_set_cookie_params(['path' => '/', 'secure' => $seguro, 'httponly' => true, 'samesite' => 'Lax']);

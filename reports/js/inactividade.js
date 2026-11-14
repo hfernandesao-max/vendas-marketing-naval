@@ -2,7 +2,7 @@
 //   - conta só o que a pessoa faz (rato, teclado, toque, roda), nunca as actualizações automáticas dos dados; a
 //     actividade é partilhada entre os separadores abertos do portal (armazenamento do navegador);
 //   - 5 minutos sem actividade: o portal volta ao painel principal (ecrã limpo), salvo com trabalho por gravar, uma
-//     janela aberta ou a escrever num campo;
+//     janela aberta, a escrever num campo ou no modo apresentação (modo-apresentacao.js; 60 minutos nesse modo);
 //   - 1 minuto antes do fim (15 minutos, definidos pelo servidor): aviso com contagem decrescente e «Continuar ligado»;
 //   - no fim: termina a sessão no servidor e abre a página de entrada com o motivo.
 // Cada pedido à API leva há quantos segundos a pessoa não mexe (cabeçalho X-Inactivo-S): é assim que o servidor
@@ -60,6 +60,9 @@ const ocupado = () =>
   haPorGravar() ||
   !!document.querySelector('dialog[open]') ||
   (document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && document.activeElement.closest('#page'));
+
+/** Modo apresentação activo (modo-apresentacao.js): o portal não volta sozinho ao painel. */
+export const emApresentacao = () => !!(SESSAO && SESSAO.apresentacao && SESSAO.apresentacao * 1000 > Date.now());
 
 function voltarInicio() {
   const inicio = (paginasVisiveis()[0] || {}).id;
@@ -122,7 +125,7 @@ const limite = () => (SESSAO && SESSAO.sessao && +SESSAO.sessao.inactiva_s) || 0
 export function verificarInactividade() {
   if (terminada) return;
   const s = segundosInactivo();
-  if (s >= VOLTAR_INICIO_S) voltarInicio();
+  if (s >= VOLTAR_INICIO_S && !emApresentacao()) voltarInicio();
   const lim = limite();
   if (!lim) return; // sem servidor (ensaios locais): só o regresso ao painel
   if (s >= lim) terminar();
@@ -130,15 +133,15 @@ export function verificarInactividade() {
   else if (aviso) fecharAviso();
 }
 
-let iniciada = false;
-export function iniciarInactividade() {
-  if (iniciada) return;
-  iniciada = true;
-  ultima = Date.now();
-  definirInactividade(segundosInactivo);
+/**
+ * Gestos numa janela (o portal ou uma app mostrada dentro dele, da mesma origem, no modo apresentação): contam como
+ * actividade da pessoa.
+ */
+export function escutarJanela(w) {
   let movido = 0;
-  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((e) => addEventListener(e, mexeu, { passive: true, capture: true }));
-  addEventListener(
+  const o = { passive: true, capture: true };
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((e) => w.addEventListener(e, mexeu, o));
+  w.addEventListener(
     'pointermove',
     () => {
       const a = Date.now();
@@ -147,8 +150,17 @@ export function iniciarInactividade() {
         mexeu();
       }
     },
-    { passive: true, capture: true },
+    o,
   );
+}
+
+let iniciada = false;
+export function iniciarInactividade() {
+  if (iniciada) return;
+  iniciada = true;
+  ultima = Date.now();
+  definirInactividade(segundosInactivo);
+  escutarJanela(window);
   addEventListener('storage', (e) => {
     if (e.key === CHAVE && aviso && segundosInactivo() < limite() - AVISO_S) fecharAviso();
   });

@@ -202,7 +202,7 @@ function naval_vigia_github(array $p, ?int $issue, string &$erro): ?int
             '| Versão instalada | `' . ($estado['versao'] ?: '?') . '` (`' . substr((string) $estado['commit'], 0, 7) . '`) |',
             '| Assinatura | `' . $p['id'] . '` |',
             '',
-            'Correcção esperada: reproduzir com um teste que falha, corrigir e enviar pelo processo de sempre (verificações, ensaio, produção).',
+            'Correcção esperada: reproduzir com um teste que falha, corrigir e enviar pelo processo de sempre (verificações, pré-produção, produção).',
         ]);
         $url = $issue ? $base . '/issues/' . $issue . '/comments' : $base . '/issues';
         $dados = $issue ? ['body' => 'Continua: ' . $p['contagem'] . ' ocorrências, a última em ' . $p['ultimo'] . '.'] : ['title' => '[vigilância] ' . $p['tipo'] . ': ' . mb_substr($p['mensagem'], 0, 120), 'body' => $corpo, 'labels' => ['vigilancia']];

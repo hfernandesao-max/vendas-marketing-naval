@@ -14,12 +14,21 @@ if (!naval_pode('app-gestao')) {
 // Só nos equipamentos registados: a app instala-se e activa-se apenas pelo código QR pessoal do portal
 naval_servico('app-telemovel');
 $eqApp = !empty($_SESSION['app_equipamento']) ? naval_app_activo((string) $_SESSION['app_equipamento']) : null;
-if (!$eqApp) {
+// Excepção documentada (modo apresentação): a app mostra-se no ecrã do computador, só dentro do próprio portal
+// (moldura de telemóvel, Sec-Fetch-Dest: iframe), na mesma sessão já autenticada, com o modo apresentação activo
+// (recurso «modo-apresentacao», período limitado) e com registo. Fora disso, só nos equipamentos registados.
+$previa = !$eqApp && naval_apresentacao_ate() > 0 && naval_pode('modo-apresentacao', 'G') && ($_SERVER['HTTP_SEC_FETCH_DEST'] ?? '') === 'iframe';
+if ($previa) {
+    if (empty($_SESSION['app_previa_registada']) || (int) $_SESSION['app_previa_registada'] !== naval_apresentacao_ate()) {
+        $_SESSION['app_previa_registada'] = naval_apresentacao_ate();
+        naval_registar('app_pre_visualizada', ['app' => 'gestao']);
+    }
+} elseif (!$eqApp) {
     header('Location: ../app/so-pelo-qr.php', true, 302);
     exit;
 }
 // a app só abre com a chave do telemóvel (Face ID, impressão digital ou código de bloqueio): termina a activação
-if (!$eqApp['credenciais']) {
+if (!$previa && !$eqApp['credenciais']) {
     header('Location: ../app/activar.php', true, 302);
     exit;
 }

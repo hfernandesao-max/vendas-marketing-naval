@@ -14,5 +14,5 @@
   },
   "depende": ["nucleo"],
   "ensaio": "so_leitura",
-  "ensaio_motivo": "A base de dados do módulo Equipamentos e o ManageEngine MDM são os da produção: no ensaio o módulo só lê."
+  "ensaio_motivo": "A base de dados do módulo Equipamentos e o ManageEngine MDM são os da produção: na pré-produção o módulo só lê."
 }

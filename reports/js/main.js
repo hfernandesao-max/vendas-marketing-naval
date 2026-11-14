@@ -105,6 +105,7 @@ const lerSessao = () =>
       }
       definirSessao(d && d.permissoes ? d : null);
       iniciarInactividade();
+      if (d && d.apresentacao) import('./modo-apresentacao.js').then((m) => m.iniciarModoApresentacao());
       // aberto como app (ícone no ecrã principal) sem ter sido instalado pelo código QR: não funciona
       const comoApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
       if (d && d.permissoes && comoApp && !d.app) {
@@ -241,7 +242,9 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
     clearTimeout(ldLimite);
     LD.fechar();
     // Super administrador: resumo das actualizações do portal ainda por ver (módulo carregado só para esse perfil)
-    if (SESSAO && SESSAO.perfil === 'SADM') import('./novidades.js').then((m) => m.mostrarNovidades()).catch(() => {});
+    // no modo apresentação não abrem janelas automáticas à frente da administração
+    if (SESSAO && SESSAO.perfil === 'SADM' && !SESSAO.apresentacao && window.self === window.top)
+      import('./novidades.js').then((m) => m.mostrarNovidades()).catch(() => {});
   })
   .catch((e) => {
     console.error(e);

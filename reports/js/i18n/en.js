@@ -2443,14 +2443,14 @@ export const EN = {
   Expirada: 'Expired',
   'Já tem a app activa num telemóvel': 'You already have the app active on a phone',
   'Ainda não tem a app no telemóvel': 'You do not have the app on your phone yet',
-  'Versão nova {v} (ensaio)': 'New version {v} (staging)',
-  'Só se aprova depois de a versão passar no ensaio': 'It can only be approved after the version passes in staging',
-  'A instalar no ensaio: fica pronta nos próximos 5 minutos': 'Installing in staging: ready within the next 5 minutes',
-  'No ensaio desde {d} · passou nos testes de fumo': 'In staging since {d} · passed the smoke tests',
-  'Abrir a versão nova (ensaio)': 'Open the new version (staging)',
-  'Teste no ensaio o que muda nesta versão (lista em baixo). O ensaio usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.':
-    'Test in staging what changes in this version (list below). Staging uses the real data, read-only in Pinguim BO; whatever you save there does not reach production.',
-  'Falhou nos testes de fumo do ensaio: não pode ser aprovada': 'Failed the staging smoke tests: it cannot be approved',
+  'Versão nova {v} (pré-produção)': 'New version {v} (pre-production)',
+  'Só se aprova depois de a versão passar na pré-produção': 'It can only be approved after the version passes in pre-production',
+  'A instalar na pré-produção: fica pronta nos próximos 5 minutos': 'Installing in pre-production: ready within the next 5 minutes',
+  'Na pré-produção desde {d} · passou nos testes de fumo': 'In pre-production since {d} · passed the smoke tests',
+  'Abrir a versão nova (pré-produção)': 'Open the new version (pre-production)',
+  'Teste na pré-produção o que muda nesta versão (lista em baixo). A pré-produção usa os dados verdadeiros, só com leitura no Pinguim BO; o que lá gravar não passa para a produção.':
+    'Test in pre-production what changes in this version (list below). Pre-production uses the real data, read-only in Pinguim BO; whatever you save there does not reach production.',
+  'Falhou nos testes de fumo da pré-produção: não pode ser aprovada': 'Failed the pre-production smoke tests: it cannot be approved',
   'Não foi possível ler os módulos.': 'Could not read the modules.',
   'Módulo «{m}»: passar a {e}': 'Module «{m}»: change to {e}',
   'Ex.: piloto com 2 rotas': 'E.g.: pilot with 2 routes',
@@ -2484,8 +2484,8 @@ export const EN = {
   'Origem dos dados': 'Data sources',
   'Cada bloco passa a ter dados quando a ligação ao sistema de origem existir. O portal só lê.':
     'Each block shows data once the link to the source system exists. The portal only reads.',
-  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e ensaio. Não se desliga.':
-    'Access (users, profiles and matrix), audit history, updates, modules and staging. Cannot be turned off.',
+  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos e pré-produção. Não se desliga.':
+    'Access (users, profiles and matrix), audit history, updates, modules and pre-production. Cannot be turned off.',
   'Estado da comunicação dos documentos à AGT, lido do Pinguim BO.': 'Status of document reporting to AGT, read from Pinguim BO.',
   'Carteira de clientes, cadastros e análise de cadastros.': 'Customer portfolio, registrations and registration analysis.',
   'Cobranças por meio de pagamento e facturas pendentes.': 'Collections by payment method and outstanding invoices.',
@@ -2655,8 +2655,8 @@ export const EN = {
   'Conformidade (prova dos controlos ISO; confirmar a revisão de acessos só o super administrador)':
     'Compliance (evidence of ISO controls; only the super administrator confirms the access review)',
   'Suporte e incidentes (V: os seus pedidos; G: gerir todos)': 'Support and incidents (V: own requests; G: manage all)',
-  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, ensaio e conformidade (prova dos controlos ISO). Não se desliga.':
-    'Access (users, profiles and matrix), audit history, updates, modules, staging and compliance (evidence of ISO controls). Cannot be turned off.',
+  'Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, pré-produção e conformidade (prova dos controlos ISO). Não se desliga.':
+    'Access (users, profiles and matrix), audit history, updates, modules, pre-production and compliance (evidence of ISO controls). Cannot be turned off.',
   'Suporte e incidentes': 'Support and incidents',
   'Pedidos de suporte, incidentes e incidentes de segurança, com prioridade, prazo, histórico, causa, lições aprendidas e satisfação (ISO/IEC 20000-1, ISO/IEC 27035).':
     'Support requests, incidents and security incidents, with priority, deadline, history, cause, lessons learned and satisfaction (ISO/IEC 20000-1, ISO/IEC 27035).',
@@ -2794,12 +2794,12 @@ export const EN = {
   'Desligar o módulo': 'Turn the module off',
   'Ligar o módulo para todos': 'Turn the module on for everyone',
   'Tentativa {n} de 3: o servidor volta a tentar sozinho dentro de 5 minutos.': 'Attempt {n} of 3: the server will try again on its own within 5 minutes.',
-  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta do ensaio em uso) e carregue em «Repetir no ensaio».':
-    'All 3 attempts failed. Fix the cause (for example, a staging folder in use) and press "Repeat in staging".',
-  'Repetir no ensaio': 'Repeat in staging',
-  'A versão volta a instalar-se no ensaio nos próximos 5 minutos.': 'The version will be installed in staging again within the next 5 minutes.',
-  'A instalação no ensaio falhou: não pode ser aprovada ainda': 'Installation in staging failed: it cannot be approved yet',
-  'Não há nenhuma instalação falhada no ensaio para repetir.': 'There is no failed staging installation to repeat.',
+  'As 3 tentativas falharam. Corrija a causa (por exemplo, uma pasta da pré-produção em uso) e carregue em «Repetir na pré-produção».':
+    'All 3 attempts failed. Fix the cause (for example, a pre-production folder in use) and press "Repeat in pre-production".',
+  'Repetir na pré-produção': 'Repeat in pre-production',
+  'A versão volta a instalar-se na pré-produção nos próximos 5 minutos.': 'The version will be installed in pre-production again within the next 5 minutes.',
+  'A instalação na pré-produção falhou: não pode ser aprovada ainda': 'Installation in pre-production failed: it cannot be approved yet',
+  'Não há nenhuma instalação falhada na pré-produção para repetir.': 'There is no failed pre-production installation to repeat.',
   Vigilância: 'Monitoring',
   'última verificação: {d}': 'last check: {d}',
   'ainda sem verificações': 'no checks yet',
@@ -2807,8 +2807,8 @@ export const EN = {
   'Verificações de negócio': 'Business checks',
   'Atenção da vigilância': 'Monitoring alerts',
   'Problemas detectados em produção': 'Problems detected in production',
-  'Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pelo ensaio.':
-    'Grouped by signature, without personal data. Those on GitHub are fixed overnight, with a test, and go through staging.',
+  'Agrupados por assinatura e sem dados pessoais. Os que estão no GitHub são corrigidos de madrugada, com teste, e seguem pela pré-produção.':
+    'Grouped by signature, without personal data. Those on GitHub are fixed overnight, with a test, and go through pre-production.',
   Problema: 'Problem',
   Última: 'Last',
   GitHub: 'GitHub',
@@ -3960,6 +3960,37 @@ export const EN = {
   'Por segurança, a sessão termina após {m} minutos sem actividade.': 'For security, the session ends after {m} minutes of inactivity.',
   'Tem alterações por gravar: continue ligado e grave-as.': 'You have unsaved changes: stay signed in and save them.',
   'Continuar ligado': 'Stay signed in',
+  'Modo apresentação': 'Presentation mode',
+  'Para apresentar com o computador ligado a um projector ou LCD. Durante o período escolhido, a sessão só termina após 60 minutos sem actividade e o portal não volta sozinho ao painel. Acaba sozinho à hora marcada e fica registado.':
+    'For presenting with the computer connected to a projector or LCD. During the chosen period, the session only ends after 60 minutes of inactivity and the portal does not return to the dashboard on its own. It ends by itself at the set time and is logged.',
+  'Duração da apresentação': 'Presentation length',
+  'O que mostrar': 'What to show',
+  '30 minutos': '30 minutes',
+  '1 hora': '1 hour',
+  '2 horas': '2 hours',
+  '3 horas': '3 hours',
+  '4 horas': '4 hours',
+  Portal: 'Portal',
+  'App de gestão': 'Management app',
+  'Portal no telemóvel': 'Portal on the phone',
+  'Portal e app lado a lado': 'Portal and app side by side',
+  'Ecrã inteiro': 'Full screen',
+  Duração: 'Duration',
+  'Pode mudar o que mostra a qualquer momento, na marca do modo apresentação.': 'You can change what is shown at any time, in the presentation mode badge.',
+  'Iniciar apresentação': 'Start presentation',
+  'Modo apresentação até às {h}.': 'Presentation mode until {h}.',
+  'O modo apresentação chegou ao fim.': 'Presentation mode has ended.',
+  'Modo apresentação terminado.': 'Presentation mode ended.',
+  'App no ecrã do computador': 'App on the computer screen',
+  'Apresentação até às {h}': 'Presenting until {h}',
+  Terminar: 'End',
+  'Modo apresentação (projector ou LCD: app no ecrã do computador; sessão até 60 min sem actividade)':
+    'Presentation mode (projector or LCD: app on the computer screen; session up to 60 min of inactivity)',
+  'Modo apresentação iniciado': 'Presentation mode started',
+  'Modo apresentação terminado': 'Presentation mode ended',
+  'App mostrada no modo apresentação': 'App shown in presentation mode',
+  'Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.':
+    'Sign-in, session, home page, alerts, phone notifications, presentation, presentation mode, exports and preferences. Cannot be turned off.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

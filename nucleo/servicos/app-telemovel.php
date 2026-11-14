@@ -113,7 +113,7 @@ function naval_app_codigo_registo(string $codigo): ?array
     return $x ?: null;
 }
 /** Cookie do equipamento (só o identificador, não dá acesso): leva a app à entrada rápida com a biometria. */
-/** Nome do cookie do equipamento (no ensaio, outro: a app da produção nunca perde o seu). */
+/** Nome do cookie do equipamento (na pré-produção, outro: a app da produção nunca perde o seu). */
 function naval_app_cookie_nome(): string
 {
     return naval_ensaio() ? 'naval_eq_ensaio' : 'naval_eq';

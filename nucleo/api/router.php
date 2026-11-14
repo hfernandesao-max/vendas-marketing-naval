@@ -87,6 +87,7 @@ function naval_api_rotas(): array
         'v1/conformidade' => [['GET', 'POST'], 'jwt', 'conformidade.php', []],
         'v1/valor' => [['GET', 'POST'], 'jwt', 'valor.php', []],
         'v1/relatorios' => [['GET', 'POST'], 'jwt', 'relatorios.php', []],
+        'v1/modo-apresentacao' => [['GET', 'POST'], 'jwt', 'modo-apresentacao.php', []],
         'v1/notificacoes' => [['GET', 'POST'], 'jwt', 'notificacoes.php', []],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)
@@ -198,8 +199,8 @@ function naval_api_executar(): void
         // Velocidade: o PHP bloqueia a sessão até ao fim do pedido, e os outros pedidos da mesma pessoa esperavam
         // (ex.: as vendas do mês ainda a ler o SQL Server). A sessão fecha-se já para escrita; continua legível em
         // $_SESSION. Excepção: a gestão de contas, que grava o reforço da autenticação na sessão.
-        // a confirmação da identidade (gestão de contas e aprovação das actualizações) grava na sessão
-        if (!in_array($rota, ['v1/gestao', 'v1/actualizacoes', 'v1/modulos'], true)) {
+        // a confirmação da identidade (gestão de contas e aprovação das actualizações) e o modo apresentação gravam na sessão
+        if (!in_array($rota, ['v1/gestao', 'v1/actualizacoes', 'v1/modulos', 'v1/modo-apresentacao'], true)) {
             naval_csrf();   // garante o código CSRF gravado antes de fechar
             session_write_close();
         }
@@ -217,7 +218,7 @@ function naval_api_executar(): void
     }
     // ensaio: os módulos que escrevem em sistemas partilhados com a produção (ex.: base de dados dos Equipamentos) só lêem
     if ($modulo !== null && $metodo === 'POST' && naval_modulo_so_leitura_no_ensaio($modulo)) {
-        throw new NavalErro((string) (naval_modulos()[$modulo]['ensaio_motivo'] ?? 'No ensaio, esta função só lê.'), 403, ['codigo' => 'ensaio']);
+        throw new NavalErro((string) (naval_modulos()[$modulo]['ensaio_motivo'] ?? 'Na pré-produção, esta função só lê.'), 403, ['codigo' => 'ensaio']);
     }
     // parâmetros fixos da rota (ex.: v1/sap/excel?numero=5 → xlsx=5)
     foreach ($fixos as $k => $v) {

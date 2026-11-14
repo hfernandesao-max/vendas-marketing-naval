@@ -14,11 +14,11 @@ function naval_raiz(): string
 }
 
 /**
- * Ambiente de ensaio (versão nova lado a lado, dentro do portal: «instalação azul e verde»). O actualizador instala a
+ * Ambiente de pré-produção (versão nova lado a lado, dentro do portal: «instalação azul e verde»). O actualizador instala a
  * versão nova em <portal>/ensaio/ com o ficheiro .ambiente-ensaio. Aí, o portal usa o .env da produção (os segredos não
  * se copiam) com estas diferenças: dados privados próprios (<dados-privados>/ensaio, uma cópia feita na instalação),
  * endereço com /ensaio, sem actualizações automáticas, correio só para os administradores de sistema e entrada só para
- * o super administrador e o administrador da plataforma. A produção nunca lê nada do ensaio.
+ * o super administrador e o administrador da plataforma. A produção nunca lê nada da pré-produção.
  */
 function naval_ensaio(): bool
 {
@@ -27,19 +27,19 @@ function naval_ensaio(): bool
     return $e;
 }
 
-/** Raiz da produção: no ensaio, a pasta acima de <portal>/ensaio. */
+/** Raiz da produção: na pré-produção, a pasta acima de <portal>/ensaio. */
 function naval_raiz_producao(): string
 {
     return naval_ensaio() ? dirname(naval_raiz()) : naval_raiz();
 }
 
-/** Dados públicos do portal (reports/data/*.json): no ensaio, os da produção (só leitura). */
+/** Dados públicos do portal (reports/data/*.json): na pré-produção, os da produção (só leitura). */
 function naval_dados_reports(): string
 {
     return naval_raiz_producao() . '/reports/data';
 }
 
-/** Versão instalada no ensaio (ficheiro .ambiente-ensaio, escrito pelo actualizador). */
+/** Versão instalada na pré-produção (ficheiro .ambiente-ensaio, escrito pelo actualizador). */
 function naval_ensaio_versao(): string
 {
     if (!naval_ensaio()) return '';
@@ -47,14 +47,14 @@ function naval_ensaio_versao(): string
     return is_array($j) ? (string) ($j['versao'] ?? '') : '';
 }
 
-/** Faixa fixa «ENSAIO» em todas as páginas do ensaio (nunca se confunde com a produção); vazio na produção. */
+/** Faixa fixa «PRÉ-PRODUÇÃO» em todas as páginas da pré-produção (nunca se confunde com a produção); vazio na produção. */
 function naval_faixa_ensaio(): string
 {
     if (!naval_ensaio()) return '';
     $v = htmlspecialchars(naval_ensaio_versao(), ENT_QUOTES, 'UTF-8');
     return '<div id="faixa-ensaio" role="status" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:#273777;color:#fff;'
         . 'font:600 12px/1.4 system-ui,sans-serif;text-align:center;padding:4px 12px;letter-spacing:.04em;pointer-events:none">'
-        . 'AMBIENTE DE ENSAIO' . ($v !== '' ? ' · versão ' . $v : '') . ' · não é a produção</div>';
+        . 'AMBIENTE DE PRÉ-PRODUÇÃO' . ($v !== '' ? ' · versão ' . $v : '') . ' · não é a produção</div>';
 }
 
 function naval_ficheiro_env(): string
@@ -88,9 +88,9 @@ function naval_env(): array
 }
 
 /**
- * Fontes de dados só do ensaio (ISO/IEC 27001 A.8.31, ambientes separados): ENSAIO_FONTE_<DOMÍNIO> substitui
- * FONTE_<DOMÍNIO> no ensaio (por exemplo, ENSAIO_FONTE_VENDAS=olap para testar o OLAP antes da produção). Só as
- * chaves FONTE_*: o ensaio nunca muda segredos, ligações nem outras definições da produção.
+ * Fontes de dados só da pré-produção (ISO/IEC 27001 A.8.31, ambientes separados): ENSAIO_FONTE_<DOMÍNIO> substitui
+ * FONTE_<DOMÍNIO> na pré-produção (por exemplo, ENSAIO_FONTE_VENDAS=olap para testar o OLAP antes da produção). Só as
+ * chaves FONTE_*: a pré-produção nunca muda segredos, ligações nem outras definições da produção.
  */
 function naval_env_fontes_ensaio(array $env): array
 {

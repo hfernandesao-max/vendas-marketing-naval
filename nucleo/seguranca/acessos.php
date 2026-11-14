@@ -104,6 +104,9 @@ const NAVAL_MATRIZ_TXT = [
     // apresentação do portal (o que já existe e o roteiro), para todos os perfis
     'apresentacao'         => 'V  V  V  V  V  V  V  V  V  V  V',
     'painel-sala'          => 'G  -  G  -  -  -  -  -  -  -  -',
+    // modo apresentação (projector ou LCD): sessão até 60 min sem actividade e app no ecrã do computador; só o super
+    // administrador por omissão, por período limitado e registado
+    'modo-apresentacao'    => '-  -  -  -  -  -  -  -  -  -  -',
     // GEO
     'geo-rotas'            => 'V  V  V  Vr Vr -  -  V  G  V  V',
     'geo-rotas-descarregar' => 'V  -  E  Er Er -  -  E  E  -  -',
@@ -204,6 +207,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'Vr', 'V'];
         case 'painel-sala':
         case 'clientes-qr':
+        case 'modo-apresentacao':
             return ['', 'G'];
         case 'suporte':
         case 'valor-portal':

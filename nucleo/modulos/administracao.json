@@ -2,7 +2,7 @@
   "id": "administracao",
   "nome": "Administração",
   "versao": "1.1.0",
-  "descricao": "Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, ensaio e conformidade (prova dos controlos ISO). Não se desliga.",
+  "descricao": "Acessos (utilizadores, perfis e matriz), histórico de auditoria, actualizações, módulos, pré-produção e conformidade (prova dos controlos ISO). Não se desliga.",
   "nucleo": true,
   "paginas": ["acessos", "auditoria", "actualizacoes", "modulos", "conformidade"],
   "recursos": ["acessos", "auditoria", "actualizacoes", "modulos", "admin-utilizadores", "admin-config", "registos", "conformidade"],
