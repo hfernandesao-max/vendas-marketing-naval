@@ -3880,6 +3880,13 @@ export const TI = {
   '{n} pessoas recebem este relatório por correio.': '{n} ሰባት ነዚ ጸብጻብ ብኢመይል ይቕበሉ።',
   'Previsão de vendas, assistente de IA, painel da sala comercial, gráficos de gestão, resumo diário, fecho do dia, app de gestão, valor do portal para a Naval e explorador de relatórios (criar, guardar, partilhar e certificar relatórios).':
     'ትንበያ መሸጣ፡ ሓጋዚ ሰብ ሰራሕ ኣእምሮ፡ ሰሌዳ ክፍሊ ንግዲ፡ ሰንጠረዛት ምሕደራ፡ ዕለታዊ ጽማቝ፡ መዕጸዊ መዓልቲ፡ መተግበሪ ምሕደራ፡ ዋጋ ፖርታል ንናቫልን መዳህሰሲ ጸብጻባትን (ጸብጻባት ፍጠር፣ ዓቅብ፣ ተኻፈልን ኣረጋግጽን)።',
+  'Contagem final de todo o dinheiro que está na caixa, nota a nota: saldo do dia anterior + entregas − depósitos. As contagens das entregas conferem cada promotor; esta confere a caixa inteira.':
+    'ናይ መወዳእታ ቆጸራ ኩሉ ኣብ ሳጹን ዘሎ ገንዘብ፡ ወረቐት ብወረቐት፦ ሕሳብ ናይ ዝሓለፈት መዓልቲ + ዝተረከበ − ዝተቐመጠ። ቆጸራታት ናይ ምርካብ ነፍሲ ወከፍ ወኪል ይፍትሹ፤ እዚ ድማ ንብምሉኡ ሳጹን ይፍትሽ።',
+  'Contagem às cegas: o saldo esperado só é comparado depois de validar, para a contagem ser independente.':
+    'ዕዉር ቆጸራ፦ እቲ ዝድለ ሕሳብ ድሕሪ ምርግጋጽ ጥራይ ይነጻጸር፡ ቆጸራ ናጻ ምእንቲ ክኸውን።',
+  'A contagem não bate com o saldo esperado (diferença de {v}). Conte de novo as notas e volte a validar; se a diferença se mantiver, explique-a.':
+    'እቲ ቆጸራ ምስቲ ዝድለ ሕሳብ ኣይሰማማዕን (ፍልልይ {v})። ነቶም ወረቓቕቲ ደጊምካ ቁጸሮም እሞ ደጊምካ ኣረጋግጽ፤ እቲ ፍልልይ እንተቐጸለ ግለጾ።',
+  'A diferença mantém-se ({v}). Explique-a para validar a caixa; fica registada para a aprovação.': 'እቲ ፍልልይ ቀጺሉ ኣሎ ({v})። ነቲ ሳጹን ንምርግጋጽ ግለጾ፤ ንምጽዳቕ ይምዝገብ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Fecho de caixa: contagem final às cegas
+
+<!-- paginas: caixa-marketing -->
+
+- A janela «Validar a caixa» explica que é a **contagem final de todo o dinheiro da caixa** (saldo do dia anterior +
+  entregas − depósitos), diferente das contagens de cada entrega, que conferem o promotor.
+- **Contagem às cegas**: o saldo esperado e a diferença deixam de aparecer enquanto se conta; o total vem só das notas e
+  moedas (saiu o campo de valor solto, sem nome).
+- Se a contagem não bater, o portal mostra a diferença e pede **nova contagem**; se se mantiver, pede a explicação, que
+  fica registada para a aprovação (controlo de numerário, COSO; ISO/IEC 27001 A.8.15).
+
 ### Relatórios por correio (subscrições)
 
 <!-- paginas: relatorios -->

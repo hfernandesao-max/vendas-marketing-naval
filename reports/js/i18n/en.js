@@ -3947,6 +3947,14 @@ export const EN = {
   '{n} pessoas recebem este relatório por correio.': '{n} people receive this report by email.',
   'Previsão de vendas, assistente de IA, painel da sala comercial, gráficos de gestão, resumo diário, fecho do dia, app de gestão, valor do portal para a Naval e explorador de relatórios (criar, guardar, partilhar e certificar relatórios).':
     'Sales forecast, AI assistant, sales room panel, management charts, daily summary, end of day, management app, portal value to Naval and report builder (create, save, share and certify reports).',
+  'Contagem final de todo o dinheiro que está na caixa, nota a nota: saldo do dia anterior + entregas − depósitos. As contagens das entregas conferem cada promotor; esta confere a caixa inteira.':
+    "Final count of all the cash in the till, note by note: previous day's balance + hand-ins − deposits. The hand-in counts check each promoter; this one checks the whole till.",
+  'Contagem às cegas: o saldo esperado só é comparado depois de validar, para a contagem ser independente.':
+    'Blind count: the expected balance is only compared after you validate, so that the count is independent.',
+  'A contagem não bate com o saldo esperado (diferença de {v}). Conte de novo as notas e volte a validar; se a diferença se mantiver, explique-a.':
+    'The count does not match the expected balance (difference of {v}). Count the notes again and validate once more; if the difference remains, explain it.',
+  'A diferença mantém-se ({v}). Explique-a para validar a caixa; fica registada para a aprovação.':
+    'The difference remains ({v}). Explain it to validate the till; it is recorded for approval.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',
