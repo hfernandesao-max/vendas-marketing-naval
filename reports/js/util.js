@@ -61,6 +61,8 @@ const ICON = {
   loja: 'M3 9l1.5-5h15L21 9zM3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M5 12v9h14v-9M10 21v-5h4v5',
   lista: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
   kpi: 'M3 18a9 9 0 0 1 18 0M12 18l4-5M6.5 12.5l1 .6M12 9v1.2',
+  // explorador de relatórios: grelha com uma lupa (criar e explorar relatórios)
+  explorar: 'M3 4h10v10H3zM3 9h10M8 4v10M15.5 15.5l5 5M14 18a4 4 0 1 0 0-.01',
   pizza: 'M12 3v9h9a9 9 0 1 1-9-9zM15 3.5A9 9 0 0 1 20.5 9H15z',
   userplus: 'M10 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 21v-1a6 6 0 0 1 6-6h3M18 14v6M15 17h6',
   carrinho: 'M3 4h2l2.5 11h10L20 7H6.2M9 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',

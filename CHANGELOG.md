@@ -4,6 +4,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Criar relatório: explorador de relatórios para todas as áreas do portal
+
+<!-- paginas: relatorios -->
+
+- Nova página **Inteligência de negócio › Criar relatório**. A pessoa escolhe a área de dados, o que quer ver nas
+  linhas (até três níveis) e nas colunas, as medidas e os filtros; o portal monta a tabela cruzada com totais e o
+  gráfico, e ao clicar numa linha mostra o detalhe.
+- **Áreas:** vendas (documentos), vendas por artigo, cobranças, carteira de clientes, cadastros, pedidos dos clientes,
+  plano de cargas, stock, requisições, conciliação das carrinhas (rotas e artigos), fecho de caixa (dias e
+  movimentos), alertas, equipamentos e suporte. Datas por dia, semana ISO, mês, trimestre, ano ou dia da semana.
+- **Os mesmos números dos ecrãs:** as medidas usam as regras da Naval (vendas sem IVA, notas de crédito, cobranças,
+  substituições de facturas, clientes pelo NIF). Cada área só aparece a quem vê a página de origem e mostra só as
+  rotas dessa pessoa.
+- **Relatórios guardados:** pessoais, partilhados com todos (nível G) e **certificados** (selo; certifica outra pessoa
+  que não o autor, controlo dos quatro olhos). Guarda-se só a definição, nunca os dados: quem abre um relatório vê os
+  números com as suas próprias permissões. Cada relatório tem endereço próprio (para favoritos e partilha).
+- **Excel e PDF** com o cabeçalho da Naval, os filtros e a fonte; só para quem pode exportar a área, e cada
+  exportação fica registada.
+
 ### Camada de fontes: Pinguim BO para hoje, OLAP para o histórico conferido, e «Dados até hh:mm»
 
 <!-- paginas: inicio, conformidade, sap-exportar -->

@@ -59,6 +59,7 @@ export const PAGES = [
   { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
   { id: 'painel-carrinha', grupo: 'Logística', icon: 'carrinhaok', nome: 'Painel da carrinha' },
   // Análise: indicadores, previsão e inteligência artificial
+  { id: 'relatorios', grupo: 'Inteligência de negócio', icon: 'explorar', nome: 'Criar relatório' },
   { id: 'previsao', grupo: 'Inteligência de negócio', icon: 'grow', nome: 'Previsão de vendas' },
   { id: 'assistente', grupo: 'Inteligência de negócio', icon: 'ia', nome: 'Assistente IA' },
   { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
@@ -114,6 +115,8 @@ export const NOMES_RECURSO = {
   conformidade: 'Conformidade (prova dos controlos ISO; confirmar a revisão de acessos só o super administrador)',
   suporte: 'Suporte e incidentes (V: os seus pedidos; G: gerir todos)',
   'valor-portal': 'Valor do portal (V: ver o cálculo; G: alterar os parâmetros)',
+  relatorios: 'Criar relatório (V: criar e guardar os seus; G: também partilhar com todos)',
+  'relatorios-certificar': 'Relatórios · certificar (selo «certificado»; outra pessoa que não o autor)',
   'admin-utilizadores': 'Utilizadores e perfis',
   'admin-config': 'Configuração e ligações',
   registos: 'Registos de acesso e exportações',
