@@ -93,6 +93,10 @@ const NAVAL_MATRIZ_TXT = [
     'previsao'             => 'V  V  V  Vr -  -  -  -  -  V  V',
     // valor do portal para a Naval: Direcção gere os parâmetros (G); administrador da plataforma, Financeiro e auditoria vêem
     'valor-portal'         => 'V  G  -  -  -  V  -  -  -  V  -',
+    // explorador de relatórios: todos criam e guardam os seus (V); partilhar com todos (G); os dados de cada área seguem
+    // sempre as permissões e as rotas de quem abre o relatório. Certificar: outra pessoa que não o autor (quatro olhos)
+    'relatorios'           => 'G  G  G  V  V  G  V  V  V  V  V',
+    'relatorios-certificar' => 'G  G  -  -  -  -  -  -  -  -  -',
     'assistente'           => '-  V  -  -  -  -  -  -  -  -  -',
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
     'fecho-dia'            => '-  V  V  V  -  V  -  -  -  V  -',
@@ -203,7 +207,10 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'G'];
         case 'suporte':
         case 'valor-portal':
+        case 'relatorios':
             return ['', 'V', 'G'];
+        case 'relatorios-certificar':
+            return ['', 'G'];
         case 'pedidos-clientes':
         case 'conciliacao-carrinha':
         case 'requisicoes-carrinha':
