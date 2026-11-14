@@ -21,6 +21,12 @@ if (!empty($_SESSION['usuario_autenticado']) && !$valido) {
 // Registo da saída (o portal indica «inactividade» quando a termina sozinho, ao fim do tempo sem actividade)
 $inactividade = ($_POST['motivo'] ?? '') === 'inactividade';
 if (!empty($_SESSION['usuario_login'])) naval_registar($inactividade ? 'sessao_terminada' : 'saida', $inactividade ? ['motivo' => 'inactividade'] : []);
+// sair durante o modo apresentação termina-o também no telemóvel que o seguia
+if (!empty($_SESSION['apresentacao_ate']) && !empty($_SESSION['usuario_login'])) {
+    naval_servico('espelho');
+    naval_espelho_activar((string) $_SESSION['usuario_login'], 0);
+    naval_registar('modo_apresentacao_terminado', ['motivo' => 'saida']);
+}
 
 // Destruir todas as variáveis de sessão
 $_SESSION = [];

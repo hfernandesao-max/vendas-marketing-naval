@@ -24,6 +24,7 @@
     "v1/preferencias",
     "v1/apresentacao",
     "v1/modo-apresentacao",
+    "v1/espelho",
     "v1/alertas",
     "v1/app-telemovel",
     "v1/notificacoes"

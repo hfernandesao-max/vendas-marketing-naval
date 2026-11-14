@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Modo apresentação: a app no computador e no telemóvel ao mesmo tempo, no idioma do portal
+
+<!-- paginas: inicio -->
+
+- **Espelho**: com o modo apresentação activo, a app de gestão mostrada no ecrã do computador e a app no telemóvel da
+  mesma conta mostram **o mesmo ecrã ao mesmo tempo**, nos dois sentidos — separador, período, rota aberta, posição na
+  página e conversa do assistente. Quem mexe conduz; o outro segue em menos de um segundo. No telemóvel, uma faixa diz
+  que está a seguir a apresentação, com «Deixar de seguir».
+- **Idioma**: a app no computador fala o idioma escolhido no portal (já não o do navegador) e o telemóvel que segue a
+  apresentação passa a esse idioma; ao acabar, volta ao idioma do telefone. A marca do modo apresentação tem os botões
+  PT · EN · TI, para mudar de idioma mesmo com a app à frente do portal.
+- Só passa pelo servidor o estado do ecrã (validado; nunca dados de negócio além da conversa do assistente), só para a
+  própria conta, só durante o modo apresentação; cada lado lê os dados com a própria sessão.
+
 ### Modo apresentação e ambiente de pré-produção
 
 <!-- paginas: inicio -->

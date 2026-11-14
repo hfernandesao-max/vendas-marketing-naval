@@ -88,6 +88,7 @@ function naval_api_rotas(): array
         'v1/valor' => [['GET', 'POST'], 'jwt', 'valor.php', []],
         'v1/relatorios' => [['GET', 'POST'], 'jwt', 'relatorios.php', []],
         'v1/modo-apresentacao' => [['GET', 'POST'], 'jwt', 'modo-apresentacao.php', []],
+        'v1/espelho' => [['GET', 'POST'], 'jwt', 'espelho.php', []],
         'v1/notificacoes' => [['GET', 'POST'], 'jwt', 'notificacoes.php', []],
     ];
     // serviços que só existem em algumas instalações (ex.: stock do SQL Server)

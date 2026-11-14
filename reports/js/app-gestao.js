@@ -18,6 +18,7 @@ import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
 import { eNC, pendenteDe, recebidoDe, recebidoPorCategoria } from './meios.js';
+import { ligarEspelho } from './espelho.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -52,7 +53,11 @@ const E = {
   conversa: [],
   aPensar: false,
   aLer: false,
+  espelho: null, // modo apresentação: o ecrã segue o do computador (e vice-versa)
+  idiomaEspelho: '',
 };
+// dentro do portal, no modo apresentação (moldura de telemóvel no ecrã do computador)
+const EMBEBIDO = window.self !== window.top;
 const ICONE = { hoje: 'home', rotas: 'trophy', controlo: 'kpi', alertas: 'sino', assistente: 'ia' };
 const SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
@@ -1476,6 +1481,7 @@ function desenhar() {
     return;
   }
   const filhos = [];
+  if (E.espelho && E.espelho.activo && !EMBEBIDO) filhos.push(faixaEspelho());
   const av = avisoDados();
   if (av && sep[0] !== 'assistente') {
     const f = el('div', 'ag-faixa');
@@ -1484,6 +1490,68 @@ function desenhar() {
     filhos.push(f);
   }
   c.replaceChildren(...filhos, ...sep[2]());
+}
+
+/** Faixa no telemóvel enquanto segue a apresentação do computador, com «Deixar de seguir» / «Voltar a seguir». */
+function faixaEspelho() {
+  const f = el('div', 'ag-faixa ag-espelho');
+  f.setAttribute('role', 'status');
+  const parado = E.espelho.parado;
+  const b = el('button', 'ag-mais', t(parado ? 'Voltar a seguir' : 'Deixar de seguir'));
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    if (parado) E.espelho.seguir();
+    else E.espelho.parar();
+    desenhar();
+  });
+  f.append(
+    el('span', 'ag-al-ic', '⇄'),
+    el('span', null, t(parado ? 'Apresentação em curso no computador.' : 'A mostrar o mesmo ecrã da apresentação no computador.')),
+    b,
+  );
+  return f;
+}
+
+/** Ecrã actual, para o espelho da apresentação. */
+function ecraActual() {
+  const f = $('ag-folha');
+  const aberta = !!(f && f.open);
+  const alvo = aberta ? f : document.scrollingElement || document.documentElement;
+  const max = alvo.scrollHeight - alvo.clientHeight;
+  return {
+    sep: E.sep,
+    periodo: E.periodo,
+    ordem: E.ordemRotas,
+    folha: aberta ? f.dataset.rota || null : null,
+    rolar: max > 0 ? Math.round((alvo.scrollTop / max) * 1000) / 1000 : 0,
+    idioma: LANG,
+    pensar: !!E.aPensar,
+    conversa: E.conversa.slice(-12).map((m) => ({ papel: m.papel, texto: m.texto, erro: !!m.erro })),
+  };
+}
+/** Mostra o ecrã do outro lado (idioma, separador, período, rota aberta, posição e conversa). */
+function aplicarEcra(e) {
+  // o idioma manda-o o portal: a moldura do portal mantém o do portal; o telemóvel passa a esse
+  if (!EMBEBIDO) E.idiomaEspelho = e.idioma || '';
+  const l = EMBEBIDO ? '' : e.idioma;
+  const p = l && l !== LANG ? mudarIdioma(l).then(setFmt) : Promise.resolve();
+  return p.then(() => {
+    document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';
+    if (e.sep && SEPARADORES.some(([x]) => x === e.sep)) E.sep = e.sep;
+    if (e.periodo) E.periodo = e.periodo;
+    if (e.ordem) E.ordemRotas = e.ordem;
+    if (Array.isArray(e.conversa)) E.conversa = e.conversa;
+    E.aPensar = !!e.pensar;
+    desenhar();
+    const f = $('ag-folha');
+    if (e.folha && E.ind) folhaRota(e.folha);
+    else if (f && f.open) f.close();
+    requestAnimationFrame(() => {
+      const g = $('ag-folha');
+      const alvo = g && g.open ? g : document.scrollingElement || document.documentElement;
+      alvo.scrollTop = (+e.rolar || 0) * Math.max(0, alvo.scrollHeight - alvo.clientHeight);
+    });
+  });
 }
 
 function carregar(fresco) {
@@ -1563,6 +1631,22 @@ apiJson('sessao').then((s) => {
   if (SEPARADORES.some(([id]) => id === pedido)) E.sep = pedido;
   carregarNotif();
   aplicarIdioma();
+  // espelho da apresentação: só para quem tem o modo apresentação (no telemóvel e na moldura do portal)
+  if (!E.espelho)
+    E.espelho = ligarEspelho({
+      obter: ecraActual,
+      aplicar: aplicarEcra,
+      podeUsar: () => pode('modo-apresentacao'),
+      csrf: () => E.sessao && E.sessao.csrf,
+      semGesto: EMBEBIDO ? ['idioma', 'conversa', 'pensar'] : ['conversa', 'pensar'],
+      activo: (sim) => {
+        if (!sim) {
+          E.idiomaEspelho = '';
+          aplicarIdioma(); // volta ao idioma do telefone
+        }
+        desenhar();
+      },
+    });
 });
 
 /**
@@ -1576,8 +1660,18 @@ function idiomaDoTelefone() {
   );
   return lista.find((x) => x === 'pt' || x === 'en' || x === 'ti') || '';
 }
+/** Idioma escolhido no portal (dentro da moldura do modo apresentação, a app fala o idioma do portal). */
+function idiomaDoPortal() {
+  try {
+    const v = localStorage.getItem('vm-lang') || '';
+    return ['pt', 'en', 'ti'].includes(v) ? v : 'pt'; // o português é o idioma do portal por omissão
+  } catch (e) {
+    return 'pt';
+  }
+}
 function aplicarIdioma() {
-  const l = idiomaDoTelefone() || (E.sessao && E.sessao.idioma) || 'pt';
+  // a seguir uma apresentação: o idioma de quem apresenta; na moldura do portal: o do portal; senão o do telefone
+  const l = E.idiomaEspelho || (EMBEBIDO && idiomaDoPortal()) || idiomaDoTelefone() || (E.sessao && E.sessao.idioma) || 'pt';
   const p = l !== LANG ? mudarIdioma(l).then(setFmt) : Promise.resolve();
   p.then(() => {
     document.documentElement.lang = { pt: 'pt-PT', en: 'en', ti: 'ti' }[LANG] || 'pt-PT';
@@ -1599,6 +1693,10 @@ function actualizarIdiomaNotif() {
 }
 window.addEventListener('languagechange', () => {
   if (E.sessao) aplicarIdioma();
+});
+// na moldura do portal: muda de idioma quando se muda no portal
+window.addEventListener('storage', (e) => {
+  if (EMBEBIDO && e.key === 'vm-lang' && E.sessao) aplicarIdioma();
 });
 $('ag-actualizar').addEventListener('click', () => {
   if (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') carregarAgora(true);

@@ -3923,6 +3923,10 @@ export const TI = {
   'App mostrada no modo apresentação': 'ኣፕ ኣብ ኣገባብ ምቕራብ ተራእዩ',
   'Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.':
     'ምእታው፡ ክፍለ-ግዜ፡ ቀንዲ ገጽ፡ መጠንቀቕታታት፡ ምልክታታት ሞባይል፡ ምቕራብ፡ ኣገባብ ምቕራብ፡ ምውጻእን ምርጫታትን። ኣይጠፍእን።',
+  'Voltar a seguir': 'ደጊምካ ተኸተል',
+  'Deixar de seguir': 'ምኽታል ኣቋርጽ',
+  'Apresentação em curso no computador.': 'ኣብ ኮምፒተር ምቕራብ ይካየድ ኣሎ።',
+  'A mostrar o mesmo ecrã da apresentação no computador.': 'ከምቲ ኣብ ኮምፒተር ዘሎ ምቕራብ ሓደ ዓይነት ስክሪን ይርኢ ኣሎ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

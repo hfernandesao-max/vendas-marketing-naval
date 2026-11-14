@@ -28,9 +28,13 @@ if ($accao === 'iniciar') {
     $ate = min(time() + $min * 60, (int) ($_SESSION['login_time'] ?? time()) + NAVAL_SESSAO_MAXIMA);
     $_SESSION['apresentacao_ate'] = $ate;
     naval_registar('modo_apresentacao_iniciado', ['minutos' => $min, 'ate' => date('Y-m-d H:i', $ate)]);
+    naval_servico('espelho');
+    naval_espelho_activar((string) (((array) naval_utilizador())['login'] ?? ''), $ate);
 } elseif ($accao === 'terminar') {
     if (!empty($_SESSION['apresentacao_ate'])) naval_registar('modo_apresentacao_terminado', ['motivo' => 'pessoa']);
     unset($_SESSION['apresentacao_ate']);
+    naval_servico('espelho');
+    naval_espelho_activar((string) (((array) naval_utilizador())['login'] ?? ''), 0);
 } else {
     throw new NavalErro('Acção desconhecida.', 400);
 }
