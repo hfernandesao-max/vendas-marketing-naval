@@ -4,12 +4,15 @@
 import { draw } from './app.js';
 import { fecharAberto } from './componentes/barra-filtros.js';
 import { haPorGravar } from './componentes/rascunho.js';
-import { fetchVendas, pedirFresco } from './fontes.js';
+import { DADOS, fetchVendas, pedirFresco } from './fontes.js';
 import { t } from './i18n/i18n.js';
 import { aplicarPreset, periodoAberto, presets, st } from './periodo.js';
 import { $, el, svg } from './util.js';
 
 export const INTERVALO = 5 * 60000;
+// dados de hoje com mais de 15 minutos: aviso a âmbar (actualidade, ISO/IEC 25012)
+const ATRASO = 15 * 60000;
+const FONTES = { pinguim: 'Pinguim BO', olap: 'histórico do OLAP', misto: 'histórico do OLAP e hoje do Pinguim BO' };
 let actualizadoEm = 0,
   aActualizar = false;
 
@@ -61,17 +64,25 @@ export function mostrarActualizacao() {
   box.replaceChildren();
   if (!actualizadoEm) return;
   const aberto = periodoAberto();
-  box.classList.toggle('vivo', aberto);
+  // hora a que os dados foram lidos da fonte (cabeçalho da API; sem ele, a hora do pedido) e a fonte de cada parte
+  const lido = DADOS.ate ? Date.parse(String(DADOS.ate).replace(' ', 'T')) || actualizadoEm : actualizadoEm;
+  const atrasado = aberto && Date.now() - lido > ATRASO;
+  box.classList.toggle('vivo', aberto && !atrasado);
+  box.classList.toggle('atrasado', atrasado);
+  const fonte = FONTES[DADOS.fonte] ? ' · ' + t(FONTES[DADOS.fonte]) : '';
   box.append(
     el('i', 'actual-dot'),
     el(
       'span',
       null,
-      aberto
-        ? t('Informação actual · actualizada às {h} · actualiza sozinha a cada 5 min', { h: hora(actualizadoEm) })
-        : t('Período fechado · dados lidos às {h}', { h: hora(actualizadoEm) }),
+      (aberto
+        ? t('Informação actual · dados até {h} · actualiza sozinha a cada 5 min', { h: hora(lido) })
+        : t('Período fechado · dados lidos às {h}', { h: hora(lido) })) + fonte,
     ),
   );
+  box.title = atrasado
+    ? t('Os dados têm mais de 15 minutos: carregue em «Actualizar» ou verifique a ligação ao Pinguim BO (indicador das fontes, no menu).')
+    : '';
   const b = el('button', 'linkbtn actual-btn');
   b.type = 'button';
   b.innerHTML = svg('actualizar'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
@@ -86,4 +97,5 @@ export function mostrarActualizacao() {
 }
 
 setInterval(verificar, 60000);
+setInterval(mostrarActualizacao, 60000); // o aviso dos dados atrasados aparece sem esperar por outro desenho
 document.addEventListener('visibilitychange', verificar);

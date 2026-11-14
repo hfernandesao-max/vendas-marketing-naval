@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## 14-11-2026
 
+### Camada de fontes: Pinguim BO para hoje, OLAP para o histórico conferido, e «Dados até hh:mm»
+
+<!-- paginas: inicio, conformidade, sap-exportar -->
+
+- **Camada de fontes das vendas** (documentos, linhas e pagamentos): hoje vem sempre do Pinguim BO; os dias anteriores
+  podem vir do OLAP, mas só os que têm a carga concluída e foram **conferidos sem diferenças** depois dessa carga. As
+  regras do portal (IVA, notas de crédito, anulados, devoluções e substituições) aplicam-se do mesmo modo às duas
+  fontes. Escolha no servidor com `FONTE_VENDAS`: `pinguim` (por omissão, nada muda), `paralelo` ou `olap`.
+- **Contrato de dados** do OLAP (esquema `rtm`, versão 1.0, em `docs/OLAP-CONTRATO.md`): o portal confirma as colunas
+  de hora a hora; sem o contrato completo, lê do Pinguim BO.
+- **Conferência diária** dos últimos 7 dias (06:00), por dia e rota: documentos, totais com e sem IVA, linhas,
+  quantidades, total bruto e pagamentos por meio. Diferenças vão por correio e aparecem em Conformidade › Vigilância e
+  conferência.
+- **Disjuntor**: 3 falhas do OLAP em 5 minutos param as consultas durante 5 minutos e o portal lê do Pinguim BO.
+- **«Dados até hh:mm»** no topo de cada ecrã, com a hora a que os dados foram lidos da fonte e a fonte (Pinguim BO,
+  histórico do OLAP); com mais de 15 minutos nos dados de hoje, aviso a âmbar. O indicador das fontes, no menu, mostra
+  também o OLAP e até que dia o histórico está conferido.
+- **Ficheiro para o SAP sempre do Pinguim BO** (fonte de registo fiscal): se o histórico do OLAP estiver carregado, a
+  página volta a ler as vendas do Pinguim BO antes de gerar. A estrutura do ficheiro não muda.
+
 ### Fecho de caixa em PDF
 
 <!-- paginas: caixa-marketing -->

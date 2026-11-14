@@ -1084,6 +1084,13 @@ section.sec[hidden] {
   box-shadow: 0 0 0 3px rgb(var(--ceu-rgb) / 0.18);
   animation: actualPulso 2.4s ease-in-out infinite;
 }
+/* dados de hoje com mais de 15 minutos: aviso a âmbar */
+.actual.atrasado .actual-dot {
+  background: var(--warn);
+}
+.actual.atrasado > span {
+  color: var(--warn);
+}
 @keyframes actualPulso {
   50% {
     box-shadow: 0 0 0 6px rgb(var(--ceu-rgb) / 0);

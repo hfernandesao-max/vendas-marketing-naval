@@ -282,7 +282,13 @@ function naval_bd_para_odbc(string $v): string
 function naval_bd_consultar(string $sql, array $parametros = []): array
 {
     naval_bd_so_leitura($sql);
-    $pdo = naval_bd();
+    return naval_bd_consultar_em(naval_bd(), $sql, $parametros);
+}
+
+/** SELECT com parâmetros numa ligação dada (ex.: o OLAP), com a mesma guarda só de leitura e o texto em UTF-8. */
+function naval_bd_consultar_em(PDO $pdo, string $sql, array $parametros = []): array
+{
+    naval_bd_so_leitura($sql);
     if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'odbc') {
         $sql = naval_bd_para_odbc($sql);
         foreach ($parametros as $k => $v) if (is_string($v)) $parametros[$k] = naval_bd_para_odbc($v);

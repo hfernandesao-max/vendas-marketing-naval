@@ -272,6 +272,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conformidade] ' . $e->getMessage());
     }
+    // fontes de dados: conferência diária OLAP × Pinguim BO dos últimos 7 dias (FONTE_VENDAS=paralelo ou olap)
+    try {
+        naval_servico('fontes');
+        $f = naval_fontes_noite($agora);
+        if ($f !== null) $feito['fontes'] = count($f['problemas']);
+    } catch (Throwable $e) {
+        error_log('[fontes] ' . $e->getMessage());
+    }
     // notificações no telemóvel: rotas paradas, vendas anuladas, carrinhas por aprovar e resumo do dia (NOTIFICACOES)
     try {
         naval_servico('notificacoes');

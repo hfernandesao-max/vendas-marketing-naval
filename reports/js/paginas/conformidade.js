@@ -8,7 +8,7 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
-import { n0 } from '../formatos.js';
+import { dl, n0 } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { postJson } from '../servidor.js';
@@ -396,6 +396,83 @@ function ligacoes(pg) {
   );
 }
 
+const MODO_FONTE = {
+  pinguim: 'Pinguim BO (o OLAP não é usado)',
+  paralelo: 'Em conferência: mostra o Pinguim BO e confere o OLAP todas as manhãs',
+  olap: 'OLAP nos dias conferidos; hoje e os restantes do Pinguim BO',
+};
+const MEDIDA = { documentos: 'documentos', total: 'total com IVA', sem_iva: 'total sem IVA', linhas: 'linhas', quantidade: 'quantidade', bruto: 'total bruto' };
+
+/** Fontes de dados: modo das vendas, contrato do OLAP e a conferência diária OLAP × Pinguim BO dos últimos 7 dias. */
+function fontesDados(pg) {
+  const f = CF.fontes;
+  if (!f || !f.olap) return;
+  const ok = (f.dias || []).filter((d) => d.conferido === true).length;
+  pg.append(
+    tiles([
+      {
+        l: t('Vendas: fonte do histórico'),
+        v: t(f.vendas === 'olap' ? 'OLAP' : f.vendas === 'paralelo' ? 'Em conferência' : 'Pinguim BO'),
+        s: t(MODO_FONTE[f.vendas] || ''),
+      },
+      {
+        l: t('Contrato de dados (rtm v{v})', { v: f.contrato }),
+        v: f.contrato_ok ? t('Completo') : t('Incompleto'),
+        s: f.contrato_ok ? '' : f.contrato_erro ? t('sem resposta do OLAP') : t('{n} colunas em falta', { n: n0((f.contrato_faltam || []).length) }),
+        tone: f.contrato_ok ? null : 'bad',
+      },
+      {
+        l: t('Dias conferidos (últimos 7)'),
+        v: n0(ok) + ' / ' + n0((f.dias || []).length),
+        s: f.conferido_ate ? t('conferido até {d}', { d: dl(f.conferido_ate.dia) }) : t('ainda nenhum'),
+        tone: ok < (f.dias || []).length ? 'warn' : null,
+      },
+      {
+        l: t('Disjuntor do OLAP'),
+        v: f.disjuntor ? t('Em pausa') : t('Fechado'),
+        s: f.disjuntor ? t('até {h}', { h: String(f.disjuntor).slice(11, 16) }) : t('consultas normais'),
+        tone: f.disjuntor ? 'bad' : null,
+      },
+    ]),
+  );
+  if (!f.contrato_ok && (f.contrato_faltam || []).length) {
+    const ul = el('ul');
+    f.contrato_faltam.forEach((x) => ul.append(el('li', null, x)));
+    pg.append(secBox(t('Colunas do contrato em falta no OLAP'), t('Enquanto faltarem, as vendas vêm do Pinguim BO.'), ul));
+  }
+  pg.append(
+    tabela({
+      id: 'conf-fontes',
+      titulo: t('Conferência diária OLAP × Pinguim BO'),
+      nota: t(
+        'Por dia e rota: documentos, totais com e sem IVA, linhas, quantidades e pagamentos por meio. Um dia só passa a ser lido do OLAP depois de conferido sem diferenças.',
+      ),
+      search: false,
+      rows: (f.dias || []).map((d) => ({
+        ...d,
+        estado: d.conferido === true ? 'ok' : d.conferido === false ? 'dif' : 'por',
+        resumo: (d.diferencas || [])
+          .slice(0, 3)
+          .map((x) => t('rota {r}: {m} Pinguim BO {a} × OLAP {b}', { r: x.rota, m: t(MEDIDA[x.medida] || x.medida), a: x.pinguim, b: x.olap }))
+          .join(' · '),
+      })),
+      cols: [
+        { key: 'dia', label: t('Dia'), p: 0, render: (v) => document.createTextNode(dl(v)) },
+        { key: 'carga_fim', label: t('Carga do OLAP'), render: (v) => document.createTextNode(v ? dh(v) : '—') },
+        { key: 'em', label: t('Conferido em'), render: (v) => document.createTextNode(v ? dh(v) : '—') },
+        { key: 'documentos', label: t('Documentos'), type: 'n' },
+        {
+          key: 'estado',
+          label: t('Resultado'),
+          render: (v) =>
+            pill(t(v === 'ok' ? 'Conferido' : v === 'dif' ? 'Com diferenças' : 'Por conferir'), v === 'ok' ? 'p-ok' : v === 'dif' ? 'p-serio' : 'p-mut'),
+        },
+        { key: 'resumo', label: t('Diferenças') },
+      ],
+    }),
+  );
+}
+
 /** Grupo de relatórios da página (ver organizarGrupos em navegacao.js). junto = os relatórios lêem-se seguidos. */
 function grupo(pg, chave, titulo, junto) {
   const g = el('div', 'rel-grupo');
@@ -480,6 +557,7 @@ R.conformidade = (pg) => {
     gResumo.append(secBox(t('Por configurar no servidor'), t('Uma vez, pela Informática; o resto é automático.'), ul));
   }
   ligacoes(gResumo);
+  fontesDados(gVigia);
   const contas = [
     ...(con.desligadas || []).map((c) => ({ ...c, estado: 'desligada' })),
     ...(con.a_desligar || []).map((c) => ({ ...c, estado: 'a_desligar' })),

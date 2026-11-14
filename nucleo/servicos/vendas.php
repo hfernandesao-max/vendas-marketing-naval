@@ -506,6 +506,17 @@ function naval_ve_vendas(): bool
  */
 function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $itens): ?array
 {
+    // camada de fontes: os dias já carregados e conferidos no OLAP vêm do OLAP (FONTE_VENDAS=olap); hoje e o resto,
+    // do Pinguim BO. As regras do portal (devoluções, substituições) aplicam-se uma vez, ao conjunto.
+    naval_servico('fontes');
+    $x = naval_fontes_vendas($inicio, $fim, $promotores, $itens);
+    if ($x === null) return null;
+    return ['vendas' => naval_vendas_substituicoes(naval_vendas_devolucoes($x['vendas'])), 'artigos' => $x['artigos']];
+}
+
+/** Documentos (e linhas, com $itens) do período lidos do Pinguim BO, sem as regras do portal. null se não responder. */
+function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bool $itens): ?array
+{
     if (!naval_bd_configurada()) return null;
     try {
         $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
@@ -565,49 +576,85 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
             $pagamentosPorDoc[$pg['DOCHEADER_ID']][] = ['codigo' => $pg['CODIGO'] ?? '?', 'meio' => $pg['MEIO'] ?? 'Sem meio indicado', 'valor' => (float) $pg['VALOR']];
         }
 
-        $vendas = [];
-        foreach ($docs as $d) {
-            $nc = (int) $d['NC'] === 1;
-            $rota = trim((string) $d['ROTA']);
-            $total = (float) $d['TOTAL'];
-            // Meios de cobrança sempre como estão no Pinguim BO (rodapé do documento), nunca presumidos:
-            //  - factura: troco descontado (o recebido nunca excede o pago, TOTAL_PAID); liquidada sem rodapé fica
-            //    «Sem meio indicado» (aparece nas ocorrências para corrigir no Pinguim BO);
-            //  - nota de crédito: o que foi devolvido ao cliente, por meio, a negativo (debita esse meio).
-            $pags = naval_vendas_pagamentos_doc($pagamentosPorDoc[$d['DOC_ID']] ?? [], $nc, $nc ? 0.0 : (float) $d['TOTAL_PAID'], (bool) $d['LIQUIDADO'], $total);
-            $vendas[] = [
-                'chave' => $d['DOCUMENTO'],
-                'data' => $d['DATA'],
-                'hora' => $d['HORA'],
-                'rota' => $rota,
-                'promotor' => $promotores[$rota] ?? $rota,
-                'tipo' => $d['TIPO_DESC'],
-                'tipo_codigo' => (string) $d['TIPO_DOC'],
-                'nc' => $nc,
-                'documento' => $d['DOCUMENTO'],
-                'cliente' => $d['CLIENTE'],
-                'cliente_codigo' => (string) $d['CLIENTE_CODIGO'],
-                'nif' => $d['NIF'],
-                'liquidado' => $nc || (bool) $d['LIQUIDADO'],
-                'total' => $total,
-                'total_sem_iva' => isset($semIvaPorDoc[$d['DOC_ID']]) ? round($nc ? -abs($semIvaPorDoc[$d['DOC_ID']]) : $semIvaPorDoc[$d['DOC_ID']], 2) : null,
-                'valor_pago' => $nc ? 0.0 : (float) $d['TOTAL_PAID'],
-                'pagamentos' => $pags,
-                'meio_pagamento' => $pags ? implode(', ', array_column($pags, 'meio')) : null,
-            ];
-        }
+        $vendas = naval_vendas_montar($docs, $semIvaPorDoc, $pagamentosPorDoc, $promotores);
 
         // 4. Linhas de artigos (consulta própria: o portal pede-as só quando uma página precisa delas)
         $artigos = [];
         if ($itens && $docs) {
-            $artigos = naval_vendas_artigos_sql($inicio, $fim, $promotores);
+            $artigos = naval_vendas_artigos_pinguim($inicio, $fim, $promotores);
             if ($artigos === null) return null;
         }
-        return ['vendas' => naval_vendas_substituicoes(naval_vendas_devolucoes($vendas)), 'artigos' => $artigos];
+        return ['vendas' => $vendas, 'artigos' => $artigos];
     } catch (Throwable $e) {
         error_log('[vendas SQL] ' . $e->getMessage());
         return null;
     }
+}
+
+/**
+ * Documentos no formato do portal, a partir das linhas lidas (Pinguim BO ou OLAP, com as mesmas colunas: DOC_ID, DATA,
+ * HORA, ROTA, TIPO_DOC, TIPO_DESC, DOCUMENTO, CLIENTE, CLIENTE_CODIGO, NIF, LIQUIDADO, NC, TOTAL, TOTAL_PAID), do valor
+ * sem IVA e dos pagamentos por documento. As duas fontes passam aqui: as regras são as mesmas.
+ */
+function naval_vendas_montar(array $docs, array $semIvaPorDoc, array $pagamentosPorDoc, array $promotores): array
+{
+    $vendas = [];
+    foreach ($docs as $d) {
+        $nc = (int) $d['NC'] === 1;
+        $rota = trim((string) $d['ROTA']);
+        $total = (float) $d['TOTAL'];
+        // Meios de cobrança sempre como estão no Pinguim BO (rodapé do documento), nunca presumidos:
+        //  - factura: troco descontado (o recebido nunca excede o pago, TOTAL_PAID); liquidada sem rodapé fica
+        //    «Sem meio indicado» (aparece nas ocorrências para corrigir no Pinguim BO);
+        //  - nota de crédito: o que foi devolvido ao cliente, por meio, a negativo (debita esse meio).
+        $pags = naval_vendas_pagamentos_doc($pagamentosPorDoc[$d['DOC_ID']] ?? [], $nc, $nc ? 0.0 : (float) $d['TOTAL_PAID'], (bool) $d['LIQUIDADO'], $total);
+        $vendas[] = [
+            'chave' => $d['DOCUMENTO'],
+            'data' => $d['DATA'],
+            'hora' => $d['HORA'],
+            'rota' => $rota,
+            'promotor' => $promotores[$rota] ?? $rota,
+            'tipo' => $d['TIPO_DESC'],
+            'tipo_codigo' => (string) $d['TIPO_DOC'],
+            'nc' => $nc,
+            'documento' => $d['DOCUMENTO'],
+            'cliente' => $d['CLIENTE'],
+            'cliente_codigo' => (string) $d['CLIENTE_CODIGO'],
+            'nif' => $d['NIF'],
+            'liquidado' => $nc || (bool) $d['LIQUIDADO'],
+            'total' => $total,
+            'total_sem_iva' => isset($semIvaPorDoc[$d['DOC_ID']]) ? round($nc ? -abs($semIvaPorDoc[$d['DOC_ID']]) : $semIvaPorDoc[$d['DOC_ID']], 2) : null,
+            'valor_pago' => $nc ? 0.0 : (float) $d['TOTAL_PAID'],
+            'pagamentos' => $pags,
+            'meio_pagamento' => $pags ? implode(', ', array_column($pags, 'meio')) : null,
+        ];
+    }
+    return $vendas;
+}
+
+/** Linha de artigo no formato do portal (colunas como na consulta do Pinguim BO; o OLAP devolve as mesmas). */
+function naval_vendas_artigo(array $a, array $promotores): array
+{
+    $r = trim((string) $a['ROTA']);
+    return [
+        'chave' => $a['DOCUMENTO'] . '|' . $a['LINHA'],
+        'data' => $a['DATA'],
+        'rota' => $r,
+        'promotor' => $promotores[$r] ?? $r,
+        'documento' => $a['DOCUMENTO'],
+        'codigo' => $a['CODIGO'],
+        'artigo' => $a['ARTIGO'],
+        'unidade' => $a['UNIDADE'],
+        'quantidade' => (float) $a['QUANTIDADE'],
+        'preco_unitario' => (float) $a['PRECO_UNITARIO'],
+        'valor_sem_iva' => (float) $a['VALOR_SEM_IVA'],
+        'desconto' => (float) $a['DESCONTO'],
+        'iva' => (float) $a['IVA'],
+        'total' => (float) $a['TOTAL'],
+        // GROSSSALES do ficheiro para o SAP: DOCMOVDETAIL.GROSS_TOTAL (null se a coluna vier vazia)
+        'gross_total' => $a['GROSS_TOTAL'] === null ? null : (float) $a['GROSS_TOTAL'],
+        'nc' => (int) $a['NC'] === 1,
+    ];
 }
 
 /**
@@ -616,6 +663,14 @@ function naval_vendas_sql(string $inicio, string $fim, array $promotores, bool $
  * quando uma página (ou uma exportação) precisa delas. null se a base de dados não responder.
  */
 function naval_vendas_artigos_sql(string $inicio, string $fim, array $promotores): ?array
+{
+    naval_servico('fontes');
+    $x = naval_fontes_vendas($inicio, $fim, $promotores, true, true);
+    return $x === null ? null : $x['artigos'];
+}
+
+/** Linhas de artigos do período lidas do Pinguim BO. null se não responder. */
+function naval_vendas_artigos_pinguim(string $inicio, string $fim, array $promotores): ?array
 {
     if (!naval_bd_configurada()) return null;
     try {
@@ -649,26 +704,7 @@ function naval_vendas_artigos_sql(string $inicio, string $fim, array $promotores
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate
             ORDER BY DH.DOC_DATE DESC, DH.ID DESC, DMD.LINE_NUMBER ASC", $p) as $a) {
-            $r = trim((string) $a['ROTA']);
-            $artigos[] = [
-                'chave' => $a['DOCUMENTO'] . '|' . $a['LINHA'],
-                'data' => $a['DATA'],
-                'rota' => $r,
-                'promotor' => $promotores[$r] ?? $r,
-                'documento' => $a['DOCUMENTO'],
-                'codigo' => $a['CODIGO'],
-                'artigo' => $a['ARTIGO'],
-                'unidade' => $a['UNIDADE'],
-                'quantidade' => (float) $a['QUANTIDADE'],
-                'preco_unitario' => (float) $a['PRECO_UNITARIO'],
-                'valor_sem_iva' => (float) $a['VALOR_SEM_IVA'],
-                'desconto' => (float) $a['DESCONTO'],
-                'iva' => (float) $a['IVA'],
-                'total' => (float) $a['TOTAL'],
-                // GROSSSALES do ficheiro para o SAP: DOCMOVDETAIL.GROSS_TOTAL (null se a coluna vier vazia)
-                'gross_total' => $a['GROSS_TOTAL'] === null ? null : (float) $a['GROSS_TOTAL'],
-                'nc' => (int) $a['NC'] === 1,
-            ];
+            $artigos[] = naval_vendas_artigo($a, $promotores);
         }
         return $artigos;
     } catch (Throwable $e) {
