@@ -5320,3 +5320,7 @@ body.apres-lado {
     display: none;
   }
 }
+.apres-idioma {
+  display: inline-flex;
+  gap: 2px;
+}

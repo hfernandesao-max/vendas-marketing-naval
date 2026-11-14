@@ -1251,3 +1251,15 @@ input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+/* espelho da apresentação: o telemóvel mostra o mesmo ecrã que o computador */
+.ag-espelho {
+  align-items: center;
+  background: var(--azul-f, rgb(37 99 235 / 0.12));
+}
+.ag-espelho .ag-al-ic {
+  background: var(--azul, #2563eb);
+  color: #fff;
+}
+.ag-espelho > span:nth-child(2) {
+  flex: 1;
+}

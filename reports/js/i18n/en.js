@@ -3991,6 +3991,10 @@ export const EN = {
   'App mostrada no modo apresentação': 'App shown in presentation mode',
   'Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.':
     'Sign-in, session, home page, alerts, phone notifications, presentation, presentation mode, exports and preferences. Cannot be turned off.',
+  'Voltar a seguir': 'Follow again',
+  'Deixar de seguir': 'Stop following',
+  'Apresentação em curso no computador.': 'Presentation in progress on the computer.',
+  'A mostrar o mesmo ecrã da apresentação no computador.': 'Showing the same screen as the presentation on the computer.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

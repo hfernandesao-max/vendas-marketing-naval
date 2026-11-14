@@ -5,10 +5,12 @@
 //   - no próprio portal escolhe-se o que se mostra: o portal, a app de gestão, o portal no telemóvel ou o portal e a
 //     app lado a lado. A app corre dentro de uma moldura de telemóvel, ao vivo, com a mesma conta e os mesmos dados;
 //   - não abrem janelas automáticas (resumo das actualizações) e uma marca discreta mostra que o modo está activo;
+//   - a app de gestão mostrada no computador e a app no telemóvel da mesma conta mostram o mesmo ecrã ao mesmo tempo
+//     (espelho.js), no idioma escolhido no portal;
 //   - começo, fim e app mostrada ficam registados (ISO/IEC 27001 A.8.15).
 import { postJson } from './servidor.js';
 import { escutarJanela } from './inactividade.js';
-import { t } from './i18n/i18n.js';
+import { LANG, t } from './i18n/i18n.js';
 import { botao, janela } from './componentes/janelas.js';
 import { SESSAO } from './perfil.js';
 import { el, toast } from './util.js';
@@ -208,6 +210,17 @@ function desenharBarra() {
     b.setAttribute('aria-pressed', String(k === vista));
     barra.append(b);
   });
+  // idioma (também com a app à frente do portal): os mesmos botões PT · EN · TI do portal
+  const idi = el('span', 'apres-idioma');
+  idi.setAttribute('role', 'group');
+  idi.setAttribute('aria-label', t('Idioma'));
+  document.querySelectorAll('#lang button').forEach((o) => {
+    const b = botao(o.dataset.l.toUpperCase(), 'sm', () => o.click());
+    b.setAttribute('lang', o.dataset.l);
+    b.setAttribute('aria-pressed', String(o.dataset.l === LANG));
+    idi.append(b);
+  });
+  if (idi.childElementCount) barra.append(idi);
   if (document.documentElement.requestFullscreen)
     barra.append(
       botao(t('Ecrã inteiro'), 'sm', () =>
@@ -223,6 +236,26 @@ function desenharBarra() {
 }
 
 addEventListener('resize', escala);
+// Mudar de idioma no portal durante a apresentação: a marca e a legenda mudam logo; a app de gestão muda sozinha
+// (lê o idioma do portal) e o telemóvel que a segue também; o portal no telemóvel recarrega-se no idioma novo.
+document.addEventListener('click', (e) => {
+  if (!e.target.closest || !e.target.closest('#lang button') || !activo()) return;
+  const antes = LANG;
+  let n = 0;
+  const ver = setInterval(() => {
+    if (LANG !== antes || ++n > 40) {
+      clearInterval(ver);
+      if (LANG === antes) return;
+      if (vista === 'telemovel') mostrar(vista);
+      else {
+        desenharBarra();
+        const l = palco && palco.querySelector('.apres-legenda');
+        if (l) l.textContent = t(VISTAS[vista].nome);
+        if (palco) palco.setAttribute('aria-label', t(VISTAS[vista].nome));
+      }
+    }
+  }, 100);
+});
 
 let ligado = false;
 /** Ao abrir o portal: retoma o modo apresentação activo nesta sessão (na vista em que estava). */
