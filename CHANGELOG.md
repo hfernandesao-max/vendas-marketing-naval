@@ -1,5 +1,25 @@
 ## 16-11-2026
 
+### Suporte: pedidos classificados pela ITIL 4 e enviados à equipa de TI (ServiceDesk Plus)
+
+<!-- paginas: suporte -->
+<!-- tipo: funcionalidade -->
+
+- Cada pedido novo segue por correio para **ITSupport@grupo-naval.com**, que alimenta a ferramenta de pedidos da equipa
+  de TI: assunto normalizado «[Portal RTM] [SUP-000123] P2 · Incidente · Smartphone RTM · título», resposta directa a
+  quem abriu o pedido e confirmação para essa pessoa com o número e os prazos. Se o correio não sair, o portal tenta de
+  novo sozinho (até 10 vezes) e quem gere pode reenviar.
+- **Classificação ITIL 4 / ISO/IEC 20000-1**: tipo, **serviço afectado** (catálogo: Portal RTM, App de gestão,
+  Smartphone RTM, Impressora móvel, Pinguim BO, SAP, Rede e Internet, Contas e acessos) e **prioridade calculada pela
+  matriz impacto × urgência** (já não é escolhida por quem abre o pedido), com prazo da **primeira resposta** (15 min,
+  1 h, 4 h, 8 h) e da resolução (4 h, 8 h, 24 h, 72 h).
+- **Contexto automático**: página onde a pessoa estava, versão e revisão do portal, navegador, ecrã e idioma; captura de
+  ecrã opcional (PNG, JPEG ou WebP até 5 MB, conferida pelo conteúdo).
+- **E-mail Command do ServiceDesk Plus** (Administração › Suporte › Encaminhamento): com os nomes da ferramenta, o
+  correio preenche sozinho o tipo, a categoria, a prioridade, o impacto, a urgência, o grupo e o requerente.
+- Pedidos com dados pessoais: o correio não leva a descrição nem a captura (ficam no portal) e lembra a avaliação de
+  comunicação à Agência de Protecção de Dados (Lei n.º 22/11).
+
 ### Acessos: retirar os dois passos e dispensar numa só operação; nova função «Tesouraria»
 
 <!-- paginas: acessos -->

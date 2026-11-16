@@ -1,6 +1,6 @@
 // Suporte e incidentes (ISO/IEC 20000-1, 27035) e Conformidade (ISO/IEC 27001, 27701, 22301), com contas reais.
 import { test, expect } from '@playwright/test';
-import { rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { entrar, API, csrf } from './ajuda.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -43,6 +43,46 @@ test('suporte: abrir, gerir, resolver com causa e lições, avaliar; cada um vê
   expect(fe.pedido.historico.map((h) => h.accao)).toEqual(['criado', 'atender', 'resolver', 'avaliar']);
   // sem CSRF, recusado
   expect((await com.post(API + 'suporte', { data: { accao: 'criar', tipo: 'pedido', prioridade: 'P4', titulo: 'Sem csrf' } })).status()).toBe(403);
+});
+
+test('suporte: o pedido novo segue para a equipa de TI (assunto normalizado, resposta para quem o abriu) e a confirmação para o requerente', async () => {
+  const SAIDA = `${PRIV}/email-saida`;
+  const antes = existsSync(SAIDA) ? new Set(readdirSync(SAIDA)) : new Set();
+  const com = (await entrar('com')).ctx;
+  const r = await (
+    await com.post(API + 'suporte', {
+      data: {
+        accao: 'criar',
+        tipo: 'incidente',
+        servico: 'smartphone',
+        impacto: 'medio',
+        urgencia: 'alta',
+        titulo: 'Telemóvel da rota 1005 não sincroniza',
+        descricao: 'Desde as 9 h',
+        contexto: { pagina: 'vendas-dia', ecra: '390x844', idioma: 'pt' },
+        csrf: await csrf(com),
+      },
+    })
+  ).json();
+  expect(r.ok).toBe(true);
+  const p = r.pedido;
+  expect(p).toMatchObject({
+    prioridade: 'P2',
+    servico: 'smartphone',
+    contexto: { pagina: 'vendas-dia' },
+    encaminhamento: { estado: 'enviado', para: 'ITSupport@grupo-naval.com' },
+  });
+  expect(p.prazo_resposta).toBeTruthy();
+  const novos = readdirSync(SAIDA).filter((f) => f.endsWith('.json') && !antes.has(f));
+  const msgs = novos.map((f) => JSON.parse(readFileSync(SAIDA + '/' + f, 'utf8')));
+  const ti = msgs.find((m) => m.para[0].emailAddress.address === 'ITSupport@grupo-naval.com');
+  expect(ti.assunto).toBe(`[Portal RTM] [${p.id}] P2 · Incidente · Smartphone RTM · Telemóvel da rota 1005 não sincroniza`);
+  expect(ti.responder_a[0].emailAddress.address).toBe('com@naval.co.ao');
+  expect(msgs.some((m) => m.assunto.startsWith(`Pedido ${p.id} registado`))).toBe(true);
+  // o requerente não configura o encaminhamento
+  expect(
+    (await com.post(API + 'suporte', { data: { accao: 'encaminhamento', destinatario: 'x@y.com', identificador: '[x]', csrf: await csrf(com) } })).status(),
+  ).toBe(403);
 });
 
 test('conformidade: TI e auditoria vêem; outros não; só o SADM confirma a revisão de acessos', async () => {

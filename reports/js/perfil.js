@@ -23,7 +23,10 @@ export function contarAlertas() {
 }
 
 // Alteração do estado partilhado: só este módulo altera estas variáveis; os outros lêem-nas.
+// página onde a pessoa estava antes da actual (contexto automático dos pedidos de suporte)
+export let anterior = '';
 export function definirAtual(valor) {
+  if (valor !== atual) anterior = atual;
   atual = valor;
 }
 export function definirSessao(valor) {

@@ -32,6 +32,11 @@ const SUP = {
   gere: false,
   tipos: { pedido: 'Pedido de serviço', incidente: 'Incidente', seguranca: 'Incidente de segurança', melhoria: 'Sugestão de melhoria' },
   prioridades: { P1: 4, P2: 8, P3: 24, P4: 72 },
+  resposta: { P1: 0.25, P2: 1, P3: 4, P4: 8 },
+  servicos: { portal: 'Portal RTM', smartphone: 'Smartphone RTM', impressora: 'Impressora móvel', outro: 'Outro' },
+  impactos: { alto: 'Toda a empresa ou vários departamentos', medio: 'Uma rota, equipa ou departamento', baixo: 'Só eu' },
+  urgencias: { alta: 'Não consigo trabalhar', media: 'Trabalho com dificuldade', baixa: 'Pode esperar' },
+  matriz: { alto: { alta: 'P1', media: 'P2', baixa: 'P3' }, medio: { alta: 'P2', media: 'P3', baixa: 'P4' }, baixo: { alta: 'P3', media: 'P4', baixa: 'P4' } },
   pedidos: [
     P('SUP-000002', 'resolvido', { resolucao: 'Reinstalada a app', resolvido_em: '2026-11-08 11:00:00' }),
     P('SUP-000001', 'novo', { fora_prazo: true }),
@@ -54,15 +59,84 @@ test('suporte: indicadores, lista, abrir um pedido novo e avaliar o resolvido', 
   await expect(page.locator('.tile').filter({ hasText: 'Fora do prazo' }).locator('.v')).toHaveText('1');
   await expect(page.locator('#s-sup-l tbody tr')).toHaveCount(2);
   await page.click('.sup-barra button:has-text("Novo pedido")');
-  await page.locator('dialog.dlg input[type=text]').first().fill('Impressora da rota 1002 avariada');
-  await page.locator('dialog.dlg button', { hasText: 'Abrir o pedido' }).click();
+  const d = page.locator('dialog.dlg');
+  await expect(d.locator('.sup-prio')).toContainText('P4 · baixa');
+  await d.getByLabel('Serviço afectado').selectOption('impressora');
+  await d.getByLabel('Quem é afectado (impacto)').selectOption('medio');
+  await d.getByLabel('Quanto pode esperar (urgência)').selectOption('alta');
+  await expect(d.locator('.sup-prio')).toContainText('P2 · alta: primeira resposta até 1 h e resolução até 8 h');
+  await d.locator('input[type=text]').first().fill('Impressora da rota 1002 avariada');
+  await d.locator('button', { hasText: 'Abrir o pedido' }).click();
   await expect.poll(() => posts.length).toBe(1);
-  expect(posts[0]).toMatchObject({ accao: 'criar', tipo: 'incidente', prioridade: 'P3', titulo: 'Impressora da rota 1002 avariada' });
+  expect(posts[0]).toMatchObject({
+    accao: 'criar',
+    tipo: 'incidente',
+    servico: 'impressora',
+    impacto: 'medio',
+    urgencia: 'alta',
+    titulo: 'Impressora da rota 1002 avariada',
+    contexto: { idioma: 'pt' },
+  });
+  expect(posts[0].prioridade).toBeUndefined();
+  expect(posts[0].contexto.ecra).toMatch(/^\d+x\d+$/);
   await page.click('#s-sup-l button.linkbtn:has-text("SUP-000002")');
   await expect(page.locator('dialog.dlg')).toContainText('Reinstalada a app');
   await page.locator('dialog.dlg button', { hasText: 'Avaliar e fechar' }).click();
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1]).toMatchObject({ accao: 'avaliar', id: 'SUP-000002', satisfacao: 5 });
+  expect(erros).toEqual([]);
+});
+
+test('suporte: quem gere configura o encaminhamento para a equipa de TI (ServiceDesk Plus) e reenvia um pedido por enviar', async ({ page }) => {
+  const posts = [];
+  const enc = {
+    activo: true,
+    destinatario: 'ITSupport@grupo-naval.com',
+    identificador: '[Portal RTM]',
+    confirmar_requerente: true,
+    comando: {
+      activo: false,
+      delimitador: '$',
+      requerente: true,
+      grupo: '',
+      tipos: { pedido: 'Service Request', incidente: 'Incident', seguranca: 'Incident', melhoria: 'Service Request' },
+      categorias: { portal: 'Portal RTM', smartphone: 'Smartphone RTM', impressora: 'Impressora móvel', outro: 'Outro' },
+      prioridades: { P1: 'High', P2: 'High', P3: 'Medium', P4: 'Low' },
+      impactos: { alto: 'High', medio: 'Medium', baixo: 'Low' },
+      urgencias: { alta: 'High', media: 'Normal', baixa: 'Low' },
+    },
+  };
+  const pendente = P('SUP-000004', 'novo', {
+    servico: 'smartphone',
+    encaminhamento: { estado: 'por_enviar', tentativas: 2, erro: 'Os destinatários não são de domínios autorizados' },
+  });
+  const V = { ...SUP, gere: true, encaminhamento: enc, pedidos: [pendente] };
+  await page.route('**/v1/suporte**', (r) => {
+    if (r.request().method() === 'POST') {
+      const b = r.request().postDataJSON();
+      posts.push(b);
+      return r.fulfill({
+        json: { ...V, pedido: { ...pendente, encaminhamento: { estado: 'enviado' } }, encaminhamento: b.accao === 'encaminhamento' ? { ...enc, ...b } : enc },
+      });
+    }
+    return r.fulfill({ json: V });
+  });
+  const erros = await abrir(page, '#suporte');
+  await page.click('.sup-barra button:has-text("Encaminhamento para a equipa de TI")');
+  const d = page.locator('dialog.dlg');
+  await expect(d.getByLabel('Endereço da equipa de TI')).toHaveValue('ITSupport@grupo-naval.com');
+  await d.getByLabel(/E-mail Command/).check();
+  await d.locator('summary', { hasText: 'Prioridade na ferramenta' }).click();
+  await d.getByLabel('P1 · crítica').fill('Urgent');
+  await d.getByRole('button', { name: 'Gravar' }).click();
+  await expect
+    .poll(() => posts[0])
+    .toMatchObject({ accao: 'encaminhamento', destinatario: 'ITSupport@grupo-naval.com', comando: { activo: true, prioridades: { P1: 'Urgent' } } });
+  await page.click('#s-sup-l button.linkbtn:has-text("SUP-000004")');
+  await expect(page.locator('dialog.dlg')).toContainText('Por enviar à equipa de TI');
+  await expect(page.locator('dialog.dlg')).toContainText('domínios autorizados');
+  await page.locator('dialog.dlg button', { hasText: 'Enviar à equipa de TI' }).click();
+  await expect.poll(() => posts[1]).toMatchObject({ accao: 'reenviar', id: 'SUP-000004' });
   expect(erros).toEqual([]);
 });
 

@@ -288,6 +288,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[fontes] ' . $e->getMessage());
     }
+    // suporte: pedidos ainda por enviar à equipa de TI (ITSupport) voltam a ser enviados
+    try {
+        naval_servico('suporte-encaminhar');
+        $se = naval_sup_encaminhar_pendentes($agora);
+        if ($se) $feito['suporte_encaminhados'] = $se;
+    } catch (Throwable $e) {
+        error_log('[suporte] ' . $e->getMessage());
+    }
     // notificações no telemóvel: rotas paradas, vendas anuladas, carrinhas por aprovar e resumo do dia (NOTIFICACOES)
     try {
         naval_servico('notificacoes');
