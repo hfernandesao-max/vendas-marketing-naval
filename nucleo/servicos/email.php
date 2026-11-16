@@ -58,9 +58,10 @@ function naval_email_token(): array
 
 /**
  * Envia um email. $para: lista de ['email'=>, 'nome'=>]. $anexos: lista de ['nome'=>, 'tipo'=>, 'conteudo'=> bytes].
+ * $o: ['responder_a' => ['email'=>, 'nome'=>]] (endereço das respostas, ex.: quem abriu um pedido de suporte).
  * Devolve ['ok' => bool, 'erro' => string].
  */
-function naval_enviar_email(array $para, string $assunto, string $html, array $anexos = []): array
+function naval_enviar_email(array $para, string $assunto, string $html, array $anexos = [], array $o = []): array
 {
     $c = naval_email_config();
     $dest = [];
@@ -98,13 +99,17 @@ function naval_enviar_email(array $para, string $assunto, string $html, array $a
             return ['@odata.type' => '#microsoft.graph.fileAttachment', 'name' => $a['nome'], 'contentType' => $a['tipo'], 'contentBytes' => base64_encode($a['conteudo'])];
         }, $anexos),
     ];
+    $resp = $o['responder_a'] ?? null;
+    if (is_array($resp) && naval_email_valido($resp['email'] ?? null)) {
+        $msg['replyTo'] = [['emailAddress' => ['address' => trim((string) $resp['email']), 'name' => str_replace(["\r", "\n"], ' ', (string) ($resp['nome'] ?? ''))]]];
+    }
 
     if ($c['modo'] === 'ficheiro') {
         $dir = naval_pasta('email-saida');
         $base = $dir . '/' . date('Ymd-His') . '-' . substr(hash('sha256', $assunto . microtime()), 0, 6);
         file_put_contents($base . '.html', $html);
         foreach ($anexos as $a) file_put_contents($base . '-' . preg_replace('/[^\w.-]+/', '_', $a['nome']), $a['conteudo']);
-        file_put_contents($base . '.json', json_encode(['assunto' => $assunto, 'para' => $dest, 'anexos' => array_column($anexos, 'nome')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        file_put_contents($base . '.json', json_encode(['assunto' => $assunto, 'para' => $dest, 'anexos' => array_column($anexos, 'nome'), 'responder_a' => $msg['replyTo'] ?? []], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         return ['ok' => true, 'erro' => ''];
     }
 

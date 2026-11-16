@@ -1169,3 +1169,29 @@ p.aviso {
   align-items: flex-start;
   line-height: 1.4;
 }
+
+/* Suporte: prioridade calculada (impacto × urgência), contexto do pedido e nomes da ferramenta de pedidos */
+.sup-prio {
+  margin: 2px 0 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgb(var(--ceu-rgb) / 0.1);
+  color: var(--sky);
+  font-weight: 600;
+  font-size: 13px;
+}
+.sup-ctx {
+  color: var(--muted);
+  font-size: 12.5px;
+  word-break: break-word;
+}
+.sup-mapa {
+  margin: 8px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.sup-mapa summary {
+  cursor: pointer;
+  font-weight: 600;
+}
