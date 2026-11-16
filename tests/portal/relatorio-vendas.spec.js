@@ -7,7 +7,6 @@ const CTL = (pronto) => ({
   conciliacao: pronto ? { estado: 'ok', detalhe: '10 carrinhas conciliadas e fechadas.' } : { estado: 'pendente', detalhe: 'Carrinhas por fechar: 1006.' },
   sap_ficheiro: { estado: 'ok', detalhe: '40 documentos carregados no SAP.' },
   caixa: { estado: 'ok', detalhe: 'Fecho de caixa aprovado por fin.' },
-  sap_odata: { estado: 'por_ligar', detalhe: 'Conector SAP por ligar.' },
 });
 const RELATORIO = {
   numero: 'RV-20261025-v1',
@@ -83,7 +82,33 @@ const RELATORIO = {
       fechada_por: 'josefa',
       aprovada_por: 'fin',
     },
-    sap: null,
+    consolidado: {
+      empresa: 'NAVAL',
+      canal: 'RTM',
+      vendas: { documentos: 2, notas_credito_documentos: 1, brutas: 1500, notas_credito: 200, liquidas: 1300 },
+      meios: { dinheiro: 600, multicaixa: 400, outros: 0, compensacao: 0, por_receber: 500, excesso: 0 },
+      bancos: [{ banco: 'BPC', conta: '0012 3456', multicaixa: 400, talaos: 1, deposito: 0, lacres: 0, total: 400 }],
+      caixa: { saldo_inicial: 100, entregue: 550, depositos: 0, saldo_teorico: 650, contagem_fisica: 650, diferenca: 0 },
+      conferencias: [
+        { id: 'cobrancas', nome: 'Vendas brutas = cobranças + por receber', valor_origem: 1500, valor_destino: 1500, diferenca: 0, estado: 'confere' },
+        { id: 'dinheiro', nome: 'Dinheiro recebido = dinheiro entregue na caixa', valor_origem: 600, valor_destino: 550, diferenca: -50, estado: 'diferenca' },
+        {
+          id: 'stock',
+          nome: 'Stock contado = stock teórico nas carrinhas',
+          valor_origem: null,
+          valor_destino: null,
+          diferenca: 0,
+          unidade: 'linhas',
+          estado: 'confere',
+        },
+      ],
+      excepcoes: [
+        { tipo: 'dinheiro', rota: '1001', promotor: '1001 · Andrea Santos', valor: -50, detalhe: 'Falta de dinheiro: recebido 600,00 Kz, entregue 550,00 Kz.' },
+        { tipo: 'por_receber', rota: '1001', promotor: '1001 · Andrea Santos', valor: 500, detalhe: 'Vendas sem cobrança no dia (crédito).' },
+      ],
+      estado: 'com_diferencas',
+      diferencas: 1,
+    },
   },
 };
 
@@ -112,7 +137,7 @@ test('relatório de vendas: bloqueado com fontes em falta; gerado, mostra a conc
   });
   await page.addInitScript(() => (window.open = () => null));
   const erros = await abrir(page, '#relatorio-vendas');
-  await expect(page.locator('.rv-lista li')).toHaveCount(5);
+  await expect(page.locator('.rv-lista li')).toHaveCount(4); // só Naval e RTM: sem a facturação SAP das outras empresas
   await expect(page.locator('.rv-lista li.rv-pendente')).toContainText('Carrinhas por fechar: 1006');
   await expect(page.getByRole('button', { name: 'Gerar o relatório' })).toBeDisabled();
   pronto = true;
@@ -120,6 +145,15 @@ test('relatório de vendas: bloqueado com fontes em falta; gerado, mostra a conc
   await page.getByRole('button', { name: 'Gerar o relatório' }).click();
   await expect(page.locator('.rv-cab')).toContainText('RV-20261025-v1');
   expect(pedidos[0]).toMatchObject({ accao: 'gerar', dia: '2026-10-25' });
+  // consolidado: estado, resumo no formato do SALES REPORT, conferências, excepções e bancos
+  await expect(page.locator('.rv-cons')).toContainText('Consolidado diário de vendas · Naval · RTM');
+  await expect(page.locator('.rv-cons')).toContainText('1 conferência(s) com diferença');
+  await expect(page.locator('#s-rv-cons-resumo')).toContainText('Vendas líquidas');
+  await expect(page.locator('#s-rv-cons-conf tbody tr').nth(1)).toContainText('Diferença');
+  await expect(page.locator('#s-rv-cons-exc tbody tr').first()).toContainText('Falta de dinheiro');
+  await expect(page.locator('#s-rv-cons-bancos')).toContainText('0012 3456');
+  await expect(page.locator('#s-rv-tpa')).toHaveCount(0); // os bancos substituem a tabela antiga do TPA
+  await expect(page.getByText('Facturação SAP')).toHaveCount(0);
   await page.click('a[href="#relatorio-vendas/rv-prom"]');
   await expect(page.locator('#s-rv-prom tbody tr').first()).toContainText('Andrea Santos');
   await expect(page.locator('#s-rv-prom .rv-dif').first()).toBeVisible(); // diferença do dinheiro a vermelho
@@ -130,6 +164,7 @@ test('relatório de vendas: bloqueado com fontes em falta; gerado, mostra a conc
   const fs = await import('node:fs');
   const pdf = fs.readFileSync(await d.path(), 'latin1');
   expect(pdf).toContain('Andrea Santos');
+  expect(pdf).toContain('Falta de dinheiro');
   expect(pdf).toContain('aaaaaaaaaaaaaaaa'); // impressão digital
   expect(erros).toEqual([]);
 });

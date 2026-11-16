@@ -1,7 +1,8 @@
-// Vendas › Relatório de Vendas diário do Marketing: um só documento com o resumo de vendas e cobranças, a
-// conciliação por promotor (Pinguim BO × caixa × TPA), a folha de caixa, o registo de vendas e o stock das carrinhas,
-// e (com o conector ligado) a facturação SAP de todas as empresas. Só se gera com todas as fontes do dia completas;
-// depois fica congelado (versão e impressão digital) e o PDF e o Excel saem dessa fotografia.
+// Vendas › Consolidado diário de vendas RTM da Naval (Relatório de Vendas diário do Marketing): resumo no formato do
+// SALES REPORT, conferências automáticas e excepções primeiro, a conciliação por promotor (Pinguim BO × caixa × TPA),
+// a caixa, os bancos, o registo de vendas e o stock das carrinhas. Só a Naval: é a única empresa que factura no RTM.
+// Só se gera com todas as fontes do dia completas; depois fica congelado (versão e impressão digital) e o PDF e o
+// Excel saem dessa fotografia.
 // Servidor: nucleo/api/v1/relatorio-vendas.php e nucleo/servicos/relatorio-vendas.php.
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
@@ -25,7 +26,6 @@ export const CONTROLOS = [
   ['conciliacao', 'Conciliação de todas as carrinhas fechada'],
   ['sap_ficheiro', 'Vendas do dia carregadas no SAP'],
   ['caixa', 'Fecho de caixa validado e aprovado'],
-  ['sap_odata', 'Facturação SAP das outras empresas (conector SAP)'],
 ];
 const ESTADO_CTL = { ok: ['Completo', 'p-ok'], pendente: ['Em falta', 'p-warn'], erro: ['Sem ligação', 'p-bad'], por_ligar: ['Por ligar', 'p-mut'] };
 
@@ -62,7 +62,12 @@ function gerar(motivo, erro, depois) {
     }
     REL = x.relatorio;
     C = null;
-    toast(t('Relatório {n} gerado.', { n: x.relatorio.numero }), 4000);
+    const env = x.relatorio.envio;
+    toast(
+      t('Relatório {n} gerado.', { n: x.relatorio.numero }) +
+        (env && env.ok ? ' ' + t('Resumo enviado por correio a {n} pessoa(s).', { n: env.destinatarios }) : ''),
+      5000,
+    );
     if (depois) depois();
     ler();
     draw();
@@ -75,7 +80,7 @@ function controlos() {
   const hl = el('div');
   hl.append(
     el('h2', null, t('Fecho do dia: as fontes estão completas?')),
-    el('p', null, t('O relatório só se gera quando todas as fontes do dia estão completas e fechadas. O conector SAP por ligar não impede a geração.')),
+    el('p', null, t('O consolidado só se gera quando todas as fontes do dia estão completas e fechadas.')),
   );
   h.append(hl);
   s.append(h);
@@ -141,6 +146,7 @@ function relatorio(pg) {
   );
   if (REL.motivo) cab.append(el('span', 'note', t('Motivo') + ': ' + REL.motivo));
   pg.append(cab);
+  if (d.consolidado) consolidado(pg, d);
   pg.append(
     tiles([
       { l: t('Vendas RTM (líquidas)'), v: kz(r.vendas), s: t('{n} documentos · {p} promotores', { n: n0(r.documentos), p: n0(r.promotores) }) },
@@ -221,7 +227,7 @@ function relatorio(pg) {
       ],
     }),
   );
-  if (cx.tpa.length)
+  if (cx.tpa.length && !d.consolidado)
     pg.append(
       tabela({
         id: 'rv-tpa',
@@ -279,25 +285,130 @@ function relatorio(pg) {
       ],
     }),
   );
-  if (d.sap)
+}
+
+const ESTADO_CONF = { confere: ['Confere', 'p-ok'], diferenca: ['Diferença', 'p-bad'], sem_dados: ['Sem dados', 'p-mut'] };
+const TIPO_EXC = { caixa: 'Caixa', dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', stock: 'Stock', por_receber: 'Por receber' };
+
+// Consolidado (formato do SALES REPORT): resumo, conferências, excepções e bancos
+function consolidado(pg, d) {
+  const c = d.consolidado,
+    v = c.vendas,
+    m = c.meios,
+    cx = c.caixa;
+  const s = el('section', 'glass sec rv-cons');
+  const h = el('div', 'sec-h');
+  const hl = el('div');
+  hl.append(
+    el('h2', null, t('Consolidado diário de vendas · Naval · RTM')),
+    el('p', null, t('Vendas RTM do Pinguim BO, facturadas pela Naval, conferidas com a folha de caixa, os talões do TPA e a contagem das carrinhas.')),
+  );
+  h.append(hl, c.diferencas ? pill(t('{n} conferência(s) com diferença', { n: c.diferencas }), 'p-bad') : pill(t('Tudo confere'), 'p-ok'));
+  s.append(h);
+  pg.append(s);
+  const linhas = [
+    { grupo: t('Vendas'), item: t('Vendas brutas ({n} documentos)', { n: n0(v.documentos) }), valor: v.brutas },
+    { grupo: t('Vendas'), item: t('Notas de crédito ({n})', { n: n0(v.notas_credito_documentos) }), valor: -v.notas_credito },
+    { grupo: t('Vendas'), item: t('Vendas líquidas'), valor: v.liquidas, forte: true },
+    { grupo: t('Cobranças'), item: t('Dinheiro'), valor: m.dinheiro },
+    { grupo: t('Cobranças'), item: t('Multicaixa'), valor: m.multicaixa },
+    ...(m.outros ? [{ grupo: t('Cobranças'), item: t('Outros meios'), valor: m.outros }] : []),
+    { grupo: t('Cobranças'), item: t('Por receber (crédito)'), valor: m.por_receber },
+    ...(m.compensacao ? [{ grupo: t('Cobranças'), item: t('das quais compensadas com notas de crédito'), valor: m.compensacao }] : []),
+    ...(m.excesso ? [{ grupo: t('Cobranças'), item: t('Cobrado a mais'), valor: m.excesso }] : []),
+    { grupo: t('Caixa'), item: t('Saldo inicial'), valor: cx.saldo_inicial },
+    { grupo: t('Caixa'), item: t('Dinheiro entregue pelos promotores'), valor: cx.entregue },
+    { grupo: t('Caixa'), item: t('Depósitos no banco'), valor: -cx.depositos },
+    { grupo: t('Caixa'), item: t('Saldo final (contagem física)'), valor: cx.contagem_fisica, forte: true },
+  ];
+  pg.append(
+    tabela({
+      id: 'rv-cons-resumo',
+      titulo: t('Resumo do dia'),
+      nota: t('Na estrutura do SALES REPORT. Valores em Kz, com IVA, exactos a duas casas decimais.'),
+      search: false,
+      rows: linhas.map((x, i) => ({ ...x, ordem: i })),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'grupo', label: t('Secção'), p: 2 },
+        { key: 'item', label: t('Linha'), p: 0, wrap: true, render: (x, r) => (r.forte ? el('b', null, x) : x) },
+        { key: 'valor', label: t('Valor'), type: 'kz', p: 0, render: (x, r) => (r.forte ? el('b', null, kz(x)) : kz(x)) },
+      ],
+    }),
+  );
+  pg.append(
+    tabela({
+      id: 'rv-cons-conf',
+      titulo: t('Conferências'),
+      nota: t('Cada conferência compara duas fontes independentes; a tolerância é zero.'),
+      search: false,
+      rows: c.conferencias.map((x, i) => ({ ...x, ordem: i, nome_t: t(x.nome), estado_t: t((ESTADO_CONF[x.estado] || [x.estado])[0]) })),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'nome_t', label: t('Conferência'), p: 0, wrap: true },
+        { key: 'valor_origem', label: t('Fonte 1'), type: 'kz', p: 3, render: (x, r) => (r.unidade ? '—' : kz(x)) },
+        { key: 'valor_destino', label: t('Fonte 2'), type: 'kz', p: 3, render: (x, r) => (r.unidade ? '—' : kz(x)) },
+        {
+          key: 'diferenca',
+          label: t('Diferença'),
+          type: 'kz',
+          p: 1,
+          render: (x, r) => el('span', r.estado === 'diferenca' ? 'rv-dif' : null, r.unidade ? t('{n} linha(s)', { n: n0(x) }) : kz(x)),
+        },
+        {
+          key: 'estado_t',
+          label: t('Resultado'),
+          p: 0,
+          render: (x, r) => pill(x, (ESTADO_CONF[r.estado] || [0, 'p-mut'])[1]),
+        },
+      ],
+    }),
+  );
+  if (c.excepcoes.length)
     pg.append(
       tabela({
-        id: 'rv-sap',
-        titulo: t('Facturação SAP por empresa'),
-        nota: t('Lida do SAP: dinheiro (ZBV), depósito (ZDP) e crédito (ZF2).'),
-        rows: Object.entries(d.sap.resumo).map(([e, x]) => ({ empresa: e, ...x })),
-        total: true,
+        id: 'rv-cons-exc',
+        titulo: t('Excepções a explicar ({n})', { n: n0(c.excepcoes.length) }),
+        nota: t('Primeiro a caixa e o dinheiro, depois o Multicaixa, o stock e as vendas a crédito; em cada tipo, o maior valor primeiro.'),
+        rows: c.excepcoes.map((x, i) => ({ ...x, ordem: i, tipo_t: t(TIPO_EXC[x.tipo] || x.tipo) })),
+        sort: 'ordem',
+        dir: 1,
         cols: [
-          { key: 'empresa', label: t('Empresa'), p: 0 },
-          { key: 'dinheiro', label: t('Dinheiro'), type: 'kz', sum: true },
-          { key: 'deposito', label: t('Depósito'), type: 'kz', sum: true },
-          { key: 'credito', label: t('Crédito'), type: 'kz', sum: true },
-          { key: 'outro', label: t('Outros'), type: 'kz', sum: true },
-          { key: 'total', label: t('Total'), type: 'bar', sum: true, p: 0 },
+          { key: 'tipo_t', label: t('Tipo'), p: 1 },
+          { key: 'promotor', label: t('Promotor'), p: 0 },
+          { key: 'detalhe', label: t('Detalhe'), wrap: true, p: 2 },
+          {
+            key: 'valor',
+            label: t('Valor'),
+            type: 'kz',
+            p: 0,
+            render: (x, r) => el('span', r.tipo === 'por_receber' ? null : 'rv-dif', r.tipo === 'stock' ? n0(x) + (r.unidade ? ' ' + r.unidade : '') : kz(x)),
+          },
         ],
       }),
     );
-  else pg.append(el('p', 'note', t('Facturação SAP das outras empresas: conector SAP por ligar.')));
+  if (c.bancos.length)
+    pg.append(
+      tabela({
+        id: 'rv-cons-bancos',
+        titulo: t('Bancos: Multicaixa e depósitos'),
+        nota: t('Multicaixa pelos talões de fecho do TPA (conta do registo dos terminais); depósitos pelos lacres dos sacos de segurança.'),
+        search: false,
+        total: true,
+        rows: c.bancos.map((b) => ({ ...b, conta: b.conta || '—' })),
+        cols: [
+          { key: 'banco', label: t('Banco'), p: 0 },
+          { key: 'conta', label: t('Conta'), p: 3 },
+          { key: 'talaos', label: t('Talões'), type: 'n', sum: true, p: 4 },
+          { key: 'multicaixa', label: t('Multicaixa'), type: 'kz', sum: true, p: 1 },
+          { key: 'lacres', label: t('Lacres'), type: 'n', sum: true, p: 4 },
+          { key: 'deposito', label: t('Depósito'), type: 'kz', sum: true, p: 1 },
+          { key: 'total', label: t('Total'), type: 'kz', sum: true, p: 0 },
+        ],
+      }),
+    );
 }
 
 R['relatorio-vendas'] = (pg) => {

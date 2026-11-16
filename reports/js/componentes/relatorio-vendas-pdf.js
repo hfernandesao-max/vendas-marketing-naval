@@ -1,6 +1,7 @@
-// Relatório de Vendas diário em PDF (A4 ao baixo, texto vectorial), sempre a partir da versão congelada no servidor:
-// resumo, vendas e cobranças por promotor, caixa, Multicaixa por banco, registo de vendas, stock das carrinhas e
-// facturação SAP por empresa. Cada página tem a referência, a impressão digital (SHA-256) e «Página x de y».
+// Consolidado diário de vendas RTM da Naval em PDF (A4 ao baixo, texto vectorial), sempre a partir da versão congelada
+// no servidor: resumo no formato do SALES REPORT, conferências, excepções, vendas e cobranças por promotor, caixa,
+// bancos, registo de vendas e stock das carrinhas. Cada página tem a referência, a impressão digital (SHA-256) e
+// «Página x de y»; no fim, as assinaturas (preparado, revisto e aprovado).
 import { dl, kz, n0 } from '../formatos.js';
 import { assinaturas, cabecalho, entregar, estiloCabeca, estiloTabela, lerEmblema, novoDoc, rodapes, tp } from './contagem-pdf.js';
 
@@ -19,8 +20,9 @@ export async function relatorioVendasPdf(R, imprimir = false) {
   const d = R.dados,
     r = d.resumo,
     M = 14;
-  doc.setProperties({ title: tp('Relatório de Vendas') + ' ' + R.numero, subject: tp('Relatório de Vendas diário'), creator: 'Portal RTM · Grupo Naval' });
-  let y = cabecalho(doc, img, tp('Relatório de Vendas'), R.numero, [
+  const NOME = d.consolidado ? tp('Consolidado diário de vendas · Naval · RTM') : tp('Relatório de Vendas');
+  doc.setProperties({ title: NOME + ' ' + R.numero, subject: NOME, creator: 'Portal RTM · Grupo Naval' });
+  let y = cabecalho(doc, img, NOME, R.numero, [
     [tp('Dia'), dl(R.dia)],
     [tp('Vendas RTM (líquidas)'), kz(r.vendas)],
     [tp('Dinheiro'), kz(r.dinheiro)],
@@ -79,13 +81,74 @@ export async function relatorioVendasPdf(R, imprimir = false) {
         conciliacao: tp('Conciliação das carrinhas'),
         sap_ficheiro: tp('Vendas carregadas no SAP'),
         caixa: tp('Fecho de caixa'),
-        sap_odata: tp('Facturação SAP (conector)'),
       }[k] || k,
       { ok: tp('Completo'), por_ligar: tp('Por ligar'), pendente: tp('Em falta'), erro: tp('Sem ligação') }[x.estado] || x.estado,
       x.detalhe,
     ]),
     { columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 26 } } },
   );
+
+  // 1.1 Consolidado: resumo (SALES REPORT), conferências e excepções
+  const c = d.consolidado;
+  if (c) {
+    const v = c.vendas,
+      m = c.meios,
+      k = c.caixa;
+    titulo(tp('Resumo do dia') + ' · ' + (c.diferencas ? tp('{n} conferência(s) com diferença', { n: c.diferencas }) : tp('Tudo confere')));
+    const forte = (a, b) => [
+      { content: a, styles: { fontStyle: 'bold' } },
+      { content: b, styles: { fontStyle: 'bold', halign: 'right' } },
+    ];
+    tabelaPdf(
+      [tp('Linha'), tp('Valor')],
+      [
+        [tp('Vendas brutas ({n} documentos)', { n: n0(v.documentos) }), kz(v.brutas)],
+        [tp('Notas de crédito ({n})', { n: n0(v.notas_credito_documentos) }), kz(-v.notas_credito)],
+        forte(tp('Vendas líquidas'), kz(v.liquidas)),
+        [tp('Dinheiro'), kz(m.dinheiro)],
+        [tp('Multicaixa'), kz(m.multicaixa)],
+        ...(m.outros ? [[tp('Outros meios'), kz(m.outros)]] : []),
+        [tp('Por receber (crédito)'), kz(m.por_receber)],
+        ...(m.compensacao ? [[tp('das quais compensadas com notas de crédito'), kz(m.compensacao)]] : []),
+        ...(m.excesso ? [[tp('Cobrado a mais'), kz(m.excesso)]] : []),
+        [tp('Caixa: saldo inicial'), kz(k.saldo_inicial)],
+        [tp('Caixa: dinheiro entregue pelos promotores'), kz(k.entregue)],
+        [tp('Caixa: depósitos no banco'), kz(-k.depositos)],
+        forte(tp('Caixa: saldo final (contagem física)'), kz(k.contagem_fisica)),
+      ],
+      { tableWidth: 150, columnStyles: { 1: { halign: 'right', cellWidth: 40 } } },
+    );
+    titulo(tp('Conferências'));
+    tabelaPdf(
+      [tp('Conferência'), tp('Fonte 1'), tp('Fonte 2'), tp('Diferença'), tp('Resultado')],
+      c.conferencias.map((x) => [
+        tp(x.nome),
+        x.unidade ? '—' : kz(x.valor_origem),
+        x.unidade ? '—' : kz(x.valor_destino),
+        (x.estado === 'diferenca' ? '!' : '') + (x.unidade ? tp('{n} linha(s)', { n: n0(x.diferenca) }) : kz(x.diferenca)),
+        (x.estado === 'diferenca' ? '!' : '') + tp({ confere: 'Confere', diferenca: 'Diferença', sem_dados: 'Sem dados' }[x.estado] || x.estado),
+      ]),
+      { columnStyles: { 0: { cellWidth: 95 }, ...direita([1, 2, 3]) }, didParseCell: vermelhoSe([1, 2, 3]) },
+    );
+    if (c.excepcoes.length) {
+      titulo(tp('Excepções a explicar ({n})', { n: n0(c.excepcoes.length) }));
+      const TIPO = { caixa: 'Caixa', dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', stock: 'Stock', por_receber: 'Por receber' };
+      tabelaPdf(
+        [tp('Tipo'), tp('Promotor'), tp('Detalhe'), tp('Valor'), tp('Explicação')],
+        c.excepcoes.map((x) => [
+          tp(TIPO[x.tipo] || x.tipo),
+          x.promotor,
+          x.detalhe,
+          (x.tipo === 'por_receber' ? '' : '!') + (x.tipo === 'stock' ? n0(x.valor) + (x.unidade ? ' ' + x.unidade : '') : kz(x.valor)),
+          '',
+        ]),
+        {
+          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 50 }, 3: { halign: 'right', cellWidth: 32 }, 4: { cellWidth: 60 } },
+          didParseCell: vermelhoSe([3]),
+        },
+      );
+    }
+  }
 
   // 2. Vendas e cobranças por promotor
   titulo(tp('Vendas e cobranças por promotor'));
@@ -163,7 +226,19 @@ export async function relatorioVendasPdf(R, imprimir = false) {
     ],
     { tableWidth: 150, columnStyles: { 1: { halign: 'right', cellWidth: 40 } }, didParseCell: vermelhoSe([1]) },
   );
-  if (cx.tpa.length) {
+  if (c && c.bancos.length) {
+    titulo(tp('Bancos: Multicaixa e depósitos'));
+    const B = c.bancos;
+    const sb = (k) => B.reduce((s, b) => s + (+b[k] || 0), 0);
+    tabelaPdf(
+      [tp('Banco'), tp('Conta'), tp('Talões'), tp('Multicaixa'), tp('Lacres'), tp('Depósito'), tp('Total')],
+      [
+        ...B.map((b) => [b.banco, b.conta || '—', n0(b.talaos), kz(b.multicaixa), n0(b.lacres), kz(b.deposito), kz(b.total)]),
+        [tp('Total'), '', n0(sb('talaos')), kz(sb('multicaixa')), n0(sb('lacres')), kz(sb('deposito')), kz(sb('total'))],
+      ],
+      { columnStyles: direita([2, 3, 4, 5, 6]), didParseCell: vermelhoSe([2, 3, 4, 5, 6]) },
+    );
+  } else if (cx.tpa.length) {
     titulo(tp('Multicaixa por banco (talões do TPA)'));
     const nome = (rota) => rota + ' · ' + ((P.find((p) => p.rota === rota) || {}).promotor || '');
     tabelaPdf(
@@ -223,22 +298,6 @@ export async function relatorioVendasPdf(R, imprimir = false) {
     { columnStyles: direita([2, 3, 4, 5, 6, 7, 8]), didParseCell: vermelhoSe([2, 3, 4, 5, 6, 7, 8]) },
   );
 
-  // 6. SAP
-  titulo(tp('Facturação SAP por empresa'));
-  if (d.sap)
-    tabelaPdf(
-      [tp('Empresa'), tp('Dinheiro'), tp('Depósito'), tp('Crédito'), tp('Outros'), tp('Total')],
-      Object.entries(d.sap.resumo).map(([e, x]) => [e, kz(x.dinheiro), kz(x.deposito), kz(x.credito), kz(x.outro), kz(x.total)]),
-      { columnStyles: direita([1, 2, 3, 4, 5]), didParseCell: vermelhoSe([1, 2, 3, 4, 5]) },
-    );
-  else {
-    doc
-      .setFont('helvetica', 'normal')
-      .setFontSize(8.5)
-      .setTextColor(...CINZA)
-      .text(tp('Conector SAP por ligar: esta parte do relatório não tem dados.'), M, y + 2);
-    y += 10;
-  }
   if (R.motivo) {
     doc
       .setFont('helvetica', 'normal')

@@ -1,6 +1,7 @@
 <?php
-// Folha de caixa, controlos de prontidão e Relatório de Vendas diário; conector SAP OData.
+// Folha de caixa, controlos de prontidão e Consolidado diário de vendas (só Naval e RTM); conector SAP OData.
 naval_servico('relatorio-vendas');
+naval_servico('sap-odata');
 
 teste('caixa: saldo do dia anterior, saldo teórico, contagem com diferença explicada, aprovação por outra pessoa', function () {
     $d1 = date('Y-m-d', time() - 6 * 86400);
@@ -70,7 +71,6 @@ $GLOBALS['rv_fontes'] = function (string $dia, array $mudar = []) {
         'lotes' => [['numero' => 4, 'estado' => 'carregado', 'documentos' => ['FR A/1', 'FR A/2', 'NC B/1']]],
         'caixa' => naval_caixa_totais(['estado' => 'aprovada', 'aprovada_por' => 'fin', 'saldo_inicial' => 100.0, 'entregas' => [['rota' => '1001', 'valor' => 550.0]],
             'tpa' => [['rota' => '1001', 'banco' => 'BPC', 'valor' => 400.0]], 'saidas' => [], 'contagem_fisica' => 650.0]),
-        'sap_configurado' => false, 'sap' => null,
     ];
 };
 
@@ -79,7 +79,7 @@ teste('prontidão: só gera com tudo completo; cada fonte em falta diz o que fal
     $f = $GLOBALS['rv_fontes'];
     $ok = naval_rv_controlos($dia, $f($dia));
     verdade($ok['pronto'], 'tudo completo');
-    igual('por_ligar', $ok['controlos']['sap_odata']['estado'], 'SAP por ligar não impede');
+    igual(false, isset($ok['controlos']['sap_odata']), 'só Naval e RTM: sem a facturação SAP das outras empresas');
     $x = naval_rv_controlos($dia, $f($dia, ['sync' => [['rota' => '1001', 'ultima' => $dia . ' 12:00:00']]]));
     igual(false, $x['pronto']);
     igual(['1001', '1002'], $x['controlos']['pinguim']['rotas'], 'rotas por sincronizar depois do fecho');
@@ -114,6 +114,24 @@ teste('relatório: cobranças por promotor face à caixa e ao TPA; congelado, co
     igual(200.0, $p['1002']['notas_credito']);
     igual(1300.0, $r['dados']['resumo']['vendas'], 'líquido das notas de crédito');
     igual(64, strlen($r['sha256']));
+    // consolidado (SALES REPORT): vendas, meios, conferências e excepções
+    $c = $r['dados']['consolidado'];
+    igual(['NAVAL', 'RTM'], [$c['empresa'], $c['canal']]);
+    igual([2, 1500.0, 200.0, 1300.0], [$c['vendas']['documentos'], $c['vendas']['brutas'], $c['vendas']['notas_credito'], $c['vendas']['liquidas']]);
+    igual([600.0, 400.0, 500.0], [$c['meios']['dinheiro'], $c['meios']['multicaixa'], $c['meios']['por_receber']]);
+    $conf = array_column($c['conferencias'], 'estado', 'id');
+    igual(['cobrancas' => 'confere', 'por_promotor' => 'confere', 'dinheiro' => 'diferenca', 'multicaixa' => 'confere', 'caixa' => 'confere', 'stock' => 'confere'], $conf);
+    igual(-50.0, array_column($c['conferencias'], 'diferenca', 'id')['dinheiro'], 'entregue − recebido');
+    igual([1, 'com_diferencas'], [$c['diferencas'], $c['estado']]);
+    igual(['dinheiro', 'por_receber'], array_column($c['excepcoes'], 'tipo'), 'primeiro o dinheiro, depois o crédito');
+    verdade(strpos($c['excepcoes'][0]['promotor'], '1001 · ') === 0, 'rota e nome da tabela de rotas');
+    igual([['banco' => 'BPC', 'conta' => '', 'multicaixa' => 400.0, 'talaos' => 1, 'deposito' => 0.0, 'lacres' => 0, 'total' => 400.0]], $c['bancos']);
+    // compensação: não é cobrança (como em «por promotor») e a conferência das cobranças continua a fechar
+    $comp = $f($dia, ['vendas' => [['rota' => '1001', 'documento' => 'FR A/9', 'total' => 300.0, 'nc' => false, 'pagamentos' => [['codigo' => 'CMP', 'valor' => 300.0]]]]]);
+    $cc = naval_rv_consolidado($comp['vendas'], naval_rv_montar($dia, $comp, ['1001' => 'Ana']));
+    igual([300.0, 300.0, 'confere'], [$cc['meios']['compensacao'], $cc['meios']['por_receber'], $cc['conferencias'][0]['estado']]);
+    verdade(strpos(naval_rv_email_html($r), 'Falta de dinheiro') !== false, 'o correio leva as excepções');
+    verdade(isset($r['envio']['ok']), 'o envio do resumo fica registado na resposta (o relatório gera-se mesmo que o envio falhe)');
     lanca(409, function () use ($dia, $f) { naval_rv_gerar($dia, '', 'dir', $f($dia)); });   // segunda versão sem motivo
     igual(2, naval_rv_gerar($dia, 'caixa corrigida', 'dir', $f($dia))['versao']);
     igual([1, 2], array_column(naval_rv_versoes($dia), 'versao'));

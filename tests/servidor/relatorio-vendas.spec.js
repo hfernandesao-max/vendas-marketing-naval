@@ -56,7 +56,7 @@ test('relatório de vendas: sem as fontes completas não se gera; perfis sem ace
   expect(v.pode_gerar).toBe(true);
   expect(v.controlos.caixa.estado).toBe('ok'); // aprovada no teste anterior
   expect(v.pronto).toBe(false); // sem base de dados do Pinguim BO no ambiente de testes
-  expect(v.controlos.sap_odata.estado).toBe('por_ligar');
+  expect(v.controlos.sap_odata).toBeUndefined(); // só Naval e RTM: sem a facturação SAP das outras empresas
   const x = await dir.post(API + 'relatorio-vendas', { data: { accao: 'gerar', dia, csrf: await csrf(dir) } });
   expect(x.status()).toBe(409);
   expect((await x.json()).controlos.pinguim.estado).not.toBe('ok');

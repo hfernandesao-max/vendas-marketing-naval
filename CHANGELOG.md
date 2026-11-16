@@ -1,5 +1,28 @@
 ## 16-11-2026
 
+### Consolidado diário de vendas RTM da Naval: resumo, conferências e excepções, e envio automático
+
+<!-- paginas: relatorio-vendas -->
+<!-- tipo: funcionalidade -->
+
+- O **Relatório Diário de Vendas** passa a **Consolidado Diário de Vendas**, só com as vendas **RTM** (Pinguim BO) da
+  **Naval**, a única empresa que factura no RTM. Sai a verificação e a secção da facturação SAP das outras empresas: o
+  consolidado já não depende do conector SAP.
+- **Resumo do dia** no formato do SALES REPORT: vendas brutas, notas de crédito e vendas líquidas; dinheiro, Multicaixa
+  e por receber (crédito); caixa (saldo inicial + dinheiro entregue − depósitos = saldo final pela contagem física).
+- **Conferências automáticas** (cada uma compara duas fontes independentes, tolerância zero): vendas = cobranças + por
+  receber; total por promotor = total do dia; dinheiro recebido = dinheiro entregue na caixa; Multicaixa = talões do
+  TPA; saldo teórico da caixa = contagem física; stock contado = stock teórico nas carrinhas. Estado no topo: «Tudo
+  confere» ou «N conferência(s) com diferença».
+- **Excepções a explicar**, primeiro (gestão por excepção): caixa, faltas e sobras de dinheiro, Multicaixa, stock e
+  vendas a crédito, por promotor, o maior valor primeiro. Os nomes vêm sempre da tabela de rotas.
+- **Bancos**: Multicaixa (talões do TPA, com a conta do registo dos terminais) e depósitos (lacres) por banco e conta.
+- **PDF** com o resumo, as conferências, as excepções (com espaço para a explicação), os bancos e as assinaturas
+  (preparado, revisto e aprovado). Excel por tabela, como antes.
+- Ao gerar, segue **por correio** o resumo, as conferências e as excepções para quem tem acesso ao consolidado na matriz
+  (sem os perfis limitados a rotas), com a ligação para o portal; `RELATORIO_VENDAS_EMAIL=0` no `.env` desliga o envio.
+  Os relatórios já gerados mantêm-se como estavam (fotografia congelada).
+
 ### Modo apresentação: moldura vermelha a toda a volta e menu da conta com cores com significado
 
 <!-- paginas: inicio -->
