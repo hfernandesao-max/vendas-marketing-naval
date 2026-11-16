@@ -13,7 +13,7 @@
     "test:unidade": "php tests/unidade/correr.php"
   },
   "devDependencies": {
-    "@eslint/js": "9.39.5",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "eslint": "10.13.0",
     "exceljs": "4.4.0",
