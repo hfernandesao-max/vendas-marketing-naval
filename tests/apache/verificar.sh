@@ -127,6 +127,8 @@ espera 404 "/equipamentos/ficha.php?id=x%27or1"
 espera 302 /equipamentos/
 P="$(curl -s "$URL/equipamentos/ficha.php?id=NAV-SMT-0001")"
 if echo "$P" | grep -q "propriedade do Grupo Naval" && ! echo "$P" | grep -qE "Andrea|BV6200|353326"; then echo "  ok    página pública do QR sem dados internos"; else echo "  FALHA página pública do QR"; FALHAS=$((FALHAS+1)); fi
+H="$(curl -s -D - -o /dev/null "$URL/equipamentos/ficha.php?id=NAV-SMT-0001" | tr -d '\r')"
+if echo "$H" | grep -qi "^Content-Security-Policy: default-src 'none'.*frame-ancestors 'none'" && ! echo "$H" | grep -qi "^Content-Security-Policy-Report-Only"; then echo "  ok    página pública do QR com CSP estrita (sem scripts nem enquadramento)"; else echo "  FALHA CSP da página pública do QR"; FALHAS=$((FALHAS+1)); fi
 H="$(curl -s -D - -o /dev/null "$URL/manifest.webmanifest")"
 if echo "$H" | grep -qi "^Content-Type: application/manifest+json"; then echo "  ok    manifesto com o tipo application/manifest+json"; else echo "  FALHA tipo do manifesto"; FALHAS=$((FALHAS+1)); fi
 H="$(curl -s -D - -o /dev/null "$URL/sw.js")"

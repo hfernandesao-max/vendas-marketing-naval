@@ -527,6 +527,16 @@ dialog.dlg.largo {
 .atv-accoes .btn {
   text-decoration: none;
 }
+.atv-nota {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-align: justify;
+  hyphens: auto;
+}
+.atv-caixa .atv-accoes {
+  margin: 12px 0 0;
+}
 a.lnk,
 button.lnk {
   color: var(--sky);

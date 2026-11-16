@@ -255,6 +255,50 @@ function desenharLista(pg) {
     const tools = pg.querySelector('#s-equipamentos-colaboradores .sec-tools');
     if (tools) tools.prepend(botao(t('Novo colaborador'), 'sm', () => dialogoColaborador({})));
   }
+  if (p.administrar && d.contacto) pg.append(seccaoPaginaPublica(d.contacto, L));
+}
+
+/** Página pública do código QR: o contacto de devolução que vê quem encontra um equipamento, e a pré-visualização. */
+function seccaoPaginaPublica(c, L) {
+  const s = caixa(t('Página pública do código QR'));
+  s.append(
+    el(
+      'p',
+      'atv-nota',
+      t(
+        'Quem lê a etiqueta sem sessão iniciada vê apenas que o equipamento é do Grupo Naval, o ID, o tipo e este contacto, em português e inglês. Se o equipamento estiver dado como perdido ou roubado, a leitura fica na ficha e quem administra os equipamentos recebe um aviso.',
+      ),
+    ),
+  );
+  const origem = { portal: t('gravado no portal'), env: t('valor por omissão do servidor (.env)'), vazio: t('por preencher') }[c.origem] || '';
+  s.append(
+    dado(t('Telefone'), c.tel || '—'),
+    dado(t('Correio electrónico'), c.email || '—'),
+    dado(t('Origem'), origem + (c.alterado_em ? ' · ' + dataHora(c.alterado_em) + (c.alterado_por ? ' · ' + c.alterado_por : '') : '')),
+  );
+  const ac = el('div', 'atv-accoes');
+  ac.append(botao(t('Alterar contacto de devolução'), '', () => dialogoContacto(c)));
+  const exemplo = (L[0] && L[0].id) || 'NAV-SMT-0001';
+  const a = ligacao(t('Pré-visualizar a página pública'), '../equipamentos/ficha.php?publica=1&id=' + encodeURIComponent(exemplo), 'btn ghost');
+  a.target = '_blank';
+  a.rel = 'noopener';
+  ac.append(a);
+  s.append(ac);
+  return s;
+}
+
+function dialogoContacto(c) {
+  janela(t('Contacto de devolução'), t('Indique pelo menos um contacto. Fica visível a qualquer pessoa que leia o código QR.'), (b, ft, fechar) => {
+    const tel = entrada('tel', c.tel, { maxLength: 24, autocomplete: 'off', placeholder: '+244 923 000 000' });
+    const email = entrada('email', c.email, { maxLength: 120, autocomplete: 'off', placeholder: 'equipamentos@naval.co.ao' });
+    b.append(campo(t('Telefone'), tel), campo(t('Correio electrónico'), email));
+    const erro = msgErro();
+    b.append(erro);
+    const go = botao(t('Gravar'), '', () =>
+      enviar(go, erro, { accao: 'contacto', tel: tel.value.trim(), email: email.value.trim() }, fechar, () => toast(t('Contacto de devolução gravado.'), 4000)),
+    );
+    ft.append(botao(t('Cancelar'), 'ghost', fechar), go);
+  });
 }
 
 // ───────────────────────────── Ficha ─────────────────────────────

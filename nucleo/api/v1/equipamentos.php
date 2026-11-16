@@ -7,13 +7,14 @@
  * GET  v1/equipamentos/documentos[?numero=…]   → lista de documentos, ou um documento com equipamentos e assinaturas
  * GET  v1/equipamentos/pdf?numero=…[&versao=original] → PDF (o assinado, se existir)
  * POST v1/equipamentos {accao, csrf, …}
- *   registar | colaborador                     (Equipamentos – Administrar, G)
+ *   registar | colaborador | contacto          (Equipamentos – Administrar, G; contacto = contacto de devolução da página pública do QR)
  *   evento | emitir | anular                   (Equipamentos – Movimentar, G; o abate exige Administrar)
  *   assinar                                    (Movimentar; ou o próprio colaborador, com a sua conta)
  *   verificar                                  (consultar)
  */
 defined('NAVAL_API') || exit;   // só pela API central (api/index.php): token JWT já validado
 naval_servico('equipamentos');
+naval_servico('equipamentos-qr');
 // O colaborador com conta no portal vê e assina, com a sua conta, os documentos em seu nome, mesmo sem acesso ao resto
 // do módulo na matriz (ex.: perfil PRO). Só estas operações: ler esse documento, o PDF, assinar e verificar.
 $soProprio = false;
@@ -61,7 +62,7 @@ if (!naval_e_post()) {
         'colaboradores' => naval_atv_colaboradores(),
         'tipos' => array_map(function ($t) { return ['codigo' => $t['Codigo'], 'nome' => $t['Descricao'] ?? $t['Codigo']]; }, naval_atv_q('SELECT * FROM ATV_TIPO ORDER BY Codigo')),
         'pode' => $pode,
-    ]);
+    ] + ($pode['administrar'] ? ['contacto' => naval_atv_contacto()] : []));
 }
 
 // ---------------- Alterações ----------------
@@ -83,6 +84,11 @@ switch ($accao) {
     case 'colaborador':
         if (!$pode['administrar']) $recusar('Equipamentos – Administrar');
         naval_json(['ok' => true] + naval_atv_guardar_colaborador($q));
+        break;
+    case 'contacto':
+        if (!$pode['administrar']) $recusar('Equipamentos – Administrar');
+        $u = naval_utilizador();
+        naval_json(['ok' => true, 'contacto' => naval_atv_gravar_contacto($q, (string) ($u['login'] ?? ''))]);
         break;
     case 'evento':
         if (!$pode['movimentar']) $recusar('Equipamentos – Movimentar');

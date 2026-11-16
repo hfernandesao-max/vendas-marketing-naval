@@ -61,6 +61,58 @@ test('Código QR: sem sessão, página pública sem dados internos; com sessão 
   expect(await c.text()).toContain('não tem acesso');
 });
 
+test('Página pública do QR: contacto gravado no portal, PT e EN, cabeçalhos estritos; leitura de um equipamento perdido fica na ficha', async () => {
+  const log = await entrar('log');
+  const ck = await csrf(log.ctx);
+  expect((await log.ctx.post(API + 'equipamentos', { data: { accao: 'contacto', tel: 'abc', email: '', csrf: ck } })).status()).toBe(400);
+  expect((await log.ctx.post(API + 'equipamentos', { data: { accao: 'contacto', tel: '', email: '', csrf: ck } })).status()).toBe(400);
+  const g = await log.ctx.post(API + 'equipamentos', { data: { accao: 'contacto', tel: '+244 923 111 222', email: 'Equipamentos@naval.co.ao', csrf: ck } });
+  expect(g.status()).toBe(200);
+  expect((await g.json()).contacto).toMatchObject({ tel: '+244 923 111 222', email: 'equipamentos@naval.co.ao', origem: 'portal', alterado_por: 'log' });
+  expect((await (await log.ctx.get(API + 'equipamentos')).json()).contacto.origem).toBe('portal');
+  // o supervisor (sem «Administrar») não vê nem altera o contacto
+  const sup = await entrar('sup');
+  expect((await (await sup.ctx.get(API + 'equipamentos')).json()).contacto).toBeUndefined();
+  expect((await sup.ctx.post(API + 'equipamentos', { data: { accao: 'contacto', tel: '+244 900 000 001', csrf: await csrf(sup.ctx) } })).status()).toBe(403);
+
+  // equipamento dado como perdido
+  const r = await log.ctx.post(API + 'equipamentos', {
+    data: { accao: 'registar', tipo: 'IMP', num_serie: 'PERD-' + Date.now(), mac: '00:11:22:33:44:' + String((Date.now() % 90) + 10), csrf: ck },
+  });
+  const id = (await r.json()).equipamento.id;
+  expect((await log.ctx.post(API + 'equipamentos', { data: { accao: 'evento', id, tipo: 'PERDA_ROUBO', observacoes: 'Teste', csrf: ck } })).status()).toBe(200);
+
+  const anon = await request.newContext({ baseURL: BASE });
+  const p = await anon.get('/equipamentos/ficha.php?id=' + id.toLowerCase(), { maxRedirects: 0 });
+  expect(p.status()).toBe(200);
+  const csp = p.headers()['content-security-policy'];
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toContain("default-src 'none'");
+  expect(p.headers()['referrer-policy']).toBe('no-referrer');
+  const html = await p.text();
+  expect(html).toContain(id);
+  expect(html).toContain('Impressora móvel');
+  expect(html).toContain('Mobile printer');
+  expect(html).toContain('This device is the property of Grupo Naval');
+  expect(html).toContain('tel:+244923111222');
+  expect(html).toContain('equipamentos@naval.co.ao');
+  expect(html).not.toContain('<script');
+  expect(html).not.toContain('PERD-');
+  expect(html).not.toContain('perdido');
+  // a resposta é a mesma para um ID que não existe
+  const x = await (await anon.get('/equipamentos/ficha.php?id=NAV-IMP-9999', { maxRedirects: 0 })).text();
+  expect(x).toContain('NAV-IMP-9999');
+  expect(x).toContain('This device is the property of Grupo Naval');
+
+  const f = await (await log.ctx.get(API + 'equipamentos/ficha?id=' + id)).json();
+  expect(f.eventos.some((e) => e.tipo === 'LEITURA_QR' && /Leitura pública/.test(e.observacoes || ''))).toBe(true);
+
+  // pré-visualização com sessão: a página pública, sem redireccionar
+  const v = await log.ctx.get('/equipamentos/ficha.php?publica=1&id=' + id, { maxRedirects: 0 });
+  expect(v.status()).toBe(200);
+  expect(await v.text()).toContain('Pré-visualização da página pública');
+});
+
 test('Assinatura com a própria conta: o colaborador (perfil sem acesso ao módulo) só vê e assina o documento em seu nome', async () => {
   const assinatura = JSON.parse(readFileSync(new URL('../dados/assinatura-teste.json', import.meta.url), 'utf8'));
   const log = await entrar('log');
