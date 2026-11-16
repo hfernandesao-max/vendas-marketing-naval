@@ -1,5 +1,26 @@
 ## 16-11-2026
 
+### Plano de cargas: tabelas de motoristas e viaturas, requisição como documento e carga pelo stock contado
+
+<!-- paginas: plano-cargas -->
+<!-- tipo: funcionalidade -->
+
+- **Tabela de motoristas** (Listas → Motoristas): nome, telefone, transportadora, matrícula habitual, **validade da carta
+  de condução** e activo. No plano, o motorista escolhe-se numa lista (só os activos e com a carta válida no dia); o
+  telefone, a viatura e a transportadora preenchem-se sozinhos. O plano já não cria nem altera motoristas: a tabela é a
+  única fonte (dados mestre).
+- **Tabela de viaturas** (Listas → Viaturas): matrícula (validada e única), **marca, modelo**, transportadora,
+  capacidade (kg) e activa. Ao escolher a matrícula, aparecem a marca e o modelo; a capacidade passa a vir daqui para o
+  limite de peso. Na primeira abertura, a tabela é criada com as capacidades e as matrículas que já existiam.
+- Publicar recusa motoristas fora da tabela, inactivos ou com a carta caducada no dia, e viaturas fora da frota ou
+  inactivas.
+- **Documento = número da requisição** ao armazém (RQ-…), preenchido sozinho pelo servidor (também no Excel e no
+  correio). Rota sem requisição emitida fica com aviso.
+- **Quantidade de cada artigo = já na carrinha + a carregar**: o stock contado na conciliação do dia anterior (no corte;
+  sem contagem, o esperado, «estimado») mais a requisição (depois de carregada, o entregue). O cartão mostra a conta por
+  artigo; uma rota com requisição fica marcada a sair. Os artigos do Pinguim BO juntam-se aos do plano pelo nome ou pela
+  **correspondência** (Listas → Correspondência).
+
 ### Conciliação da carrinha: a carga para o dia seguinte não entra na contagem
 
 <!-- paginas: conciliacao-carrinha -->

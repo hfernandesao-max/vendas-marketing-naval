@@ -6,6 +6,12 @@
  *   AAAA-MM-DD.json        plano do dia (rascunho e versão publicada)
  *   AAAA-MM-DD-vN.xlsx     Excel enviado em cada publicação
  *   listas.json            motoristas, zonas, armazéns, viaturas, transportadoras, artigos e destinatários
+ *
+ * Dados mestre (gestão de frota): «motoristas» (nome, telefone, transportadora, matrícula habitual, validade da carta
+ * de condução, activo) e «frota» (matrícula, marca, modelo, transportadora, capacidade em kg, activa). Com as tabelas
+ * preenchidas, só se publica um plano com motoristas activos, com a carta válida no dia, e viaturas activas da frota.
+ * O documento de cada rota é o número da requisição ao armazém (preenchido sozinho) e a quantidade de cada artigo do
+ * plano é o stock da carrinha no corte do dia anterior (contado na conciliação) + o que se vai carregar (requisição).
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/email.php';
@@ -28,7 +34,55 @@ function naval_plano_listas(): array
     foreach (['armazens', 'motoristas', 'zonas', 'viaturas', 'transportadoras', 'destinatarios'] as $k) if (!isset($l[$k]) || !is_array($l[$k])) $l[$k] = [];
     if (empty($l['artigos'])) $l['artigos'] = NAVAL_ARTIGOS_PADRAO;
     if (!isset($l['capacidades']) || !is_array($l['capacidades'])) $l['capacidades'] = [];
+    if (!isset($l['grupos_artigos']) || !is_array($l['grupos_artigos'])) $l['grupos_artigos'] = [];
+    foreach ($l['motoristas'] as &$m) $m += ['telefone' => '', 'matricula' => '', 'viatura' => '', 'transportadora' => '', 'carta_validade' => '', 'activo' => true];
+    unset($m);
+    // frota (viaturas por matrícula): na primeira leitura, a partir das capacidades e das matrículas dos motoristas
+    if (!isset($l['frota']) || !is_array($l['frota'])) {
+        $f = [];
+        foreach ($l['capacidades'] as $mat => $kg) $f[(string) $mat] = ['matricula' => (string) $mat, 'marca' => '', 'modelo' => '', 'transportadora' => '', 'kg' => (float) $kg, 'activa' => true];
+        foreach ($l['motoristas'] as $m) {
+            $mat = naval_frota_matricula((string) ($m['matricula'] ?? ''));
+            if ($mat === '') continue;
+            $f[$mat] = ($f[$mat] ?? ['matricula' => $mat, 'marca' => '', 'modelo' => '', 'transportadora' => '', 'kg' => 0.0, 'activa' => true]);
+            if ($f[$mat]['modelo'] === '') $f[$mat]['modelo'] = naval_texto($m['viatura'] ?? '', 40);
+            if ($f[$mat]['transportadora'] === '') $f[$mat]['transportadora'] = naval_texto($m['transportadora'] ?? '', 60);
+        }
+        ksort($f);
+        $l['frota'] = array_values($f);
+    }
+    // capacidade (kg) por matrícula: a da frota manda (o limite de peso do plano usa-a)
+    foreach ($l['frota'] as $v) if (!empty($v['activa']) && (float) ($v['kg'] ?? 0) > 0) $l['capacidades'][(string) $v['matricula']] = (float) $v['kg'];
     return $l;
+}
+
+/** Matrícula normalizada (maiúsculas, separada por hífenes) ou '' se não for válida. Ex.: «ld 23 45 ab» → LD-23-45-AB. */
+function naval_frota_matricula(string $m): string
+{
+    $m = strtoupper(trim((string) preg_replace('/[\s.\/_]+/', '-', trim($m))));
+    $m = trim((string) preg_replace('/-+/', '-', (string) preg_replace('/[^A-Z0-9-]/', '', $m)), '-');
+    return preg_match('/^[A-Z0-9]{1,4}(-[A-Z0-9]{1,4}){1,4}$/', $m) ? $m : '';
+}
+
+/** Problemas de dados mestre de uma rota que sai: motorista activo com a carta válida no dia; viatura activa na frota. */
+function naval_frota_erros(array $r, array $listas, string $data): array
+{
+    $e = [];
+    $n = 'Rota ' . $r['rota'];
+    if ($listas['motoristas'] && $r['motorista'] !== '') {
+        $m = null;
+        foreach ($listas['motoristas'] as $x) if (naval_chave_texto((string) $x['nome']) === naval_chave_texto($r['motorista'])) { $m = $x; break; }
+        if (!$m) $e[] = $n . ': o motorista ' . $r['motorista'] . ' não está na tabela de motoristas.';
+        elseif (empty($m['activo'])) $e[] = $n . ': o motorista ' . $m['nome'] . ' está inactivo.';
+        elseif (($m['carta_validade'] ?? '') !== '' && $m['carta_validade'] < $data) $e[] = $n . ': a carta de condução de ' . $m['nome'] . ' caducou em ' . naval_data_pt($m['carta_validade']) . '.';
+    }
+    if ($listas['frota'] && $r['matricula'] !== '') {
+        $v = null;
+        foreach ($listas['frota'] as $x) if ($x['matricula'] === naval_frota_matricula($r['matricula'])) { $v = $x; break; }
+        if (!$v) $e[] = $n . ': a matrícula ' . $r['matricula'] . ' não está na tabela de viaturas.';
+        elseif (empty($v['activa'])) $e[] = $n . ': a viatura ' . $v['matricula'] . ' está inactiva.';
+    }
+    return $e;
 }
 
 function naval_plano_gravar_listas(array $l): void
@@ -50,6 +104,7 @@ function naval_ligacoes_minusculas(string $s): string
 /** Acrescenta às listas os motoristas, zonas, armazéns, viaturas e transportadoras usados num plano. */
 function naval_plano_aprender(array &$l, array $rotas): void
 {
+    $l['_mestre'] = !empty($l['motoristas']);
     $junta = function (array &$lista, string $v) {
         $v = naval_texto($v);
         if ($v === '') return;
@@ -63,7 +118,8 @@ function naval_plano_aprender(array &$l, array $rotas): void
         $junta($l['viaturas'], (string) ($r['viatura'] ?? ''));
         $junta($l['transportadoras'], (string) ($r['transportadora'] ?? ''));
         $nome = naval_texto($r['motorista'] ?? '');
-        if ($nome === '') continue;
+        // dados mestre: com a tabela de motoristas preenchida, o plano não cria nem altera motoristas
+        if ($nome === '' || !empty($l['_mestre'])) continue;
         $k = naval_chave_texto($nome);
         $novo = ['nome' => $nome, 'telefone' => naval_texto($r['telefone'] ?? '', 30), 'matricula' => naval_texto($r['matricula'] ?? '', 20),
             'viatura' => naval_texto($r['viatura'] ?? '', 40), 'transportadora' => naval_texto($r['transportadora'] ?? '', 60)];
@@ -74,8 +130,9 @@ function naval_plano_aprender(array &$l, array $rotas): void
             $achou = true;
             break;
         }
-        if (!$achou) $l['motoristas'][] = $novo;
+        if (!$achou) $l['motoristas'][] = $novo + ['carta_validade' => '', 'activo' => true];
     }
+    unset($l['_mestre']);
 }
 
 /** Lista de nomes sem repetidos (ignora maiúsculas, acentos e pontuação). */
@@ -120,16 +177,16 @@ function naval_plano_rota_limpa(array $r, array $artigos): array
         'quantidades' => $q,
         'motorista' => naval_texto($r['motorista'] ?? ''),
         'telefone' => preg_replace('/[^0-9+ ]/', '', naval_texto($r['telefone'] ?? '', 30)),
-        'matricula' => strtoupper(naval_texto($r['matricula'] ?? '', 20)),
+        'matricula' => naval_frota_matricula((string) ($r['matricula'] ?? '')) ?: strtoupper(naval_texto($r['matricula'] ?? '', 20)),
         'viatura' => naval_texto($r['viatura'] ?? '', 40),
         'transportadora' => naval_texto($r['transportadora'] ?? '', 60),
-        'factura' => naval_texto($r['factura'] ?? '', 40),
+        'factura' => naval_texto($r['factura'] ?? '', 120),
         'obs' => naval_texto($r['obs'] ?? '', 300),
     ];
 }
 
 /** Problemas que impedem a publicação (só as rotas que saem). */
-function naval_plano_erros(array $rotas, array $artigos): array
+function naval_plano_erros(array $rotas, array $artigos, ?array $listas = null, string $data = ''): array
 {
     $e = [];
     $saem = array_filter($rotas, function ($r) { return $r['sai']; });
@@ -140,6 +197,7 @@ function naval_plano_erros(array $rotas, array $artigos): array
         if ($r['matricula'] === '') $e[] = $n . ': falta a matrícula.';
         if (!$r['zonas']) $e[] = $n . ': indique pelo menos uma zona.';
         if (array_sum($r['quantidades']) <= 0) $e[] = $n . ': a carga está a zero.';
+        if ($listas !== null) $e = array_merge($e, naval_frota_erros($r, $listas, $data !== '' ? $data : date('Y-m-d')));
     }
     return $e;
 }
@@ -274,7 +332,7 @@ function naval_plano_email_html(array $p, array $artigos, string $ligacao): stri
         . '<h2 style="margin:0 0 6px;font-size:20px">Plano de cargas de ' . $d . '-' . $m . '-' . $a . '</h2>'
         . '<p style="margin:0 0 14px;font-size:13px;color:#5B6B8C">' . count($saem) . ' rotas · publicado por ' . $h($pub['por_nome'] ?? $pub['por']) . ' em ' . $h(date('d-m-Y H:i', strtotime($pub['em']))) . '</p>'
         . $rect . $nota
-        . '<table style="border-collapse:collapse;width:100%"><thead><tr><th ' . $th . '>Rota / vendedor</th><th ' . $th . '>Motorista</th><th ' . $th . '>Viatura</th><th ' . $th . '>Zonas</th>' . $cab . '<th ' . $th . '>Factura</th></tr></thead>'
+        . '<table style="border-collapse:collapse;width:100%"><thead><tr><th ' . $th . '>Rota / vendedor</th><th ' . $th . '>Motorista</th><th ' . $th . '>Viatura</th><th ' . $th . '>Zonas</th>' . $cab . '<th ' . $th . '>Requisição</th></tr></thead>'
         . '<tbody>' . $linhas . '<tr><td ' . $td . ' colspan="4"><b>Total</b></td>' . $rod . '<td ' . $td . '></td></tr></tbody></table>'
         . '<p style="margin:16px 0 0;font-size:13px">O Excel segue em anexo, no formato habitual.' . ($ligacao ? ' Também pode consultar o plano no portal: <a href="' . $h($ligacao) . '" style="color:#1E4FB0">abrir o plano de cargas</a>.' : '') . '</p>'
         . '<p style="margin:14px 0 0;font-size:11px;color:#8A97B3">Mensagem automática do Portal RTM · Grupo Naval. Não responda a este email.</p></div>';
@@ -453,7 +511,7 @@ function naval_plano_destinatarios(array $listas, array $para): array
 function naval_plano_publicar(array $p, string $xlsx, string $nota, array $eu, array $listas, bool $enviar = true, array $para = []): array
 {
     $rotas = $p['rotas'];
-    $erros = naval_plano_erros($rotas, $listas['artigos']);
+    $erros = naval_plano_erros($rotas, $listas['artigos'], $listas, (string) $p['data']);
     if ($enviar && !$listas['destinatarios']) $erros[] = 'A lista de destinatários está vazia (Listas → Destinatários).';
     if ($erros) throw new NavalErro('Corrija antes de publicar:', 400, ['erros' => $erros]);
     if ($enviar) naval_plano_destinatarios($listas, $para);   // escolha válida antes de gravar a versão
@@ -507,10 +565,54 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
         if (isset($n[$k])) $l[$k] = naval_lista_unica((array) $n[$k]);
     }
     if (isset($n['motoristas'])) {
-        $l['motoristas'] = [];
-        naval_plano_aprender($l, array_map(function ($m) {
-            return ['motorista' => $m['nome'] ?? '', 'telefone' => $m['telefone'] ?? '', 'matricula' => $m['matricula'] ?? '', 'viatura' => $m['viatura'] ?? '', 'transportadora' => $m['transportadora'] ?? ''];
-        }, (array) $n['motoristas']));
+        // tabela de motoristas (dados mestre): nome único, telefone, transportadora, matrícula habitual, validade da carta
+        $mot = [];
+        foreach ((array) $n['motoristas'] as $m) {
+            $nome = naval_texto($m['nome'] ?? '');
+            if ($nome === '') continue;
+            $k = naval_chave_texto($nome);
+            if (isset($mot[$k])) throw new NavalErro('O motorista ' . $nome . ' está repetido.');
+            $val = trim((string) ($m['carta_validade'] ?? ''));
+            if ($val !== '' && !naval_data_valida($val)) throw new NavalErro('Validade da carta inválida para ' . $nome . '.');
+            $mat = trim((string) ($m['matricula'] ?? ''));
+            if ($mat !== '' && naval_frota_matricula($mat) === '') throw new NavalErro('Matrícula inválida para ' . $nome . ': ' . $mat . '.');
+            $mot[$k] = ['nome' => $nome, 'telefone' => preg_replace('/[^0-9+ ]/', '', naval_texto($m['telefone'] ?? '', 30)),
+                'matricula' => $mat === '' ? '' : naval_frota_matricula($mat), 'viatura' => naval_texto($m['viatura'] ?? '', 40),
+                'transportadora' => naval_texto($m['transportadora'] ?? '', 60), 'carta_validade' => $val, 'activo' => !array_key_exists('activo', (array) $m) || !empty($m['activo'])];
+        }
+        $l['motoristas'] = array_values($mot);
+    }
+    if (isset($n['frota'])) {
+        // tabela de viaturas (dados mestre): matrícula única, marca, modelo, transportadora e capacidade (kg)
+        $f = [];
+        foreach ((array) $n['frota'] as $v) {
+            $bruta = trim((string) ($v['matricula'] ?? ''));
+            if ($bruta === '') continue;
+            $mat = naval_frota_matricula($bruta);
+            if ($mat === '') throw new NavalErro('Matrícula inválida: ' . $bruta . '.');
+            if (isset($f[$mat])) throw new NavalErro('A matrícula ' . $mat . ' está repetida.');
+            $kg = (float) str_replace(',', '.', (string) ($v['kg'] ?? 0));
+            if ($kg < 0 || $kg > 40000) throw new NavalErro('Capacidade inválida para a viatura ' . $mat . '.');
+            $f[$mat] = ['matricula' => $mat, 'marca' => naval_texto($v['marca'] ?? '', 40), 'modelo' => naval_texto($v['modelo'] ?? '', 40),
+                'transportadora' => naval_texto($v['transportadora'] ?? '', 60), 'kg' => round($kg, 1), 'activa' => !array_key_exists('activa', (array) $v) || !empty($v['activa'])];
+        }
+        ksort($f);
+        $l['frota'] = array_values($f);
+        $l['capacidades'] = [];
+        foreach ($f as $mat => $v) if ($v['kg'] > 0) $l['capacidades'][$mat] = $v['kg'];
+    }
+    if (isset($n['grupos_artigos'])) {
+        // correspondência dos artigos do Pinguim BO (código) com os artigos do plano (Fraldas, Sabão, …)
+        $ids = array_column($l['artigos'], 'id');
+        $g = [];
+        foreach ((array) $n['grupos_artigos'] as $cod => $id) {
+            $cod = naval_texto((string) $cod, 30);
+            if ($cod === '' || $id === '' || $id === null) continue;
+            if (!in_array((string) $id, $ids, true)) throw new NavalErro('Artigo do plano desconhecido: ' . $id . '.');
+            $g[$cod] = (string) $id;
+        }
+        ksort($g);
+        $l['grupos_artigos'] = $g;
     }
     if (isset($n['destinatarios'])) {
         $l['destinatarios'] = [];
@@ -535,8 +637,8 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
         if (!$art) throw new NavalErro('Tem de haver pelo menos um artigo.');
         $l['artigos'] = array_values($art);
     }
-    if (isset($n['capacidades'])) {
-        // carga máxima (kg) de cada viatura, pela matrícula
+    if (isset($n['capacidades']) && !isset($n['frota'])) {
+        // carga máxima (kg) de cada viatura, pela matrícula (compatibilidade: a tabela de viaturas substitui esta lista)
         $l['capacidades'] = [];
         foreach ((array) $n['capacidades'] as $mat => $kg) {
             $mat = strtoupper(naval_texto($mat, 20));
@@ -548,6 +650,124 @@ function naval_plano_actualizar_listas(array $n, array $listas): array
         ksort($l['capacidades']);
     }
     naval_plano_gravar_listas($l);
-    naval_registar('plano_listas', ['destinatarios' => count($l['destinatarios']), 'motoristas' => count($l['motoristas']), 'zonas' => count($l['zonas'])]);
+    naval_registar('plano_listas', ['destinatarios' => count($l['destinatarios']), 'motoristas' => count($l['motoristas']), 'zonas' => count($l['zonas']),
+        'viaturas' => count($l['frota'] ?? [])]);
     return $l;
+}
+
+// ── Carga de cada rota: stock da carrinha no corte do dia anterior + requisição ─────────────────────────────────────
+
+/** Último dia de trabalho antes de $data (o dia em que se contou a carrinha e se carregou para $data). */
+function naval_plano_dia_anterior(string $data): string
+{
+    naval_servico('calendario');
+    $t = strtotime($data . ' 12:00');
+    for ($i = 1; $i <= 7; $i++) {
+        $d = date('Y-m-d', $t - $i * 86400);
+        if (!naval_cal_folga($d)) return $d;
+    }
+    return date('Y-m-d', $t - 86400);
+}
+
+/** Artigo do plano (id) de um artigo do Pinguim BO: pela correspondência gravada ou pelo nome (ex.: «FRALDAS …» → fraldas). */
+function naval_plano_grupo_artigo(string $codigo, string $nome, array $listas): string
+{
+    if (isset($listas['grupos_artigos'][$codigo])) return (string) $listas['grupos_artigos'][$codigo];
+    $chave = ' ' . naval_chave_texto($nome) . ' ';
+    foreach ($listas['artigos'] as $a) {
+        $raiz = substr(naval_chave_texto((string) $a['nome']), 0, 5);
+        if (strlen($raiz) >= 4 && preg_match('/ ' . preg_quote($raiz, '/') . '/', $chave)) return (string) $a['id'];
+    }
+    return '';
+}
+
+/**
+ * Por rota, para o plano de $data: as requisições (emitidas ou carregadas, do dia anterior de trabalho até $data) e, por
+ * artigo do plano, o que já está na carrinha (contado na conciliação do dia anterior, no corte; sem contagem, o esperado
+ * — «estimado»), o que se vai carregar (requisitado; depois de carregada, o entregue) e o total à saída.
+ * {rota: {requisicoes: [{numero, estado}], grupos: {id: {na, carregar, total}}, stock: contado|estimado|sem_dados, sem_grupo: [{codigo, artigo}]}}
+ */
+function naval_plano_carga(string $data, array $listas, ?array $rotas = null): array
+{
+    naval_servico('carrinha');
+    naval_servico('requisicoes');
+    $ant = naval_plano_dia_anterior($data);
+    $out = [];
+    $vazio = function () use ($listas) {
+        $g = [];
+        foreach ($listas['artigos'] as $a) $g[(string) $a['id']] = ['na' => 0.0, 'carregar' => 0.0, 'total' => 0.0];
+        return ['requisicoes' => [], 'grupos' => $g, 'stock' => 'sem_dados', 'sem_grupo' => []];
+    };
+    $junta = function (string $rota, string $codigo, string $nome, string $campo, float $q) use (&$out, $listas, $vazio) {
+        if (!isset($out[$rota])) $out[$rota] = $vazio();
+        $g = naval_plano_grupo_artigo($codigo, $nome, $listas);
+        if ($g === '' || !isset($out[$rota]['grupos'][$g])) {
+            if ($q > 0) $out[$rota]['sem_grupo'][$codigo] = ['codigo' => $codigo, 'artigo' => $nome];
+            return;
+        }
+        $out[$rota]['grupos'][$g][$campo] = round($out[$rota]['grupos'][$g][$campo] + $q, 3);
+    };
+    // requisições ao armazém
+    foreach (array_unique([substr($ant, 0, 4), substr($data, 0, 4)]) as $ano) {
+        foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+            $r = naval_json_ler((string) $f);
+            if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $data) continue;
+            $rota = (string) $r['rota'];
+            if ($rotas !== null && !in_array($rota, $rotas, true)) continue;
+            if (!isset($out[$rota])) $out[$rota] = $vazio();
+            $out[$rota]['requisicoes'][] = ['numero' => $r['numero'], 'estado' => $r['estado']];
+            foreach ($r['linhas'] as $l) {
+                $q = (float) ($r['estado'] === 'carregada' ? ($l['entregue'] ?? $l['quantidade']) : $l['quantidade']);
+                $junta($rota, (string) $l['codigo'], (string) ($l['artigo'] ?? ''), 'carregar', $q);
+            }
+        }
+    }
+    // stock da carrinha no corte do dia anterior (conciliação: contado; sem contagem, o esperado)
+    try {
+        $v = naval_carr_vista($ant, $rotas, false);
+        foreach ($v['rotas'] as $c) {
+            $rota = (string) $c['rota'];
+            if (!isset($out[$rota])) $out[$rota] = $vazio();
+            $contada = $c['resumo']['estado'] !== 'por_contar';
+            $out[$rota]['stock'] = $contada ? 'contado' : 'estimado';
+            foreach ($c['linhas'] as $l) {
+                $q = $contada && $l['contado'] !== null ? (float) $l['contado'] : (float) $l['esperado'];
+                $junta($rota, (string) $l['codigo'], (string) $l['artigo'], 'na', max(0.0, $q));
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[plano carga] ' . $e->getMessage());   // sem Pinguim BO: só a requisição (stock «sem_dados»)
+    }
+    foreach ($out as &$x) {
+        foreach ($x['grupos'] as &$g) $g['total'] = round($g['na'] + $g['carregar'], 3);
+        unset($g);
+        usort($x['requisicoes'], function ($a, $b) { return strcmp($a['numero'], $b['numero']); });
+        $x['sem_grupo'] = array_values($x['sem_grupo']);
+    }
+    unset($x);
+    ksort($out);
+    return ['dia_anterior' => $ant, 'rotas' => $out];
+}
+
+/** Preenche o documento de cada rota com os números das requisições (emitidas ou carregadas) para o dia do plano. */
+function naval_plano_com_requisicoes(array $p, array $listas): array
+{
+    naval_servico('requisicoes');
+    $ant = naval_plano_dia_anterior((string) $p['data']);
+    $num = [];
+    foreach (array_unique([substr($ant, 0, 4), substr((string) $p['data'], 0, 4)]) as $ano) {
+        foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+            $r = naval_json_ler((string) $f);
+            if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $p['data']) continue;
+            $num[(string) $r['rota']][] = (string) $r['numero'];
+        }
+    }
+    foreach ($p['rotas'] as &$r) {
+        if (!empty($num[$r['rota']])) {
+            sort($num[$r['rota']]);
+            $r['factura'] = implode(', ', $num[$r['rota']]);
+        }
+    }
+    unset($r);
+    return $p;
 }

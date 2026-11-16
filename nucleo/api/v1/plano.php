@@ -53,6 +53,8 @@ if (!naval_e_post()) {
         'ligacao' => naval_plano_ligacao(),
         // peso que ainda está em cada carrinha (stock actual no Pinguim BO × peso dos artigos): limite de carga
         'na_carrinha' => $gere ? naval_carga_na_carrinha_seguro() : (object) [],
+        // por rota: requisição ao armazém e stock da carrinha no corte do dia anterior (contado) + o que se vai carregar
+        'carga' => $gere ? naval_plano_carga($data, $listas, naval_rotas()) : ['dia_anterior' => null, 'rotas' => (object) []],
     ]);
 }
 
@@ -71,6 +73,8 @@ switch ($accao) {
     case 'guardar':
     case 'publicar':
         $p = naval_plano_actualizar((string) ($q['data'] ?? ''), (int) ($q['rev'] ?? -1), (array) ($q['rotas'] ?? []), $eu, $listas['artigos']);
+        // documento de cada rota: o número da requisição ao armazém (preenchido pelo servidor, nunca pelo navegador)
+        $p = naval_plano_com_requisicoes($p, $listas);
         // limite de peso: não deixa planear acima do que a viatura ainda pode levar (capacidade − o que já leva)
         $errosPeso = naval_carga_erros(naval_carga_estado($p['rotas'], $listas, naval_carga_na_carrinha_seguro()));
         if ($errosPeso) {

@@ -105,10 +105,40 @@ teste('plano de cargas: listas sem repetidos e palavras de ligação em minúscu
     igual('Estalagem e Moagem do Sul', naval_ligacoes_minusculas('Estalagem E Moagem Do Sul'));
     $l = ['zonas' => [], 'armazens' => [], 'viaturas' => [], 'transportadoras' => [], 'motoristas' => [['nome' => 'Adão Paulo', 'telefone' => '', 'matricula' => 'X', 'viatura' => '', 'transportadora' => '']]];
     naval_plano_aprender($l, [['motorista' => 'ADAO PAULO', 'telefone' => '924', 'matricula' => '', 'zonas' => ['Bairro E Zona']]]);
+    // tabela de motoristas preenchida (dados mestre): o plano não cria nem altera motoristas
     igual(1, count($l['motoristas']));
-    igual('924', $l['motoristas'][0]['telefone']);
+    igual('', $l['motoristas'][0]['telefone']);
     igual('X', $l['motoristas'][0]['matricula']);
     igual(['Bairro e Zona'], $l['zonas']);
+    // tabela vazia: os motoristas dos planos publicados entram na tabela (activos)
+    $v = ['zonas' => [], 'armazens' => [], 'viaturas' => [], 'transportadoras' => [], 'motoristas' => []];
+    naval_plano_aprender($v, [['motorista' => 'Adão Paulo', 'telefone' => '924', 'matricula' => 'LD-58-73-GY']]);
+    igual([['Adão Paulo', '924', true]], array_map(function ($m) { return [$m['nome'], $m['telefone'], $m['activo']]; }, $v['motoristas']));
+});
+
+teste('plano de cargas: tabelas de motoristas e viaturas; publicar só com motorista activo, carta válida e viatura da frota', function () {
+    igual('LD-23-45-AB', naval_frota_matricula(' ld 23.45 ab '));
+    igual('', naval_frota_matricula('???'));
+    $l = naval_plano_listas();
+    $n = naval_plano_actualizar_listas([
+        'motoristas' => [['nome' => 'Adão Paulo', 'telefone' => '923 000 000', 'transportadora' => 'Velotrans', 'matricula' => 'ld-58-73-gy', 'carta_validade' => '2026-11-10', 'activo' => true],
+            ['nome' => 'Bento Silva', 'carta_validade' => '', 'activo' => false]],
+        'frota' => [['matricula' => 'ld 58 73 gy', 'marca' => 'Mitsubishi', 'modelo' => 'Canter', 'transportadora' => 'Velotrans', 'kg' => '3500', 'activa' => true]],
+        'grupos_artigos' => ['10000332' => 'fraldas'],
+    ], $l);
+    igual(['LD-58-73-GY', 'Mitsubishi', 'Canter', 3500.0], [$n['frota'][0]['matricula'], $n['frota'][0]['marca'], $n['frota'][0]['modelo'], $n['frota'][0]['kg']]);
+    igual(3500.0, $n['capacidades']['LD-58-73-GY'], 'capacidade da frota no limite de peso');
+    igual('fraldas', naval_plano_grupo_artigo('10000332', 'X', $n));
+    igual('sabao', naval_plano_grupo_artigo('10000386', 'SABÃO VERDE 6 BARRAS', $n), 'pelo nome');
+    lanca(400, function () use ($n) { naval_plano_actualizar_listas(['frota' => [['matricula' => 'AA-11'], ['matricula' => 'aa 11']]], $n); });
+    lanca(400, function () use ($n) { naval_plano_actualizar_listas(['motoristas' => [['nome' => 'X', 'carta_validade' => '31-12-2026']]], $n); });
+    $rota = ['rota' => '1005', 'sai' => true, 'motorista' => 'Adão Paulo', 'matricula' => 'LD-58-73-GY', 'zonas' => ['Z'], 'quantidades' => ['fraldas' => 1]];
+    $e = naval_plano_erros([$rota], $n['artigos'], $n, '2026-11-17');
+    verdade(strpos(implode(' ', $e), 'caducou em 10-11-2026') !== false, implode(' | ', $e));
+    $e = naval_plano_erros([['motorista' => 'Bento Silva', 'matricula' => 'XX-00-00'] + $rota], $n['artigos'], $n, '2026-11-01');
+    verdade(strpos(implode(' ', $e), 'inactivo') !== false && strpos(implode(' ', $e), 'não está na tabela de viaturas') !== false, implode(' | ', $e));
+    igual([], naval_plano_erros([$rota], $n['artigos'], $n, '2026-11-01'));
+    naval_plano_gravar_listas($l);
 });
 
 teste('plano de cargas: conflito de versão devolve 409', function () {
