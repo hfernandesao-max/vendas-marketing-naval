@@ -41,13 +41,18 @@ function naval_nov_seccoes(string $md): array
             $id = substr(hash('sha256', $data . '|' . $m[1]), 0, 16);
             for ($n = 2; isset($ids[$id]); $n++) $id = substr(hash('sha256', $data . '|' . $m[1] . '|' . $n), 0, 16);
             $ids[$id] = true;
-            $actual = ['id' => $id, 'data' => $data, 'titulo' => $m[1], 'itens' => [], 'paginas' => []];
+            $actual = ['id' => $id, 'data' => $data, 'titulo' => $m[1], 'itens' => [], 'paginas' => [], 'tipo' => ''];
             continue;
         }
         if ($actual === null) continue;
         // páginas a que a secção diz respeito (selo «Novo» no menu durante 24 h): <!-- paginas: pagamentos, vendas -->
         if (preg_match('/^<!--\s*paginas:\s*(.+?)\s*-->$/', trim($l), $m)) {
             $actual['paginas'] = array_values(array_filter(array_map('trim', explode(',', $m[1]))));
+            continue;
+        }
+        // classificação da alteração (nucleo/servicos/versoes.php): <!-- tipo: funcionalidade -->
+        if (preg_match('/^<!--\s*tipo:\s*([a-z]+)\s*-->$/', trim($l), $m)) {
+            $actual['tipo'] = $m[1];
             continue;
         }
         if (preg_match('/^[-*]\s+(.*)$/', $l, $m)) {

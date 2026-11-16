@@ -81,6 +81,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2   # nos pedidos de integração, HEAD^1 é o main (verificação da classificação)
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -100,6 +102,11 @@ jobs:
 
       - name: Normas de código
         run: npm run lint && npm run format:check
+
+      # classificação obrigatória de cada alteração no CHANGELOG.md; ficheiros sensíveis exigem «impacto» (ISO/IEC 27001 A.8.32)
+      - name: Classificação das alterações
+        if: github.event_name == 'pull_request'
+        run: php scripts/verificar-versao.php HEAD^1
 
       - name: Navegador dos testes
         # o apt passa para outro espelho oficial do Ubuntu se o do GitHub não responder (.github/scripts/apt-preparar.sh)

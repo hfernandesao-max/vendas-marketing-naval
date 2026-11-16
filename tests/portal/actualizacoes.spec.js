@@ -18,7 +18,7 @@ const VISTA = {
       versao: 'v2026.11.04.7',
       publicada_em: '2026-11-04T10:00:00Z',
       commit: 'aaaaaaa',
-      seccoes: [{ id: 'x', data: '04-11-2026', titulo: 'Plano de cargas', itens: ['**Zonas:** novo campo `zona`.'] }],
+      seccoes: [{ id: 'x', data: '04-11-2026', titulo: 'Plano de cargas', tipo: 'funcionalidade', itens: ['**Zonas:** novo campo `zona`.'] }],
       notas: '',
       decisao: null,
       resultado: null,
@@ -69,7 +69,11 @@ test('versões à espera: resumo, aprovar com confirmação da identidade', asyn
   await expect(page.locator('.tile').nth(1)).toContainText('2');
   const cartoes = page.locator('.act-cartao');
   await expect(cartoes).toHaveCount(2);
-  await expect(cartoes.first().locator('h3')).toHaveText('Versão v2026.11.04.7');
+  await expect(page.locator('.tile').first()).toContainText('revisão d3b70f5');
+  await expect(cartoes.first().locator('h3')).toHaveText('Versão v2026.11.04.7 Nova funcionalidade');
+  await expect(cartoes.first().locator('h3 .pill')).toHaveText('Nova funcionalidade');
+  await expect(cartoes.first().locator('.act-resumo h4 .pill')).toHaveText('Nova funcionalidade');
+  await expect(cartoes.nth(1).locator('h3 .pill')).toHaveCount(0);
   await expect(cartoes.first().locator('details')).toHaveAttribute('open', '');
   await expect(cartoes.first().locator('.act-resumo li strong')).toHaveText('Zonas:');
   await expect(cartoes.first().locator('.act-resumo li code')).toHaveText('zona');

@@ -1,8 +1,23 @@
 ## 16-11-2026
 
+### Versões: numeração sem falhas, classificação das alterações e revisão do código
+
+<!-- paginas: actualizacoes -->
+<!-- tipo: impacto -->
+
+- O número de cada versão (v<AAAA.MM.DD>.<N>) passa a ser **próprio do portal e sem falhas**: a versão anterior + 1, e
+  não o contador de execuções do GitHub, que contava também as execuções sem versão (por isso não houve a v.104).
+- **Classificação obrigatória de cada alteração**: correcção, melhoria, nova funcionalidade ou alteração com impacto. A
+  versão fica com a mais exigente e a classificação aparece em **Actualizações** (para aprovar) e nas novidades.
+- Alterações em ficheiros sensíveis (base de dados, ficheiro e integração SAP, segurança e acessos, actualizador,
+  Apache) só são aceites classificadas como **alteração com impacto**: a verificação dos pedidos de integração recusa-as
+  de outra forma (ISO/IEC 27001:2022 A.8.32, gestão das alterações).
+- A **revisão do código** (commit) aparece na nota de cada versão e na versão instalada, em Actualizações.
+
 ### Acessos: dispensa de dois passos por conta
 
 <!-- paginas: acessos -->
+<!-- tipo: impacto -->
 
 - Em **Acessos › Gerir**, nas contas com perfil que obriga à verificação em dois passos, o super administrador pode
   **dispensar** essa obrigação a uma pessoa: motivo obrigatório e prazo de 7, 30, 60 ou 90 dias, renovável ou
@@ -15,6 +30,7 @@
 ### Equipamentos: página pública do código QR integrada no portal
 
 <!-- paginas: equipamentos -->
+<!-- tipo: melhoria -->
 
 - A página provisória do código QR (id.naval.co.ao) passa a ser a do próprio portal: o mesmo QR das etiquetas abre a
   ficha para quem tem sessão e permissão e, para quem o encontra, uma página em **português e inglês** com a propriedade
@@ -32,6 +48,7 @@
 ### Multicaixa por TPA: conferência máquina a máquina e resumo de fim de dia para o Financeiro
 
 <!-- paginas: multicaixa-tpa, caixa-marketing -->
+<!-- tipo: funcionalidade -->
 
 - Nova página **Finanças › Multicaixa por TPA**, pedida pelo Financeiro para conferir com os extractos e limpar a conta
   de cartões (POS Card GL) no SAP:
