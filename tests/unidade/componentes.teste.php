@@ -13,6 +13,7 @@ teste('componentes: inventário completo, licenças permitidas, SHA-256 certo e 
         verdade(in_array($listados[$n]['licenca'], $inv['licencas_permitidas'], true), 'licença de ' . $n);
     }
     $saida = sys_get_temp_dir() . '/sbom-' . getmypid() . '.json';
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($raiz . '/scripts/sbom.php') . ' ' . escapeshellarg($saida) . ' v-teste abc 2>&1', $o, $r);
     igual(0, $r, implode("\n", $o));
     $s = json_decode((string) file_get_contents($saida), true);

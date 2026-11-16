@@ -187,7 +187,7 @@ function imprimir(codigos) {
       q.addData(c.url);
       q.make();
       const qr = el('div', 'cqr-qr');
-      qr.innerHTML = q.createSvgTag({ cellSize: 10, margin: 2, scalable: true }); // nosemgrep: insecure-innerhtml -- SVG gerado pela biblioteca de QR
+      qr.innerHTML = q.createSvgTag({ cellSize: 10, margin: 2, scalable: true }); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG gerado pela biblioteca de QR
       const logo = el('img');
       logo.src = '../assets/naval-emblema.png';
       logo.alt = '';

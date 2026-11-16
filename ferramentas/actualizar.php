@@ -77,6 +77,7 @@ try {
                 $destino = naval_act_pasta() . '/github-app.pem';
                 if (file_put_contents($destino, $conteudo, LOCK_EX) === false) $falha('Não foi possível guardar a chave na pasta privada.');
                 // só a conta SYSTEM e os administradores lêem a chave (Windows)
+                // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
                 if (DIRECTORY_SEPARATOR === '\\') exec('icacls ' . escapeshellarg($destino) . ' /inheritance:r /grant:r *S-1-5-18:R *S-1-5-32-544:F 2>&1');
                 else @chmod($destino, 0600);
                 echo "  ok     chave privada guardada na pasta privada (pode apagar o ficheiro original)\n";
@@ -91,6 +92,7 @@ try {
             $copia = naval_env_gravar($chaves, 'actualizacao');
             echo "  ok     chaves gravadas no .env (cópia do anterior: $copia)\n";
             // nova leitura do .env num processo próprio: confirma o acesso ao GitHub
+            // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
             passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' estado', $r);
             exit((int) $r);
 
@@ -102,6 +104,7 @@ try {
             $tr = '/TR "\\"' . PHP_BINARY . '\\" \\"' . __FILE__ . '\\" ';
             foreach ([['Portal RTM - Actualizacao', '/SC DAILY /ST ' . $hora, 'automatico', 'todos os dias às ' . $hora],
                       ['Portal RTM - Actualizacao urgente', '/SC MINUTE /MO 5', 'urgente', 'de 5 em 5 minutos (pedidos do portal)']] as [$nome, $quando, $cmdAct, $texto]) {
+                // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
                 passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $tr . $cmdAct . '"', $r);
                 if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
                 echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
