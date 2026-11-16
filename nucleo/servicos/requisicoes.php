@@ -8,7 +8,10 @@
  *   rascunho  editável (gravar quantas vezes for preciso; controlo de versão contra gravações simultâneas)
  *   emitida   fechada ao emitir o PDF ou imprimir: não se altera mais; precisa de mais mercadoria → nova requisição
  *   carregada o armazém confirmou a carga na carrinha, com a quantidade entregue de cada artigo (por omissão a
- *             requisitada); quem emitiu não confirma a sua própria carga (segregação de funções)
+ *             requisitada); quem emitiu não confirma a sua própria carga (segregação de funções). Só depois de
+ *             fechadas as conciliações dos dias anteriores da carrinha (naval_carr_fechos_pendentes); sem isso, só com
+ *             a autorização de quem fecha as conciliações (motivo, outra pessoa que não a que confirma) e a carga
+ *             fica fora da contagem desses dias (naval_carr_juntar_posterior)
  *   anulada   rascunho que não vai ser usado (fica registado, com o motivo)
  * O âmbito por rota (SUP e PRO só as suas rotas) verifica-se na API (nucleo/api/v1/requisicoes.php).
  * Numeração sequencial por ano, sem saltos nem repetições: RQ-AAAA-000001. Cada passo fica no histórico do documento
@@ -375,8 +378,61 @@ function naval_req_validar_stock(array $linhas): void
 }
 
 /** Confirma a carga de uma requisição emitida: quantidade entregue por artigo (por omissão, a requisitada). */
+/**
+ * Fecho da carrinha antes da carga: devolve os dias por fechar que a carga tem de respeitar. Recusa (409) se houver
+ * dias por fechar sem uma autorização que os cubra, ou se quem confirma foi quem autorizou.
+ */
+function naval_req_verificar_fecho(array $r, string $login): array
+{
+    naval_servico('carrinha');
+    $f = naval_carr_fechos_pendentes((string) $r['rota']);
+    if (!$f['pendentes']) return [];
+    $exc = $r['excepcao_fecho'] ?? null;
+    $cobertos = is_array($exc) ? array_flip((array) ($exc['dias'] ?? [])) : [];
+    $falta = array_values(array_filter($f['pendentes'], function ($p) use ($cobertos) { return !isset($cobertos[$p['data']]); }));
+    if ($falta) {
+        throw new NavalErro('A carrinha da rota ' . $r['rota'] . ' ainda não tem o fecho de ' . naval_carr_pendentes_texto($falta)
+            . '. Feche a conciliação antes de carregar ou peça a autorização de carga antes do fecho.', 409, ['fecho_pendente' => $falta]);
+    }
+    if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0' && strcasecmp((string) $exc['por'], $login) === 0) {
+        throw new NavalErro('Segregação de funções: quem autorizou a carga antes do fecho não a confirma.', 403);
+    }
+    return $f['pendentes'];
+}
+
+/**
+ * Autorização de carga antes do fecho (excepção, por quem fecha as conciliações): motivo obrigatório; cobre os dias
+ * por fechar nesse momento. Fica na requisição, no histórico e no registo de actividade.
+ */
+function naval_req_autorizar_carga(string $id, string $motivo, string $login): array
+{
+    naval_servico('carrinha');
+    $motivo = trim((string) preg_replace('/\s+/u', ' ', $motivo));
+    if (mb_strlen($motivo) < 15 || mb_strlen($motivo) > 300) throw new NavalErro('Indique o motivo da autorização (15 a 300 caracteres).', 400);
+    $r = naval_req_ler($id);
+    if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+    if ($r['estado'] !== 'emitida') throw new NavalErro('Só se autoriza a carga de uma requisição emitida.', 409);
+    $f = naval_carr_fechos_pendentes((string) $r['rota']);
+    if (!$f['pendentes']) throw new NavalErro('A carrinha não tem fechos por fazer: pode confirmar a carga.', 409);
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $motivo, $login, $f) {
+        $r = naval_req_ler($id);
+        if (!$r || $r['estado'] !== 'emitida') throw new NavalErro('Só se autoriza a carga de uma requisição emitida.', 409);
+        $r['excepcao_fecho'] = ['dias' => array_column($f['pendentes'], 'data'), 'estados' => array_column($f['pendentes'], 'estado', 'data'),
+            'motivo' => $motivo, 'por' => $login, 'em' => date('Y-m-d H:i:s')];
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'carga_antes_do_fecho', $login, ['dias' => $r['excepcao_fecho']['dias'], 'motivo' => $motivo]);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    naval_registar('carga_antes_do_fecho', ['numero' => $id, 'rota' => $r['rota'], 'dias' => $r['excepcao_fecho']['dias'], 'motivo' => $motivo]);
+    return $r;
+}
+
 function naval_req_confirmar(string $id, array $entregue, string $login): array
 {
+    $antes = naval_req_ler($id);
+    if (!$antes) throw new NavalErro('Requisição não encontrada.', 404);
+    $pendentes = $antes['estado'] === 'emitida' ? naval_req_verificar_fecho($antes, $login) : [];
     $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $entregue, $login) {
         $r = naval_req_ler($id);
         if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
@@ -400,8 +456,34 @@ function naval_req_confirmar(string $id, array $entregue, string $login): array
         naval_req_gravar_ficheiro($r);
         return $r;
     });
-    naval_registar('requisicao_carregada', ['numero' => $id, 'rota' => $r['rota']]);
+    // carga antes do fecho: fica fora da contagem dos dias ainda por contar (soma-se ao que se conta)
+    $fora = [];
+    if ($pendentes) {
+        $q = [];
+        foreach ($r['linhas'] as $l) $q[(string) $l['codigo']] = (float) $l['entregue'];
+        foreach ($pendentes as $p) {
+            if (naval_carr_juntar_posterior($p['data'], (string) $r['rota'], $id, $q, (string) ($r['excepcao_fecho']['por'] ?? ''), (string) $r['confirmado_em'])) $fora[] = $p['data'];
+        }
+    }
+    naval_registar('requisicao_carregada', ['numero' => $id, 'rota' => $r['rota']] + ($pendentes ? ['antes_do_fecho' => array_column($pendentes, 'data'), 'fora_da_contagem' => $fora] : []));
     return $r;
+}
+
+/** Fechos por fazer das rotas com requisições por carregar: {rota: {pendentes, verificado}} (para o ecrã do stock). */
+function naval_req_fechos(array $carga): array
+{
+    naval_servico('carrinha');
+    $out = [];
+    foreach ($carga as $rota => $rs) {
+        if (!array_filter($rs, function ($x) { return $x['estado'] === 'emitida'; })) continue;
+        try {
+            $f = naval_carr_fechos_pendentes((string) $rota);
+        } catch (Throwable $e) {
+            $f = ['pendentes' => [], 'verificado' => false];
+        }
+        if ($f['pendentes']) $out[(string) $rota] = ['pendentes' => $f['pendentes'], 'verificado' => $f['verificado']];
+    }
+    return $out;
 }
 
 /**
@@ -420,7 +502,8 @@ function naval_req_carga(string $data, ?array $rotas): array
             $carregada = $r['estado'] === 'carregada' && substr((string) $r['confirmado_em'], 0, 10) === $data;
             if (!$pendente && !$carregada) continue;
             $out[(string) $r['rota']][] = ['numero' => $r['numero'], 'estado' => $r['estado'], 'linhas' => $r['linhas'], 'emitida_em' => $r['emitida_em'],
-                'emitida_por' => $r['emitida_por'], 'confirmado_em' => $r['confirmado_em'] ?? null, 'confirmado_por' => $r['confirmado_por'] ?? null];
+                'emitida_por' => $r['emitida_por'], 'confirmado_em' => $r['confirmado_em'] ?? null, 'confirmado_por' => $r['confirmado_por'] ?? null,
+                'excepcao_fecho' => $r['excepcao_fecho'] ?? null];
         }
     }
     foreach ($out as &$l) usort($l, function ($a, $b) { return strcmp($a['numero'], $b['numero']); });

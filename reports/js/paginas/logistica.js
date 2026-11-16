@@ -19,7 +19,7 @@ import { t } from '../i18n/i18n.js';
 import { st } from '../periodo.js';
 import { SESSAO, podeVer } from '../perfil.js';
 import { apiJson } from '../api.js';
-import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { postJson } from '../servidor.js';
 import { DB, el, sum, toast } from '../util.js';
 import { R } from './registo.js';
@@ -101,7 +101,17 @@ function garantirRequisicoes(data) {
   REQ = { data, estado: 'a-ler', rotas: {}, gere: false, eu: '', em: Date.now() };
   apiJson('requisicoes?carga=1&data=' + data).then((d) => {
     if (REQ.data !== data) return;
-    REQ = { data, estado: 'ok', rotas: (d && d.rotas) || {}, gere: !!(d && d.gere), eu: (d && d.eu) || '', horario: (d && d.horario) || null, em: Date.now() };
+    REQ = {
+      data,
+      estado: 'ok',
+      rotas: (d && d.rotas) || {},
+      fechos: (d && d.fechos) || {},
+      autoriza: !!(d && d.autoriza),
+      gere: !!(d && d.gere),
+      eu: (d && d.eu) || '',
+      horario: (d && d.horario) || null,
+      em: Date.now(),
+    };
     draw();
   });
 }
@@ -198,11 +208,62 @@ function confirmarCarga(r) {
     },
   );
 }
-/** Linha por baixo do título da carrinha: as requisições da rota e o botão de confirmar a carga. */
-function linhaRequisicoes(rs) {
+const ESTADO_FECHO = {
+  por_contar: 'por contar',
+  por_validar: 'por validar',
+  por_aprovar: 'por aprovar',
+  por_fechar: 'por fechar',
+  por_verificar: 'sem dados do Pinguim BO',
+};
+const diasTxt = (ps) => ps.map((p) => dl(p.data) + ' (' + t(ESTADO_FECHO[p.estado] || p.estado) + ')').join(', ');
+
+/**
+ * Autorização de carga antes do fecho (excepção): quem fecha as conciliações indica o motivo. A carga fica fora da
+ * contagem dos dias por fechar e é confirmada por outra pessoa.
+ */
+function autorizarCarga(r, pendentes) {
+  janela(
+    t('Autorizar a carga antes do fecho · {n}', { n: r.numero }),
+    t(
+      'A carrinha ainda não tem o fecho de {d}. Com a autorização, a carga pode ser confirmada por outra pessoa e não entra na contagem desses dias (soma-se ao que se conta). É uma excepção registada.',
+      { d: diasTxt(pendentes) },
+    ),
+    (b, ft, fechar) => {
+      const motivo = el('textarea', 'inp');
+      motivo.rows = 3;
+      motivo.maxLength = 300;
+      const erro = msgErro();
+      b.append(campo(t('Motivo (obrigatório)'), motivo), erro);
+      const ok = botao(t('Autorizar'), null, () => {
+        ok.disabled = true;
+        postJson('requisicoes', { accao: 'autorizar_carga', numero: r.numero, motivo: motivo.value.trim() }).then((x) => {
+          ok.disabled = false;
+          if (!x.ok) {
+            erro.hidden = false;
+            erro.textContent = t(x.erro || 'Não foi possível gravar.');
+            return;
+          }
+          fechar();
+          toast(t('Carga da requisição {n} autorizada antes do fecho.', { n: r.numero }), 4000);
+          REQ.em = 0;
+          garantirRequisicoes(REQ.data);
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
+      setTimeout(() => motivo.focus(), 50);
+    },
+  );
+}
+
+/** Linha por baixo do título da carrinha: as requisições da rota, o fecho por fazer e o botão de confirmar a carga. */
+function linhaRequisicoes(rs, rota) {
   const w = el('div', 'req-linha');
+  const fecho = (REQ.fechos || {})[rota];
   rs.forEach((r) => {
     const pend = r.estado === 'emitida';
+    const exc = r.excepcao_fecho;
+    const cobertos = new Set((exc && exc.dias) || []);
+    const falta = pend && fecho ? fecho.pendentes.filter((p) => !cobertos.has(p.data)) : [];
     w.append(
       pill((pend ? t('A carregar') : t('Carregado')) + ' · ' + r.numero, pend ? 'p-warn' : 'p-ok'),
       el(
@@ -216,14 +277,24 @@ function linhaRequisicoes(rs) {
             }),
       ),
     );
+    if (falta.length) w.append(pill(t('Fecho por fazer: {d}', { d: diasTxt(falta) }), 'p-bad'));
+    else if (pend && exc) w.append(pill(t('Carga autorizada antes do fecho por {p}', { p: exc.por }), 'p-warn'));
     if (pend && REQ.gere) {
       const b = botao(t('Confirmar carga'), 'sm', () => confirmarCarga(r));
-      if (REQ.eu && String(r.emitida_por || '').toLowerCase() === REQ.eu.toLowerCase()) {
+      const eu = String(REQ.eu || '').toLowerCase();
+      if (eu && String(r.emitida_por || '').toLowerCase() === eu) {
         b.disabled = true;
         b.title = t('Quem emitiu a requisição não confirma a carga (segregação de funções).');
+      } else if (falta.length) {
+        b.disabled = true;
+        b.title = t('Só se carrega depois de fechada a conciliação da carrinha dos dias anteriores.');
+      } else if (exc && eu && String(exc.por || '').toLowerCase() === eu) {
+        b.disabled = true;
+        b.title = t('Quem autorizou a carga antes do fecho não a confirma (segregação de funções).');
       }
       w.append(b);
     }
+    if (falta.length && REQ.autoriza) w.append(botao(t('Autorizar a carga antes do fecho'), 'ghost sm', () => autorizarCarga(r, falta)));
   });
   return w;
 }
@@ -353,7 +424,7 @@ R['stock-carrinha'] = (pg) => {
     });
     const hl = sec.querySelector('.sec-h > div');
     if (hl) hl.append(origemCarrinha(car));
-    if (hl && car.req.length) hl.append(linhaRequisicoes(car.req));
+    if (hl && car.req.length) hl.append(linhaRequisicoes(car.req, car.rota));
     secs.append(sec);
   });
   pg.append(secs);

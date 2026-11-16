@@ -176,3 +176,51 @@ test('stock por carrinha: coluna da requisição ao armazém — âmbar a carreg
   expect(pedidos[0]).toMatchObject({ accao: 'confirmar_carga', numero: 'RQ-2026-000007', entregue: { 10000009: 8, 10000777: 2 } });
   expect(erros).toEqual([]);
 });
+
+test('stock por carrinha: sem o fecho do dia anterior não se confirma a carga; quem fecha as conciliações autoriza a excepção', async ({ page }) => {
+  await simularStock(page);
+  const pedidos = [];
+  let exc = null;
+  const req = () => ({
+    numero: 'RQ-2026-000008',
+    estado: 'emitida',
+    emitida_em: '2026-10-26 07:00:00',
+    emitida_por: 'pro',
+    confirmado_em: null,
+    confirmado_por: null,
+    excepcao_fecho: exc,
+    linhas: [{ codigo: '10000009', artigo: 'FRALDAS NAVAL MEDIUM', quantidade: 8 }],
+  });
+  await page.route('**/v1/requisicoes**', (r) => {
+    if (r.request().method() === 'POST') {
+      const b = JSON.parse(r.request().postData());
+      pedidos.push(b);
+      exc = { dias: ['2026-10-25'], motivo: b.motivo, por: 'resp', em: '2026-10-26 07:10:00' };
+      return r.fulfill({ json: { ok: true, requisicao: req() } });
+    }
+    return r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        autoriza: true,
+        eu: 'log',
+        rotas: { 1001: [req()] },
+        fechos: { 1001: { pendentes: [{ data: '2026-10-25', estado: 'por_aprovar' }], verificado: true } },
+      },
+    });
+  });
+  const erros = await abrir(page, '#stock-carrinha');
+  const sec = page.locator('#s-sc-car-1001');
+  await expect(sec.locator('.req-linha')).toContainText('Fecho por fazer: 25-10-2026 (por aprovar)');
+  await expect(sec.getByRole('button', { name: 'Confirmar carga' })).toBeDisabled();
+  await sec.getByRole('button', { name: 'Autorizar a carga antes do fecho' }).click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByLabel('Motivo (obrigatório)').fill('Clientes à espera; conciliação ao fim da manhã');
+  await dlg.getByRole('button', { name: 'Autorizar', exact: true }).click();
+  await expect
+    .poll(() => pedidos[0])
+    .toMatchObject({ accao: 'autorizar_carga', numero: 'RQ-2026-000008', motivo: 'Clientes à espera; conciliação ao fim da manhã' });
+  await expect(sec.locator('.req-linha')).toContainText('Carga autorizada antes do fecho por resp');
+  await expect(sec.getByRole('button', { name: 'Confirmar carga' })).toBeEnabled();
+  expect(erros).toEqual([]);
+});

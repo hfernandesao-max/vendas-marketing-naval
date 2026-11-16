@@ -91,3 +91,44 @@ teste('requisições: nunca mais do que o stock do armazém principal (criar, gr
         unset($GLOBALS['naval_req_stock']);
     }
 });
+
+teste('fecho antes da carga: só se carrega com as conciliações anteriores fechadas; excepção autorizada fica fora da contagem', function () {
+    $regra = naval_pasta('carrinha') . '/_regra-fecho.json';
+    $tinha = is_file($regra) ? file_get_contents($regra) : null;
+    $ontem = date('Y-m-d', time() - 86400);
+    $rota = '1077';
+    naval_json_gravar($regra, ['desde' => $ontem]);
+    @unlink(naval_carr_pasta($ontem) . '/' . $rota . '.json');
+    $dados = naval_json_ler(naval_carr_pasta($ontem) . '/_dados.json');
+    $base = ['s0' => ['A1' => ['n' => 'Fraldas M', 'q' => 10.0]], 's1' => ['A1' => ['n' => 'Fraldas M', 'q' => 4.0]], 'v' => ['A1' => ['n' => 'Fraldas M', 'u' => 'CX', 'q' => 6.0, 't' => 6000.0]], 'mov' => ['A1' => ['c' => 0.0, 'd' => 0.0]]];
+    naval_json_gravar(naval_carr_pasta($ontem) . '/_dados.json', ['data' => $ontem, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados', 'precos' => ['A1' => 1000.0],
+        'rotas' => ((array) ($dados['rotas'] ?? [])) + [$rota => $base]]);
+    $f = naval_carr_fechos_pendentes($rota);
+    igual([['data' => $ontem, 'estado' => 'por_contar']], $f['pendentes']);
+    $r = naval_req_criar($rota, date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 5]], 'pro');
+    $r = naval_req_emitir($r['numero'], $r['versao'], 'pro');
+    $e = lanca(409, function () use ($r) { naval_req_confirmar($r['numero'], [], 'arm'); });
+    verdade(strpos($e->getMessage(), 'ainda não tem o fecho de ' . naval_data_pt($ontem) . ' (por contar)') !== false, $e->getMessage());
+    lanca(400, function () use ($r) { naval_req_autorizar_carga($r['numero'], 'curto', 'resp'); });
+    $a = naval_req_autorizar_carga($r['numero'], 'Rota com clientes à espera; conciliação ao fim da manhã', 'resp');
+    igual([$ontem], $a['excepcao_fecho']['dias']);
+    lanca(403, function () use ($r) { naval_req_confirmar($r['numero'], [], 'resp'); });   // quem autorizou não confirma
+    $c = naval_req_confirmar($r['numero'], ['A1' => 5], 'arm');
+    igual('carregada', $c['estado']);
+    // a carga está na carrinha antes da contagem de ontem: conta-se, mas não entra na conciliação
+    $reg = naval_carr_ler($ontem, $rota);
+    igual([$r['numero']], array_column($reg['cargas_posteriores'], 'numero'));
+    $res = naval_carr_contar($ontem, $rota, ['A1' => 9], ['login' => 'tec', 'nome' => 'Técnico', 'email' => '']);
+    igual(0, $res['resumo']['diferencas'], '4 esperados + 5 da carga posterior = 9 contados');
+    igual(5.0, $res['linhas'][0]['posterior']);
+    // fechada a conciliação de ontem (sem diferenças fecha sozinha), a carga seguinte já não precisa de autorização
+    naval_carr_validar($ontem, $rota, ['login' => 'tec', 'nome' => 'Técnico', 'email' => '']);
+    igual([], naval_carr_fechos_pendentes($rota)['pendentes']);
+    // sem base de dados nem fotografia de um dia: não se consegue verificar — conta como por fechar (uma só vez)
+    naval_json_gravar($regra, ['desde' => date('Y-m-d', time() - 5 * 86400)]);
+    $sem = array_values(array_filter(naval_carr_fechos_pendentes($rota)['pendentes'], function ($p) { return $p['estado'] === 'por_verificar'; }));
+    verdade(count($sem) <= 1, 'uma só entrada por verificar');
+    @unlink(naval_carr_pasta($ontem) . '/' . $rota . '.json');
+    if ($dados) naval_json_gravar(naval_carr_pasta($ontem) . '/_dados.json', $dados); else @unlink(naval_carr_pasta($ontem) . '/_dados.json');
+    if ($tinha === null) @unlink($regra); else file_put_contents($regra, $tinha);
+});

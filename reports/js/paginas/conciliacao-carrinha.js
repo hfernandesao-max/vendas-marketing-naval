@@ -207,6 +207,17 @@ function tabelaRota(r) {
   const aprovar = est === 'por_aprovar' && pode.coordenar && !fui('contado_por');
   const box = el('div', 'cc-detalhe');
   box.append(circuito(r));
+  // carga de um dia seguinte autorizada antes do fecho: já está na carrinha, soma-se ao que se conta (fora da conciliação)
+  if ((r.cargas_posteriores || []).length)
+    box.append(
+      el(
+        'p',
+        'aviso',
+        t('Carga posterior já na carrinha ({n}): conta-se com o resto, mas não entra na conciliação deste dia (somada ao esperado).', {
+          n: r.cargas_posteriores.map((c) => c.numero).join(', '),
+        }),
+      ),
+    );
   const tab = el('table', 'cc-tab cc-cores');
   const g = el('tr', 'cc-grupos');
   const vazio = el('th', null, '');
