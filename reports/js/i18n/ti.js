@@ -4177,6 +4177,11 @@ export const TI = {
   'A carrinha não tem fechos por fazer: pode confirmar a carga.': 'እታ መኪና ዘይተዓጸወ የብላን፦ ነቲ ጽዕነት ከተረጋግጹ ትኽእሉ ኢኹም።',
   'Segregação de funções: quem autorizou a carga antes do fecho não a confirma.': 'ምፍልላይ ሓላፍነት፦ ቅድሚ ምዕጻው ጽዕነት ዝፈቐደ ኣየረጋግጾን።',
   'Só quem fecha as conciliações das carrinhas autoriza uma carga antes do fecho.': 'ምስምማዕ መኪናታት ዝዓጹ ጥራይ ቅድሚ ምዕጻው ጽዕነት ይፈቕድ።',
+  'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.':
+    'እቲ ቆጸራ ኣብ ናይ {h} መቑረጺ ኣብ መኪና ዝነበረ ይሽፍን ({o})። ናይ ጽባሕ ጽዕነት ኣብዚ ቆጸራ ኣይኣቱን፦ ጽባሕ ኣብ 00:00 ናይ መኪና ክምችት ይኸውን።',
+  'fotografia do stock antes do corte': 'ቅድሚ መቑረጺ ዝተወስደ ስእሊ ክምችት',
+  'estimado: inicial − vendido + cargas confirmadas antes do corte': 'ግምት፦ መጀመርታ − ዝተሸጠ + ቅድሚ መቑረጺ ዝተረጋገጹ ጽዕነታት',
+  'Carregado depois do corte: {q}.': 'ድሕሪ መቑረጺ ዝተጻዕነ፦ {q}።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

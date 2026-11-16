@@ -171,3 +171,30 @@ teste('listas do plano: peso dos artigos e capacidade das viaturas validados', f
     igual(['LD-1' => 1200.0], $l['capacidades']);
     lanca(400, function () { naval_plano_actualizar_listas(['capacidades' => ['Y' => 99999]], naval_plano_listas()); });
 });
+
+teste('corte do dia: a carga para o dia seguinte não entra na contagem (fotografia antes do corte ou estimativa)', function () {
+    // rota 1005 a 16-11-2026: 64 de manhã, 27 vendidas, 150 carregadas às 16:30 para o dia seguinte; contadas 37
+    $r = ['s0' => ['A' => ['n' => 'Fraldas', 'q' => 64.0], 'B' => ['n' => 'Sabão', 'q' => 9.0]],
+        's1' => ['A' => ['n' => 'Fraldas', 'q' => 187.0], 'B' => ['n' => 'Sabão', 'q' => 4.0], 'N' => ['n' => 'Só amanhã', 'q' => 30.0]],
+        'v' => ['A' => ['n' => 'Fraldas', 'u' => 'CX', 'q' => 27.0, 't' => 405000.0], 'B' => ['n' => 'Sabão', 'u' => 'UN', 'q' => 5.0, 't' => 5000.0]], 'mov' => null];
+    $sem = naval_carr_linhas($r, ['A' => 37, 'B' => 4]);
+    igual(-150.0, array_values(array_filter($sem, function ($l) { return $l['codigo'] === 'A'; }))[0]['diferenca'], 'sem corte: a carga de amanhã aparece como falta');
+    $data = date('Y-m-d', time() - 2 * 86400);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
+    $c = naval_carr_stock_corte($data, '1005', $r, '16:00');
+    igual(['estimado', 37.0, 4.0], [$c['origem'], $c['q']['A'], $c['q']['B']]);
+    $l = naval_carr_linhas($r + ['corte' => $c], ['A' => 37, 'B' => 4]);
+    $a = array_values(array_filter($l, function ($x) { return $x['codigo'] === 'A'; }))[0];
+    igual([0.0, 37.0, 0.0, 150.0], [$a['carregado'], $a['esperado'], $a['diferenca'], $a['depois_do_corte']]);
+    igual([], array_values(array_filter($l, function ($x) { return $x['codigo'] === 'N'; })), 'artigo só da carga de amanhã: nada para contar');
+    igual(0, naval_carr_resumo($l, ['estado' => 'por_aprovar', 'contagem' => ['A' => 37]])['diferencas']);
+    // com a fotografia tirada antes do corte, vale a fotografia (inclui uma carga de manhã de 10)
+    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', ['data' => $data, 'hora' => '15:55', 'rotas' => ['1005' => ['A' => ['n' => 'Fraldas', 'q' => 47.0]]]]);
+    $c = naval_carr_stock_corte($data, '1005', $r, '16:00');
+    igual(['fotografia', '15:55', 47.0], [$c['origem'], $c['hora'], $c['q']['A']]);
+    $a = array_values(array_filter(naval_carr_linhas($r + ['corte' => $c], ['A' => 47]), function ($x) { return $x['codigo'] === 'A'; }))[0];
+    igual([10.0, 47.0, 0.0], [$a['carregado'], $a['esperado'], $a['diferenca']]);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
+    // conciliação já aprovada sem corte gravado: fica como foi aprovada
+    igual(false, isset(naval_carr_base($data, '1005', $r, ['estado' => 'aprovada'])['corte']));
+});

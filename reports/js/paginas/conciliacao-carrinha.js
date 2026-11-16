@@ -207,6 +207,23 @@ function tabelaRota(r) {
   const aprovar = est === 'por_aprovar' && pode.coordenar && !fui('contado_por');
   const box = el('div', 'cc-detalhe');
   box.append(circuito(r));
+  // corte do dia (início do carregamento): a carga para o dia seguinte e as devoluções depois do corte não contam hoje
+  if (r.corte) {
+    const depois = r.linhas.filter((l) => l.depois_do_corte > 0).reduce((a, l) => a + l.depois_do_corte, 0);
+    box.append(
+      el(
+        'p',
+        'cc-corte',
+        t(
+          'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.',
+          {
+            h: r.corte.hora,
+            o: t(r.corte.origem === 'fotografia' ? 'fotografia do stock antes do corte' : 'estimado: inicial − vendido + cargas confirmadas antes do corte'),
+          },
+        ) + (depois > 0 ? ' ' + t('Carregado depois do corte: {q}.', { q: q(depois) }) : ''),
+      ),
+    );
+  }
   // carga de um dia seguinte autorizada antes do fecho: já está na carrinha, soma-se ao que se conta (fora da conciliação)
   if ((r.cargas_posteriores || []).length)
     box.append(
