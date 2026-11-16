@@ -121,7 +121,7 @@ function naval_conf_lista_acessos(): array
         if (empty($u['activo'])) continue;
         $out[] = ['login' => $login, 'nome' => (string) ($u['nome'] ?? $login), 'perfil' => (string) ($u['perfil'] ?? ''),
             'perfil_nome' => (string) ($perfis[$u['perfil'] ?? ''] ?? ''), 'rotas' => array_values((array) ($u['rotas'] ?? [])),
-            'dois_passos' => !empty($u['mfa']), 'ultima_entrada' => substr((string) ($ent[$login] ?? ''), 0, 16),
+            'dois_passos' => !empty($u['mfa']), 'dispensa_dois_passos' => (naval_mfa_dispensa($u)['ate'] ?? ''), 'ultima_entrada' => substr((string) ($ent[$login] ?? ''), 0, 16),
             'valido_ate' => (string) ($u['valido_ate'] ?? '')];
     }
     return $out;

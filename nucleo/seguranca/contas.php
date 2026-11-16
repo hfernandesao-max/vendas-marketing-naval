@@ -186,10 +186,28 @@ function naval_nova_versao(array $u): array
     return $u;
 }
 
-/** A conta tem de configurar os dois passos antes de entrar (perfil com dois passos obrigatórios)? */
+/** Prazo máximo de uma dispensa de dois passos (renovável, com novo motivo). */
+const NAVAL_MFA_DISPENSA_MAX_DIAS = 90;
+
+/**
+ * Dispensa da obrigação de dois passos em vigor para a conta: {motivo, ate (AAAA-MM-DD, inclusive), por, em}, ou null.
+ * Excepção documentada e temporária (aceitação do risco, ISO/IEC 27001:2022 6.1.3 e A.5.17/A.8.5): dada pelo super
+ * administrador, com motivo e prazo; nunca vale para contas SADM. Terminado o prazo, a obrigação volta sozinha.
+ */
+function naval_mfa_dispensa(array $u, ?int $agora = null): ?array
+{
+    $x = $u['mfa_dispensa'] ?? null;
+    if (!is_array($x) || ($u['perfil'] ?? '') === 'SADM') return null;
+    $ate = (string) ($x['ate'] ?? '');
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ate) || $ate < date('Y-m-d', $agora ?? time())) return null;
+    return ['motivo' => (string) ($x['motivo'] ?? ''), 'ate' => $ate, 'por' => (string) ($x['por'] ?? ''), 'em' => (string) ($x['em'] ?? '')];
+}
+
+/** A conta tem de configurar os dois passos antes de entrar (perfil com dois passos obrigatórios e sem dispensa)? */
 function naval_mfa_inscricao_obrigatoria(array $u): bool
 {
     if (naval_config('MFA_OBRIGATORIA', '1') === '0' || !empty($u['mfa']) || !empty($u['compatibilidade'])) return false;
+    if (naval_mfa_dispensa($u) !== null) return false;
     return in_array($u['perfil'] ?? '', naval_perfis_mfa(), true);
 }
 
@@ -266,7 +284,10 @@ function naval_abrir_sessao(string $login, array $u, bool $comMfa, string $metod
     if (!function_exists('naval_conf_marcar_entrada')) naval_servico('conformidade');
     naval_conf_marcar_entrada($login);   // última entrada de cada conta (contas sem uso: ISO/IEC 27001 5.18)
     naval_registar('entrada', ['dois_passos' => $comMfa] + ($metodo !== 'senha' ? ['metodo' => $metodo] : []) + (!empty($_SESSION['app_equipamento']) ? ['equipamento' => $_SESSION['app_equipamento']] : []), $login);
-    if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) naval_registar('dois_passos_em_falta', [], $login);
+    if (!$comMfa && in_array($u['perfil'] ?? '', naval_perfis_mfa(), true)) {
+        $disp = naval_mfa_dispensa($u);
+        naval_registar('dois_passos_em_falta', $disp ? ['dispensa_ate' => $disp['ate']] : [], $login);
+    }
 }
 
 /**

@@ -78,3 +78,31 @@ teste('sincronização: uma única consulta, a definida pela gestão, só de lei
     }
     verdade($recusou, 'UPDATE recusado');
 });
+
+teste('dispensa de dois passos: por conta, com motivo e prazo (até 90 dias); nunca SADM nem a própria conta; expira sozinha', function () {
+    $f = naval_ficheiro_utilizadores();
+    @unlink($f);
+    $h = password_hash('x', PASSWORD_DEFAULT);
+    naval_gravar_utilizadores([
+        'chefe' => ['nome' => 'Chefe', 'perfil' => 'SADM', 'email' => 'chefe@naval.co.ao', 'senha' => $h, 'activo' => true],
+        'outro' => ['nome' => 'Outro', 'perfil' => 'SADM', 'email' => 'outro@naval.co.ao', 'senha' => $h, 'activo' => true],
+        'josefa' => ['nome' => 'Josefa Bento', 'perfil' => 'DIR', 'email' => 'josefa@naval.co.ao', 'senha' => $h, 'activo' => true],
+    ]);
+    $eu = ['login' => 'chefe', 'perfil' => 'SADM'];
+    $agora = strtotime('2026-11-16 11:00');
+    verdade(naval_mfa_inscricao_obrigatoria(naval_utilizadores()['josefa']), 'DIR sem dispensa: obrigatória');
+    lanca(400, function () use ($eu, $agora) { naval_gestao_dispensa_mfa('josefa', 'curto', 30, $eu, $agora); });
+    lanca(400, function () use ($eu, $agora) { naval_gestao_dispensa_mfa('josefa', 'Telemóvel avariado, em reparação', 91, $eu, $agora); });
+    lanca(400, function () use ($eu, $agora) { naval_gestao_dispensa_mfa('outro', 'Telemóvel avariado, em reparação', 30, $eu, $agora); });   // SADM
+    lanca(400, function () use ($agora) { naval_gestao_dispensa_mfa('josefa', 'Telemóvel avariado, em reparação', 30, ['login' => 'josefa', 'perfil' => 'SADM'], $agora); });
+    $r = naval_gestao_dispensa_mfa('josefa', '  Telemóvel   avariado, em reparação ', 30, $eu, $agora);
+    igual(['Telemóvel avariado, em reparação', '2026-12-15', 'chefe'], [$r['dispensa']['motivo'], $r['dispensa']['ate'], $r['dispensa']['por']]);
+    $u = naval_utilizadores()['josefa'];
+    verdade(naval_mfa_dispensa($u, strtotime('2026-12-15 23:00')) !== null, 'em vigor no último dia');
+    verdade(naval_mfa_dispensa($u, strtotime('2026-12-16 00:01')) === null, 'expirada no dia seguinte');
+    verdade(naval_mfa_dispensa(['perfil' => 'SADM'] + $u, $agora) === null, 'nunca para SADM (mesmo que mude de perfil)');
+    igual('2026-12-15', array_column(array_filter(naval_gestao_vista()['utilizadores'] ?? [], function ($x) { return $x['login'] === 'josefa'; }), 'dispensa_dois_passos')[0]['ate'] ?? null);
+    naval_gestao_dispensa_mfa('josefa', '', 0, $eu, $agora);
+    verdade(!isset(naval_utilizadores()['josefa']['mfa_dispensa']), 'retirada');
+    unlink($f);
+});

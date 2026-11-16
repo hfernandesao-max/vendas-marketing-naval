@@ -163,3 +163,48 @@ test('Acessos: última entrada e última alteração da palavra-passe com local 
   await expect(reg).toContainText('Luanda, Angola');
   expect(erros).toEqual([]);
 });
+
+test('Acessos: dispensa de dois passos por conta, com motivo e prazo; o SADM e a própria conta não têm a opção', async ({ page }) => {
+  const pedidos = [];
+  const conta = (o) => ({ email_ok: true, rotas: null, activo: true, ligada: true, dois_passos: false, ...o });
+  let vista = {
+    ...vistaAntiga,
+    compatibilidade: false,
+    pode_activar: false,
+    pode_gerir: true,
+    eu: 'hf',
+    dispensa_max_dias: 90,
+    utilizadores: [
+      conta({ login: 'hf', nome: 'Henrique', email: 'hf@naval.co.ao', perfil: 'SADM', perfil_nome: 'Super administrador', dois_passos: true }),
+      conta({ login: 'josefa', nome: 'Josefa Bento', email: 'josefa@naval.co.ao', perfil: 'DIR', perfil_nome: PERFIS.DIR }),
+      conta({ login: 'rui', nome: 'Rui', email: 'rui@naval.co.ao', perfil: 'SADM', perfil_nome: 'Super administrador' }),
+    ],
+  };
+  await page.route('**/v1/gestao*', (r) => {
+    const q = r.request();
+    if (q.method() !== 'POST') return r.fulfill({ json: vista });
+    const b = q.postDataJSON();
+    pedidos.push(b);
+    const dispensa = { motivo: b.motivo, ate: '2026-12-15', por: 'hf', em: '2026-11-16 11:00:00' };
+    vista = { ...vista, utilizadores: vista.utilizadores.map((u) => (u.login === b.conta ? { ...u, dispensa_dois_passos: dispensa } : u)) };
+    return r.fulfill({ json: { ok: true, dispensa } });
+  });
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
+  const erros = await abrir(page, '#acessos');
+  await expect(page.locator('.tile', { hasText: 'Sem verificação em dois passos' })).toContainText('2');
+  const gerir = (nome) => page.locator('#s-ac-u tbody tr', { hasText: nome }).getByRole('button', { name: 'Gerir' }).click();
+  await gerir('rui@naval.co.ao');
+  await expect(page.locator('dialog[open]').getByRole('button', { name: 'Activar dois passos' })).toBeVisible();
+  await expect(page.locator('dialog[open]').getByRole('button', { name: 'Dispensar dois passos' })).toHaveCount(0);
+  await page.locator('dialog[open]').getByRole('button', { name: 'Cancelar' }).click();
+  await gerir('josefa@naval.co.ao');
+  await page.locator('dialog[open]').getByRole('button', { name: 'Dispensar dois passos' }).click();
+  const d = page.locator('dialog[open]');
+  await d.getByLabel('Motivo (obrigatório)').fill('Telemóvel avariado, em reparação');
+  await d.getByLabel('Prazo').selectOption('30');
+  await d.getByRole('button', { name: 'Dispensar', exact: true }).click();
+  await expect.poll(() => pedidos[0]).toMatchObject({ accao: 'dispensa_dois_passos', conta: 'josefa', motivo: 'Telemóvel avariado, em reparação', dias: 30 });
+  await expect(page.locator('#s-ac-u tbody tr', { hasText: 'josefa@naval.co.ao' })).toContainText('Dispensada até 15-12-2026');
+  await expect(page.locator('.tile', { hasText: 'Sem verificação em dois passos' })).toContainText('1 com dispensa');
+  expect(erros).toEqual([]);
+});

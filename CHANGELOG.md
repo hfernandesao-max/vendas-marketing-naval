@@ -1,5 +1,17 @@
 ## 16-11-2026
 
+### Acessos: dispensa de dois passos por conta
+
+<!-- paginas: acessos -->
+
+- Em **Acessos › Gerir**, nas contas com perfil que obriga à verificação em dois passos, o super administrador pode
+  **dispensar** essa obrigação a uma pessoa: motivo obrigatório e prazo de 7, 30, 60 ou 90 dias, renovável ou
+  retirável a qualquer momento. Terminado o prazo, a obrigação volta sozinha na entrada seguinte.
+- Excepção documentada e temporária (aceitação do risco, ISO/IEC 27001:2022 6.1.3, A.5.17 e A.8.5): nunca para contas
+  SADM nem para a própria conta; fica no registo de actividade e na revisão de acessos da conformidade.
+- Na lista de contas: «Dispensada até dd-mm-aaaa»; o quadro «Sem verificação em dois passos» não conta as contas
+  dispensadas e indica quantas há.
+
 ### Equipamentos: página pública do código QR integrada no portal
 
 <!-- paginas: equipamentos -->
