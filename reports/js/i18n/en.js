@@ -4230,6 +4230,30 @@ export const EN = {
   'O identificador do assunto tem de 1 a 40 caracteres.': 'The subject identifier must have 1 to 40 characters.',
   'O delimitador tem de ser um ou dois destes caracteres: $ @ # % & ~ ^ |': 'The delimiter must be one or two of these characters: $ @ # % & ~ ^ |',
   'Captura não encontrada.': 'Screenshot not found.',
+  'por validar': 'to be validated',
+  'por fechar': 'to be closed',
+  'sem dados do Pinguim BO': 'no Pinguim BO data',
+  'Autorizar a carga antes do fecho · {n}': 'Authorise loading before closing · {n}',
+  'A carrinha ainda não tem o fecho de {d}. Com a autorização, a carga pode ser confirmada por outra pessoa e não entra na contagem desses dias (soma-se ao que se conta). É uma excepção registada.':
+    'The van has not yet been closed for {d}. With the authorisation, another person can confirm the load and it is left out of the count for those days (added to what is counted). It is a recorded exception.',
+  Autorizar: 'Authorise',
+  'Carga da requisição {n} autorizada antes do fecho.': 'Load of requisition {n} authorised before closing.',
+  'Fecho por fazer: {d}': 'Closing pending: {d}',
+  'Carga autorizada antes do fecho por {p}': 'Load authorised before closing by {p}',
+  'Só se carrega depois de fechada a conciliação da carrinha dos dias anteriores.':
+    'Loading is only allowed after the van reconciliation of the previous days is closed.',
+  'Quem autorizou a carga antes do fecho não a confirma (segregação de funções).':
+    'Whoever authorised the load before closing cannot confirm it (segregation of duties).',
+  'Autorizar a carga antes do fecho': 'Authorise loading before closing',
+  'Carga posterior já na carrinha ({n}): conta-se com o resto, mas não entra na conciliação deste dia (somada ao esperado).':
+    "Later load already in the van ({n}): it is counted with the rest, but it is not part of this day's reconciliation (added to the expected).",
+  'Indique o motivo da autorização (15 a 300 caracteres).': 'Enter the reason for the authorisation (15 to 300 characters).',
+  'Só se autoriza a carga de uma requisição emitida.': 'Only the load of an issued requisition can be authorised.',
+  'A carrinha não tem fechos por fazer: pode confirmar a carga.': 'The van has no pending closings: you can confirm the load.',
+  'Segregação de funções: quem autorizou a carga antes do fecho não a confirma.':
+    'Segregation of duties: whoever authorised the load before closing cannot confirm it.',
+  'Só quem fecha as conciliações das carrinhas autoriza uma carga antes do fecho.':
+    'Only whoever closes the van reconciliations can authorise a load before closing.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

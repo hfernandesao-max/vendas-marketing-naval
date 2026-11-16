@@ -99,7 +99,7 @@ teste('notificações: destinatários pela matriz e pelas rotas; inactivas de fo
     igual(['chefe', 'log'], array_column($GLOBALS['nt_entregas'], 0));
     // a mesma chave nunca repete
     $GLOBALS['nt_entregas'] = [];
-    igual(true, naval_notificar('carrinha_aprovar', 'Carrinha 1011 por aprovar', '…', ['rota' => '1011', 'chave' => 'c1'])['repetida']);
+    igual(true, naval_notificar('carrinha_aprovar', 'Carrinha 1011 por aprovar', '…', ['rota' => '1011', 'chave' => 'c1'], strtotime('2026-11-12 15:30'))['repetida']);
     igual([], $GLOBALS['nt_entregas']);
 });
 

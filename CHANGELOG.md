@@ -1,5 +1,21 @@
 ## 16-11-2026
 
+### Carrinhas: só se carrega com o fecho do dia anterior feito
+
+<!-- paginas: stock-carrinha, conciliacao-carrinha -->
+<!-- tipo: impacto -->
+
+- **Fecho antes da carga** (liquidação da rota antes da saída seguinte, como na distribuição directa): o armazém só
+  confirma a carga de uma requisição quando as conciliações dos dias anteriores dessa carrinha estão **fechadas**. Com
+  um fecho por fazer, o ecrã do stock mostra «Fecho por fazer: dd-mm-aaaa (estado)» e o botão «Confirmar carga» fica
+  bloqueado; o servidor recusa também. Sem dados do Pinguim BO para verificar, conta como por fechar.
+- **Excepção autorizada**: quem fecha as conciliações («Fechar conciliações») pode autorizar a carga antes do fecho,
+  com motivo; a carga é confirmada por outra pessoa (separação de funções) e **não entra na contagem** dos dias por
+  contar: soma-se ao que se conta, para a conciliação desses dias ficar certa. Fica no histórico da requisição, na
+  conciliação e no registo de actividade.
+- A regra vale para os dias a partir da instalação desta versão (os dias antigos ficam como estavam), até 7 dias para
+  trás (`CARRINHA_FECHO_DIAS`); `CARRINHA_FECHO_ANTES_CARGA=0` desliga.
+
 ### Suporte: pedidos classificados pela ITIL 4 e enviados à equipa de TI (ServiceDesk Plus)
 
 <!-- paginas: suporte -->

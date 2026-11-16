@@ -11,7 +11,9 @@
  * POST {accao: emitir, numero, versao, csrf}            fecha o documento (PDF / impressão)
  * POST {accao: reimprimir, numero, csrf}                2.ª via de um documento emitido
  * POST {accao: anular, numero, versao, motivo, csrf}
- * POST {accao: confirmar_carga, numero, entregue: {codigo: quantidade}, csrf}   o armazém confirma a carga
+ * POST {accao: confirmar_carga, numero, entregue: {codigo: quantidade}, csrf}   o armazém confirma a carga (só com
+ *      os fechos das carrinhas feitos, ou com a autorização de carga antes do fecho)
+ * POST {accao: autorizar_carga, numero, motivo, csrf}   carga antes do fecho (quem fecha as conciliações, «conciliacao-fecho» G)
  * GET  v1/requisicoes?carga=1&data=AAAA-MM-DD          por rota: emitidas por carregar e carregadas no dia (stock)
  */
 defined('NAVAL_API') || exit;
@@ -27,7 +29,9 @@ if (!naval_e_post()) {
         $data = (string) ($_GET['data'] ?? date('Y-m-d'));
         if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
         naval_servico('calendario');
-        naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'horario' => naval_cal_para_pagina($data), 'rotas' => (object) naval_req_carga($data, naval_rotas())]);
+        $carga = naval_req_carga($data, naval_rotas());
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'eu' => $login, 'horario' => naval_cal_para_pagina($data), 'rotas' => (object) $carga,
+            'fechos' => (object) ($data === date('Y-m-d') ? naval_req_fechos($carga) : []), 'autoriza' => naval_pode('conciliacao-fecho', 'G')]);
     }
     if (($_GET['catalogo'] ?? '') === '1') {
         $art = naval_req_catalogo();
@@ -51,6 +55,16 @@ if (!naval_e_post()) {
 $p = naval_pedido();
 naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
+// autorização de carga antes do fecho: quem fecha as conciliações (não precisa de gerir requisições)
+if ($accao === 'autorizar_carga') {
+    if (!naval_pode('conciliacao-fecho', 'G')) {
+        naval_registar('alteracao_recusada', ['accao' => 'autorizar_carga', 'motivo' => 'perfil']);
+        throw new NavalErro('Só quem fecha as conciliações das carrinhas autoriza uma carga antes do fecho.', 403);
+    }
+    $alvo = naval_req_ler((string) ($p['numero'] ?? ''));
+    if (!$alvo || !naval_rota_permitida($alvo['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
+    naval_json_assinado(['ok' => true, 'requisicao' => naval_req_autorizar_carga((string) $p['numero'], (string) ($p['motivo'] ?? ''), $login)]);
+}
 if (!$gere) {
     naval_registar('alteracao_recusada', ['accao' => 'requisicao_' . $accao, 'motivo' => 'perfil']);
     throw new NavalErro('O seu perfil não permite criar nem alterar requisições.', 403);
