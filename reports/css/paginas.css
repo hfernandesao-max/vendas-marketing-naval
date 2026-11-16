@@ -1206,3 +1206,25 @@ p.aviso {
   font-size: 13px;
   text-align: justify;
 }
+
+/* Plano de cargas: de onde vem a quantidade (já na carrinha + a carregar = total) e caixas nas listas */
+.pc-carga {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pc-carga ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.pc-carga b {
+  color: var(--fg);
+  font-weight: 600;
+}
+.pc-chk {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  white-space: nowrap;
+}

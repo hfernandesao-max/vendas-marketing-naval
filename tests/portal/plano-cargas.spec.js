@@ -103,7 +103,7 @@ test('publicado: enviar por email só aos destinatários escolhidos', async ({ p
   await expect.poll(() => pedidos.find((p) => p.accao === 'enviar')).toMatchObject({ data: '2026-10-26', para: ['armazem@naval.co.ao'] });
 });
 
-test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo, sem factura', async ({ page }) => {
+test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo, sem requisição', async ({ page }) => {
   const pedidos = [];
   const sug = { ...ROTA, origem: '2026-10-22', factura: undefined, obs: undefined, telefone: '924516916' };
   const erros = await abrirPlano(page, null, pedidos, { sugestoes: [sug] });
@@ -113,10 +113,10 @@ test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo
   await expect(c.getByLabel('Matrícula')).toHaveValue('LD-58-73-GY');
   await expect(c.getByLabel('Transportadora')).toHaveValue('Velotrans');
   await expect(c.getByLabel('Fraldas')).toHaveValue('90');
-  await expect(c.getByLabel('N.º da factura')).toHaveValue('');
+  await expect(c.getByLabel('Requisição ao armazém')).toHaveValue('');
   await expect(c.locator('.pc-info')).toContainText('22-10');
   await expect(c.locator('.pc-err')).toHaveCount(0);
-  await expect(c.locator('.pc-av')).toContainText('sem número de factura');
+  await expect(c.locator('.pc-av')).toContainText('sem requisição ao armazém emitida');
   expect(erros).toEqual([]);
 });
 
@@ -137,5 +137,68 @@ test('limite de peso: não deixa carregar acima do que ainda cabe na viatura (ca
   await expect(fraldas).toHaveValue('80'); // (840 − 200) ÷ 8
   await expect(c.locator('.pc-peso')).toContainText('Peso: 840 kg de 840 kg disponíveis');
   await expect(c.locator('.pc-peso')).not.toHaveClass(/excede/);
+  expect(erros).toEqual([]);
+});
+
+test('carga pela requisição: já na carrinha (contado) + a carregar = total; motorista e viatura escolhidos nas tabelas', async ({ page }) => {
+  const pedidos = [];
+  const base = resposta(null);
+  base.listas.motoristas = [
+    { nome: 'Adão Paulo', telefone: '924516916', transportadora: 'Velotrans', matricula: 'LD-58-73-GY', carta_validade: '2027-05-01', activo: true },
+    { nome: 'Carlos Velho', carta_validade: '2026-01-01', activo: true },
+    { nome: 'Inactivo Sousa', activo: false },
+  ];
+  base.listas.frota = [{ matricula: 'LD-58-73-GY', marca: 'Mitsubishi', modelo: 'Canter', transportadora: 'Velotrans', kg: 3500, activa: true }];
+  const carga = {
+    dia_anterior: '2026-10-24',
+    rotas: {
+      1001: {
+        requisicoes: [{ numero: 'RQ-2026-000123', estado: 'emitida' }],
+        grupos: { fraldas: { na: 37, carregar: 150, total: 187 }, sabao: { na: 4, carregar: 0, total: 4 } },
+        stock: 'contado',
+        sem_grupo: [{ codigo: '10000293', artigo: 'SOAP BROWN CONFIANC' }],
+      },
+    },
+  };
+  const erros = await abrirPlano(page, null, pedidos, { listas: base.listas, carga });
+  const c = page.locator('.pc-card').first();
+  await expect(c.getByLabel('Fraldas')).toHaveValue('187');
+  await expect(c.getByLabel('Sabão')).toHaveValue('4');
+  await expect(c.getByLabel('Requisição ao armazém')).toHaveValue('RQ-2026-000123');
+  await expect(c.locator('.pc-carga')).toContainText('contado no fecho de 24-10-2026');
+  await expect(c.locator('.pc-carga')).toContainText('Fraldas: 37 + 150 = 187');
+  await expect(c.locator('.pc-carga')).toContainText('10000293 SOAP BROWN CONFIANC');
+  // só os motoristas activos e com a carta válida no dia
+  const mot = c.getByLabel('Motorista');
+  await expect(mot.locator('option')).toHaveText(['—', 'Adão Paulo · Velotrans']);
+  await mot.selectOption('Adão Paulo');
+  await expect(c.getByLabel('Telefone')).toHaveValue('924516916');
+  await expect(c.getByLabel('Matrícula')).toHaveValue('LD-58-73-GY');
+  await expect(c.getByLabel('Marca e modelo')).toHaveValue('Mitsubishi Canter');
+  await expect(c.getByLabel('Transportadora')).toHaveValue('Velotrans');
+  expect(erros).toEqual([]);
+});
+
+test('listas: tabela de viaturas (matrícula, marca, modelo, capacidade) e motoristas com validade da carta e activo', async ({ page }) => {
+  const pedidos = [];
+  const base = resposta(null);
+  base.listas.motoristas = [{ nome: 'Adão Paulo', telefone: '924516916', transportadora: 'Velotrans', matricula: '', carta_validade: '', activo: true }];
+  base.listas.frota = [];
+  const erros = await abrirPlano(page, null, pedidos, { listas: base.listas });
+  await page.getByRole('button', { name: 'Listas', exact: true }).click();
+  const d = page.locator('dialog[open]');
+  await d.getByRole('button', { name: 'Motoristas', exact: true }).click();
+  await d.getByRole('textbox', { name: 'Validade da carta de condução' }).fill('01-05-2027');
+  await d.getByRole('button', { name: 'Viaturas', exact: true }).click();
+  await d.getByRole('button', { name: 'Acrescentar' }).click();
+  await d.getByLabel('Matrícula', { exact: true }).fill('LD-58-73-GY');
+  await d.getByLabel('Marca', { exact: true }).fill('Mitsubishi');
+  await d.getByLabel('Modelo', { exact: true }).fill('Canter');
+  await d.getByLabel('Capacidade (kg)').fill('3500');
+  await d.getByRole('button', { name: 'Guardar listas' }).click();
+  await expect.poll(() => pedidos.find((p) => p.accao === 'listas')).toBeTruthy();
+  const l = pedidos.find((p) => p.accao === 'listas').listas;
+  expect(l.frota).toEqual([{ matricula: 'LD-58-73-GY', marca: 'Mitsubishi', modelo: 'Canter', transportadora: '', kg: '3500', activa: true }]);
+  expect(l.motoristas[0]).toMatchObject({ nome: 'Adão Paulo', carta_validade: '2027-05-01', activo: true });
   expect(erros).toEqual([]);
 });

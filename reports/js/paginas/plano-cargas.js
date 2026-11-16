@@ -100,7 +100,23 @@ function montarRotasPlano(d, base) {
       if (novo || r.sai) preencherRota(r, d, novo);
     });
   }
+  // carga de cada rota: stock da carrinha no corte do dia anterior (contado) + requisição ao armazém
+  if (!(d.plano && d.plano.publicado)) lista.forEach((r) => aplicarCarga(r, d));
   return lista;
+}
+const cargaDe = (rota, d = PC.resp) => ((d && d.carga && d.carga.rotas) || {})[rota] || null;
+/** Com requisição emitida, a quantidade de cada artigo do plano é o que já está na carrinha + o que se vai carregar. */
+function aplicarCarga(r, d) {
+  const c = cargaDe(r.rota, d);
+  if (!c || !c.requisicoes.length) return false;
+  r.factura = c.requisicoes.map((x) => x.numero).join(', ');
+  r.sai = true; // com requisição emitida, a rota sai
+  d.listas.artigos.forEach((a) => {
+    const g = c.grupos[a.id];
+    if (g) r.quantidades[a.id] = Math.max(0, Math.round(+g.total || 0));
+  });
+  r._carga = true;
+  return true;
 }
 const rotaVazia = (r) => !r.motorista.trim() && !r.matricula.trim() && !r.zonas.length && somaQ(r) <= 0;
 // Preenche uma rota vazia com a sugestão do servidor (último registo publicado ou histórico de transportes)
@@ -140,7 +156,13 @@ function validarPlano(rotas) {
     if (somaQ(r) <= 0) erros.push({ rota: r.rota, msg: t('a carga está a zero') });
     if (pesoRota(r).excede) erros.push({ rota: r.rota, msg: t('a carga passa o peso máximo da viatura') });
     if (r.motorista.trim() && !r.telefone.trim()) avisos.push({ rota: r.rota, msg: t('sem telefone do motorista') });
-    if (!r.factura.trim()) avisos.push({ rota: r.rota, msg: t('sem número de factura') });
+    if (!r.factura.trim()) avisos.push({ rota: r.rota, msg: t('sem requisição ao armazém emitida') });
+    const cg = cargaDe(r.rota);
+    if (cg && cg.sem_grupo.length)
+      avisos.push({ rota: r.rota, msg: t('{n} artigos da requisição sem artigo do plano (Listas → Correspondência)', { n: cg.sem_grupo.length }) });
+    const mot = motoristaDe(r.motorista);
+    if (mot && mot.carta_validade && mot.carta_validade < PC.data) erros.push({ rota: r.rota, msg: t('a carta de condução de {m} caducou', { m: mot.nome }) });
+    if (mot && mot.activo === false) erros.push({ rota: r.rota, msg: t('o motorista {m} está inactivo', { m: mot.nome }) });
     const km = chaveTxt(r.motorista),
       kp = chaveTxt(r.matricula);
     if (km) {
@@ -154,6 +176,16 @@ function validarPlano(rotas) {
   });
   return { erros, avisos };
 }
+const motoristaDe = (nome) => ((PC.resp && PC.resp.listas.motoristas) || []).find((m) => chaveTxt(m.nome) === chaveTxt(nome)) || null;
+const viaturaDe = (mat) =>
+  ((PC.resp && PC.resp.listas.frota) || []).find(
+    (v) =>
+      v.matricula ===
+      String(mat || '')
+        .toUpperCase()
+        .trim(),
+  ) || null;
+const nomeViatura = (v) => [v.marca, v.modelo].filter(Boolean).join(' ');
 let pcTimer = null;
 function marcarSujo() {
   PC.sujo = true;
@@ -231,7 +263,7 @@ function gerarExcelPlano(rotas, data, versao, artigos, rascunho = false) {
       'PLATE',
       'VEHICLE TYPE',
       'COMPANY',
-      'INVOICE NUMBER',
+      'REQUISITION NUMBER',
     ].forEach((h, i) => {
       const c = r2.getCell(i + 1);
       c.value = h;
@@ -421,7 +453,7 @@ function publicarPlano() {
     }),
     (b, ft, fechar) => {
       if (v.avisos.length)
-        b.append(el('p', 'aviso', t('{n} avisos (por exemplo, falta de número de factura). Pode publicar na mesma.', { n: v.avisos.length })));
+        b.append(el('p', 'aviso', t('{n} avisos (por exemplo, rota sem requisição emitida). Pode publicar na mesma.', { n: v.avisos.length })));
       const cEnv = entrada('checkbox');
       cEnv.checked = dest.length > 0;
       cEnv.disabled = !dest.length;
@@ -512,7 +544,14 @@ function publicarPlano() {
 // ---- Listas (destinatários, motoristas, zonas, ...) ----
 function janelaListas() {
   const L = JSON.parse(JSON.stringify(PC.resp.listas));
-  const CAP = Object.entries(L.capacidades || {}).map(([matricula, kg]) => ({ matricula, kg }));
+  L.frota = L.frota || [];
+  // correspondência: as gravadas e os artigos das requisições ainda sem artigo do plano
+  const GRP = Object.entries(L.grupos_artigos || {}).map(([codigo, grupo]) => ({ codigo, artigo: '', grupo }));
+  Object.values((PC.resp.carga && PC.resp.carga.rotas) || {}).forEach((c) =>
+    (c.sem_grupo || []).forEach((x) => {
+      if (!GRP.some((g) => g.codigo === x.codigo)) GRP.push({ codigo: x.codigo, artigo: x.artigo, grupo: '' });
+    }),
+  );
   janela(
     t('Listas do plano de cargas'),
     t('Usadas no preenchimento. Motoristas, zonas e viaturas novos entram sozinhos quando o plano é publicado.'),
@@ -527,7 +566,27 @@ function janelaListas() {
           arr.forEach((x, i) => {
             const l = el('div', 'pc-linha');
             cols.forEach(([k, ph, tipo]) => {
+              if (tipo === 'checkbox') {
+                const c = entrada('checkbox');
+                c.checked = x[k] !== false;
+                c.setAttribute('aria-label', ph);
+                c.title = ph;
+                c.addEventListener('change', () => (x[k] = c.checked));
+                const lb = el('label', 'pc-chk');
+                lb.append(c, el('span', null, ph));
+                return l.append(lb);
+              }
+              if (Array.isArray(tipo)) {
+                const sel = el('select', 'inp');
+                sel.setAttribute('aria-label', ph);
+                tipo.forEach(([v, txt]) => sel.append(new Option(txt, v)));
+                sel.value = x[k] || '';
+                sel.addEventListener('change', () => (x[k] = sel.value));
+                return l.append(sel);
+              }
               const inp = entrada(tipo || 'text', x[k] || '', { placeholder: ph });
+              inp.setAttribute('aria-label', ph);
+              if (tipo === 'date') inp.title = ph;
               inp.addEventListener('input', () => {
                 x[k] = inp.value;
               });
@@ -603,11 +662,12 @@ function janelaListas() {
               [
                 ['nome', t('Nome')],
                 ['telefone', t('Telefone'), 'tel'],
-                ['matricula', t('Matrícula')],
-                ['viatura', t('Viatura')],
                 ['transportadora', t('Transportadora')],
+                ['matricula', t('Matrícula habitual')],
+                ['carta_validade', t('Validade da carta de condução'), 'date'],
+                ['activo', t('Activo'), 'checkbox'],
               ],
-              () => ({ nome: '', telefone: '', matricula: '', viatura: '', transportadora: '' }),
+              () => ({ nome: '', telefone: '', transportadora: '', matricula: '', carta_validade: '', activo: true }),
             ),
         ],
         [
@@ -621,14 +681,10 @@ function janelaListas() {
         ],
         [
           'outras',
-          t('Armazéns e viaturas'),
+          t('Armazéns e transportadoras'),
           () => {
             const w = el('div', 'campos2');
-            w.append(
-              campo(t('Armazéns de carga (um por linha)'), area('armazens')),
-              campo(t('Tipos de viatura'), area('viaturas')),
-              campo(t('Transportadoras'), area('transportadoras')),
-            );
+            w.append(campo(t('Armazéns de carga (um por linha)'), area('armazens')), campo(t('Transportadoras'), area('transportadoras')));
             return w;
           },
         ],
@@ -652,19 +708,48 @@ function janelaListas() {
           },
         ],
         [
-          'capacidades',
-          t('Capacidade das viaturas'),
+          'frota',
+          t('Viaturas'),
           () => {
             const w = el('div');
             w.append(
-              el('p', 'nota-dlg', t('Peso máximo que cada viatura pode levar (kg). O plano não deixa carregar acima do que ainda cabe.')),
+              el('p', 'nota-dlg', t('Matrícula, marca, modelo e capacidade (kg) de cada viatura. O plano não deixa carregar acima do que ainda cabe.')),
               linhas(
-                CAP,
+                L.frota,
                 [
                   ['matricula', t('Matrícula')],
+                  ['marca', t('Marca')],
+                  ['modelo', t('Modelo')],
+                  ['transportadora', t('Transportadora')],
                   ['kg', t('Capacidade (kg)'), 'number'],
+                  ['activa', t('Activa'), 'checkbox'],
                 ],
-                () => ({ matricula: '', kg: '' }),
+                () => ({ matricula: '', marca: '', modelo: '', transportadora: '', kg: '', activa: true }),
+              ),
+            );
+            return w;
+          },
+        ],
+        [
+          'grupos',
+          t('Correspondência'),
+          () => {
+            const w = el('div');
+            const opc = [['', '—'], ...L.artigos.map((a) => [a.id, t(a.nome)])];
+            w.append(
+              el(
+                'p',
+                'nota-dlg',
+                t('Artigo do plano de cada artigo do Pinguim BO (pelo código). Sem correspondência, o portal usa o nome (ex.: «FRALDAS …» → Fraldas).'),
+              ),
+              linhas(
+                GRP,
+                [
+                  ['codigo', t('Código')],
+                  ['artigo', t('Artigo do Pinguim BO')],
+                  ['grupo', t('Artigo do plano'), opc],
+                ],
+                () => ({ codigo: '', artigo: '', grupo: '' }),
               ),
             );
             return w;
@@ -694,7 +779,8 @@ function janelaListas() {
         L.artigos.forEach((a) => {
           if (!a.id) a.id = chaveTxt(a.nome).toLowerCase().replace(/ /g, '');
         });
-        L.capacidades = Object.fromEntries(CAP.filter((x) => x.matricula && +x.kg > 0).map((x) => [x.matricula.toUpperCase().trim(), +x.kg]));
+        delete L.capacidades;
+        L.grupos_artigos = Object.fromEntries(GRP.filter((x) => x.codigo && x.grupo).map((x) => [x.codigo.trim(), x.grupo]));
         postPlano({ accao: 'listas', listas: L }).then((r) => {
           gd.disabled = false;
           if (!r.ok) {
@@ -828,14 +914,45 @@ function cartaoRota(r, d, dls) {
     });
     return [campo(rot, i), i];
   };
-  const [fMot, iMot] = inp('motorista', t('Motorista'), { autocomplete: 'off' }, dls.mot);
+  // motorista e matrícula escolhidos nas tabelas (dados mestre); sem tabelas, como antes (texto com sugestões)
+  const escolha = (k, rot, opcoes) => {
+    const s = el('select', 'inp');
+    s.append(new Option('—', ''));
+    opcoes.forEach(([v, txt]) => s.append(new Option(txt, v)));
+    if (r[k] && !opcoes.some(([v]) => v === r[k])) s.append(new Option(r[k] + ' · ' + t('fora da tabela'), r[k]));
+    s.value = r[k] || '';
+    return [campo(rot, s), s];
+  };
+  const tabMot = (d.listas.motoristas || []).filter((m) => m.activo !== false && !(m.carta_validade && m.carta_validade < PC.data));
+  const tabVia = (d.listas.frota || []).filter((v) => v.activa !== false);
+  const [fMot, iMot] = tabMot.length
+    ? escolha(
+        'motorista',
+        t('Motorista'),
+        tabMot.map((m) => [m.nome, m.nome + (m.transportadora ? ' · ' + m.transportadora : '')]),
+      )
+    : inp('motorista', t('Motorista'), { autocomplete: 'off' }, dls.mot);
   const [fTel, iTel] = inp('telefone', t('Telefone'), { type: 'tel', inputMode: 'tel' });
-  const [fMat, iMat] = inp('matricula', t('Matrícula'), { autocomplete: 'off' });
-  const [fVia, iVia] = inp('viatura', t('Viatura'), { autocomplete: 'off' }, dls.via);
+  const [fMat, iMat] = tabVia.length
+    ? escolha(
+        'matricula',
+        t('Matrícula'),
+        tabVia.map((v) => [v.matricula, v.matricula + (nomeViatura(v) ? ' · ' + nomeViatura(v) : '')]),
+      )
+    : inp('matricula', t('Matrícula'), { autocomplete: 'off' });
+  const [fVia, iVia] = inp('viatura', t('Marca e modelo'), { autocomplete: 'off' }, dls.via);
   const [fTra, iTra] = inp('transportadora', t('Transportadora'), { autocomplete: 'off' }, dls.tra);
+  if (tabVia.length) iVia.readOnly = true;
+  const porViatura = () => {
+    const v = viaturaDe(r.matricula);
+    if (!v) return;
+    if (nomeViatura(v)) r.viatura = iVia.value = nomeViatura(v);
+    if (v.transportadora) r.transportadora = iTra.value = v.transportadora;
+  };
   iMot.addEventListener('change', () => {
-    const m = d.listas.motoristas.find((x) => chaveTxt(x.nome) === chaveTxt(iMot.value));
-    if (!m) return;
+    r.motorista = iMot.value;
+    const m = motoristaDe(iMot.value);
+    if (!m) return marcarSujo();
     r.motorista = iMot.value = m.nome;
     [
       [iTel, 'telefone'],
@@ -847,6 +964,14 @@ function cartaoRota(r, d, dls) {
         r[k] = i.value = m[k];
       }
     });
+    porViatura();
+    mostrarPeso();
+    marcarSujo();
+  });
+  iMat.addEventListener('change', () => {
+    r.matricula = iMat.value.toUpperCase().trim();
+    porViatura();
+    mostrarPeso();
     marcarSujo();
   });
   iMat.addEventListener('blur', () => {
@@ -854,7 +979,10 @@ function cartaoRota(r, d, dls) {
   });
   const [fArm] = inp('armazem', t('Armazém de carga'), { autocomplete: 'off' }, dls.arm);
   const [fVg] = inp('viagens', t('Viagens'), { type: 'number', min: 0, max: 20, inputMode: 'numeric' });
-  const [fFac] = inp('factura', t('N.º da factura'));
+  // documento: o número da requisição ao armazém (preenchido sozinho pelo servidor)
+  const [fFac, iFac] = inp('factura', t('Requisição ao armazém'));
+  iFac.readOnly = true;
+  if (!r.factura) iFac.placeholder = t('sem requisição emitida');
   const [fObs] = inp('obs', t('Observações'));
   const qs = el('div', 'pc-qs');
   const pesoEl = el('p', 'pc-peso');
@@ -863,6 +991,26 @@ function cartaoRota(r, d, dls) {
     pesoEl.classList.toggle('excede', pesoRota(r).excede);
   };
   iMat.addEventListener('input', mostrarPeso);
+  // de onde vem a quantidade: já na carrinha (contado no corte do dia anterior) + a carregar (requisição) = total
+  const cg = cargaDe(r.rota, d);
+  const detalhe = el('div', 'pc-carga');
+  if (cg && cg.requisicoes.length) {
+    const origem = {
+      contado: t('contado no fecho de {d}', { d: dl(d.carga.dia_anterior) }),
+      estimado: t('estimado: contagem de {d} por fazer', { d: dl(d.carga.dia_anterior) }),
+      sem_dados: t('sem dados do Pinguim BO'),
+    }[cg.stock];
+    detalhe.append(el('b', null, t('Carga: já na carrinha ({o}) + a carregar = total à saída', { o: origem })));
+    const ul = el('ul');
+    d.listas.artigos.forEach((a) => {
+      const g = cg.grupos[a.id];
+      if (!g || !g.total) return;
+      ul.append(el('li', null, t(a.nome) + ': ' + n0(g.na) + ' + ' + n0(g.carregar) + ' = ' + n0(g.total)));
+    });
+    detalhe.append(ul);
+    if (cg.sem_grupo.length)
+      detalhe.append(el('p', 'aviso', t('Sem artigo do plano: {a}', { a: cg.sem_grupo.map((x) => x.codigo + ' ' + x.artigo).join('; ') })));
+  }
   d.listas.artigos.forEach((a) => {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
     i.addEventListener('input', () => {
@@ -891,7 +1039,7 @@ function cartaoRota(r, d, dls) {
   const zonas = el('div', 'campo');
   zonas.append(el('span', null, t('Zonas de descarga')), editorZonas(r, d, dls.zon));
   mostrarPeso();
-  corpo.append(linha(fMot, fTel), l3, zonas, qs, pesoEl, linha(fArm, fFac), fObs);
+  corpo.append(linha(fMot, fTel), l3, zonas, qs, detalhe, pesoEl, linha(fArm, fFac), fObs);
   c.append(corpo, av);
   return { el: c, corpo, total, av };
 }
@@ -1135,7 +1283,7 @@ R['plano-cargas'] = (pg) => {
             { key: 'zonas_t', label: t('Zonas'), wrap: true },
             ...d.listas.artigos.map((a) => ({ key: 'q_' + a.id, label: t(a.nome), type: 'n', sum: true })),
             { key: 'total', label: t('Total'), type: 'n', sum: true },
-            { key: 'factura', label: t('Factura') },
+            { key: 'factura', label: t('Requisição') },
           ],
         }),
       );
