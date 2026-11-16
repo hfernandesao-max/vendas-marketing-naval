@@ -1195,3 +1195,14 @@ p.aviso {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* Conciliação da carrinha: corte do dia (a carga para o dia seguinte não entra na contagem) */
+.cc-corte {
+  margin: 8px 0 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgb(var(--ceu-rgb) / 0.1);
+  color: var(--fg);
+  font-size: 13px;
+  text-align: justify;
+}

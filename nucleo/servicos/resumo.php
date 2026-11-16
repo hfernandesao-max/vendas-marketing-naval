@@ -254,6 +254,13 @@ function naval_periodicas(?int $agora = null): array
             error_log('[prospecção] ' . $e->getMessage());
         }
     }
+    // conciliação das carrinhas: fotografia do stock antes do corte (início do carregamento)
+    try {
+        naval_servico('carrinha');
+        if (naval_carr_foto_corte($agora)) $feito['carrinha_corte'] = 1;
+    } catch (Throwable $e) {
+        error_log('[conciliação carrinha] corte: ' . $e->getMessage());
+    }
     // conciliação das carrinhas: aviso do fim do dia a quem conta e aprova (CARRINHA_HORA_AVISO, 19:30)
     if (naval_config('CARRINHA_AVISO_ACTIVO', '1') !== '0') {
         try {

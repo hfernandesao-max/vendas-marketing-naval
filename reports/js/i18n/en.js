@@ -4254,6 +4254,11 @@ export const EN = {
     'Segregation of duties: whoever authorised the load before closing cannot confirm it.',
   'Só quem fecha as conciliações das carrinhas autoriza uma carga antes do fecho.':
     'Only whoever closes the van reconciliations can authorise a load before closing.',
+  'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.':
+    'The count covers what was in the van at the {h} cut-off ({o}). The load for the next day is not part of this count: it becomes van stock tomorrow at 00:00.',
+  'fotografia do stock antes do corte': 'stock snapshot before the cut-off',
+  'estimado: inicial − vendido + cargas confirmadas antes do corte': 'estimated: opening − sold + loads confirmed before the cut-off',
+  'Carregado depois do corte: {q}.': 'Loaded after the cut-off: {q}.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -225,7 +225,7 @@ function naval_rel_conciliacao(string $de, string $ate, ?array $rotas): array
             if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || ($rotas !== null && !in_array($rota, $rotas, true))) continue;
             $reg = naval_carr_ler($d, $rota);
             if (empty($reg['base'])) continue;   // sem contagem: só a página da conciliação calcula (lê o Pinguim BO)
-            $linhas = naval_carr_linhas((array) $reg['base'] + ['post' => naval_carr_posteriores($reg)], $reg['contagem'], (array) ($reg['precos'] ?? []));
+            $linhas = naval_carr_linhas(naval_carr_base($d, $rota, (array) $reg['base'], $reg), $reg['contagem'], (array) ($reg['precos'] ?? []));
             $r = naval_carr_resumo($linhas, $reg);
             $res[] = ['dia' => $d, 'rota' => $rota, 'promotor' => (string) ($prom[$rota] ?? $rota), 'estado' => $r['estado'], 'artigos' => $r['artigos'],
                 'diferencas' => $r['diferencas'], 'alertas' => $r['alertas'], 'falta_kz' => $r['falta_kz'], 'sobra_kz' => $r['sobra_kz'],

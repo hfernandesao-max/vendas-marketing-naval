@@ -183,3 +183,41 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   expect(res.texto).toContain('Assinado no portal');
   expect(erros).toEqual([]);
 });
+
+test('conciliação: conta-se o stock no corte do dia; a carga para o dia seguinte fica de fora', async ({ page }) => {
+  await page.route('**/v1/conciliacao-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        pode: { contar: true, coordenar: true, fechar: true },
+        eu: 'tec',
+        data: '2026-11-16',
+        movimentos: 'saldo',
+        motivos: MOTIVOS,
+        nomes: {},
+        rotas: [
+          {
+            rota: '1005',
+            promotor: 'Olindo Baião',
+            cega: false,
+            linhas: [{ ...linhaCompleta('A1', 'Fraldas M', 37, 37), inicial: 64, carregado: 0, vendido: 27, depois_do_corte: 150 }],
+            corte: { hora: '16:00', origem: 'estimado' },
+            contado_por: 'tec',
+            contado_em: '2026-11-16 17:32:00',
+            motivos: {},
+            resumo: { estado: 'por_validar', artigos: 1, alertas: 0, diferencas: 0, falta_kz: 0, sobra_kz: 0 },
+            historico: [],
+          },
+        ],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#conciliacao-carrinha');
+  await page.locator('.cc-rota', { hasText: '1005' }).getByRole('button', { name: 'Ver' }).click();
+  const nota = page.locator('.cc-corte');
+  await expect(nota).toContainText('Conta-se o que estava na carrinha no corte das 16:00');
+  await expect(nota).toContainText('passa a stock da carrinha amanhã, às 00:00');
+  await expect(nota).toContainText('Carregado depois do corte: 150');
+  expect(erros).toEqual([]);
+});

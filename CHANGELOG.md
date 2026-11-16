@@ -1,5 +1,19 @@
 ## 16-11-2026
 
+### Conciliação da carrinha: a carga para o dia seguinte não entra na contagem
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: impacto -->
+
+- A conciliação do dia vai até ao **corte** (início do carregamento, 16:00 de segunda a sexta, pelo calendário): conta-se
+  o que estava na carrinha nessa hora. A **carga para o dia seguinte** (e uma devolução feita depois do corte) **não
+  entra na contagem**: passa a stock efectivo da carrinha no dia seguinte (o inicial, às 00:00).
+- O portal tira sozinho uma **fotografia do stock das carrinhas** nos 20 minutos antes do corte. Sem fotografia, o stock
+  no corte é **estimado**: inicial − vendido + cargas confirmadas no portal antes do corte. A conciliação diz qual foi
+  usado e quanto foi carregado depois do corte.
+- Vale a partir de 16-11-2026, incluindo as conciliações deste dia ainda por fechar (ex.: rota 1005); as já aprovadas
+  ficam como foram aprovadas. `CARRINHA_CORTE=0` desliga.
+
 ### Carrinhas: só se carrega com o fecho do dia anterior feito
 
 <!-- paginas: stock-carrinha, conciliacao-carrinha -->
