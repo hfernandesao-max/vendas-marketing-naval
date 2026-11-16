@@ -85,7 +85,7 @@ test('gestão: repor palavra-passe, dois passos e matriz (com repor a original)'
 
   const mfa = await pedir({ accao: 'dois_passos', conta: 'bo', activar: true });
   expect(mfa.uri).toContain('otpauth://totp/');
-  expect(await pedir({ accao: 'dois_passos', conta: 'bo', activar: false })).toEqual({ ok: true });
+  expect(await pedir({ accao: 'dois_passos', conta: 'bo', activar: false })).toEqual({ ok: true, dispensa: null });
   expect((await pedir({ accao: 'dois_passos', conta: 'sadm', activar: false })).erro).toContain('própria conta');
 
   expect(await pedir({ accao: 'matriz', matriz: { ranking: { BO: 'V' } } })).toEqual({ ok: true, alteracoes: 1 });
