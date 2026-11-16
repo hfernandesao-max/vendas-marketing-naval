@@ -10,7 +10,7 @@ import { novoDe, seloNovo } from './componentes/novo.js';
 
 // Cada secção de uma página passa a ser um relatório: mostra-se um de cada vez (separadores no topo e
 // sub-itens no menu), com os indicadores e os filtros da página sempre visíveis.
-const SEM_DIVISAO = ['plano-cargas', 'inicio', 'cadastros', 'stock-carrinha', 'caixa-marketing', 'relatorios']; // painéis que se lêem de uma vez (o stock mostra todas as carrinhas seguidas; a folha de caixa preenche-se toda no mesmo ecrã)
+const SEM_DIVISAO = ['plano-cargas', 'inicio', 'cadastros', 'stock-carrinha', 'caixa-marketing', 'relatorios', 'multicaixa-tpa']; // painéis que se lêem de uma vez (o stock mostra todas as carrinhas seguidas; a folha de caixa preenche-se toda no mesmo ecrã)
 export let RELS = [],
   REL_ATUAL = '',
   REL_PEDIDO = '';

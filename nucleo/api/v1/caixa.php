@@ -16,6 +16,7 @@
 defined('NAVAL_API') || exit;
 naval_servico('caixa');
 naval_servico('rotas');
+naval_servico('tpa');
 naval_exigir(['caixa-marketing']);
 $gere = naval_pode('caixa-marketing', 'G');
 $niveis = array_values(array_filter([naval_pode('caixa-aprovacao', 'G') ? 1 : 0, naval_pode('caixa-aprovacao-final', 'G') ? 2 : 0]));
@@ -34,7 +35,9 @@ if (!naval_e_post()) {
     }
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'dois_niveis' => naval_caixa_dois_niveis(), 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
-        'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? '')]);
+        'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? ''),
+        // registo dos TPA (Multicaixa por TPA): com terminais, cada talão de fecho escolhe o TPA e escreve o período e o total
+        'terminais' => array_values(array_filter(naval_tpa_terminais(), function ($t) { return !empty($t['activo']); }))]);
 }
 
 $p = naval_pedido();
@@ -64,6 +67,10 @@ switch ($accao) {
         } catch (Throwable $e) {
             error_log('[caixa esperado] ' . $e->getMessage());
         }
+        // com o registo dos TPA, o valor é o «total a movimentar» escrito do talão de fecho (comparado depois com o
+        // Pinguim BO, no relatório Multicaixa por TPA): nada se substitui
+        naval_servico('tpa');
+        if (naval_tpa_em_uso()) $esperado = null;
         if ($esperado !== null && isset($p['tpa']) && is_array($p['tpa'])) {
             $vistos = [];
             foreach ($p['tpa'] as $i => $l) {

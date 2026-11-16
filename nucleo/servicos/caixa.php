@@ -126,7 +126,12 @@ function naval_caixa_linhas(array $p): array
             'nota' => naval_texto($l['nota'] ?? '', 120)];
     }
     $tpa = [];
-    foreach (array_slice((array) ($p['tpa'] ?? []), 0, 500) as $l) {
+    // com o registo dos TPA (Finanças › Multicaixa por TPA): cada talão de fecho tem o TPA, o período, as operações e
+    // o «total a movimentar» escrito do talão; banco, conta e empresa vêm do registo (nucleo/servicos/tpa.php)
+    naval_servico('tpa');
+    $terminais = naval_tpa_terminais();
+    foreach ($terminais ? array_slice((array) ($p['tpa'] ?? []), 0, 500) : [] as $l) $tpa[] = naval_tpa_linha_fecho((array) $l, $terminais, $valor);
+    foreach ($terminais ? [] : array_slice((array) ($p['tpa'] ?? []), 0, 500) as $l) {
         $l = (array) $l;
         $rt = $rota($l['rota'] ?? '');
         if ($rt === '') throw new NavalErro('Escolha o promotor de cada talão do TPA.', 400);
@@ -256,6 +261,7 @@ function naval_caixa_gravar(string $dia, array $p, ?int $versao, string $login):
 {
     if ($dia > date('Y-m-d')) throw new NavalErro('Não se regista a caixa de um dia que ainda não chegou.', 400);
     [$entregas, $tpa, $saidas] = naval_caixa_linhas($p);
+    naval_tpa_fechos_unicos($dia, $tpa);
     return naval_caixa_alterar($dia, $versao, function ($c) use ($p, $entregas, $tpa, $saidas, $login) {
         if ($c['estado'] !== 'aberta') throw new NavalErro('A caixa deste dia já está fechada. Reabra-a para corrigir.', 409);
         // o estado de antes, para saber se alguma coisa mudou (incluindo o saldo inicial)
@@ -367,6 +373,11 @@ function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $ni
         return $c;
     });
     naval_registar($nivel === 1 ? 'caixa_verificada' : 'caixa_aprovada', ['dia' => $dia]);
+    // aprovação final: o resumo de fim de dia segue para o Financeiro (Multicaixa por TPA, banco e conta)
+    if ($nivel === 2) {
+        naval_servico('tpa');
+        naval_tpa_resumo_enviar($dia, $c);
+    }
     return $c;
 }
 
