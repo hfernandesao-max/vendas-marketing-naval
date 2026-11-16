@@ -62,6 +62,7 @@ function textos() {
 // Páginas que não dependem do período (sem a barra De / Até)
 const SEM_PERIODO = [
   'plano-cargas',
+  'multicaixa-tpa',
   'conciliacao-carrinha',
   'equipamentos',
   'equipamentos-documentos',

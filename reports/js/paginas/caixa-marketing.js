@@ -40,7 +40,10 @@ function ler() {
     if (ed && D.gere && D.caixa.estado === 'aberta' && D.esperado && !ed.entregas.length && !ed.tpa.length) {
       Object.entries(D.esperado).forEach(([r, x]) => {
         if (x.dinheiro > 0) ed.entregas.push({ rota: r, empresa: '', valor: null, notas: null, nota: '' });
-        if (x.multicaixa > 0) ed.tpa.push({ rota: r, banco: '', talao: '', empresa: '', valor: null });
+        if (x.multicaixa > 0)
+          ed.tpa.push(
+            comRegisto() ? { rota: r, tpa: '', periodo: '', operacoes: null, valor: null } : { rota: r, banco: '', talao: '', empresa: '', valor: null },
+          );
       });
       if (ed.entregas.length || ed.tpa.length) {
         ed.sugerido = true;
@@ -50,6 +53,10 @@ function ler() {
     if (atual === 'caixa-marketing') draw();
   });
 }
+// registo dos TPA (Finanças › Multicaixa por TPA): com terminais, cada talão de fecho escolhe o TPA e escreve o
+// período, as operações e o «total a movimentar» do talão; o banco e a conta vêm do registo
+const comRegisto = () => !!(D && D.terminais && D.terminais.length);
+const tpaDaRota = (r) => ((D && D.terminais) || []).find((x) => x.rota === r);
 const copia = (c) => ({
   entregas: c.entregas.map((x) => ({ ...x, notas: x.notas ? { ...x.notas } : null })),
   tpa: c.tpa.map((x) => ({ ...x })),
@@ -401,8 +408,13 @@ R['caixa-marketing'] = (pg) => {
     pg.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
-  // valor de cada talão do TPA = Multicaixa recebido pelo promotor no Pinguim BO (o servidor confirma ao gravar)
-  if (ed && D.esperado && D.caixa.estado === 'aberta')
+  // com o registo dos TPA: o TPA da rota vem já escolhido (muda-se se o promotor usou outro)
+  if (ed && comRegisto() && D.caixa.estado === 'aberta')
+    ed.tpa.forEach((l) => {
+      if (!l.tpa && l.rota && tpaDaRota(l.rota)) l.tpa = tpaDaRota(l.rota).tpa;
+    });
+  // sem registo: valor de cada talão do TPA = Multicaixa recebido pelo promotor no Pinguim BO (o servidor confirma)
+  if (ed && !comRegisto() && D.esperado && D.caixa.estado === 'aberta')
     ed.tpa.forEach((l) => {
       const v = l.rota && D.esperado[l.rota] ? D.esperado[l.rota].multicaixa : 0;
       l.valor = v > 0 ? v : null;
@@ -549,28 +561,52 @@ R['caixa-marketing'] = (pg) => {
       aberta,
       mudou,
     ),
-    grelha(
-      t('Talões do TPA (Multicaixa)'),
-      t('Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.'),
-      ed.tpa,
-      [
-        { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom, refaz: true },
-        { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha') },
-        { key: 'talao', label: t('Nº do talão de fecho'), max: 30, obrigatorio: true },
-        // valor do Pinguim BO (Multicaixa recebido pelo promotor); só se escreve sem ligação ao Pinguim BO
-        D.esperado
-          ? {
-              key: 'valor',
-              label: t('Valor (Pinguim BO)'),
-              n: true,
-              extra: (l, td) => (td.textContent = l.valor == null ? '—' : kz(l.valor)),
-            }
-          : { key: 'valor', label: t('Valor'), n: true },
-      ],
-      () => ({ rota: '', banco: '', talao: '', empresa: '', valor: null }),
-      aberta,
-      mudou,
-    ),
+    comRegisto()
+      ? grelha(
+          t('Talões de fecho do TPA (Multicaixa)'),
+          t(
+            'Um talão «Desactivar (fecho)» por TPA: o período («Per»), o número de operações e o «total a movimentar», como no talão. O banco e a conta vêm do registo dos TPA; a comparação com o Pinguim BO está em Multicaixa por TPA.',
+          ),
+          ed.tpa,
+          [
+            { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom, refaz: true },
+            {
+              key: 'tpa',
+              label: t('TPA'),
+              lista: () => D.terminais.map((x) => [x.tpa, x.tpa + ' · ' + x.banco + ' · ' + x.empresa]),
+              vazio: t('Escolha'),
+              ver: (l) => (l.tpa ? l.tpa + ' · ' + (l.banco || '') : '—'),
+            },
+            { key: 'periodo', label: t('Período (Per)'), max: 4, obrigatorio: true },
+            { key: 'operacoes', label: t('Operações'), max: 4, ver: (l) => (l.operacoes == null || l.operacoes === '' ? '—' : String(l.operacoes)) },
+            { key: 'valor', label: t('Total a movimentar'), n: true, obrigatorio: true },
+          ],
+          () => ({ rota: '', tpa: '', periodo: '', operacoes: null, valor: null }),
+          aberta,
+          mudou,
+        )
+      : grelha(
+          t('Talões do TPA (Multicaixa)'),
+          t('Fecho de cada TPA, por banco, com o número e o valor do talão. Compara-se com o Multicaixa recebido no Pinguim BO.'),
+          ed.tpa,
+          [
+            { key: 'rota', label: t('Promotor'), lista: promotores, vazio: t('Escolha'), ver: prom, refaz: true },
+            { key: 'banco', label: t('Banco'), lista: bancos, vazio: t('Escolha') },
+            { key: 'talao', label: t('Nº do talão de fecho'), max: 30, obrigatorio: true },
+            // valor do Pinguim BO (Multicaixa recebido pelo promotor); só se escreve sem ligação ao Pinguim BO
+            D.esperado
+              ? {
+                  key: 'valor',
+                  label: t('Valor (Pinguim BO)'),
+                  n: true,
+                  extra: (l, td) => (td.textContent = l.valor == null ? '—' : kz(l.valor)),
+                }
+              : { key: 'valor', label: t('Valor'), n: true },
+          ],
+          () => ({ rota: '', banco: '', talao: '', empresa: '', valor: null }),
+          aberta,
+          mudou,
+        ),
     // depósitos no banco (controlo duplo dos valores em trânsito): quem lança é o requisitante; aprova outra pessoa
     // com nível de aprovação da caixa; depósito aprovado fica bloqueado (só quem aprovou retira a aprovação)
     grelha(
@@ -633,9 +669,15 @@ R['caixa-marketing'] = (pg) => {
   if (aberta) {
     // o número do talão de fecho é obrigatório em cada TPA (o servidor também o exige)
     const semTalao = () => {
-      if (!ed.tpa.some((l) => !String(l.talao || '').trim())) return false;
+      // com o registo dos TPA: o TPA, o período e o total a movimentar de cada talão de fecho
+      const falta = comRegisto()
+        ? ed.tpa.some((l) => !l.tpa || !String(l.periodo || '').trim() || !(+l.valor > 0))
+        : ed.tpa.some((l) => !String(l.talao || '').trim());
+      if (!falta) return false;
       erro.hidden = false;
-      erro.textContent = t('Indique o número do talão de fecho de cada TPA.');
+      erro.textContent = comRegisto()
+        ? t('Indique o TPA, o período e o total a movimentar de cada talão de fecho.')
+        : t('Indique o número do talão de fecho de cada TPA.');
       const i = document.querySelector('.cx-falta');
       if (i) i.focus();
       return true;

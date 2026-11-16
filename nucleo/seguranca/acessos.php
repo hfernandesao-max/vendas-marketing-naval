@@ -64,6 +64,8 @@ const NAVAL_MATRIZ_TXT = [
     // aprovação da folha de caixa em dois níveis (segregação de funções: quem lança valida, três pessoas diferentes):
     // 1.º nível o superior de quem lança; 2.º nível (final) o responsável máximo. Atribui-se no portal aos perfis próprios.
     'caixa-aprovacao'      => '-  -  -  -  -  -  -  -  -  -  -',
+    // Multicaixa por TPA: o Financeiro regista os terminais, confere com o extracto e recebe o resumo de fim de dia
+    'multicaixa-tpa'       => 'V  V  -  -  -  G  V  -  -  V  -',
     'caixa-aprovacao-final' => '-  G  -  -  -  -  -  -  -  -  -',
     'sap-exportar'         => 'V  -  -  -  -  E  E  -  -  V  -',
     'agt'                  => 'E  E  -  -  -  E  E  -  -  E  E',
@@ -222,6 +224,7 @@ function naval_niveis_recurso(string $rec): array
         case 'relatorio-vendas':
             return ['', 'V', 'E'];
         case 'caixa-marketing':
+        case 'multicaixa-tpa':
             return ['', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':

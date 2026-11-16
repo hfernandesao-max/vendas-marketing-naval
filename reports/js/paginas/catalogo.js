@@ -41,6 +41,7 @@ export const PAGES = [
   { id: 'pagamentos', grupo: 'Finanças', icon: 'card', nome: 'Cobranças' },
   { id: 'pendentes', grupo: 'Finanças', icon: 'clock', nome: 'Contas a receber (antiguidade)' },
   { id: 'caixa-marketing', grupo: 'Finanças', icon: 'caixa', nome: 'Fecho de caixa' },
+  { id: 'multicaixa-tpa', grupo: 'Finanças', icon: 'tpa', nome: 'Multicaixa por TPA' },
   // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
   { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
   { id: 'conversao-visitas', grupo: 'Terreno', icon: 'funil', nome: 'Conversão das visitas' },

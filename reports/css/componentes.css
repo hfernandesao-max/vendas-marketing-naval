@@ -5324,3 +5324,27 @@ body.apres-lado {
   display: inline-flex;
   gap: 2px;
 }
+
+/* Multicaixa por TPA (reports/js/paginas/multicaixa-tpa.js) */
+.mc-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.mc-barra .seg {
+  margin-left: auto;
+}
+.mc-sim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.tile.tile-alerta {
+  border-color: var(--warn, #d97706);
+}
+.tile.tile-alerta .v {
+  color: var(--warn-t, #9a3412);
+}

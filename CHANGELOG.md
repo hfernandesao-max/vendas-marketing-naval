@@ -1,3 +1,28 @@
+## 16-11-2026
+
+### Multicaixa por TPA: conferência máquina a máquina e resumo de fim de dia para o Financeiro
+
+<!-- paginas: multicaixa-tpa, caixa-marketing -->
+
+- Nova página **Finanças › Multicaixa por TPA**, pedida pelo Financeiro para conferir com os extractos e limpar a conta
+  de cartões (POS Card GL) no SAP:
+  - **por TPA (máquina) e por dia**: empresa, banco e conta, Ident. TPA, rota, período, operações, total do fecho,
+    Multicaixa no Pinguim BO e diferença;
+  - **por empresa, banco e conta**: o que o banco credita e o que já está conferido;
+  - **Multicaixa sem talão de fecho**: rotas com Multicaixa no Pinguim BO e sem talão de fecho na folha de caixa;
+  - **Conferido no extracto**: o Financeiro marca cada fecho com a referência e a data do movimento;
+  - **Pagamentos a rever**: com `PINGUIM_MC_REFERENCIA` (a coluna do Pinguim BO com o «Número» do pagamento), cada
+    pagamento Multicaixa é conferido pela referência «período/transacção» do talão (sem referência, formato errado ou
+    de outro período).
+- **Registo dos terminais (TPA)**: Ident. TPA, Id. Estab., empresa, banco, conta e rota atribuída.
+- **Folha de caixa**: com o registo, cada talão de fecho tem o TPA (o da rota já escolhido), o período, as operações e
+  o «total a movimentar» escrito do talão (às cegas, como as notas); banco e conta vêm do registo; TPA + período não se
+  repetem (nem nos 60 dias anteriores). Sem terminais registados, a folha fica como antes.
+- **Resumo de fim de dia por correio** quando a caixa recebe a aprovação final, para os destinatários escolhidos na
+  página: Multicaixa por banco, conta, TPA e período, numerário, depósitos e o que está a rever, com a ligação ao dia.
+- Recurso «multicaixa-tpa» na matriz (Financeiro gere; TI, Direcção, Back Office e Auditoria vêem). Nunca se guarda o
+  número do cartão nem o certificado da transacção (PCI DSS). Tudo fica nos registos de auditoria.
+
 # Registo de alterações
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas em dd-mm-aaaa.
