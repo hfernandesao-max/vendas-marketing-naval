@@ -10,6 +10,7 @@ $ok = 0;
 $falhas = 0;
 foreach (['preparar', 'log', 'pro', 'sup'] as $fase) {
     $saida = [];
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($cenario) . ' ' . escapeshellarg($amb) . ' ' . $fase . ' 2>&1', $saida, $codigo);
     foreach ($saida as $l) {
         echo "[$fase] $l\n";
