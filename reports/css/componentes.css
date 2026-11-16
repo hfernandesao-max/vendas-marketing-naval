@@ -3992,26 +3992,42 @@ html .barra-sup .menu-btn {
   border-radius: 9px;
   cursor: pointer;
   font-size: 13px;
-  color: var(--bad);
+  color: var(--fg);
 }
+/* menu da conta: acções neutras; o vermelho fica só para a acção que termina a sessão (cor com significado único) */
 .conta-sair:hover,
 .conta-sair:focus-visible {
-  background: rgb(var(--er1-rgb) / 0.1);
+  background: rgb(var(--ceu-rgb) / 0.1);
 }
-/* «App no telemóvel»: verde enquanto a pessoa não tem a app; vermelho quando já a tem activa num telemóvel */
-.conta-app {
-  color: var(--ok);
-}
-.conta-app.instalada {
+.conta-perigo {
   color: var(--bad);
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
 }
-.conta-app:hover,
-.conta-app:focus-visible {
-  background: rgb(48 209 88 / 0.1);
-}
-.conta-app.instalada:hover,
-.conta-app.instalada:focus-visible {
+.conta-perigo:hover,
+.conta-perigo:focus-visible {
   background: rgb(var(--er1-rgb) / 0.1);
+}
+/* estado de cada opção, em texto (nunca só pela cor): «activa», «por instalar», «activo até às 21:30» */
+.conta-estado {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.conta-estado.ligado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--apres-cor);
+  font-weight: 600;
+}
+.conta-estado.ligado::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 /* estrela «fixar nos favoritos» ao lado do título */
 .titulo-l {
@@ -5220,6 +5236,44 @@ body.sessao-terminada #nav {
   visibility: hidden;
 }
 
+/*
+ * Modo apresentação: moldura a toda a volta do ecrã enquanto está activo (indicador de estado sempre visível, como nas
+ * aplicações de partilha de ecrã; ISO 9241-110 «visibilidade do estado do sistema»), com o rótulo em texto (WCAG 2.2
+ * 1.4.1: nunca só pela cor). Não intercepta cliques, não pisca e não sai na impressão.
+ */
+:root {
+  --apres-cor: #d92d20;
+}
+body.apres-activo::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147482500;
+  border: 4px solid var(--apres-cor);
+  pointer-events: none;
+}
+body.apres-activo::after {
+  content: attr(data-apres-rotulo);
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 2147482501;
+  transform: translateX(-50%);
+  padding: 3px 12px 4px;
+  border-radius: 0 0 8px 8px;
+  background: var(--apres-cor);
+  color: #fff;
+  font: 600 12px/1.3 var(--font);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media print {
+  body.apres-activo::before,
+  body.apres-activo::after {
+    display: none;
+  }
+}
 /* Modo apresentação (reports/js/modo-apresentacao.js): marca discreta com as vistas, app numa moldura de telemóvel */
 .apres-barra {
   position: fixed;
