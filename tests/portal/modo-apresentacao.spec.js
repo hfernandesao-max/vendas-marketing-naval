@@ -44,6 +44,18 @@ test('modo apresentação: app de gestão no ecrã do computador, lado a lado, s
   await expect(page.frameLocator('.apres-tel iframe').locator('h1').first()).toBeVisible();
   const barra = page.locator('.apres-barra');
   await expect(barra).toContainText('Apresentação até às 14:00');
+  // moldura vermelha a toda a volta, com o rótulo em texto; no menu da conta, «activo até às 14:00»
+  const moldura = await page.evaluate(() => {
+    const a = getComputedStyle(document.body, '::before');
+    const b = getComputedStyle(document.body, '::after');
+    return { borda: a.borderTopWidth + ' ' + a.borderTopColor, pos: a.position, cliques: a.pointerEvents, rotulo: b.content };
+  });
+  expect(moldura).toEqual({ borda: '4px rgb(217, 45, 32)', pos: 'fixed', cliques: 'none', rotulo: '"● Em apresentação · até às 14:00"' });
+  await expect(page.locator('#conta-apres-e')).toHaveText('activo até às 14:00');
+  // só «Terminar sessão» fica a vermelho no menu da conta
+  const cores = await page.evaluate(() => ['#conta-app', '#conta-apres', '#sair'].map((s) => getComputedStyle(document.querySelector(s)).color));
+  expect(cores[0]).toBe(cores[1]);
+  expect(cores[2]).not.toBe(cores[0]);
   // lado a lado: o portal continua à esquerda e a app à direita
   await barra.getByRole('button', { name: 'Portal e app lado a lado' }).click();
   await expect(page.locator('body')).toHaveClass(/apres-lado/);
@@ -58,6 +70,8 @@ test('modo apresentação: app de gestão no ecrã do computador, lado a lado, s
   await barra.getByRole('button', { name: 'Terminar' }).click();
   await expect.poll(() => pedidos.some((x) => x.accao === 'terminar')).toBe(true);
   await expect(page.locator('.apres-barra')).toHaveCount(0);
+  expect(await page.evaluate(() => getComputedStyle(document.body, '::before').borderTopWidth)).not.toBe('4px');
+  await expect(page.locator('#conta-apres-e')).toHaveText('');
   expect(erros).toEqual([]);
 });
 

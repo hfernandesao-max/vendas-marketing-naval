@@ -130,6 +130,21 @@ export function terminarModoApresentacao(pelaHora) {
   else postJson('modo-apresentacao', { accao: 'terminar' }).then(fim);
 }
 
+/**
+ * Sinal de estado do modo apresentação: moldura vermelha a toda a volta do ecrã com o rótulo em texto (CSS
+ * body.apres-activo) e, no menu da conta, «activo até às HH:MM».
+ */
+export function marcarEstado() {
+  const on = activo() && document.body.classList.contains('apres-activo');
+  if (on) document.body.dataset.apresRotulo = '● ' + t('Em apresentação · até às {h}', { h: hhmm(SESSAO.apresentacao) });
+  else delete document.body.dataset.apresRotulo;
+  const e = document.getElementById('conta-apres-e');
+  if (e) {
+    e.classList.toggle('ligado', on);
+    e.textContent = on ? t('activo até às {h}', { h: hhmm(SESSAO.apresentacao) }) : '';
+  }
+}
+
 function limpar() {
   clearInterval(relogio);
   relogio = 0;
@@ -137,6 +152,7 @@ function limpar() {
   if (palco) palco.remove();
   barra = palco = null;
   document.body.classList.remove('apres-activo', 'apres-lado', 'apres-palco');
+  marcarEstado();
   try {
     sessionStorage.removeItem(CHAVE);
   } catch (e) {
@@ -187,6 +203,7 @@ export function mostrar(v, retomar) {
     /* sem armazenamento */
   }
   document.body.classList.add('apres-activo');
+  marcarEstado();
   document.body.classList.toggle('apres-lado', vista === 'lado');
   document.body.classList.toggle('apres-palco', vista === 'gestao');
   if (palco) palco.remove();
@@ -212,6 +229,7 @@ function chamarTelemovel(avisar) {
 }
 
 function desenharBarra() {
+  marcarEstado();
   if (barra) barra.remove();
   barra = el('div', 'apres-barra');
   barra.setAttribute('role', 'toolbar');

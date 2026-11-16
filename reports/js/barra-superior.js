@@ -212,11 +212,15 @@ function mostrarConta() {
   const tem = !!SESSAO.app_instalada;
   $('#conta-app').classList.toggle('instalada', tem);
   $('#conta-app').title = t(tem ? 'Já tem a app activa num telemóvel' : 'Ainda não tem a app no telemóvel');
+  const ae = $('#conta-app-e');
+  if (ae) ae.textContent = t(tem ? 'activa' : 'por instalar');
   // modo apresentação (projector ou LCD): só com o recurso «modo-apresentacao» e fora de uma moldura
   const ap = $('#conta-apres');
   if (ap) {
     ap.hidden = !podeGerir('modo-apresentacao') || window.self !== window.top;
     $('#conta-apres-t').textContent = t('Modo apresentação');
+    // estado no menu (activo até às HH:MM): o módulo do modo apresentação só se carrega quando está activo
+    if (document.body.classList.contains('apres-activo')) import('./modo-apresentacao.js').then((m) => m.marcarEstado());
   }
   // ambiente de pré-produção (só SADM e TI): a versão nova lado a lado, para testar antes de aprovar
   const ens = $('#conta-ensaio');

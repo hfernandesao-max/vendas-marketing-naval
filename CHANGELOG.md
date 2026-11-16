@@ -1,5 +1,18 @@
 ## 16-11-2026
 
+### Modo apresentação: moldura vermelha a toda a volta e menu da conta com cores com significado
+
+<!-- paginas: inicio -->
+<!-- tipo: melhoria -->
+
+- Com o modo apresentação activo, o ecrã fica com uma **moldura vermelha a toda a volta** e o rótulo «● Em apresentação
+  · até às HH:MM» ao centro, em cima (estado sempre visível, como nas aplicações de partilha de ecrã; ISO 9241-110 e
+  WCAG 2.2 1.4.1: o estado também em texto, nunca só pela cor). A moldura não intercepta cliques, não pisca e não sai na
+  impressão.
+- **Menu da conta**: as opções passam a cor normal e só **Terminar sessão** fica a vermelho (separada por uma linha). O
+  estado de cada opção aparece em texto: «activa» / «por instalar» na app no telemóvel e «activo até às HH:MM» no modo
+  apresentação, com o ponto da cor da moldura.
+
 ### Plano de cargas: tabelas de motoristas e viaturas, requisição como documento e carga pelo stock contado
 
 <!-- paginas: plano-cargas -->
