@@ -4343,6 +4343,7 @@ export const EN = {
   'A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar':
     'To load = requisition; total on departure = already in the van ({o}) + to load',
   'Quantidade da requisição (não se altera no plano)': 'Requisition quantity (cannot be changed in the plan)',
+  'Existências na carrinha + requisição (não se altera no plano)': 'Van stock + requisition (cannot be changed in the plan)',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

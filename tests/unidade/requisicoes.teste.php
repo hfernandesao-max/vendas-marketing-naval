@@ -143,11 +143,18 @@ teste('plano de cargas: a requisição emitida fixa o documento, as quantidades 
     $e = naval_req_emitir($r['numero'], $r['versao'], 'pro');
     igual(['F1' => 'RTM HIGITEC PIV – NON FOOD', 'S1' => 'RTM REFITEC/FOODTEC PIV – FOOD'], array_column($e['linhas'], 'armazem', 'codigo'), 'armazém gravado na emissão');
     $listas = ['artigos' => NAVAL_ARTIGOS_PADRAO];
-    $p = naval_plano_com_requisicoes(['data' => $hoje, 'rotas' => [['rota' => '1017', 'factura' => 'X', 'armazem' => 'HIGITEC',
-        'quantidades' => ['fraldas' => 999, 'sabao' => 1, 'sabonete' => 5]]]], $listas);
+    $ecra = ['data' => $hoje, 'rotas' => [['rota' => '1017', 'factura' => 'X', 'armazem' => 'HIGITEC', 'quantidades' => ['fraldas' => 999, 'sabao' => 1, 'sabonete' => 5]]]];
+    // existências na carrinha (contadas) + requisitado = total à saída, seja o que for que venha do ecrã
+    $cg = ['rotas' => ['1017' => ['stock' => 'contado', 'grupos' => ['fraldas' => ['na' => 7], 'sabao' => ['na' => 0], 'sabonete' => ['na' => 3]]]]];
+    $p = naval_plano_com_requisicoes($ecra, $listas, $cg);
     $x = $p['rotas'][0];
     igual($e['numero'], $x['factura']);
-    igual(['fraldas' => 12, 'sabao' => 30, 'sabonete' => 0], $x['quantidades'], 'quantidades da requisição, não as do ecrã');
+    igual(['fraldas' => 19, 'sabao' => 30, 'sabonete' => 3], $x['quantidades'], 'existências + requisição, não o ecrã');
+    verdade($x['carga_total'], 'o limite de peso não soma as existências outra vez');
+    igual(0.0, naval_carga_estado($p['rotas'], $listas + ['capacidades' => []], ['1017' => 500.0])['1017']['na_carrinha']);
+    // sem Pinguim BO (existências desconhecidas): o do ecrã, nunca abaixo do requisitado
+    $sem = naval_plano_com_requisicoes($ecra, $listas, ['rotas' => ['1017' => ['stock' => 'sem_dados', 'grupos' => []]]]);
+    igual(['fraldas' => 999, 'sabao' => 30, 'sabonete' => 5], $sem['rotas'][0]['quantidades']);
     igual('RTM HIGITEC PIV – NON FOOD + RTM REFITEC/FOODTEC PIV – FOOD', $x['armazem']);
     $c = naval_plano_carga($hoje, $listas, ['1017']);
     igual(['RTM HIGITEC PIV – NON FOOD', 'RTM REFITEC/FOODTEC PIV – FOOD'], $c['rotas']['1017']['armazens']);

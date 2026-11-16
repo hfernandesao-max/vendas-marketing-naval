@@ -810,7 +810,8 @@ function naval_carga_estado(array $rotasPlano, array $listas, ?array $naCarrinha
             if (empty($peso[$id])) $semPeso[] = (string) $id;
             $plan += (float) $q * ($peso[$id] ?? 0);
         }
-        $na = (float) ($naCarrinha[$rota] ?? 0);
+        // com requisição, as quantidades do plano já são o total à saída (com as existências na carrinha)
+        $na = empty($r['carga_total']) ? (float) ($naCarrinha[$rota] ?? 0) : 0.0;
         $out[$rota] = ['matricula' => $mat, 'capacidade' => $c, 'na_carrinha' => round($na, 1), 'planeado' => round($plan, 1),
             'disponivel' => $c === null ? null : round($c - $na, 1), 'excede' => $c !== null && !empty($r['sai']) && $plan + $na > $c + 0.05,
             'sem_peso' => $semPeso];

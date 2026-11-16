@@ -5,10 +5,11 @@
 <!-- paginas: plano-cargas, requisicoes-carrinha -->
 <!-- tipo: melhoria -->
 
-- **A requisição é a única fonte da carga** (documento de origem): com requisição emitida para a rota, o plano mostra
-  sozinho o **número da requisição**, o **armazém de carga** (o armazém dos artigos da requisição) e as **quantidades de
-  cada artigo = as da requisição**, todos só para leitura. O servidor volta a fixá-los ao gravar e ao publicar, seja o
-  que for que venha do ecrã. O que já está na carrinha continua na nota «total à saída» e conta para o limite de peso.
+- **A carga vem da requisição** (documento de origem): com requisição emitida para a rota, o plano mostra sozinho o
+  **número da requisição**, o **armazém de carga** (o armazém dos artigos da requisição) e a **quantidade de cada artigo
+  = existências na carrinha (contadas no fecho do dia anterior) + requisição**, todos só para leitura. O servidor volta
+  a fixá-los ao gravar e ao publicar, seja o que for que venha do ecrã (sem ligação ao Pinguim BO, nunca abaixo do
+  requisitado). O limite de peso usa esse total, sem somar outra vez o que está na carrinha.
 - A requisição ainda **em rascunho** aparece no campo «Requisição ao armazém» («RQ-… em rascunho: emita a requisição»).
 - Ao emitir uma requisição, fica gravado o armazém de cada artigo (o do catálogo do Pinguim BO nesse momento); nas
   requisições antigas, o armazém vem do catálogo.

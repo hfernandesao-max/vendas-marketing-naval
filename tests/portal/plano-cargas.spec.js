@@ -141,7 +141,9 @@ test('limite de peso: não deixa carregar acima do que ainda cabe na viatura (ca
   expect(erros).toEqual([]);
 });
 
-test('carga pela requisição: quantidades, documento e armazém da requisição, só para leitura; motorista e viatura escolhidos nas tabelas', async ({ page }) => {
+test('carga pela requisição: existências + requisição, documento e armazém da requisição, só para leitura; motorista e viatura escolhidos nas tabelas', async ({
+  page,
+}) => {
   const pedidos = [];
   const base = resposta(null);
   base.listas.motoristas = [
@@ -165,9 +167,9 @@ test('carga pela requisição: quantidades, documento e armazém da requisição
   };
   const erros = await abrirPlano(page, null, pedidos, { listas: base.listas, carga });
   const c = page.locator('.pc-card').first();
-  // a carregar = a quantidade da requisição (o que já está na carrinha não entra), sem poder alterar
-  await expect(c.getByLabel('Fraldas')).toHaveValue('150');
-  await expect(c.getByLabel('Sabão')).toHaveValue('');
+  // quantidade = existências na carrinha + requisição = total à saída, sem poder alterar
+  await expect(c.getByLabel('Fraldas')).toHaveValue('187');
+  await expect(c.getByLabel('Sabão')).toHaveValue('4');
   await expect(c.getByLabel('Fraldas')).toHaveJSProperty('readOnly', true);
   await expect(c.getByLabel('Requisição ao armazém')).toHaveValue('RQ-2026-000123');
   await expect(c.getByLabel('Armazém de carga')).toHaveValue('RTM HIGITEC PIV – NON FOOD');

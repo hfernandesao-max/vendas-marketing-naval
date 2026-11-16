@@ -24,7 +24,8 @@ function pesoRota(r) {
       .toUpperCase()
       .trim()
   ];
-  const na = +((PC.resp && PC.resp.na_carrinha) || {})[r.rota] || 0;
+  // com requisição, as quantidades já são o total à saída (com as existências na carrinha): não se somam outra vez
+  const na = comRequisicao(r) ? 0 : +((PC.resp && PC.resp.na_carrinha) || {})[r.rota] || 0;
   return { plan, cap: cap ? +cap : null, na, disp: cap ? +cap - na : null, peso, excede: !!cap && r.sai && plan + na > +cap + 0.05 };
 }
 // Capacidade de carga (carga útil) de referência, dos fabricantes, para quando a tabela de viaturas ainda não a tem.
@@ -127,9 +128,9 @@ function montarRotasPlano(d, base) {
 }
 const cargaDe = (rota, d = PC.resp) => ((d && d.carga && d.carga.rotas) || {})[rota] || null;
 /**
- * Com requisição emitida, a requisição é a única fonte da carga: o número (documento), a quantidade de cada artigo
- * (a requisitada) e o armazém de carga (o dos artigos). Estes campos ficam só para leitura; o servidor fixa-os de novo
- * ao gravar (nucleo/servicos/cargas.php, naval_plano_com_requisicoes).
+ * Com requisição emitida, a carga vem da requisição: o número (documento), o armazém de carga (o dos artigos) e a
+ * quantidade de cada artigo = existências na carrinha (contadas no corte do dia anterior) + requisitado = total à
+ * saída. Estes campos ficam só para leitura; o servidor fixa-os de novo ao gravar (naval_plano_com_requisicoes).
  */
 const comRequisicao = (r, d = PC.resp) => {
   const c = cargaDe(r.rota, d);
@@ -142,7 +143,7 @@ function aplicarCarga(r, d) {
   r.sai = true; // com requisição emitida, a rota sai
   d.listas.artigos.forEach((a) => {
     const g = c.grupos[a.id];
-    r.quantidades[a.id] = g ? Math.max(0, Math.round(+g.carregar || 0)) : 0;
+    r.quantidades[a.id] = g ? Math.max(0, Math.round(+g.total || 0)) : 0;
   });
   if ((c.armazens || []).length) r.armazem = c.armazens.join(' + ');
   r._carga = true;
@@ -1085,7 +1086,7 @@ function cartaoRota(r, d, dls) {
       estimado: t('estimado: contagem de {d} por fazer', { d: dl(d.carga.dia_anterior) }),
       sem_dados: t('sem dados do Pinguim BO'),
     }[cg.stock];
-    detalhe.append(el('b', null, t('A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar', { o: origem })));
+    detalhe.append(el('b', null, t('Carga: já na carrinha ({o}) + a carregar = total à saída', { o: origem })));
     const ul = el('ul');
     d.listas.artigos.forEach((a) => {
       const g = cg.grupos[a.id];
@@ -1100,7 +1101,7 @@ function cartaoRota(r, d, dls) {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
     if (temReq) {
       i.readOnly = true;
-      i.title = t('Quantidade da requisição (não se altera no plano)');
+      i.title = t('Existências na carrinha + requisição (não se altera no plano)');
     }
     i.addEventListener('input', () => {
       if (temReq) return;

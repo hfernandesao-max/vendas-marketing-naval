@@ -773,10 +773,12 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
 
 /**
  * Documento de carga = requisição: em cada rota com requisição emitida (ou carregada) para o dia do plano, o servidor
- * fixa o número da requisição, as quantidades (as da requisição, por artigo do plano) e o armazém de carga (o dos
- * artigos da requisição). O que vier do ecrã para estes campos é ignorado: a requisição é a única fonte.
+ * fixa o número da requisição, o armazém de carga (o dos artigos da requisição) e as quantidades de cada artigo do plano
+ * = existências na carrinha (contadas no corte do dia anterior; sem contagem, as esperadas) + requisitado = total à
+ * saída. O que vier do ecrã para estes campos é ignorado. Sem ligação ao Pinguim BO (existências desconhecidas), fica o
+ * valor do ecrã, mas nunca abaixo do requisitado. $carga: naval_plano_carga já lida (os testes passam-na).
  */
-function naval_plano_com_requisicoes(array $p, array $listas): array
+function naval_plano_com_requisicoes(array $p, array $listas, ?array $carga = null): array
 {
     naval_servico('requisicoes');
     $ant = naval_plano_dia_anterior((string) $p['data']);
@@ -798,15 +800,29 @@ function naval_plano_com_requisicoes(array $p, array $listas): array
             }
         }
     }
+    if ($req && $carga === null) {
+        try {
+            $carga = naval_plano_carga((string) $p['data'], $listas, array_map('strval', array_keys($req)));
+        } catch (Throwable $e) {
+            error_log('[plano requisições] ' . $e->getMessage());
+            $carga = ['rotas' => []];
+        }
+    }
     foreach ($p['rotas'] as &$r) {
         $x = $req[$r['rota']] ?? null;
         if (!$x) continue;
         sort($x['num']);
         $r['factura'] = implode(', ', $x['num']);
+        $cg = $carga['rotas'][$r['rota']] ?? null;
+        $conhecido = $cg && ($cg['stock'] ?? 'sem_dados') !== 'sem_dados';
         foreach ($listas['artigos'] as $a) {
             $id = (string) $a['id'];
-            $r['quantidades'][$id] = (int) round($x['q'][$id] ?? 0);
+            $pedido = (float) ($x['q'][$id] ?? 0);
+            $r['quantidades'][$id] = $conhecido
+                ? (int) round($pedido + (float) ($cg['grupos'][$id]['na'] ?? 0))
+                : (int) max(round($pedido), (int) ($r['quantidades'][$id] ?? 0));
         }
+        $r['carga_total'] = true;   // as quantidades já levam as existências: o limite de peso não as soma outra vez
         if ($x['arm']) {
             $arm = array_keys($x['arm']);
             sort($arm);
