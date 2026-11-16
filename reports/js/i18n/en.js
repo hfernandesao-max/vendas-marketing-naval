@@ -4331,6 +4331,19 @@ export const EN = {
   'Multicaixa recebido = talões do TPA': 'Multicaixa received = POS slips',
   'Saldo teórico da caixa = contagem física': 'Expected cash balance = physical count',
   'Stock contado = stock teórico nas carrinhas': 'Counted stock = expected van stock',
+  'Peso planeado: {k} kg. Sem capacidade na tabela de viaturas: referência do fabricante {c} kg ({n}); confirme no livrete.':
+    'Planned weight: {k} kg. No capacity in the vehicle table: manufacturer reference {c} kg ({n}); check the registration document.',
+  'Capacidade = carga útil do livrete (peso bruto − tara). Sem o livrete, use a referência do fabricante: FUSO Canter FE71 (4 rodas) 2 500 kg, Canter FE85 (6 rodas) 6 000 kg, Sinotruk HOWO ligeiro 5 000 kg.':
+    'Capacity = payload on the registration document (gross weight − tare). Without it, use the manufacturer reference: FUSO Canter FE71 (4 wheels) 2,500 kg, Canter FE85 (6 wheels) 6,000 kg, Sinotruk HOWO light 5,000 kg.',
+  'Preencher as capacidades em falta com a referência do fabricante': 'Fill in missing capacities with the manufacturer reference',
+  '{n} viatura(s) com a capacidade de referência. Grave para aplicar.': '{n} vehicle(s) set to the reference capacity. Save to apply.',
+  'Nenhuma viatura sem capacidade com referência conhecida.': 'No vehicle without capacity has a known reference.',
+  'Armazém dos artigos da requisição': 'Warehouse of the requisition items',
+  '{n} em rascunho: emita a requisição': '{n} in draft: issue the requisition',
+  'A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar':
+    'To load = requisition; total on departure = already in the van ({o}) + to load',
+  'Quantidade da requisição (não se altera no plano)': 'Requisition quantity (cannot be changed in the plan)',
+  'Existências na carrinha + requisição (não se altera no plano)': 'Van stock + requisition (cannot be changed in the plan)',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

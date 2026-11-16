@@ -4251,6 +4251,18 @@ export const TI = {
   'Multicaixa recebido = talões do TPA': 'ዝተቐበለ Multicaixa = ቅጥዕታት TPA',
   'Saldo teórico da caixa = contagem física': 'ትጽቢት ሚዛን ካሳ = ኣካላዊ ቆጸራ',
   'Stock contado = stock teórico nas carrinhas': 'ዝተቖጽረ ክምችት = ትጽቢት ክምችት ኣብ መካይን',
+  'Peso planeado: {k} kg. Sem capacidade na tabela de viaturas: referência do fabricante {c} kg ({n}); confirme no livrete.':
+    'ዝተመደበ ክብደት፦ {k} kg። ኣብ ሰሌዳ መካይን ዓቕሚ የለን፦ መወከሲ ናይ ፋብሪካ {c} kg ({n})፤ ኣብ ሊብረቶ ኣረጋግጹ።',
+  'Capacidade = carga útil do livrete (peso bruto − tara). Sem o livrete, use a referência do fabricante: FUSO Canter FE71 (4 rodas) 2 500 kg, Canter FE85 (6 rodas) 6 000 kg, Sinotruk HOWO ligeiro 5 000 kg.':
+    'ዓቕሚ = ጽዕነት ኣብ ሊብረቶ (ጠቕላላ ክብደት − ታራ)። ብዘይ ሊብረቶ፡ መወከሲ ናይ ፋብሪካ ተጠቐሙ፦ FUSO Canter FE71 (4 መንኮርኮራት) 2 500 kg፡ Canter FE85 (6 መንኮርኮራት) 6 000 kg፡ Sinotruk HOWO ፈኲስ 5 000 kg።',
+  'Preencher as capacidades em falta com a referência do fabricante': 'ዝጎደሉ ዓቕምታት ብመወከሲ ናይ ፋብሪካ ምምላእ',
+  '{n} viatura(s) com a capacidade de referência. Grave para aplicar.': '{n} መኪና(ታት) ምስ መወከሲ ዓቕሚ። ንምትግባር ዓቕቡ።',
+  'Nenhuma viatura sem capacidade com referência conhecida.': 'ብዘይ ዓቕሚ ዘሎ መኪና ምስ ዝፍለጥ መወከሲ የለን።',
+  'Armazém dos artigos da requisição': 'መኽዘን ናይ ኣቕሑ ሕቶ',
+  '{n} em rascunho: emita a requisição': '{n} ኣብ ንድፊ፦ ነቲ ሕቶ ኣውጽኡ',
+  'A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar': 'ዝጽዓን = ሕቶ፤ ድምር ኣብ ምውጻእ = ኣብ መኪና ዘሎ ({o}) + ዝጽዓን',
+  'Quantidade da requisição (não se altera no plano)': 'ብዝሒ ናይ ሕቶ (ኣብ መደብ ኣይቕየርን)',
+  'Existências na carrinha + requisição (não se altera no plano)': 'ክምችት ኣብ መኪና + ሕቶ (ኣብ መደብ ኣይቕየርን)',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

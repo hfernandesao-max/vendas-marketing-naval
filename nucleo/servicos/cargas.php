@@ -171,7 +171,7 @@ function naval_plano_rota_limpa(array $r, array $artigos): array
         'rota' => naval_texto($r['rota'] ?? '', 20),
         'vendedor' => naval_texto($r['vendedor'] ?? ''),
         'sai' => !empty($r['sai']),
-        'armazem' => naval_texto($r['armazem'] ?? '', 60),
+        'armazem' => naval_texto($r['armazem'] ?? '', 120),
         'viagens' => max(0, min(20, (int) ($r['viagens'] ?? 1))),
         'zonas' => $zonas,
         'quantidades' => $q,
@@ -696,7 +696,7 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
     $vazio = function () use ($listas) {
         $g = [];
         foreach ($listas['artigos'] as $a) $g[(string) $a['id']] = ['na' => 0.0, 'carregar' => 0.0, 'total' => 0.0];
-        return ['requisicoes' => [], 'grupos' => $g, 'stock' => 'sem_dados', 'sem_grupo' => []];
+        return ['requisicoes' => [], 'rascunhos' => [], 'armazens' => [], 'grupos' => $g, 'stock' => 'sem_dados', 'sem_grupo' => []];
     };
     $junta = function (string $rota, string $codigo, string $nome, string $campo, float $q) use (&$out, $listas, $vazio) {
         if (!isset($out[$rota])) $out[$rota] = $vazio();
@@ -708,17 +708,37 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
         $out[$rota]['grupos'][$g][$campo] = round($out[$rota]['grupos'][$g][$campo] + $q, 3);
     };
     // requisições ao armazém
+    $catArm = null;
     foreach (array_unique([substr($ant, 0, 4), substr($data, 0, 4)]) as $ano) {
         foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
             $r = naval_json_ler((string) $f);
-            if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $data) continue;
+            if (!$r || $r['data'] < $ant || $r['data'] > $data) continue;
             $rota = (string) $r['rota'];
             if ($rotas !== null && !in_array($rota, $rotas, true)) continue;
+            if ($r['estado'] === 'rascunho') {   // ainda por emitir: o plano avisa, mas não carrega
+                if (!isset($out[$rota])) $out[$rota] = $vazio();
+                $out[$rota]['rascunhos'][] = (string) $r['numero'];
+                continue;
+            }
+            if (!in_array($r['estado'], ['emitida', 'carregada'], true)) continue;
             if (!isset($out[$rota])) $out[$rota] = $vazio();
             $out[$rota]['requisicoes'][] = ['numero' => $r['numero'], 'estado' => $r['estado']];
             foreach ($r['linhas'] as $l) {
                 $q = (float) ($r['estado'] === 'carregada' ? ($l['entregue'] ?? $l['quantidade']) : $l['quantidade']);
                 $junta($rota, (string) $l['codigo'], (string) ($l['artigo'] ?? ''), 'carregar', $q);
+                // armazém de carga: o gravado na emissão; nas requisições antigas, o do catálogo do Pinguim BO
+                $arm = (string) ($l['armazem'] ?? '');
+                if ($arm === '') {
+                    if ($catArm === null) {
+                        try {
+                            $catArm = naval_req_armazem_artigos();
+                        } catch (Throwable $e) {
+                            $catArm = [];
+                        }
+                    }
+                    $arm = (string) ($catArm[(string) $l['codigo']] ?? '');
+                }
+                if ($arm !== '' && $q > 0 && !in_array($arm, $out[$rota]['armazens'], true)) $out[$rota]['armazens'][] = $arm;
             }
         }
     }
@@ -742,6 +762,8 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
         foreach ($x['grupos'] as &$g) $g['total'] = round($g['na'] + $g['carregar'], 3);
         unset($g);
         usort($x['requisicoes'], function ($a, $b) { return strcmp($a['numero'], $b['numero']); });
+        sort($x['rascunhos']);
+        sort($x['armazens']);
         $x['sem_grupo'] = array_values($x['sem_grupo']);
     }
     unset($x);
@@ -749,23 +771,62 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
     return ['dia_anterior' => $ant, 'rotas' => $out];
 }
 
-/** Preenche o documento de cada rota com os números das requisições (emitidas ou carregadas) para o dia do plano. */
-function naval_plano_com_requisicoes(array $p, array $listas): array
+/**
+ * Documento de carga = requisição: em cada rota com requisição emitida (ou carregada) para o dia do plano, o servidor
+ * fixa o número da requisição, o armazém de carga (o dos artigos da requisição) e as quantidades de cada artigo do plano
+ * = existências na carrinha (contadas no corte do dia anterior; sem contagem, as esperadas) + requisitado = total à
+ * saída. O que vier do ecrã para estes campos é ignorado. Sem ligação ao Pinguim BO (existências desconhecidas), fica o
+ * valor do ecrã, mas nunca abaixo do requisitado. $carga: naval_plano_carga já lida (os testes passam-na).
+ */
+function naval_plano_com_requisicoes(array $p, array $listas, ?array $carga = null): array
 {
     naval_servico('requisicoes');
     $ant = naval_plano_dia_anterior((string) $p['data']);
-    $num = [];
+    $req = [];
+    $grupo = [];
     foreach (array_unique([substr($ant, 0, 4), substr((string) $p['data'], 0, 4)]) as $ano) {
         foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
             $r = naval_json_ler((string) $f);
             if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $p['data']) continue;
-            $num[(string) $r['rota']][] = (string) $r['numero'];
+            $rt = (string) $r['rota'];
+            $req[$rt] = $req[$rt] ?? ['num' => [], 'q' => [], 'arm' => []];
+            $req[$rt]['num'][] = (string) $r['numero'];
+            foreach ((array) $r['linhas'] as $l) {
+                $q = (float) ($r['estado'] === 'carregada' ? ($l['entregue'] ?? $l['quantidade']) : $l['quantidade']);
+                $c = (string) $l['codigo'];
+                $g = $grupo[$c] = $grupo[$c] ?? naval_plano_grupo_artigo($c, (string) ($l['artigo'] ?? ''), $listas);
+                if ($g !== '') $req[$rt]['q'][$g] = ($req[$rt]['q'][$g] ?? 0) + $q;
+                if (($l['armazem'] ?? '') !== '' && $q > 0) $req[$rt]['arm'][(string) $l['armazem']] = true;
+            }
+        }
+    }
+    if ($req && $carga === null) {
+        try {
+            $carga = naval_plano_carga((string) $p['data'], $listas, array_map('strval', array_keys($req)));
+        } catch (Throwable $e) {
+            error_log('[plano requisições] ' . $e->getMessage());
+            $carga = ['rotas' => []];
         }
     }
     foreach ($p['rotas'] as &$r) {
-        if (!empty($num[$r['rota']])) {
-            sort($num[$r['rota']]);
-            $r['factura'] = implode(', ', $num[$r['rota']]);
+        $x = $req[$r['rota']] ?? null;
+        if (!$x) continue;
+        sort($x['num']);
+        $r['factura'] = implode(', ', $x['num']);
+        $cg = $carga['rotas'][$r['rota']] ?? null;
+        $conhecido = $cg && ($cg['stock'] ?? 'sem_dados') !== 'sem_dados';
+        foreach ($listas['artigos'] as $a) {
+            $id = (string) $a['id'];
+            $pedido = (float) ($x['q'][$id] ?? 0);
+            $r['quantidades'][$id] = $conhecido
+                ? (int) round($pedido + (float) ($cg['grupos'][$id]['na'] ?? 0))
+                : (int) max(round($pedido), (int) ($r['quantidades'][$id] ?? 0));
+        }
+        $r['carga_total'] = true;   // as quantidades já levam as existências: o limite de peso não as soma outra vez
+        if ($x['arm']) {
+            $arm = array_keys($x['arm']);
+            sort($arm);
+            $r['armazem'] = implode(' + ', $arm);
         }
     }
     unset($r);

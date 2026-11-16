@@ -141,7 +141,9 @@ test('limite de peso: não deixa carregar acima do que ainda cabe na viatura (ca
   expect(erros).toEqual([]);
 });
 
-test('carga pela requisição: já na carrinha (contado) + a carregar = total; motorista e viatura escolhidos nas tabelas', async ({ page }) => {
+test('carga pela requisição: existências + requisição, documento e armazém da requisição, só para leitura; motorista e viatura escolhidos nas tabelas', async ({
+  page,
+}) => {
   const pedidos = [];
   const base = resposta(null);
   base.listas.motoristas = [
@@ -157,25 +159,37 @@ test('carga pela requisição: já na carrinha (contado) + a carregar = total; m
         requisicoes: [{ numero: 'RQ-2026-000123', estado: 'emitida' }],
         grupos: { fraldas: { na: 37, carregar: 150, total: 187 }, sabao: { na: 4, carregar: 0, total: 4 } },
         stock: 'contado',
+        armazens: ['RTM HIGITEC PIV – NON FOOD'],
+        rascunhos: [],
         sem_grupo: [{ codigo: '10000293', artigo: 'SOAP BROWN CONFIANC' }],
       },
     },
   };
   const erros = await abrirPlano(page, null, pedidos, { listas: base.listas, carga });
   const c = page.locator('.pc-card').first();
+  // quantidade = existências na carrinha + requisição = total à saída, sem poder alterar
   await expect(c.getByLabel('Fraldas')).toHaveValue('187');
   await expect(c.getByLabel('Sabão')).toHaveValue('4');
+  await expect(c.getByLabel('Fraldas')).toHaveJSProperty('readOnly', true);
   await expect(c.getByLabel('Requisição ao armazém')).toHaveValue('RQ-2026-000123');
+  await expect(c.getByLabel('Armazém de carga')).toHaveValue('RTM HIGITEC PIV – NON FOOD');
+  await expect(c.getByLabel('Armazém de carga')).toHaveJSProperty('readOnly', true);
   await expect(c.locator('.pc-carga')).toContainText('contado no fecho de 24-10-2026');
   await expect(c.locator('.pc-carga')).toContainText('Fraldas: 37 + 150 = 187');
   await expect(c.locator('.pc-carga')).toContainText('10000293 SOAP BROWN CONFIANC');
   // só os motoristas activos e com a carta válida no dia
   const mot = c.getByLabel('Motorista');
-  await expect(mot.locator('option')).toHaveText(['—', 'Adão Paulo · Velotrans']);
+  await expect(mot.locator('option')).toHaveText(['—', 'Adão Paulo']); // só o nome
   await mot.selectOption('Adão Paulo');
   await expect(c.getByLabel('Telefone')).toHaveValue('924516916');
   await expect(c.getByLabel('Matrícula')).toHaveValue('LD-58-73-GY');
-  await expect(c.getByLabel('Marca e modelo')).toHaveValue('Mitsubishi Canter');
+  // a lista só tem a matrícula; marca e modelo ao lado, só para leitura
+  await expect(c.getByLabel('Matrícula').locator('option', { hasText: 'LD-58-73-GY' })).toHaveText('LD-58-73-GY');
+  await expect(c.getByLabel('Marca', { exact: true })).toHaveValue('Mitsubishi');
+  await expect(c.getByLabel('Modelo', { exact: true })).toHaveValue('Canter');
+  await expect(c.getByLabel('Marca', { exact: true })).toHaveJSProperty('readOnly', true);
+  await expect(c.getByLabel('Modelo', { exact: true })).toHaveJSProperty('readOnly', true);
+  await expect(c.getByLabel('Marca e modelo')).toHaveCount(0);
   await expect(c.getByLabel('Transportadora')).toHaveValue('Velotrans');
   expect(erros).toEqual([]);
 });

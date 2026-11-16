@@ -212,6 +212,10 @@ function naval_req_emitir(string $id, ?int $versao, string $login): array
     $r = naval_req_alterar($id, $versao, function ($r) use ($login) {
         if (!$r['linhas']) throw new NavalErro('A requisição não tem artigos.', 400);
         naval_req_validar_stock((array) $r['linhas']);   // o stock pode ter mudado desde a gravação
+        // armazém de onde sai cada artigo (o do catálogo do Pinguim BO no momento da emissão): é o armazém de carga
+        $arm = naval_req_armazem_artigos();
+        foreach ($r['linhas'] as &$l) if (($arm[(string) $l['codigo']] ?? '') !== '') $l['armazem'] = $arm[(string) $l['codigo']];
+        unset($l);
         $r['estado'] = 'emitida';
         $r['emitida_por'] = $login;
         $r['emitida_em'] = date('Y-m-d H:i:s');
@@ -347,6 +351,17 @@ function naval_req_armazens_principais(): array
     naval_servico('sap');
     $a = (array) (naval_sap_config()['armazens'] ?? []);
     return $a ?: NAVAL_ARMAZENS_PRINCIPAIS;
+}
+
+/** Armazém principal de cada artigo {código: nome do armazém} (catálogo do Pinguim BO; vazio sem ligação). */
+function naval_req_armazem_artigos(): array
+{
+    if (array_key_exists('naval_req_armazens_teste', $GLOBALS)) return $GLOBALS['naval_req_armazens_teste'];
+    static $m = null;
+    if ($m !== null) return $m;
+    $m = [];
+    foreach (naval_req_catalogo() as $a) if (($a['armazem'] ?? '') !== '') $m[(string) $a['codigo']] = (string) $a['armazem'];
+    return $m;
 }
 
 /**

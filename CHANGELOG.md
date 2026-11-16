@@ -1,5 +1,26 @@
 ## 16-11-2026
 
+### Plano de cargas: a requisição manda na carga; matrícula, marca e modelo; motorista só pelo nome; capacidades de referência
+
+<!-- paginas: plano-cargas, requisicoes-carrinha -->
+<!-- tipo: melhoria -->
+
+- **A carga vem da requisição** (documento de origem): com requisição emitida para a rota, o plano mostra sozinho o
+  **número da requisição**, o **armazém de carga** (o armazém dos artigos da requisição) e a **quantidade de cada artigo
+  = existências na carrinha (contadas no fecho do dia anterior) + requisição**, todos só para leitura. O servidor volta
+  a fixá-los ao gravar e ao publicar, seja o que for que venha do ecrã (sem ligação ao Pinguim BO, nunca abaixo do
+  requisitado). O limite de peso usa esse total, sem somar outra vez o que está na carrinha.
+- A requisição ainda **em rascunho** aparece no campo «Requisição ao armazém» («RQ-… em rascunho: emita a requisição»).
+- Ao emitir uma requisição, fica gravado o armazém de cada artigo (o do catálogo do Pinguim BO nesse momento); nas
+  requisições antigas, o armazém vem do catálogo.
+- No cartão de cada rota, a lista **Matrícula** mostra só a matrícula. Ao escolhê-la, a **Marca** e o **Modelo** aparecem
+  em dois campos ao lado, que não se editam (vêm da tabela de viaturas); a transportadora fica por baixo.
+- A lista **Motorista** mostra só o nome (sem a transportadora).
+- **Capacidade de carga**: a que conta é a carga útil do livrete (peso bruto − tara), gravada na tabela de viaturas.
+  Para as viaturas sem ela, o plano mostra a referência do fabricante (FUSO Canter FE71, 4 rodas: 2 500 kg; Canter
+  FE85, 6 rodas: 6 000 kg; Sinotruk HOWO ligeiro: 5 000 kg) e, em Listas → Viaturas, um botão preenche as capacidades
+  em falta com essa referência (só depois de gravar passa a contar para o limite de peso).
+
 ### Consolidado diário de vendas RTM da Naval: resumo, conferências e excepções, e envio automático
 
 <!-- paginas: relatorio-vendas -->
