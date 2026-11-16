@@ -201,10 +201,77 @@ test('Acessos: dispensa de dois passos por conta, com motivo e prazo; o SADM e a
   await page.locator('dialog[open]').getByRole('button', { name: 'Dispensar dois passos' }).click();
   const d = page.locator('dialog[open]');
   await d.getByLabel('Motivo (obrigatório)').fill('Telemóvel avariado, em reparação');
-  await d.getByLabel('Prazo').selectOption('30');
+  await d.getByLabel(/^Prazo/).selectOption('30');
   await d.getByRole('button', { name: 'Dispensar', exact: true }).click();
   await expect.poll(() => pedidos[0]).toMatchObject({ accao: 'dispensa_dois_passos', conta: 'josefa', motivo: 'Telemóvel avariado, em reparação', dias: 30 });
   await expect(page.locator('#s-ac-u tbody tr', { hasText: 'josefa@naval.co.ao' })).toContainText('Dispensada até 15-12-2026');
   await expect(page.locator('.tile', { hasText: 'Sem verificação em dois passos' })).toContainText('1 com dispensa');
+  expect(erros).toEqual([]);
+});
+
+test('Acessos: retirar dois passos num perfil que os exige pede logo a dispensa (ou configurar de novo), numa só operação', async ({ page }) => {
+  const pedidos = [];
+  const vista = {
+    ...vistaAntiga,
+    compatibilidade: false,
+    pode_activar: false,
+    pode_gerir: true,
+    eu: 'hf',
+    dispensa_max_dias: 90,
+    utilizadores: [
+      {
+        login: 'hf',
+        nome: 'Henrique',
+        email: 'hf@naval.co.ao',
+        email_ok: true,
+        perfil: 'SADM',
+        perfil_nome: 'Super administrador',
+        rotas: null,
+        activo: true,
+        ligada: true,
+        dois_passos: true,
+      },
+      {
+        login: 'josefa',
+        nome: 'Josefa Bento',
+        email: 'josefa@naval.co.ao',
+        email_ok: true,
+        perfil: 'DIR',
+        perfil_nome: PERFIS.DIR,
+        rotas: null,
+        activo: true,
+        ligada: true,
+        dois_passos: true,
+      },
+    ],
+  };
+  await page.route('**/v1/gestao*', (r) => {
+    const q = r.request();
+    if (q.method() !== 'POST') return r.fulfill({ json: vista });
+    const b = q.postDataJSON();
+    pedidos.push(b);
+    return r.fulfill({ json: { ok: true, dispensa: b.dias ? { motivo: b.motivo, ate: '2026-12-15', por: 'hf' } : null } });
+  });
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
+  const erros = await abrir(page, '#acessos');
+  const gerir = () => page.locator('#s-ac-u tbody tr', { hasText: 'josefa@naval.co.ao' }).getByRole('button', { name: 'Gerir' }).click();
+  await gerir();
+  await expect(page.locator('dialog[open]').getByRole('button', { name: 'Dispensar dois passos' })).toHaveCount(0);
+  await page.locator('dialog[open]').getByRole('button', { name: 'Retirar dois passos' }).click();
+  let d = page.locator('dialog[open]');
+  await d.getByLabel('Motivo (obrigatório)').fill('Telemóvel avariado, em reparação');
+  await d.getByLabel(/^Prazo/).selectOption('30');
+  await d.getByRole('button', { name: 'Retirar', exact: true }).click();
+  await expect
+    .poll(() => pedidos[0])
+    .toMatchObject({ accao: 'dois_passos', conta: 'josefa', activar: false, motivo: 'Telemóvel avariado, em reparação', dias: 30 });
+  // telemóvel novo: só retirar, configura de novo na entrada seguinte
+  await gerir();
+  await page.locator('dialog[open]').getByRole('button', { name: 'Retirar dois passos' }).click();
+  d = page.locator('dialog[open]');
+  await d.getByLabel(/Configurar de novo na próxima entrada/).check();
+  await expect(d.getByLabel('Motivo (obrigatório)')).toBeHidden();
+  await d.getByRole('button', { name: 'Retirar', exact: true }).click();
+  await expect.poll(() => pedidos[1]).toMatchObject({ accao: 'dois_passos', conta: 'josefa', activar: false, dias: 0 });
   expect(erros).toEqual([]);
 });

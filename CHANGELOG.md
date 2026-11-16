@@ -1,8 +1,39 @@
 ## 16-11-2026
 
+### Acessos: retirar os dois passos e dispensar numa só operação; nova função «Tesouraria»
+
+<!-- paginas: acessos -->
+<!-- tipo: impacto -->
+
+- **Retirar dois passos** num perfil que os exige abre logo a dispensa: motivo e prazo na mesma janela, gravados numa
+  só operação (ou fica tudo feito, ou nada). Em alternativa, «configurar de novo na próxima entrada» (por exemplo,
+  telemóvel novo). «Dispensar dois passos» fica só para as contas que nunca os configuraram, ou para renovar ou retirar
+  uma dispensa em vigor.
+- Nova função principal **Tesouraria** (menor privilégio, ISO/IEC 27001:2022 A.5.15, A.5.18 e A.8.2): início,
+  documentos de venda, relatório de vendas, clientes, cobranças e contas a receber (com exportação), e Multicaixa por
+  TPA só para consulta. Junta-se a «Lançar e validar o fecho de caixa». Sem logística, equipamentos, integrações,
+  inteligência de negócio nem exportações completas; exige dois passos (salvo dispensa).
+- Separação de funções (A.5.3): «Tesouraria» não se pode juntar às aprovações do fecho de caixa. As funções do sistema
+  acrescentadas em versões novas passam a aparecer nos catálogos já gravados, sem mexer nas funções alteradas.
+
+### Versões: numeração sem falhas, classificação das alterações e revisão do código
+
+<!-- paginas: actualizacoes -->
+<!-- tipo: impacto -->
+
+- O número de cada versão (v<AAAA.MM.DD>.<N>) passa a ser **próprio do portal e sem falhas**: a versão anterior + 1, e
+  não o contador de execuções do GitHub, que contava também as execuções sem versão (por isso não houve a v.104).
+- **Classificação obrigatória de cada alteração**: correcção, melhoria, nova funcionalidade ou alteração com impacto. A
+  versão fica com a mais exigente e a classificação aparece em **Actualizações** (para aprovar) e nas novidades.
+- Alterações em ficheiros sensíveis (base de dados, ficheiro e integração SAP, segurança e acessos, actualizador,
+  Apache) só são aceites classificadas como **alteração com impacto**: a verificação dos pedidos de integração recusa-as
+  de outra forma (ISO/IEC 27001:2022 A.8.32, gestão das alterações).
+- A **revisão do código** (commit) aparece na nota de cada versão e na versão instalada, em Actualizações.
+
 ### Acessos: dispensa de dois passos por conta
 
 <!-- paginas: acessos -->
+<!-- tipo: impacto -->
 
 - Em **Acessos › Gerir**, nas contas com perfil que obriga à verificação em dois passos, o super administrador pode
   **dispensar** essa obrigação a uma pessoa: motivo obrigatório e prazo de 7, 30, 60 ou 90 dias, renovável ou
@@ -15,6 +46,7 @@
 ### Equipamentos: página pública do código QR integrada no portal
 
 <!-- paginas: equipamentos -->
+<!-- tipo: melhoria -->
 
 - A página provisória do código QR (id.naval.co.ao) passa a ser a do próprio portal: o mesmo QR das etiquetas abre a
   ficha para quem tem sessão e permissão e, para quem o encontra, uma página em **português e inglês** com a propriedade
@@ -32,6 +64,7 @@
 ### Multicaixa por TPA: conferência máquina a máquina e resumo de fim de dia para o Financeiro
 
 <!-- paginas: multicaixa-tpa, caixa-marketing -->
+<!-- tipo: funcionalidade -->
 
 - Nova página **Finanças › Multicaixa por TPA**, pedida pelo Financeiro para conferir com os extractos e limpar a conta
   de cartões (POS Card GL) no SAP:

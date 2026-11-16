@@ -34,7 +34,7 @@ switch ($accao) {
     case 'senha':
         naval_json(['ok' => true, 'senha' => naval_gestao_repor_senha($login)]);
     case 'dois_passos':
-        naval_json(['ok' => true] + naval_gestao_dois_passos($login, !empty($p['activar']), $eu));
+        naval_json(['ok' => true] + naval_gestao_dois_passos($login, !empty($p['activar']), $eu, (string) ($p['motivo'] ?? ''), (int) ($p['dias'] ?? 0)));
     case 'dispensa_dois_passos':
         naval_json(['ok' => true] + naval_gestao_dispensa_mfa($login, (string) ($p['motivo'] ?? ''), (int) ($p['dias'] ?? 0), $eu));
     case 'matriz':

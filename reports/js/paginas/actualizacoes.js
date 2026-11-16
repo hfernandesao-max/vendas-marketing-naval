@@ -7,7 +7,7 @@ import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, campo, confirmarIdentidade, janela, msgErro } from '../componentes/janelas.js';
 import { t } from '../i18n/i18n.js';
-import { textoFormatado } from '../novidades.js';
+import { textoFormatado, tipoMaior, tituloSeccao } from '../novidades.js';
 import { atual } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
@@ -155,7 +155,7 @@ function resumo(v) {
   const box = el('div', 'act-resumo');
   if (v.seccoes && v.seccoes.length) {
     for (const s of v.seccoes) {
-      box.append(el('h4', null, s.data + ' · ' + s.titulo));
+      box.append(tituloSeccao('h4', s.data + ' · ' + s.titulo, s.tipo));
       const ul = el('ul');
       for (const i of s.itens) ul.append(textoFormatado(el('li'), i));
       box.append(ul);
@@ -177,8 +177,20 @@ function cartaoPendente(v, maisRecente) {
   const cab = el('div', 'act-cab');
   const tit = el('div');
   const inclui = (v.pacote && v.pacote.versoes) || [];
-  tit.append(el('h3', null, inclui.length > 1 ? t('Pacote de instalação {v}', { v: v.versao }) : t('Versão {v}', { v: v.versao })));
-  tit.append(el('p', null, t('Publicada em {d} · revisão {c} · passou em todos os testes automáticos', { d: dataHora(v.publicada_em), c: v.commit })));
+  tit.append(
+    tituloSeccao(
+      'h3',
+      inclui.length > 1 ? t('Pacote de instalação {v}', { v: v.versao }) : t('Versão {v}', { v: v.versao }),
+      tipoMaior(inclui.length > 1 && v.pacote.seccoes ? v.pacote.seccoes : v.seccoes),
+    ),
+  );
+  tit.append(
+    el(
+      'p',
+      null,
+      t('Publicada em {d} · revisão {c} · passou em todos os testes automáticos', { d: dataHora(v.publicada_em), c: String(v.commit || '').slice(0, 7) }),
+    ),
+  );
   if (inclui.length > 1)
     tit.append(
       el(
@@ -275,7 +287,9 @@ R.actualizacoes = (pg) => {
       {
         l: t('Versão instalada'),
         v: E.instalada.versao || '—',
-        s: E.instalada.aplicada_em ? t('desde {d}', { d: dataHora(E.instalada.aplicada_em) }) : t('instalação manual'),
+        s:
+          (E.instalada.aplicada_em ? t('desde {d}', { d: dataHora(E.instalada.aplicada_em) }) : t('instalação manual')) +
+          (E.instalada.commit ? ' · ' + t('revisão {c}', { c: String(E.instalada.commit).slice(0, 7) }) : ''),
       },
       { l: t('À espera de decisão'), v: String(porDecidir), s: t('versões testadas e publicadas'), tone: porDecidir ? 'warn' : null },
       {

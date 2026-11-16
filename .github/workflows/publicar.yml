@@ -1,5 +1,6 @@
 # Publicação automática das versões do portal:
-#  - publicar: cada alteração no main que passa nos «Testes» dá uma versão (v<AAAA.MM.DD>.<n>) com o pacote do servidor
+#  - publicar: cada alteração no main que passa nos «Testes» dá uma versão (v<AAAA.MM.DD>.<n>, n sequencial sem falhas,
+#    classificação e revisão do código na nota: nucleo/servicos/versoes.php) com o pacote do servidor
 #    (scripts/construir-pacote.php: só ficheiros do portal, sem testes, .env nem dados), o SHA-256 e a proveniência
 #    assinada (attestation) do pacote;
 #  - ensaio: num Windows com PHP, um «servidor» com a versão anterior é actualizado pelo próprio actualizador
@@ -47,6 +48,8 @@ jobs:
 
       - name: Número da versão
         id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           SHA=$(git rev-parse HEAD)
           if git tag --points-at HEAD | grep -q '^v'; then
@@ -54,7 +57,9 @@ jobs:
             echo "versao=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          V="v$(TZ=Africa/Luanda date +%Y.%m.%d).${GITHUB_RUN_NUMBER}"
+          # número próprio, sem falhas: o maior das versões existentes (repositório e GitHub) + 1 (nucleo/servicos/versoes.php)
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' > publicadas.txt || true
+          V=$(php scripts/versao.php publicadas.txt)
           echo "versao=$V" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
@@ -84,7 +89,7 @@ jobs:
         run: |
           ANT=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
           # o que muda (secções novas do CHANGELOG.md): é o resumo que o super administrador aprova no portal
-          php scripts/notas-versao.php "$ANT" > notas.md
+          php scripts/notas-versao.php "$ANT" "$SHA" > notas.md
           gh release create "$V" dist/portal-rtm-* --target "$SHA" --title "Portal RTM $V" --notes-file notas.md
 
   ensaio:

@@ -7,6 +7,29 @@ import { SESSAO } from './perfil.js';
 import { postJson } from './servidor.js';
 import { el } from './util.js';
 
+/** Classificação de cada alteração (nucleo/servicos/versoes.php): nome e etiqueta (sem verde). */
+const TIPOS_ALTERACAO = {
+  correcao: ['Correcção', 'p-mut'],
+  melhoria: ['Melhoria', 'p-ok'],
+  funcionalidade: ['Nova funcionalidade', 'p-ok'],
+  impacto: ['Alteração com impacto', 'p-warn'],
+};
+
+/** Classificação de um conjunto de secções: a mais exigente (ordem de TIPOS_ALTERACAO). */
+export const tipoMaior = (seccoes) =>
+  (seccoes || []).reduce((m, s) => {
+    const k = Object.keys(TIPOS_ALTERACAO);
+    return k.indexOf(s.tipo) > k.indexOf(m) ? s.tipo : m;
+  }, '');
+
+/** Título de uma secção do registo de alterações com a etiqueta da classificação, quando existe. */
+export function tituloSeccao(tag, texto, tipo) {
+  const h = el(tag, 'nov-tit', texto);
+  const x = TIPOS_ALTERACAO[tipo];
+  if (x) h.append(' ', el('span', 'pill ' + x[1], t(x[0])));
+  return h;
+}
+
 /** Texto do registo de alterações com **negrito** e `código`, montado sem HTML vindo do servidor. */
 export function textoFormatado(pai, txt) {
   for (const parte of String(txt).split(/(\*\*[^*]+\*\*|`[^`]+`)/)) {
@@ -55,7 +78,7 @@ export async function mostrarNovidades() {
           if (i === 0 && j === 0) det.open = true;
           det.append(el('summary', null, g.data + ' · ' + g.seccoes.map((s) => s.titulo).join(', ')));
           for (const s of g.seccoes) {
-            det.append(el('h4', null, s.titulo));
+            det.append(tituloSeccao('h4', s.titulo, s.tipo));
             const ul = el('ul');
             for (const item of s.itens) ul.append(textoFormatado(el('li'), item));
             det.append(ul);
