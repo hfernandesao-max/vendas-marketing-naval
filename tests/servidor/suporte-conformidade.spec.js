@@ -48,9 +48,9 @@ test('suporte: abrir, gerir, resolver com causa e lições, avaliar; cada um vê
 test('suporte: o pedido novo segue para a equipa de TI (assunto normalizado, resposta para quem o abriu) e a confirmação para o requerente', async () => {
   const SAIDA = `${PRIV}/email-saida`;
   const antes = existsSync(SAIDA) ? new Set(readdirSync(SAIDA)) : new Set();
-  const com = (await entrar('com')).ctx;
+  const fin = (await entrar('fin')).ctx;
   const r = await (
-    await com.post(API + 'suporte', {
+    await fin.post(API + 'suporte', {
       data: {
         accao: 'criar',
         tipo: 'incidente',
@@ -60,7 +60,7 @@ test('suporte: o pedido novo segue para a equipa de TI (assunto normalizado, res
         titulo: 'Telemóvel da rota 1005 não sincroniza',
         descricao: 'Desde as 9 h',
         contexto: { pagina: 'vendas-dia', ecra: '390x844', idioma: 'pt' },
-        csrf: await csrf(com),
+        csrf: await csrf(fin),
       },
     })
   ).json();
@@ -77,11 +77,11 @@ test('suporte: o pedido novo segue para a equipa de TI (assunto normalizado, res
   const msgs = novos.map((f) => JSON.parse(readFileSync(SAIDA + '/' + f, 'utf8')));
   const ti = msgs.find((m) => m.para[0].emailAddress.address === 'ITSupport@grupo-naval.com');
   expect(ti.assunto).toBe(`[Portal RTM] [${p.id}] P2 · Incidente · Smartphone RTM · Telemóvel da rota 1005 não sincroniza`);
-  expect(ti.responder_a[0].emailAddress.address).toBe('com@naval.co.ao');
+  expect(ti.responder_a[0].emailAddress.address).toBe('fin@naval.co.ao');
   expect(msgs.some((m) => m.assunto.startsWith(`Pedido ${p.id} registado`))).toBe(true);
   // o requerente não configura o encaminhamento
   expect(
-    (await com.post(API + 'suporte', { data: { accao: 'encaminhamento', destinatario: 'x@y.com', identificador: '[x]', csrf: await csrf(com) } })).status(),
+    (await fin.post(API + 'suporte', { data: { accao: 'encaminhamento', destinatario: 'x@y.com', identificador: '[x]', csrf: await csrf(fin) } })).status(),
   ).toBe(403);
 });
 
