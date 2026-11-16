@@ -62,6 +62,7 @@ async function abrirPlano(page, plano, pedidos, extra = {}) {
       pedidos.push(corpo);
       if (corpo.accao === 'publicar') return r.fulfill({ json: { ok: true, plano: PUBLICADO, email: corpo.enviar ? { ok: true, para: corpo.para } : null } });
       if (corpo.accao === 'enviar') return r.fulfill({ json: { ok: true, plano: PUBLICADO, email: { ok: true, para: corpo.para } } });
+      if (corpo.accao === 'listas') return r.fulfill({ json: { ok: true, listas: { ...resposta(plano).listas, ...(extra.listas || {}), ...corpo.listas } } });
       return r.fulfill({ json: { ok: true, plano } });
     }
     if (q.url().includes('historico')) return r.fulfill({ json: { dias: [] } });
@@ -197,6 +198,7 @@ test('listas: tabela de viaturas (matrícula, marca, modelo, capacidade) e motor
   await d.getByLabel('Capacidade (kg)').fill('3500');
   await d.getByRole('button', { name: 'Guardar listas' }).click();
   await expect.poll(() => pedidos.find((p) => p.accao === 'listas')).toBeTruthy();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
   const l = pedidos.find((p) => p.accao === 'listas').listas;
   expect(l.frota).toEqual([{ matricula: 'LD-58-73-GY', marca: 'Mitsubishi', modelo: 'Canter', transportadora: '', kg: '3500', activa: true }]);
   expect(l.motoristas[0]).toMatchObject({ nome: 'Adão Paulo', carta_validade: '2027-05-01', activo: true });
