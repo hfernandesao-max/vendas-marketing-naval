@@ -51,7 +51,6 @@ $tel = $contacto['tel'];
 $email = $contacto['email'];
 $telLigacao = preg_replace('/[^0-9+]/', '', $tel);
 [$tipoPt, $tipoEn] = $valido ? naval_atv_qr_tipo($id) : ['', ''];
-$h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
 ?>
 <!DOCTYPE html>
 <html lang="pt-PT">
@@ -63,8 +62,8 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#273777">
 <link rel="apple-touch-icon" sizes="180x180" href="../app/icones/apple-touch-icon-180.png">
-<title><?= $valido ? $h($id) . ' · ' : '' ?>Grupo Naval</title>
-<style nonce="<?= $h($nonce) ?>">
+<title><?= $valido ? htmlspecialchars($id, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' · ' : '' ?>Grupo Naval</title>
+<style nonce="<?= htmlspecialchars($nonce, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
   :root { --fundo: #eef2f8; --cartao: #fff; --texto: #0b1f3a; --suave: #44546d; --linha: #d5ddeb; --pri: #0057b8; --pri-txt: #fff; --faixa: #273777; }
   @media (prefers-color-scheme: dark) {
     :root { --fundo: #0b1220; --cartao: #131c2e; --texto: #e8edf6; --suave: #a9b5c8; --linha: #26324a; --pri: #3f8cff; --pri-txt: #06101f; --faixa: #3a4f9e; }
@@ -100,15 +99,15 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT
   <h1>Este equipamento é propriedade do Grupo Naval</h1>
   <p class="en" lang="en">This device is the property of Grupo Naval.</p>
   <div class="id">
-    <div class="t"><?= $h($tipoPt) ?><?php if ($tipoEn !== $tipoPt): ?> · <span lang="en"><?= $h($tipoEn) ?></span><?php endif; ?></div>
-    <div class="n"><?= $h($id) ?></div>
+    <div class="t"><?= htmlspecialchars($tipoPt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?><?php if ($tipoEn !== $tipoPt): ?> · <span lang="en"><?= htmlspecialchars($tipoEn, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span><?php endif; ?></div>
+    <div class="n"><?= htmlspecialchars($id, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div>
   </div>
   <p>Se o encontrou, por favor contacte-nos para o devolver. O equipamento está registado e pode ser bloqueado à distância.</p>
   <p class="en" lang="en">If you found it, please contact us to return it. This device is registered and can be locked remotely.</p>
   <?php if ($telLigacao !== '' || $email !== ''): ?>
   <div class="acc">
-    <?php if ($telLigacao !== ''): ?><a class="p" href="tel:<?= $h($telLigacao) ?>">Ligar · <span lang="en">Call</span> <?= $h($tel) ?></a><?php endif; ?>
-    <?php if ($email !== ''): ?><a class="<?= $telLigacao !== '' ? 's' : 'p' ?>" href="mailto:<?= $h($email) ?>?subject=<?= $h(rawurlencode('Equipamento encontrado ' . $id)) ?>">Enviar mensagem · <span lang="en">Email</span> <?= $h($email) ?></a><?php endif; ?>
+    <?php if ($telLigacao !== ''): ?><a class="p" href="tel:<?= htmlspecialchars($telLigacao, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">Ligar · <span lang="en">Call</span> <?= htmlspecialchars($tel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a><?php endif; ?>
+    <?php if ($email !== ''): ?><a class="<?= $telLigacao !== '' ? 's' : 'p' ?>" href="mailto:<?= htmlspecialchars($email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>?subject=<?= htmlspecialchars(rawurlencode('Equipamento encontrado ' . $id), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">Enviar mensagem · <span lang="en">Email</span> <?= htmlspecialchars($email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a><?php endif; ?>
   </div>
   <?php endif; ?>
   <p class="nota">Não retire a etiqueta.<br><span lang="en">Please do not remove the label.</span></p>
@@ -116,7 +115,7 @@ $h = function (string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT
   <?php if ($entrou && !$previsualizar): ?>
   <p class="nota">A sua conta não tem acesso à gestão de equipamentos. Peça o acesso ao administrador da plataforma.</p>
   <?php elseif (!$entrou): ?>
-  <div class="acc"><a class="s" href="../geo/login.php?redirect=<?= $h(rawurlencode('../equipamentos/')) ?>">Colaboradores: iniciar sessão</a></div>
+  <div class="acc"><a class="s" href="../geo/login.php?redirect=<?= htmlspecialchars(rawurlencode('../equipamentos/'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">Colaboradores: iniciar sessão</a></div>
   <p class="nota">Os colaboradores do Grupo Naval iniciam sessão para abrir a ficha do equipamento.</p>
   <?php endif; ?>
 <?php elseif ($excesso): ?>
