@@ -37,6 +37,8 @@ const NOMES_ACCAO = {
   senha_alterada: 'Palavra-passe alterada',
   dois_passos_configurado: 'Dois passos activados',
   dois_passos_retirado: 'Dois passos retirados',
+  dois_passos_dispensado: 'Dois passos dispensados',
+  dois_passos_dispensa_retirada: 'Dispensa de dois passos retirada',
   matriz_alterada: 'Matriz alterada',
   matriz_reposta: 'Matriz original reposta',
   alteracao_recusada: 'Alteração recusada',
@@ -378,7 +380,9 @@ function janelaConta(u) {
               confirmarAccao(
                 t('Retirar dois passos'),
                 t('A conta de {c} passa a entrar só com a palavra-passe.', { c: u.nome }) +
-                  (G.perfis_dois_passos.includes(u.perfil) ? ' ' + t('Este perfil exige verificação em dois passos.') : ''),
+                  (G.perfis_dois_passos.includes(u.perfil) && !u.dispensa_dois_passos
+                    ? ' ' + t('Este perfil exige verificação em dois passos: sem dispensa, terá de a configurar de novo na próxima entrada.')
+                    : ''),
                 t('Retirar'),
                 () =>
                   pedirGestao({ accao: 'dois_passos', conta: u.login, activar: false }).then((d) => {
@@ -389,6 +393,13 @@ function janelaConta(u) {
                     return d;
                   }),
               );
+            }),
+          );
+        if (G.perfis_dois_passos.includes(u.perfil) && u.perfil !== 'SADM' && u.login !== G.eu)
+          acc.append(
+            botao(u.dispensa_dois_passos ? t('Dispensa de dois passos') : t('Dispensar dois passos'), 'ghost sm', () => {
+              fechar();
+              janelaDispensa(u, G);
             }),
           );
         if (u.bloqueado)
@@ -463,6 +474,62 @@ function janelaConta(u) {
   );
 }
 
+/**
+ * Dispensa da obrigação de dois passos de uma conta: excepção documentada (motivo) e temporária (prazo), dada só pelo
+ * super administrador; terminado o prazo, a obrigação volta sozinha. Nunca para contas SADM nem para a própria conta.
+ */
+function janelaDispensa(u, G) {
+  const d = u.dispensa_dois_passos;
+  const max = G.dispensa_max_dias || 90;
+  janela(
+    t('Dispensa de dois passos'),
+    t(
+      'O perfil de {c} exige verificação em dois passos. Com a dispensa, a conta entra só com a palavra-passe até ao fim do prazo; depois, terá de configurar os dois passos na entrada seguinte. Use apenas quando não houver alternativa: é uma excepção registada e revista na conformidade.',
+      { c: u.nome },
+    ),
+    (b, ft, fechar) => {
+      if (d) b.append(el('p', 'aviso', t('Dispensa em vigor até {d}, dada por {p}: {m}', { d: dl(d.ate), p: d.por, m: d.motivo })));
+      const motivo = el('textarea');
+      motivo.rows = 3;
+      motivo.maxLength = 300;
+      motivo.value = d ? d.motivo : '';
+      const prazo = el('select');
+      [7, 30, 60, 90].filter((n) => n <= max).forEach((n) => prazo.append(new Option(t('{n} dias', { n }), String(n))));
+      prazo.value = '30';
+      b.append(campo(t('Motivo (obrigatório)'), motivo), campo(t('Prazo'), prazo));
+      const erro = msgErro();
+      b.append(erro);
+      const enviarDispensa = (dias, btn) => {
+        btn.disabled = true;
+        erro.hidden = true;
+        pedirGestao({ accao: 'dispensa_dois_passos', conta: u.login, motivo: motivo.value.trim(), dias }).then((r) => {
+          btn.disabled = false;
+          if (r.cancelado) return;
+          if (!r.ok) {
+            erro.textContent = t(r.erro || 'Não foi possível guardar.');
+            erro.hidden = false;
+            return;
+          }
+          fechar();
+          recarregarGestao();
+          toast(
+            dias ? t('Dois passos dispensados até {d}.', { d: dl(r.dispensa.ate) }) : t('Dispensa retirada: a conta volta a ser obrigada aos dois passos.'),
+            5000,
+          );
+        });
+      };
+      ft.append(botao(t('Cancelar'), 'ghost', fechar));
+      if (d) {
+        const ret = botao(t('Retirar a dispensa'), 'ghost', () => enviarDispensa(0, ret));
+        ft.append(ret);
+      }
+      const go = botao(d ? t('Renovar a dispensa') : t('Dispensar'), '', () => enviarDispensa(Number(prazo.value), go));
+      ft.append(go);
+      setTimeout(() => motivo.focus(), 50);
+    },
+  );
+}
+
 R.acessos = (pg) => {
   if (!GESTAO) {
     pg.append(el('div', 'glass empty', t('A carregar…')));
@@ -501,9 +568,11 @@ R.acessos = (pg) => {
       { l: t('Sem correio electrónico associado'), v: n0(U.filter((u) => !u.email_ok).length), tone: U.some((u) => !u.email_ok) ? 'warn' : null },
       {
         l: t('Sem verificação em dois passos'),
-        v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos).length),
-        s: t('perfis {p}', { p: obrig.join(', ') }),
-        tone: U.some((u) => obrig.includes(u.perfil) && !u.dois_passos) ? 'warn' : null,
+        v: n0(U.filter((u) => obrig.includes(u.perfil) && !u.dois_passos && !u.dispensa_dois_passos).length),
+        s:
+          t('perfis {p}', { p: obrig.join(', ') }) +
+          (U.some((u) => u.dispensa_dois_passos) ? ' · ' + t('{n} com dispensa', { n: U.filter((u) => u.dispensa_dois_passos).length }) : ''),
+        tone: U.some((u) => obrig.includes(u.perfil) && !u.dois_passos && !u.dispensa_dois_passos) ? 'warn' : null,
       },
     ]),
   );
@@ -606,7 +675,7 @@ R.acessos = (pg) => {
       chave: u.login,
       estado: estado(u),
       rotas_txt: u.rotas ? u.rotas.join(', ') || t('nenhuma') : t('Todas'),
-      mfa: u.dois_passos ? t('Sim') : t('Não'),
+      mfa: u.dois_passos ? t('Sim') : u.dispensa_dois_passos ? t('Dispensada até {d}', { d: dl(u.dispensa_dois_passos.ate) }) : t('Não'),
       gerir: '',
     })),
     cols,

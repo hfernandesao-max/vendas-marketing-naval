@@ -241,6 +241,35 @@ function naval_gestao_dois_passos(string $login, bool $activar, array $eu): arra
     return [];
 }
 
+/**
+ * Dispensa a obrigação de dois passos de uma conta (motivo e prazo obrigatórios, até NAVAL_MFA_DISPENSA_MAX_DIAS) ou
+ * retira a dispensa ($dias = 0). Nunca para contas SADM nem para a própria conta. Fica no registo de actividade.
+ * A conta pode continuar a usar os dois passos se já os tiver; a dispensa só retira a obrigação de os configurar.
+ */
+function naval_gestao_dispensa_mfa(string $login, string $motivo, int $dias, array $eu, ?int $agora = null): array
+{
+    $agora = $agora ?? time();
+    $d = naval_utilizadores();
+    if (!isset($d[$login])) naval_gestao_recusar('Conta não encontrada.', 'dispensa_dois_passos');
+    if ($dias === 0) {
+        $antes = $d[$login]['mfa_dispensa']['ate'] ?? null;
+        unset($d[$login]['mfa_dispensa']);
+        naval_gravar_utilizadores($d);
+        naval_registar('dois_passos_dispensa_retirada', ['conta' => $login, 'ate' => $antes]);
+        return ['dispensa' => null];
+    }
+    if (($d[$login]['perfil'] ?? '') === 'SADM') naval_gestao_recusar('As contas de super administrador têm sempre de usar a verificação em dois passos.', 'dispensa_dois_passos');
+    if ($login === $eu['login']) naval_gestao_recusar('Não pode dispensar os dois passos da sua própria conta.', 'dispensa_dois_passos');
+    $motivo = trim(preg_replace('/\s+/u', ' ', $motivo));
+    if (mb_strlen($motivo) < 15 || mb_strlen($motivo) > 300) throw new NavalErro('Indique o motivo da dispensa (15 a 300 caracteres).', 400, ['campo' => 'motivo']);
+    if ($dias < 1 || $dias > NAVAL_MFA_DISPENSA_MAX_DIAS) throw new NavalErro('O prazo da dispensa vai de 1 a ' . NAVAL_MFA_DISPENSA_MAX_DIAS . ' dias.', 400, ['campo' => 'dias']);
+    $ate = date('Y-m-d', $agora + ($dias - 1) * 86400);
+    $d[$login]['mfa_dispensa'] = ['motivo' => $motivo, 'ate' => $ate, 'por' => (string) $eu['login'], 'em' => date('Y-m-d H:i:s', $agora)];
+    naval_gravar_utilizadores($d);
+    naval_registar('dois_passos_dispensado', ['conta' => $login, 'motivo' => $motivo, 'ate' => $ate]);
+    return ['dispensa' => naval_mfa_dispensa($d[$login], $agora)];
+}
+
 /** Aplica alterações à matriz (só níveis permitidos). Devolve o número de alterações. */
 function naval_gestao_matriz(array $nova): int
 {
@@ -293,6 +322,7 @@ function naval_gestao_vista(): array
             'idioma' => naval_idioma_conta($u),
             'funcoes' => array_values((array) ($u['funcoes'] ?? [])),
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
+            'dispensa_dois_passos' => naval_mfa_dispensa($u),
             'senha_temporaria' => !empty($u['trocar_senha']),
             'ultima_entrada' => $ultimas[$login]['data'] ?? null,
             'ultima_entrada_local' => $ultimas[$login]['local'] ?? null,
@@ -315,6 +345,7 @@ function naval_gestao_vista(): array
         'niveis' => $niveis,
         'por_rota' => naval_perfis_por_rota(),
         'perfis_dois_passos' => naval_perfis_mfa(),
+        'dispensa_max_dias' => NAVAL_MFA_DISPENSA_MAX_DIAS,
         'rotas' => $gerir || naval_gestao_pode_activar($eu) ? naval_rotas_portal() : [],
         'utilizadores' => $us,
         'registos' => naval_pode('registos') ? naval_ler_registos(300) : [],
