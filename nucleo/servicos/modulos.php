@@ -54,7 +54,7 @@ const NAVAL_CONECTORES_FICHA = [
     'cctv' => ['Segurança física', 'Gravador NVR do parque', 'ONVIF / RTSP', 'entrada', 'Imagens do parque nas cargas e descargas das carrinhas.'],
     'ia' => ['Inteligência artificial', 'Fornecedor de IA', 'REST (HTTPS)', 'entrada e saída', 'Assistente que responde a perguntas sobre os dados do portal.'],
     'sap' => ['Integração com sistemas', 'SAP', 'Ficheiro Excel (modelo de carregamento)', 'saída', 'Ficheiro de vendas para carregar no SAP, sem alterações à estrutura.'],
-    'sap-odata' => ['Dados de negócio (ERP)', 'SAP', 'OData v2 (HTTPS), só leitura', 'entrada', 'Facturação de todas as empresas (Naval, Foodtec, Higitec, Refitech) para o Relatório de Vendas.'],
+    'sap-odata' => ['Dados de negócio (ERP)', 'SAP', 'OData v2 (HTTPS), só leitura', 'entrada', 'Facturação SAP das empresas do grupo (leitura). O Consolidado diário de vendas não o usa: é só RTM e Naval.'],
     'github' => ['Plataforma', 'GitHub', 'REST (GitHub App)', 'entrada', 'Versões novas do portal, instaladas pelo actualizador.'],
 ];
 

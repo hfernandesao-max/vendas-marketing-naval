@@ -1,7 +1,16 @@
 <?php
 /**
- * Relatório de Vendas diário do Marketing: junta num só documento o que hoje vem em quatro ficheiros (resumo de vendas,
- * registo de vendas, folha de caixa e stock), lido das bases de dados e nunca de Excel.
+ * Consolidado diário de vendas RTM da Naval (Relatório de Vendas diário do Marketing): junta num só documento o que hoje
+ * vem em vários ficheiros (resumo de vendas, registo de vendas, folha de caixa e stock), lido das bases de dados e nunca
+ * de Excel. Âmbito: só as vendas RTM (Pinguim BO), facturadas pela Naval — a única empresa que factura no RTM.
+ *
+ * Segue a prática do sector para o fecho diário de vendas e tesouraria (reconciliação vendas × cobranças × caixa × banco,
+ * «proof totals», gestão por excepção, separação de funções e fotografia inalterável com assinaturas):
+ *   - resumo no formato do SALES REPORT: vendas (brutas, notas de crédito, líquidas) por meio de cobrança, Multicaixa e
+ *     depósitos por banco e conta, e caixa (saldo inicial + dinheiro entregue − depósitos = saldo final);
+ *   - conferências automáticas com resultado «confere» / «diferença» (tolerância 0,00 Kz: os valores são exactos, a
+ *     duas casas decimais) e a lista de excepções primeiro (o que precisa de explicação), por promotor;
+ *   - os nomes dos promotores vêm sempre da tabela de rotas (um só nome por promotor em todo o documento).
  *
  * Fecho do dia antes do relatório (prática de «close readiness» / controlo de completude dos dados): o relatório só
  * se gera quando todas as fontes do dia estão completas e fechadas:
@@ -10,15 +19,14 @@
  *   2. conciliação de todas as carrinhas com movimento fechada (contagem, validação e aprovações);
  *   3. vendas do dia no SAP: todos os documentos estão num ficheiro de carregamento marcado «carregado no SAP»;
  *   4. folha de caixa do dia validada e aprovada nos dois níveis;
- *   5. SAP (facturação das outras empresas): lida pelo conector OData; enquanto não estiver ligado fica «por ligar»
- *      e essa parte do relatório sai assinalada (não impede o resto).
  * Uma vez gerado, o relatório fica congelado (fotografia dos dados, com impressão digital SHA-256 e número de versão):
  * o PDF e o Excel saem sempre da mesma fotografia. Uma correcção posterior gera uma nova versão, com motivo.
+ * Ao gerar, segue por correio um resumo para quem tem acesso ao relatório na matriz (sem os perfis limitados a rotas),
+ * com a ligação para o portal (RELATORIO_VENDAS_EMAIL=0 no .env desliga o envio).
  * Ficheiros: dados-privados/relatorio-vendas/AAAA-MM-DD/v<n>.json.
  */
 defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/caixa.php';
-require_once __DIR__ . '/sap-odata.php';
 
 /** Controlos de prontidão do dia, a partir das fontes já lidas (função pura, testável). */
 function naval_rv_controlos(string $dia, array $f): array
@@ -94,10 +102,6 @@ function naval_rv_controlos(string $dia, array $f): array
     $c['caixa'] = ($cx['estado'] ?? '') === 'aprovada'
         ? ['estado' => 'ok', 'detalhe' => 'Fecho de caixa aprovado por ' . ($cx['aprovada_por'] ?? '') . '.']
         : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Fecho de caixa validado, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Fecho de caixa aprovado no 1.º nível, falta a aprovação final.' : 'Fecho de caixa por lançar e validar.')];
-    // 5. SAP (outras empresas)
-    $c['sap_odata'] = !($f['sap_configurado'] ?? false)
-        ? ['estado' => 'por_ligar', 'detalhe' => 'Conector SAP por ligar: o relatório mostra só as vendas RTM do Pinguim BO.']
-        : ($f['sap'] === null ? ['estado' => 'erro', 'detalhe' => 'O SAP não respondeu.'] : ['estado' => 'ok', 'detalhe' => count($f['sap']) . ' linhas de facturação lidas do SAP.']);
     $bloqueia = array_filter($c, function ($x) { return in_array($x['estado'], ['pendente', 'erro'], true); });
     return ['controlos' => $c, 'pronto' => !$bloqueia, 'dia' => $dia];
 }
@@ -241,9 +245,139 @@ function naval_rv_montar(string $dia, array $f, array $promotores): array
         'saldo_teorico' => $caixa['saldo_teorico'] ?? null, 'contagem_fisica' => $caixa['contagem_fisica'] ?? null, 'diferenca' => $caixa['diferenca'] ?? null,
         'explicacao' => $caixa['explicacao'] ?? '', 'fechada_por' => $caixa['fechada_por'] ?? null, 'aprovada_por' => $caixa['aprovada_por'] ?? null,
     ];
-    // 5. SAP (todas as empresas), quando ligado
-    $sap = $f['sap'] === null ? null : ['resumo' => naval_sapod_resumo((array) $f['sap']), 'linhas' => (array) $f['sap']];
-    return ['dia' => $dia, 'resumo' => $resumo, 'promotores' => $prom, 'registo' => $registo, 'stock' => $stock, 'caixa' => $cx, 'sap' => $sap];
+    $dados = ['dia' => $dia, 'resumo' => $resumo, 'promotores' => $prom, 'registo' => $registo, 'stock' => $stock, 'caixa' => $cx];
+    $dados['consolidado'] = naval_rv_consolidado($vendas, $dados);
+    return $dados;
+}
+
+/**
+ * Consolidado no formato do SALES REPORT (só Naval, canal RTM), com as conferências e as excepções (função pura).
+ * $vendas: documentos efectivos do dia (sem substituições); $d: o resto do relatório já montado.
+ */
+function naval_rv_consolidado(array $vendas, array $d): array
+{
+    $r2 = function ($v) { return round((float) $v, 2); };
+    $zero = function ($v) { return abs((float) $v) < 0.005; };
+    // 1. vendas e meios de cobrança (documento a documento, do Pinguim BO)
+    $m = ['brutas' => 0.0, 'notas_credito' => 0.0, 'dinheiro' => 0.0, 'multicaixa' => 0.0, 'outros' => 0.0, 'compensacao' => 0.0, 'por_receber' => 0.0, 'excesso' => 0.0];
+    $docs = 0;
+    $nc = 0;
+    foreach ($vendas as $v) {
+        $total = (float) $v['total'];
+        if (!empty($v['nc'])) {
+            $m['notas_credito'] += -$total;
+            $nc++;
+            continue;
+        }
+        $docs++;
+        $m['brutas'] += $total;
+        $pago = 0.0;
+        foreach ((array) ($v['pagamentos'] ?? []) as $pg) {
+            $cat = naval_rv_meio((array) $pg);
+            $val = (float) ($pg['valor'] ?? 0);
+            if ($cat === 'compensacao') {   // como em «por promotor»: a compensação não é cobrança, fica por receber
+                $m['compensacao'] += $val;
+                continue;
+            }
+            $pago += $val;
+            $m[$cat === 'outro' ? 'outros' : $cat] += $val;
+        }
+        if ($pago < $total) $m['por_receber'] += $total - $pago;
+        else $m['excesso'] += $pago - $total;
+    }
+    foreach ($m as $k => $x) $m[$k] = $r2($x);
+    $liquidas = $r2($m['brutas'] - $m['notas_credito']);
+    $cx = (array) $d['caixa'];
+    $res = (array) $d['resumo'];
+    // 2. bancos: Multicaixa (talões do TPA, com a conta do registo dos terminais) e depósitos (lacres) por banco e conta
+    $bancos = [];
+    $linha = function ($banco, $conta) use (&$bancos) {
+        $k = $banco . '|' . $conta;
+        if (!isset($bancos[$k])) $bancos[$k] = ['banco' => (string) $banco, 'conta' => (string) $conta, 'multicaixa' => 0.0, 'talaos' => 0, 'deposito' => 0.0, 'lacres' => 0];
+        return $k;
+    };
+    foreach ((array) ($cx['tpa'] ?? []) as $t) {
+        $k = $linha($t['banco'] ?? '', $t['conta'] ?? '');
+        $bancos[$k]['multicaixa'] += (float) ($t['valor'] ?? 0);
+        $bancos[$k]['talaos']++;
+    }
+    $depositos = 0.0;
+    foreach ((array) ($cx['saidas'] ?? []) as $s) {
+        if (($s['tipo'] ?? 'deposito_banco') !== 'deposito_banco') continue;
+        $k = $linha($s['banco'] ?? '', '');
+        $bancos[$k]['deposito'] += (float) ($s['valor'] ?? 0);
+        $bancos[$k]['lacres']++;
+        $depositos += (float) ($s['valor'] ?? 0);
+    }
+    foreach ($bancos as $k => $b) {
+        $b['multicaixa'] = $r2($b['multicaixa']);
+        $b['deposito'] = $r2($b['deposito']);
+        $b['total'] = $r2($b['multicaixa'] + $b['deposito']);
+        $bancos[$k] = $b;
+    }
+    ksort($bancos);
+    // 3. conferências («proof totals»): cada uma compara duas fontes independentes
+    $conf = [];
+    $c = function (string $id, string $nome, string $a, $va, string $b, $vb) use (&$conf, $r2, $zero) {
+        $dif = $va === null || $vb === null ? null : $r2((float) $vb - (float) $va);
+        $conf[] = ['id' => $id, 'nome' => $nome, 'origem' => $a, 'valor_origem' => $va === null ? null : $r2($va), 'destino' => $b,
+            'valor_destino' => $vb === null ? null : $r2($vb), 'diferenca' => $dif, 'estado' => $dif === null ? 'sem_dados' : ($zero($dif) ? 'confere' : 'diferenca')];
+    };
+    $c('cobrancas', 'Vendas brutas = cobranças + por receber', 'Vendas brutas (Pinguim BO)', $m['brutas'],
+        'Dinheiro + Multicaixa + outros + por receber − cobrado a mais', $m['dinheiro'] + $m['multicaixa'] + $m['outros'] + $m['por_receber'] - $m['excesso']);
+    $c('por_promotor', 'Total por promotor = total do dia', 'Vendas líquidas do dia', $liquidas, 'Soma das vendas por promotor', $res['vendas'] ?? 0);
+    $c('dinheiro', 'Dinheiro recebido = dinheiro entregue na caixa', 'Recebido em dinheiro (Pinguim BO)', $m['dinheiro'], 'Entregue na caixa (folha de caixa)', $res['entregue'] ?? 0);
+    $c('multicaixa', 'Multicaixa recebido = talões do TPA', 'Recebido em Multicaixa (Pinguim BO)', $m['multicaixa'], 'Talões de fecho do TPA', $res['tpa'] ?? 0);
+    $teorico = $cx['saldo_inicial'] === null ? null : (float) $cx['saldo_inicial'] + (float) ($cx['entregas'] ?? 0) - (float) ($cx['total_saidas'] ?? 0);
+    $c('caixa', 'Saldo teórico da caixa = contagem física', 'Saldo inicial + entregue − depósitos', $teorico, 'Contagem física', $cx['contagem_fisica'] ?? null);
+    $difStock = array_values(array_filter((array) $d['stock'], function ($l) use ($zero) { return $l['diferenca'] !== null && !$zero($l['diferenca']); }));
+    $conf[] = ['id' => 'stock', 'nome' => 'Stock contado = stock teórico nas carrinhas', 'origem' => 'Stock final teórico', 'valor_origem' => null,
+        'destino' => 'Contagem das carrinhas', 'valor_destino' => null, 'diferenca' => count($difStock), 'unidade' => 'linhas',
+        'estado' => $difStock ? 'diferenca' : 'confere'];
+    // 4. excepções (gestão por excepção: o que precisa de explicação, primeiro o maior valor)
+    $exc = [];
+    foreach ((array) $d['promotores'] as $p) {
+        $nome = $p['rota'] . ' · ' . $p['promotor'];
+        if (!$zero($p['dif_dinheiro'])) $exc[] = ['tipo' => 'dinheiro', 'rota' => $p['rota'], 'promotor' => $nome, 'valor' => $p['dif_dinheiro'],
+            'detalhe' => ($p['dif_dinheiro'] < 0 ? 'Falta' : 'Sobra') . ' de dinheiro: recebido ' . naval_rv_kz($p['dinheiro']) . ', entregue ' . naval_rv_kz($p['entregue']) . '.'];
+        if (!$zero($p['dif_tpa'])) $exc[] = ['tipo' => 'multicaixa', 'rota' => $p['rota'], 'promotor' => $nome, 'valor' => $p['dif_tpa'],
+            'detalhe' => 'Multicaixa: recebido ' . naval_rv_kz($p['multicaixa']) . ', talões do TPA ' . naval_rv_kz($p['tpa']) . '.'];
+        if (!$zero($p['por_receber'])) $exc[] = ['tipo' => 'por_receber', 'rota' => $p['rota'], 'promotor' => $nome, 'valor' => $p['por_receber'],
+            'detalhe' => 'Vendas sem cobrança no dia (crédito).'];
+    }
+    foreach ($difStock as $l) {
+        $exc[] = ['tipo' => 'stock', 'rota' => $l['rota'], 'promotor' => $l['rota'] . ' · ' . $l['promotor'], 'valor' => (float) $l['diferenca'], 'unidade' => $l['unidade'] ?? '',
+            'detalhe' => 'Stock: ' . $l['codigo'] . ' ' . $l['artigo'] . ' — teórico ' . naval_rv_n($l['final']) . ', contado ' . naval_rv_n($l['contado']) . '.'];
+    }
+    if ($cx['diferenca'] !== null && !$zero($cx['diferenca'])) {
+        $exc[] = ['tipo' => 'caixa', 'rota' => '', 'promotor' => 'Tesouraria', 'valor' => (float) $cx['diferenca'],
+            'detalhe' => 'Diferença na contagem da caixa' . ($cx['explicacao'] ? ': ' . $cx['explicacao'] : '.')];
+    }
+    $ordem = ['caixa' => 0, 'dinheiro' => 1, 'multicaixa' => 2, 'stock' => 3, 'por_receber' => 4];
+    usort($exc, function ($a, $b) use ($ordem) { return [$ordem[$a['tipo']], -abs($a['valor'])] <=> [$ordem[$b['tipo']], -abs($b['valor'])]; });
+    $falhas = count(array_filter($conf, function ($x) { return $x['estado'] === 'diferenca'; }));
+    return [
+        'empresa' => 'NAVAL', 'canal' => 'RTM',
+        'vendas' => ['documentos' => $docs, 'notas_credito_documentos' => $nc, 'brutas' => $m['brutas'], 'notas_credito' => $m['notas_credito'], 'liquidas' => $liquidas],
+        'meios' => ['dinheiro' => $m['dinheiro'], 'multicaixa' => $m['multicaixa'], 'outros' => $m['outros'], 'compensacao' => $m['compensacao'],
+            'por_receber' => $m['por_receber'], 'excesso' => $m['excesso']],
+        'bancos' => array_values($bancos),
+        'caixa' => ['saldo_inicial' => $cx['saldo_inicial'], 'entregue' => $r2($cx['entregas'] ?? 0), 'depositos' => $r2($depositos),
+            'saldo_teorico' => $cx['saldo_teorico'], 'contagem_fisica' => $cx['contagem_fisica'], 'diferenca' => $cx['diferenca']],
+        'conferencias' => $conf, 'excepcoes' => $exc,
+        'estado' => $falhas ? 'com_diferencas' : 'confere', 'diferencas' => $falhas,
+    ];
+}
+
+/** Kz em texto (para as excepções): 1 234 567,89 Kz. */
+function naval_rv_kz($v): string
+{
+    return number_format((float) $v, 2, ',', ' ') . ' Kz';
+}
+
+function naval_rv_n($v): string
+{
+    return $v === null ? '—' : rtrim(rtrim(number_format((float) $v, 3, ',', ' '), '0'), ',');
 }
 
 /** Lê todas as fontes do dia (cada uma pode falhar sem impedir as outras de aparecer nos controlos). */
@@ -271,15 +405,6 @@ function naval_rv_fontes(string $dia): array
     }
     $f['lotes'] = naval_sap_lotes();
     $f['caixa'] = naval_caixa_ler($dia);
-    $f['sap_configurado'] = naval_sapod_configurado();
-    $f['sap'] = null;
-    if ($f['sap_configurado']) {
-        try {
-            $f['sap'] = naval_sapod_facturacao($dia);
-        } catch (Throwable $e) {
-            error_log('[relatorio SAP] ' . $e->getMessage());
-        }
-    }
     return $f;
 }
 
@@ -330,7 +455,7 @@ function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $font
     $f = $fontes ?? naval_rv_fontes($dia);
     $ctl = naval_rv_controlos($dia, $f);
     if (!$ctl['pronto']) throw new NavalErro('O relatório só se gera com todas as fontes do dia completas.', 409, ['controlos' => $ctl['controlos']]);
-    return naval_exclusivo('relatorio-vendas-' . $dia, function () use ($dia, $motivo, $login, $f, $ctl) {
+    $r = naval_exclusivo('relatorio-vendas-' . $dia, function () use ($dia, $motivo, $login, $f, $ctl) {
         $versoes = naval_rv_versoes($dia);
         $motivo = naval_texto($motivo, 300);
         if ($versoes && mb_strlen($motivo) < 5) throw new NavalErro('Já existe o relatório deste dia: indique o motivo da nova versão.', 409, ['codigo' => 'versao']);
@@ -343,4 +468,94 @@ function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $font
         naval_registar('relatorio_vendas_gerado', ['dia' => $dia, 'versao' => $n, 'sha256' => $sha]);
         return $r;
     });
+    $r['envio'] = naval_rv_enviar($r);
+    return $r;
+}
+
+/** Destinatários do resumo por correio: quem vê o relatório na matriz, sem os perfis limitados a rotas (vê o dia todo). */
+function naval_rv_destinatarios(): array
+{
+    naval_servico('email');
+    $porRota = naval_perfis_por_rota();
+    $m = naval_matriz();
+    $out = [];
+    foreach (naval_utilizadores() as $login => $u) {
+        $p = (string) ($u['perfil'] ?? '');
+        if ($p === '' || in_array($p, $porRota, true)) continue;
+        $nivel = (string) ($m['relatorio-vendas'][$p] ?? '');
+        if ($nivel === '' || NAVAL_ORDEM_NIVEIS[$nivel] < NAVAL_ORDEM_NIVEIS['V'] || !naval_recurso_disponivel('relatorio-vendas', $p)) continue;
+        if (!naval_conta_valida($u) || !naval_email_valido($u['email'] ?? null)) continue;
+        $out[strtolower(trim((string) $u['email']))] = ['email' => trim((string) $u['email']), 'nome' => (string) ($u['nome'] ?? $login)];
+    }
+    return array_values($out);
+}
+
+/** Envia o resumo do consolidado gerado (nunca lança excepções: o relatório já está gravado). */
+function naval_rv_enviar(array $r): array
+{
+    try {
+        if (naval_config('RELATORIO_VENDAS_EMAIL', '1') === '0') return ['ok' => false, 'erro' => 'Envio desligado (RELATORIO_VENDAS_EMAIL=0).'];
+        naval_servico('email');
+        if (!naval_email_configurado()) return ['ok' => false, 'erro' => 'O envio por correio electrónico não está configurado no servidor.'];
+        $para = naval_rv_destinatarios();
+        if (!$para) return ['ok' => false, 'erro' => 'Ninguém com acesso ao relatório tem correio electrónico.'];
+        $c = (array) ($r['dados']['consolidado'] ?? []);
+        $assunto = 'Consolidado diário de vendas RTM · Naval · ' . naval_data_pt($r['dia']) . ' · ' . $r['numero']
+            . (($c['diferencas'] ?? 0) ? ' · ' . $c['diferencas'] . ' conferência(s) com diferença' : ' · tudo confere');
+        $x = naval_enviar_email($para, $assunto, naval_rv_email_html($r));
+        naval_registar('relatorio_vendas_enviado', ['dia' => $r['dia'], 'versao' => $r['versao'], 'destinatarios' => count($para), 'ok' => !empty($x['ok'])]);
+        return ['ok' => !empty($x['ok']), 'destinatarios' => count($para), 'erro' => $x['erro'] ?? null];
+    } catch (Throwable $e) {
+        error_log('[relatorio-vendas envio] ' . $e->getMessage());
+        return ['ok' => false, 'erro' => 'Não foi possível enviar o resumo por correio.'];
+    }
+}
+
+/** Corpo do correio: resumo, conferências e excepções, com a ligação para o relatório no portal (os detalhes ficam lá). */
+function naval_rv_email_html(array $r): string
+{
+    $h = function ($t) { return htmlspecialchars((string) $t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
+    $c = (array) ($r['dados']['consolidado'] ?? []);
+    $v = (array) ($c['vendas'] ?? []);
+    $m = (array) ($c['meios'] ?? []);
+    $cx = (array) ($c['caixa'] ?? []);
+    $td = 'style="padding:6px 10px;border-bottom:1px solid #E3E8F2;text-align:justify"';
+    $tdv = 'style="padding:6px 10px;border-bottom:1px solid #E3E8F2;text-align:right;white-space:nowrap"';
+    $th = 'style="padding:6px 10px;background:#273777;color:#fff;text-align:left;font-size:12px"';
+    $l = function ($a, $b, $forte = false) use ($h, $td, $tdv) {
+        return '<tr><td ' . $td . '>' . ($forte ? '<b>' . $h($a) . '</b>' : $h($a)) . '</td><td ' . $tdv . '>' . ($forte ? '<b>' . $h($b) . '</b>' : $h($b)) . '</td></tr>';
+    };
+    $kz = function ($x) { return $x === null ? '—' : naval_rv_kz($x); };
+    $res = '<table style="border-collapse:collapse;width:100%;margin:0 0 16px"><thead><tr><th ' . $th . ' colspan="2">Resumo do dia</th></tr></thead><tbody>'
+        . $l('Vendas brutas (' . ($v['documentos'] ?? 0) . ' documentos)', $kz($v['brutas'] ?? 0))
+        . $l('Notas de crédito (' . ($v['notas_credito_documentos'] ?? 0) . ')', $kz(-($v['notas_credito'] ?? 0)))
+        . $l('Vendas líquidas', $kz($v['liquidas'] ?? 0), true)
+        . $l('Dinheiro', $kz($m['dinheiro'] ?? 0)) . $l('Multicaixa', $kz($m['multicaixa'] ?? 0))
+        . (($m['outros'] ?? 0) ? $l('Outros meios', $kz($m['outros'])) : '') . (($m['compensacao'] ?? 0) ? $l('Compensação', $kz($m['compensacao'])) : '')
+        . $l('Por receber (crédito)', $kz($m['por_receber'] ?? 0))
+        . $l('Caixa: saldo inicial', $kz($cx['saldo_inicial'] ?? null)) . $l('Caixa: dinheiro entregue', $kz($cx['entregue'] ?? 0))
+        . $l('Caixa: depósitos no banco', $kz(-($cx['depositos'] ?? 0))) . $l('Caixa: saldo final (contagem física)', $kz($cx['contagem_fisica'] ?? null), true)
+        . '</tbody></table>';
+    $conf = '';
+    foreach ((array) ($c['conferencias'] ?? []) as $x) {
+        $ok = $x['estado'] === 'confere';
+        $dif = ($x['unidade'] ?? '') === 'linhas' ? ($x['diferenca'] . ' linha(s)') : $kz($x['diferenca']);
+        $conf .= '<tr><td ' . $td . '>' . $h($x['nome']) . '</td><td ' . $tdv . '>' . ($ok ? '<span style="color:#1F4E9E">Confere</span>' : '<b style="color:#B42318">Diferença · ' . $h($dif) . '</b>') . '</td></tr>';
+    }
+    $exc = '';
+    foreach (array_slice((array) ($c['excepcoes'] ?? []), 0, 30) as $x) {
+        $exc .= '<tr><td ' . $td . '>' . $h($x['promotor']) . '</td><td ' . $td . '>' . $h($x['detalhe']) . '</td></tr>';
+    }
+    $n = count((array) ($c['excepcoes'] ?? []));
+    $link = rtrim(naval_config('PORTAL_URL', 'https://geo.naval.co.ao:2051'), '/') . '/reports/#relatorio-vendas';
+    return '<div style="font-family:Segoe UI,Arial,sans-serif;color:#0B1F3A;max-width:720px">'
+        . '<h2 style="color:#273777;margin:0 0 4px">Consolidado diário de vendas RTM · Naval</h2>'
+        . '<p style="margin:0 0 14px;color:#44546D">' . $h(naval_data_pt($r['dia'])) . ' · ' . $h($r['numero']) . ' · gerado por ' . $h($r['gerado_por']) . ' em '
+        . $h(naval_data_pt(substr($r['gerado_em'], 0, 10)) . ' ' . substr($r['gerado_em'], 11, 5)) . ($r['motivo'] ? ' · motivo: ' . $h($r['motivo']) : '') . '</p>'
+        . $res
+        . '<table style="border-collapse:collapse;width:100%;margin:0 0 16px"><thead><tr><th ' . $th . '>Conferência</th><th ' . $th . '>Resultado</th></tr></thead><tbody>' . $conf . '</tbody></table>'
+        . ($exc ? '<table style="border-collapse:collapse;width:100%;margin:0 0 16px"><thead><tr><th ' . $th . '>Excepção</th><th ' . $th . '>Detalhe</th></tr></thead><tbody>' . $exc . '</tbody></table>'
+            . ($n > 30 ? '<p style="font-size:12px;color:#44546D">E mais ' . ($n - 30) . ' excepção(ões) no portal.</p>' : '') : '<p>Sem excepções: tudo confere.</p>')
+        . '<p style="margin:16px 0"><a href="' . $h($link) . '" style="background:#0057B8;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir o consolidado no portal (PDF e Excel)</a></p>'
+        . '<p style="font-size:11px;color:#8A97B3;text-align:justify">Fotografia congelada · SHA-256 ' . $h($r['sha256']) . '. Dados do Pinguim BO e da folha de caixa do portal. Mensagem automática do Portal RTM · Grupo Naval.</p></div>';
 }

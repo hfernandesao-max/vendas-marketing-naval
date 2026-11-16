@@ -1,13 +1,13 @@
 {
   "id": "relatorio-vendas",
-  "nome": "Relatório de Vendas diário",
-  "versao": "1.1.0",
-  "descricao": "Relatório de Vendas do Marketing (resumo, cobranças por promotor, caixa, registo de vendas e stock das carrinhas), gerado só com todas as fontes do dia completas, folha de caixa da tesouraria e Multicaixa por TPA (conferência dos fechos com o Pinguim BO e o extracto, e resumo de fim de dia para o Financeiro).",
+  "nome": "Consolidado diário de vendas (RTM · Naval)",
+  "versao": "1.2.0",
+  "descricao": "Consolidado diário das vendas RTM da Naval (resumo no formato do SALES REPORT, conferências e excepções, cobranças por promotor, caixa, bancos, registo de vendas e stock das carrinhas), gerado só com todas as fontes do dia completas, folha de caixa da tesouraria e Multicaixa por TPA (conferência dos fechos com o Pinguim BO e o extracto, e resumo de fim de dia para o Financeiro).",
   "nucleo": false,
   "paginas": ["relatorio-vendas", "caixa-marketing", "multicaixa-tpa"],
   "recursos": ["relatorio-vendas", "caixa-marketing", "caixa-aprovacao", "caixa-aprovacao-final", "multicaixa-tpa"],
   "api": ["v1/relatorio-vendas", "v1/caixa", "v1/multicaixa-tpa"],
-  "conectores": ["pinguim-sql", "sap-odata"],
+  "conectores": ["pinguim-sql"],
   "eventos": {
     "publica": ["relatorio.vendas_gerado", "caixa.aprovada"],
     "escuta": []
