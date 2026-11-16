@@ -123,6 +123,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
+/* plano de cargas: matrícula, marca e modelo (só leitura) na mesma linha; a transportadora por baixo */
+.campos3.campos4 {
+  grid-template-columns: minmax(132px, 1.3fr) 1fr 1fr;
+}
+.campos3.campos4 > :nth-child(4) {
+  grid-column: 1 / -1;
+}
 @media (max-width: 560px) {
   .campos3 {
     grid-template-columns: 1fr 1fr;

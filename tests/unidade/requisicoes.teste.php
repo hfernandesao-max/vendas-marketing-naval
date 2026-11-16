@@ -132,3 +132,24 @@ teste('fecho antes da carga: só se carrega com as conciliações anteriores fec
     if ($dados) naval_json_gravar(naval_carr_pasta($ontem) . '/_dados.json', $dados); else @unlink(naval_carr_pasta($ontem) . '/_dados.json');
     if ($tinha === null) @unlink($regra); else file_put_contents($regra, $tinha);
 });
+
+teste('plano de cargas: a requisição emitida fixa o documento, as quantidades e o armazém de carga (o ecrã não os muda)', function () {
+    naval_servico('cargas');
+    $GLOBALS['naval_req_armazens_teste'] = ['F1' => 'RTM HIGITEC PIV – NON FOOD', 'S1' => 'RTM REFITEC/FOODTEC PIV – FOOD'];
+    $hoje = date('Y-m-d');
+    $r = naval_req_criar('1017', $hoje, [['codigo' => 'F1', 'artigo' => 'Fraldas M', 'quantidade' => 12], ['codigo' => 'S1', 'artigo' => 'Sabão azul', 'quantidade' => 30]], 'pro');
+    $rasc = naval_plano_carga($hoje, ['artigos' => NAVAL_ARTIGOS_PADRAO], ['1017']);
+    igual([[$r['numero']], []], [$rasc['rotas']['1017']['rascunhos'], $rasc['rotas']['1017']['requisicoes']], 'rascunho: avisa, não carrega');
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro');
+    igual(['F1' => 'RTM HIGITEC PIV – NON FOOD', 'S1' => 'RTM REFITEC/FOODTEC PIV – FOOD'], array_column($e['linhas'], 'armazem', 'codigo'), 'armazém gravado na emissão');
+    $listas = ['artigos' => NAVAL_ARTIGOS_PADRAO];
+    $p = naval_plano_com_requisicoes(['data' => $hoje, 'rotas' => [['rota' => '1017', 'factura' => 'X', 'armazem' => 'HIGITEC',
+        'quantidades' => ['fraldas' => 999, 'sabao' => 1, 'sabonete' => 5]]]], $listas);
+    $x = $p['rotas'][0];
+    igual($e['numero'], $x['factura']);
+    igual(['fraldas' => 12, 'sabao' => 30, 'sabonete' => 0], $x['quantidades'], 'quantidades da requisição, não as do ecrã');
+    igual('RTM HIGITEC PIV – NON FOOD + RTM REFITEC/FOODTEC PIV – FOOD', $x['armazem']);
+    $c = naval_plano_carga($hoje, $listas, ['1017']);
+    igual(['RTM HIGITEC PIV – NON FOOD', 'RTM REFITEC/FOODTEC PIV – FOOD'], $c['rotas']['1017']['armazens']);
+    unset($GLOBALS['naval_req_armazens_teste']);
+});

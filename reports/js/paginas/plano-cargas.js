@@ -27,9 +27,30 @@ function pesoRota(r) {
   const na = +((PC.resp && PC.resp.na_carrinha) || {})[r.rota] || 0;
   return { plan, cap: cap ? +cap : null, na, disp: cap ? +cap - na : null, peso, excede: !!cap && r.sai && plan + na > +cap + 0.05 };
 }
+// Capacidade de carga (carga útil) de referência, dos fabricantes, para quando a tabela de viaturas ainda não a tem.
+// É só uma referência: a capacidade que conta é a do livrete de cada viatura (peso bruto − tara), gravada na tabela.
+// Fontes: FUSO Canter FE71 (4 rodas, carga útil 2 490–2 585 kg) e FE85 (6 rodas, 6 090–6 125 kg), fuso.com.ph;
+// Sinotruk HOWO ligeiro de carga (capacidade 5 t), cnhtcgroup.com.
+export const CAPACIDADE_REF = [
+  { re: /\bFE ?8[4-9]\b/i, kg: 6000, nome: 'FUSO Canter FE85 (6 rodas)' },
+  { re: /\bFE ?7\d\b/i, kg: 2500, nome: 'FUSO Canter FE71 (4 rodas)' },
+  { re: /\bCANTER\b/i, kg: 2500, nome: 'FUSO Canter FE71 (4 rodas)' },
+  { re: /\b(SINOTRUK|HOWO)\b/i, kg: 5000, nome: 'Sinotruk HOWO ligeiro (5 t)' },
+];
+export const capacidadeRef = (v) => (v ? CAPACIDADE_REF.find((x) => x.re.test([v.marca, v.modelo].filter(Boolean).join(' '))) || null : null);
 function textoPeso(r) {
   const p = pesoRota(r);
-  if (p.cap == null) return p.plan ? t('Peso planeado: {k} kg (sem capacidade definida para esta matrícula)', { k: n0(p.plan) }) : '';
+  if (p.cap == null) {
+    if (!p.plan) return '';
+    const ref = capacidadeRef(viaturaDe(r.matricula));
+    return ref
+      ? t('Peso planeado: {k} kg. Sem capacidade na tabela de viaturas: referência do fabricante {c} kg ({n}); confirme no livrete.', {
+          k: n0(p.plan),
+          c: n0(ref.kg),
+          n: ref.nome,
+        })
+      : t('Peso planeado: {k} kg (sem capacidade definida para esta matrícula)', { k: n0(p.plan) });
+  }
   return t('Peso: {k} kg de {d} kg disponíveis (capacidade {c} kg; ainda na carrinha {n} kg)', {
     k: n0(p.plan),
     d: n0(Math.max(0, p.disp)),
@@ -105,7 +126,15 @@ function montarRotasPlano(d, base) {
   return lista;
 }
 const cargaDe = (rota, d = PC.resp) => ((d && d.carga && d.carga.rotas) || {})[rota] || null;
-/** Com requisição emitida, a quantidade de cada artigo do plano é o que já está na carrinha + o que se vai carregar. */
+/**
+ * Com requisição emitida, a requisição é a única fonte da carga: o número (documento), a quantidade de cada artigo
+ * (a requisitada) e o armazém de carga (o dos artigos). Estes campos ficam só para leitura; o servidor fixa-os de novo
+ * ao gravar (nucleo/servicos/cargas.php, naval_plano_com_requisicoes).
+ */
+const comRequisicao = (r, d = PC.resp) => {
+  const c = cargaDe(r.rota, d);
+  return !!(c && c.requisicoes.length);
+};
 function aplicarCarga(r, d) {
   const c = cargaDe(r.rota, d);
   if (!c || !c.requisicoes.length) return false;
@@ -113,8 +142,9 @@ function aplicarCarga(r, d) {
   r.sai = true; // com requisição emitida, a rota sai
   d.listas.artigos.forEach((a) => {
     const g = c.grupos[a.id];
-    if (g) r.quantidades[a.id] = Math.max(0, Math.round(+g.total || 0));
+    r.quantidades[a.id] = g ? Math.max(0, Math.round(+g.carregar || 0)) : 0;
   });
+  if ((c.armazens || []).length) r.armazem = c.armazens.join(' + ');
   r._carga = true;
   return true;
 }
@@ -712,8 +742,8 @@ function janelaListas() {
           t('Viaturas'),
           () => {
             const w = el('div');
-            w.append(
-              el('p', 'nota-dlg', t('Matrícula, marca, modelo e capacidade (kg) de cada viatura. O plano não deixa carregar acima do que ainda cabe.')),
+            const tabFrota = el('div');
+            const novaTabFrota = () =>
               linhas(
                 L.frota,
                 [
@@ -725,8 +755,36 @@ function janelaListas() {
                   ['activa', t('Activa'), 'checkbox'],
                 ],
                 () => ({ matricula: '', marca: '', modelo: '', transportadora: '', kg: '', activa: true }),
+              );
+            w.append(
+              el('p', 'nota-dlg', t('Matrícula, marca, modelo e capacidade (kg) de cada viatura. O plano não deixa carregar acima do que ainda cabe.')),
+              el(
+                'p',
+                'nota-dlg',
+                t(
+                  'Capacidade = carga útil do livrete (peso bruto − tara). Sem o livrete, use a referência do fabricante: FUSO Canter FE71 (4 rodas) 2 500 kg, Canter FE85 (6 rodas) 6 000 kg, Sinotruk HOWO ligeiro 5 000 kg.',
+                ),
               ),
+              botao(t('Preencher as capacidades em falta com a referência do fabricante'), 'ghost sm', () => {
+                let n = 0;
+                L.frota.forEach((v) => {
+                  const ref = capacidadeRef(v);
+                  if (ref && !(+v.kg > 0)) {
+                    v.kg = ref.kg;
+                    n++;
+                  }
+                });
+                toast(
+                  n
+                    ? t('{n} viatura(s) com a capacidade de referência. Grave para aplicar.', { n })
+                    : t('Nenhuma viatura sem capacidade com referência conhecida.'),
+                  5000,
+                );
+                tabFrota.replaceChildren(novaTabFrota());
+              }),
+              tabFrota,
             );
+            tabFrota.append(novaTabFrota());
             return w;
           },
         ],
@@ -929,7 +987,7 @@ function cartaoRota(r, d, dls) {
     ? escolha(
         'motorista',
         t('Motorista'),
-        tabMot.map((m) => [m.nome, m.nome + (m.transportadora ? ' · ' + m.transportadora : '')]),
+        tabMot.map((m) => [m.nome, m.nome]),
       )
     : inp('motorista', t('Motorista'), { autocomplete: 'off' }, dls.mot);
   const [fTel, iTel] = inp('telefone', t('Telefone'), { type: 'tel', inputMode: 'tel' });
@@ -937,18 +995,34 @@ function cartaoRota(r, d, dls) {
     ? escolha(
         'matricula',
         t('Matrícula'),
-        tabVia.map((v) => [v.matricula, v.matricula + (nomeViatura(v) ? ' · ' + nomeViatura(v) : '')]),
+        tabVia.map((v) => [v.matricula, v.matricula]),
       )
     : inp('matricula', t('Matrícula'), { autocomplete: 'off' });
+  // com a tabela de viaturas: a lista só tem a matrícula; marca e modelo aparecem ao lado, só para leitura (dados
+  // mestre da tabela); sem tabela, como antes (texto «Marca e modelo» com sugestões)
   const [fVia, iVia] = inp('viatura', t('Marca e modelo'), { autocomplete: 'off' }, dls.via);
+  const soLeitura = (rot) => {
+    const i = entrada('text', '');
+    i.readOnly = true;
+    i.tabIndex = -1;
+    return [campo(rot, i), i];
+  };
+  const [fMarca, iMarca] = soLeitura(t('Marca'));
+  const [fModelo, iModelo] = soLeitura(t('Modelo'));
   const [fTra, iTra] = inp('transportadora', t('Transportadora'), { autocomplete: 'off' }, dls.tra);
-  if (tabVia.length) iVia.readOnly = true;
+  const mostrarViatura = () => {
+    const v = viaturaDe(r.matricula);
+    iMarca.value = (v && v.marca) || '';
+    iModelo.value = (v && v.modelo) || '';
+  };
   const porViatura = () => {
     const v = viaturaDe(r.matricula);
+    mostrarViatura();
     if (!v) return;
     if (nomeViatura(v)) r.viatura = iVia.value = nomeViatura(v);
     if (v.transportadora) r.transportadora = iTra.value = v.transportadora;
   };
+  mostrarViatura();
   iMot.addEventListener('change', () => {
     r.motorista = iMot.value;
     const m = motoristaDe(iMot.value);
@@ -977,12 +1051,23 @@ function cartaoRota(r, d, dls) {
   iMat.addEventListener('blur', () => {
     iMat.value = r.matricula = iMat.value.toUpperCase().trim();
   });
-  const [fArm] = inp('armazem', t('Armazém de carga'), { autocomplete: 'off' }, dls.arm);
+  const temReq = comRequisicao(r, d);
+  const [fArm, iArm] = inp('armazem', t('Armazém de carga'), { autocomplete: 'off' }, dls.arm);
+  if (temReq) {
+    iArm.readOnly = true;
+    iArm.removeAttribute('list');
+    iArm.title = t('Armazém dos artigos da requisição');
+  }
   const [fVg] = inp('viagens', t('Viagens'), { type: 'number', min: 0, max: 20, inputMode: 'numeric' });
   // documento: o número da requisição ao armazém (preenchido sozinho pelo servidor)
   const [fFac, iFac] = inp('factura', t('Requisição ao armazém'));
   iFac.readOnly = true;
-  if (!r.factura) iFac.placeholder = t('sem requisição emitida');
+  const rasc = (cargaDe(r.rota, d) || {}).rascunhos || [];
+  if (!temReq) {
+    r.factura = '';
+    iFac.value = '';
+    iFac.placeholder = rasc.length ? t('{n} em rascunho: emita a requisição', { n: rasc.join(', ') }) : t('sem requisição emitida');
+  }
   const [fObs] = inp('obs', t('Observações'));
   const qs = el('div', 'pc-qs');
   const pesoEl = el('p', 'pc-peso');
@@ -1000,7 +1085,7 @@ function cartaoRota(r, d, dls) {
       estimado: t('estimado: contagem de {d} por fazer', { d: dl(d.carga.dia_anterior) }),
       sem_dados: t('sem dados do Pinguim BO'),
     }[cg.stock];
-    detalhe.append(el('b', null, t('Carga: já na carrinha ({o}) + a carregar = total à saída', { o: origem })));
+    detalhe.append(el('b', null, t('A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar', { o: origem })));
     const ul = el('ul');
     d.listas.artigos.forEach((a) => {
       const g = cg.grupos[a.id];
@@ -1013,7 +1098,12 @@ function cartaoRota(r, d, dls) {
   }
   d.listas.artigos.forEach((a) => {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
+    if (temReq) {
+      i.readOnly = true;
+      i.title = t('Quantidade da requisição (não se altera no plano)');
+    }
     i.addEventListener('input', () => {
+      if (temReq) return;
       r.quantidades[a.id] = Math.max(0, Math.round(+i.value || 0));
       // não deixa passar o peso máximo: só pode carregar a diferença entre a capacidade e o que a carrinha já leva
       const p = pesoRota(r);
@@ -1035,7 +1125,10 @@ function cartaoRota(r, d, dls) {
     return w;
   };
   const l3 = el('div', 'campos3');
-  l3.append(fMat, fVia, fTra);
+  if (tabVia.length) {
+    l3.classList.add('campos4');
+    l3.append(fMat, fMarca, fModelo, fTra);
+  } else l3.append(fMat, fVia, fTra);
   const zonas = el('div', 'campo');
   zonas.append(el('span', null, t('Zonas de descarga')), editorZonas(r, d, dls.zon));
   mostrarPeso();
