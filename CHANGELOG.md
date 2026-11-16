@@ -1,5 +1,22 @@
 ## 16-11-2026
 
+### Equipamentos: página pública do código QR integrada no portal
+
+<!-- paginas: equipamentos -->
+
+- A página provisória do código QR (id.naval.co.ao) passa a ser a do próprio portal: o mesmo QR das etiquetas abre a
+  ficha para quem tem sessão e permissão e, para quem o encontra, uma página em **português e inglês** com a propriedade
+  do Grupo Naval, o **tipo** (smartphone ou impressora móvel, deduzido do ID), o ID e os botões **Ligar** e **Enviar
+  mensagem**; modo claro e escuro. Não mostra nem revela se o ID existe nem nenhum dado interno.
+- **Contacto de devolução gravado no portal** (Equipamentos › Página pública do código QR, «Equipamentos –
+  Administrar»), validado e registado no registo de actividade, com **pré-visualização** da página pública; as chaves
+  do `.env` ficam como valores por omissão.
+- **Equipamento perdido ou roubado lido**: a leitura sem sessão fica na ficha (evento «Leitura do código QR», com o IP e
+  a localização aproximada) e quem administra os equipamentos recebe uma notificação crítica (uma por hora e por
+  equipamento). Todas as leituras sem sessão ficam no registo de actividade.
+- Cabeçalhos mais estritos na página pública: CSP sem scripts, sem enquadramento nem formulários, sem enviar o endereço de origem;
+  continua o limite de 60 leituras por minuto e por ligação.
+
 ### Multicaixa por TPA: conferência máquina a máquina e resumo de fim de dia para o Financeiro
 
 <!-- paginas: multicaixa-tpa, caixa-marketing -->

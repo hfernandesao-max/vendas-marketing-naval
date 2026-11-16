@@ -206,3 +206,33 @@ test('Equipamentos: sem o servidor do módulo mostra o motivo', async ({ page })
   await expect(page.locator('#page')).toContainText('Não foi possível ler os equipamentos');
   await expect(page.locator('#page')).toContainText('ATV_DB_NAME');
 });
+
+test('Página pública do código QR: o administrador vê e altera o contacto de devolução, e pré-visualiza a página', async ({ page }) => {
+  const pedidos = [];
+  let contacto = { tel: '', email: '', origem: 'vazio', alterado_por: '', alterado_em: '' };
+  await page.route('**/v1/equipamentos**', (r) => {
+    const q = r.request();
+    if (q.method() === 'POST') {
+      const b = q.postDataJSON();
+      pedidos.push(b);
+      if (!b.tel && !b.email) return r.fulfill({ status: 400, json: { ok: false, erro: 'Indique pelo menos um contacto: telefone ou correio electrónico.' } });
+      contacto = { tel: b.tel, email: b.email, origem: 'portal', alterado_por: 'hf', alterado_em: '2026-11-16 10:00:00' };
+      return r.fulfill({ json: { ok: true, contacto } });
+    }
+    return r.fulfill({ json: { ...LISTA, contacto } });
+  });
+  const erros = await abrir(page, '#equipamentos');
+  const s = page.locator('section', { hasText: 'Página pública do código QR' });
+  await expect(s).toContainText('por preencher');
+  await expect(s.getByRole('link', { name: 'Pré-visualizar a página pública' })).toHaveAttribute('href', /ficha\.php\?publica=1&id=NAV-SMT-0001/);
+  await s.getByRole('button', { name: 'Alterar contacto de devolução' }).click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByRole('button', { name: 'Gravar' }).click();
+  await expect(dlg).toContainText('Indique pelo menos um contacto');
+  await dlg.getByLabel('Telefone').fill('+244 923 111 222');
+  await dlg.getByLabel('Correio electrónico').fill('equipamentos@naval.co.ao');
+  await dlg.getByRole('button', { name: 'Gravar' }).click();
+  await expect.poll(() => pedidos.at(-1)).toMatchObject({ accao: 'contacto', tel: '+244 923 111 222', email: 'equipamentos@naval.co.ao' });
+  await expect(page.locator('section', { hasText: 'Página pública do código QR' })).toContainText('+244 923 111 222');
+  expect(erros.filter((e) => !/400/.test(e))).toEqual([]);
+});

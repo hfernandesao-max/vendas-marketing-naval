@@ -26,6 +26,7 @@ const NAVAL_NOTIF_TIPOS = [
     'problema' => ['Problema em produção', 'A vigilância do portal encontrou um problema novo.', 'actualizacoes', 'V', 'critico'],
     'versao' => ['Actualizações do portal', 'Versão instalada, à espera de aprovação ou reposta.', 'actualizacoes', 'V', 'info'],
     'resumo_dia' => ['Resumo do dia', 'Às 18:30: vendas do dia, documentos e a melhor rota.', 'app-gestao', 'V', 'info'],
+    'equipamento_lido' => ['Equipamento perdido lido', 'O código QR de um equipamento dado como perdido ou roubado foi lido sem sessão iniciada.', 'equipamentos-administrar', 'G', 'critico'],
 ];
 /** Textos das notificações em português, inglês e tigrínia (o telefone recebe-as no idioma em que está). */
 const NAVAL_NOTIF_TEXTOS = [
@@ -58,6 +59,9 @@ const NAVAL_NOTIF_TEXTOS = [
         'en' => ['Reconciliation for {d} with differences', '{n} route(s) with documents or amounts different from Pinguim BO: {lista}.'],
         'ti' => ['ምንጽጻር ናይ {d} ፍልልያት ኣለዎ', '{n} መስመር(ታት) ካብ Pinguim BO ዝተፈልየ ሰነዳት ወይ ዋጋታት፦ {lista}።']],
     'problema' => ['pt' => ['Problema em produção', '{m}'], 'en' => ['Production problem', '{m}'], 'ti' => ['ጸገም ኣብ ስራሕ', '{m}']],
+    'perdido_lido' => ['pt' => ['Equipamento {id} lido', 'O código QR de um equipamento dado como perdido ou roubado foi lido às {h} (local aproximado: {l}).'],
+        'en' => ['Device {id} scanned', 'The QR code of a device reported lost or stolen was scanned at {h} (approximate location: {l}).'],
+        'ti' => ['መሳርሒ {id} ተነቢቡ', 'ናይ ዝጠፍአ ወይ ዝተሰረቐ መሳርሒ QR ኮድ ኣብ {h} ተነቢቡ (ግምታዊ ቦታ፦ {l})።']],
     'teste' => ['pt' => ['Notificações ligadas', 'Vai receber aqui os alertas do Portal RTM.'],
         'en' => ['Notifications on', 'You will receive Portal RTM alerts here.'],
         'ti' => ['ምልክታታት ተወሊዖም', 'መጠንቀቕታታት Portal RTM ኣብዚ ክትቕበሉ ኢኹም።']],
