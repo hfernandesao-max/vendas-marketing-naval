@@ -4167,6 +4167,11 @@ export const EN = {
   'Nova funcionalidade': 'New feature',
   'Alteração com impacto': 'High-impact change',
   'revisão {c}': 'revision {c}',
+  'Este perfil exige verificação em dois passos: terá de a configurar de novo na próxima entrada.':
+    'This profile requires two-step verification: it will have to be set up again at the next sign-in.',
+  'Depois de retirar': 'After removing',
+  'Dispensar durante um prazo (entra só com a palavra-passe)': 'Exempt for a period (signs in with the password only)',
+  'Configurar de novo na próxima entrada (por exemplo, telemóvel novo)': 'Set up again at the next sign-in (for example, a new phone)',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -46,6 +46,14 @@ function naval_funcoes_iniciais(): array
         $f['P-' . $p] = ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'base', 'permissoes' => $dePerfil($p),
             'por_rota' => in_array($p, NAVAL_POR_ROTA, true), 'dois_passos' => in_array($p, NAVAL_PERFIS_SISTEMA_MFA, true), 'conflitos' => [], 'activo' => true];
     }
+    // Tesouraria (operação de caixa): menor privilégio (ISO/IEC 27001:2022 A.5.15, A.5.18, A.8.2, A.8.3) — recebimentos,
+    // cobranças e contas a receber, com o fecho de caixa pela função «Lançar e validar o fecho de caixa». Sem logística,
+    // equipamentos, integrações, inteligência de negócio nem exportações completas. Separação de funções (A.5.3): quem
+    // recebe o dinheiro não aprova a caixa nem confere o Multicaixa com o extracto (só consulta).
+    $f['P-TES'] = ['nome' => 'Tesouraria', 'descricao' => 'Recebimentos, cobranças e contas a receber. Juntar «Lançar e validar o fecho de caixa».',
+        'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'inicio' => 'V', 'alertas' => 'V', 'suporte' => 'V', 'documentos' => 'V',
+            'relatorio-vendas' => 'V', 'clientes' => 'V', 'pagamentos' => 'E', 'pendentes' => 'E', 'multicaixa-tpa' => 'V'],
+        'por_rota' => false, 'dois_passos' => true, 'conflitos' => ['C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR'], 'activo' => true];
     $comp = function (string $nome, string $desc, array $perm, array $conflitos = [], bool $mfa = false) {
         return ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'complementar', 'permissoes' => $perm, 'por_rota' => false,
             'dois_passos' => $mfa, 'conflitos' => $conflitos, 'activo' => true];
@@ -53,9 +61,9 @@ function naval_funcoes_iniciais(): array
     $f['C-CAIXA-LANCAR'] = $comp('Lançar e validar o fecho de caixa', 'Quem recebe o dinheiro: lança entregas, talões e depósitos e valida com a contagem.',
         ['caixa-marketing' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR']);
     $f['C-CAIXA-APROVAR-1'] = $comp('Aprovar o fecho de caixa (1.º nível)', 'Superior de quem lança: aprova os depósitos e a folha validada.',
-        ['caixa-marketing' => 'V', 'caixa-aprovacao' => 'G'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR'], true);
+        ['caixa-marketing' => 'V', 'caixa-aprovacao' => 'G'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR', 'P-TES'], true);
     $f['C-CAIXA-APROVAR'] = $comp('Aprovar o fecho de caixa (final)', 'Responsável máximo: aprovação final da folha e dos depósitos.',
-        ['caixa-marketing' => 'V', 'caixa-aprovacao-final' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1'], true);
+        ['caixa-marketing' => 'V', 'caixa-aprovacao-final' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1', 'P-TES'], true);
     $f['C-CONC-CONTAR'] = $comp('Contar as carrinhas', 'Técnico do armazém: contagem às cegas e validação da conciliação.',
         ['conciliacao-carrinha' => 'G', 'stock-carrinha' => 'V'], ['C-CONC-COORD', 'C-CONC-FECHO']);
     $f['C-CONC-COORD'] = $comp('Aprovar conciliações (coordenador)', '1.º nível de aprovação das diferenças da carrinha.',
@@ -92,7 +100,8 @@ function naval_funcoes(bool $recarregar = false): array
     static $f = null;
     if ($f !== null && !$recarregar) return $f;
     $g = naval_json_ler(naval_ficheiro_funcoes());
-    $f = $g ? (array) $g : naval_funcoes_iniciais();
+    // as funções gravadas mantêm-se como estão; as do sistema acrescentadas depois (ex.: P-TES) juntam-se ao catálogo
+    $f = $g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais();
     return $f;
 }
 

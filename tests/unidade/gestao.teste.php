@@ -106,3 +106,50 @@ teste('dispensa de dois passos: por conta, com motivo e prazo (até 90 dias); nu
     verdade(!isset(naval_utilizadores()['josefa']['mfa_dispensa']), 'retirada');
     unlink($f);
 });
+
+teste('retirar dois passos com dispensa numa só operação: tudo ou nada; sem prazo, configura de novo na entrada', function () {
+    $f = naval_ficheiro_utilizadores();
+    @unlink($f);
+    $h = password_hash('x', PASSWORD_DEFAULT);
+    naval_gravar_utilizadores([
+        'chefe' => ['nome' => 'Chefe', 'perfil' => 'SADM', 'email' => 'chefe@naval.co.ao', 'senha' => $h, 'activo' => true, 'mfa' => 'AAAA'],
+        'josefa' => ['nome' => 'Josefa Bento', 'perfil' => 'DIR', 'email' => 'josefa@naval.co.ao', 'senha' => $h, 'activo' => true, 'mfa' => 'BBBB'],
+    ]);
+    $eu = ['login' => 'chefe', 'perfil' => 'SADM'];
+    $agora = time();
+    lanca(400, function () use ($eu, $agora) { naval_gestao_dois_passos('josefa', false, $eu, 'curto', 30, $agora); });
+    igual('BBBB', naval_utilizadores()['josefa']['mfa'] ?? null);   // nada mudou
+    $r = naval_gestao_dois_passos('josefa', false, $eu, 'Telemóvel avariado, em reparação', 7, $agora);
+    $u = naval_utilizadores()['josefa'];
+    verdade(!isset($u['mfa']), 'retirados');
+    igual(date('Y-m-d', $agora + 6 * 86400), $r['dispensa']['ate']);
+    verdade(!naval_mfa_inscricao_obrigatoria($u), 'com dispensa não pede para configurar');
+    // sem prazo: retira e volta a pedir na entrada seguinte
+    naval_gestao_dispensa_mfa('josefa', '', 0, $eu, $agora);
+    naval_gestao_dois_passos('josefa', true, $eu);
+    naval_gestao_dois_passos('josefa', false, $eu);
+    verdade(naval_mfa_inscricao_obrigatoria(naval_utilizadores()['josefa']), 'sem dispensa: configura de novo');
+    unlink($f);
+});
+
+teste('função Tesouraria: menor privilégio e separação de funções; junta-se a catálogos já gravados', function () {
+    $p = naval_funcoes_permissoes(['P-TES', 'C-CAIXA-LANCAR']);
+    igual('G', $p['caixa-marketing']);
+    igual('V', $p['multicaixa-tpa']);
+    foreach (['registo-cargas', 'stock-armazem', 'equipamentos', 'sap-exportar', 'relatorios', 'exportar-dados', 'excel-completo', 'conciliacao-fecho', 'caixa-aprovacao', 'caixa-aprovacao-final'] as $r) {
+        verdade(!isset($p[$r]), 'sem ' . $r);
+    }
+    igual(1, count(naval_funcoes_conflitos(['P-TES', 'C-CAIXA-APROVAR'])));
+    igual(1, count(naval_funcoes_conflitos(['P-TES', 'C-CAIXA-APROVAR-1'])));
+    $fx = naval_ficheiro_funcoes();
+    $tinha = is_file($fx) ? file_get_contents($fx) : null;
+    $sem = naval_funcoes_iniciais();
+    unset($sem['P-TES']);
+    $sem['P-FIN']['nome'] = 'Finanças (alterada)';
+    naval_json_gravar($fx, $sem);
+    $f = naval_funcoes(true);
+    verdade(isset($f['P-TES']), 'acrescentada ao catálogo gravado');
+    igual('Finanças (alterada)', $f['P-FIN']['nome']);
+    if ($tinha === null) unlink($fx); else file_put_contents($fx, $tinha);
+    naval_funcoes(true);
+});

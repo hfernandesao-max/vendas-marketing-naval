@@ -1,5 +1,21 @@
 ## 16-11-2026
 
+### Acessos: retirar os dois passos e dispensar numa só operação; nova função «Tesouraria»
+
+<!-- paginas: acessos -->
+<!-- tipo: impacto -->
+
+- **Retirar dois passos** num perfil que os exige abre logo a dispensa: motivo e prazo na mesma janela, gravados numa
+  só operação (ou fica tudo feito, ou nada). Em alternativa, «configurar de novo na próxima entrada» (por exemplo,
+  telemóvel novo). «Dispensar dois passos» fica só para as contas que nunca os configuraram, ou para renovar ou retirar
+  uma dispensa em vigor.
+- Nova função principal **Tesouraria** (menor privilégio, ISO/IEC 27001:2022 A.5.15, A.5.18 e A.8.2): início,
+  documentos de venda, relatório de vendas, clientes, cobranças e contas a receber (com exportação), e Multicaixa por
+  TPA só para consulta. Junta-se a «Lançar e validar o fecho de caixa». Sem logística, equipamentos, integrações,
+  inteligência de negócio nem exportações completas; exige dois passos (salvo dispensa).
+- Separação de funções (A.5.3): «Tesouraria» não se pode juntar às aprovações do fecho de caixa. As funções do sistema
+  acrescentadas em versões novas passam a aparecer nos catálogos já gravados, sem mexer nas funções alteradas.
+
 ### Versões: numeração sem falhas, classificação das alterações e revisão do código
 
 <!-- paginas: actualizacoes -->

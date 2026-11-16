@@ -1148,3 +1148,24 @@ p.aviso {
   color: var(--warn);
   font-size: 11.5px;
 }
+
+/* Acessos: opções ao retirar os dois passos (dispensar durante um prazo ou configurar de novo) */
+.ac-opcoes {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ac-opcoes legend {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.ac-opcoes label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.4;
+}
