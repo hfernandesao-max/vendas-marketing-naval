@@ -1,5 +1,13 @@
 ## 17-11-2026
 
+### Terminais TPA: a cadeia de custódia começa com o promotor que o terminal já tinha
+
+<!-- paginas: multicaixa-tpa -->
+<!-- tipo: correcao -->
+
+- Nos terminais registados antes da cadeia de custódia, o promotor que já tinham não ficava no histórico: ao mudar de
+  promotor, só aparecia o novo. Passa a entrar na cadeia, desde a data do registo do terminal, e a fechar na mudança.
+
 ### Terminais TPA: associar o promotor pela lista, situação, número de série e cadeia de custódia
 
 <!-- paginas: multicaixa-tpa -->
