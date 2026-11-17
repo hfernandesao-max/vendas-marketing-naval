@@ -1,3 +1,15 @@
+## 17-11-2026
+
+### Consolidado diário: o depósito fica na conta do banco
+
+<!-- paginas: relatorio-vendas -->
+<!-- tipo: correcao -->
+
+- Em «Bancos: Multicaixa e depósitos», o depósito (lacre) aparecia numa linha à parte, sem conta, mesmo quando o banco
+  só tem uma conta nos talões do TPA. Passa a ficar na linha dessa conta; só fica à parte quando o banco tem várias
+  contas ou nenhuma.
+- No PDF, o subtítulo passa a «Portal RTM · Comercial · Vendas» (dizia «Logística»).
+
 ## 16-11-2026
 
 ### Plano de cargas: a requisição manda na carga; matrícula, marca e modelo; motorista só pelo nome; capacidades de referência

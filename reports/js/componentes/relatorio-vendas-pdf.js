@@ -22,14 +22,21 @@ export async function relatorioVendasPdf(R, imprimir = false) {
     M = 14;
   const NOME = d.consolidado ? tp('Consolidado diário de vendas · Naval · RTM') : tp('Relatório de Vendas');
   doc.setProperties({ title: NOME + ' ' + R.numero, subject: NOME, creator: 'Portal RTM · Grupo Naval' });
-  let y = cabecalho(doc, img, NOME, R.numero, [
-    [tp('Dia'), dl(R.dia)],
-    [tp('Vendas RTM (líquidas)'), kz(r.vendas)],
-    [tp('Dinheiro'), kz(r.dinheiro)],
-    [tp('Multicaixa'), kz(r.multicaixa)],
-    [tp('Por receber'), kz(r.por_receber)],
-    [tp('Gerado'), dl(R.gerado_em.slice(0, 10)) + ' ' + R.gerado_em.slice(11, 16) + ' · ' + R.gerado_por],
-  ]);
+  let y = cabecalho(
+    doc,
+    img,
+    NOME,
+    R.numero,
+    [
+      [tp('Dia'), dl(R.dia)],
+      [tp('Vendas RTM (líquidas)'), kz(r.vendas)],
+      [tp('Dinheiro'), kz(r.dinheiro)],
+      [tp('Multicaixa'), kz(r.multicaixa)],
+      [tp('Por receber'), kz(r.por_receber)],
+      [tp('Gerado'), dl(R.gerado_em.slice(0, 10)) + ' ' + R.gerado_em.slice(11, 16) + ' · ' + R.gerado_por],
+    ],
+    'Portal RTM · Comercial · Vendas',
+  );
   y += 4;
   const titulo = (txt) => {
     if (y > doc.internal.pageSize.getHeight() - 40) {

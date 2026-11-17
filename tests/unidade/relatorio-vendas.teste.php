@@ -130,6 +130,12 @@ teste('relatório: cobranças por promotor face à caixa e ao TPA; congelado, co
     $comp = $f($dia, ['vendas' => [['rota' => '1001', 'documento' => 'FR A/9', 'total' => 300.0, 'nc' => false, 'pagamentos' => [['codigo' => 'CMP', 'valor' => 300.0]]]]]);
     $cc = naval_rv_consolidado($comp['vendas'], naval_rv_montar($dia, $comp, ['1001' => 'Ana']));
     igual([300.0, 300.0, 'confere'], [$cc['meios']['compensacao'], $cc['meios']['por_receber'], $cc['conferencias'][0]['estado']]);
+    // depósito (lacre) num banco com uma só conta nos talões: fica na linha dessa conta
+    $dd = $d0 = naval_rv_montar($dia, $f($dia), ['1001' => 'Ana']);
+    $dd['caixa']['tpa'] = [['rota' => '1001', 'banco' => 'BPC', 'conta' => '0040', 'valor' => 400.0]];
+    $dd['caixa']['saidas'] = [['tipo' => 'deposito_banco', 'banco' => 'BPC', 'lacre' => 'L1', 'valor' => 900.0], ['tipo' => 'deposito_banco', 'banco' => 'BAI', 'lacre' => 'L2', 'valor' => 100.0]];
+    $bb = naval_rv_consolidado($f($dia)['vendas'], $dd)['bancos'];
+    igual([['BAI', '', 100.0], ['BPC', '0040', 1300.0]], array_map(function ($b) { return [$b['banco'], $b['conta'], $b['total']]; }, $bb));
     verdade(strpos(naval_rv_email_html($r), 'Falta de dinheiro') !== false, 'o correio leva as excepções');
     verdade(isset($r['envio']['ok']), 'o envio do resumo fica registado na resposta (o relatório gera-se mesmo que o envio falhe)');
     lanca(409, function () use ($dia, $f) { naval_rv_gerar($dia, '', 'dir', $f($dia)); });   // segunda versão sem motivo

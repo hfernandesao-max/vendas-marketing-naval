@@ -4263,6 +4263,7 @@ export const TI = {
   'A carregar = requisição; total à saída = já na carrinha ({o}) + a carregar': 'ዝጽዓን = ሕቶ፤ ድምር ኣብ ምውጻእ = ኣብ መኪና ዘሎ ({o}) + ዝጽዓን',
   'Quantidade da requisição (não se altera no plano)': 'ብዝሒ ናይ ሕቶ (ኣብ መደብ ኣይቕየርን)',
   'Existências na carrinha + requisição (não se altera no plano)': 'ክምችት ኣብ መኪና + ሕቶ (ኣብ መደብ ኣይቕየርን)',
+  'Portal RTM · Comercial · Vendas': 'ፖርታል RTM · ንግዲ · መሸጣ',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
