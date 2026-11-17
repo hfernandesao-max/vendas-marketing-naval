@@ -304,6 +304,7 @@ function enviar(corpo, erro, ok) {
         return null;
       }
       D.caixa = x.caixa;
+      if (x.por_rever) D.por_rever = x.por_rever;
       ed = copia(x.caixa);
       marcarPorGravar('caixa', false);
       if (ok) toast(corpo.accao === 'gravar' && x.caixa.versao === versao ? t('Sem alterações: nada a gravar.') : t(ok), 4000);
@@ -324,6 +325,7 @@ const ACCOES = {
   reaberta: 'Reaberta para corrigir',
   deposito_aprovado: 'Depósito aprovado',
   deposito_aprovacao_retirada: 'Aprovação do depósito retirada',
+  revista: 'Revisto pela Tesouraria',
 };
 function rastreio(c) {
   const s = el('section', 'glass sec cx-sec cx-rastreio');
@@ -367,11 +369,13 @@ function rastreio(c) {
         ? t('{n} gravações · primeira {h}', { n: x.n, h: quando(x.primeira) })
         : x.accao === 'reaberta'
           ? x.motivo || ''
-          : x.accao === 'fechada' && x.diferenca
-            ? t('diferença {v}', { v: kz(x.diferenca) })
-            : x.lacre
-              ? [x.banco, t('lacre {l}', { l: x.lacre }), x.valor != null ? kz(x.valor) : ''].filter(Boolean).join(' · ')
-              : '';
+          : x.accao === 'revista'
+            ? x.nota || ''
+            : x.accao === 'fechada' && x.diferenca
+              ? t('diferença {v}', { v: kz(x.diferenca) })
+              : x.lacre
+                ? [x.banco, t('lacre {l}', { l: x.lacre }), x.valor != null ? kz(x.valor) : ''].filter(Boolean).join(' · ')
+                : '';
     tr.append(el('td', null, t(ACCOES[x.accao])), el('td', null, x.pors.map(quem).join(' · ')), el('td', null, quando(x.em)), el('td', 'note', nota));
     tb.append(tr);
   });
@@ -498,6 +502,25 @@ R['caixa-marketing'] = (pg) => {
   if (c.fechada_por) cab.append(el('span', 'note', t('validada por {p}', { p: quem(c.fechada_por) })));
   if (c.verificada_por) cab.append(el('span', 'note', t('1.º nível por {p}', { p: quem(c.verificada_por) })));
   if (c.aprovada_por) cab.append(el('span', 'note', t('aprovada por {p}', { p: quem(c.aprovada_por) })));
+  (c.revisoes || []).forEach((r) => cab.append(el('span', 'note', t('revista pela Tesouraria: {p}', { p: quem(r.por) }))));
+  // fechos validados por outra pessoa que a Tesouraria ainda não reviu: um atalho para cada dia
+  const porRever = (D.gere && D.por_rever) || [];
+  if (porRever.length) {
+    const s = el('section', 'glass sec cx-rever');
+    s.id = 'cx-por-rever';
+    s.append(
+      el('b', null, t('Fechos por rever pela Tesouraria ({n})', { n: n0(porRever.length) })),
+      el('p', 'note', t('Fechos validados por outra pessoa. Abra cada dia, confira e confirme a revisão; quem validou fica registado como está.')),
+    );
+    const l = el('div', 'cx-rever-dias');
+    porRever.slice(0, 40).forEach((d) => {
+      const b = botao(dl(d), d === dia ? 'sm' : 'ghost sm', () => mudarDia(d));
+      if (d === dia) b.setAttribute('aria-current', 'date');
+      l.append(b);
+    });
+    s.append(l);
+    pg.append(s);
+  }
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
   pg.append(cab);
@@ -800,6 +823,38 @@ R['caixa-marketing'] = (pg) => {
             'Quem lança valida; aprova o superior de quem lança (1.º nível) e, por fim, o responsável máximo. Três pessoas diferentes (segregação de funções).',
           );
   }
+  // revisão pela Tesouraria: um fecho validado por outra pessoa (ex.: antes de a tesoureira ter conta) é confirmado
+  // por quem lança a caixa; as assinaturas que lá estão não mudam, a revisão acrescenta-se ao registo
+  const revi = (c.revisoes || []).some((r) => r.por === D.eu);
+  if (D.gere && c.estado !== 'aberta' && c.fechada_por !== D.eu && !revi)
+    acc.append(
+      botao(t('Confirmar a revisão (Tesouraria)'), null, () =>
+        janela(
+          t('Confirmar a revisão do fecho de {d}?', { d: dl(dia) }),
+          t(
+            'Confirma que conferiu este fecho, validado por {p}. A validação de {p} fica como está; a sua revisão acrescenta-se ao registo, com o seu nome, a data e a hora.',
+            { p: quem(c.fechada_por) },
+          ),
+          (b, ft, fechar) => {
+            const m = el('textarea');
+            m.rows = 2;
+            m.maxLength = 300;
+            m.placeholder = t('Nota (opcional)');
+            m.setAttribute('aria-label', t('Nota da revisão'));
+            const e2 = msgErro();
+            b.append(m, e2);
+            ft.append(
+              botao(t('Cancelar'), 'ghost', fechar),
+              botao(t('Confirmar a revisão'), null, () =>
+                enviar({ accao: 'rever', nota: m.value }, e2, 'Revisão registada.').then((x) => {
+                  if (x) fechar();
+                }),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   // depois de validado: o fecho em PDF (relatório de caixa do dia, com as assinaturas e o código de verificação)
   if (c.estado !== 'aberta') {
     const pdf = botao(t('PDF do fecho de caixa'), 'ghost', () => {

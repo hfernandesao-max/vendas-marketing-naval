@@ -4347,6 +4347,19 @@ export const EN = {
   'Portal RTM · Comercial · Vendas': 'RTM Portal · Commercial · Sales',
   'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte':
     'opening − sold + Pinguim BO transport notes and warehouse exits registered before the cut-off',
+  'revista pela Tesouraria: {p}': 'reviewed by Treasury: {p}',
+  'Fechos por rever pela Tesouraria ({n})': 'Closings to be reviewed by Treasury ({n})',
+  'Fechos validados por outra pessoa. Abra cada dia, confira e confirme a revisão; quem validou fica registado como está.':
+    'Closings validated by someone else. Open each day, check it and confirm the review; whoever validated it stays on record as is.',
+  'Confirmar a revisão (Tesouraria)': 'Confirm the review (Treasury)',
+  'Confirmar a revisão do fecho de {d}?': 'Confirm the review of the {d} closing?',
+  'Confirma que conferiu este fecho, validado por {p}. A validação de {p} fica como está; a sua revisão acrescenta-se ao registo, com o seu nome, a data e a hora.':
+    'Confirm that you have checked this closing, validated by {p}. The validation by {p} stays as is; your review is added to the record with your name, date and time.',
+  'Nota (opcional)': 'Note (optional)',
+  'Nota da revisão': 'Review note',
+  'Confirmar a revisão': 'Confirm the review',
+  'Revisto pela Tesouraria': 'Reviewed by Treasury',
+  'Revisão registada.': 'Review recorded.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

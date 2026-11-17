@@ -1,5 +1,20 @@
 ## 17-11-2026
 
+### Fecho de caixa: revisão pela Tesouraria dos fechos validados por outra pessoa
+
+<!-- paginas: caixa-marketing -->
+<!-- tipo: funcionalidade -->
+
+- Os fechos de caixa validados por outra pessoa (por exemplo, os lançados antes de a tesoureira ter conta no portal)
+  passam a poder ser **revistos pela Tesouraria**: botão «Confirmar a revisão (Tesouraria)», com uma nota opcional.
+- Boa prática de controlo interno e de auditoria (ISO/IEC 27001:2022 A.8.15; COSO): **as assinaturas registadas nunca se
+  reescrevem**. Quem validou e quem aprovou ficam como estão; a revisão acrescenta-se, com o nome, a data e a hora, no
+  cabeçalho, na rastreabilidade das assinaturas e no PDF. Não muda valores, estado nem aprovações (vale também numa caixa
+  já aprovada).
+- Uma revisão por pessoa e por dia; quem validou o fecho não o revê; uma caixa aberta valida-se (não se revê).
+- No topo da folha de caixa, «Fechos por rever pela Tesouraria (N)», com um atalho para cada dia (últimos 120 dias).
+- Só quem lança a caixa («Lançar e validar o fecho de caixa») revê.
+
 ### Conciliação das carrinhas: entradas e saídas lidas das linhas dos documentos do Pinguim BO (DOCMOVDETAIL), com a hora
 
 <!-- paginas: conciliacao-carrinha -->
