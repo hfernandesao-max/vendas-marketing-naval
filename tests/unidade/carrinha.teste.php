@@ -198,3 +198,35 @@ teste('corte do dia: a carga para o dia seguinte não entra na contagem (fotogra
     // conciliação já aprovada sem corte gravado: fica como foi aprovada
     igual(false, isset(naval_carr_base($data, '1005', $r, ['estado' => 'aprovada'])['corte']));
 });
+
+teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e saída de armazém antes do corte contam', function () {
+    // rota 1005 a 16-11-2026: GTC às 08:54 (+15 sabão verde, +15 sabão castanho), SA às 11:39 (−12 sabão branco),
+    // GTC às 16:00:33 (+200 fraldas, para o dia seguinte); contados 22, 22 e 0
+    $rows = [
+        ['ROTA' => '1005', 'CODIGO' => '10000292', 'ANTES' => 1, 'ENTRADAS' => 15.0, 'SAIDAS' => 0.0],
+        ['ROTA' => '1005', 'CODIGO' => '10000293', 'ANTES' => 1, 'ENTRADAS' => 15.0, 'SAIDAS' => 0.0],
+        ['ROTA' => '1005', 'CODIGO' => '10000382', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 12.0],
+        ['ROTA' => '1005', 'CODIGO' => '10000332', 'ANTES' => 0, 'ENTRADAS' => 200.0, 'SAIDAS' => 0.0],
+        ['ROTA' => '1000', 'CODIGO' => '10000382', 'ANTES' => 1, 'ENTRADAS' => 12.0, 'SAIDAS' => 0.0],   // armazém principal: não é carrinha
+    ];
+    $mov = naval_carr_movimentos_agrupar($rows, ['1005', '1006']);
+    igual(['1005'], array_map('strval', array_keys($mov)));
+    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0], $mov['1005']['10000332']);
+    $r = ['s0' => ['10000292' => ['n' => 'Sabão verde', 'q' => 7.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 7.0], '10000382' => ['n' => 'Sabão branco', 'q' => 12.0],
+        '10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
+        's1' => ['10000292' => ['n' => 'Sabão verde', 'q' => 22.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 22.0], '10000332' => ['n' => 'Fraldas', 'q' => 237.0]],
+        'v' => ['10000332' => ['n' => 'Fraldas', 'u' => 'CX', 'q' => 27.0, 't' => 405000.0]], 'mov' => $mov['1005']];
+    $data = date('Y-m-d', time() - 3 * 86400);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
+    $c = naval_carr_stock_corte($data, '1005', $r, '16:00');
+    igual(['documentos', 22.0, 22.0, 0.0, 37.0], [$c['origem'], $c['q']['10000292'], $c['q']['10000293'], $c['q']['10000382'], $c['q']['10000332']]);
+    $l = naval_carr_linhas($r + ['corte' => $c], ['10000292' => 22, '10000293' => 22, '10000382' => 0, '10000332' => 37]);
+    $por = array_column($l, null, 'codigo');
+    igual([15.0, 0.0, 0.0], [$por['10000292']['carregado'], $por['10000292']['devolvido'], $por['10000292']['diferenca']], 'carga de manhã');
+    igual([0.0, 12.0, 0.0], [$por['10000382']['carregado'], $por['10000382']['devolvido'], $por['10000382']['diferenca']], 'saída de armazém');
+    igual([0.0, 0.0, 200.0], [$por['10000332']['carregado'], $por['10000332']['diferenca'], $por['10000332']['depois_do_corte']], 'carga das 16:00 para amanhã');
+    igual(0, naval_carr_resumo($l, ['estado' => 'por_validar', 'contagem' => ['10000292' => 22]])['diferencas']);
+    // sem a separação por hora (dados antigos): a estimativa pelas cargas do portal, como antes
+    $r['mov'] = ['10000292' => ['c' => 15.0, 'd' => 0.0]];
+    igual('estimado', naval_carr_stock_corte($data, '1005', $r, '16:00')['origem']);
+});

@@ -174,8 +174,10 @@ function naval_carr_corte(string $data): ?string
 }
 
 /**
- * Stock de uma rota no corte, por artigo: {codigo: quantidade, …} e a origem — «fotografia» (tirada antes do corte) ou
- * «estimado» (sem fotografia: inicial − vendido + cargas confirmadas no portal antes do corte). Null antes do corte.
+ * Stock de uma rota no corte, por artigo: {codigo: quantidade, …} e a origem — «fotografia» (tirada antes do corte),
+ * «documentos» (sem fotografia: inicial − vendido + entradas − saídas dos documentos de stock do Pinguim BO registados
+ * antes do corte) ou «estimado» (sem os documentos: inicial − vendido + cargas confirmadas no portal antes do corte).
+ * Null antes do corte.
  */
 function naval_carr_stock_corte(string $data, string $rota, array $r, ?string $hora = null): ?array
 {
@@ -192,8 +194,21 @@ function naval_carr_stock_corte(string $data, string $rota, array $r, ?string $h
     $q = [];
     foreach ((array) ($r['s0'] ?? []) as $c => $x) $q[(string) $c] = (float) ($x['q'] ?? 0);
     foreach ((array) ($r['v'] ?? []) as $c => $x) $q[(string) $c] = ($q[(string) $c] ?? 0) - (float) ($x['q'] ?? 0);
+    $mov = $r['mov'] ?? null;
+    if (is_array($mov) && naval_carr_mov_com_hora($mov)) {
+        // com os documentos de stock do Pinguim BO e a hora de registo: entradas e saídas registadas antes do corte
+        foreach ($mov as $c => $x) $q[(string) $c] = ($q[(string) $c] ?? 0) + (float) ($x['ca'] ?? 0) - (float) ($x['da'] ?? 0);
+        return ['q' => $q, 'origem' => 'documentos', 'hora' => $hora];
+    }
     foreach (naval_carr_cargas_portal($data, $rota, $hora) as $c => $x) $q[(string) $c] = ($q[(string) $c] ?? 0) + $x;
     return ['q' => $q, 'origem' => 'estimado', 'hora' => $hora];
+}
+
+/** Os movimentos têm a separação antes/depois do corte (lidos dos documentos com a hora de registo)? */
+function naval_carr_mov_com_hora(array $mov): bool
+{
+    foreach ($mov as $x) return is_array($x) && array_key_exists('ca', $x);
+    return true;   // sem movimentos nenhuns no dia: nada entrou nem saiu antes do corte
 }
 
 /** Cargas confirmadas no portal para a rota no dia antes do corte: {codigo: quantidade entregue}. */
@@ -272,58 +287,61 @@ function naval_carr_vendido(array $artigos): array
 }
 
 /**
- * Entradas e saídas das carrinhas no dia, sem as vendas: {rota: {codigo: ['c' => carregado, 'd' => devolvido]}}.
- * Só se esta base de dados tiver o sinal de stock dos movimentos (DOCMOV.STOCK_SIGNAL ou DOCCONFIG.STOCK_SIGNAL);
- * caso contrário devolve null e o cálculo usa o saldo do dia.
+ * Entradas e saídas das carrinhas no dia, sem as vendas, lidas das linhas dos documentos de stock do Pinguim BO
+ * (DOCMOVDETAIL × DOCHEADER × DOCCONFIG.STOCK_SIGNAL: guias de transporte GTC +1, saídas de armazém SA −1, …), pela loja
+ * do documento (a carrinha): {rota: {codigo: ['c' => carregado, 'd' => devolvido, 'ca' => carregado antes do corte,
+ * 'da' => devolvido antes do corte]}}. A hora é a do registo do documento (CLOCK_DATE). null sem ligação ou se a
+ * consulta falhar (o cálculo usa então o saldo do dia).
  */
 function naval_carr_movimentos_sql(string $data): ?array
 {
     if (!naval_bd_configurada()) return null;
+    $corte = naval_carr_corte($data) ?? '23:59';
     try {
-        $col = [];
-        foreach (naval_bd_consultar("
-            SELECT UPPER(TABLE_NAME) AS T, UPPER(COLUMN_NAME) AS C
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = 'dbo' AND UPPER(TABLE_NAME) IN ('DOCMOV', 'DOCCONFIG', 'DOCHEADER')") as $r) {
-            $col[$r['T']][$r['C']] = true;
-        }
-        foreach (['WAREHOUSE_ID', 'PRODUCT_ID', 'QNT', 'DOCHEADER_ID'] as $c) if (empty($col['DOCMOV'][$c])) return null;
-        $sinal = !empty($col['DOCMOV']['STOCK_SIGNAL']) ? 'MV.STOCK_SIGNAL' : (!empty($col['DOCCONFIG']['STOCK_SIGNAL']) ? 'DC.STOCK_SIGNAL' : '');
-        if ($sinal === '') return null;
-        $apagado = (!empty($col['DOCMOV']['DELETED']) ? ' AND MV.DELETED = 0' : '') . (!empty($col['DOCHEADER']['DELETED']) ? ' AND DH.DELETED = 0' : '');
         $rows = naval_bd_consultar("
-            SELECT E.CODE AS COD_ARMAZEM, E.DESCRIPTION AS ARMAZEM, P.CODE AS CODIGO,
-                   CAST(SUM(CASE WHEN MV.QNT * $sinal > 0 THEN ABS(MV.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
-                   CAST(SUM(CASE WHEN MV.QNT * $sinal < 0 THEN ABS(MV.QNT) ELSE 0 END) AS FLOAT) AS SAIDAS
-            FROM DOCMOV MV
-            INNER JOIN DOCHEADER DH ON DH.ID = MV.DOCHEADER_ID
+            SELECT COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)) AS ROTA,
+                   LTRIM(RTRIM(DMD.PRODUCT_CODE)) AS CODIGO,
+                   CAST(CASE WHEN COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) < :limite THEN 1 ELSE 0 END AS INT) AS ANTES,
+                   CAST(SUM(CASE WHEN DMD.QNT * DC.STOCK_SIGNAL > 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
+                   CAST(SUM(CASE WHEN DMD.QNT * DC.STOCK_SIGNAL < 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS SAIDAS
+            FROM DOCMOVDETAIL DMD
+            INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
-            INNER JOIN ENTITY E ON E.ID = MV.WAREHOUSE_ID
-            INNER JOIN PRODUCT P ON P.ID = MV.PRODUCT_ID
-            WHERE DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate
+            LEFT JOIN STORE S ON S.ID = DH.STORE_ID
+            WHERE DMD.DELETED = 0 AND DH.DELETED = 0
+              AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate
               AND COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0
-              AND (E.CODE LIKE '100010%' OR E.DESCRIPTION LIKE '%10[0-9][0-9]%')" . $apagado . "
-            GROUP BY E.CODE, E.DESCRIPTION, P.CODE", [':de' => naval_bd_data($data), ':ate' => naval_bd_data($data)]);
+              AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0
+            GROUP BY COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)), LTRIM(RTRIM(DMD.PRODUCT_CODE)),
+                     CASE WHEN COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) < :limite2 THEN 1 ELSE 0 END",
+            [':de' => naval_bd_data($data), ':ate' => naval_bd_data($data), ':limite' => $data . ' ' . $corte . ':00', ':limite2' => $data . ' ' . $corte . ':00']);
     } catch (Throwable $e) {
         error_log('[carrinha movimentos SQL] ' . $e->getMessage());
         return null;
     }
-    $out = [];
-    foreach ($rows as $r) {
-        $rota = naval_carr_rota_armazem((string) $r['COD_ARMAZEM'], (string) $r['ARMAZEM']);
-        if ($rota === '') continue;
-        $c = trim((string) $r['CODIGO']);
-        $out[$rota][$c] = ['c' => round((float) $r['ENTRADAS'], 3), 'd' => round((float) $r['SAIDAS'], 3)];
-    }
-    return $out;
+    return naval_carr_movimentos_agrupar($rows, array_keys(naval_promotores()));
 }
 
-/** Rota da carrinha a partir do armazém (100010NN ou «… 10NN»), como no stock. */
-function naval_carr_rota_armazem(string $cod, string $nome): string
+/** Agrupa as linhas da consulta dos movimentos por rota (só as rotas conhecidas) e artigo (função pura, testável). */
+function naval_carr_movimentos_agrupar(array $rows, array $rotas): array
 {
-    if (preg_match('/^100010(\d{2})$/', trim($cod), $m)) return '10' . $m[1];
-    if (preg_match('/10\d{2}/', $nome, $m)) return $m[0];
-    return '';
+    $rotas = array_flip(array_map('strval', $rotas));
+    $out = [];
+    foreach ($rows as $r) {
+        $rota = trim((string) $r['ROTA']);
+        if (!preg_match('/^\d{4}$/', $rota) || ($rotas && !isset($rotas[$rota]))) continue;
+        $c = trim((string) $r['CODIGO']);
+        if ($c === '') continue;
+        $x = $out[$rota][$c] ?? ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0];
+        $x['c'] = round($x['c'] + (float) $r['ENTRADAS'], 3);
+        $x['d'] = round($x['d'] + (float) $r['SAIDAS'], 3);
+        if ((int) $r['ANTES'] === 1) {
+            $x['ca'] = round($x['ca'] + (float) $r['ENTRADAS'], 3);
+            $x['da'] = round($x['da'] + (float) $r['SAIDAS'], 3);
+        }
+        $out[$rota][$c] = $x;
+    }
+    return $out;
 }
 
 /**
@@ -401,12 +419,18 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         $alertas = [];
         $corte = isset($r['corte']['q']) ? (array) $r['corte']['q'] : null;
         $depois = 0.0;
+        $deDocs = false;
         if ($corte !== null) {
             // até ao corte: o que entrou e saiu até à contagem; o resto (carga do dia seguinte, devolução) fica de fora
             $noCorte = (float) ($corte[$c] ?? 0);
             $saldo = $noCorte - $ini + $ven;
             $car = max(0.0, $saldo);
             $dev = max(0.0, -$saldo);
+            if (is_array($mov) && naval_carr_mov_com_hora($mov) && ($r['corte']['origem'] ?? '') === 'documentos') {
+                $car = (float) ($mov[$c]['ca'] ?? 0);   // carregado e devolvido até ao corte, documento a documento
+                $dev = (float) ($mov[$c]['da'] ?? 0);
+                $deDocs = true;
+            }
             $esperado = $noCorte;
             $depois = round($fim - $noCorte, 3);
         } elseif (is_array($mov)) {
@@ -432,7 +456,8 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         // anterior retirado ou corrigido no Pinguim BO). Sem alertas e sem contagem feita, não entra na conciliação.
         $zero = function (float $x): bool { return abs($x) <= NAVAL_CARR_TOLERANCIA; };
         // (com o corte, a carga só para amanhã também fica de fora: não há nada dela para contar hoje)
-        if (!$alertas && $zero($esperado) && ($corte !== null || $zero($fim)) && $zero($ven) && !$contado && $zero($pos)) continue;
+        // (um artigo com documento de entrada ou saída antes do corte fica, para se ver o movimento: ex. devolução ao armazém)
+        if (!$alertas && $zero($esperado) && ($corte !== null || $zero($fim)) && $zero($ven) && !$contado && $zero($pos) && !($deDocs && ($car > 0 || $dev > 0))) continue;
         $out[] = [
             'codigo' => $c,
             'artigo' => (string) ($v[$c]['n'] ?? $s1[$c]['n'] ?? $s0[$c]['n'] ?? $c),

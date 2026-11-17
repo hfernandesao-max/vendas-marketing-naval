@@ -4345,6 +4345,8 @@ export const EN = {
   'Quantidade da requisição (não se altera no plano)': 'Requisition quantity (cannot be changed in the plan)',
   'Existências na carrinha + requisição (não se altera no plano)': 'Van stock + requisition (cannot be changed in the plan)',
   'Portal RTM · Comercial · Vendas': 'RTM Portal · Commercial · Sales',
+  'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte':
+    'opening − sold + Pinguim BO transport notes and warehouse exits registered before the cut-off',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

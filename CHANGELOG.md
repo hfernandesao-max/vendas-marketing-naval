@@ -1,5 +1,21 @@
 ## 17-11-2026
 
+### Conciliação das carrinhas: entradas e saídas lidas das linhas dos documentos do Pinguim BO (DOCMOVDETAIL), com a hora
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: correcao -->
+
+- As cargas (guias de transporte GTC) e as devoluções (saídas de armazém SA) não eram lidas: a consulta procurava as
+  linhas na tabela DOCMOV, que não tem a ligação ao documento. Passa a ler as linhas de **DOCMOVDETAIL**, com o sinal de
+  stock do tipo de documento e a **hora de registo** de cada documento.
+- O **stock no corte** (16:00), quando não há fotografia, passa a ser inicial − vendido + entradas − saídas dos
+  documentos registados **antes do corte** (antes só contava as cargas confirmadas no portal). As colunas «Carregado» e
+  «Devolvido» mostram esses documentos; o que foi registado depois do corte fica em «Carregado depois do corte».
+- Exemplo (rota 1005, 16-11-2026): a carga das 08:54 (+15 sabão verde, +15 sabão castanho) e a saída de armazém das
+  11:39 (−12 sabão branco) passam a contar; as diferenças de +15, +15 e −12 desaparecem.
+- As contagens já feitas mantêm os números com que foram contadas: para recalcular uma contagem por validar, use
+  «Recontar».
+
 ### Consolidado diário: o depósito fica na conta do banco
 
 <!-- paginas: relatorio-vendas -->
