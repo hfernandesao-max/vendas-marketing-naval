@@ -139,7 +139,15 @@ export async function relatorioVendasPdf(R, imprimir = false) {
     );
     if (c.excepcoes.length) {
       titulo(tp('Excepções a explicar ({n})', { n: n0(c.excepcoes.length) }));
-      const TIPO = { caixa: 'Caixa', dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', stock: 'Stock', por_receber: 'Por receber' };
+      const TIPO = {
+        caixa: 'Caixa',
+        dinheiro: 'Dinheiro',
+        multicaixa: 'Multicaixa',
+        forma_invalida: 'Forma de pagamento',
+        banco_diferente: 'Banco do TPA',
+        stock: 'Stock',
+        por_receber: 'Por receber',
+      };
       tabelaPdf(
         [tp('Tipo'), tp('Promotor'), tp('Detalhe'), tp('Valor'), tp('Explicação')],
         c.excepcoes.map((x) => [

@@ -4,7 +4,7 @@
 // quem recebe o resumo de fim de dia. Servidor: nucleo/api/v1/multicaixa-tpa.php e nucleo/servicos/tpa.php.
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
-import { pill, tiles } from '../componentes/blocos.js';
+import { pill, tabela as tabelaB, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { dl, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -395,6 +395,415 @@ function terminais(pg) {
   pg.append(s);
 }
 
+// Formas de pagamento: tabela das formas válidas no RTM (lista branca) e reconciliação por dia e promotor — vendas do
+// Pinguim BO por forma × dinheiro entregue na caixa e talões do TPA (o mapa «Rtm sales reconciliation», agora da base
+// de dados). Servidor: nucleo/servicos/formas-pagamento.php.
+let F = null;
+let chaveF = '';
+let aLerF = false;
+function lerFormas(forcar) {
+  const k = de + '|' + ate;
+  if (aLerF || (!forcar && F && chaveF === k)) return;
+  aLerF = true;
+  apiJson('multicaixa-tpa?formas=1&de=' + de + '&ate=' + ate).then((d) => {
+    aLerF = false;
+    chaveF = k;
+    F = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler os dados.') };
+    if (atual === 'multicaixa-tpa') draw();
+  });
+}
+const FORMA = { numerario: 'Numerário', multicaixa: 'Multicaixa' };
+const TIPO_FP = {
+  forma_invalida: 'Forma de pagamento não válida',
+  banco_diferente: 'Multicaixa de outro banco',
+  provavel_troca: 'Provável numerário registado como Multicaixa',
+  tpa_outra_empresa: 'TPA de outra empresa',
+};
+const ESTADO_CORR = {
+  pendente: ['Por aprovar', 'p-warn'],
+  aprovada: ['Aprovada', 'p-ok'],
+  recusada: ['Recusada', 'p-mut'],
+  anulada: ['Anulada', 'p-mut'],
+};
+const pillCorr = (e) => pill(t((ESTADO_CORR[e] || [e])[0]), (ESTADO_CORR[e] || [0, 'p-mut'])[1]);
+const formasTxt = (x) =>
+  [
+    x.numerario ? t('Numerário') + ' ' + kz(x.numerario) : '',
+    x.multicaixa ? t('Multicaixa') + ' ' + kz(x.multicaixa) : '',
+    x.invalida ? t('sem forma válida') + ' ' + kz(x.invalida) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ') || '—';
+
+// Correcção da forma de pagamento de um dia e promotor: documento a documento, com justificação e evidência. O
+// documento do Pinguim BO não muda; a correcção só conta depois de aprovada por outra pessoa.
+function abrirCorrecao(linha) {
+  janela(
+    t('Corrigir as formas de pagamento · {p} · {d}', { p: prom(linha.rota), d: dl(linha.dia) }),
+    t(
+      'Indique, documento a documento, o que se recebeu de facto. O documento do Pinguim BO não muda: a correcção fica registada com a justificação e só conta nos relatórios depois de aprovada por outra pessoa (1.º nível de aprovação da caixa).',
+    ),
+    (b, ft, fechar) => {
+      const dlg = b.closest('dialog');
+      if (dlg) dlg.classList.add('dlg-largo');
+      const corpo = el('div', 'fp-corr');
+      corpo.append(el('p', 'note', t('A carregar…')));
+      b.append(corpo);
+      const just = el('textarea');
+      just.rows = 3;
+      just.maxLength = 600;
+      just.placeholder = t(
+        'Ex.: o cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano. Confirmado com o dinheiro entregue na caixa e o talão do TPA do dia.',
+      );
+      just.setAttribute('aria-label', t('Justificação (obrigatória)'));
+      const evid = entrada('text', '', { maxLength: 200, placeholder: t('Ex.: talão de fecho do TPA 00444134, período 103; folha de caixa do dia') });
+      evid.setAttribute('aria-label', t('Evidência'));
+      const lj = el('label', 'campo');
+      lj.append(el('span', null, t('Justificação (obrigatória)')), just);
+      const le = el('label', 'campo');
+      le.append(el('span', null, t('Evidência')), evid);
+      const e2 = msgErro();
+      b.append(lj, le, e2);
+      const valores = [];
+      apiJson('multicaixa-tpa?formas_docs=1&dia=' + linha.dia + '&rota=' + encodeURIComponent(linha.rota)).then((d) => {
+        corpo.replaceChildren();
+        if (!d || !d.ok) {
+          corpo.append(el('p', 'note', t((d && d.erro) || 'Não foi possível ler os documentos.')));
+          return;
+        }
+        const linhas = d.documentos.map((doc) => {
+          const tr = el('tr');
+          const emVigor = (doc.correcoes || []).find((c) => c.estado === 'pendente' || c.estado === 'aprovada');
+          const alvo = doc.pinguim.total_pago > 0 ? doc.pinguim.total_pago : doc.total;
+          const base = emVigor || { numerario: doc.pinguim.numerario, multicaixa: doc.pinguim.multicaixa + (doc.pinguim.invalida || 0) };
+          const nu = entrada('number', base.numerario || '', { min: 0, step: '0.01', inputMode: 'decimal' });
+          const mc = entrada('number', base.multicaixa || '', { min: 0, step: '0.01', inputMode: 'decimal' });
+          nu.setAttribute('aria-label', t('Numerário do documento {d}', { d: doc.documento }));
+          mc.setAttribute('aria-label', t('Multicaixa do documento {d}', { d: doc.documento }));
+          const bloqueado = !doc.corrigivel || !!emVigor;
+          nu.disabled = mc.disabled = bloqueado;
+          // ao mudar um valor, o outro completa o total cobrado
+          nu.addEventListener('input', () => (mc.value = Math.max(0, Math.round((alvo - (+nu.value || 0)) * 100) / 100)));
+          mc.addEventListener('input', () => (nu.value = Math.max(0, Math.round((alvo - (+mc.value || 0)) * 100) / 100)));
+          if (!bloqueado) valores.push({ documento: doc.documento, nu, mc });
+          const tdN = el('td', 'n');
+          tdN.append(nu);
+          const tdM = el('td', 'n');
+          tdM.append(mc);
+          const estado = el('td');
+          if (emVigor) estado.append(pillCorr(emVigor.estado), el('span', 'note', ' ' + emVigor.id));
+          else if (!doc.corrigivel) estado.append(el('span', 'note', doc.nc ? t('nota de crédito') : t('não se corrige')));
+          tr.append(
+            el('td', null, doc.documento),
+            el('td', null, doc.hora || '—'),
+            el('td', 'n', kz(alvo)),
+            el('td', null, formasTxt(doc.pinguim)),
+            tdN,
+            tdM,
+            estado,
+          );
+          return tr;
+        });
+        corpo.append(
+          tabela([[t('Documento')], [t('Hora')], [t('Cobrado'), 1], [t('No Pinguim BO')], [t('Numerário'), 1], [t('Multicaixa'), 1], [t('Correcção')]], linhas),
+        );
+      });
+      ft.append(
+        botao(t('Cancelar'), 'ghost', fechar),
+        botao(t('Pedir a correcção'), null, () => {
+          const docs = valores.map((x) => ({ documento: x.documento, numerario: +x.nu.value || 0, multicaixa: +x.mc.value || 0 }));
+          postJson('multicaixa-tpa', { accao: 'corrigir', dia: linha.dia, rota: linha.rota, docs, justificacao: just.value, evidencia: evid.value }).then(
+            (x) => {
+              if (!x || !x.ok) {
+                e2.hidden = false;
+                e2.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+                return;
+              }
+              fechar();
+              toast(t('Correcção pedida: {n} documento(s). Fica por aprovar.', { n: x.correcoes.length }), 4000);
+              F = null;
+              draw();
+            },
+          );
+        }),
+      );
+    },
+  );
+}
+
+function decidirCorrecao(c, accao) {
+  const aprovar = accao === 'aprovar_correcao';
+  const titulo = { aprovar_correcao: 'Aprovar a correcção {id}?', recusar_correcao: 'Recusar a correcção {id}?', anular_correcao: 'Anular a correcção {id}?' }[
+    accao
+  ];
+  janela(
+    t(titulo, { id: c.id }),
+    t('{doc} · {d} · {p}: Pinguim BO {a} → corrigido {b}.', {
+      doc: c.documento,
+      d: dl(c.dia),
+      p: prom(c.rota),
+      a: formasTxt(c.pinguim),
+      b: formasTxt(c),
+    }),
+    (b, ft, fechar) => {
+      b.append(el('p', 'note', t('Justificação: {j}', { j: c.justificacao })));
+      if (c.evidencia) b.append(el('p', 'note', t('Evidência: {e}', { e: c.evidencia })));
+      const m = el('textarea');
+      m.rows = 2;
+      m.maxLength = 300;
+      m.setAttribute('aria-label', aprovar ? t('Nota (opcional)') : t('Motivo (obrigatório)'));
+      m.placeholder = aprovar ? t('Nota (opcional)') : t('Motivo (obrigatório)');
+      const e2 = msgErro();
+      b.append(m, e2);
+      ft.append(
+        botao(t('Cancelar'), 'ghost', fechar),
+        botao(t({ aprovar_correcao: 'Aprovar', recusar_correcao: 'Recusar', anular_correcao: 'Anular' }[accao]), aprovar ? null : 'perigo', () =>
+          postJson('multicaixa-tpa', { accao, id: c.id, motivo: m.value }).then((x) => {
+            if (!x || !x.ok) {
+              e2.hidden = false;
+              e2.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+              return;
+            }
+            fechar();
+            F = null;
+            draw();
+          }),
+        ),
+      );
+    },
+  );
+}
+
+function correcoes(pg) {
+  const lista = F.correcoes || [];
+  const pend = lista.filter((c) => c.estado === 'pendente').length;
+  pg.append(
+    tabelaB({
+      id: 'fp-corr',
+      titulo: t('Correcções da forma de pagamento ({n} por aprovar)', { n: n0(pend) }),
+      nota: t(
+        'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa (1.º nível de aprovação da caixa). Só as aprovadas contam; nada se apaga.',
+      ),
+      rows: lista.map((c, i) => ({
+        ...c,
+        ordem: (c.estado === 'pendente' ? 0 : 1) * 10000 + i,
+        quem: prom(c.rota),
+        de_txt: formasTxt(c.pinguim),
+        para_txt: formasTxt(c),
+        estado_t: t((ESTADO_CORR[c.estado] || [c.estado])[0]),
+      })),
+      sort: 'ordem',
+      dir: 1,
+      cols: [
+        { key: 'id', label: t('Correcção'), p: 0 },
+        { key: 'dia', label: t('Dia'), render: (v) => dl(v), p: 1 },
+        { key: 'quem', label: t('Promotor'), p: 1 },
+        { key: 'documento', label: t('Documento'), p: 0 },
+        { key: 'de_txt', label: t('No Pinguim BO'), wrap: true, p: 2 },
+        { key: 'para_txt', label: t('Corrigido'), wrap: true, p: 0 },
+        { key: 'justificacao', label: t('Justificação'), wrap: true, p: 2 },
+        { key: 'pedido_por', label: t('Pedido por'), p: 3 },
+        {
+          key: 'estado_t',
+          label: t('Estado'),
+          p: 0,
+          render: (v, c) => {
+            const w = el('span');
+            w.append(pillCorr(c.estado));
+            if (c.decidido_por) w.append(el('span', 'note', ' ' + c.decidido_por));
+            if (F.aprova_correcao && c.estado === 'pendente' && c.pedido_por !== F.eu)
+              w.append(
+                botao(t('Aprovar'), 'sm', () => decidirCorrecao(c, 'aprovar_correcao')),
+                botao(t('Recusar'), 'ghost sm', () => decidirCorrecao(c, 'recusar_correcao')),
+              );
+            if (F.aprova_correcao && c.estado === 'aprovada') w.append(botao(t('Anular'), 'ghost sm', () => decidirCorrecao(c, 'anular_correcao')));
+            return w;
+          },
+        },
+      ],
+    }),
+  );
+}
+function formas(pg) {
+  if (!F || chaveF !== de + '|' + ate) {
+    pg.append(el('div', 'glass empty', t('A carregar…')));
+    lerFormas();
+    return;
+  }
+  if (F.falhou) {
+    pg.append(el('div', 'glass empty', t(F.falhou)));
+    return;
+  }
+  const r = F.reconciliacao;
+  const tt = r.totais;
+  if (!r.pinguim_ligado) pg.append(el('div', 'glass note', t('Sem ligação ao Pinguim BO: só aparecem as folhas de caixa.')));
+  const nExc = (tipo) => r.excepcoes.filter((x) => x.tipo === tipo).length;
+  pg.append(
+    tiles([
+      { l: t('Numerário (Pinguim BO)'), v: kz(tt.numerario), s: t('entregue na caixa: {v}', { v: kz(tt.entregue) }) },
+      { l: t('Multicaixa (Pinguim BO)'), v: kz(tt.multicaixa), s: t('talões do TPA: {v}', { v: kz(tt.talaos) }) },
+      {
+        l: t('Forma de pagamento não válida'),
+        v: kz(tt.invalida),
+        s: t('{n} pagamento(s)', { n: nExc('forma_invalida') }),
+        cls: tt.invalida ? 'tile-alerta' : '',
+      },
+      {
+        l: t('Provável numerário registado como Multicaixa'),
+        v: t('{n} dia(s)', { n: nExc('provavel_troca') }),
+        s: t('Multicaixa de outro banco: {n}', { n: nExc('banco_diferente') }),
+        cls: nExc('provavel_troca') || nExc('banco_diferente') ? 'tile-alerta' : '',
+      },
+    ]),
+  );
+  if (r.excepcoes.length)
+    pg.append(
+      tabelaB({
+        id: 'fp-exc',
+        titulo: t('Excepções das formas de pagamento ({n})', { n: n0(r.excepcoes.length) }),
+        nota: t('O documento fiscal não se altera: a forma certa escolhe-se no telemóvel, na venda; a diferença explica-se na folha de caixa.'),
+        rows: r.excepcoes.map((x, i) => ({ ...x, ordem: i, tipo_t: t(TIPO_FP[x.tipo] || x.tipo), quem: prom(x.rota) })),
+        sort: 'ordem',
+        dir: 1,
+        cols: [
+          { key: 'dia', label: t('Dia'), render: (v) => dl(v), p: 0 },
+          { key: 'tipo_t', label: t('Excepção'), p: 0 },
+          { key: 'quem', label: t('Promotor'), p: 1 },
+          { key: 'documento', label: t('Documento'), p: 2 },
+          { key: 'detalhe', label: t('Detalhe'), wrap: true, p: 3 },
+          { key: 'valor', label: t('Valor'), type: 'kz', p: 0 },
+        ],
+      }),
+    );
+  const dif = (v) => (v == null ? '—' : el('span', Math.abs(v) >= 0.01 ? 'rv-dif' : null, kz(v)));
+  pg.append(
+    tabelaB({
+      id: 'fp-rec',
+      titulo: t('Reconciliação das vendas RTM por forma de pagamento'),
+      nota: t(
+        'Por dia e promotor: Numerário do Pinguim BO × dinheiro entregue na caixa; Multicaixa do Pinguim BO × talões do TPA. Banco do TPA da rota na tabela das formas de pagamento.',
+      ),
+      total: true,
+      rows: r.linhas.map((x) => ({ ...x, quem: prom(x.rota), banco: banco(x.banco_tpa) })),
+      sort: 'dia',
+      dir: 1,
+      cols: [
+        { key: 'dia', label: t('Dia'), render: (v) => dl(v), p: 0 },
+        { key: 'quem', label: t('Promotor'), p: 0 },
+        { key: 'banco', label: t('Banco do TPA'), p: 3 },
+        { key: 'documentos', label: t('Docs.'), type: 'n', sum: true, p: 4 },
+        { key: 'numerario', label: t('Numerário'), type: 'kz', sum: true, p: 1 },
+        { key: 'entregue', label: t('Entregue na caixa'), type: 'kz', sum: true, p: 2 },
+        { key: 'dif_numerario', label: t('Dif. numerário'), type: 'kz', sum: true, p: 1, render: dif },
+        { key: 'multicaixa', label: t('Multicaixa'), type: 'kz', sum: true, p: 1 },
+        { key: 'talaos', label: t('Talões do TPA'), type: 'kz', sum: true, p: 2 },
+        { key: 'dif_multicaixa', label: t('Dif. Multicaixa'), type: 'kz', sum: true, p: 1, render: dif },
+        { key: 'invalida', label: t('Forma não válida'), type: 'kz', sum: true, p: 2 },
+        { key: 'por_receber', label: t('Por receber'), type: 'kz', sum: true, p: 3 },
+        { key: 'total', label: t('Total'), type: 'kz', sum: true, p: 0 },
+        { key: 'corrigidos', label: t('Corrigidos'), type: 'n', sum: true, p: 3 },
+        ...(F.pede_correcao
+          ? [{ key: 'corrigir', label: t('Correcção'), p: 0, render: (v, x) => botao(t('Corrigir'), 'ghost sm', () => abrirCorrecao(x)) }]
+          : []),
+      ],
+    }),
+  );
+  correcoes(pg);
+  configFormas(pg);
+}
+
+// tabela das formas de pagamento válidas e banco do TPA de cada rota (quem gere o Multicaixa por TPA altera)
+function configFormas(pg) {
+  const cfg = F.formas;
+  const codigos = Object.entries(cfg.codigos).map(([codigo, x]) => ({ codigo, forma: x.forma, banco: x.banco || '' }));
+  const rotas = { ...cfg.rotas };
+  const efectivos = cfg.bancos_rotas || {};
+  Object.keys(D && D.promotores ? D.promotores : F.promotores || {}).forEach((r) => (rotas[r] = rotas[r] || ''));
+  const s = seccao(
+    t('Formas de pagamento válidas no RTM'),
+    t(
+      'Lista branca: só os códigos do Pinguim BO desta tabela contam como Numerário ou Multicaixa; qualquer outro código, ou um documento sem forma de pagamento, é uma excepção. O banco do TPA de cada rota assinala o Multicaixa de outro banco.',
+    ),
+  );
+  if (cfg.alterado_por)
+    s.append(el('p', 'note', t('Alterado por {p} em {d}', { p: cfg.alterado_por, d: dl(cfg.alterado_em.slice(0, 10)) + ' ' + cfg.alterado_em.slice(11, 16) })));
+  const sel = (opcoes, val, rot) => {
+    const x = el('select');
+    x.setAttribute('aria-label', rot);
+    opcoes.forEach(([k, txt]) => {
+      const o = el('option', null, txt);
+      o.value = k;
+      if (k === val) o.selected = true;
+      x.append(o);
+    });
+    x.disabled = !D.gere;
+    return x;
+  };
+  const bancos = [['', '—'], ...(F.bancos || []).map((b) => [b, banco(b)])];
+  const linhasC = codigos.map((c) => {
+    const tr = el('tr');
+    const fs = sel(
+      Object.keys(FORMA).map((k) => [k, t(FORMA[k])]),
+      c.forma,
+      t('Forma do código {c}', { c: c.codigo }),
+    );
+    const bs = sel(bancos, c.banco, t('Banco do código {c}', { c: c.codigo }));
+    fs.addEventListener('change', () => (c.forma = fs.value));
+    bs.addEventListener('change', () => (c.banco = bs.value));
+    const tdF = el('td');
+    tdF.append(fs);
+    const tdB = el('td');
+    tdB.append(bs);
+    tr.append(el('td', null, c.codigo), tdF, tdB);
+    return tr;
+  });
+  s.append(tabela([[t('Código no Pinguim BO')], [t('Forma')], [t('Banco')]], linhasC));
+  const novo = entrada('text', '', { maxLength: 10, placeholder: t('ex.: MCA') });
+  novo.setAttribute('aria-label', t('Novo código'));
+  const linhasR = Object.keys(rotas)
+    .sort()
+    .map((rt) => {
+      const tr = el('tr');
+      const bs = sel(bancos, rotas[rt], t('Banco do TPA da rota {r}', { r: rt }));
+      bs.addEventListener('change', () => (rotas[rt] = bs.value));
+      const tdB = el('td');
+      tdB.append(bs);
+      // o registo dos terminais manda: se a rota tem um TPA registado de outro banco, mostra-se o que está em vigor
+      if (efectivos[rt] && efectivos[rt] !== rotas[rt])
+        tdB.append(el('span', 'note', ' ' + t('em vigor pelo registo dos TPA: {b}', { b: banco(efectivos[rt]) })));
+      tr.append(el('td', null, prom(rt)), tdB);
+      return tr;
+    });
+  s.append(el('h3', null, t('Banco do TPA de cada rota')), tabela([[t('Rota')], [t('Banco do TPA')]], linhasR));
+  if (D.gere) {
+    const e = msgErro();
+    const lN = el('label', 'campo');
+    lN.append(el('span', null, t('Acrescentar código do Pinguim BO')), novo);
+    s.append(
+      lN,
+      e,
+      botao(t('Gravar as formas de pagamento'), null, () => {
+        const cod = {};
+        codigos.forEach((c) => (cod[c.codigo] = { forma: c.forma, banco: c.banco }));
+        const n = novo.value.trim().toUpperCase();
+        if (n) cod[n] = { forma: 'multicaixa', banco: '' };
+        postJson('multicaixa-tpa', { accao: 'formas', codigos: cod, rotas }).then((x) => {
+          if (!x || !x.ok) {
+            e.hidden = false;
+            e.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+            return;
+          }
+          e.hidden = true;
+          toast(t('Formas de pagamento gravadas.'), 2500);
+          F = null;
+          draw();
+        });
+      }),
+    );
+  }
+  pg.append(s);
+}
+
 function correio(pg) {
   const s = seccao(
     t('Resumo de fim de dia para o Financeiro'),
@@ -460,6 +869,7 @@ R['multicaixa-tpa'] = (pg) => {
   seps.setAttribute('aria-label', t('Vista'));
   [
     ['relatorio', t('Relatório')],
+    ['formas', t('Formas de pagamento')],
     ['terminais', t('Terminais (TPA)')],
     ['correio', t('Resumo por correio')],
   ].forEach(([id, nome]) => {
@@ -481,7 +891,8 @@ R['multicaixa-tpa'] = (pg) => {
     pg.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
-  if (vista === 'terminais') terminais(pg);
+  if (vista === 'formas') formas(pg);
+  else if (vista === 'terminais') terminais(pg);
   else if (vista === 'correio') correio(pg);
   else relatorio(pg);
 };

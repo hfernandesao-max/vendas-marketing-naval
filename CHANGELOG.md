@@ -1,5 +1,38 @@
 ## 17-11-2026
 
+### Formas de pagamento do RTM: lista das formas válidas, banco do TPA por rota e reconciliação por dia e promotor
+
+<!-- paginas: multicaixa-tpa, relatorio-vendas -->
+<!-- tipo: funcionalidade -->
+
+- **Formas de pagamento válidas no RTM** (Finanças › Multicaixa por TPA › Formas de pagamento): só **Numerário** e
+  **Multicaixa**, por lista branca dos códigos do Pinguim BO — NU (Numerário), MC (Multicaixa) e MCB (Multicaixa BPC).
+  Um código que não esteja na tabela, ou um documento sem forma de pagamento, é uma **excepção**; nunca se adivinha a
+  forma pelo nome. Um código novo (ex.: Multicaixa de outro banco) acrescenta-se na tabela, no portal.
+- **Banco do TPA de cada rota** (BPC: 1001 a 1007, 1009 e 1012; Atlântico: 1008, 1010 e 1011): o Multicaixa de outro banco
+  é assinalado (TPA de outro promotor ou forma mal escolhida).
+- **Reconciliação das vendas RTM por forma de pagamento**, por dia e promotor (o mapa «Rtm sales reconciliation», agora
+  lido da base de dados): Numerário do Pinguim BO × dinheiro entregue na caixa e Multicaixa do Pinguim BO × talões do
+  TPA, com as diferenças, as formas não válidas, o por receber e o total; Excel pela tabela.
+- **«Provável numerário registado como Multicaixa»**: quando a caixa recebeu mais dinheiro e o TPA menos do que o
+  Pinguim BO indica. O documento fiscal não se altera: a forma certa escolhe-se no telemóvel; a diferença explica-se na
+  folha de caixa.
+- **Consolidado diário**: nova conferência «Formas de pagamento válidas» e excepções «Forma de pagamento» e «Banco do
+  TPA».
+- **Correcção**: a conferência do Multicaixa por TPA só lia o código MC; passa a ler todos os códigos de Multicaixa da
+  tabela (MC, MCB…).
+- **Correcção da forma de pagamento, com justificação e aprovação** (quatro olhos): quando a forma registada na venda
+  não é a que se recebeu de facto, a Tesouraria corrige no portal, documento a documento («Corrigir» na
+  reconciliação), com a **justificação obrigatória** e a evidência (talão do TPA, folha de caixa); Numerário + Multicaixa
+  tem de dar o valor cobrado. Outra pessoa, do 1.º nível de aprovação da caixa, **aprova ou recusa** (com motivo); quem
+  pede não aprova. **O documento fiscal do Pinguim BO nunca se altera**: só a correcção aprovada conta na folha de caixa,
+  no Multicaixa por TPA, no consolidado e na reconciliação, sempre com a forma original ao lado. Uma correcção aprovada
+  anula-se com motivo; nada se apaga (ISO/IEC 27001:2022 A.5.3 e A.8.15; ISO 9001:2015 7.5.3; COSO).
+- **Banco do TPA por rota a partir do registo dos terminais**: quando a rota tem um TPA registado, manda o banco desse
+  TPA; a tabela das formas só completa as rotas sem terminal.
+- **TPA de outra empresa**: um talão de um TPA da Higitec (ou de outra empresa) numa venda RTM da Naval é assinalado — o
+  valor entra na conta da outra empresa e tem de ser acertado entre empresas.
+
 ### Fecho de caixa: revisão pela Tesouraria dos fechos validados por outra pessoa
 
 <!-- paginas: caixa-marketing -->

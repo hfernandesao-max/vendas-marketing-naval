@@ -120,7 +120,7 @@ teste('relatório: cobranças por promotor face à caixa e ao TPA; congelado, co
     igual([2, 1500.0, 200.0, 1300.0], [$c['vendas']['documentos'], $c['vendas']['brutas'], $c['vendas']['notas_credito'], $c['vendas']['liquidas']]);
     igual([600.0, 400.0, 500.0], [$c['meios']['dinheiro'], $c['meios']['multicaixa'], $c['meios']['por_receber']]);
     $conf = array_column($c['conferencias'], 'estado', 'id');
-    igual(['cobrancas' => 'confere', 'por_promotor' => 'confere', 'dinheiro' => 'diferenca', 'multicaixa' => 'confere', 'caixa' => 'confere', 'stock' => 'confere'], $conf);
+    igual(['cobrancas' => 'confere', 'por_promotor' => 'confere', 'dinheiro' => 'diferenca', 'multicaixa' => 'confere', 'caixa' => 'confere', 'stock' => 'confere', 'formas' => 'confere'], $conf);
     igual(-50.0, array_column($c['conferencias'], 'diferenca', 'id')['dinheiro'], 'entregue − recebido');
     igual([1, 'com_diferencas'], [$c['diferencas'], $c['estado']]);
     igual(['dinheiro', 'por_receber'], array_column($c['excepcoes'], 'tipo'), 'primeiro o dinheiro, depois o crédito');

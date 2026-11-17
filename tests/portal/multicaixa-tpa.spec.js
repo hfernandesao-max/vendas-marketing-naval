@@ -172,3 +172,179 @@ test('folha de caixa com o registo dos TPA: talão de fecho com TPA (o da rota),
   expect(pedidos[0].tpa[0]).toMatchObject({ rota: '1001', tpa: '00444134', periodo: '104', operacoes: '2', valor: 20000 });
   expect(erros).toEqual([]);
 });
+
+test('formas de pagamento: reconciliação por dia e promotor, excepções e tabela das formas válidas (lista branca)', async ({ page }) => {
+  const FORMAS = {
+    codigos: { MC: { forma: 'multicaixa', banco: '' }, MCB: { forma: 'multicaixa', banco: 'BPC' }, NU: { forma: 'numerario', banco: '' } },
+    rotas: { 1001: 'BPC', 1002: 'ATLANTICO' },
+    alterado_por: '',
+    alterado_em: '',
+  };
+  const REC = {
+    pinguim_ligado: true,
+    linhas: [
+      {
+        dia: '2026-11-13',
+        rota: '1001',
+        promotor: 'Andrea Santos',
+        banco_tpa: 'BPC',
+        documentos: 3,
+        numerario: 0,
+        multicaixa: 795800,
+        invalida: 0,
+        por_receber: 0,
+        total: 795800,
+        entregue: 577700,
+        talaos: 218100,
+        dif_numerario: 577700,
+        dif_multicaixa: -577700,
+        provavel_troca: 577700,
+      },
+      {
+        dia: '2026-11-13',
+        rota: '1002',
+        promotor: 'Bruno Miguel',
+        banco_tpa: 'ATLANTICO',
+        documentos: 1,
+        numerario: 0,
+        multicaixa: 880000,
+        invalida: 780000,
+        por_receber: 0,
+        total: 1660000,
+        entregue: null,
+        talaos: null,
+        dif_numerario: null,
+        dif_multicaixa: null,
+        provavel_troca: 0,
+      },
+    ],
+    excepcoes: [
+      {
+        tipo: 'forma_invalida',
+        dia: '2026-11-13',
+        rota: '1002',
+        promotor: 'Bruno Miguel',
+        documento: 'FR A/3',
+        valor: 780000,
+        detalhe: 'Sem forma de pagamento no Pinguim BO.',
+      },
+      {
+        tipo: 'provavel_troca',
+        dia: '2026-11-13',
+        rota: '1001',
+        promotor: 'Andrea Santos',
+        documento: '',
+        valor: 577700,
+        detalhe: 'Provável numerário registado como Multicaixa.',
+      },
+    ],
+    totais: { documentos: 4, numerario: 0, multicaixa: 1675800, invalida: 780000, por_receber: 0, total: 2455800, entregue: 577700, talaos: 218100 },
+  };
+  const gravados = [];
+  let leituras = 0;
+  await page.route('**/v1/multicaixa-tpa**', (r) => {
+    const req = r.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      gravados.push(b);
+      if (b.accao === 'corrigir') return r.fulfill({ json: { ok: true, correcoes: [{ id: 'FP-2026-00008' }] } });
+      if (b.accao === 'aprovar_correcao') return r.fulfill({ json: { ok: true, correcao: { id: b.id, estado: 'aprovada' } } });
+      return r.fulfill({ json: { ok: true, formas: FORMAS } });
+    }
+    const base = {
+      ok: true,
+      gere: true,
+      terminais: TERMINAIS,
+      empresas: ['NAVAL'],
+      bancos: ['BPC', 'ATLANTICO', 'BAI'],
+      promotores: { 1001: 'Andrea Santos', 1002: 'Bruno Miguel' },
+      destinatarios: [],
+    };
+    const q = new URL(req.url()).searchParams;
+    if (q.get('formas_docs') === '1')
+      return r.fulfill({
+        json: {
+          ok: true,
+          documentos: [
+            {
+              documento: 'FR A1001/10',
+              hora: '09:10',
+              cliente: 'Loja 1',
+              total: 795800,
+              nc: false,
+              corrigivel: true,
+              meio_pinguim: 'Multicaixa',
+              pinguim: { numerario: 0, multicaixa: 795800, invalida: 0, total_pago: 795800 },
+              correcoes: [],
+            },
+          ],
+        },
+      });
+    if (q.get('formas') === '1') leituras++;
+    if (q.get('formas') === '1')
+      return r.fulfill({
+        json: {
+          ...base,
+          formas: FORMAS,
+          reconciliacao: REC,
+          pede_correcao: true,
+          aprova_correcao: true,
+          eu: 'sara',
+          correcoes: [
+            {
+              id: 'FP-2026-00007',
+              dia: '2026-11-13',
+              rota: '1002',
+              documento: 'FR A1002/3',
+              estado: 'pendente',
+              pedido_por: 'josefa',
+              numerario: 780000,
+              multicaixa: 880000,
+              pinguim: { numerario: 0, multicaixa: 880000, invalida: 780000 },
+              justificacao: 'Pagou em dinheiro; sem forma no Pinguim BO.',
+              evidencia: '',
+              decidido_por: '',
+            },
+          ],
+        },
+      });
+    return r.fulfill({ json: { ...base, relatorio: RELATORIO } });
+  });
+  const erros = await abrir(page, '#multicaixa-tpa?de=2026-11-13&ate=2026-11-13');
+  await page.getByRole('button', { name: 'Formas de pagamento' }).click();
+  await expect(page.locator('#s-fp-exc tbody tr').first()).toContainText('Forma de pagamento não válida');
+  await expect(page.locator('#s-fp-exc')).toContainText('Provável numerário registado como Multicaixa');
+  await expect(page.locator('#s-fp-rec tbody tr').first()).toContainText('1001 · Andrea Santos');
+  await expect(page.locator('#s-fp-rec tbody tr').first().locator('.rv-dif').first()).toBeVisible();
+  // correcção de um dia e promotor: documento a documento, com justificação
+  await page.locator('#s-fp-rec tbody tr').first().getByRole('button', { name: 'Corrigir' }).click();
+  await page.getByLabel('Numerário do documento FR A1001/10').fill('577700');
+  await expect(page.getByLabel('Multicaixa do documento FR A1001/10')).toHaveValue('218100');
+  await page.getByLabel('Justificação (obrigatória)').fill('O cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano.');
+  await page.getByRole('button', { name: 'Pedir a correcção' }).click();
+  await expect.poll(() => gravados.length).toBe(1);
+  expect(gravados[0]).toMatchObject({
+    accao: 'corrigir',
+    dia: '2026-11-13',
+    rota: '1001',
+    docs: [{ documento: 'FR A1001/10', numerario: 577700, multicaixa: 218100 }],
+  });
+  // correcção pedida por outra pessoa: quem aprova vê Aprovar e Recusar
+  const corr = page.locator('#s-fp-corr tbody tr').first();
+  await expect(corr).toContainText('Por aprovar');
+  await corr.getByRole('button', { name: 'Aprovar' }).click();
+  await page.getByRole('button', { name: 'Aprovar', exact: true }).last().click();
+  await expect.poll(() => gravados.length).toBe(2);
+  expect(gravados[1]).toMatchObject({ accao: 'aprovar_correcao', id: 'FP-2026-00007' });
+  await expect.poll(() => leituras).toBe(3); // a página volta a ler depois de cada decisão
+  await expect(page.locator('#s-fp-corr')).toBeVisible();
+  // tabela das formas: muda o banco da rota 1002 e acrescenta um código
+  await page.getByLabel('Banco do TPA da rota 1002').selectOption('BAI');
+  await page.getByLabel('Novo código').fill('mca');
+  await page.getByRole('button', { name: 'Gravar as formas de pagamento' }).click();
+  await expect.poll(() => gravados.length).toBe(3);
+  expect(gravados[2]).toMatchObject({ accao: 'formas', rotas: { 1001: 'BPC', 1002: 'BAI' } });
+  expect(gravados[2].codigos.MCA).toEqual({ forma: 'multicaixa', banco: '' });
+  expect(gravados[2].codigos.NU).toEqual({ forma: 'numerario', banco: '' });
+  expect(erros).toEqual([]);
+});

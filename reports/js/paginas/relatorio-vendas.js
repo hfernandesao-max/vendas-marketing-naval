@@ -288,7 +288,15 @@ function relatorio(pg) {
 }
 
 const ESTADO_CONF = { confere: ['Confere', 'p-ok'], diferenca: ['Diferença', 'p-bad'], sem_dados: ['Sem dados', 'p-mut'] };
-const TIPO_EXC = { caixa: 'Caixa', dinheiro: 'Dinheiro', multicaixa: 'Multicaixa', stock: 'Stock', por_receber: 'Por receber' };
+const TIPO_EXC = {
+  caixa: 'Caixa',
+  dinheiro: 'Dinheiro',
+  multicaixa: 'Multicaixa',
+  forma_invalida: 'Forma de pagamento',
+  banco_diferente: 'Banco do TPA',
+  stock: 'Stock',
+  por_receber: 'Por receber',
+};
 
 // Consolidado (formato do SALES REPORT): resumo, conferências, excepções e bancos
 function consolidado(pg, d) {
