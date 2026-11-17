@@ -218,7 +218,12 @@ function tabelaRota(r) {
           'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.',
           {
             h: r.corte.hora,
-            o: t(r.corte.origem === 'fotografia' ? 'fotografia do stock antes do corte' : 'estimado: inicial − vendido + cargas confirmadas antes do corte'),
+            o: t(
+              {
+                fotografia: 'fotografia do stock antes do corte',
+                documentos: 'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte',
+              }[r.corte.origem] || 'estimado: inicial − vendido + cargas confirmadas antes do corte',
+            ),
           },
         ) + (depois > 0 ? ' ' + t('Carregado depois do corte: {q}.', { q: q(depois) }) : ''),
       ),

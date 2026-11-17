@@ -4264,6 +4264,8 @@ export const TI = {
   'Quantidade da requisição (não se altera no plano)': 'ብዝሒ ናይ ሕቶ (ኣብ መደብ ኣይቕየርን)',
   'Existências na carrinha + requisição (não se altera no plano)': 'ክምችት ኣብ መኪና + ሕቶ (ኣብ መደብ ኣይቕየርን)',
   'Portal RTM · Comercial · Vendas': 'ፖርታል RTM · ንግዲ · መሸጣ',
+  'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte':
+    'መጀመርታ − ዝተሸጠ + ናይ Pinguim BO ናይ መጓዓዝያ ሰነዳትን ካብ መኽዘን ምውጻእን ቅድሚ ግዜ ምቁራጽ ዝተመዝገቡ',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
