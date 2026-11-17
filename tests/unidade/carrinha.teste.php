@@ -77,6 +77,15 @@ teste('contar e aprovar: motivo obrigatório por diferença; «outro» exige not
         'precos' => ['A1' => 1000.0, 'B2' => 500.0], 'rotas' => ['1001' => $GLOBALS['cc_rota']]]);
     // naval_carr_dados(…, true) relê o Pinguim BO; sem base de dados usa a fotografia gravada
     $eu = ['login' => 'tec.armazem', 'nome' => 'Técnico', 'email' => ''];
+    // por contar: quem conta e quem só consulta não vêem as quantidades do sistema; a coordenação e o fecho vêem
+    $l = naval_carr_vista($data, null, false)['rotas'][0];
+    verdade($l['quantidades_ocultas'] && !$l['cega'], 'só consulta: oculto, sem formulário');
+    igual(['codigo', 'artigo', 'unidade', 'contado', 'alertas'], array_keys($l['linhas'][0]));
+    $l = naval_carr_vista($data, null, true)['rotas'][0];
+    verdade($l['quantidades_ocultas'] && $l['cega'], 'quem conta: às cegas');
+    $l = naval_carr_vista($data, null, false, false, true)['rotas'][0];
+    verdade(!$l['quantidades_ocultas'] && isset($l['linhas'][0]['esperado']), 'coordenação: vê o esperado');
+    verdade(naval_carr_vista($data, null, true, false, true)['rotas'][0]['quantidades_ocultas'], 'quem conta nunca vê, mesmo com outra função');
     lanca(400, function () use ($data, $eu) { naval_carr_contar($data, '1001', ['A1' => -1], $eu); });
     $r = naval_carr_contar($data, '1001', ['A1' => 3, 'B2' => 2, 'XX' => 9], $eu);
     igual(1, $r['resumo']['diferencas'], 'artigo desconhecido ignorado');

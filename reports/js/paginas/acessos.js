@@ -11,7 +11,7 @@ import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
-import { blocoFuncoes, seccaoFuncoes } from './acessos-funcoes.js';
+import { blocoFuncoes, seccaoFuncoes, seccaoGovernanca } from './acessos-funcoes.js';
 
 const NOMES_ACCAO = {
   entrada: 'Entrada',
@@ -327,11 +327,16 @@ function janelaConta(u) {
       const l3 = el('div', 'campos2');
       caixaPerfil.append(campo(t('Perfil manual (sem funções)'), sPerfil));
       l3.append(caixaPerfil, campo(t('Idioma do portal (obrigatório)'), sIdioma));
-      const bf = blocoFuncoes(G, funcoes, (c, conf) => {
-        funcoes = c;
-        conflitos = conf;
-        actualizar();
-      });
+      const bf = blocoFuncoes(
+        G,
+        funcoes,
+        (c, conf) => {
+          funcoes = c;
+          conflitos = conf;
+          actualizar();
+        },
+        u.funcoes_fim,
+      );
       b.append(campo(t('Nome'), iNome), l2, bf.el, l3, campo(t('Válida até (opcional)'), iAte), caixaRotas, lAct, notaAprov, caixaAprov);
       if (!novo) {
         const acc = el('div', 'dlg-accoes');
@@ -454,6 +459,7 @@ function janelaConta(u) {
           email: iEmail.value.trim(),
           perfil: sPerfil.value,
           funcoes,
+          funcoes_fim: bf.lerFim(),
           rotas,
           valido_ate: iAte.value,
           activo: cAct.checked,
@@ -719,6 +725,7 @@ R.acessos = (pg) => {
 
   // ---- funções (atribuição automática) e perfis ----
   pg.append(seccaoFuncoes(GESTAO, gerir, pedirGestao, recarregarGestao));
+  if (gerir) pg.append(seccaoGovernanca(GESTAO, pedirGestao, recarregarGestao));
   pg.append(seccaoPerfis(gerir));
 
   // ---- matriz ----

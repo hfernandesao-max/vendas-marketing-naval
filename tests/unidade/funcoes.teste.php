@@ -5,6 +5,7 @@
 function fn_limpar(): void
 {
     @unlink(naval_ficheiro_funcoes());
+    @unlink(naval_funcoes_ficheiro_ajustes());
     naval_gravar_perfis([]);
     naval_funcoes(true);
 }
@@ -62,4 +63,115 @@ teste('funções: alterar uma função actualiza sozinho os perfis gerados; conf
     verdade(in_array('C-DEPOSITOS', $todas['C-CAIXA-APROVAR']['conflitos'], true), 'conflito simétrico');
     igual(['caixa-marketing' => 'V'], $todas['C-DEPOSITOS']['permissoes'], 'sem A nem páginas inexistentes');
     fn_limpar();
+});
+
+teste('funções: regras do sistema — a logística não aprova nem fecha a conciliação; as finanças não aprovam a caixa', function () {
+    fn_limpar();
+    lanca(400, function () { naval_funcoes_perfil(['P-LOG', 'C-CONC-COORD'], 'admin'); });
+    lanca(400, function () { naval_funcoes_perfil(['P-LOG', 'C-CONC-FECHO'], 'admin'); });
+    lanca(400, function () { naval_funcoes_perfil(['P-FIN', 'C-CAIXA-APROVAR-1'], 'admin'); });
+    lanca(400, function () { naval_funcoes_perfil(['P-FIN', 'C-CAIXA-APROVAR'], 'admin'); });
+    $f = naval_funcoes();
+    verdade(in_array('P-LOG', $f['C-CONC-COORD']['conflitos_sistema'], true), 'simétrico e marcado como do sistema');
+    // retirar a regra no portal não a retira: volta sempre ao ler
+    $log = $f['P-LOG'];
+    naval_funcoes_gravar(['codigo' => 'P-LOG', 'conflitos' => []] + $log, 'admin');
+    verdade(in_array('C-CONC-COORD', naval_funcoes(true)['P-LOG']['conflitos'], true), 'regra mantém-se');
+    verdade(!isset(json_decode((string) file_get_contents(naval_ficheiro_funcoes()), true)['P-LOG']['conflitos_sistema']), 'não se grava');
+    fn_limpar();
+});
+
+teste('funções: ajuste do sistema ao catálogo gravado (apoio administrativo vê a conciliação) aplica-se uma vez e actualiza os perfis', function () {
+    fn_limpar();
+    igual('V', naval_funcoes()['P-BO']['permissoes']['conciliacao-carrinha'] ?? '', 'catálogo inicial já com V');
+    // catálogo gravado antes do ajuste: P-BO sem a conciliação, e um perfil gerado com P-BO
+    $g = naval_funcoes_iniciais();
+    unset($g['P-BO']['permissoes']['conciliacao-carrinha']);
+    naval_json_gravar(naval_ficheiro_funcoes(), $g);
+    naval_json_gravar(naval_funcoes_ficheiro_ajustes(), ['2026-11-bo-conciliacao' => '2026-11-01 00:00']);
+    naval_funcoes(true);
+    $p = naval_funcoes_perfil(['P-BO'], 'admin');
+    igual('', naval_matriz(true)['conciliacao-carrinha'][$p], 'antes do ajuste');
+    @unlink(naval_funcoes_ficheiro_ajustes());
+    igual('V', naval_funcoes(true)['P-BO']['permissoes']['conciliacao-carrinha'], 'ajustado');
+    igual('V', naval_matriz(true)['conciliacao-carrinha'][$p], 'perfil gerado actualizado');
+    verdade(isset(naval_json_ler(naval_funcoes_ficheiro_ajustes())['2026-11-bo-conciliacao']), 'marcado como feito');
+    // depois de feito, uma alteração do super administrador mantém-se
+    $bo = naval_funcoes()['P-BO'];
+    unset($bo['permissoes']['conciliacao-carrinha']);
+    naval_funcoes_gravar(['codigo' => 'P-BO'] + $bo, 'admin');
+    igual('', naval_funcoes(true)['P-BO']['permissoes']['conciliacao-carrinha'] ?? '', 'não volta a aplicar');
+    igual('V', naval_matriz_base()['conciliacao-carrinha']['BO'], 'perfil do sistema BO também vê');
+    fn_limpar();
+});
+
+/** Contas de ensaio (lista nova), guardando a original para repor. */
+function fn_contas(array $contas): ?string
+{
+    $f = naval_ficheiro_utilizadores();
+    $antes = is_file($f) ? (string) file_get_contents($f) : null;
+    $d = [];
+    foreach ($contas as $l => $x) $d[$l] = $x + ['nome' => ucfirst($l), 'email' => $l . '@naval.co.ao', 'activo' => true, 'idioma' => 'pt'];
+    naval_gravar_utilizadores($d);
+    return $antes;
+}
+
+function fn_repor(?string $antes): void
+{
+    $f = naval_ficheiro_utilizadores();
+    if ($antes === null) @unlink($f); else file_put_contents($f, $antes);
+}
+
+teste('funções: dono validado; contas em conflito; passagem para funções só sem mudança de acessos; funções temporárias', function () {
+    fn_limpar();
+    $antes = fn_contas([
+        'chefe' => ['perfil' => 'LOG'],
+        'ana' => ['perfil' => 'LOG'],
+        'rui' => ['perfil' => 'COM'],
+        'desligado' => ['perfil' => 'LOG', 'activo' => false],
+    ]);
+    try {
+        $log = naval_funcoes()['P-LOG'];
+        lanca(400, function () use ($log) { naval_funcoes_gravar(['codigo' => 'P-LOG', 'dono' => 'desligado'] + $log, 'admin'); });
+        naval_funcoes_gravar(['codigo' => 'P-LOG', 'dono' => 'chefe'] + $log, 'admin');
+        igual('chefe', naval_funcoes(true)['P-LOG']['dono']);
+        // matriz com uma alteração na coluna COM: o Rui não passa sozinho (mudaria um acesso)
+        naval_gravar_matriz(['ranking' => ['COM' => 'V']]);
+        $sem = [];
+        foreach (naval_funcoes_sem_funcoes() as $x) $sem[$x['login']] = $x;
+        igual([], $sem['ana']['diferencas'], 'LOG = P-LOG');
+        igual('P-LOG', $sem['ana']['funcao']);
+        verdade((bool) $sem['rui']['diferencas'], 'COM alterado na matriz');
+        verdade(!isset($sem['desligado']), 'contas desligadas fora');
+        $r = naval_funcoes_converter(['ana', 'rui'], 'admin');
+        igual(['ana'], $r['convertidas']);
+        igual(['rui'], $r['ficam']);
+        $u = naval_utilizadores();
+        igual(['P-LOG'], $u['ana']['funcoes']);
+        igual(naval_matriz(true)['plano-cargas']['LOG'], naval_matriz()['plano-cargas'][$u['ana']['perfil']], 'mesmos acessos');
+        naval_gravar_matriz([]);
+        // conta com combinação que passou a ser proibida (gravada antes da regra)
+        $d = naval_utilizadores();
+        $d['ana']['funcoes'] = ['C-CONC-COORD', 'P-LOG'];
+        naval_gravar_utilizadores($d);
+        igual([['C-CONC-COORD', 'P-LOG']], array_column(naval_funcoes_contas_conflito(), 'funcoes'));
+        // temporária: no dia a seguir ao último dia sai sozinha; sem funções, a conta desliga-se
+        $d['ana']['funcoes'] = ['C-CONC-CONTAR', 'P-LOG'];
+        $d['ana']['funcoes_fim'] = ['C-CONC-CONTAR' => '2026-11-17'];
+        $d['chefe']['funcoes'] = ['P-LOG'];
+        $d['chefe']['funcoes_fim'] = ['P-LOG' => '2026-11-17'];
+        naval_gravar_utilizadores($d);
+        igual([], naval_funcoes_expirar(strtotime('2026-11-17 23:00')), 'no último dia ainda tem');
+        $m = naval_funcoes_expirar(strtotime('2026-11-18 02:00'));
+        igual(['ana', 'chefe'], array_keys($m));
+        $u = naval_utilizadores();
+        igual(['P-LOG'], $u['ana']['funcoes']);
+        verdade(!isset($u['ana']['funcoes_fim']));
+        igual(naval_funcoes_codigo(['P-LOG']), $u['ana']['perfil'], 'perfil recalculado');
+        verdade(empty($u['chefe']['activo']), 'sem funções: desligada');
+    } finally {
+        naval_gravar_matriz([]);
+        fn_repor($antes);
+        fn_limpar();
+    }
 });

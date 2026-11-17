@@ -52,7 +52,7 @@ const NAVAL_MATRIZ_TXT = [
     'vendas-promotor-artigo' => 'V  E  E  Vr Vr E  -  -  -  E  V',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E  V',
     'plano-cargas'         => 'V  E  E  Vr -  -  V  G  V  E  V',
-    'conciliacao-carrinha' => 'V  V  V  Vr Vr V  -  G  -  V  V',
+    'conciliacao-carrinha' => 'V  V  V  Vr Vr V  V  G  -  V  V',
     // circuito de aprovação da conciliação (segregação de funções): 1.º nível coordenador, 2.º nível responsável (fecha)
     'conciliacao-coordenacao' => '-  -  -  -  -  -  -  G  -  -  -',
     'conciliacao-fecho'    => '-  G  -  -  -  G  -  -  -  -  -',

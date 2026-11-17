@@ -161,6 +161,14 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     if (!isset(naval_perfis()[$perfil])) naval_gestao_recusar('Perfil inválido.', $accao);
     if (in_array($perfil, naval_perfis_por_rota(), true) && !$rotas) naval_gestao_recusar('Este perfil só vê as suas rotas: indique pelo menos uma rota.', $accao);
     if ($ate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $ate)) naval_gestao_recusar('Data de fim inválida.', $accao);
+    // funções temporárias: último dia de cada uma (substituições, férias); no dia seguinte saem sozinhas
+    $fins = [];
+    foreach ((array) ($p['funcoes_fim'] ?? []) as $c => $dia) {
+        $dia = trim((string) $dia);
+        if ($dia === '' || !in_array((string) $c, $funcoes, true)) continue;
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia) || $dia < date('Y-m-d')) naval_gestao_recusar('O último dia de uma função temporária tem de ser hoje ou depois.', $accao);
+        $fins[(string) $c] = $dia;
+    }
 
     // A própria conta: não se pode retirar o perfil SADM nem desactivar
     if ($login === $eu['login'] && ($perfil !== 'SADM' || !$activo || ($ate !== '' && $ate < date('Y-m-d')))) {
@@ -178,8 +186,10 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
     if ($funcoes) {
         sort($funcoes);
         $u['funcoes'] = $funcoes;
+        ksort($fins);
+        if ($fins) $u['funcoes_fim'] = $fins; else unset($u['funcoes_fim']);
     } else {
-        unset($u['funcoes']);
+        unset($u['funcoes'], $u['funcoes_fim']);
     }
     $u['rotas'] = in_array($perfil, naval_perfis_por_rota(), true) ? $rotas : [];
     $u['activo'] = $activo;
@@ -199,9 +209,10 @@ function naval_gestao_guardar_conta(array $p, array $eu): array
 
     // Registo: o que mudou
     $mud = [];
-    foreach (['nome', 'email', 'perfil', 'funcoes', 'rotas', 'activo', 'valido_ate', 'idioma'] as $k) {
+    foreach (['nome', 'email', 'perfil', 'funcoes', 'funcoes_fim', 'rotas', 'activo', 'valido_ate', 'idioma'] as $k) {
         $a = $antes[$k] ?? null;
         $b = $u[$k] ?? null;
+        if ($k === 'funcoes_fim' && is_array($b)) $b = array_map(function ($c, $dia) { return $c . ' até ' . $dia; }, array_keys($b), $b);
         if ($a != $b) $mud[$k] = is_array($b) ? implode(', ', $b) : (is_bool($b) ? ($b ? 'sim' : 'não') : (string) $b);
     }
     naval_registar($novo ? 'conta_criada' : 'conta_alterada', ['conta' => $login] + $mud + ($envolveSadm ? ['aprovado_por' => $aprov] : []));
@@ -334,6 +345,7 @@ function naval_gestao_vista(): array
             'activo' => naval_conta_valida($u), 'ligada' => !empty($u['activo']), 'valido_ate' => $u['valido_ate'] ?? null,
             'idioma' => naval_idioma_conta($u),
             'funcoes' => array_values((array) ($u['funcoes'] ?? [])),
+            'funcoes_fim' => (object) ($u['funcoes_fim'] ?? []),
             'dois_passos' => !empty($u['mfa']), 'compatibilidade' => !empty($u['compatibilidade']),
             'dispensa_dois_passos' => naval_mfa_dispensa($u),
             'senha_temporaria' => !empty($u['trocar_senha']),
@@ -351,6 +363,12 @@ function naval_gestao_vista(): array
         'perfis' => naval_perfis(),
         'perfis_info' => naval_gestao_perfis_vista(),
         'funcoes' => (object) naval_funcoes(),
+        'contas_conflito' => naval_funcoes_contas_conflito(),
+        'sem_funcoes' => naval_funcoes_sem_funcoes(),
+        'pedidos_acesso' => (function () {
+            naval_servico('acessos-pedidos');
+            return naval_pa_para_aplicar();
+        })(),
         'ordem_niveis' => NAVAL_ORDEM_NIVEIS,
         'gerados' => array_keys(array_filter(naval_perfis_criados(), function ($x) { return !empty($x['gerado']); })),
         'matriz' => naval_matriz(),

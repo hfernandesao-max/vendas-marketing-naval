@@ -562,8 +562,12 @@ function naval_carr_cega(array $linhas): array
     }, $linhas);
 }
 
-/** Vista do dia para o portal: rotas do âmbito, com linhas, resumo e registo. */
-function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actualizar = false): array
+/**
+ * Vista do dia para o portal: rotas do âmbito, com linhas, resumo e registo. Contagem às cegas: enquanto a rota está
+ * por contar, as quantidades do sistema só vão para quem coordena ou fecha a conciliação ($veEsperado) e não conta;
+ * quem conta e quem só consulta (ex.: quem acompanha a contagem) vê os artigos sem números.
+ */
+function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actualizar = false, bool $veEsperado = false): array
 {
     $d = naval_carr_dados($data, $actualizar);
     $cega = naval_config('CARRINHA_CONTAGEM_CEGA', '1') !== '0';
@@ -578,9 +582,10 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? $d['precos'] ?? []));
         $resumo = naval_carr_resumo($linhas, $reg);
         if ($resumo['estado'] === 'sem_movimento') continue;
-        if ($gere && $cega && $resumo['estado'] === 'por_contar') $linhas = naval_carr_cega($linhas);
+        $oculta = $cega && $resumo['estado'] === 'por_contar' && ($gere || !$veEsperado);
+        if ($oculta) $linhas = naval_carr_cega($linhas);
         $out[] = ['rota' => $rota, 'promotor' => $promotores[$rota] ?? $rota, 'resumo' => $resumo, 'linhas' => $linhas,
-            'cega' => $gere && $cega && $resumo['estado'] === 'por_contar',
+            'cega' => $gere && $cega && $resumo['estado'] === 'por_contar', 'quantidades_ocultas' => $oculta,
             'contado_por' => $reg['contado_por'] ?? null, 'contado_em' => $reg['contado_em'] ?? null,
             'validado_por' => $reg['validado_por'] ?? null, 'validado_em' => $reg['validado_em'] ?? null,
             'coordenado_por' => $reg['coordenado_por'] ?? null, 'coordenado_em' => $reg['coordenado_em'] ?? null,

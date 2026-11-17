@@ -25,12 +25,17 @@ test.beforeAll(() => {
 
 test('conciliação da carrinha: acessos, contagem cega, âmbito, motivo e aprovação', async () => {
   const URL = API + 'conciliacao-carrinha?data=' + dia;
-  expect((await (await entrar('bo')).ctx.get(URL)).status()).toBe(403);
+  expect([401, 403]).toContain((await (await entrar('geo')).ctx.get(URL)).status()); // sem acesso à conciliação
+  // o apoio administrativo vê a conciliação (e imprime a folha), sem contar
+  const bo = await (await (await entrar('bo')).ctx.get(URL)).json();
+  expect(bo.gere).toBe(false);
   const sup = (await entrar('sup')).ctx;
   const vs = await (await sup.get(URL)).json();
   expect(vs.rotas.map((r) => r.rota)).toEqual(['1001']);
   expect(vs.gere).toBe(false);
-  expect(vs.rotas[0].linhas[0].esperado).toBe(4); // quem só vê, vê tudo
+  // por contar: quem só consulta também não vê as quantidades do sistema (contagem às cegas)
+  expect(vs.rotas[0].quantidades_ocultas).toBe(true);
+  expect(Object.keys(vs.rotas[0].linhas[0])).not.toContain('esperado');
   expect(
     (await sup.post(API + 'conciliacao-carrinha', { data: { accao: 'contar', data: dia, rota: '1001', contagem: { A1: 1 }, csrf: await csrf(sup) } })).status(),
   ).toBe(403);

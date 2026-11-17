@@ -1,5 +1,39 @@
 ## 17-11-2026
 
+### Acessos: pedidos de acesso autorizados pelo dono da função, revisão por área e novas regras de separação de funções
+
+<!-- paginas: acessos, suporte -->
+<!-- tipo: impacto -->
+
+- **Dono de cada função** (Acessos › Funções › Gerir): a pessoa responsável pelo processo (ex.: a chefia da logística
+  para as funções da conciliação). O dono autoriza os pedidos de acesso à sua função e revê, por trimestre, quem a tem
+  (ISO/IEC 27001, controlos 5.9, 5.15 e 5.18). Sem dono, autoriza o super administrador.
+- **Pedidos de acesso** (Suporte › Pedidos de acesso): qualquer pessoa pede uma função para si ou para outra conta,
+  com o motivo e, se for temporário, o último dia. O portal recusa logo funções que a conta já tem e combinações
+  proibidas. O dono autoriza (recebe um aviso por correio) e o super administrador aplica em Acessos › Governação dos
+  acessos, com a confirmação da identidade. Ninguém autoriza o pedido que fez nem um acesso para a sua própria conta,
+  e o super administrador não aplica um pedido para si. Cada passo fica no histórico do pedido e nos registos.
+- **Funções temporárias**: na conta, cada função pode ter um último dia (substituições, férias). No dia seguinte sai
+  sozinha na verificação da noite; sem nenhuma função, a conta fica desligada. Fica registado.
+- **Revisão trimestral por área**: quando a revisão abre, cada dono recebe um aviso e confirma a sua parte em Suporte ›
+  Revisão de acessos da sua área (mantém, ou marca a quem retirar, com a razão). O super administrador fecha a revisão
+  com essas confirmações; sem todas, só fecha com a razão escrita.
+- **Novas regras de separação de funções do sistema** (não se retiram no portal): a Logística (quem conta a carrinha)
+  não acumula com aprovar nem fechar a conciliação, e as Finanças (quem lança a caixa) não acumulam com aprovar a caixa
+  (1.º nível ou final). As contas que hoje tenham essas combinações aparecem em Acessos › Governação dos acessos para
+  retirar uma das funções; até lá, cada operação continua a recusar a mesma pessoa em dois passos.
+- **Contas sem funções**: em Governação dos acessos, a lista das contas que ainda têm perfil manual e o que mudaria ao
+  passarem para a função equivalente. As que ficam com os mesmos acessos passam com um clique.
+- O **Apoio administrativo RTM** passa a ver a conciliação da carrinha e a imprimir a folha de contagem.
+
+### Conciliação da carrinha: contagem às cegas também para quem só consulta
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: melhoria -->
+
+- Enquanto a rota está por contar, quem só consulta a conciliação (ex.: o promotor ou quem acompanha a contagem) vê os
+  artigos sem as quantidades do sistema, como quem conta. A coordenação e o fecho continuam a ver o esperado.
+
 ### Conciliação da carrinha: as vendas depois do corte saem do que tem de voltar
 
 <!-- paginas: conciliacao-carrinha -->

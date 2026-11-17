@@ -23,7 +23,7 @@ if (!naval_e_post()) {
     $corrigir = naval_perfil() === 'SADM';
     naval_servico('calendario');
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
-        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + ['horario' => naval_cal_para_pagina($data)] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1'));
+        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + ['horario' => naval_cal_para_pagina($data)] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1', $pode['coordenar'] || $pode['fechar']));
 }
 
 $p = naval_pedido();

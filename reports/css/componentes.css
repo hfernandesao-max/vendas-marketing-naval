@@ -5526,3 +5526,27 @@ body.apres-lado {
 .tile.tile-alerta .v {
   color: var(--warn-t, #9a3412);
 }
+
+/* Acessos: último dia de uma função temporária, junto da função; governação dos acessos */
+.chips-rotas input.ac-fim {
+  width: auto;
+  min-height: 0;
+  padding: 2px 6px;
+  margin-left: 6px;
+  font-size: 0.85em;
+}
+.ac-gov h3 {
+  margin: 14px 0 6px;
+  font-size: 1rem;
+}
+.ac-gov-l {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.ac-gov-l li {
+  margin: 4px 0;
+  text-align: justify;
+}
+.pa-revisao .inp {
+  margin: 8px 0;
+}

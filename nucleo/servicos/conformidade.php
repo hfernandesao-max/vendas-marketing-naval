@@ -122,7 +122,8 @@ function naval_conf_lista_acessos(): array
         $out[] = ['login' => $login, 'nome' => (string) ($u['nome'] ?? $login), 'perfil' => (string) ($u['perfil'] ?? ''),
             'perfil_nome' => (string) ($perfis[$u['perfil'] ?? ''] ?? ''), 'rotas' => array_values((array) ($u['rotas'] ?? [])),
             'dois_passos' => !empty($u['mfa']), 'dispensa_dois_passos' => (naval_mfa_dispensa($u)['ate'] ?? ''), 'ultima_entrada' => substr((string) ($ent[$login] ?? ''), 0, 16),
-            'valido_ate' => (string) ($u['valido_ate'] ?? '')];
+            'valido_ate' => (string) ($u['valido_ate'] ?? ''), 'funcoes' => array_values((array) ($u['funcoes'] ?? [])),
+            'funcoes_fim' => (object) ($u['funcoes_fim'] ?? [])];
     }
     return $out;
 }
@@ -138,8 +139,10 @@ function naval_conf_revisao_abrir(int $agora): ?string
     naval_registar('revisao_acessos_aberta', ['trimestre' => $tri, 'contas' => count($lista)], 'conformidade');
     naval_conf_avisar('revisão de acessos do trimestre ' . $tri, [
         'Está aberta a revisão de acessos do trimestre ' . $tri . ' (ISO/IEC 27001, controlo 5.18): ' . count($lista) . ' contas activas.',
-        'Confirme em Portal RTM › Administração › Conformidade quem deve manter cada acesso; o que retirar faz-se em Acessos.',
+        'Cada dono de função confirma a sua parte em Suporte › Revisão de acessos da sua área; depois confirme em Portal RTM › Administração › Conformidade. O que retirar faz-se em Acessos.',
     ]);
+    naval_servico('acessos-pedidos');
+    naval_pa_revisao_avisar_donos($tri);
     return $tri;
 }
 
@@ -151,7 +154,13 @@ function naval_conf_revisao_confirmar(string $tri, array $eu, string $notas): ar
     $r = naval_json_ler($f);
     if (!$r) throw new NavalErro('Não há revisão aberta para ' . $tri . '.', 404);
     if (!empty($r['confirmada'])) throw new NavalErro('A revisão de ' . $tri . ' já foi confirmada.', 409);
-    $r['confirmada'] = ['por' => (string) $eu['login'], 'em' => date('Y-m-d H:i:s'), 'notas' => mb_substr($notas, 0, 1000)];
+    // cada dono revê a sua função primeiro (A.5.18); sem todas as confirmações, a razão fica escrita na revisão
+    naval_servico('acessos-pedidos');
+    $falta = naval_pa_revisao_donos_em_falta($r);
+    if ($falta && mb_strlen(trim($notas)) < 10) {
+        throw new NavalErro('Faltam as confirmações dos donos das funções (' . implode(', ', $falta) . '). Para fechar sem elas, explique porquê nas notas.', 409);
+    }
+    $r['confirmada'] = ['por' => (string) $eu['login'], 'em' => date('Y-m-d H:i:s'), 'notas' => mb_substr($notas, 0, 1000), 'donos_em_falta' => array_keys($falta)];
     naval_json_gravar($f, $r);
     naval_registar('revisao_acessos_confirmada', ['trimestre' => $tri]);
     return $r;
@@ -421,6 +430,10 @@ function naval_conf_noite(int $agora): ?array
     $passo('revisao', function () use ($agora) {
         return ['ok' => true, 'aberta' => naval_conf_revisao_abrir($agora)];
     });
+    $passo('funcoes_temporarias', function () use ($agora) {
+        $m = naval_exclusivo('utilizadores', function () use ($agora) { return naval_funcoes_expirar($agora); });
+        return ['ok' => true, 'contas' => count($m)];
+    });
     $passo('copia', function () use ($agora, &$problemas) {
         $c = naval_conf_copiar($agora);
         $t = naval_conf_testar_recuperacao(naval_pasta('copias-dados') . '/' . $c['ficheiro']);
@@ -486,7 +499,11 @@ function naval_conf_vista(): array
     $revs = [];
     foreach (glob(naval_conf_pasta() . '/revisao-*.json') ?: [] as $f) {
         $j = naval_json_ler($f);
-        $revs[] = ['trimestre' => $j['trimestre'] ?? '', 'aberta_em' => $j['aberta_em'] ?? '', 'contas' => count($j['contas'] ?? []), 'confirmada' => $j['confirmada'] ?? null];
+        $revs[] = ['trimestre' => $j['trimestre'] ?? '', 'aberta_em' => $j['aberta_em'] ?? '', 'contas' => count($j['contas'] ?? []), 'confirmada' => $j['confirmada'] ?? null,
+            'donos' => (object) ($j['donos'] ?? []), 'donos_em_falta' => empty($j['confirmada']) ? (function () use ($j) {
+                naval_servico('acessos-pedidos');
+                return (object) naval_pa_revisao_donos_em_falta($j);
+            })() : (object) []];
     }
     usort($revs, function ($a, $b) { return strcmp($b['trimestre'], $a['trimestre']); });
     $copias = [];
