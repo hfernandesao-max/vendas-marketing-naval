@@ -333,7 +333,8 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
   // correcção de um dia e promotor: documento a documento, com justificação
   await page.locator('#s-fp-rec tbody tr').first().getByRole('button', { name: 'Corrigir' }).click();
   await page.getByLabel('Numerário do documento FR A1001/10').fill('577700');
-  await expect(page.getByLabel('Multicaixa do documento FR A1001/10')).toHaveValue('218100');
+  await expect(page.getByLabel('Multicaixa do documento FR A1001/10', { exact: true })).toHaveValue('218100');
+  await expect(page.getByLabel('Banco do Multicaixa do documento FR A1001/10').locator('option')).toHaveText(['MC', 'BPC']);
   await page.getByLabel('Justificação (obrigatória)').fill('O cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano.');
   await page.getByRole('button', { name: 'Pedir a correcção' }).click();
   await expect.poll(() => gravados.length).toBe(1);
@@ -341,7 +342,7 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
     accao: 'corrigir',
     dia: '2026-11-13',
     rota: '1001',
-    docs: [{ documento: 'FR A1001/10', numerario: 577700, multicaixa: 218100 }],
+    docs: [{ documento: 'FR A1001/10', numerario: 577700, multicaixa: 218100, codigo_multicaixa: 'MC' }],
   });
   // correcção pedida por outra pessoa: quem aprova vê Aprovar e Recusar
   const corr = page.locator('#s-fp-corr tbody tr').first();

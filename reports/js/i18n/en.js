@@ -4445,6 +4445,15 @@ export const EN = {
   Avariado: 'Faulty',
   'Este promotor já tem outro TPA em funcionamento: {x}. Se este o substitui, mude a situação do outro.':
     "This sales rep already has another POS in service: {x}. If this one replaces it, change the other's status.",
+  'Banco do Multicaixa do documento {d}': 'Multicaixa bank of document {d}',
+  'Banco do Multicaixa': 'Multicaixa bank',
+  'O documento do Pinguim BO não muda. A correcção fica registada com a justificação e só conta depois de aprovada por outra pessoa.':
+    'The Pinguim BO document does not change. The correction is recorded with its justification and only counts once approved by someone else.',
+  'Ex.: o cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano. Confirmado com a folha de caixa e o talão do TPA.':
+    'E.g. the customer paid in cash; the sales rep chose Multicaixa by mistake. Confirmed with the cash sheet and the POS slip.',
+  'Ex.: talão de fecho do TPA 00444134, período 103': 'E.g. POS closing slip 00444134, period 103',
+  'Tudo em Numerário': 'All in cash',
+  'Tudo em Multicaixa': 'All in Multicaixa',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -117,5 +117,10 @@ teste('TPA: situação, número de série e associação ao promotor com cadeia 
     $r = naval_tpa_associar('00444134', '', 'sara');
     igual([2, true], [count($r['terminal']['associacoes']), $r['terminal']['associacoes'][1]['ate'] !== ''], 'sem promotor: fecha, não apaga');
     igual('', $r['terminal']['rota']);
+    // terminal registado antes da cadeia de custódia: a associação que já tinha entra na cadeia
+    $f = naval_tpa_pasta() . '/terminais.json';
+    naval_json_gravar($f, ['terminais' => [['tpa' => '00476641', 'empresa' => 'NAVAL', 'banco' => 'ATLANTICO', 'rota' => $a, 'activo' => true, 'criado_em' => '2026-11-17 10:20:00']]]);
+    $c = naval_tpa_associar('00476641', $b, 'sara')['terminal']['associacoes'];
+    igual([[$a, '2026-11-17 10:20:00'], [$b, '']], array_map(function ($x) { return [$x['rota'], $x['ate'] === '' ? '' : $x['de']]; }, $c));
     @unlink(naval_tpa_pasta() . '/terminais.json');
 });

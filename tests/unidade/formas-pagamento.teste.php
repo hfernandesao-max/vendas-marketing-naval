@@ -83,6 +83,17 @@ teste('correcção da forma de pagamento: justificação, valor igual ao cobrado
     $an = naval_fp_anular('FP-2026-00001', 'pedido em duplicado', 'sara');
     igual(['anulada', ['pedida', 'aprovada', 'anulada']], [$an['estado'], array_column($an['historico'], 'accao')]);
     igual($v, naval_fp_aplicar($v));
+    // banco do Multicaixa: MCB (BPC) numa rota Atlântico corrige-se para o Multicaixa sem banco (ou o do banco certo)
+    $doc2 = [['documento' => 'FR A1005/12', 'hora' => '10:00', 'cliente' => 'Loja 2', 'total' => 142000.0, 'nc' => false, 'corrigivel' => true,
+        'pinguim' => ['numerario' => 0.0, 'multicaixa' => 142000.0, 'invalida' => 0.0, 'total_pago' => 142000.0, 'codigo_multicaixa' => 'MCB'], 'meio_pinguim' => 'Multicaixa - BPC', 'correcoes' => []]];
+    lanca(400, function () use ($doc2, $j) { naval_fp_pedir('2026-11-12', '1005', [['documento' => 'FR A1005/12', 'numerario' => 0, 'multicaixa' => 142000, 'codigo_multicaixa' => 'XYZ']], $j, '', 'josefa', $doc2); });
+    lanca(400, function () use ($doc2, $j) { naval_fp_pedir('2026-11-12', '1005', [['documento' => 'FR A1005/12', 'numerario' => 0, 'multicaixa' => 142000, 'codigo_multicaixa' => 'MCB']], $j, '', 'josefa', $doc2); }); // igual
+    $c2 = naval_fp_pedir('2026-11-12', '1005', [['documento' => 'FR A1005/12', 'numerario' => 0, 'multicaixa' => 142000, 'codigo_multicaixa' => 'MC']], $j, '', 'josefa', $doc2);
+    naval_fp_decidir($c2[0]['id'], true, '', 'sara');
+    $v2 = [['data' => '2026-11-12', 'rota' => '1005', 'documento' => 'FR A1005/12', 'total' => 142000.0, 'nc' => false, 'pagamentos' => [['codigo' => 'MCB', 'meio' => 'Multicaixa - BPC', 'valor' => 142000.0]]]];
+    $cfg2 = $cfg + ['bancos_rotas' => ['1005' => 'ATLANTICO']];
+    igual(['banco_diferente'], array_column(naval_fp_excecoes_documento($v2[0], $cfg2), 'tipo'), 'antes da correcção');
+    igual([], naval_fp_excecoes_documento(naval_fp_aplicar($v2)[0], $cfg2), 'depois da correcção aprovada');
     // TPA de outra empresa: talão da Higitec numa venda da Naval
     $r2 = naval_fp_reconciliar([], ['2026-10-21' => ['entregas' => [], 'tpa' => [['rota' => '1006', 'empresa' => 'HIGITEC', 'tpa' => '00445739', 'valor' => 356500.0]]]], ['1006' => 'Rosa Vemba'], $cfg);
     igual(['tpa_outra_empresa', 356500.0], [$r2['excepcoes'][0]['tipo'], $r2['excepcoes'][0]['valor']]);

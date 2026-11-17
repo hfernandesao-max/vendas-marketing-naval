@@ -277,12 +277,16 @@ function naval_fp_correcoes_aprovadas(): array
 function naval_fp_formas_documento(array $v, array $cfg): array
 {
     $x = ['numerario' => 0.0, 'multicaixa' => 0.0, 'invalida' => 0.0];
+    $porCodigo = [];
     foreach ((array) ($v['pagamentos'] ?? []) as $p) {
         $f = naval_fp_forma((string) ($p['codigo'] ?? ''), $cfg);
         if ($f === 'compensacao') continue;
         $x[$f] += (float) ($p['valor'] ?? 0);
+        if ($f === 'multicaixa') $porCodigo[strtoupper((string) $p['codigo'])] = ($porCodigo[strtoupper((string) $p['codigo'])] ?? 0) + (float) ($p['valor'] ?? 0);
     }
     foreach ($x as $k => $val) $x[$k] = round($val, 2);
+    arsort($porCodigo);
+    $x['codigo_multicaixa'] = (string) (key($porCodigo) ?? '');   // o código de Multicaixa do documento (o de maior valor)
     $x['total_pago'] = round($x['numerario'] + $x['multicaixa'] + $x['invalida'], 2);
     return $x;
 }
@@ -307,7 +311,7 @@ function naval_fp_aplicar(array $vendas, ?array $aprovadas = null): array
         if (!$c || substr((string) $v['data'], 0, 10) !== $c['dia'] || (string) $v['rota'] !== (string) $c['rota']) continue;
         $novos = array_values(array_filter((array) ($v['pagamentos'] ?? []), function ($p) { return strtoupper((string) ($p['codigo'] ?? '')) === 'CMP'; }));
         if ($c['numerario'] > 0) $novos[] = ['codigo' => 'NU', 'meio' => 'Numerário (corrigido ' . $c['id'] . ')', 'valor' => (float) $c['numerario'], 'corrigido' => $c['id']];
-        if ($c['multicaixa'] > 0) $novos[] = ['codigo' => $c['codigo_multicaixa'] ?? 'MC', 'meio' => 'Multicaixa (corrigido ' . $c['id'] . ')', 'valor' => (float) $c['multicaixa'], 'corrigido' => $c['id']];
+        if ($c['multicaixa'] > 0) $novos[] = ['codigo' => $c['codigo_multicaixa'] ?? 'MC', 'meio' => 'Multicaixa ' . ($c['codigo_multicaixa'] ?? 'MC') . ' (corrigido ' . $c['id'] . ')', 'valor' => (float) $c['multicaixa'], 'corrigido' => $c['id']];
         $vendas[$i]['pagamentos_pinguim'] = $v['pagamentos'] ?? [];
         $vendas[$i]['pagamentos'] = $novos;
         $vendas[$i]['forma_corrigida'] = $c['id'];
@@ -382,17 +386,22 @@ function naval_fp_pedir(string $dia, string $rota, array $docs, string $justific
             }
             $nu = round(max(0.0, (float) ($x['numerario'] ?? 0)), 2);
             $mcv = round(max(0.0, (float) ($x['multicaixa'] ?? 0)), 2);
+            // banco do Multicaixa: um dos códigos de Multicaixa da tabela (ex.: MC, MCB); sem indicação, o do documento
+            $codPinguim = (string) ($p['pinguim']['codigo_multicaixa'] ?? '') ?: ($mc[0] ?? 'MC');
+            $codMc = strtoupper(trim((string) ($x['codigo_multicaixa'] ?? ''))) ?: $codPinguim;
+            if ($mcv > 0 && !in_array($codMc, $mc, true)) throw new NavalErro('No documento ' . $doc . ', escolha o Multicaixa da tabela das formas de pagamento.', 400);
             $alvo = (float) $p['pinguim']['total_pago'];
             if ($alvo <= 0) $alvo = (float) $p['total'];   // sem forma de pagamento: o total do documento
             if (abs($nu + $mcv - $alvo) >= 0.01) {
                 throw new NavalErro('No documento ' . $doc . ', Numerário + Multicaixa tem de dar ' . naval_rv_kz_fp($alvo) . ' (o valor cobrado).', 400);
             }
-            if (abs($nu - $p['pinguim']['numerario']) < 0.01 && abs($mcv - $p['pinguim']['multicaixa']) < 0.01 && $p['pinguim']['invalida'] < 0.01) continue;   // igual ao Pinguim BO
+            $mesmoCodigo = $mcv < 0.01 || $codMc === $codPinguim;
+            if (abs($nu - $p['pinguim']['numerario']) < 0.01 && abs($mcv - $p['pinguim']['multicaixa']) < 0.01 && $p['pinguim']['invalida'] < 0.01 && $mesmoCodigo) continue;   // igual ao Pinguim BO
             $id = naval_fp_numero(array_merge($lista, $novos), substr($dia, 0, 4));
             $lote = $lote ?: $id;
             $agora = date('Y-m-d H:i:s');
             $novos[] = ['id' => $id, 'lote' => $lote, 'dia' => $dia, 'rota' => $rota, 'documento' => $doc, 'total' => (float) $p['total'],
-                'pinguim' => $p['pinguim'], 'meio_pinguim' => $p['meio_pinguim'], 'numerario' => $nu, 'multicaixa' => $mcv, 'codigo_multicaixa' => $mc[0] ?? 'MC',
+                'pinguim' => $p['pinguim'], 'meio_pinguim' => $p['meio_pinguim'], 'numerario' => $nu, 'multicaixa' => $mcv, 'codigo_multicaixa' => $codMc,
                 'justificacao' => $justificacao, 'evidencia' => $evidencia, 'estado' => 'pendente', 'pedido_por' => $login, 'pedido_em' => $agora,
                 'decidido_por' => '', 'decidido_em' => '', 'motivo' => '', 'historico' => [['accao' => 'pedida', 'por' => $login, 'em' => $agora]]];
         }

@@ -73,7 +73,8 @@ function naval_tpa_gravar(array $p, string $login): array
         $d = naval_json_ler($f, ['terminais' => []]);
         $lista = naval_tpa_terminais();
         $antes = $lista[$novo['tpa']] ?? null;
-        $novo['associacoes'] = naval_tpa_cadeia((array) ($antes['associacoes'] ?? []), (string) ($antes['rota'] ?? ''), $novo['rota'], $login, $novo['alterado_em'], $antes === null);
+        $novo['associacoes'] = naval_tpa_cadeia((array) ($antes['associacoes'] ?? []), (string) ($antes['rota'] ?? ''), $novo['rota'], $login, $novo['alterado_em'], $antes === null,
+            (string) ($antes['criado_em'] ?? ''));
         $lista[$novo['tpa']] = $novo + ['criado_em' => $antes['criado_em'] ?? $novo['alterado_em']];
         $d['terminais'] = array_values($lista);
         naval_json_gravar($f, $d);
@@ -87,8 +88,10 @@ function naval_tpa_gravar(array $p, string $login): array
  * A.5.11 devolução de activos): ao mudar de promotor, fecha-se a associação anterior e abre-se a nova. Nada se apaga.
  * [{rota, de, ate, por}] — 'ate' vazio é a associação em vigor.
  */
-function naval_tpa_cadeia(array $cadeia, string $antes, string $depois, string $login, string $em, bool $novo): array
+function naval_tpa_cadeia(array $cadeia, string $antes, string $depois, string $login, string $em, bool $novo, string $desde = ''): array
 {
+    // terminal registado antes da cadeia de custódia: a associação que já tinha entra na cadeia, desde o registo
+    if (!$novo && !$cadeia && $antes !== '') $cadeia[] = ['rota' => $antes, 'de' => $desde, 'ate' => '', 'por' => ''];
     if (!$novo && $antes === $depois) return $cadeia;
     foreach ($cadeia as $i => $a) if (($a['ate'] ?? '') === '') $cadeia[$i]['ate'] = $em;
     if ($depois !== '') $cadeia[] = ['rota' => $depois, 'de' => $em, 'ate' => '', 'por' => $login];

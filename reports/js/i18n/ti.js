@@ -4364,6 +4364,15 @@ export const TI = {
   Avariado: 'ዝተበላሸወ',
   'Este promotor já tem outro TPA em funcionamento: {x}. Se este o substitui, mude a situação do outro.':
     'እዚ ወኪል መሸጣ ካልእ ኣብ ስራሕ ዘሎ TPA ኣለዎ፦ {x}። እዚ ንዕኡ ዝትክእ እንተኾይኑ፡ ኩነታት ናይቲ ካልእ ቀይሩ።',
+  'Banco do Multicaixa do documento {d}': 'ባንክ Multicaixa ናይ ሰነድ {d}',
+  'Banco do Multicaixa': 'ባንክ Multicaixa',
+  'O documento do Pinguim BO não muda. A correcção fica registada com a justificação e só conta depois de aprovada por outra pessoa.':
+    'እቲ ሰነድ Pinguim BO ኣይቕየርን። እቲ ምእራም ምስ መግለጺኡ ይምዝገብ፡ ብካልእ ሰብ ምስ ጸደቐ ጥራይ ይቑጸር።',
+  'Ex.: o cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano. Confirmado com a folha de caixa e o talão do TPA.':
+    'ንኣብነት፦ ዓሚል ብጥረ ገንዘብ ከፊሉ፤ ወኪል መሸጣ ብጌጋ Multicaixa መሪጹ። ብወረቐት ካሳን ቅጥዒ TPAን ተረጋጊጹ።',
+  'Ex.: talão de fecho do TPA 00444134, período 103': 'ንኣብነት፦ ቅጥዒ ምዕጻው TPA 00444134፡ እዋን 103',
+  'Tudo em Numerário': 'ኩሉ ብጥረ ገንዘብ',
+  'Tudo em Multicaixa': 'ኩሉ ብMulticaixa',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
