@@ -91,3 +91,31 @@ teste('TPA: conferência com o extracto e destinatários do resumo', function ()
     igual(['financeiro@naval.co.ao', 'vanda@naval.co.ao'], naval_tpa_destinatarios(['Financeiro@naval.co.ao', 'vanda@naval.co.ao', 'financeiro@naval.co.ao'], 'fin'));
     tpa_limpar();
 });
+
+teste('TPA: situação, número de série e associação ao promotor com cadeia de custódia (nada se apaga)', function () {
+    @unlink(naval_tpa_pasta() . '/terminais.json');
+    $prom = naval_promotores();
+    $rotas = array_keys($prom);
+    if (count($rotas) < 2) {
+        naval_json_gravar(naval_dados_reports() . '/rotas.json', [['rota' => '1004', 'promotor' => 'Nelson Bumba'], ['rota' => '1009', 'promotor' => 'Efrem Bokre']]);
+        $rotas = ['1004', '1009'];
+    }
+    [$a, $b] = [(string) $rotas[0], (string) $rotas[1]];
+    lanca(400, function () { naval_tpa_gravar(['tpa' => '00444565', 'empresa' => 'NAVAL', 'banco' => 'BPC', 'situacao' => 'perdido'], 'fin'); });
+    $t = naval_tpa_gravar(['tpa' => '00444565', 'empresa' => 'NAVAL', 'banco' => 'BPC', 'serie' => '2316 6730 3061', 'situacao' => 'avariado', 'defeito' => 'desliga-se ao fazer movimento'], 'fin');
+    igual(['avariado', false, '231667303061', []], [$t['situacao'], $t['activo'], $t['serie'], $t['associacoes']]);
+    $t = naval_tpa_gravar(['tpa' => '00444134', 'empresa' => 'NAVAL', 'banco' => 'BPC', 'rota' => $a], 'fin');
+    igual(['em_funcionamento', true, 1], [$t['situacao'], $t['activo'], count($t['associacoes'])], 'pedido antigo sem situação: activo');
+    lanca(400, function () { naval_tpa_associar('00444134', 'XPTO', 'fin'); });
+    lanca(404, function () { naval_tpa_associar('00000000', '', 'fin'); });
+    naval_tpa_gravar(['tpa' => '00444562', 'empresa' => 'NAVAL', 'banco' => 'BPC', 'rota' => $b], 'fin');
+    $r = naval_tpa_associar('00444134', $b, 'sara');
+    igual(['00444562'], $r['outros'], 'o promotor já tem outro TPA em funcionamento');
+    $c = $r['terminal']['associacoes'];
+    igual([$a, $b], array_column($c, 'rota'));
+    verdade($c[0]['ate'] !== '' && $c[1]['ate'] === '' && $c[1]['por'] === 'sara', 'fecha a anterior, abre a nova');
+    $r = naval_tpa_associar('00444134', '', 'sara');
+    igual([2, true], [count($r['terminal']['associacoes']), $r['terminal']['associacoes'][1]['ate'] !== ''], 'sem promotor: fecha, não apaga');
+    igual('', $r['terminal']['rota']);
+    @unlink(naval_tpa_pasta() . '/terminais.json');
+});

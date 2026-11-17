@@ -65,13 +65,18 @@ test('Multicaixa por TPA: relatório por máquina, banco e conta; conferir no ex
       terminais,
       empresas: ['NAVAL', 'HIGITEC', 'REFITECH'],
       bancos: ['BPC', 'BAI', 'ATLANTICO'],
+      situacoes: { em_funcionamento: 'Em funcionamento', reserva: 'Reserva', em_revisao: 'Em revisão', avariado: 'Avariado', abatido: 'Abatido' },
       promotores: { 1001: 'Andrea Santos', 1002: 'Cristina Sachuma' },
       destinatarios: ['financeiro@naval.co.ao'],
     };
     if (q.method() === 'POST') {
       const b = q.postDataJSON();
       pedidos.push(b);
-      if (b.accao === 'terminal') terminais = terminais.concat([{ ...b, activo: true }]);
+      if (b.accao === 'terminal') terminais = terminais.concat([{ ...b, activo: b.situacao === 'em_funcionamento' }]);
+      if (b.accao === 'associar') {
+        terminais = terminais.map((x) => (x.tpa === b.tpa ? { ...x, rota: b.rota } : x));
+        return r.fulfill({ json: { ...base, terminais, outros_tpa: ['00516385'] } });
+      }
       if (b.accao === 'destinatarios') return r.fulfill({ json: { ...base, destinatarios: b.destinatarios } });
       return r.fulfill({ json: { ...base, terminais } });
     }
@@ -104,9 +109,18 @@ test('Multicaixa por TPA: relatório por máquina, banco e conta; conferir no ex
   await t.getByLabel('Ident. TPA (8 dígitos)').fill('00445736');
   await t.getByLabel('Empresa').selectOption('HIGITEC');
   await t.getByLabel('Banco').selectOption('BPC');
+  await t.getByLabel('Número de série').fill('223367303061245428241423');
+  await t.getByLabel('Situação').selectOption('avariado');
+  await t.getByLabel('Avaria ou defeito').fill('desliga sozinho');
   await t.getByRole('button', { name: 'Gravar' }).click();
-  await expect.poll(() => pedidos.find((x) => x.accao === 'terminal')).toMatchObject({ tpa: '00445736', empresa: 'HIGITEC', banco: 'BPC', activo: true });
+  await expect
+    .poll(() => pedidos.find((x) => x.accao === 'terminal'))
+    .toMatchObject({ tpa: '00445736', empresa: 'HIGITEC', banco: 'BPC', serie: '223367303061245428241423', situacao: 'avariado', defeito: 'desliga sozinho' });
   await expect(page.locator('.sec', { hasText: 'Terminais (TPA)' })).toContainText('00445736');
+  // associar o promotor ao TPA, na própria tabela (lista dos promotores)
+  await page.getByLabel('Promotor do TPA 00444134').selectOption('1002');
+  await expect.poll(() => pedidos.find((x) => x.accao === 'associar')).toMatchObject({ tpa: '00444134', rota: '1002' });
+  await expect(page.locator('.toast, [role=status]').last()).toContainText('já tem outro TPA em funcionamento: 00516385');
   // destinatários do resumo de fim de dia
   await page.getByRole('button', { name: 'Resumo por correio' }).click();
   await page.getByLabel('Destinatários (um endereço por linha)').fill('financeiro@naval.co.ao\nvanda@naval.co.ao');

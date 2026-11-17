@@ -4,7 +4,8 @@
  * terminais, marcar «Conferido no extracto» e escolher quem recebe o resumo de fim de dia.
  *
  * GET  v1/multicaixa-tpa?de=AAAA-MM-DD&ate=AAAA-MM-DD     relatório do período (até 62 dias) e registo dos terminais
- * POST {accao: terminal, tpa, estab, empresa, banco, conta, rota, activo, nota, csrf}
+ * POST {accao: terminal, tpa, estab, empresa, banco, conta, rota, serie, situacao, defeito, nota, csrf}
+ * POST {accao: associar, tpa, rota, csrf}   (associa o promotor ao terminal; fica a cadeia de custódia)
  * POST {accao: conferir | retirar_conferencia, dia, tpa, periodo, ref, data, csrf}
  * POST {accao: destinatarios, destinatarios: [email…], csrf}
  * GET  v1/multicaixa-tpa?formas=1&de=…&ate=…              formas de pagamento: tabela e reconciliação por dia e promotor
@@ -26,7 +27,7 @@ $pedeCorr = naval_pode('caixa-marketing', 'G');
 $aprovaCorr = naval_pode('caixa-aprovacao', 'G');
 $login = (string) (((array) naval_utilizador())['login'] ?? '');
 $base = function () use ($gere) {
-    return ['ok' => true, 'gere' => $gere, 'terminais' => array_values(naval_tpa_terminais()), 'empresas' => NAVAL_CAIXA_EMPRESAS,
+    return ['ok' => true, 'gere' => $gere, 'terminais' => array_values(naval_tpa_terminais()), 'situacoes' => NAVAL_TPA_SITUACOES, 'empresas' => NAVAL_CAIXA_EMPRESAS,
         'bancos' => NAVAL_CAIXA_BANCOS, 'promotores' => (object) naval_promotores(),
         'destinatarios' => $gere ? (array) (naval_tpa_config()['destinatarios'] ?? []) : null];
 };
@@ -68,6 +69,9 @@ switch ((string) ($p['accao'] ?? '')) {
     case 'terminal':
         naval_tpa_gravar($p, $login);
         naval_json($base());
+    case 'associar':
+        $a = naval_tpa_associar(preg_replace('/\D/', '', (string) ($p['tpa'] ?? '')), (string) ($p['rota'] ?? ''), $login);
+        naval_json($base() + ['outros_tpa' => $a['outros']]);   // o promotor já tem outro TPA em funcionamento
     case 'conferir':
     case 'retirar_conferencia':
         naval_tpa_conferir((string) ($p['dia'] ?? ''), (string) ($p['tpa'] ?? ''), ltrim((string) ($p['periodo'] ?? ''), '0') ?: '0',

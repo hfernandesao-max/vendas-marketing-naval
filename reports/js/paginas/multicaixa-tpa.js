@@ -284,11 +284,13 @@ function relatorio(pg) {
     );
 }
 
+const SIT_COR = { em_funcionamento: 'p-ok', reserva: 'p-mut', em_revisao: 'p-warn', avariado: 'p-bad', abatido: 'p-mut' };
+const situacao = (x) => x.situacao || (x.activo === false ? 'reserva' : 'em_funcionamento');
 function terminais(pg) {
   const lista = D.terminais || [];
   const editar = (x) =>
     janela(x ? t('TPA {tpa}', { tpa: x.tpa }) : t('Registar TPA'), t('Os dados estão no talão do TPA: «Ident. TPA» e «Id. Estab.».'), (b, ft, fechar) => {
-      const v = x || { tpa: '', estab: '', empresa: 'NAVAL', banco: '', conta: '', rota: '', activo: true, nota: '' };
+      const v = x || { tpa: '', estab: '', empresa: 'NAVAL', banco: '', conta: '', rota: '', serie: '', situacao: 'em_funcionamento', defeito: '', nota: '' };
       const sel = (lista2, val, vazio) => {
         const s = el('select');
         if (vazio) {
@@ -320,31 +322,54 @@ function terminais(pg) {
       const rota = sel(
         Object.keys(D.promotores || {}).map((r) => [r, prom(r)]),
         v.rota,
-        t('Sem rota atribuída'),
+        t('Sem promotor associado'),
       );
-      const act = el('input');
-      act.type = 'checkbox';
-      act.checked = v.activo !== false;
+      const serie = entrada('text', v.serie || '', { maxLength: 40 });
+      const sit = sel(
+        Object.entries(D.situacoes || {}).map(([k, n]) => [k, t(n)]),
+        situacao(v),
+      );
+      const defeito = entrada('text', v.defeito || '', { maxLength: 120 });
       const nota = entrada('text', v.nota || '', { maxLength: 120 });
       const lin = (rot, c) => {
         const l = el('label', 'campo');
         l.append(el('span', null, rot), c);
         return l;
       };
-      const lAct = el('label', 'mc-sim');
-      lAct.append(act, el('span', null, t('Activo')));
       const e = msgErro();
       b.append(
         lin(t('Ident. TPA (8 dígitos)'), tpa),
+        lin(t('Número de série'), serie),
         lin(t('Id. Estab.'), estab),
         lin(t('Empresa'), emp),
         lin(t('Banco'), bco),
         lin(t('Conta'), conta),
-        lin(t('Rota atribuída'), rota),
+        lin(t('Promotor (rota)'), rota),
+        lin(t('Situação'), sit),
+        lin(t('Avaria ou defeito'), defeito),
         lin(t('Nota informativa (facultativa)'), nota),
-        lAct,
         e,
       );
+      // cadeia de custódia: quem teve o terminal e quando
+      const cad = (v.associacoes || []).slice().reverse();
+      if (cad.length) {
+        b.append(el('h3', null, t('Promotores que tiveram este TPA')));
+        b.append(
+          tabela(
+            [[t('Promotor')], [t('Desde')], [t('Até')], [t('Associado por')]],
+            cad.map((a) => {
+              const tr = el('tr');
+              tr.append(
+                td(prom(a.rota)),
+                td(dl(a.de.slice(0, 10)) + ' ' + a.de.slice(11, 16)),
+                td(a.ate ? dl(a.ate.slice(0, 10)) + ' ' + a.ate.slice(11, 16) : t('em vigor')),
+                td(a.por),
+              );
+              return tr;
+            }),
+          ),
+        );
+      }
       ft.append(
         botao(t('Cancelar'), 'ghost', fechar),
         botao(t('Gravar'), null, () =>
@@ -356,7 +381,9 @@ function terminais(pg) {
             banco: bco.value,
             conta: conta.value,
             rota: rota.value,
-            activo: act.checked,
+            serie: serie.value,
+            situacao: sit.value,
+            defeito: defeito.value,
             nota: nota.value,
           }).then((r) => {
             if (!r || !r.ok) {
@@ -380,15 +407,51 @@ function terminais(pg) {
       b.setAttribute('aria-label', t('Alterar o TPA {tpa}', { tpa: x.tpa }));
       a.append(b);
     }
-    tr.append(td(x.tpa), td(x.estab), td(empresa(x.empresa)), td(banco(x.banco)), td(x.conta), td(prom(x.rota)), el('td', null, ''), a);
-    tr.children[6].append(x.activo ? pill(t('Activo'), 'p-ok') : pill(t('Desactivado'), 'p-mut'));
+    // promotor associado: escolhe-se na lista, logo na tabela (fica a cadeia de custódia)
+    const tdP = el('td');
+    if (D.gere) {
+      const ps = el('select');
+      ps.setAttribute('aria-label', t('Promotor do TPA {tpa}', { tpa: x.tpa }));
+      [['', t('Sem promotor')], ...Object.keys(D.promotores || {}).map((r) => [r, prom(r)])].forEach(([k, txt]) => {
+        const o = el('option', null, txt);
+        o.value = k;
+        if (String(k) === String(x.rota || '')) o.selected = true;
+        ps.append(o);
+      });
+      ps.addEventListener('change', () =>
+        postJson('multicaixa-tpa', { accao: 'associar', tpa: x.tpa, rota: ps.value }).then((r) => {
+          if (!r || !r.ok) {
+            toast(t((r && r.erro) || 'Não foi possível gravar.'), 4000);
+            ps.value = x.rota || '';
+            return;
+          }
+          D.terminais = r.terminais;
+          const outros = (r.outros_tpa || []).join(', ');
+          toast(
+            outros
+              ? t('Este promotor já tem outro TPA em funcionamento: {x}. Se este o substitui, mude a situação do outro.', { x: outros })
+              : t('Promotor associado ao TPA {tpa}.', { tpa: x.tpa }),
+            outros ? 6000 : 2500,
+          );
+          draw();
+        }),
+      );
+      tdP.append(ps);
+    } else tdP.append(prom(x.rota));
+    const sitTd = el('td');
+    const sv = situacao(x);
+    sitTd.append(pill(t((D.situacoes || {})[sv] || sv), SIT_COR[sv] || 'p-mut'));
+    if (x.defeito) sitTd.append(el('div', 'note', x.defeito));
+    tr.append(td(x.tpa), td(x.serie), td(empresa(x.empresa)), td(banco(x.banco)), td(x.conta), tdP, sitTd, a);
     return tr;
   });
   const s = seccao(
     t('Terminais (TPA)'),
-    t('Cada TPA com o banco, a conta, a empresa e a rota a que está atribuído. É o registo que dá o banco e a conta a cada talão de fecho da folha de caixa.'),
+    t(
+      'Inventário dos TPA: banco, conta, empresa, situação e o promotor que o tem. É o registo que dá o banco e a conta a cada talão de fecho da folha de caixa e o banco do TPA de cada rota. Ao mudar o promotor, fica registado quem o teve e quando.',
+    ),
     lista.length
-      ? tabela([[t('Ident. TPA')], [t('Id. Estab.')], [t('Empresa')], [t('Banco')], [t('Conta')], [t('Rota atribuída')], [t('Estado')], ['']], linhas)
+      ? tabela([[t('Ident. TPA')], [t('Número de série')], [t('Empresa')], [t('Banco')], [t('Conta')], [t('Promotor (rota)')], [t('Situação')], ['']], linhas)
       : el('p', 'note', t('Ainda sem TPA registados. Enquanto não houver, a folha de caixa mantém os talões como antes (banco e número do talão).')),
   );
   if (D.gere) s.append(botao(t('Registar TPA'), 'ghost sm', () => editar(null)));
