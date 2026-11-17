@@ -189,7 +189,14 @@ function naval_carr_stock_corte(string $data, string $rota, array $r, ?string $h
     if ($foto && isset($foto['rotas'])) {
         $q = [];
         foreach ((array) ($foto['rotas'][$rota] ?? []) as $c => $x) $q[(string) $c] = (float) ($x['q'] ?? 0);
-        return ['q' => $q, 'origem' => 'fotografia', 'hora' => (string) ($foto['hora'] ?? $hora)];
+        // vendas registadas depois da fotografia (ex.: facturas às 18:30): já não estão na carrinha quando se conta
+        $vd = 0.0;
+        foreach ((array) ($r['mov'] ?? []) as $c => $x) {
+            if (!is_array($x) || empty($x['vd'])) continue;
+            $q[(string) $c] = round(($q[(string) $c] ?? 0) - (float) $x['vd'], 3);
+            $vd += (float) $x['vd'];
+        }
+        return ['q' => $q, 'origem' => 'fotografia', 'hora' => (string) ($foto['hora'] ?? $hora), 'vendido_depois' => round($vd, 3)];
     }
     $q = [];
     foreach ((array) ($r['s0'] ?? []) as $c => $x) $q[(string) $c] = (float) ($x['q'] ?? 0);
@@ -297,21 +304,26 @@ function naval_carr_movimentos_sql(string $data): ?array
 {
     if (!naval_bd_configurada()) return null;
     $corte = naval_carr_corte($data) ?? '23:59';
+    naval_servico('vendas');
+    $validos = naval_vendas_condicao_validos();
     try {
+        // documentos de stock (guias, saídas de armazém…) e vendas registadas depois do corte (VENDIDO, por artigo):
+        // a mercadoria vendida depois do corte já não está na carrinha quando se conta
         $rows = naval_bd_consultar("
             SELECT COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)) AS ROTA,
                    LTRIM(RTRIM(DMD.PRODUCT_CODE)) AS CODIGO,
                    CAST(CASE WHEN COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) < :limite THEN 1 ELSE 0 END AS INT) AS ANTES,
-                   CAST(SUM(CASE WHEN DMD.QNT * DC.STOCK_SIGNAL > 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
-                   CAST(SUM(CASE WHEN DMD.QNT * DC.STOCK_SIGNAL < 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS SAIDAS
+                   CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND DMD.QNT * DC.STOCK_SIGNAL > 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
+                   CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND DMD.QNT * DC.STOCK_SIGNAL < 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS SAIDAS,
+                   CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 THEN DMD.QNT * DH.CALC_SALES_SIGNAL ELSE 0 END) AS FLOAT) AS VENDIDO
             FROM DOCMOVDETAIL DMD
             INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE S ON S.ID = DH.STORE_ID
             WHERE DMD.DELETED = 0 AND DH.DELETED = 0
               AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate
-              AND COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0
-              AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0
+              AND ((COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0)
+                   OR (COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 AND $validos))
             GROUP BY COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)), LTRIM(RTRIM(DMD.PRODUCT_CODE)),
                      CASE WHEN COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) < :limite2 THEN 1 ELSE 0 END",
             [':de' => naval_bd_data($data), ':ate' => naval_bd_data($data), ':limite' => $data . ' ' . $corte . ':00', ':limite2' => $data . ' ' . $corte . ':00']);
@@ -332,12 +344,14 @@ function naval_carr_movimentos_agrupar(array $rows, array $rotas): array
         if (!preg_match('/^\d{4}$/', $rota) || ($rotas && !isset($rotas[$rota]))) continue;
         $c = trim((string) $r['CODIGO']);
         if ($c === '') continue;
-        $x = $out[$rota][$c] ?? ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0];
+        $x = $out[$rota][$c] ?? ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'vd' => 0.0];
         $x['c'] = round($x['c'] + (float) $r['ENTRADAS'], 3);
         $x['d'] = round($x['d'] + (float) $r['SAIDAS'], 3);
         if ((int) $r['ANTES'] === 1) {
             $x['ca'] = round($x['ca'] + (float) $r['ENTRADAS'], 3);
             $x['da'] = round($x['da'] + (float) $r['SAIDAS'], 3);
+        } else {
+            $x['vd'] = round($x['vd'] + (float) ($r['VENDIDO'] ?? 0), 3);   // vendido depois do corte
         }
         $out[$rota][$c] = $x;
     }
@@ -573,7 +587,8 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
             'aprovado_por' => $reg['aprovado_por'] ?? null, 'aprovado_em' => $reg['aprovado_em'] ?? null,
             'motivos' => (object) ($reg['motivos'] ?? []), 'historico' => array_slice((array) $reg['historico'], -20),
             'requisicao' => naval_req_da_conciliacao_numero($data, $rota),
-            'corte' => isset($base['corte']) ? ['hora' => $base['corte']['hora'], 'origem' => $base['corte']['origem']] : null,
+            'corte' => isset($base['corte']) ? ['hora' => $base['corte']['hora'], 'origem' => $base['corte']['origem'],
+                'vendido_depois' => (float) ($base['corte']['vendido_depois'] ?? 0)] : null,
             'cargas_posteriores' => array_map(function ($x) { return ['numero' => $x['numero'], 'confirmado_em' => $x['confirmado_em'], 'autorizado_por' => $x['autorizado_por'] ?? '']; }, (array) ($reg['cargas_posteriores'] ?? []))];
     }
     return ['data' => $data, 'gerado' => $d['gerado'], 'movimentos' => $d['movimentos'], 'rotas' => $out, 'motivos' => NAVAL_CARR_MOTIVOS];

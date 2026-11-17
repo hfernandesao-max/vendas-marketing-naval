@@ -211,7 +211,7 @@ teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e sa
     ];
     $mov = naval_carr_movimentos_agrupar($rows, ['1005', '1006']);
     igual(['1005'], array_map('strval', array_keys($mov)));
-    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0], $mov['1005']['10000332']);
+    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'vd' => 0.0], $mov['1005']['10000332']);
     $r = ['s0' => ['10000292' => ['n' => 'Sabão verde', 'q' => 7.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 7.0], '10000382' => ['n' => 'Sabão branco', 'q' => 12.0],
         '10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
         's1' => ['10000292' => ['n' => 'Sabão verde', 'q' => 22.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 22.0], '10000332' => ['n' => 'Fraldas', 'q' => 237.0]],
@@ -229,4 +229,19 @@ teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e sa
     // sem a separação por hora (dados antigos): a estimativa pelas cargas do portal, como antes
     $r['mov'] = ['10000292' => ['c' => 15.0, 'd' => 0.0]];
     igual('estimado', naval_carr_stock_corte($data, '1005', $r, '16:00')['origem']);
+});
+
+teste('corte por fotografia: as vendas registadas depois do corte saem do esperado (facturas às 18:30)', function () {
+    // rota 1009 a 23-10-2026: fotografia às 15:50 com 40 fraldas; três facturas entre as 18:25 e as 18:44 (30 fraldas)
+    $rows = [
+        ['ROTA' => '1009', 'CODIGO' => '10000332', 'ANTES' => 0, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 30.0],
+        ['ROTA' => '1009', 'CODIGO' => '10000015', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 5.0],
+    ];
+    $mov = naval_carr_movimentos_agrupar($rows, ['1009']);
+    igual([30.0, 0.0], [$mov['1009']['10000332']['vd'], $mov['1009']['10000015']['vd']], 'só conta o vendido depois do corte');
+    $data = date('Y-m-d', time() - 5 * 86400);
+    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', ['hora' => '15:50', 'rotas' => ['1009' => ['10000332' => ['q' => 40.0], '10000015' => ['q' => 6.0]]]]);
+    $c = naval_carr_stock_corte($data, '1009', ['mov' => $mov['1009']], '16:00');
+    igual(['fotografia', 10.0, 6.0, 30.0], [$c['origem'], $c['q']['10000332'], $c['q']['10000015'], $c['vendido_depois']]);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
 });

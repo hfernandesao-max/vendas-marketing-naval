@@ -4373,6 +4373,7 @@ export const TI = {
   'Ex.: talão de fecho do TPA 00444134, período 103': 'ንኣብነት፦ ቅጥዒ ምዕጻው TPA 00444134፡ እዋን 103',
   'Tudo em Numerário': 'ኩሉ ብጥረ ገንዘብ',
   'Tudo em Multicaixa': 'ኩሉ ብMulticaixa',
+  'Vendido depois do corte (já não está na carrinha): {q}.': 'ድሕሪ ግዜ ምቁራጽ ዝተሸጠ (ኣብ መኪና የለን)፦ {q}።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',
