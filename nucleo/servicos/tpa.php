@@ -272,6 +272,14 @@ function naval_tpa_pagamentos_pinguim(string $de, string $ate): ?array
     if (!naval_bd_configurada()) return null;
     $p = [':de' => naval_bd_data(str_replace('-', '', $de)), ':ate' => naval_bd_data(str_replace('-', '', $ate))];
     $validos = naval_vendas_condicao_validos();
+    // todos os códigos de Multicaixa da tabela das formas de pagamento (MC, MCB…), não só o MC
+    naval_servico('formas-pagamento');
+    $mc = naval_fp_codigos_multicaixa() ?: ['MC'];
+    $in = [];
+    foreach (array_values($mc) as $i => $c) {
+        $in[] = ':mc' . $i;
+        $p[':mc' . $i] = $c;
+    }
     $out = [];
     foreach (naval_bd_consultar("
         SELECT CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DIA,
@@ -283,7 +291,7 @@ function naval_tpa_pagamentos_pinguim(string $de, string $ate): ?array
         INNER JOIN DOCHEADER DH ON DH.ID = DF.DOCHEADER_ID
         INNER JOIN PAYMETHOD PM ON PM.ID = DF.PAYMETHOD_ID
         LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
-        WHERE DF.DELETED = 0 AND PM.CODE = 'MC' AND $validos
+        WHERE DF.DELETED = 0 AND PM.CODE IN (" . implode(', ', $in) . ") AND $validos
           AND DH.CALC_SALES_SIGNAL > 0
           AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate", $p) as $r) {
         $out[] = ['dia' => (string) $r['DIA'], 'rota' => (string) $r['ROTA'], 'documento' => (string) $r['DOCUMENTO'], 'valor' => (float) $r['VALOR'], 'ref' => (string) ($r['REF'] ?? '')];

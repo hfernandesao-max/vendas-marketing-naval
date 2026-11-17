@@ -120,12 +120,12 @@ function naval_sap_exportados_rv(array $lotes): array
 /** Meio de cobrança: a mesma regra do portal (reports/js/meios.js, catMeio). */
 function naval_rv_meio(array $p): string
 {
-    $c = strtoupper((string) ($p['codigo'] ?? ''));
-    $m = strtoupper((string) ($p['meio'] ?? ''));
-    if ($c === 'CMP') return 'compensacao';
-    if ($c === 'NU' || preg_match('/NUMER|DINHEIRO|CASH/u', $m)) return 'dinheiro';
-    if ($c === 'MC' || preg_match('/MULTI|TPA|CART|CARD/u', $m)) return 'multicaixa';
-    return 'outro';
+    // pela tabela das formas de pagamento do RTM (lista branca): um código fora da tabela é «outro» (excepção)
+    naval_servico('formas-pagamento');
+    static $cfg = null;
+    $cfg = $cfg ?? naval_fp_config();
+    $f = naval_fp_forma((string) ($p['codigo'] ?? ''), $cfg);
+    return ['numerario' => 'dinheiro', 'multicaixa' => 'multicaixa', 'compensacao' => 'compensacao'][$f] ?? 'outro';
 }
 
 /**
@@ -142,6 +142,9 @@ function naval_caixa_esperado(string $dia, ?array $vendas = null): ?array
         $vendas = (naval_vendas_sql($d8, $d8, naval_promotores(), false) ?? ['vendas' => null])['vendas'];
         if ($vendas === null) return null;
     }
+    // correcções aprovadas da forma de pagamento (o documento do Pinguim BO não muda; conta a forma corrigida)
+    naval_servico('formas-pagamento');
+    $vendas = naval_fp_aplicar($vendas);
     $out = [];
     foreach ($vendas as $v) {
         if (!empty($v['nc']) || !empty($v['substituicao'])) continue;   // substituição: sem venda nem dinheiro
@@ -355,7 +358,21 @@ function naval_rv_consolidado(array $vendas, array $d): array
         $exc[] = ['tipo' => 'caixa', 'rota' => '', 'promotor' => 'Tesouraria', 'valor' => (float) $cx['diferenca'],
             'detalhe' => 'Diferença na contagem da caixa' . ($cx['explicacao'] ? ': ' . $cx['explicacao'] : '.')];
     }
-    $ordem = ['caixa' => 0, 'dinheiro' => 1, 'multicaixa' => 2, 'stock' => 3, 'por_receber' => 4];
+    // formas de pagamento: só Numerário e Multicaixa são válidas no RTM; Multicaixa do banco do TPA da rota
+    naval_servico('formas-pagamento');
+    $fp = naval_fp_config();
+    $invalidas = 0.0;
+    foreach ($vendas as $v) {
+        foreach (naval_fp_excecoes_documento($v, $fp) as $e) {
+            if ($e['tipo'] === 'forma_invalida') $invalidas += abs($e['valor']);
+            $exc[] = ['tipo' => $e['tipo'], 'rota' => (string) $v['rota'], 'promotor' => $v['rota'] . ' · ' . naval_rv_nome_promotor($d, (string) $v['rota']),
+                'valor' => $e['valor'], 'detalhe' => $e['detalhe'] . ' Documento ' . ($v['documento'] ?? '') . '.'];
+        }
+    }
+    $conf[] = ['id' => 'formas', 'nome' => 'Formas de pagamento válidas (Numerário e Multicaixa)', 'origem' => 'Cobranças com forma válida', 'valor_origem' => null,
+        'destino' => 'Cobranças sem forma ou com forma não válida', 'valor_destino' => $r2($invalidas), 'diferenca' => $r2($invalidas),
+        'estado' => $zero($invalidas) ? 'confere' : 'diferenca'];
+    $ordem = ['caixa' => 0, 'dinheiro' => 1, 'multicaixa' => 2, 'forma_invalida' => 3, 'banco_diferente' => 4, 'stock' => 5, 'por_receber' => 6];
     usort($exc, function ($a, $b) use ($ordem) { return [$ordem[$a['tipo']], -abs($a['valor'])] <=> [$ordem[$b['tipo']], -abs($b['valor'])]; });
     $falhas = count(array_filter($conf, function ($x) { return $x['estado'] === 'diferenca'; }));
     return [
@@ -369,6 +386,13 @@ function naval_rv_consolidado(array $vendas, array $d): array
         'conferencias' => $conf, 'excepcoes' => $exc,
         'estado' => $falhas ? 'com_diferencas' : 'confere', 'diferencas' => $falhas,
     ];
+}
+
+/** Nome do promotor de uma rota, pelo quadro «por promotor» do relatório. */
+function naval_rv_nome_promotor(array $d, string $rota): string
+{
+    foreach ((array) ($d['promotores'] ?? []) as $p) if ((string) $p['rota'] === $rota) return (string) $p['promotor'];
+    return '';
 }
 
 /** Kz em texto (para as excepções): 1 234 567,89 Kz. */
@@ -393,7 +417,8 @@ function naval_rv_fontes(string $dia): array
     naval_servico('sincronizacao');
     $d8 = str_replace('-', '', $dia);
     $v = naval_vendas_sql($d8, $d8, naval_promotores(), true);
-    $f = ['vendas' => $v['vendas'] ?? null, 'artigos' => $v['artigos'] ?? null];
+    naval_servico('formas-pagamento');
+    $f = ['vendas' => isset($v['vendas']) ? naval_fp_aplicar($v['vendas']) : null, 'artigos' => $v['artigos'] ?? null];
     if ($f['vendas'] !== null && !$f['artigos']) $f['artigos'] = naval_vendas_artigos_sql($d8, $d8, naval_promotores()) ?? [];
     try {
         $f['sync'] = naval_sincronizacao()['rotas'];
