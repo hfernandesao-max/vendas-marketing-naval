@@ -304,7 +304,9 @@ function naval_rv_consolidado(array $vendas, array $d): array
     $depositos = 0.0;
     foreach ((array) ($cx['saidas'] ?? []) as $s) {
         if (($s['tipo'] ?? 'deposito_banco') !== 'deposito_banco') continue;
-        $k = $linha($s['banco'] ?? '', '');
+        // o lacre não diz a conta: se o banco só tem uma conta nos talões do TPA, o depósito fica nessa linha
+        $doBanco = array_keys(array_filter($bancos, function ($b) use ($s) { return $b['banco'] === (string) ($s['banco'] ?? ''); }));
+        $k = count($doBanco) === 1 ? $doBanco[0] : $linha($s['banco'] ?? '', '');
         $bancos[$k]['deposito'] += (float) ($s['valor'] ?? 0);
         $bancos[$k]['lacres']++;
         $depositos += (float) ($s['valor'] ?? 0);

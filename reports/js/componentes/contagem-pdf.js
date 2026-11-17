@@ -63,7 +63,7 @@ export async function novoDoc(orientacao) {
 }
 
 /** Cabeçalho: emblema e empresa à esquerda; título, referência e estado à direita; dados da contagem por baixo. */
-export function cabecalho(doc, img, titulo, ref, campos) {
+export function cabecalho(doc, img, titulo, ref, campos, area = 'Portal RTM · Logística') {
   const W = doc.internal.pageSize.getWidth(),
     M = 14;
   if (img) doc.addImage(img, 'PNG', M, 10, 12, 12);
@@ -77,7 +77,7 @@ export function cabecalho(doc, img, titulo, ref, campos) {
     .setFont('helvetica', 'normal')
     .setFontSize(8)
     .setTextColor(...CINZA)
-    .text(tp('Portal RTM · Logística'), x0, 20);
+    .text(tp(area), x0, 20);
   doc
     .setFont('helvetica', 'bold')
     .setFontSize(15)

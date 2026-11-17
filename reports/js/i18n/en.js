@@ -4344,6 +4344,7 @@ export const EN = {
     'To load = requisition; total on departure = already in the van ({o}) + to load',
   'Quantidade da requisição (não se altera no plano)': 'Requisition quantity (cannot be changed in the plan)',
   'Existências na carrinha + requisição (não se altera no plano)': 'Van stock + requisition (cannot be changed in the plan)',
+  'Portal RTM · Comercial · Vendas': 'RTM Portal · Commercial · Sales',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',
