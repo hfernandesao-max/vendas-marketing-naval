@@ -17,6 +17,9 @@ defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_TPA_MAX_DIAS = 62;
 
+/** Situação de cada terminal (inventário de activos, ISO/IEC 27001:2022 A.5.9). Só «em funcionamento» está activo. */
+const NAVAL_TPA_SITUACOES = ['em_funcionamento' => 'Em funcionamento', 'reserva' => 'Reserva', 'em_revisao' => 'Em revisão', 'avariado' => 'Avariado', 'abatido' => 'Abatido'];
+
 function naval_tpa_pasta(): string
 {
     return naval_pasta('tpa');
@@ -56,20 +59,61 @@ function naval_tpa_gravar(array $p, string $login): array
     if ($conta !== '' && !preg_match('/^[A-Z0-9][A-Z0-9 .\-]{3,39}$/', $conta)) throw new NavalErro('Conta bancária inválida.', 400);
     $rota = (string) ($p['rota'] ?? '');
     if ($rota !== '' && !preg_match('/^[A-Za-z0-9]{1,10}$/', $rota)) throw new NavalErro('Rota inválida.', 400);
-    $novo = ['tpa' => $tpa, 'estab' => $estab, 'empresa' => $empresa, 'banco' => $banco, 'conta' => $conta, 'rota' => $rota,
-        'activo' => !array_key_exists('activo', $p) || !empty($p['activo']), 'nota' => naval_texto($p['nota'] ?? '', 120),
+    $serie = preg_replace('/\s+/', '', (string) ($p['serie'] ?? ''));
+    if ($serie !== '' && !preg_match('/^[A-Za-z0-9\-]{4,40}$/', $serie)) throw new NavalErro('Número de série inválido.', 400);
+    // situação: a indicada; sem ela (pedidos antigos), «activo» decide entre em funcionamento e reserva
+    $sit = (string) ($p['situacao'] ?? '');
+    if ($sit === '') $sit = !array_key_exists('activo', $p) || !empty($p['activo']) ? 'em_funcionamento' : 'reserva';
+    if (!isset(NAVAL_TPA_SITUACOES[$sit])) throw new NavalErro('Situação do TPA inválida.', 400);
+    $novo = ['tpa' => $tpa, 'estab' => $estab, 'empresa' => $empresa, 'banco' => $banco, 'conta' => $conta, 'rota' => $rota, 'serie' => $serie,
+        'situacao' => $sit, 'activo' => $sit === 'em_funcionamento', 'defeito' => naval_texto($p['defeito'] ?? '', 120), 'nota' => naval_texto($p['nota'] ?? '', 120),
         'alterado_por' => $login, 'alterado_em' => date('Y-m-d H:i:s')];
-    return naval_exclusivo('tpa', function () use ($novo) {
+    return naval_exclusivo('tpa', function () use ($novo, $login) {
         $f = naval_tpa_pasta() . '/terminais.json';
         $d = naval_json_ler($f, ['terminais' => []]);
         $lista = naval_tpa_terminais();
         $antes = $lista[$novo['tpa']] ?? null;
+        $novo['associacoes'] = naval_tpa_cadeia((array) ($antes['associacoes'] ?? []), (string) ($antes['rota'] ?? ''), $novo['rota'], $login, $novo['alterado_em'], $antes === null);
         $lista[$novo['tpa']] = $novo + ['criado_em' => $antes['criado_em'] ?? $novo['alterado_em']];
         $d['terminais'] = array_values($lista);
         naval_json_gravar($f, $d);
         naval_registar($antes ? 'tpa_alterado' : 'tpa_registado', ['tpa' => $novo['tpa'], 'banco' => $novo['banco'], 'empresa' => $novo['empresa'], 'rota' => $novo['rota']]);
         return $lista[$novo['tpa']];
     });
+}
+
+/**
+ * Cadeia de custódia do terminal (quem o teve e quando; ISO/IEC 27001:2022 A.5.9 inventário, A.5.10 uso aceitável e
+ * A.5.11 devolução de activos): ao mudar de promotor, fecha-se a associação anterior e abre-se a nova. Nada se apaga.
+ * [{rota, de, ate, por}] — 'ate' vazio é a associação em vigor.
+ */
+function naval_tpa_cadeia(array $cadeia, string $antes, string $depois, string $login, string $em, bool $novo): array
+{
+    if (!$novo && $antes === $depois) return $cadeia;
+    foreach ($cadeia as $i => $a) if (($a['ate'] ?? '') === '') $cadeia[$i]['ate'] = $em;
+    if ($depois !== '') $cadeia[] = ['rota' => $depois, 'de' => $em, 'ate' => '', 'por' => $login];
+    return array_slice($cadeia, -50);
+}
+
+/**
+ * Associa (ou retira) o promotor de um terminal, sem mexer no resto. Devolve o terminal e, se o promotor já tiver outro
+ * TPA em funcionamento, um aviso (não impede: pode ser a substituição de um avariado).
+ */
+function naval_tpa_associar(string $tpa, string $rota, string $login): array
+{
+    $lista = naval_tpa_terminais();
+    $t = $lista[$tpa] ?? null;
+    if (!$t) throw new NavalErro('TPA não registado.', 404);
+    if ($rota !== '') {
+        naval_servico('rotas');
+        if (!isset(naval_promotores()[$rota])) throw new NavalErro('Escolha um promotor da lista.', 400);
+    }
+    $r = naval_tpa_gravar(['rota' => $rota] + $t, $login);
+    $outros = [];
+    foreach ($lista as $x) {
+        if ($x['tpa'] !== $tpa && $rota !== '' && (string) ($x['rota'] ?? '') === $rota && ($x['situacao'] ?? (!empty($x['activo']) ? 'em_funcionamento' : 'reserva')) === 'em_funcionamento') $outros[] = $x['tpa'];
+    }
+    return ['terminal' => $r, 'outros' => $outros];
 }
 
 /** Valida um talão de fecho de TPA da folha de caixa (modo com registo): devolve a linha a guardar. */

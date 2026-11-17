@@ -1,5 +1,19 @@
 ## 17-11-2026
 
+### Terminais TPA: associar o promotor pela lista, situação, número de série e cadeia de custódia
+
+<!-- paginas: multicaixa-tpa -->
+<!-- tipo: melhoria -->
+
+- Em Multicaixa por TPA › Terminais (TPA), o **promotor associa-se ao terminal na própria tabela**, escolhendo-o na
+  lista dos promotores (rota · nome). Se o promotor já tiver outro TPA em funcionamento, o portal avisa (pode ser a
+  substituição de um avariado).
+- **Cadeia de custódia** (ISO/IEC 27001:2022 A.5.9 inventário, A.5.10 e A.5.11 uso e devolução de activos): cada mudança
+  de promotor fecha a associação anterior e abre a nova, com quem associou e quando; nada se apaga. Na ficha do TPA,
+  «Promotores que tiveram este TPA».
+- Cada TPA passa a ter **número de série**, **situação** (em funcionamento, reserva, em revisão, avariado, abatido) e
+  **avaria ou defeito**, como no «Control de TPA» do Marketing. Só os TPA em funcionamento contam como activos.
+
 ### Formas de pagamento do RTM: lista das formas válidas, banco do TPA por rota e reconciliação por dia e promotor
 
 <!-- paginas: multicaixa-tpa, relatorio-vendas -->
