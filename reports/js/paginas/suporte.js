@@ -12,6 +12,7 @@ import { anterior, atual } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { R } from './registo.js';
+import { seccoesAcessos } from './suporte-acessos.js';
 
 let SUP = null;
 let aLer = false;
@@ -326,6 +327,8 @@ R.suporte = (pg) => {
       ],
     }),
   );
+  // pedidos de acesso (autorizados pelo dono de cada função) e a revisão de acessos da área de quem é dono
+  seccoesAcessos(pg);
 };
 
 /**

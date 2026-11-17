@@ -41,6 +41,11 @@ switch ($accao) {
         naval_json(['ok' => true, 'alteracoes' => naval_gestao_matriz(is_array($p['matriz'] ?? null) ? $p['matriz'] : [])]);
     case 'guardar_funcao':
         naval_json(['ok' => true, 'contas' => naval_funcoes_gravar($p, (string) $eu['login'])]);
+    case 'converter_funcoes':
+        naval_json(['ok' => true] + naval_funcoes_converter((array) ($p['contas'] ?? []), (string) $eu['login']));
+    case 'aplicar_pedido_acesso':
+        naval_servico('acessos-pedidos');
+        naval_json(['ok' => true, 'pedido' => naval_pa_aplicar((string) ($p['id'] ?? ''), $eu)]);
     case 'guardar_perfil':
         naval_json(['ok' => true] + naval_gestao_guardar_perfil($p, $eu));
     case 'apagar_perfil':

@@ -46,7 +46,7 @@ test('módulos: só o SADM gere; piloto e desligado mudam a matriz e a API; o n�
 });
 
 test('painel da carrinha: mesmo acesso da conciliação, só leitura', async () => {
-  expect((await (await entrar('bo')).ctx.get(API + 'painel-carrinha')).status()).toBe(403);
+  expect([401, 403]).toContain((await (await entrar('geo')).ctx.get(API + 'painel-carrinha')).status());
   const sup = (await entrar('sup')).ctx;
   const r = await sup.get(API + 'painel-carrinha');
   expect([200, 503]).toContain(r.status());

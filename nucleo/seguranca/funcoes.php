@@ -20,6 +20,21 @@ defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_FUNCAO_GERADO = 'F';   // prefixo dos perfis gerados (F + 7 caracteres do resumo do conjunto de funções)
 
+/**
+ * Separação de funções imposta pelo sistema (ISO/IEC 27001 A.5.3): estes pares juntam-se sempre aos conflitos do
+ * catálogo, mesmo gravado, e não se retiram no portal. Quem conta a carrinha (Logística) não aprova nem fecha a
+ * conciliação; quem lança a caixa (Finanças) não a aprova.
+ */
+const NAVAL_FUNCOES_CONFLITOS_SISTEMA = [
+    ['P-LOG', 'C-CONC-COORD'], ['P-LOG', 'C-CONC-FECHO'],
+    ['P-FIN', 'C-CAIXA-APROVAR-1'], ['P-FIN', 'C-CAIXA-APROVAR'],
+];
+
+/** Ajustes ao catálogo gravado, aplicados uma só vez cada (id => [função, página, nível mínimo]). */
+const NAVAL_FUNCOES_AJUSTES = [
+    '2026-11-bo-conciliacao' => ['P-BO', 'conciliacao-carrinha', 'V'],   // o apoio administrativo vê a conciliação e imprime a folha
+];
+
 /** Catálogo inicial: as funções-base copiam os perfis do sistema; as complementares juntam-se a elas. */
 function naval_funcoes_iniciais(): array
 {
@@ -101,14 +116,84 @@ function naval_funcoes(bool $recarregar = false): array
     if ($f !== null && !$recarregar) return $f;
     $g = naval_json_ler(naval_ficheiro_funcoes());
     // as funções gravadas mantêm-se como estão; as do sistema acrescentadas depois (ex.: P-TES) juntam-se ao catálogo
-    $f = $g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais();
+    $f = naval_funcoes_regras($g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais());
+    if ($g && naval_funcoes_ajustes_pendentes()) $f = naval_funcoes_regras(naval_funcoes_ajustar((array) $g) + naval_funcoes_iniciais());
     return $f;
+}
+
+/** Junta ao catálogo os conflitos impostos pelo sistema (simétricos), marcados em «conflitos_sistema». */
+function naval_funcoes_regras(array $f): array
+{
+    foreach (NAVAL_FUNCOES_CONFLITOS_SISTEMA as $par) {
+        if (!isset($f[$par[0]], $f[$par[1]])) continue;
+        foreach ([[$par[0], $par[1]], [$par[1], $par[0]]] as $xy) {
+            foreach (['conflitos', 'conflitos_sistema'] as $k) {
+                $l = array_map('strval', (array) ($f[$xy[0]][$k] ?? []));
+                if (!in_array($xy[1], $l, true)) $l[] = $xy[1];
+                $f[$xy[0]][$k] = $l;
+            }
+        }
+    }
+    return $f;
+}
+
+function naval_funcoes_ficheiro_ajustes(): string
+{
+    return naval_pasta_privada() . '/funcoes-ajustes.json';
+}
+
+/** Ajustes do sistema ainda por aplicar ao catálogo gravado. */
+function naval_funcoes_ajustes_pendentes(): array
+{
+    $feitos = naval_json_ler(naval_funcoes_ficheiro_ajustes());
+    return array_diff_key(NAVAL_FUNCOES_AJUSTES, $feitos);
+}
+
+/**
+ * Aplica os ajustes pendentes ao catálogo gravado (sobe o nível da página quando está abaixo do mínimo), grava, e
+ * recalcula os perfis gerados que usam as funções ajustadas. Fica registado. Devolve o catálogo gravado ajustado.
+ */
+function naval_funcoes_ajustar(array $g): array
+{
+    $pend = naval_funcoes_ajustes_pendentes();
+    $feitos = naval_json_ler(naval_funcoes_ficheiro_ajustes());
+    $mudadas = [];
+    foreach ($pend as $id => $a) {
+        [$cod, $rec, $nivel] = $a;
+        if (isset($g[$cod]) && (NAVAL_ORDEM_NIVEIS[(string) ($g[$cod]['permissoes'][$rec] ?? '')] ?? 0) < NAVAL_ORDEM_NIVEIS[$nivel]) {
+            $g[$cod]['permissoes'][$rec] = $nivel;
+            $g[$cod]['permissoes'] = naval_funcoes_limpar((array) $g[$cod]['permissoes']);
+            $mudadas[$cod] = true;
+        }
+        $feitos[$id] = date('Y-m-d H:i');
+    }
+    if ($mudadas) naval_json_gravar(naval_ficheiro_funcoes(), $g);
+    naval_json_gravar(naval_funcoes_ficheiro_ajustes(), $feitos);
+    if ($mudadas) {
+        $f = naval_funcoes_regras($g + naval_funcoes_iniciais());
+        foreach (naval_perfis_criados(true) as $pc => $x) {
+            if (empty($x['gerado']) || !array_intersect(array_keys($mudadas), (array) ($x['funcoes'] ?? []))) continue;
+            $x['matriz'] = naval_funcoes_permissoes_de($f, (array) $x['funcoes']);
+            $x['alterado'] = date('Y-m-d H:i');
+            $x['alterado_por'] = 'sistema';
+            $todos = naval_perfis_criados(true);
+            $todos[$pc] = $x;
+            naval_gravar_perfis($todos);
+        }
+        naval_registar('funcoes_ajustadas', ['ajustes' => array_keys($pend), 'funcoes' => array_keys($mudadas)], 'sistema');
+    }
+    return $g;
 }
 
 /** Permissões efectivas de um conjunto de funções: o maior nível de cada página. */
 function naval_funcoes_permissoes(array $codigos): array
 {
-    $f = naval_funcoes();
+    return naval_funcoes_permissoes_de(naval_funcoes(), $codigos);
+}
+
+/** Permissões efectivas de um conjunto de funções num catálogo dado. */
+function naval_funcoes_permissoes_de(array $f, array $codigos): array
+{
     $out = [];
     foreach ($codigos as $c) {
         foreach ((array) ($f[$c]['permissoes'] ?? []) as $rec => $nivel) {
@@ -199,12 +284,18 @@ function naval_funcoes_gravar(array $p, string $por): int
     if ($nome === '') throw new NavalErro('Indique o nome da função.', 400);
     $novo = !isset($f[$codigo]);
     $conflitos = array_values(array_filter(array_map('strval', (array) ($p['conflitos'] ?? [])), function ($c) use ($f, $codigo) { return $c !== $codigo && isset($f[$c]); }));
+    // dono da função (ISO/IEC 27001 A.5.9 e A.5.18): aprova os pedidos de acesso e revê, por trimestre, quem a tem
+    $dono = array_key_exists('dono', $p) ? trim((string) $p['dono']) : (string) ($f[$codigo]['dono'] ?? '');
+    if ($dono !== '') {
+        $u = naval_utilizadores()[$dono] ?? null;
+        if (!$u || !naval_conta_valida($u)) throw new NavalErro('O dono da função tem de ser uma conta activa.', 400);
+    }
     $activo = !array_key_exists('activo', $p) || !empty($p['activo']);
     $contas = naval_funcoes_contas($codigo);
     if (!$activo && $contas) throw new NavalErro('Há contas com esta função: retire-a das contas antes de a desactivar.', 409);
     $f[$codigo] = ['nome' => $nome, 'descricao' => naval_texto($p['descricao'] ?? '', 200), 'tipo' => ($f[$codigo]['tipo'] ?? 'complementar'),
         'permissoes' => naval_funcoes_limpar((array) ($p['permissoes'] ?? [])), 'por_rota' => !empty($p['por_rota']), 'dois_passos' => !empty($p['dois_passos']),
-        'conflitos' => $conflitos, 'activo' => $activo] + ($novo ? ['criada' => date('Y-m-d H:i'), 'criada_por' => $por] : array_intersect_key($f[$codigo], ['criada' => 1, 'criada_por' => 1]));
+        'conflitos' => $conflitos, 'dono' => $dono, 'activo' => $activo] + ($novo ? ['criada' => date('Y-m-d H:i'), 'criada_por' => $por] : array_intersect_key($f[$codigo], ['criada' => 1, 'criada_por' => 1]));
     // os conflitos são simétricos
     foreach ($f as $c => $x) {
         if ($c === $codigo) continue;
@@ -212,6 +303,8 @@ function naval_funcoes_gravar(array $p, string $por): int
         if (in_array($c, $conflitos, true)) $l[] = $codigo;
         $f[$c]['conflitos'] = $l;
     }
+    // os conflitos impostos pelo sistema não se gravam (juntam-se sempre ao ler)
+    foreach ($f as $c => $x) unset($f[$c]['conflitos_sistema']);
     naval_json_gravar(naval_ficheiro_funcoes(), $f);
     naval_funcoes(true);
     // perfis gerados que usam esta função: recalculam-se
@@ -230,4 +323,119 @@ function naval_funcoes_contas(string $codigo): array
     $out = [];
     foreach (naval_utilizadores() as $l => $u) if (isset($gerados[(string) ($u['perfil'] ?? '')])) $out[] = (string) $l;
     return $out;
+}
+
+/** Perfis do sistema que têm uma função-base equivalente (P-xx), para passar as contas antigas para funções. */
+const NAVAL_FUNCOES_DE_PERFIL = ['TI', 'DIR', 'COM', 'SUP', 'PRO', 'FIN', 'BO', 'LOG', 'GEO', 'AUD'];
+
+/** Contas cujas funções formam hoje uma combinação proibida (ex.: depois de uma nova regra do sistema). */
+function naval_funcoes_contas_conflito(): array
+{
+    $f = naval_funcoes();
+    $out = [];
+    foreach (naval_utilizadores() as $l => $u) {
+        if (empty($u['funcoes']) || !naval_conta_valida($u)) continue;
+        foreach (naval_funcoes_conflitos((array) $u['funcoes']) as $par) {
+            $out[] = ['login' => (string) $l, 'nome' => (string) ($u['nome'] ?? $l), 'funcoes' => $par,
+                'nomes' => [(string) ($f[$par[0]]['nome'] ?? $par[0]), (string) ($f[$par[1]]['nome'] ?? $par[1])]];
+        }
+    }
+    return $out;
+}
+
+/**
+ * Contas activas ainda sem funções (perfil manual), com o que muda se passarem para a função-base equivalente:
+ * as páginas em que o nível da função difere do perfil em vigor. Sem diferenças, a conversão não muda nenhum acesso.
+ */
+function naval_funcoes_sem_funcoes(): array
+{
+    $f = naval_funcoes();
+    $m = naval_matriz();
+    $out = [];
+    foreach (naval_utilizadores() as $l => $u) {
+        $perfil = (string) ($u['perfil'] ?? '');
+        if (!empty($u['funcoes']) || !naval_conta_valida($u) || $perfil === 'SADM' || !empty($u['compatibilidade'])) continue;
+        $funcao = in_array($perfil, NAVAL_FUNCOES_DE_PERFIL, true) && isset($f['P-' . $perfil]) ? 'P-' . $perfil : null;
+        $dif = [];
+        if ($funcao) {
+            $nova = naval_funcoes_permissoes([$funcao]);
+            foreach ($m as $rec => $col) {
+                $a = (string) ($col[$perfil] ?? '');
+                $b = (string) ($nova[$rec] ?? '');
+                if ($a === 'A') $a = '';
+                if ($a !== $b) $dif[] = ['pagina' => (string) $rec, 'actual' => $a, 'funcao' => $b];
+            }
+        }
+        $out[] = ['login' => (string) $l, 'nome' => (string) ($u['nome'] ?? $l), 'perfil' => $perfil, 'perfil_nome' => naval_perfil_nome($perfil),
+            'funcao' => $funcao, 'diferencas' => $dif];
+    }
+    return $out;
+}
+
+/**
+ * Passa para a função-base equivalente as contas indicadas que não mudam de acessos (sem diferenças). As outras
+ * ficam como estão e voltam na resposta: primeiro ajusta-se a função ou o perfil, ou atribuem-se as funções à mão.
+ */
+function naval_funcoes_converter(array $logins, string $por): array
+{
+    $lista = [];
+    foreach (naval_funcoes_sem_funcoes() as $x) $lista[$x['login']] = $x;
+    $d = naval_utilizadores();
+    $feitas = $ficam = [];
+    foreach (array_values(array_unique(array_map('strval', $logins))) as $l) {
+        $x = $lista[$l] ?? null;
+        if (!$x || !$x['funcao'] || $x['diferencas']) {
+            $ficam[] = $l;
+            continue;
+        }
+        $d[$l]['perfil'] = naval_funcoes_perfil([$x['funcao']], $por);
+        $d[$l]['funcoes'] = [$x['funcao']];
+        $d[$l]['alterado'] = date('Y-m-d H:i');
+        $d[$l]['alterado_por'] = $por;
+        $feitas[] = $l;
+    }
+    if ($feitas) {
+        naval_gravar_utilizadores($d);
+        foreach ($feitas as $l) naval_registar('conta_alterada', ['conta' => $l, 'funcoes' => $lista[$l]['funcao'], 'perfil' => $d[$l]['perfil'], 'motivo' => 'passagem para funções sem mudança de acessos']);
+    }
+    return ['convertidas' => $feitas, 'ficam' => $ficam];
+}
+
+/**
+ * Funções temporárias (substituições, férias, projectos): cada função pode ter um último dia («funcoes_fim»). No dia
+ * seguinte sai da conta sozinha; o perfil é recalculado e, sem nenhuma função, a conta fica desligada. Tudo registado.
+ */
+function naval_funcoes_expirar(int $agora): array
+{
+    $hoje = date('Y-m-d', $agora);
+    $d = naval_utilizadores();
+    $mud = [];
+    foreach ($d as $l => $u) {
+        $fim = (array) ($u['funcoes_fim'] ?? []);
+        $sai = array_keys(array_filter($fim, function ($dia) use ($hoje) { return (string) $dia !== '' && (string) $dia < $hoje; }));
+        if (!$sai) continue;
+        $resto = array_values(array_diff((array) ($u['funcoes'] ?? []), $sai));
+        foreach ($sai as $c) unset($fim[$c]);
+        if ($fim) $d[$l]['funcoes_fim'] = $fim; else unset($d[$l]['funcoes_fim']);
+        if ($resto) {
+            try {
+                $d[$l]['perfil'] = naval_funcoes_perfil($resto, 'sistema');
+            } catch (NavalErro $e) {
+                // o que fica é uma combinação que deixou de ser permitida: desliga-se e o super administrador decide
+                $d[$l]['activo'] = false;
+            }
+            $d[$l]['funcoes'] = $resto;
+        } else {
+            unset($d[$l]['funcoes']);
+            $d[$l]['activo'] = false;
+        }
+        $d[$l]['alterado'] = date('Y-m-d H:i', $agora);
+        $d[$l]['alterado_por'] = 'sistema';
+        $mud[(string) $l] = ['saiu' => $sai, 'desligada' => empty($d[$l]['activo'])];
+    }
+    if ($mud) {
+        naval_gravar_utilizadores($d);
+        foreach ($mud as $l => $x) naval_registar('funcao_expirada', ['conta' => $l, 'funcoes' => $x['saiu'], 'desligada' => $x['desligada']], 'sistema');
+    }
+    return $mud;
 }

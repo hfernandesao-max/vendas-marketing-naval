@@ -245,7 +245,7 @@ test('conciliação: a folha de contagem imprime-se para toda a logística, mesm
         movimentos: 'saldo',
         motivos: MOTIVOS,
         nomes: {},
-        rotas: [rota('1009', 'por_contar'), rota('1001', 'aprovada', { promotor: 'Outro' })],
+        rotas: [rota('1009', 'por_contar', { quantidades_ocultas: true }), rota('1001', 'aprovada', { promotor: 'Outro' })],
       },
     }),
   );
@@ -262,7 +262,12 @@ test('conciliação: a folha de contagem imprime-se para toda a logística, mesm
   expect(folha.texto).not.toContain('Tem de voltar');
   // rota já contada: deixa de haver folha para imprimir
   await expect(page.locator('.cc-rota', { hasText: '1001' }).getByRole('button', { name: 'Imprimir folha de contagem' })).toHaveCount(0);
+  // contagem às cegas também para quem só consulta: artigos sem as quantidades do sistema
   await r1009.getByRole('button', { name: 'Ver' }).click();
+  await expect(r1009.locator('.cc-oculta')).toContainText('Contagem às cegas');
+  await expect(r1009.locator('th')).toHaveText(['Código', 'Artigo', 'Unidade']);
+  await r1009.getByRole('button', { name: 'Fechar' }).click();
+  await page.locator('.cc-rota', { hasText: '1001' }).getByRole('button', { name: 'Ver' }).click();
   await expect(page.locator('.cc-corte')).toContainText('Vendido depois do corte (já não está na carrinha): 3');
   expect(erros).toEqual([]);
 });

@@ -206,6 +206,23 @@ function tabelaRota(r) {
   const aprovar = est === 'por_aprovar' && pode.coordenar && !fui('contado_por');
   const box = el('div', 'cc-detalhe');
   box.append(circuito(r));
+  // contagem às cegas: antes de a rota ser contada, quem só consulta vê os artigos, sem as quantidades do sistema
+  if (r.quantidades_ocultas) {
+    box.append(el('p', 'note cc-oculta', t('Contagem às cegas: as quantidades do sistema só aparecem depois de a carrinha ser contada.')));
+    const tb = el('table', 'cc-tab');
+    const cab = el('tr');
+    [t('Código'), t('Artigo'), t('Unidade')].forEach((x) => cab.append(el('th', null, x)));
+    tb.append(cab);
+    r.linhas.forEach((l) => {
+      const tr = el('tr');
+      tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, l.artigo), el('td', null, l.unidade || ''));
+      tb.append(tr);
+    });
+    const w = el('div', 'cc-scroll');
+    w.append(tb);
+    box.append(w);
+    return box;
+  }
   // corte do dia (início do carregamento): a carga para o dia seguinte e as devoluções depois do corte não contam hoje
   if (r.corte) {
     const depois = r.linhas.filter((l) => l.depois_do_corte > 0).reduce((a, l) => a + l.depois_do_corte, 0);
