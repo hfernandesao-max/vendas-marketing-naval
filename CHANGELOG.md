@@ -1,5 +1,26 @@
 ## 17-11-2026
 
+### Conciliação da carrinha: as vendas depois do corte saem do que tem de voltar
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: correcao -->
+
+- Quando o corte vem da fotografia do stock (16:00), as facturas emitidas depois do corte (ex.: rota 1009 a 23-10-2026,
+  três facturas entre as 18:25 e as 18:44) não eram descontadas: a contagem mostrava faltas que não existiam. Passam a
+  sair do que tem de voltar, e a nota do corte diz quanto foi «Vendido depois do corte (já não está na carrinha)».
+- As vendas lêem-se dos mesmos documentos válidos do Pinguim BO que as vendas do portal; as entradas e saídas de stock
+  continuam a ser só as guias e as saídas de armazém.
+
+### Folha de contagem: disponível para toda a logística
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: melhoria -->
+
+- O botão **«Imprimir folha de contagem»** passa a estar no cartão de cada rota por contar, para todos os utilizadores
+  que vêem a conciliação (logística, coordenação, fecho, supervisores, direcção), e não só para quem conta no portal.
+  A folha continua às cegas: só os artigos, o código e a unidade, sem nenhuma quantidade do sistema.
+- Depois de contada a rota, o botão sai do cartão (fica o «PDF da contagem» com o resultado).
+
 ### Formas de pagamento: corrigir a partir das excepções e escolher o banco do Multicaixa
 
 <!-- paginas: multicaixa-tpa -->

@@ -127,7 +127,6 @@ function formContagem(r) {
   });
   const erro = msgErro();
   f.append(
-    pdfBotao(t('Imprimir folha de contagem'), () => folhaContagemCega(r, dia)),
     el('p', 'note', t('Conte o que voltou na carrinha (artigos por vender e devoluções). Os números do sistema só aparecem depois de gravar a contagem.')),
     tab,
     estado,
@@ -225,7 +224,9 @@ function tabelaRota(r) {
               }[r.corte.origem] || 'estimado: inicial − vendido + cargas confirmadas antes do corte',
             ),
           },
-        ) + (depois > 0 ? ' ' + t('Carregado depois do corte: {q}.', { q: q(depois) }) : ''),
+        ) +
+          (depois > 0 ? ' ' + t('Carregado depois do corte: {q}.', { q: q(depois) }) : '') +
+          (r.corte.vendido_depois > 0 ? ' ' + t('Vendido depois do corte (já não está na carrinha): {q}.', { q: q(r.corte.vendido_depois) }) : ''),
       ),
     );
   }
@@ -420,6 +421,9 @@ R['conciliacao-carrinha'] = (pg) => {
       () => ((aberta = aberta === r.rota ? null : r.rota), draw()),
     );
     c.append(abrir);
+    // folha de contagem às cegas: disponível para toda a logística que vê a rota (quem conta no papel, quem acompanha,
+    // quem coordena), enquanto a carrinha está por contar; só leva os artigos, nunca as quantidades do sistema
+    if (r.resumo.estado === 'por_contar') c.append(pdfBotao(t('Imprimir folha de contagem'), () => folhaContagemCega(r, dia)));
     // requisição de reposição criada pela conciliação (o que foi vendido), para o promotor rever e emitir
     if (r.requisicao) {
       const a = el('a', 'btn ghost sm cc-req', t('Requisição de reposição {n}', { n: r.requisicao }));

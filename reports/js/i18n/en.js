@@ -4454,6 +4454,7 @@ export const EN = {
   'Ex.: talão de fecho do TPA 00444134, período 103': 'E.g. POS closing slip 00444134, period 103',
   'Tudo em Numerário': 'All in cash',
   'Tudo em Multicaixa': 'All in Multicaixa',
+  'Vendido depois do corte (já não está na carrinha): {q}.': 'Sold after the cut-off (no longer in the van): {q}.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

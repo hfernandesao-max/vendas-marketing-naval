@@ -221,3 +221,48 @@ test('conciliação: conta-se o stock no corte do dia; a carga para o dia seguin
   await expect(nota).toContainText('Carregado depois do corte: 150');
   expect(erros).toEqual([]);
 });
+
+test('conciliação: a folha de contagem imprime-se para toda a logística, mesmo sem poder contar; vendas depois do corte', async ({ page }) => {
+  const rota = (codigo, estado, extra) => ({
+    rota: codigo,
+    promotor: 'Efrem',
+    cega: false,
+    linhas: [{ ...linhaCompleta('A1', 'Fraldas M', 10, null), inicial: 20, carregado: 0, vendido: 10 }],
+    corte: { hora: '16:00', origem: 'fotografia', vendido_depois: 3 },
+    motivos: {},
+    resumo: { estado, artigos: 1, alertas: 0, diferencas: 0, falta_kz: 0, sobra_kz: 0 },
+    historico: [],
+    ...extra,
+  });
+  await page.route('**/v1/conciliacao-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        gere: false,
+        pode: { contar: false, coordenar: false, fechar: false },
+        eu: 'log',
+        data: '2026-10-23',
+        movimentos: 'saldo',
+        motivos: MOTIVOS,
+        nomes: {},
+        rotas: [rota('1009', 'por_contar'), rota('1001', 'aprovada', { promotor: 'Outro' })],
+      },
+    }),
+  );
+  await page.addInitScript(() => (window.open = () => null));
+  const erros = await abrir(page, '#conciliacao-carrinha');
+  const r1009 = page.locator('.cc-rota', { hasText: '1009' });
+  // sem abrir a rota nem ter a função de contar: a folha às cegas está no cartão
+  const botaoFolha = r1009.getByRole('button', { name: 'Imprimir folha de contagem' });
+  const [d] = await Promise.all([page.waitForEvent('download'), botaoFolha.click()]);
+  const fs = await import('node:fs');
+  const folha = { nome: d.suggestedFilename(), texto: fs.readFileSync(await d.path(), 'latin1') };
+  expect(folha.nome).toBe('CC-1009-20261026_folha-de-contagem.pdf');
+  expect(folha.texto).toContain('Fraldas M');
+  expect(folha.texto).not.toContain('Tem de voltar');
+  // rota já contada: deixa de haver folha para imprimir
+  await expect(page.locator('.cc-rota', { hasText: '1001' }).getByRole('button', { name: 'Imprimir folha de contagem' })).toHaveCount(0);
+  await r1009.getByRole('button', { name: 'Ver' }).click();
+  await expect(page.locator('.cc-corte')).toContainText('Vendido depois do corte (já não está na carrinha): 3');
+  expect(erros).toEqual([]);
+});
