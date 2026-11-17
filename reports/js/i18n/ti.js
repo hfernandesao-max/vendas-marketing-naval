@@ -4266,6 +4266,19 @@ export const TI = {
   'Portal RTM · Comercial · Vendas': 'ፖርታል RTM · ንግዲ · መሸጣ',
   'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte':
     'መጀመርታ − ዝተሸጠ + ናይ Pinguim BO ናይ መጓዓዝያ ሰነዳትን ካብ መኽዘን ምውጻእን ቅድሚ ግዜ ምቁራጽ ዝተመዝገቡ',
+  'revista pela Tesouraria: {p}': 'ብገንዘብ ቤት ዝተረኣየ፦ {p}',
+  'Fechos por rever pela Tesouraria ({n})': 'ብገንዘብ ቤት ዝረኣዩ ምዕጻዋት ({n})',
+  'Fechos validados por outra pessoa. Abra cada dia, confira e confirme a revisão; quem validou fica registado como está.':
+    'ብካልእ ሰብ ዝተረጋገጹ ምዕጻዋት። ነፍሲ ወከፍ መዓልቲ ክፈቱ፡ ኣረጋግጹን ነቲ ምርኣይ ኣጽድቑን፤ ዘረጋገጸ ከም ዘለዎ ተመዝጊቡ ይተርፍ።',
+  'Confirmar a revisão (Tesouraria)': 'ምርኣይ ኣጽድቑ (ገንዘብ ቤት)',
+  'Confirmar a revisão do fecho de {d}?': 'ምርኣይ ናይ ምዕጻው {d} ኣጽድቑ?',
+  'Confirma que conferiu este fecho, validado por {p}. A validação de {p} fica como está; a sua revisão acrescenta-se ao registo, com o seu nome, a data e a hora.':
+    'ነዚ ብ{p} ዝተረጋገጸ ምዕጻው ከም ዝረኣኹምዎ ኣጽድቑ። ምርግጋጽ ናይ {p} ከም ዘለዎ ይተርፍ፤ ምርኣይኩም ምስ ስምኩም፡ ዕለትን ሰዓትን ናብቲ መዝገብ ይውሰኽ።',
+  'Nota (opcional)': 'መዘኻኸሪ (ኣማራጺ)',
+  'Nota da revisão': 'መዘኻኸሪ ምርኣይ',
+  'Confirmar a revisão': 'ምርኣይ ኣጽድቑ',
+  'Revisto pela Tesouraria': 'ብገንዘብ ቤት ዝተረኣየ',
+  'Revisão registada.': 'ምርኣይ ተመዝጊቡ።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

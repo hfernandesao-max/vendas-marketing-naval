@@ -22,6 +22,7 @@ const PASSOS = {
   reaberta: 'Reaberta para corrigir',
   deposito_aprovado: 'Depósito aprovado',
   deposito_aprovacao_retirada: 'Aprovação do depósito retirada',
+  revista: 'Revisto pela Tesouraria',
 };
 const soma = (l) => (l || []).reduce((a, x) => a + (+x.valor || 0), 0);
 
@@ -69,8 +70,8 @@ function passos(c) {
     x.em,
     x.accao === 'gravada' && x.n > 1
       ? tp('{n} gravações · primeira {h}', { n: x.n, h: quando(x.primeira) })
-      : x.accao === 'reaberta'
-        ? x.motivo || ''
+      : x.accao === 'reaberta' || x.accao === 'revista'
+        ? x.motivo || x.nota || ''
         : x.accao === 'fechada' && x.diferenca
           ? tp('diferença {v}', { v: kz(x.diferenca) })
           : x.lacre
@@ -237,6 +238,7 @@ export async function fechoCaixaPdf(c, extra = {}, imprimir = false) {
   const blocos = [[tp('Validado por (quem lança)'), tp('Nome, assinatura e data'), { por: c.fechada_por, em: c.fechada_em }]];
   if (dois) blocos.push([tp('Aprovado no 1.º nível'), tp('Nome, assinatura e data'), { por: c.verificada_por, em: c.verificada_em }]);
   blocos.push([tp('Aprovação final'), tp('Nome, assinatura e data'), { por: c.aprovada_por, em: c.aprovada_em }]);
+  (c.revisoes || []).forEach((r) => blocos.push([tp('Revisto pela Tesouraria'), tp('Nome, assinatura e data'), { por: r.por, em: r.em }]));
   y = assinaturas(doc, y + 2, blocos);
   const reg = passos(c);
   if (reg.length) {

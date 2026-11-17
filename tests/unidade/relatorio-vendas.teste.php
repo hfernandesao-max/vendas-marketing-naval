@@ -188,3 +188,20 @@ teste('caixa por notas: o valor da entrega e a contagem física saem das notas e
     $c = naval_caixa_fechar($dia, null, '', $c['versao'], 'josefa', ['5000' => 2, 'moedas' => 50]);
     igual([10050.0, 0.0], [$c['contagem_fisica'], $c['diferenca']]);
 });
+
+teste('caixa: revisão pela Tesouraria de um fecho validado por outra pessoa (acrescenta-se; nada se reescreve)', function () {
+    $d = date('Y-m-d', time() - 20 * 86400);
+    $c = naval_caixa_gravar($d, ['saldo_inicial' => 1000, 'entregas' => [['rota' => '1001', 'notas' => ['500' => 2]]]], 0, 'henrique');
+    lanca(409, function () use ($d, $c) { naval_caixa_rever($d, '', $c['versao'], 'josefa'); }); // aberta: valida-se, não se revê
+    $c = naval_caixa_fechar($d, 2000, '', $c['versao'], 'henrique');
+    $c = naval_caixa_aprovar($d, $c['versao'], 'michael', [2], false);
+    verdade(in_array($d, naval_caixa_por_rever('josefa', 60), true), 'por rever pela Josefa');
+    igual(false, in_array($d, naval_caixa_por_rever('henrique', 60), true), 'quem validou não tem nada a rever');
+    lanca(409, function () use ($d, $c) { naval_caixa_rever($d, '', $c['versao'], 'henrique'); });
+    $r = naval_caixa_rever($d, 'conferido com as guias de entrega', $c['versao'], 'josefa');
+    igual(['henrique', 'michael', 'aprovada', 2000.0], [$r['fechada_por'], $r['aprovada_por'], $r['estado'], (float) $r['contagem_fisica']], 'assinaturas, estado e valores intactos');
+    igual(['josefa', 'conferido com as guias de entrega', 'aprovada'], [$r['revisoes'][0]['por'], $r['revisoes'][0]['nota'], $r['revisoes'][0]['estado']]);
+    igual('revista', end($r['historico'])['accao']);
+    lanca(409, function () use ($d, $r) { naval_caixa_rever($d, '', $r['versao'], 'josefa'); }); // uma vez por pessoa
+    igual(false, in_array($d, naval_caixa_por_rever('josefa', 60), true));
+});

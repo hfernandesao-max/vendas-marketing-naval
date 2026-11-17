@@ -4506,6 +4506,17 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   display: grid;
   gap: 10px;
 }
+/* fechos por rever pela Tesouraria: atalhos para cada dia */
+.cx-rever {
+  display: grid;
+  gap: 6px;
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+.cx-rever-dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .rv-dif {
   color: var(--bad);
   font-weight: 700;

@@ -544,3 +544,70 @@ test('fecho de caixa: depois de validado dá o PDF com a reconciliação, o deta
   expect(txt).toContain('Andrea Santos');
   expect(erros).toEqual([]);
 });
+
+test('fecho de caixa: a Tesouraria revê um fecho validado por outra pessoa; quem validou fica como está', async ({ page }) => {
+  let caixa = {
+    dia: '2026-10-26',
+    estado: 'aprovada',
+    versao: 6,
+    saldo_inicial: 1000,
+    entregas: [{ rota: '1001', empresa: 'NAVAL', valor: 500, nota: '' }],
+    tpa: [],
+    saidas: [],
+    contagem_fisica: 1500,
+    explicacao: '',
+    saldo_teorico: 1500,
+    diferenca: 0,
+    fechada_por: 'henrique',
+    fechada_em: '2026-10-26 16:02:00',
+    aprovada_por: 'michael',
+    aprovada_em: '2026-10-26 17:00:00',
+    historico: [
+      { accao: 'fechada', por: 'henrique', em: '2026-10-26 16:02:00' },
+      { accao: 'aprovada', por: 'michael', em: '2026-10-26 17:00:00' },
+    ],
+  };
+  let porRever = ['2026-10-26', '2026-10-24'];
+  const pedidos = [];
+  await page.route('**/v1/caixa**', (r) => {
+    const req = r.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      caixa = {
+        ...caixa,
+        versao: 7,
+        revisoes: [{ por: 'josefa', em: '2026-10-26 18:00:00', nota: b.nota, estado: 'aprovada' }],
+        historico: [...caixa.historico, { accao: 'revista', por: 'josefa', em: '2026-10-26 18:00:00', nota: b.nota }],
+      };
+      porRever = ['2026-10-24'];
+      return r.fulfill({ json: { ok: true, caixa, por_rever: porRever } });
+    }
+    return r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        aprova: [],
+        eu: 'josefa',
+        caixa,
+        por_rever: porRever,
+        promotores: { 1001: 'Andrea Santos' },
+        esperado: {},
+        bancos: ['BPC'],
+        empresas: ['NAVAL'],
+      },
+    });
+  });
+  const erros = await abrir(page, '#caixa-marketing');
+  await expect(page.locator('#cx-por-rever')).toContainText('Fechos por rever pela Tesouraria (2)');
+  await page.getByRole('button', { name: 'Confirmar a revisão (Tesouraria)' }).click();
+  await page.getByLabel('Nota da revisão').fill('conferido com as guias');
+  await page.getByRole('button', { name: 'Confirmar a revisão', exact: true }).click();
+  await expect(page.locator('.cx-cab')).toContainText('revista pela Tesouraria');
+  await expect(page.locator('.cx-cab')).toContainText('validada por');
+  await expect(page.locator('.cx-rastreio tbody tr', { hasText: 'Revisto pela Tesouraria' })).toContainText('conferido com as guias');
+  await expect(page.locator('#cx-por-rever')).toContainText('(1)');
+  await expect(page.getByRole('button', { name: 'Confirmar a revisão (Tesouraria)' })).toHaveCount(0);
+  expect(pedidos[0]).toMatchObject({ accao: 'rever', dia: '2026-10-26', versao: 6, nota: 'conferido com as guias' });
+  expect(erros).toEqual([]);
+});

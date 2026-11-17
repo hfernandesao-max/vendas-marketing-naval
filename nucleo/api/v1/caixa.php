@@ -12,6 +12,7 @@
  * POST {accao: fechar, dia, versao, contagem, notas?: {5000: n, …, moedas: valor}, explicacao, csrf}
  * POST {accao: aprovar, dia, versao, csrf}
  * POST {accao: reabrir, dia, versao, motivo, csrf}
+ * POST {accao: rever, dia, versao, nota?, csrf}   (revisão pela Tesouraria de um fecho validado por outra pessoa; G)
  */
 defined('NAVAL_API') || exit;
 naval_servico('caixa');
@@ -37,7 +38,9 @@ if (!naval_e_post()) {
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
         'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? ''),
         // registo dos TPA (Multicaixa por TPA): com terminais, cada talão de fecho escolhe o TPA e escreve o período e o total
-        'terminais' => array_values(array_filter(naval_tpa_terminais(), function ($t) { return !empty($t['activo']); }))]);
+        'terminais' => array_values(array_filter(naval_tpa_terminais(), function ($t) { return !empty($t['activo']); })),
+        // fechos validados por outra pessoa que quem lança a caixa ainda não reviu
+        'por_rever' => $gere ? naval_caixa_por_rever((string) (((array) naval_utilizador())['login'] ?? '')) : []]);
 }
 
 $p = naval_pedido();
@@ -51,7 +54,7 @@ $accao = (string) ($p['accao'] ?? '');
 if ($accao === 'aprovar' && !$aprova) throw new NavalErro('O seu perfil não aprova a caixa.', 403);
 if (in_array($accao, ['aprovar_deposito', 'retirar_aprovacao_deposito'], true) && !$aprova) throw new NavalErro('O seu perfil não aprova depósitos.', 403);
 if ($accao === 'reabrir' && !$gere && !$aprova) throw new NavalErro('O seu perfil não permite reabrir a caixa.', 403);
-if (in_array($accao, ['gravar', 'fechar'], true) && !$gere) throw new NavalErro('O seu perfil não permite registar a caixa.', 403);
+if (in_array($accao, ['gravar', 'fechar', 'rever'], true) && !$gere) throw new NavalErro('O seu perfil não permite registar a caixa.', 403);
 switch ($accao) {
     case 'aprovar_deposito':
     case 'retirar_aprovacao_deposito':
@@ -91,5 +94,8 @@ switch ($accao) {
         naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_aprovar($dia, $versao, $login, $niveis)]);
     case 'reabrir':
         naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_reabrir($dia, (string) ($p['motivo'] ?? ''), $versao, $login)]);
+    case 'rever':
+        naval_json_assinado(['ok' => true, 'caixa' => naval_caixa_rever($dia, (string) ($p['nota'] ?? ''), $versao, $login),
+            'por_rever' => naval_caixa_por_rever($login)]);
 }
 throw new NavalErro('Acção desconhecida.', 400);

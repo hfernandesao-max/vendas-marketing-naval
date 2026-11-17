@@ -381,6 +381,52 @@ function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $ni
     return $c;
 }
 
+/**
+ * Revisão pela Tesouraria (ratificação posterior): quem lança a caixa confirma um fecho que foi validado por outra
+ * pessoa — ex.: os fechos lançados antes de a tesoureira ter conta no portal. Boa prática de controlo interno e de
+ * auditoria (ISO/IEC 27001:2022 A.8.15; COSO): as assinaturas registadas nunca se reescrevem; a revisão acrescenta-se
+ * (quem, quando, nota) e fica um passo no registo. Não muda valores, estado nem aprovações; vale também numa caixa já
+ * aprovada. Uma revisão por pessoa e por dia; quem validou o fecho não o revê.
+ */
+function naval_caixa_rever(string $dia, string $nota, ?int $versao, string $login): array
+{
+    $nota = naval_texto($nota, 300);
+    $c = naval_caixa_alterar($dia, $versao, function ($c) use ($nota, $login) {
+        if ($c['estado'] === 'aberta') throw new NavalErro('Esta caixa ainda está aberta: valide-a em vez de a rever.', 409);
+        if (strcasecmp((string) ($c['fechada_por'] ?? ''), $login) === 0) throw new NavalErro('Foi quem validou este fecho: não há nada para rever.', 409);
+        foreach ((array) ($c['revisoes'] ?? []) as $r) {
+            if (strcasecmp((string) $r['por'], $login) === 0) throw new NavalErro('Já reviu este fecho.', 409);
+        }
+        $em = date('Y-m-d H:i:s');
+        $c['revisoes'][] = ['por' => $login, 'em' => $em, 'nota' => $nota, 'estado' => $c['estado']];
+        naval_caixa_hist($c, 'revista', $login, $nota !== '' ? ['nota' => $nota] : []);
+        return $c;
+    });
+    naval_registar('caixa_revista', ['dia' => $dia, 'estado' => $c['estado']]);
+    return $c;
+}
+
+/**
+ * Fechos (não abertos) dos últimos $dias que $login ainda não validou nem reviu: [dia, …], o mais recente primeiro.
+ * Para a Tesouraria ver o que falta rever.
+ */
+function naval_caixa_por_rever(string $login, int $dias = 120, ?string $hoje = null): array
+{
+    $hoje = $hoje ?? date('Y-m-d');
+    $desde = date('Y-m-d', strtotime($hoje . ' 12:00') - $dias * 86400);
+    $out = [];
+    foreach ((array) glob(naval_pasta('caixa') . '/*.json') as $f) {
+        $dia = basename((string) $f, '.json');
+        if (!naval_data_valida($dia) || $dia < $desde || $dia > $hoje) continue;
+        $c = naval_json_ler((string) $f);
+        if (!$c || ($c['estado'] ?? 'aberta') === 'aberta' || strcasecmp((string) ($c['fechada_por'] ?? ''), $login) === 0) continue;
+        foreach ((array) ($c['revisoes'] ?? []) as $r) if (strcasecmp((string) $r['por'], $login) === 0) continue 2;
+        $out[] = $dia;
+    }
+    rsort($out);
+    return $out;
+}
+
 /** Reabre uma caixa validada ou verificada (ainda sem a aprovação final) para corrigir, com motivo. */
 function naval_caixa_reabrir(string $dia, string $motivo, ?int $versao, string $login): array
 {
