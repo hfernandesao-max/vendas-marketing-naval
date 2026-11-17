@@ -503,30 +503,27 @@ const formasTxt = (x) =>
 function abrirCorrecao(linha) {
   janela(
     t('Corrigir as formas de pagamento · {p} · {d}', { p: prom(linha.rota), d: dl(linha.dia) }),
-    t(
-      'Indique, documento a documento, o que se recebeu de facto. O documento do Pinguim BO não muda: a correcção fica registada com a justificação e só conta nos relatórios depois de aprovada por outra pessoa (1.º nível de aprovação da caixa).',
-    ),
-    (b, ft, fechar) => {
-      const dlg = b.closest('dialog');
-      if (dlg) dlg.classList.add('dlg-largo');
+    t('O documento do Pinguim BO não muda. A correcção fica registada com a justificação e só conta depois de aprovada por outra pessoa.'),
+    (b, ft, fechar, dlg) => {
+      dlg.classList.add('dlg-fp');
       const corpo = el('div', 'fp-corr');
       corpo.append(el('p', 'note', t('A carregar…')));
       b.append(corpo);
       const just = el('textarea');
-      just.rows = 3;
+      just.rows = 2;
       just.maxLength = 600;
-      just.placeholder = t(
-        'Ex.: o cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano. Confirmado com o dinheiro entregue na caixa e o talão do TPA do dia.',
-      );
+      just.placeholder = t('Ex.: o cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano. Confirmado com a folha de caixa e o talão do TPA.');
       just.setAttribute('aria-label', t('Justificação (obrigatória)'));
-      const evid = entrada('text', '', { maxLength: 200, placeholder: t('Ex.: talão de fecho do TPA 00444134, período 103; folha de caixa do dia') });
+      const evid = entrada('text', '', { maxLength: 200, placeholder: t('Ex.: talão de fecho do TPA 00444134, período 103') });
       evid.setAttribute('aria-label', t('Evidência'));
       const lj = el('label', 'campo');
       lj.append(el('span', null, t('Justificação (obrigatória)')), just);
       const le = el('label', 'campo');
       le.append(el('span', null, t('Evidência')), evid);
       const e2 = msgErro();
-      b.append(lj, le, e2);
+      const campos = el('div', 'fp-campos');
+      campos.append(lj, le);
+      b.append(campos, e2);
       const valores = [];
       apiJson('multicaixa-tpa?formas_docs=1&dia=' + linha.dia + '&rota=' + encodeURIComponent(linha.rota)).then((d) => {
         corpo.replaceChildren();
@@ -534,47 +531,95 @@ function abrirCorrecao(linha) {
           corpo.append(el('p', 'note', t((d && d.erro) || 'Não foi possível ler os documentos.')));
           return;
         }
-        const linhas = d.documentos.map((doc) => {
+        const mcs = Object.entries(F.formas.codigos).filter(([, x]) => x.forma === 'multicaixa');
+        const comCorr = d.documentos.some((doc) => (doc.correcoes || []).some((c) => c.estado === 'pendente' || c.estado === 'aprovada'));
+        const tab = el('table', 'fp-tab');
+        const cab = el('tr');
+        [
+          [t('Documento'), ''],
+          [t('Cobrado'), 'n'],
+          [t('Numerário'), 'n'],
+          [t('Multicaixa'), 'n'],
+          ...(mcs.length > 1 ? [[t('Banco'), '']] : []),
+          ...(comCorr ? [[t('Estado'), '']] : []),
+        ].forEach(([txt, c]) => cab.append(el('th', c || null, txt)));
+        tab.append(cab);
+        d.documentos.forEach((doc) => {
           const tr = el('tr');
           const emVigor = (doc.correcoes || []).find((c) => c.estado === 'pendente' || c.estado === 'aprovada');
           const alvo = doc.pinguim.total_pago > 0 ? doc.pinguim.total_pago : doc.total;
           const base = emVigor || { numerario: doc.pinguim.numerario, multicaixa: doc.pinguim.multicaixa + (doc.pinguim.invalida || 0) };
-          const nu = entrada('number', base.numerario || '', { min: 0, step: '0.01', inputMode: 'decimal' });
-          const mc = entrada('number', base.multicaixa || '', { min: 0, step: '0.01', inputMode: 'decimal' });
-          nu.setAttribute('aria-label', t('Numerário do documento {d}', { d: doc.documento }));
-          mc.setAttribute('aria-label', t('Multicaixa do documento {d}', { d: doc.documento }));
           const bloqueado = !doc.corrigivel || !!emVigor;
-          nu.disabled = mc.disabled = bloqueado;
+          const num = (v, rot) => {
+            const i = entrada('number', v || '', { min: 0, step: '0.01', inputMode: 'decimal', placeholder: '0' });
+            i.setAttribute('aria-label', rot);
+            i.disabled = bloqueado;
+            return i;
+          };
+          const nu = num(base.numerario, t('Numerário do documento {d}', { d: doc.documento }));
+          const mc = num(base.multicaixa, t('Multicaixa do documento {d}', { d: doc.documento }));
           // ao mudar um valor, o outro completa o total cobrado
           nu.addEventListener('input', () => (mc.value = Math.max(0, Math.round((alvo - (+nu.value || 0)) * 100) / 100)));
           mc.addEventListener('input', () => (nu.value = Math.max(0, Math.round((alvo - (+mc.value || 0)) * 100) / 100)));
-          if (!bloqueado) valores.push({ documento: doc.documento, nu, mc });
-          const tdN = el('td', 'n');
-          tdN.append(nu);
-          const tdM = el('td', 'n');
-          tdM.append(mc);
-          const estado = el('td');
-          if (emVigor) estado.append(pillCorr(emVigor.estado), el('span', 'note', ' ' + emVigor.id));
-          else if (!doc.corrigivel) estado.append(el('span', 'note', doc.nc ? t('nota de crédito') : t('não se corrige')));
-          tr.append(
-            el('td', null, doc.documento),
-            el('td', null, doc.hora || '—'),
-            el('td', 'n', kz(alvo)),
-            el('td', null, formasTxt(doc.pinguim)),
-            tdN,
-            tdM,
-            estado,
-          );
-          return tr;
+          const bs = el('select');
+          bs.setAttribute('aria-label', t('Banco do Multicaixa do documento {d}', { d: doc.documento }));
+          const codAtual = (emVigor && emVigor.codigo_multicaixa) || doc.pinguim.codigo_multicaixa || (mcs[0] || [''])[0];
+          mcs.forEach(([cod, x]) => {
+            const o = el('option', null, x.banco ? banco(x.banco) : cod);
+            o.value = cod;
+            if (cod === codAtual) o.selected = true;
+            bs.append(o);
+          });
+          bs.disabled = bloqueado;
+          if (!bloqueado) valores.push({ documento: doc.documento, nu, mc, bs });
+          // documento, hora e o que está no Pinguim BO na mesma célula (sem colunas a mais)
+          const tdD = el('td', 'fp-doc');
+          const formaP = [
+            doc.pinguim.numerario ? t('Numerário') : '',
+            doc.pinguim.multicaixa ? t('Multicaixa') : '',
+            doc.pinguim.invalida ? t('sem forma válida') : '',
+          ]
+            .filter(Boolean)
+            .join(' + ');
+          tdD.append(el('b', null, doc.documento), el('span', 'note', [doc.hora, formaP].filter(Boolean).join(' · ')));
+          tdD.title = t('No Pinguim BO') + ': ' + formasTxt(doc.pinguim);
+          // data-l: o nome da coluna, para o ecrã estreito (telemóvel), onde cada documento é um cartão
+          const cel = (x, c, rot) => {
+            const c2 = el('td', c || null);
+            c2.dataset.l = rot;
+            c2.append(x);
+            return c2;
+          };
+          tr.append(tdD, cel(kz(alvo), 'n', t('Cobrado')), cel(nu, 'n', t('Numerário')), cel(mc, 'n', t('Multicaixa')));
+          if (mcs.length > 1) tr.append(cel(bs, '', t('Banco')));
+          if (comCorr) {
+            const es = el('td');
+            if (emVigor) es.append(pillCorr(emVigor.estado));
+            else if (!doc.corrigivel) es.append(el('span', 'note', doc.nc ? t('nota de crédito') : t('não se corrige')));
+            tr.append(es);
+          }
+          tab.append(tr);
         });
-        corpo.append(
-          tabela([[t('Documento')], [t('Hora')], [t('Cobrado'), 1], [t('No Pinguim BO')], [t('Numerário'), 1], [t('Multicaixa'), 1], [t('Correcção')]], linhas),
-        );
+        // atalhos: tudo em numerário ou tudo em Multicaixa (os casos mais comuns)
+        const tudo = (em) => () =>
+          valores.forEach((x) => {
+            const tot = (+x.nu.value || 0) + (+x.mc.value || 0);
+            x.nu.value = em === 'nu' ? tot : 0;
+            x.mc.value = em === 'mc' ? tot : 0;
+          });
+        const at = el('div', 'fp-atalhos');
+        if (valores.length) at.append(botao(t('Tudo em Numerário'), 'ghost sm', tudo('nu')), botao(t('Tudo em Multicaixa'), 'ghost sm', tudo('mc')));
+        corpo.append(tab, at);
       });
       ft.append(
         botao(t('Cancelar'), 'ghost', fechar),
         botao(t('Pedir a correcção'), null, () => {
-          const docs = valores.map((x) => ({ documento: x.documento, numerario: +x.nu.value || 0, multicaixa: +x.mc.value || 0 }));
+          const docs = valores.map((x) => ({
+            documento: x.documento,
+            numerario: +x.nu.value || 0,
+            multicaixa: +x.mc.value || 0,
+            codigo_multicaixa: x.bs.value,
+          }));
           postJson('multicaixa-tpa', { accao: 'corrigir', dia: linha.dia, rota: linha.rota, docs, justificacao: just.value, evidencia: evid.value }).then(
             (x) => {
               if (!x || !x.ok) {
@@ -735,6 +780,17 @@ function formas(pg) {
           { key: 'documento', label: t('Documento'), p: 2 },
           { key: 'detalhe', label: t('Detalhe'), wrap: true, p: 3 },
           { key: 'valor', label: t('Valor'), type: 'kz', p: 0 },
+          // corrigir logo a partir da excepção (os documentos desse dia e promotor)
+          ...(F.pede_correcao
+            ? [
+                {
+                  key: 'corrigir',
+                  label: t('Correcção'),
+                  p: 0,
+                  render: (v, x) => (x.tipo === 'tpa_outra_empresa' ? '—' : botao(t('Corrigir'), 'ghost sm', () => abrirCorrecao(x))),
+                },
+              ]
+            : []),
         ],
       }),
     );

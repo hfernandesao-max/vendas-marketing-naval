@@ -1,5 +1,22 @@
 ## 17-11-2026
 
+### Formas de pagamento: corrigir a partir das excepções e escolher o banco do Multicaixa
+
+<!-- paginas: multicaixa-tpa -->
+<!-- tipo: melhoria -->
+
+- Na tabela «Excepções das formas de pagamento», cada excepção tem o botão **«Corrigir»**, que abre os documentos desse
+  dia e promotor (como na reconciliação). Para fechar Outubro e Novembro: escolha o período, corrija a partir das
+  excepções e aprove.
+- Na correcção, além de Numerário e Multicaixa, escolhe-se o **banco do Multicaixa** (os códigos de Multicaixa da tabela:
+  MC, MCB · BPC…). Assim corrige-se também o «Multicaixa de outro banco». Continua a valer: justificação obrigatória,
+  aprovação por outra pessoa e o documento do Pinguim BO sem alteração.
+- Antes de corrigir um «Multicaixa de outro banco», confirme o terminal do promotor em Terminais (TPA): se o registo do
+  terminal estiver errado, corrige-se o registo e a excepção desaparece sem corrigir documentos.
+- A janela da correcção fica **compacta e sem barras de deslocamento** num ecrã de computador: o documento, a hora e a
+  forma do Pinguim BO numa só coluna, linhas mais baixas, justificação e evidência lado a lado, e os atalhos «Tudo em
+  Numerário» e «Tudo em Multicaixa». No telemóvel, cada documento é um cartão (sem deslocamento para o lado).
+
 ### Terminais TPA: a cadeia de custódia começa com o promotor que o terminal já tinha
 
 <!-- paginas: multicaixa-tpa -->
