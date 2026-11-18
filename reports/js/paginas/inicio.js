@@ -711,12 +711,11 @@ R.inicio = (pg) => {
 };
 
 /**
- * Formas de pagamento conciliadas: o que estava no Pinguim BO no momento da venda, o que ficou depois das correcções
- * aprovadas (o que se recebeu de facto) e a diferença, só dos documentos corrigidos. Os quadros acima já mostram os
- * valores conciliados.
+ * Formas de pagamento conciliadas: o que está no Pinguim BO (os quadros acima, sem nenhuma alteração), o que se recebeu
+ * de facto segundo as correcções aprovadas e a diferença, só dos documentos corrigidos.
  */
 function quadroConciliado(V) {
-  const corr = V.filter((v) => v.forma_corrigida);
+  const corr = V.filter((v) => v.conciliacao);
   if (!corr.length) return null;
   const por = (lista) => {
     const o = { dinheiro: 0, multicaixa: 0, outro: 0 };
@@ -730,8 +729,13 @@ function quadroConciliado(V) {
   const antes = { dinheiro: 0, multicaixa: 0, outro: 0 },
     depois = { dinheiro: 0, multicaixa: 0, outro: 0 };
   corr.forEach((v) => {
-    const a = por(v.pagamentos_pinguim || []),
-      b = por(v.pagamentos || []);
+    const c = v.conciliacao;
+    const a = por(v.pagamentos || []),
+      b = por([
+        ...(v.pagamentos || []).filter((p) => catMeio(p) === 'compensacao'),
+        { codigo: 'NU', valor: c.numerario },
+        { codigo: 'MC', valor: c.multicaixa },
+      ]);
     Object.keys(antes).forEach((k) => {
       antes[k] += a[k];
       depois[k] += b[k];
@@ -743,7 +747,10 @@ function quadroConciliado(V) {
     el(
       'p',
       'note',
-      t('{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima já mostram o que se recebeu de facto.', { n: n0(corr.length) }),
+      t(
+        '{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima mostram o Pinguim BO, sem alterações; aqui, o que se recebeu de facto.',
+        { n: n0(corr.length) },
+      ),
     ),
   );
   const tb = el('table', 'cc-tab ini-conc-t');

@@ -1,5 +1,31 @@
 ## 18-11-2026
 
+### Vendas e ficheiro para o SAP: exactamente como no Pinguim BO; a conciliação das formas de pagamento fica à parte
+
+<!-- paginas: inicio, pagamentos, documentos, sap-exportar -->
+<!-- tipo: impacto -->
+
+> titulo: Valores do Pinguim BO sem alterações
+> titulo [en]: Pinguim BO figures, unchanged
+> titulo [ti]: ቁጽርታት Pinguim BO ብዘይ ለውጢ
+> - O Início, as Cobranças e os documentos voltam a mostrar exactamente o que está no Pinguim BO, sem nenhuma alteração.
+> [en] The Home page, Collections and documents again show exactly what is in Pinguim BO, with no changes.
+> [ti] መእተዊ ገጽ፡ ኣከፋፍላን ሰነዳትን ከም ብሓድሽ ኣብ Pinguim BO ዘሎ ብዘይ ዋላ ሓደ ለውጢ የርእዩ።
+> - O ficheiro para o SAP leva as formas de pagamento exactamente como foram registadas na venda.
+> [en] The SAP file carries the payment methods exactly as they were recorded at the sale.
+> [ti] ፋይል SAP ነቶም ኣገባባት ክፍሊት ልክዕ ከምቲ ኣብ መሸጣ ዝተመዝገቡ ይሕዞም።
+> - O que se recebeu de facto, segundo as correcções aprovadas, aparece só no quadro «Formas de pagamento conciliadas» do Início e na reconciliação.
+> [en] What was actually received, according to the approved corrections, appears only in the «Reconciled payment methods» table on the Home page and in the reconciliation.
+> [ti] ብሓቂ ዝተቐበልናዮ፡ ከም ዝጸደቑ ምእራማት፡ ኣብ ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ናይ መእተዊ ገጽን ኣብ ምስምማዕን ጥራይ ይርአ።
+
+- **Vendas (v1/vendas):** os documentos voltam a chegar ao portal exactamente como estão no Pinguim BO (formas de
+  pagamento, valores e nomes dos meios). A correcção aprovada da forma de pagamento segue à parte, no campo
+  «conciliacao», e não muda nenhum valor mostrado.
+- **Início:** «Recebido», «Em dinheiro» e «Em Multicaixa» mostram o Pinguim BO. O quadro «Formas de pagamento
+  conciliadas» mostra, dos documentos corrigidos, o Pinguim BO, o que se recebeu de facto (aprovado) e a diferença.
+- **Ficheiro para o SAP:** o CASH AMOUNT e o CARD AMOUNT voltam a ser exactamente os do Pinguim BO, como foram
+  registados na venda; as correcções aprovadas na reconciliação não mudam o ficheiro. A estrutura não muda.
+
 ### Formas de pagamento: documentos corrigidos só em leitura, ficheiro SAP com as formas da reconciliação e horas certas
 
 <!-- paginas: multicaixa-tpa, sap-exportar, documentos -->
