@@ -43,6 +43,7 @@ teste('formas de pagamento: reconciliação por dia e promotor (Pinguim BO × ca
     igual(['BPC', 'ATLANTICO'], [$l['1004']['banco_tpa'], $l['1011']['banco_tpa']]);
     igual([780000.0, 880000.0, null, null], [$l['1011']['invalida'], $l['1011']['multicaixa'], $l['1011']['entregue'], $l['1011']['dif_numerario']], 'sem folha de caixa');
     igual(1000.0, $l['1001']['por_receber']);
+    igual([2, 0], [$l['1004']['corrigiveis'], $l['1004']['corrigidos']], 'documentos que se podem corrigir');
     igual(['provavel_troca', 'forma_invalida'], array_column($r['excepcoes'], 'tipo'));
     igual([2456800.0, 1675800.0, 577700.0], [$r['totais']['total'], $r['totais']['multicaixa'], $r['totais']['entregue']]);
 });
@@ -58,6 +59,9 @@ teste('correcção da forma de pagamento: justificação, valor igual ao cobrado
     ];
     $j = 'O cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano.';
     lanca(400, function () use ($docs) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'FR A1004/10', 'numerario' => 500000, 'multicaixa' => 0]], 'engano', '', 'josefa', $docs); });
+    // letras ao acaso não são justificação (prova para a auditoria)
+    lanca(400, function () use ($docs) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'FR A1004/10', 'numerario' => 500000, 'multicaixa' => 0]], 'ddhdfhfbgfdbdhdfghdfgsfgsfdgs', '', 'josefa', $docs); });
+    lanca(400, function () use ($docs) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'FR A1004/10', 'numerario' => 500000, 'multicaixa' => 0]], 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '', 'josefa', $docs); });
     lanca(400, function () use ($docs, $j) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'FR A1004/10', 'numerario' => 400000, 'multicaixa' => 0]], $j, '', 'josefa', $docs); });
     lanca(400, function () use ($docs, $j) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'NC A1004/2', 'numerario' => 0, 'multicaixa' => -1000]], $j, '', 'josefa', $docs); });
     lanca(400, function () use ($docs, $j) { naval_fp_pedir('2026-10-20', '1004', [['documento' => 'FR A1004/10', 'numerario' => 0, 'multicaixa' => 500000]], $j, '', 'josefa', $docs); }); // igual

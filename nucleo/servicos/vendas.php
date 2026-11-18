@@ -527,7 +527,9 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
             SELECT
                 DH.ID AS DOC_ID,
                 CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA,
-                RIGHT('0' + CAST(COALESCE(DH.CLOCK_HOUR / 60, 0) AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(COALESCE(DH.CLOCK_HOUR % 60, 0) AS VARCHAR(2)), 2) AS HORA,
+                -- hora do registo do documento (HH:MM); CLOCK_HOUR só guarda a hora (0 a 23), sem os minutos
+                CASE WHEN DH.CLOCK_DATE IS NOT NULL THEN CONVERT(VARCHAR(5), DH.CLOCK_DATE, 108)
+                     ELSE RIGHT('0' + CAST(COALESCE(DH.CLOCK_HOUR, 0) AS VARCHAR(2)), 2) + ':00' END AS HORA,
                 COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4)) AS ROTA,
                 DC.CODE AS TIPO_DOC,
                 DC.DESCRIPTION AS TIPO_DESC,

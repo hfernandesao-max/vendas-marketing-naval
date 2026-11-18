@@ -1,5 +1,47 @@
 ## 18-11-2026
 
+### Formas de pagamento: documentos corrigidos só em leitura, ficheiro SAP com as formas da reconciliação e horas certas
+
+<!-- paginas: multicaixa-tpa, sap-exportar, documentos -->
+<!-- tipo: correcao -->
+
+> titulo: Correcções da forma de pagamento e ficheiro para o SAP
+> titulo [en]: Payment-method corrections and the SAP file
+> titulo [ti]: ምእራም ኣገባብ ክፍሊትን ፋይል SAPን
+> - Na correcção, os documentos já corrigidos (aprovados ou por aprovar) aparecem só para consulta. Só se pedem os que mudam de facto.
+> [en] In the correction screen, documents already corrected (approved or pending) are shown for reference only. Only those that actually change are requested.
+> [ti] ኣብ ምእራም፡ ቀደም ዝተኣረሙ ሰነዳት (ዝጸደቑ ወይ ዝጽበዩ) ንምርኣይ ጥራይ ይቐርቡ። ብሓቂ ዝቕየሩ ጥራይ ይሕተቱ።
+> - Quando todos os documentos de um dia e promotor estão corrigidos, a reconciliação mostra «Corrigido» em vez do botão «Corrigir».
+> [en] When every document of a day and sales rep is corrected, the reconciliation shows «Corrected» instead of the «Correct» button.
+> [ti] ኩሎም ሰነዳት ናይ ሓንቲ መዓልትን ሸያጥን ምስ ዝኣረሙ፡ እቲ ምስምማዕ ኣብ ክንዲ «ኣርም» «ተኣሪሙ» የርኢ።
+> - O ficheiro para o SAP leva o numerário e o Multicaixa aprovados na reconciliação. A estrutura do ficheiro não muda.
+> [en] The SAP file carries the cash and Multicaixa amounts approved in the reconciliation. The file structure does not change.
+> [ti] ፋይል SAP ነቲ ኣብ ምስምማዕ ዝጸደቐ ጥረ ገንዘብን Multicaixa ን ይሕዝ። ቅርጺ እቲ ፋይል ኣይቕየርን።
+> - A hora dos documentos passa a ser a do registo no Pinguim BO (ex.: 18:25, e não 00:18).
+> [en] Document times are now the registration time in Pinguim BO (e.g. 18:25, not 00:18).
+> [ti] ሰዓት ሰነዳት ሕጂ ናይቲ ኣብ Pinguim BO ዝተመዝገበሉ እዩ (ንኣብነት 18:25፡ ኣይኮነን 00:18)።
+> 1. Para mudar uma correcção já aprovada, peça a quem aprova a caixa que a anule e volte a pedir a correcção.
+> [en] To change an already approved correction, ask the cash-sheet approver to cancel it, then request the correction again.
+> [ti] ዝጸደቐ ምእራም ንምቕያር፡ ነቲ ሳጹን ዘጽድቕ ክስርዞ ሕተትዎ፡ ድሕሪኡ ምእራም ደጊምኩም ሕተቱ።
+> 2. Se um lote para o SAP já tinha estes documentos com a forma antiga, anule esse lote e gere-o de novo.
+> [en] If an SAP batch already had these documents with the old payment method, cancel that batch and generate it again.
+> [ti] ሓደ ጉጅለ ናይ SAP ነዞም ሰነዳት ብናይ ቀደም ኣገባብ ክፍሊት ሒዝዎም እንተ ነይሩ፡ ነቲ ጉጅለ ሰሪዝኩም ደጊምኩም ኣዳልውዎ።
+
+- **Correcção:** os documentos com correcção aprovada ou por aprovar aparecem na janela sem campos (valores, banco e
+  estado), não entram no pedido e os atalhos «Tudo em…» não lhes tocam. Sem nenhum documento por corrigir, a janela diz
+  porquê e não deixa pedir. Antes de enviar, só seguem os documentos que mudam (numerário, Multicaixa ou banco); sem
+  nenhuma mudança, a mensagem diz o que alterar.
+- **Justificação:** tem de ter pelo menos três palavras (letras ao acaso são recusadas): é a prova para a auditoria.
+- **Reconciliação:** cada linha conta os documentos que se podem corrigir e as correcções por aprovar; com tudo
+  corrigido mostra «Corrigido» ou «Por aprovar» em vez de «Corrigir».
+- **Ficheiro para o SAP:** o CASH AMOUNT e o CARD AMOUNT de cada documento passam a vir das correcções aprovadas da
+  forma de pagamento (as mesmas da reconciliação, da folha de caixa e do consolidado). Folha, colunas e formatos do
+  ficheiro mantêm-se. A página diz quantos documentos seguem com a forma corrigida. Exemplo: FP-2026-00045 (FR
+  FR0126S78515N 13, Nelson, 22-10-2026), Multicaixa 1 568 000,00 no Pinguim BO → CASH AMOUNT 907 600,00 e CARD AMOUNT
+  660 400,00 em todas as linhas do documento.
+- **Hora dos documentos:** lia-se o campo CLOCK_HOUR do Pinguim BO como minutos desde a meia-noite, mas só tem a hora;
+  as 18:25 apareciam como 00:18. Passa a ser a hora do registo (CLOCK_DATE).
+
 ### Correcções da forma de pagamento: também as decide quem aprova a caixa no fim, e várias de uma vez
 
 <!-- paginas: multicaixa-tpa -->

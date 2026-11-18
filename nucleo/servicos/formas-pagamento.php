@@ -148,7 +148,7 @@ function naval_fp_reconciliar(array $vendas, array $caixas, array $promotores, a
         $k = $dia . '|' . $rota;
         if (!isset($L[$k])) {
             $L[$k] = ['dia' => $dia, 'rota' => $rota, 'promotor' => (string) ($promotores[$rota] ?? ''), 'banco_tpa' => (string) (($cfg['bancos_rotas'] ?? $cfg['rotas'])[$rota] ?? ''),
-                'documentos' => 0, 'corrigidos' => 0, 'numerario' => 0.0, 'multicaixa' => 0.0, 'invalida' => 0.0, 'por_receber' => 0.0, 'total' => 0.0,
+                'documentos' => 0, 'corrigiveis' => 0, 'corrigidos' => 0, 'por_aprovar' => 0, 'numerario' => 0.0, 'multicaixa' => 0.0, 'invalida' => 0.0, 'por_receber' => 0.0, 'total' => 0.0,
                 'entregue' => null, 'talaos' => null];
         }
         return $k;
@@ -158,6 +158,7 @@ function naval_fp_reconciliar(array $vendas, array $caixas, array $promotores, a
         $dia = substr((string) $v['data'], 0, 10);
         $k = $linha($dia, (string) $v['rota']);
         $L[$k]['documentos']++;
+        if (naval_fp_corrigivel($v)) $L[$k]['corrigiveis']++;
         if (!empty($v['forma_corrigida'])) $L[$k]['corrigidos']++;
         $L[$k]['total'] += (float) $v['total'];
         $pago = 0.0;
@@ -234,7 +235,12 @@ function naval_fp_reconciliacao(string $de, string $ate): array
         if (is_file(naval_caixa_ficheiro($d))) $caixas[$d] = naval_caixa_ler($d);
     }
     $cfg = naval_fp_config();
-    return naval_fp_reconciliar(naval_fp_aplicar((array) ($v['vendas'] ?? [])), $caixas, $prom, $cfg) + ['pinguim_ligado' => $v !== null, 'de' => $de, 'ate' => $ate];
+    $r = naval_fp_reconciliar(naval_fp_aplicar((array) ($v['vendas'] ?? [])), $caixas, $prom, $cfg) + ['pinguim_ligado' => $v !== null, 'de' => $de, 'ate' => $ate];
+    // correcções por aprovar em cada dia e rota: a linha não volta a pedir correcção dos mesmos documentos
+    $pend = [];
+    foreach (naval_fp_correcoes() as $c) if ($c['estado'] === 'pendente') $pend[$c['dia'] . '|' . $c['rota']] = ($pend[$c['dia'] . '|' . $c['rota']] ?? 0) + 1;
+    foreach ($r['linhas'] as $i => $l) $r['linhas'][$i]['por_aprovar'] = $pend[$l['dia'] . '|' . $l['rota']] ?? 0;
+    return $r;
 }
 
 /*
@@ -364,6 +370,11 @@ function naval_fp_pedir(string $dia, string $rota, array $docs, string $justific
     $evidencia = trim(naval_texto($evidencia, 200));
     if (mb_strlen($justificacao) < NAVAL_FP_JUSTIFICACAO_MIN) {
         throw new NavalErro('Escreva a justificação da correcção (pelo menos ' . NAVAL_FP_JUSTIFICACAO_MIN . ' caracteres): o que se recebeu de facto e como se confirmou.', 400, ['campo' => 'justificacao']);
+    }
+    // uma justificação com sentido (prova para a auditoria): pelo menos três palavras, não letras ao acaso
+    preg_match_all('/[\p{L}\p{N}]{2,}/u', $justificacao, $palavras);
+    if (count($palavras[0]) < 3 || preg_match('/^(\S)\1*$/u', preg_replace('/\s+/u', '', $justificacao))) {
+        throw new NavalErro('Escreva a justificação em palavras (pelo menos três): o que se recebeu de facto e como se confirmou.', 400, ['campo' => 'justificacao']);
     }
     if (!$docs) throw new NavalErro('Indique os documentos a corrigir.', 400);
     $pinguim = [];

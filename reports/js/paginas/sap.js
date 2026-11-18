@@ -64,7 +64,21 @@ const COMO = { rota: 'Indicada na rota', origem: 'Origem do stock', omissao: 'Po
  */
 // substituições de facturas (vendas.php): os pagamentos do documento como estão no Pinguim BO, que corrigem no SAP o
 // recebido da factura original (ex.: Multicaixa −20 000 quando o cliente só pagou o valor com desconto)
-const pagosSap = (v) => v.pagamentos_origem || pagosDe(v);
+// formas de pagamento corrigidas e aprovadas (Multicaixa por TPA › Formas de pagamento): o ficheiro leva o numerário e
+// o Multicaixa da reconciliação dos documentos; as compensações (CMP) ficam como estão
+const corrigidaSap = (v) => {
+  const c = ((SAPD && SAPD.formas_corrigidas) || {})[v.documento];
+  return c && c.dia === String(v.data).slice(0, 10) && String(c.rota) === String(v.rota) ? c : null;
+};
+const pagosSap = (v) => {
+  if (v.pagamentos_origem) return v.pagamentos_origem;
+  const c = corrigidaSap(v);
+  if (!c) return pagosDe(v);
+  const novos = pagosDe(v).filter((p) => String(p.codigo || '').toUpperCase() === 'CMP');
+  if (c.numerario > 0) novos.push({ codigo: 'NU', meio: 'Numerário', valor: c.numerario });
+  if (c.multicaixa > 0) novos.push({ codigo: 'MC', meio: 'Multicaixa', valor: c.multicaixa });
+  return novos;
+};
 const acertoTxt = (s, fmt) =>
   (s.acerto || []).length
     ? ' · ' + t('acerto do recebido na factura original: {l}', { l: s.acerto.map((a) => t(a.meio) + ' ' + fmt(a.valor)).join(', ') })
@@ -444,6 +458,17 @@ R['sap-exportar'] = (pg) => {
   // substituições de facturas de dias anteriores (vendas.php): os dois documentos seguem no ficheiro como estão no
   // Pinguim BO (documentos fiscais): o total tem o desconto e os meios têm o acerto do recebido da factura original,
   // que as Cobranças mostram à parte (não é dinheiro de hoje)
+  const nCorr = L.docs.filter(corrigidaSap).length;
+  if (nCorr)
+    pg.append(
+      el(
+        'p',
+        'glass note sap-corr',
+        t('{n} documento(s) seguem com a forma de pagamento corrigida e aprovada na reconciliação (Multicaixa por TPA › Formas de pagamento).', {
+          n: n0(nCorr),
+        }),
+      ),
+    );
   const subst = L.docs.filter((v) => v.substituicao && eNC(v)),
     descSubst = subst.reduce((a, v) => a + (+v.substituicao.desconto || 0), 0);
   pg.append(
