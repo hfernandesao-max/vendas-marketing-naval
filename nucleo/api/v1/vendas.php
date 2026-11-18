@@ -89,7 +89,7 @@ $fiscal = ($_GET['fiscal'] ?? '') === '1';
 if ($fiscal) $GLOBALS['naval_fontes_fiscal'] = true;
 $base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom)) . ($fiscal ? '|fiscal' : '');
 $chaves = [];
-if (!$soArtigos) $chaves['vendas'] = 'vendas3|' . $base;
+if (!$soArtigos) $chaves['vendas'] = 'vendas5|' . $base;
 if ($itens || $soArtigos) $chaves['artigos'] = 'artigos2|' . $base;
 $tempo = naval_cache_periodo($ate);
 $fresco = ($_GET['fresco'] ?? '') === '1';
@@ -122,7 +122,30 @@ if (!$fresco) {
 
 $d = ['vendas' => [], 'artigos' => []];
 if (isset($chaves['vendas'])) {
-    $d['vendas'] = naval_cache($chaves['vendas'], $tempo, function () use ($de, $ate, $prom) {
+    $d['vendas'] = naval_cache($chaves['vendas'], $tempo, function () use ($de, $ate, $prom, $fresco, $fiscal) {
+        if (!$fiscal) {
+            // A factura original pode estar fora do período pedido; carrega-se o histórico desde o arranque do Pinguim BO
+            // (reports/js/periodo.js), aplica-se a substituição e só depois se devolvem os documentos do período.
+            $contextoDe = min($de, '20261020');
+            $contextoAte = max($ate, date('Ymd'));
+            $chaveContexto = 'vendas-contexto5|' . $contextoDe . '|' . $contextoAte . '|' . hash('sha256', (string) json_encode($prom));
+            $historico = naval_cache($chaveContexto, naval_cache_periodo($contextoAte), function () use ($contextoDe, $contextoAte, $prom) {
+                $h = naval_vendas_sql($contextoDe, $contextoAte, $prom, false);
+                if ($h !== null) return $h['vendas'];
+                try {
+                    return naval_vendas_do_xml(naval_pinguim_xml($contextoDe, $contextoAte), $prom, false)['vendas'];
+                } catch (Throwable $e) {
+                    error_log('[vendas contexto] ' . $e->getMessage());
+                    return null;
+                }
+            }, $fresco);
+            if (is_array($historico)) {
+                return array_values(array_filter($historico, function ($v) use ($de, $ate) {
+                    $dia = (string) preg_replace('/\D/', '', (string) ($v['data'] ?? ''));
+                    return $dia >= $de && $dia <= $ate;
+                }));
+            }
+        }
         // Prioridade 1: base de dados do Pinguim BO; prioridade 2: exportação REST
         $x = naval_vendas_sql($de, $ate, $prom, false);
         if ($x === null) $x = naval_vendas_do_xml(naval_pinguim_xml($de, $ate), $prom, false);

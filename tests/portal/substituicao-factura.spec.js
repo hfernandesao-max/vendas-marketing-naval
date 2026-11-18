@@ -84,12 +84,25 @@ test('desconto da substituição é aplicado ao total efectivo sem reescrever a 
     documento: 'FR R1004/2026/1',
     total: 1500000,
     total_sem_iva: 1315789.47,
-    ajustes_substituicao: [{ nota: marca.nota, factura: 'FR R1004/2026/1', desconto: 20000, desconto_sem_iva: 17543.86 }],
+    valor_pago: 1500000,
+    pagamentos: [{ codigo: 'MC', meio: 'Multicaixa', valor: 1500000 }],
+    ajustes_substituicao: [
+      {
+        nota: marca.nota,
+        factura: 'FR R1004/2026/1',
+        desconto: 20000,
+        desconto_sem_iva: 17543.86,
+        acerto: marca.acerto,
+      },
+    ],
   };
   delete original.substituicao;
   const api = (r) => r.fulfill({ json: { vendas: [...vendas, original, ...SUBST], artigos } });
   const erros = await abrir(page, '#inicio', { api });
   await expect(page.locator('.tile').filter({ hasText: 'Vendas líquidas s/ IVA' })).toContainText('com IVA: 1 600 000,00 Kz');
+  await page.goto('/reports/index.html#pagamentos');
+  await expect(page.locator('.tile').nth(0)).toContainText('1 568 000,00 Kz');
+  await expect(page.locator('.tile').nth(2)).toContainText('1 524 000,00 Kz');
   await page.goto('/reports/index.html#documentos');
   await expect(page.locator('#page')).toContainText('FR R1004/2026/1');
   expect(erros).toEqual([]);

@@ -14,6 +14,7 @@ import {
   recebidoBruto,
   recebidoDe,
   recebidoLiquido,
+  pagosEfectivosDe,
   temMeio,
   totalVendaDe,
   valorCat,
@@ -169,7 +170,7 @@ R.pagamentos = (pg) => {
   const V = vendasR(),
     // Recebido líquido = cobrado nas facturas − notas de crédito a clientes (as devoluções debitam o recebido);
     // a taxa de cobrança mede-se sobre as vendas líquidas (facturas − notas de crédito): tudo pago = 100 %
-    vendasLiq = sum(V, 'total'),
+    vendasLiq = sum(V, totalVendaDe),
     bruto = recebidoBruto(V),
     nc = notasCredito(V),
     liq = bruto - nc,
@@ -224,7 +225,7 @@ R.pagamentos = (pg) => {
         chave: rs[0].rota,
         rota: rs[0].rota,
         promotor: promotorRota(rs[0].rota),
-        vendido: sum(rs, 'total'),
+        vendido: sum(rs, totalVendaDe),
         recebido: rec,
         dinheiro: c.dinheiro,
         multicaixa: c.multicaixa,
@@ -327,10 +328,18 @@ R.pagamentos = (pg) => {
   // Colunas por meio real presente no período
   const meios = PM.map((o) => o.meio);
   const linha = (rs, base) => {
-    const ncM = -sum(rs.filter(eNC), (x) => sum(pagosDe(x), 'valor'));
-    const o = { ...base, total: sum(rs, 'total'), recebido: recebidoLiquido(rs), nc: -Math.max(0, notasCredito(rs) - ncM) };
+    const ncM = -sum(rs.filter(eNC), (x) => sum(pagosEfectivosDe(x), 'valor'));
+    const o = {
+      ...base,
+      total: sum(rs, totalVendaDe),
+      recebido: recebidoLiquido(rs),
+      nc: -Math.max(0, notasCredito(rs) - ncM),
+    };
     meios.forEach((m, i) => {
-      o['m' + i] = rs.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0), 0);
+      o['m' + i] = rs.reduce(
+        (s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0),
+        0,
+      );
     });
     o.por_liquidar = sum(rs, pendenteDe);
     return o;

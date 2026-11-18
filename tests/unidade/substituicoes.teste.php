@@ -63,6 +63,8 @@ teste('substituição: o desconto ajusta a venda original sem alterar os documen
     igual(1500000.0, $v[0]['total']);
     igual(round(1500000 / 1.14, 2), $v[0]['total_sem_iva']);
     igual(20000.0, $v[0]['ajustes_substituicao'][0]['desconto']);
+    igual([['meio' => 'Multicaixa', 'valor' => -20000.0]], $v[0]['ajustes_substituicao'][0]['acerto']);
+    igual([['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1500000.0]], $v[0]['pagamentos']);
     $efectivas = naval_vendas_efectivas($v);
     igual(1, count($efectivas));
     igual('FR 1008/2026/1', $efectivas[0]['documento']);

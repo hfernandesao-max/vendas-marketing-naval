@@ -2,10 +2,10 @@
 import { LANG, t } from './i18n/i18n.js';
 import { INICIO_PINGUIM, addD, hoje, inR, st } from './periodo.js';
 import { DB, group, sum } from './util.js';
-import { catMeio, eNC, pagosDe, pendenteDe, recebidoDe } from './meios.js';
+import { catMeio, eNC, pagosDe, pagosEfectivosDe, pendenteDe, recebidoDe, recebidoEfectivoDe } from './meios.js';
 
 // regras dos meios de cobrança partilhadas com a app de gestão (meios.js, sem dependências do portal)
-export { catMeio, eNC, pagosDe, pendenteDe, recebidoDe };
+export { catMeio, eNC, pagosDe, pagosEfectivosDe, pendenteDe, recebidoDe, recebidoEfectivoDe };
 
 // Código do tipo de documento: o da base de dados (DOCCONFIG) quando existe; na exportação REST, FR ou FT
 export const tipoDoc = (v) => v.tipo_codigo || (v.tipo === 'Factura' ? 'FT' : 'FR');
@@ -56,15 +56,16 @@ export const nomeDia = (d) => (LANG === 'en' ? DIA_EN[d] || d : LANG === 'ti' ? 
 export const pendentesDe = (V) => sum(V, pendenteDe);
 // Recebido líquido: o que foi cobrado nas facturas menos as notas de crédito a clientes (devoluções e créditos debitam
 // o recebido; nunca o aumentam). Com tudo pago, é igual às vendas líquidas (facturas − notas de crédito).
-export const recebidoBruto = (V) => sum(V, recebidoDe);
-export const recebidoLiquido = (V) => sum(V, recebidoDe) - notasCredito(V);
+export const recebidoBruto = (V) => sum(V, recebidoEfectivoDe);
+export const recebidoLiquido = (V) => sum(V, recebidoEfectivoDe) - notasCredito(V);
 export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
-export const valorCat = (V, cat) => V.reduce((s, x) => s + pagosDe(x).reduce((a, p) => a + (catMeio(p) === cat ? +p.valor || 0 : 0), 0), 0);
+export const valorCat = (V, cat) =>
+  V.reduce((s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + (catMeio(p) === cat ? +p.valor || 0 : 0), 0), 0);
 // Soma por meio de pagamento real (nome do Pinguim BO), ordenado do maior para o menor
 export function porMeio(V) {
   const m = new Map();
   V.forEach((x) =>
-    pagosDe(x).forEach((p) => {
+    pagosEfectivosDe(x).forEach((p) => {
       const k = p.meio || p.codigo || '?';
       const o = m.get(k) || { meio: k, codigo: p.codigo || '', categoria: catMeio(p), docs: new Set(), valor: 0 };
       o.valor += +p.valor || 0;

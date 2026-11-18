@@ -340,8 +340,9 @@ function naval_vendas_devolucoes(array $vendas): array
  *   - Os dois documentos ficam como estão no Pinguim BO (lista de documentos, controlo interno, AGT e ficheiro para o
  *     SAP, que usa os pagamentos do documento em 'pagamentos_origem': o acerto dos meios corrige no SAP o recebido da
  *     factura original) e ficam marcados com 'substituicao' (com o desconto e o acerto por meio).
- *   - Nos meios de cobrança, os pagamentos passam a «Substituição de factura» (código CMP, compensação, fora do
- *     dinheiro e do Multicaixa): o recebido do dia, a folha de caixa e a conferência do TPA não mudam.
+ *   - Nos documentos, os pagamentos passam a «Substituição de factura» (código CMP, compensação, fora do dinheiro e
+ *     do Multicaixa). O recebido bruto e a caixa do dia não mudam; os agregados históricos aplicam à factura original
+ *     o acerto por meio, sem reescrever os pagamentos do Pinguim BO.
  *   - As vendas do dia não os contam (o desempenho é da factura original); o desconto aparece à parte, positivo, nas
  *     «Rectificações de documentos anteriores» (prática IFRS 15: ajuste de preço de uma venda já reconhecida,
  *     apresentado separadamente e conciliável com o Pinguim BO).
@@ -418,6 +419,7 @@ function naval_vendas_substituicoes(array $vendas): array
                     'factura' => $vendas[$i]['documento'],
                     'desconto' => $desc,
                     'desconto_sem_iva' => $descSi,
+                    'acerto' => $marca['acerto'],
                 ];
             }
         }

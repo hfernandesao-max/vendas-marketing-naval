@@ -6,7 +6,8 @@
 <!-- tipo: impacto -->
 
 - Quando uma nota de crédito substitui uma factura anterior por outra de menor valor, o total efectivo passa a reflectir o desconto na venda original.
-- Os valores originais dos documentos, pagamentos, lista de documentos e ficheiro SAP permanecem inalterados.
+- Os agregados de recebido e Multicaixa reflectem o acerto na venda original, sem alterar os pagamentos brutos dos documentos nem o ficheiro SAP.
+- Os valores brutos dos documentos e pagamentos, a lista de documentos e o ficheiro SAP permanecem inalterados.
 
 ### Total de vendas com IVA: apenas facturas, facturas-recibo e notas de crédito
 
