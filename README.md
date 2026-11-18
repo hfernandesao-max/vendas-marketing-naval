@@ -62,6 +62,8 @@ php ferramentas/sincronizar-pinguim.php
 
 A ligação usa as chaves `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do `.env` e mantém o acesso só de leitura. O actualizador configura uma tarefa que arranca com o servidor e sincroniza de 30 em 30 segundos. Os dados gerados são JSON público; não escreve na base do Pinguim BO. Para instalar ou actualizar a tarefa no servidor, executar uma vez, como administrador, `php ferramentas/actualizar.php tarefa`.
 
+Para iniciar manualmente uma actualização no Windows, executar `ferramentas\actualizar-manual.bat` na instalação do servidor. O script mostra o estado, faz uma pré-verificação e pede confirmação antes de aplicar a versão aprovada mais recente. Se o servidor exigir aprovação, aprove a versão na página «Actualizações» antes de executar o script; a instalação manual não contorna essa regra.
+
 ## Aviso
 
 O site é público: qualquer pessoa com o link vê vendas, promotores e clientes.

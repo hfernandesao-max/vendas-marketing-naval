@@ -77,8 +77,7 @@ export function porMeio(V) {
     .map((o) => ({ ...o, docs: o.docs.size }))
     .sort((a, b) => b.valor - a.valor);
 }
-const descontoSubstituicao = (x, campo) =>
-  (x.ajustes_substituicao || []).reduce((total, ajuste) => total + (+ajuste[campo] || 0), 0);
+const descontoSubstituicao = (x, campo) => (x.ajustes_substituicao || []).reduce((total, ajuste) => total + (+ajuste[campo] || 0), 0);
 /** Total efectivo com IVA, sem alterar o valor original apresentado no documento. */
 export const totalVendaDe = (x) => (+x.total || 0) - descontoSubstituicao(x, 'desconto');
 /** Vendas líquidas sem IVA de um documento (base de gestão); sem esse valor, o total do documento. */
