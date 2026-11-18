@@ -128,6 +128,7 @@ function naval_pinguim_sincronizacao_continua(): void
         throw new RuntimeException('O processo contínuo de sincronização já está em execução.');
     }
 
+    // @phpstan-ignore while.alwaysTrue -- O processo supervisor deve continuar até ser terminado pelo Task Scheduler.
     while (true) {
         $inicio = microtime(true);
         $saida = [];
