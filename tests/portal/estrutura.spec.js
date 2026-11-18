@@ -24,6 +24,7 @@ async function abrirAcessos(page, estrutura) {
   await page.route('**/v1/gestao*', (r) => r.fulfill({ json: GESTAO }));
   await page.route('**/v1/estrutura-dados*', (r) => r.fulfill({ json: estrutura }));
   const erros = await abrir(page, '#acessos');
+  await expect(page.locator('#ac-estrutura-json')).toContainText('Ver estrutura (JSON)');
   await expect(page.locator('#ac-dicionario')).toContainText('Dicionário técnico da base de dados');
   return erros;
 }
@@ -151,6 +152,17 @@ const ESTRUTURA = {
     ],
   },
 };
+
+test('dicionário técnico: consulta a estrutura em JSON no portal, sem transferir Excel', async ({ page }) => {
+  const erros = await abrirAcessos(page, ESTRUTURA);
+  await page.click('#ac-estrutura-json');
+  const area = page.locator('#estrutura-json');
+  await expect(area).toBeVisible();
+  await expect(area).toHaveValue(/"objecto": "DOCHEADER"/);
+  await expect(area).toHaveValue(/"coluna_ref": "ID"/);
+  await expect(page.locator('dialog.dlg.estrutura-json button')).toContainText(['Fechar', 'Copiar JSON']);
+  expect(erros).toEqual([]);
+});
 
 test('dicionário técnico: um Excel com capa, catálogo da base de dados, modelo do portal e matriz', async ({ page }) => {
   const erros = await abrirAcessos(page, ESTRUTURA);

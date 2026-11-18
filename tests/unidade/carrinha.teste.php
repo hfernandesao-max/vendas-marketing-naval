@@ -220,7 +220,7 @@ teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e sa
     ];
     $mov = naval_carr_movimentos_agrupar($rows, ['1005', '1006']);
     igual(['1005'], array_map('strval', array_keys($mov)));
-    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'vd' => 0.0], $mov['1005']['10000332']);
+    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0], $mov['1005']['10000332']);
     $r = ['s0' => ['10000292' => ['n' => 'Sabão verde', 'q' => 7.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 7.0], '10000382' => ['n' => 'Sabão branco', 'q' => 12.0],
         '10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
         's1' => ['10000292' => ['n' => 'Sabão verde', 'q' => 22.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 22.0], '10000332' => ['n' => 'Fraldas', 'q' => 237.0]],
@@ -247,10 +247,72 @@ teste('corte por fotografia: as vendas registadas depois do corte saem do espera
         ['ROTA' => '1009', 'CODIGO' => '10000015', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 5.0],
     ];
     $mov = naval_carr_movimentos_agrupar($rows, ['1009']);
-    igual([30.0, 0.0], [$mov['1009']['10000332']['vd'], $mov['1009']['10000015']['vd']], 'só conta o vendido depois do corte');
+    igual([30.0, 0.0, 5.0], [$mov['1009']['10000332']['vd'], $mov['1009']['10000015']['vd'], $mov['1009']['10000015']['va']], 'separa vendas antes e depois do corte');
     $data = date('Y-m-d', time() - 5 * 86400);
     naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', ['hora' => '15:50', 'rotas' => ['1009' => ['10000332' => ['q' => 40.0], '10000015' => ['q' => 6.0]]]]);
     $c = naval_carr_stock_corte($data, '1009', ['mov' => $mov['1009']], '16:00');
     igual(['fotografia', 10.0, 6.0, 30.0], [$c['origem'], $c['q']['10000332'], $c['q']['10000015'], $c['vendido_depois']]);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
+});
+
+teste('a base da contagem fica congelada e não recebe uma fotografia posterior', function () {
+    $r = [
+        's0' => ['10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
+        's1' => ['10000332' => ['n' => 'Fraldas', 'q' => 110.0]],
+        'v' => ['10000332' => ['n' => 'Fraldas', 'u' => 'CX', 'q' => 60.0, 't' => 900000.0]],
+        'mov' => null,
+    ];
+    $mov = ['10000332' => ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 25.0, 'vd' => 35.0]];
+    $base = naval_carr_congelar_base($r, '2026-11-16 15:34:00', [
+        '10000332' => ['n' => 'Fraldas', 'q' => 39.0],
+    ], $mov);
+    $linha = naval_carr_linhas($base, ['10000332' => 10], ['10000332' => 15000.0])[0];
+    igual([25.0, 39.0, -29.0], [$linha['vendido'], $linha['esperado'], $linha['diferenca']]);
+    $data = date('Y-m-d', time() - 2 * 86400);
+    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', [
+        'data' => $data, 'hora' => '15:50',
+        'rotas' => ['1004' => ['10000332' => ['n' => 'Fraldas', 'q' => 10.0]]],
+    ]);
+    $vista = naval_carr_base($data, '1004', $base, ['estado' => 'por_validar']);
+    igual(['contagem', '2026-11-16 15:34:00', 39.0], [$vista['corte']['origem'], $vista['corte']['hora'], $vista['corte']['q']['10000332']]);
+    igual(-29.0, naval_carr_linhas($vista, ['10000332' => 10], ['10000332' => 15000.0])[0]['diferenca']);
+    @unlink(naval_carr_pasta($data) . '/_corte.json');
+});
+
+teste('a primeira folha congela a base, a reimpressão reutiliza-a e a contagem mantém-na', function () {
+    $data = date('Y-m-d', time() - 86400);
+    igual($data . ' 23:59:59', naval_carr_hora_referencia($data), 'sem regra de corte: referência histórica ao fim do dia');
+    $r = [
+        's0' => ['A1' => ['n' => 'Fraldas', 'q' => 10.0]],
+        's1' => ['A1' => ['n' => 'Fraldas', 'q' => 5.0]],
+        'v' => ['A1' => ['n' => 'Fraldas', 'u' => 'CX', 'q' => 5.0, 't' => 5000.0]],
+        'mov' => ['A1' => ['c' => 0.0, 'd' => 0.0]],
+    ];
+    naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', [
+        'data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
+        'precos' => ['A1' => 1000.0], 'rotas' => ['1001' => $r],
+    ]);
+    $eu = ['login' => 'tec.armazem'];
+    verdade(naval_carr_juntar_posterior($data, '1001', 'RQ-1', ['B1' => 2.0], 'coord', date('Y-m-d H:i:s')), 'carga anterior à folha');
+    $primeira = naval_carr_preparar_folha($data, '1001', $eu);
+    igual(['A1', 'B1'], array_column($primeira['linhas'], 'codigo'), 'a folha inclui as cargas já autorizadas');
+    $base = naval_carr_ler($data, '1001');
+    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', [
+        'data' => $data, 'hora' => '15:50', 'rotas' => ['1001' => ['A1' => ['n' => 'Fraldas', 'q' => 0.0]]],
+    ]);
+    $alterada = $r;
+    $alterada['s1'] = ['A1' => ['n' => 'Fraldas', 'q' => 0.0]];
+    naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', [
+        'data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
+        'precos' => ['A1' => 1000.0], 'rotas' => ['1001' => $alterada],
+    ]);
+    $segunda = naval_carr_preparar_folha($data, '1001', $eu);
+    igual($primeira, $segunda, 'reimpressão não muda a base nem a lista');
+    igual($base['base'], naval_carr_ler($data, '1001')['base']);
+    igual(1, count(array_filter(naval_carr_ler($data, '1001')['historico'], function ($h) { return $h['accao'] === 'folha_contagem_congelada'; })));
+    verdade(!naval_carr_juntar_posterior($data, '1001', 'RQ-2', ['B1' => 3.0], 'coord', date('Y-m-d H:i:s')), 'carga posterior à folha não altera a contagem');
+    $contagem = naval_carr_contar($data, '1001', ['A1' => 5.0, 'B1' => 2.0], $eu);
+    $linhas = array_column($contagem['linhas'], null, 'codigo');
+    igual([5.0, 0.0, 2.0, 0.0], [$linhas['A1']['esperado'], $linhas['A1']['diferenca'], $linhas['B1']['posterior'], $linhas['B1']['diferenca']]);
     @unlink(naval_carr_pasta($data) . '/_corte.json');
 });

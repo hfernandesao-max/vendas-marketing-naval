@@ -68,6 +68,7 @@ teste('stock: consulta só de leitura e só com as colunas que existem nesta bas
         }
         foreach (array_keys($p) as $k) igual(1, preg_match_all('/' . preg_quote($k, '/') . '\b/', $sql), $k);
     }
+    igual('2026-10-24 15:34:12', naval_stock_consulta('2026-10-24 15:34:12', '1001', $todas)[1][':data_fim_com_hora']);
     // base de dados sem colunas DELETED nem tabelas de inventário: nenhuma coluna inexistente na consulta
     [$sql] = naval_stock_consulta('2026-10-24', 'todos', ['DOCMOV' => ['DELETED' => true]]);
     naval_bd_so_leitura($sql);

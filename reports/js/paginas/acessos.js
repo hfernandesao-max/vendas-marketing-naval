@@ -5,7 +5,7 @@ import { botao, campo, confirmarAccao, confirmarIdentidade, copiar, entrada, jan
 import { dl, n0 } from '../formatos.js';
 import { IDIOMAS, NOMES_IDIOMA, siglaNivel, t } from '../i18n/i18n.js';
 import { nomeRecurso } from './catalogo.js';
-import { exportarEstrutura } from '../estrutura.js';
+import { exportarEstrutura, mostrarEstruturaJSON } from '../estrutura.js';
 import { R } from './registo.js';
 import { atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
@@ -586,13 +586,16 @@ R.acessos = (pg) => {
     obrig = GESTAO.perfis_dois_passos || ['SADM', 'TI', 'DIR'],
     gerir = GESTAO.pode_gerir;
   if (GESTAO.compatibilidade) pg.append(cartaoActivar());
-  // Documentação técnica (TI e auditoria): estrutura da base de dados, sem dados de negócio
+  // Documentação técnica (TI e auditoria): catálogo da base de dados em JSON ou Excel, sem dados de negócio
   if (podeExportar('estrutura-dados')) {
     const acc = el('div', 'ac-accoes');
+    const ver = botao(t('Ver estrutura (JSON)'), 'ghost sm', () => mostrarEstruturaJSON(ver));
+    ver.id = 'ac-estrutura-json';
+    ver.title = t('Consultar e copiar o catálogo técnico sem transferir um ficheiro.');
     const b = botao(t('Dicionário técnico da base de dados'), 'ghost sm', () => exportarEstrutura(b));
     b.id = 'ac-dicionario';
     b.title = t('Excel com as tabelas, colunas, chaves, relações e índices da base de dados do Pinguim BO, o modelo do portal e a matriz de acessos');
-    acc.append(b);
+    acc.append(ver, b);
     pg.append(acc);
   }
   const estado = (u) => (u.bloqueado ? 'Bloqueada' : !u.email_ok && !u.compatibilidade ? 'Sem correio electrónico' : u.activo ? 'Activa' : 'Inactiva');

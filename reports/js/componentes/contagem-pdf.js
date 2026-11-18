@@ -252,6 +252,11 @@ export async function folhaContagemCega(r, dia, imprimir = true) {
     [tp('Dia'), dl(dia)],
     [tp('Artigos a contar'), n0(r.linhas.length)],
   ]);
+  if (r.base_congelada_em) {
+    doc.setFont('helvetica', 'bold').setFontSize(8.5).setTextColor(...CINZA);
+    doc.text(tp('Base do sistema congelada em: {h}.', { h: r.base_congelada_em }), 14, y);
+    y += 5;
+  }
   doc
     .setFont('helvetica', 'normal')
     .setFontSize(8.5)

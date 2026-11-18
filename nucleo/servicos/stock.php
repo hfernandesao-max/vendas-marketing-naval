@@ -136,10 +136,12 @@ function naval_stock_consulta(string $data, string $armazem, array $col): array
     $naoApagado = function (string $t, string $alias) use ($tem): string {
         return $tem($t, 'DELETED') ? ' AND ' . $alias . '.DELETED = 0' : '';
     };
-    // Data e hora no formato canónico do ODBC (AAAA-MM-DD hh:mm:ss): o driver ODBC converte o parâmetro para
-    // data antes de o enviar, por isso não depende do idioma da sessão; o formato ISO com «T» é recusado pelo
-    // ODBC Driver 17 («Invalid character value for cast specification»).
-    $params = [':data_fim_com_hora' => substr($data, 0, 10) . ' 23:59:59'];
+    // Aceita uma data (stock até ao fim do dia) ou uma data/hora (stock no instante indicado).
+    // O formato canónico ODBC evita depender do idioma da sessão e não usa o «T» recusado pelo Driver 17.
+    $dataHora = preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $data)
+        ? $data
+        : substr($data, 0, 10) . ' 23:59:59';
+    $params = [':data_fim_com_hora' => $dataHora];
 
     $filtroArm = trim($armazem);
     if ($filtroArm !== '' && strtolower($filtroArm) !== 'todos' && strtolower($filtroArm) !== 'all') {
@@ -221,7 +223,8 @@ function naval_stock_consulta(string $data, string $armazem, array $col): array
 }
 
 /**
- * Stock na data indicada (AAAA-MM-DD) e armazém/rota, calculado no SQL Server pelo próprio Pinguim BO
+ * Stock na data indicada (AAAA-MM-DD) ou no instante (AAAA-MM-DD hh:mm:ss) e armazém/rota, calculado no SQL Server
+ * pelo próprio Pinguim BO
  * (dbo.GET_STOCK, só SELECT); null se a base de dados não estiver configurada ou não responder.
  *
  * Artigos considerados em cada armazém (como no Pinguim): os que tiveram movimentos (DOCMOV), contagens de
@@ -240,7 +243,7 @@ function naval_stock_sql(string $data, string $armazem = ''): ?array
         naval_stock_erro($e->getMessage());
         return null;
     }
-    return naval_stock_organizar($rows, $data);
+    return naval_stock_organizar($rows, substr($data, 0, 10));
 }
 
 /** Separa as linhas em carrinhas (armazéns 100010NN / «Armazém 10NN») e armazéns centrais. */

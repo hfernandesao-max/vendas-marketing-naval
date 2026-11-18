@@ -162,6 +162,8 @@ Um só Excel, `RTM - Dicionário Técnico da Base de Dados-DD-MM-AAAA.xlsx`, **s
 classificação, convenções e índice), _Tabelas e vistas_, _Colunas_ (tipo, nulos, PK, FK, identidade, valor por omissão),
 _Relações_, _Índices_, _Modelo do portal_, _Matriz de acessos_, _Perfis_ e _Fontes de dados_.
 
+- Em **Administração › Acessos**, «Ver estrutura (JSON)» mostra e permite copiar o mesmo catálogo directamente no portal,
+  sem transferir o Excel.
 - Serviço: API `v1/estrutura-dados` (`nucleo/api/v1/estrutura-dados.php`) → `nucleo/servicos/dicionario.php`; lê só o catálogo do SQL Server
   (`sys.*`, ou `INFORMATION_SCHEMA`) com SELECT, pela mesma guarda de só leitura.
 - Acesso: recurso `estrutura-dados` (E: TI e AUD; SADM sempre).

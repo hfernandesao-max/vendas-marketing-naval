@@ -82,11 +82,22 @@ function pdfBotao(txt, gerar) {
       .then(gerar)
       .catch((e) => {
         console.error(e);
-        toast(t('Não foi possível gerar o PDF.'), 5000);
+        toast(t(e.message || 'Não foi possível gerar o PDF.'), 5000);
       })
       .then(() => (b.disabled = false));
   });
   return b;
+}
+
+async function imprimirFolhaContagem(r) {
+  const x = await postJson('conciliacao-carrinha', { accao: 'preparar_folha', data: dia, rota: r.rota });
+  if (!x || !x.ok) throw new Error((x && x.erro) || t('Não foi possível congelar a base da contagem.'));
+  const actualizada = await apiJson('conciliacao-carrinha?data=' + dia + '&actualizar=1');
+  if (!actualizada || !actualizada.ok) throw new Error((actualizada && actualizada.erro) || t('Não foi possível ler os dados.'));
+  CC = actualizada;
+  draw();
+  const rota = actualizada.rotas.find((v) => v.rota === r.rota) || r;
+  return folhaContagemCega({ ...rota, linhas: x.linhas, base_congelada_em: x.congelada_em }, dia);
 }
 
 /** Contagem cega: só o artigo e o campo da quantidade que voltou na carrinha. */
@@ -225,12 +236,10 @@ function tabelaRota(r) {
   }
   // corte do dia (início do carregamento): a carga para o dia seguinte e as devoluções depois do corte não contam hoje
   if (r.corte) {
-    const depois = r.linhas.filter((l) => l.depois_do_corte > 0).reduce((a, l) => a + l.depois_do_corte, 0);
-    box.append(
-      el(
-        'p',
-        'cc-corte',
-        t(
+    const depois = r.linhas.reduce((a, l) => a + l.depois_do_corte, 0);
+    const nota = r.corte.origem === 'contagem'
+      ? t('Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.', { h: r.corte.hora })
+      : t(
           'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.',
           {
             h: r.corte.hora,
@@ -241,8 +250,13 @@ function tabelaRota(r) {
               }[r.corte.origem] || 'estimado: inicial − vendido + cargas confirmadas antes do corte',
             ),
           },
-        ) +
-          (depois > 0 ? ' ' + t('Carregado depois do corte: {q}.', { q: q(depois) }) : '') +
+        );
+    box.append(
+      el(
+        'p',
+        'cc-corte',
+        nota +
+          (Math.abs(depois) > 0.001 ? ' ' + t('Variação líquida do stock depois do corte: {q}.', { q: q(depois) }) : '') +
           (r.corte.vendido_depois > 0 ? ' ' + t('Vendido depois do corte (já não está na carrinha): {q}.', { q: q(r.corte.vendido_depois) }) : ''),
       ),
     );
@@ -401,6 +415,11 @@ R['conciliacao-carrinha'] = (pg) => {
       { l: t('Alertas automáticos'), v: n0(soma('alertas')), tone: soma('alertas') ? 'warn' : null, s: t('artigos assinalados pelo sistema') },
     ]),
   );
+  if (CC.pode && CC.pode.corrigir) {
+    pg.append(
+      botao(t('Actualizar históricos por contar'), 'ghost sm cc-corrigir', () => actualizarHistoricosAbertos()),
+    );
+  }
   if (CC.movimentos === 'saldo')
     pg.append(
       el(
@@ -440,7 +459,7 @@ R['conciliacao-carrinha'] = (pg) => {
     c.append(abrir);
     // folha de contagem às cegas: disponível para toda a logística que vê a rota (quem conta no papel, quem acompanha,
     // quem coordena), enquanto a carrinha está por contar; só leva os artigos, nunca as quantidades do sistema
-    if (r.resumo.estado === 'por_contar') c.append(pdfBotao(t('Imprimir folha de contagem'), () => folhaContagemCega(r, dia)));
+    if (r.resumo.estado === 'por_contar') c.append(pdfBotao(t('Imprimir folha de contagem'), () => imprimirFolhaContagem(r)));
     // requisição de reposição criada pela conciliação (o que foi vendido), para o promotor rever e emitir
     if (r.requisicao) {
       const a = el('a', 'btn ghost sm cc-req', t('Requisição de reposição {n}', { n: r.requisicao }));
@@ -467,6 +486,55 @@ R['conciliacao-carrinha'] = (pg) => {
     lista.before(botao(t('Corrigir quem contou / validou'), 'ghost sm cc-corrigir', () => corrigirRegisto(contadas)));
   pg.append(caixaDia);
 };
+
+function actualizarHistoricosAbertos() {
+  janela(
+    t('Actualizar históricos por contar'),
+    t('Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.'),
+    (b, ft, fechar) => {
+      const resultado = msgErro();
+      const actualizar = botao(t('Actualizar'), null, () => {
+        actualizar.disabled = true;
+        const total = { actualizadas: 0, ignoradas: 0, falhas: [] };
+        let cursor = '';
+        const executar = async () => {
+          while (true) {
+            const x = await postJson('conciliacao-carrinha', { accao: 'actualizar_abertas_anteriores', depois_de: cursor });
+            if (!x || !x.ok) {
+              resultado.hidden = false;
+              resultado.textContent = t(x && x.erro ? x.erro : 'Não foi possível actualizar os históricos.');
+              actualizar.disabled = false;
+              return;
+            }
+            const r = x.resultado || {};
+            total.actualizadas += (r.actualizadas || []).length;
+            total.ignoradas += r.ignoradas || 0;
+            total.falhas.push(...(r.falhas || []));
+            if (!r.mais) break;
+            cursor = r.continuar_de || cursor;
+          }
+          resultado.hidden = false;
+          resultado.textContent = t('Actualizadas: {n}; ignoradas: {i}; falhas: {f}.', {
+            n: n0(total.actualizadas),
+            i: n0(total.ignoradas),
+            f: n0(total.falhas.length),
+          }) + (total.falhas.length ? ' ' + total.falhas.slice(0, 10).map((f) => [f.data, f.rota, f.erro].filter(Boolean).join(' · ')).join(' | ') : '');
+          actualizar.disabled = true;
+          CC = null;
+          ler(true);
+        };
+        executar().catch((e) => {
+          console.error(e);
+          resultado.hidden = false;
+          resultado.textContent = t('Não foi possível actualizar os históricos.');
+          actualizar.disabled = false;
+        });
+      });
+      b.append(resultado);
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), actualizar);
+    },
+  );
+}
 
 /**
  * Correcção do registo de quem contou e de quem validou (super administrador): não muda números nem aprovações,

@@ -14,6 +14,17 @@ dialog.dlg {
 dialog.dlg.dlg-largo {
   width: min(760px, calc(100vw - 32px));
 }
+dialog.dlg.estrutura-json {
+  width: min(920px, calc(100vw - 32px));
+}
+.estrutura-json .estrutura-conteudo {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: min(60vh, 600px);
+  resize: vertical;
+  font: 12px/1.45 ui-monospace, Consolas, monospace;
+  white-space: pre;
+}
 /* correcção das formas de pagamento: compacta, sem barras de deslocamento (a tabela cabe na janela) */
 dialog.dlg.dlg-fp {
   width: min(820px, calc(100vw - 24px));

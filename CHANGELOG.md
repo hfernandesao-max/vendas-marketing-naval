@@ -1,5 +1,17 @@
 ## 18-11-2026
 
+### Conciliação das carrinhas: base congelada na primeira folha de contagem
+
+- A primeira geração da folha congela no servidor o stock e os movimentos do Pinguim BO; reimpressões e submissão reutilizam a mesma base.
+- O PDF regista a hora de referência e a conciliação deixa de ser alterada por fotografias posteriores; movimentos e vendas são apurados até ao instante congelado.
+- A variação líquida após o corte deixa de ser apresentada como carga.
+- O super administrador pode actualizar em bloco as conciliações históricas ainda por contar, usando o stock e os movimentos do Pinguim BO no corte operacional; contagens feitas e aprovações não são alteradas.
+
+### Consultar o dicionário técnico sem exportar Excel
+
+- Administração › Acessos permite ver e copiar o catálogo das tabelas e relações em JSON, directamente no portal.
+- Mantém as permissões existentes; apresenta apenas metadados da estrutura, sem linhas de negócio.
+
 ### Total efectivo de vendas: desconto de substituição na factura original
 
 <!-- paginas: inicio, vendas-promotor, vendas-dia, vendas-cliente -->

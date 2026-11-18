@@ -30,6 +30,18 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
       const b = JSON.parse(r.request().postData());
       pedidos.push(b);
       const agora = '2026-10-26 18:30:00';
+      if (b.accao === 'preparar_folha') {
+        return r.fulfill({
+          json: {
+            ok: true,
+            linhas: [
+              { codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX' },
+              { codigo: 'B2', artigo: 'Sabão', unidade: 'CX' },
+            ],
+            congelada_em: '2026-10-26 15:34:00',
+          },
+        });
+      }
       if (b.accao === 'contar') {
         estado = 'por_validar';
         Object.assign(reg, { contado_por: eu, contado_em: agora });
@@ -115,6 +127,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   const folha = await pdfTexto(rota.getByRole('button', { name: 'Imprimir folha de contagem' }));
   expect(folha.nome).toBe('CC-1001-20261026_folha-de-contagem.pdf');
   expect(folha.texto).toContain('Fraldas M');
+  expect(folha.texto).toContain('Base do sistema congelada em: 2026-10-26 15:34:00.');
   expect(folha.texto).toContain('Quantidade');
   expect(folha.texto).not.toContain('Tem de voltar');
   await rota.getByLabel('Fraldas M').fill('3');
@@ -130,8 +143,8 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await expect(rota.locator('.erro')).toContainText('Preencha todos os artigos');
   await rota.getByLabel('Sabão').fill('2');
   await rota.getByRole('button', { name: 'Gravar contagem' }).click();
-  await expect.poll(() => pedidos.length).toBe(1);
-  expect(pedidos[0]).toMatchObject({ accao: 'contar', rota: '1001', contagem: { A1: 3, B2: 2 } });
+  await expect.poll(() => pedidos.filter((p) => p.accao === 'contar').length).toBe(1);
+  expect(pedidos.find((p) => p.accao === 'contar')).toMatchObject({ accao: 'contar', rota: '1001', contagem: { A1: 3, B2: 2 } });
   // gravado: o rascunho apaga-se quando chega a resposta do servidor
   await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('vm-rascunho-')))).toEqual([]);
 
@@ -185,8 +198,17 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
 });
 
 test('conciliação: conta-se o stock no corte do dia; a carga para o dia seguinte fica de fora', async ({ page }) => {
-  await page.route('**/v1/conciliacao-carrinha**', (r) =>
-    r.fulfill({
+  await page.route('**/v1/conciliacao-carrinha**', (r) => {
+    if (r.request().method() === 'POST') {
+      return r.fulfill({
+        json: {
+          ok: true,
+          linhas: [{ codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX' }],
+          congelada_em: '2026-10-23 23:59:59',
+        },
+      });
+    }
+    return r.fulfill({
       json: {
         ok: true,
         gere: true,
@@ -211,14 +233,14 @@ test('conciliação: conta-se o stock no corte do dia; a carga para o dia seguin
           },
         ],
       },
-    }),
-  );
+    });
+  });
   const erros = await abrir(page, '#conciliacao-carrinha');
   await page.locator('.cc-rota', { hasText: '1005' }).getByRole('button', { name: 'Ver' }).click();
   const nota = page.locator('.cc-corte');
   await expect(nota).toContainText('Conta-se o que estava na carrinha no corte das 16:00');
   await expect(nota).toContainText('passa a stock da carrinha amanhã, às 00:00');
-  await expect(nota).toContainText('Carregado depois do corte: 150');
+  await expect(nota).toContainText('Variação líquida do stock depois do corte: 150');
   expect(erros).toEqual([]);
 });
 
@@ -234,8 +256,17 @@ test('conciliação: a folha de contagem imprime-se para toda a logística, mesm
     historico: [],
     ...extra,
   });
-  await page.route('**/v1/conciliacao-carrinha**', (r) =>
-    r.fulfill({
+  await page.route('**/v1/conciliacao-carrinha**', (r) => {
+    if (r.request().method() === 'POST') {
+      return r.fulfill({
+        json: {
+          ok: true,
+          linhas: [{ codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX' }],
+          congelada_em: '2026-10-23 23:59:59',
+        },
+      });
+    }
+    return r.fulfill({
       json: {
         ok: true,
         gere: false,
@@ -247,8 +278,8 @@ test('conciliação: a folha de contagem imprime-se para toda a logística, mesm
         nomes: {},
         rotas: [rota('1009', 'por_contar', { quantidades_ocultas: true }), rota('1001', 'aprovada', { promotor: 'Outro' })],
       },
-    }),
-  );
+    });
+  });
   await page.addInitScript(() => (window.open = () => null));
   const erros = await abrir(page, '#conciliacao-carrinha');
   const r1009 = page.locator('.cc-rota', { hasText: '1009' });

@@ -4,6 +4,8 @@
  * contagem do técnico do armazém e a aprovação das diferenças.
  *
  * GET  v1/conciliacao-carrinha?data=AAAA-MM-DD[&actualizar=1]       recurso «conciliacao-carrinha» (Vr: só as suas rotas)
+ * POST v1/conciliacao-carrinha {accao: preparar_folha, data, rota, csrf}                             «conciliacao-carrinha» V
+ * POST v1/conciliacao-carrinha {accao: actualizar_abertas_anteriores, csrf}                          só SADM
  * POST v1/conciliacao-carrinha {accao: contar, data, rota, contagem: {codigo: quantidade}, csrf}      «conciliacao-carrinha» G
  * POST v1/conciliacao-carrinha {accao: validar, data, rota, csrf}                                   quem contou
  * POST v1/conciliacao-carrinha {accao: aprovar, data, rota, motivos: {codigo: {motivo, nota}}, csrf}  «conciliacao-coordenacao» G
@@ -29,6 +31,13 @@ if (!naval_e_post()) {
 $p = naval_pedido();
 naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
+if ($accao === 'actualizar_abertas_anteriores') {
+    if (naval_perfil() !== 'SADM') {
+        naval_registar('alteracao_recusada', ['accao' => $accao, 'motivo' => 'perfil']);
+        throw new NavalErro('Só o super administrador pode actualizar as conciliações históricas em aberto.', 403);
+    }
+    naval_json_assinado(['ok' => true, 'resultado' => naval_carr_actualizar_abertas_anteriores($eu, (string) ($p['depois_de'] ?? ''))]);
+}
 if ($accao === 'corrigir_registo') {
     // correcção de quem contou / validou: só o super administrador, com motivo, fica no histórico de cada rota
     if (naval_perfil() !== 'SADM') {
@@ -42,7 +51,7 @@ if ($accao === 'corrigir_registo') {
     naval_json_assinado(['ok' => true, 'rotas' => $feitas]);
 }
 $precisa = ['contar' => 'contar', 'validar' => 'contar', 'aprovar' => 'coordenar', 'fechar' => 'fechar'][$accao] ?? 'contar';
-if (!$pode[$precisa]) {
+if ($accao !== 'preparar_folha' && !$pode[$precisa]) {
     naval_registar('alteracao_recusada', ['accao' => 'carrinha_' . $accao, 'motivo' => 'perfil']);
     throw new NavalErro($precisa === 'contar' ? 'O seu perfil não permite contar a conciliação das carrinhas.'
         : 'O seu perfil não permite aprovar este nível da conciliação das carrinhas.', 403);
@@ -51,6 +60,9 @@ $data = (string) ($p['data'] ?? '');
 $rota = (string) ($p['rota'] ?? '');
 if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
 if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || !naval_rota_permitida($rota)) throw new NavalErro('Rota inválida.', 400);
+if ($accao === 'preparar_folha') {
+    naval_json_assinado(['ok' => true] + naval_carr_preparar_folha($data, $rota, $eu));
+}
 switch ($accao) {
     case 'contar':
         naval_json_assinado(['ok' => true] + naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu));

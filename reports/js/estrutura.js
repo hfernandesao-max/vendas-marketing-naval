@@ -1,8 +1,9 @@
-// Excel «Dicionário técnico da base de dados» (Administração › Acessos): estrutura, sem dados de negócio.
+// Estrutura de dados (JSON e Excel) em Administração › Acessos, sem dados de negócio.
 // Boas práticas de documentação de dados (metadados técnicos e de negócio, ao estilo DAMA-DMBOK):
 // capa com proveniência e classificação, índice com ligações, uma tabela do Excel com nome por folha,
 // cabeçalho numa só linha, painéis fixos, filtros, sem células unidas nas tabelas e convenções explicadas.
 import { download } from './componentes/blocos.js';
+import { botao, janela } from './componentes/janelas.js';
 import { NAVY2, GREY, carregarExcelJS, conjuntosDados, nomeFolha } from './excel.js';
 import { dl } from './formatos.js';
 import { siglaNivel, t, tv } from './i18n/i18n.js';
@@ -50,6 +51,53 @@ export async function exportarEstrutura(bt) {
     toast(e && e.message ? t(e.message) : t('Não foi possível gerar o Excel.'), 6000);
   }
   if (bt) bt.disabled = false;
+}
+
+export async function mostrarEstruturaJSON(bt) {
+  if (!podeExportar('estrutura-dados')) {
+    toast(t('O seu perfil não permite exportar a estrutura de dados.'), 6000);
+    return;
+  }
+  if (bt) bt.disabled = true;
+  toast(t('A preparar a estrutura de dados…'));
+  try {
+    const E = await lerEstrutura();
+    const texto = JSON.stringify(E, null, 2);
+    janela(
+      t('Estrutura da base de dados'),
+      t('O catálogo contém apenas estrutura e metadados; não inclui linhas de negócio.'),
+      (b, ft, fechar) => {
+        const area = document.createElement('textarea');
+        area.id = 'estrutura-json';
+        area.className = 'estrutura-conteudo';
+        area.readOnly = true;
+        area.spellcheck = false;
+        area.setAttribute('aria-label', t('Estrutura da base de dados em JSON'));
+        area.value = texto;
+        b.append(area);
+        ft.append(
+          botao(t('Fechar'), 'ghost', fechar),
+          botao(t('Copiar JSON'), '', async () => {
+            try {
+              if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard API indisponível.');
+              await navigator.clipboard.writeText(texto);
+              toast(t('Copiado.'), 2500);
+            } catch {
+              area.focus();
+              area.select();
+              toast(t('Texto seleccionado. Prima Ctrl+C para copiar.'), 6000);
+            }
+          }),
+        );
+      },
+    ).classList.add('largo', 'estrutura-json');
+    toast(t('Catálogo carregado.'), 2500);
+  } catch (e) {
+    console.error(e);
+    toast(e && e.message ? t(e.message) : t('Não foi possível consultar a estrutura de dados.'), 6000);
+  } finally {
+    if (bt) bt.disabled = false;
+  }
 }
 
 function gerar(E) {
