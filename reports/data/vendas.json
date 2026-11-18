@@ -6,12 +6,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/1",
     "cliente": "I.BARRY TODO DIVERSO - COMÉRCIO E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
     "nif": "5002464519",
     "liquidado": true,
     "total": 434000.0,
-    "meio_pagamento": null
+    "valor_pago": 434000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 434000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/2",
@@ -20,12 +30,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/2",
     "cliente": "ABEL GHIBRESLASSIE - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5002174421",
     "liquidado": true,
     "total": 62500.0,
-    "meio_pagamento": null
+    "valor_pago": 62500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 62500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/1",
@@ -34,12 +54,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/1",
     "cliente": "MAVUNGU NZUZI",
     "nif": "001419868UE036",
     "liquidado": true,
     "total": 145000.0,
-    "meio_pagamento": null
+    "valor_pago": 145000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 145000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/1",
@@ -48,12 +78,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/1",
     "cliente": "MJAHH-COMERCIO GERAL E PREST DE SERVICOSSULDA",
     "nif": "5417659096",
     "liquidado": true,
     "total": 554350.0,
-    "meio_pagamento": null
+    "valor_pago": 554350.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 554350.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77687N/1",
@@ -62,12 +102,22 @@
     "rota": "1011",
     "promotor": "Robel Tesfamichael",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77687N/1",
     "cliente": "HABTEMARYAM - COMERCIO GERAL E PRESTACAO DE SERVICOS (SU), LDA",
     "nif": "5000195898",
     "liquidado": true,
     "total": 615000.0,
-    "meio_pagamento": null
+    "valor_pago": 615000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 615000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/2",
@@ -76,12 +126,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/2",
     "cliente": "BOUBACAR DIALLO-COMERCIO A RETALHO(SU), LDA",
     "nif": "5000226165",
     "liquidado": true,
     "total": 75000.0,
-    "meio_pagamento": null
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/2",
@@ -90,12 +150,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/2",
     "cliente": "MERHAWI SG - COMÉRCIO GERAL, (SU), LDA",
     "nif": "5002522373",
     "liquidado": true,
     "total": 160000.0,
-    "meio_pagamento": null
+    "valor_pago": 160000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 160000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/3",
@@ -104,12 +174,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/3",
     "cliente": "HELENA FLORINDA LUIS",
     "nif": "004956068KS041",
     "liquidado": true,
     "total": 466000.0,
-    "meio_pagamento": null
+    "valor_pago": 466000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 466000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/4",
@@ -118,12 +198,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/4",
     "cliente": "TECLEWEINI H.A - COMERCIO GERAL E PRESTAÇA DE SERVIÇOS, (SU), LDA",
     "nif": "5002930536",
     "liquidado": true,
     "total": 320000.0,
-    "meio_pagamento": null
+    "valor_pago": 320000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 320000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/3",
@@ -132,12 +222,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/3",
     "cliente": "AL-RIDHA GROUP ,LDA",
     "nif": "5417173754",
     "liquidado": true,
     "total": 299300.0,
-    "meio_pagamento": null
+    "valor_pago": 299300.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 299300.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/5",
@@ -146,12 +246,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/5",
     "cliente": "ANGOMATOTO-COMÉRCIO GERAL",
     "nif": "5002906473",
     "liquidado": true,
     "total": 356500.0,
-    "meio_pagamento": null
+    "valor_pago": 356500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 356500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/4",
@@ -160,12 +270,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/4",
     "cliente": "AB AMADOU - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5002146312",
     "liquidado": true,
     "total": 68500.0,
-    "meio_pagamento": null
+    "valor_pago": 68500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 68500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FT FT0126S84839N/1",
@@ -173,12 +293,16 @@
     "hora": "09:22",
     "rota": "1011",
     "promotor": "Robel Tesfamichael",
-    "tipo": "Fatura",
+    "tipo": "Factura",
+    "tipo_codigo": "FT",
+    "nc": false,
     "documento": "FT FT0126S84839N/1",
     "cliente": "YONITK - COMÉRCIO GERAL & PRESTAÇÃO DE SERVIÇOS",
     "nif": "5001874438",
-    "liquidado": false,
+    "liquidado": true,
     "total": 780000.0,
+    "valor_pago": 780000.0,
+    "pagamentos": [],
     "meio_pagamento": null
   },
   {
@@ -188,12 +312,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/5",
     "cliente": "I. Barry Todo Diverso",
     "nif": "5002464519",
     "liquidado": true,
     "total": 91000.0,
-    "meio_pagamento": null
+    "valor_pago": 91000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 91000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77687N/2",
@@ -202,12 +336,22 @@
     "rota": "1011",
     "promotor": "Robel Tesfamichael",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77687N/2",
     "cliente": "MEREBAY TESFAALEM - COMÉRCIO & PRESTAÇÃO DE SERVIÇOS , (SU), LDA",
     "nif": "5002730642",
     "liquidado": true,
     "total": 880000.0,
-    "meio_pagamento": null
+    "valor_pago": 880000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 880000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/6",
@@ -216,12 +360,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/6",
     "cliente": "Barry Atigou - Comercio",
     "nif": "5000184004",
     "liquidado": true,
     "total": 160000.0,
-    "meio_pagamento": null
+    "valor_pago": 160000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 160000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/3",
@@ -230,12 +384,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/3",
     "cliente": "IBRAMA - COMERCIO GERAL, (SU), LDA",
     "nif": "5001359452",
     "liquidado": true,
     "total": 86500.0,
-    "meio_pagamento": null
+    "valor_pago": 86500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 86500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/1",
@@ -244,12 +408,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/1",
     "cliente": "E.T. WelduA - Comercio Geral",
     "nif": "50025822937",
     "liquidado": true,
     "total": 295000.0,
-    "meio_pagamento": null
+    "valor_pago": 295000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 295000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/7",
@@ -258,12 +432,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/7",
     "cliente": "BARRY ATIGOU - COMERCIO GERAL (SU) LDA",
     "nif": "5000184004",
     "liquidado": true,
     "total": 91000.0,
-    "meio_pagamento": null
+    "valor_pago": 91000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 91000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/2",
@@ -272,12 +456,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/2",
     "cliente": "MUTARO DJALO - COMERCIO E PRESTAÇAO DE SERVIÇOS,(SU), LDA",
     "nif": "5002002132",
     "liquidado": true,
     "total": 150000.0,
-    "meio_pagamento": null
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/8",
@@ -286,12 +480,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/8",
     "cliente": "ZAKARIA BAH - COMÉRCIO GERAL, (SU), LDA",
     "nif": "5002268531",
     "liquidado": true,
     "total": 295000.0,
-    "meio_pagamento": null
+    "valor_pago": 295000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 295000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/6",
@@ -300,12 +504,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/6",
     "cliente": "DAI MOUHAMADOU-COMÉRCIO",
     "nif": "5002620545",
     "liquidado": true,
     "total": 690000.0,
-    "meio_pagamento": null
+    "valor_pago": 690000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 690000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/1",
@@ -314,12 +528,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/1",
     "cliente": "OUMAR DIALLO - COMERCIO GERLA E PRESTAÇAO DE SERVIÇOS (SU),LDA.",
     "nif": "5001827847",
     "liquidado": true,
     "total": 270000.0,
-    "meio_pagamento": null
+    "valor_pago": 270000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 270000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77694N/1",
@@ -328,12 +552,22 @@
     "rota": "1008",
     "promotor": "Daniel Mihreteab",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77694N/1",
     "cliente": "M.S.ANDEMICAEL-COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
     "nif": "5000859990",
     "liquidado": true,
     "total": 1500000.0,
-    "meio_pagamento": null
+    "valor_pago": 1500000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 1500000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/4",
@@ -342,12 +576,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/4",
     "cliente": "AVARICE-COMERCIO GERAL SU-LDA",
     "nif": "5417666599",
     "liquidado": true,
     "total": 54000.0,
-    "meio_pagamento": null
+    "valor_pago": 54000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 54000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/3",
@@ -356,12 +600,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/3",
     "cliente": "ALHASSNE DIALLO - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
     "nif": "5001719777",
     "liquidado": true,
     "total": 389250.0,
-    "meio_pagamento": null
+    "valor_pago": 389250.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 389250.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/5",
@@ -370,12 +624,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/5",
     "cliente": "DANT-M.F.A COMERCIO E SERVIÇOS, LDA",
     "nif": "5002685825",
     "liquidado": true,
     "total": 198600.0,
-    "meio_pagamento": null
+    "valor_pago": 198600.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 198600.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/2",
@@ -384,12 +648,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/2",
     "cliente": "AFEWERKI SIUM - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
     "nif": "5002294338",
     "liquidado": true,
     "total": 270000.0,
-    "meio_pagamento": null
+    "valor_pago": 270000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 270000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/9",
@@ -398,12 +672,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/9",
     "cliente": "BARRY ATIGOU - COMERCIO GERAL (SU) LDA",
     "nif": "5000184004",
     "liquidado": true,
     "total": 150000.0,
-    "meio_pagamento": null
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/3",
@@ -412,12 +696,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/3",
     "cliente": "LUCENA DA CONCEIÇAO DA SILVA LOURENÇO",
     "nif": "000234712LA038",
     "liquidado": true,
     "total": 147400.0,
-    "meio_pagamento": null
+    "valor_pago": 147400.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 147400.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77782N/1",
@@ -426,12 +720,22 @@
     "rota": "1010",
     "promotor": "Nahom Areaya",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77782N/1",
     "cliente": "MAMADOU YACINE BAH - COMERCIO GERAL E PRESTACAO DE SERVICOS (SU),LDA",
     "nif": "5001856081",
     "liquidado": true,
     "total": 216000.0,
-    "meio_pagamento": null
+    "valor_pago": 216000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 216000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/4",
@@ -440,12 +744,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/4",
     "cliente": "D. ABDOURAHMANE - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5001388940",
     "liquidado": true,
     "total": 54000.0,
-    "meio_pagamento": null
+    "valor_pago": 54000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 54000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/5",
@@ -454,26 +768,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/5",
     "cliente": "A.B.GADRI - COMERCIO GERAL, (SU), LDA",
     "nif": "5002160145",
     "liquidado": true,
     "total": 74000.0,
-    "meio_pagamento": null
-  },
-  {
-    "chave": "FR FR0126S77764N/6",
-    "data": "2026-10-21",
-    "hora": "13:10",
-    "rota": "1003",
-    "promotor": "Joceil Prata",
-    "tipo": "Factura-recibo",
-    "documento": "FR FR0126S77764N/6",
-    "cliente": "D.M. ABDOULAYE - COMERCIO GERAL E SERVIÇOS, (SU), LDA",
-    "nif": "5001600206",
-    "liquidado": true,
-    "total": 135000.0,
-    "meio_pagamento": null
+    "valor_pago": 74000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 74000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/10",
@@ -482,12 +792,46 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/10",
     "cliente": "Consumidor Final",
     "nif": "999999999",
     "liquidado": true,
     "total": 135000.0,
-    "meio_pagamento": null
+    "valor_pago": 135000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 135000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
+  },
+  {
+    "chave": "FR FR0126S77764N/6",
+    "data": "2026-10-21",
+    "hora": "13:10",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/6",
+    "cliente": "D.M. ABDOULAYE - COMERCIO GERAL E SERVIÇOS, (SU), LDA",
+    "nif": "5001600206",
+    "liquidado": true,
+    "total": 135000.0,
+    "valor_pago": 135000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 135000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77782N/2",
@@ -496,12 +840,22 @@
     "rota": "1010",
     "promotor": "Nahom Areaya",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77782N/2",
     "cliente": "AUGUSTO PAULO PEDRO SEBASTIAO",
     "nif": "000174662LA019",
     "liquidado": true,
     "total": 306000.0,
-    "meio_pagamento": null
+    "valor_pago": 306000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 306000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/1",
@@ -510,12 +864,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/1",
     "cliente": "BARRY AMADOU DJOULDE",
     "nif": "0000202544",
     "liquidado": true,
     "total": 134500.0,
-    "meio_pagamento": null
+    "valor_pago": 134500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 134500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/4",
@@ -524,12 +888,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/4",
     "cliente": "RAZÃO GOMES CUDINHINGANA",
     "nif": "000007347UE012",
     "liquidado": true,
     "total": 160000.0,
-    "meio_pagamento": null
+    "valor_pago": 160000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 160000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/7",
@@ -538,12 +912,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/7",
     "cliente": "BADIAGA SADY",
     "nif": "0000064501",
     "liquidado": true,
     "total": 280500.0,
-    "meio_pagamento": null
+    "valor_pago": 280500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 280500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77745N/1",
@@ -552,12 +936,22 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/1",
     "cliente": "BERHANE SEMEREAB",
     "nif": "00001929933",
     "liquidado": true,
     "total": 1600000.0,
-    "meio_pagamento": null
+    "valor_pago": 1600000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 1600000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/8",
@@ -566,12 +960,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/8",
     "cliente": "MAURO PEDRO - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS (SU), LDA",
     "nif": "5000411213",
     "liquidado": true,
     "total": 284500.0,
-    "meio_pagamento": null
+    "valor_pago": 284500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 284500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/6",
@@ -580,12 +984,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/6",
     "cliente": "BAH M.ALIOU - COMERCIO GERAL , (SU), LDA",
     "nif": "5001610570",
     "liquidado": true,
     "total": 81000.0,
-    "meio_pagamento": null
+    "valor_pago": 81000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 81000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/5",
@@ -594,12 +1008,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/5",
     "cliente": "DIALLO AMADOU TIDIANE",
     "nif": "0000115419",
     "liquidado": true,
     "total": 205300.0,
-    "meio_pagamento": null
+    "valor_pago": 205300.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 205300.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/7",
@@ -608,12 +1032,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/7",
     "cliente": "AVARICE-COMERCIO GERAL SU-LDA",
     "nif": "5417666599",
     "liquidado": true,
     "total": 54000.0,
-    "meio_pagamento": null
+    "valor_pago": 54000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 54000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/2",
@@ -622,12 +1056,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/2",
     "cliente": "INUSA TABALA",
     "nif": "003177442ZE032",
     "liquidado": true,
     "total": 450000.0,
-    "meio_pagamento": null
+    "valor_pago": 450000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 450000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77700N/7",
@@ -636,12 +1080,22 @@
     "rota": "1006",
     "promotor": "Rosa Vemba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77700N/7",
     "cliente": "FAMILIA DA COSTA - COMERCIO E PRESTAÇAO DE SERVIÇOS, LDA",
     "nif": "5000937584",
     "liquidado": true,
     "total": 337300.0,
-    "meio_pagamento": null
+    "valor_pago": 337300.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 337300.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/11",
@@ -650,12 +1104,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/11",
     "cliente": "KANA DIALLO - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
     "nif": "5001763806",
     "liquidado": true,
     "total": 640000.0,
-    "meio_pagamento": null
+    "valor_pago": 640000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 640000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/3",
@@ -664,12 +1128,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/3",
     "cliente": "ELHADJ MALAL-DIALLO - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
     "nif": "5001045113",
     "liquidado": true,
     "total": 148000.0,
-    "meio_pagamento": null
+    "valor_pago": 148000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 148000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/4",
@@ -678,12 +1152,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/4",
     "cliente": "ALPHOUMAR - COMÉRCIO E SERVIÇOS, (SU), LDA",
     "nif": "5002470705",
     "liquidado": true,
     "total": 147500.0,
-    "meio_pagamento": null
+    "valor_pago": 147500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 147500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/12",
@@ -692,12 +1176,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/12",
     "cliente": "SOULEYMANE SOW SS - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5000888761",
     "liquidado": true,
     "total": 142000.0,
-    "meio_pagamento": null
+    "valor_pago": 142000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 142000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/13",
@@ -706,12 +1200,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/13",
     "cliente": "DIALLO SANOUSSY - COMÉRCIO GERAL",
     "nif": "5001888820",
     "liquidado": true,
     "total": 1568000.0,
-    "meio_pagamento": null
+    "valor_pago": 1568000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 1568000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/5",
@@ -720,12 +1224,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/5",
     "cliente": "FATIMATOU DIALLO",
     "nif": "0000106082",
     "liquidado": true,
     "total": 103000.0,
-    "meio_pagamento": null
+    "valor_pago": 103000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 103000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/9",
@@ -734,12 +1248,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/9",
     "cliente": "DANT MD MUSSA COMERCIO E SERVIÇOS (SU), LDA",
     "nif": "5001723820",
     "liquidado": true,
     "total": 72500.0,
-    "meio_pagamento": null
+    "valor_pago": 72500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 72500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78519N/6",
@@ -748,12 +1272,22 @@
     "rota": "1001",
     "promotor": "Andrea Santos",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78519N/6",
     "cliente": "KAALA & HERACO - COMERCIO E PRESTAÇAO DE SERVIÇOS, LDA",
     "nif": "5002718235",
     "liquidado": true,
     "total": 74500.0,
-    "meio_pagamento": null
+    "valor_pago": 74500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 74500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/10",
@@ -762,12 +1296,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/10",
     "cliente": "BALDE ALHASSANE - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5001127314",
     "liquidado": true,
     "total": 29500.0,
-    "meio_pagamento": null
+    "valor_pago": 29500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 29500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77764N/11",
@@ -776,12 +1320,22 @@
     "rota": "1003",
     "promotor": "Joceil Prata",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77764N/11",
     "cliente": "KADI-HADI - COMERCIO E SERVIÇOS, LDA",
     "nif": "5002218585",
     "liquidado": true,
     "total": 888000.0,
-    "meio_pagamento": null
+    "valor_pago": 888000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 888000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/14",
@@ -790,12 +1344,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/14",
     "cliente": "M. SIRADJO DJALO - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
     "nif": "5002188260",
     "liquidado": true,
     "total": 12500.0,
-    "meio_pagamento": null
+    "valor_pago": 12500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 12500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77774N/1",
@@ -804,12 +1368,22 @@
     "rota": "1007",
     "promotor": "Awet Weldemenkorios",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77774N/1",
     "cliente": "MISYAM",
     "nif": "5000637602",
     "liquidado": true,
     "total": 740000.0,
-    "meio_pagamento": null
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77745N/2",
@@ -818,12 +1392,22 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/2",
     "cliente": "F.SOLOMON-COMERCIO GERAL, (SU), LDA",
     "nif": "5001137697",
     "liquidado": true,
     "total": 2960000.0,
-    "meio_pagamento": null
+    "valor_pago": 2960000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 2960000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77745N/3",
@@ -832,12 +1416,22 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/3",
     "cliente": "HAGOS ABEDE - COMERCIO E SERVIÇOS, (SU), LDA",
     "nif": "5001514725",
     "liquidado": true,
     "total": 1480000.0,
-    "meio_pagamento": null
+    "valor_pago": 1480000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 1480000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/6",
@@ -846,12 +1440,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/6",
     "cliente": "LAH ALOU - COMERCIO GERAL, (SU), LDA",
     "nif": "5001691678",
     "liquidado": true,
     "total": 75000.0,
-    "meio_pagamento": null
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/15",
@@ -860,12 +1464,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/15",
     "cliente": "M.A.A.D. ALPHA - COMERCIO GERAL, (SU), LDA",
     "nif": "5001551485",
     "liquidado": true,
     "total": 173500.0,
-    "meio_pagamento": null
+    "valor_pago": 173500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 173500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/16",
@@ -874,12 +1488,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/16",
     "cliente": "A.BAILO B. - COMÉRCIO GERAL",
     "nif": "5001963686",
     "liquidado": true,
     "total": 133000.0,
-    "meio_pagamento": null
+    "valor_pago": 133000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 133000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S78515N/17",
@@ -888,12 +1512,22 @@
     "rota": "1004",
     "promotor": "Nelson Bumba",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S78515N/17",
     "cliente": "A.BAILO B. - COMÉRCIO GERAL",
     "nif": "5001963686",
     "liquidado": true,
     "total": 71500.0,
-    "meio_pagamento": null
+    "valor_pago": 71500.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 71500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/8",
@@ -902,12 +1536,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/8",
     "cliente": "AMANUEL YOSIEF-COMERCIO GERAL(SU), LDA",
     "nif": "5000943983",
     "liquidado": true,
     "total": 300000.0,
-    "meio_pagamento": null
+    "valor_pago": 300000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 300000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/9",
@@ -916,12 +1560,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/9",
     "cliente": "S.W.SAMI - COMÉRCIO GERAL, (SU), LDA",
     "nif": "5002585146",
     "liquidado": true,
     "total": 245000.0,
-    "meio_pagamento": null
+    "valor_pago": 245000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 245000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77694N/2",
@@ -930,12 +1584,22 @@
     "rota": "1008",
     "promotor": "Daniel Mihreteab",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77694N/2",
     "cliente": "KALU.ARAYA - COMERCIO GERAL, (SU), LDA",
     "nif": "5001508946",
     "liquidado": true,
     "total": 740000.0,
-    "meio_pagamento": null
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77768N/10",
@@ -944,12 +1608,22 @@
     "rota": "1005",
     "promotor": "Olindo Baião",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77768N/10",
     "cliente": "TEMESGEN TESFATSION - COMERCIO GERAL (SU), LDA",
     "nif": "5000139319",
     "liquidado": true,
     "total": 150000.0,
-    "meio_pagamento": null
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/7",
@@ -958,12 +1632,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/7",
     "cliente": "ISMADIA",
     "nif": "5002199076",
     "liquidado": true,
     "total": 150000.0,
-    "meio_pagamento": null
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77755N/8",
@@ -972,12 +1656,22 @@
     "rota": "1002",
     "promotor": "Cristina Sachuma",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77755N/8",
     "cliente": "ANDOM HAILE - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS",
     "nif": "5001708600",
     "liquidado": true,
     "total": 30000.0,
-    "meio_pagamento": null
+    "valor_pago": 30000.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 30000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
   },
   {
     "chave": "FR FR0126S77745N/4",
@@ -986,12 +1680,22 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/4",
     "cliente": "TESFALEM HABTEAB BIRHANE - COMERCIO GERAL",
     "nif": "5001857460",
     "liquidado": true,
     "total": 1205000.0,
-    "meio_pagamento": null
+    "valor_pago": 1205000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 1205000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
   },
   {
     "chave": "FR FR0126S77745N/5",
@@ -1000,12 +1704,27 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/5",
     "cliente": "T.GHEBRU - COMÉRCIO GERAL, (SU), LDA",
     "nif": "5003160416",
     "liquidado": true,
     "total": 2960000.0,
-    "meio_pagamento": null
+    "valor_pago": 2960000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 2200000.0
+      },
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 760000.0
+      }
+    ],
+    "meio_pagamento": "Numerário, Multicaixa"
   },
   {
     "chave": "FR FR0126S77745N/6",
@@ -1014,11 +1733,2118 @@
     "rota": "1009",
     "promotor": "Efrem Bokre",
     "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
     "documento": "FR FR0126S77745N/6",
     "cliente": "SAWADOGO & FILHOS - COMERCIO GERAL, LDA.",
     "nif": "5001621670",
     "liquidado": true,
     "total": 740000.0,
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "NC NC0126S53627N/1",
+    "data": "2026-10-30",
+    "hora": "15:50",
+    "rota": "1011",
+    "promotor": "Robel Tesfamichael",
+    "tipo": "Nota de crédito",
+    "tipo_codigo": "NC",
+    "nc": true,
+    "documento": "NC NC0126S53627N/1",
+    "cliente": "YONITK - COMÉRCIO GERAL & PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5001874438",
+    "liquidado": false,
+    "total": -780000.0,
+    "valor_pago": 0.0,
+    "pagamentos": [],
     "meio_pagamento": null
+  },
+  {
+    "chave": "FR FR0126S77687N/3",
+    "data": "2026-11-03",
+    "hora": "12:39",
+    "rota": "1011",
+    "promotor": "Robel Tesfamichael",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77687N/3",
+    "cliente": "YONITK - COMÉRCIO GERAL & PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5001874438",
+    "liquidado": true,
+    "total": 780000.0,
+    "valor_pago": 780000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 780000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "NC NC0126S53627N/2",
+    "data": "2026-11-07",
+    "hora": "12:11",
+    "rota": "1011",
+    "promotor": "Robel Tesfamichael",
+    "tipo": "Nota de crédito",
+    "tipo_codigo": "NC",
+    "nc": true,
+    "documento": "NC NC0126S53627N/2",
+    "cliente": "MEREBAY TESFAALEM - COMÉRCIO & PRESTAÇÃO DE SERVIÇOS , (SU), LDA",
+    "nif": "5002730642",
+    "liquidado": false,
+    "total": -880000.0,
+    "valor_pago": 0.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 880000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
+  },
+  {
+    "chave": "NC NC0126S53627N/3",
+    "data": "2026-11-09",
+    "hora": "13:34",
+    "rota": "1011",
+    "promotor": "Robel Tesfamichael",
+    "tipo": "Nota de crédito",
+    "tipo_codigo": "NC",
+    "nc": true,
+    "documento": "NC NC0126S53627N/3",
+    "cliente": "YONITK - COMÉRCIO GERAL & PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5001874438",
+    "liquidado": false,
+    "total": -780000.0,
+    "valor_pago": 0.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 780000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/8",
+    "data": "2026-11-12",
+    "hora": "12:19",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/8",
+    "cliente": "ISATOU-M - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
+    "nif": "5000621463",
+    "liquidado": true,
+    "total": 260000.0,
+    "valor_pago": 260000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 260000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/11",
+    "data": "2026-11-12",
+    "hora": "12:26",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/11",
+    "cliente": "JALLOH MOHAMED - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5001807080",
+    "liquidado": true,
+    "total": 341000.0,
+    "valor_pago": 341000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 341000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/9",
+    "data": "2026-11-12",
+    "hora": "13:08",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/9",
+    "cliente": "BAH M.ALIOU - COMERCIO GERAL , (SU), LDA",
+    "nif": "5001610570",
+    "liquidado": true,
+    "total": 155000.0,
+    "valor_pago": 155000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 155000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/10",
+    "data": "2026-11-12",
+    "hora": "13:13",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/10",
+    "cliente": "T.A.M.OUMAR - COMÉRCIO GERAL, (SU), LDA",
+    "nif": "5002597390",
+    "liquidado": true,
+    "total": 267500.0,
+    "valor_pago": 267500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 267500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/12",
+    "data": "2026-11-12",
+    "hora": "13:32",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/12",
+    "cliente": "J.A.C.DANY-COMERCIO GERAL SULDA",
+    "nif": "5417634964",
+    "liquidado": true,
+    "total": 142000.0,
+    "valor_pago": 142000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 142000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77700N/11",
+    "data": "2026-11-12",
+    "hora": "13:59",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/11",
+    "cliente": "ANGO SOWLAMINE - COMERCIO E SERVIÇOS, LDA",
+    "nif": "5001599968",
+    "liquidado": true,
+    "total": 167500.0,
+    "valor_pago": 167500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 167500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/13",
+    "data": "2026-11-12",
+    "hora": "14:16",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/13",
+    "cliente": "BOUBACAR DIALLO-COMERCIO A RETALHO(SU), LDA",
+    "nif": "5000226165",
+    "liquidado": true,
+    "total": 740000.0,
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/14",
+    "data": "2026-11-12",
+    "hora": "14:29",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/14",
+    "cliente": "MD-SAIDOU - COMERCIO GERAL, (SU), LDA",
+    "nif": "5002202158",
+    "liquidado": true,
+    "total": 155000.0,
+    "valor_pago": 155000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 155000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/12",
+    "data": "2026-11-12",
+    "hora": "15:10",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/12",
+    "cliente": "FAMILIA DA COSTA - COMERCIO E PRESTAÇAO DE SERVIÇOS, LDA",
+    "nif": "5000937584",
+    "liquidado": true,
+    "total": 740000.0,
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/13",
+    "data": "2026-11-13",
+    "hora": "09:07",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/13",
+    "cliente": "UMARO BALDE - COMERCIO GERAL, IMPORTAÇAO & EXPORTAÇAO, LDA",
+    "nif": "5001490958",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/15",
+    "data": "2026-11-13",
+    "hora": "09:33",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/15",
+    "cliente": "AMADOU SARA - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5001942824",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/16",
+    "data": "2026-11-13",
+    "hora": "10:09",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/16",
+    "cliente": "TESFALEM TOKOR - COMÉRCIO GERAL, (SU), LDA",
+    "nif": "5002683792",
+    "liquidado": true,
+    "total": 142500.0,
+    "valor_pago": 142500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 142500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/14",
+    "data": "2026-11-13",
+    "hora": "10:23",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/14",
+    "cliente": "E.F.T. - COMERCIO GERAL (SU) LDA",
+    "nif": "5000122882",
+    "liquidado": true,
+    "total": 300000.0,
+    "valor_pago": 300000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 300000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/15",
+    "data": "2026-11-13",
+    "hora": "10:26",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/15",
+    "cliente": "ALAGIE JALLOW - COMÉRCIO E SERVIÇOS",
+    "nif": "5001724819",
+    "liquidado": true,
+    "total": 182000.0,
+    "valor_pago": 182000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 182000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/17",
+    "data": "2026-11-13",
+    "hora": "11:25",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/17",
+    "cliente": "ANGO NURYA - COMERCIO GERAL & PRESTAÇAO DE SERVIÇOS , (SU), LDA",
+    "nif": "5002172569",
+    "liquidado": true,
+    "total": 169000.0,
+    "valor_pago": 169000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 169000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "NC NC0126S53632N/1",
+    "data": "2026-11-13",
+    "hora": "11:42",
+    "rota": "1008",
+    "promotor": "Daniel Mihreteab",
+    "tipo": "Nota de crédito",
+    "tipo_codigo": "NC",
+    "nc": true,
+    "documento": "NC NC0126S53632N/1",
+    "cliente": "M.S.ANDEMICAEL-COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
+    "nif": "5000859990",
+    "liquidado": false,
+    "total": -1500000.0,
+    "valor_pago": 0.0,
+    "pagamentos": [
+      {
+        "codigo": "MC",
+        "meio": "Multicaixa",
+        "valor": 1500000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa"
+  },
+  {
+    "chave": "FR FR0126S77768N/18",
+    "data": "2026-11-13",
+    "hora": "12:13",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/18",
+    "cliente": "YASSAROU - COMERCIO GERAL, (SU), LDA.",
+    "nif": "5000603430",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77694N/3",
+    "data": "2026-11-13",
+    "hora": "12:18",
+    "rota": "1008",
+    "promotor": "Daniel Mihreteab",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77694N/3",
+    "cliente": "M.S.ANDEMICAEL-COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
+    "nif": "5000859990",
+    "liquidado": true,
+    "total": 1480000.0,
+    "valor_pago": 1480000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCA",
+        "meio": "Multicaixa - ATLANTICO",
+        "valor": 1480000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - ATLANTICO"
+  },
+  {
+    "chave": "FR FR0126S77700N/16",
+    "data": "2026-11-13",
+    "hora": "13:06",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/16",
+    "cliente": "MADALENA SOUSA LUIS",
+    "nif": "001544672KS037",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/19",
+    "data": "2026-11-13",
+    "hora": "13:26",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/19",
+    "cliente": "FLAVIO BALDE - COMERCIO GERAL, IMPORTAÇAO E EXPORTAÇAO(SU),LDA",
+    "nif": "5001140272",
+    "liquidado": true,
+    "total": 62500.0,
+    "valor_pago": 62500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 62500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/17",
+    "data": "2026-11-13",
+    "hora": "13:46",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/17",
+    "cliente": "ERNESTO KASSOKO CHIWALE",
+    "nif": "006505574HO045",
+    "liquidado": true,
+    "total": 195000.0,
+    "valor_pago": 195000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 195000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/20",
+    "data": "2026-11-14",
+    "hora": "09:03",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/20",
+    "cliente": "CARINA MANDUNDU",
+    "nif": "008329930UE043",
+    "liquidado": true,
+    "total": 87500.0,
+    "valor_pago": 87500.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 87500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77768N/21",
+    "data": "2026-11-14",
+    "hora": "10:14",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/21",
+    "cliente": "BARATUCHO DO SOW - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5002112957",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/22",
+    "data": "2026-11-14",
+    "hora": "12:46",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/22",
+    "cliente": "SOW - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5000721697",
+    "liquidado": true,
+    "total": 57500.0,
+    "valor_pago": 57500.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 57500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77768N/23",
+    "data": "2026-11-14",
+    "hora": "12:48",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/23",
+    "cliente": "SOW - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5000721697",
+    "liquidado": true,
+    "total": 30000.0,
+    "valor_pago": 30000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 30000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/18",
+    "data": "2026-11-14",
+    "hora": "13:33",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/18",
+    "cliente": "LUCIA DE NASCIMENTO",
+    "nif": "002112110BE038",
+    "liquidado": true,
+    "total": 300000.0,
+    "valor_pago": 300000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 300000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77700N/19",
+    "data": "2026-11-16",
+    "hora": "09:36",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/19",
+    "cliente": "ANG. GHROUGA - COMERCIO GERAL, (SU), LDA",
+    "nif": "5000889989",
+    "liquidado": true,
+    "total": 197750.0,
+    "valor_pago": 197750.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 197750.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/24",
+    "data": "2026-11-16",
+    "hora": "10:13",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/24",
+    "cliente": "A.TIDIANE - COMERCIO GERAL, (SU), LDA",
+    "nif": "5001604090",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77700N/20",
+    "data": "2026-11-16",
+    "hora": "11:13",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/20",
+    "cliente": "ALAGIE JALLOW - COMÉRCIO E SERVIÇOS",
+    "nif": "5001724819",
+    "liquidado": true,
+    "total": 260000.0,
+    "valor_pago": 260000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 260000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/25",
+    "data": "2026-11-16",
+    "hora": "12:02",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/25",
+    "cliente": "BOUBACAR DIALLO-COMERCIO A RETALHO(SU), LDA",
+    "nif": "5000226165",
+    "liquidado": true,
+    "total": 100000.0,
+    "valor_pago": 100000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 100000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77700N/21",
+    "data": "2026-11-16",
+    "hora": "12:25",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/21",
+    "cliente": "ABDULAI DJALO",
+    "nif": "0000239169",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/26",
+    "data": "2026-11-16",
+    "hora": "13:04",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/26",
+    "cliente": "JALLOH MOHAMED - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5001807080",
+    "liquidado": true,
+    "total": 365000.0,
+    "valor_pago": 365000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 365000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/27",
+    "data": "2026-11-16",
+    "hora": "13:16",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/27",
+    "cliente": "BOUBACAR DIALLO-COMERCIO A RETALHO(SU), LDA",
+    "nif": "5000226165",
+    "liquidado": true,
+    "total": 45000.0,
+    "valor_pago": 45000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 45000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77700N/22",
+    "data": "2026-11-16",
+    "hora": "13:39",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/22",
+    "cliente": "T.A.M.OUMAR - COMÉRCIO GERAL, (SU), LDA",
+    "nif": "5002597390",
+    "liquidado": true,
+    "total": 300000.0,
+    "valor_pago": 300000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 300000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77768N/28",
+    "data": "2026-11-17",
+    "hora": "10:32",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/28",
+    "cliente": "DIALLO MAMADOU ALIOU-COMERCIO E PRESTAÇAO DE SERVIÇOS(SU), LDA",
+    "nif": "5000444600",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/12",
+    "data": "2026-11-17",
+    "hora": "11:00",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/12",
+    "cliente": "ABDOU DJAWANDO - COMERCIO E SERVIÇOS (SU), LD.",
+    "nif": "5002829339",
+    "liquidado": true,
+    "total": 107500.0,
+    "valor_pago": 107500.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 107500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77755N/9",
+    "data": "2026-11-17",
+    "hora": "11:28",
+    "rota": "1002",
+    "promotor": "Cristina Sachuma",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77755N/9",
+    "cliente": "MUTARO DJALO - COMERCIO E PRESTAÇAO DE SERVIÇOS,(SU), LDA",
+    "nif": "5002002132",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77755N/10",
+    "data": "2026-11-17",
+    "hora": "11:31",
+    "rota": "1002",
+    "promotor": "Cristina Sachuma",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77755N/10",
+    "cliente": "S.K.D. KORKA - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
+    "nif": "5002812096",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/18",
+    "data": "2026-11-17",
+    "hora": "11:41",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/18",
+    "cliente": "F. L - FILO - COMERCIO GERAL, (SU), LDA",
+    "nif": "5000977080",
+    "liquidado": true,
+    "total": 317000.0,
+    "valor_pago": 317000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 317000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/13",
+    "data": "2026-11-17",
+    "hora": "12:00",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/13",
+    "cliente": "OUMAR DIALLO - COMERCIO GERLA E PRESTAÇAO DE SERVIÇOS (SU),LDA.",
+    "nif": "5001827847",
+    "liquidado": true,
+    "total": 804000.0,
+    "valor_pago": 804000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 804000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77768N/29",
+    "data": "2026-11-17",
+    "hora": "12:07",
+    "rota": "1005",
+    "promotor": "Olindo Baião",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77768N/29",
+    "cliente": "TMM FAMILY - COMERCIO GERAL, LDA",
+    "nif": "5003132277",
+    "liquidado": true,
+    "total": 187500.0,
+    "valor_pago": 187500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 187500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/23",
+    "data": "2026-11-17",
+    "hora": "12:11",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/23",
+    "cliente": "MAVUNGU NZUZI",
+    "nif": "001419868UE036",
+    "liquidado": true,
+    "total": 237500.0,
+    "valor_pago": 237500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 237500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/24",
+    "data": "2026-11-17",
+    "hora": "12:15",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/24",
+    "cliente": "MARIA MORENA JOÃO",
+    "nif": "007422636UE041",
+    "liquidado": true,
+    "total": 87500.0,
+    "valor_pago": 87500.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 87500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S78515N/19",
+    "data": "2026-11-17",
+    "hora": "12:35",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/19",
+    "cliente": "AL-RIDHA GROUP ,LDA",
+    "nif": "5417173754",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/7",
+    "data": "2026-11-17",
+    "hora": "12:38",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/7",
+    "cliente": "MANUEL BAIAO ALEXANDRE NETO",
+    "nif": "000044645LA027",
+    "liquidado": true,
+    "total": 186000.0,
+    "valor_pago": 186000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 186000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77755N/11",
+    "data": "2026-11-17",
+    "hora": "12:43",
+    "rota": "1002",
+    "promotor": "Cristina Sachuma",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77755N/11",
+    "cliente": "DIALLO AMADOU TIDIANE",
+    "nif": "0000115419",
+    "liquidado": true,
+    "total": 212500.0,
+    "valor_pago": 212500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 212500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77782N/3",
+    "data": "2026-11-17",
+    "hora": "12:51",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/3",
+    "cliente": "BEKMART - COMERCIO GERAL, (SU),LDA",
+    "nif": "5000526452",
+    "liquidado": true,
+    "total": 740000.0,
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/8",
+    "data": "2026-11-17",
+    "hora": "12:54",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/8",
+    "cliente": "SO USSUMANE - COMERCIO GERAL (SU) LDA",
+    "nif": "5001145274",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77782N/4",
+    "data": "2026-11-17",
+    "hora": "13:01",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/4",
+    "cliente": "DIALLO MAMADOU OURY - COMERCIO E PRESTAÇAO DE SERVIÇOS, (SU), LDA",
+    "nif": "5002726599",
+    "liquidado": true,
+    "total": 930000.0,
+    "valor_pago": 930000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCA",
+        "meio": "Multicaixa - ATLANTICO",
+        "valor": 930000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - ATLANTICO"
+  },
+  {
+    "chave": "FR FR0126S77764N/14",
+    "data": "2026-11-17",
+    "hora": "13:08",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/14",
+    "cliente": "NEAFGMA-COMERCIO E SERVIÇOS(SU), LDA",
+    "nif": "5000445479",
+    "liquidado": true,
+    "total": 330000.0,
+    "valor_pago": 330000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 330000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77700N/25",
+    "data": "2026-11-17",
+    "hora": "13:08",
+    "rota": "1006",
+    "promotor": "Rosa Vemba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77700N/25",
+    "cliente": "LUNDOLOKI LUZOLO",
+    "nif": "008391882UE045",
+    "liquidado": true,
+    "total": 23750.0,
+    "valor_pago": 23750.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 23750.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/15",
+    "data": "2026-11-17",
+    "hora": "13:16",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/15",
+    "cliente": "A.B.GADRI - COMERCIO GERAL, (SU), LDA",
+    "nif": "5002160145",
+    "liquidado": true,
+    "total": 71000.0,
+    "valor_pago": 71000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 71000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/9",
+    "data": "2026-11-17",
+    "hora": "13:25",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/9",
+    "cliente": "BUBACAR SIDI SOW - COMERCIO GERAL E PRESTACAO DE SERVICOS (SU), LDA",
+    "nif": "5000171930",
+    "liquidado": true,
+    "total": 155000.0,
+    "valor_pago": 155000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 155000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77782N/5",
+    "data": "2026-11-17",
+    "hora": "13:47",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/5",
+    "cliente": "OUMAR BALDE-COMERCIO A RETALHO(SU), LDA",
+    "nif": "5000108936",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/20",
+    "data": "2026-11-17",
+    "hora": "13:59",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/20",
+    "cliente": "HOASOLA WADIA - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5000816000",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/10",
+    "data": "2026-11-17",
+    "hora": "14:12",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/10",
+    "cliente": "QISANET ARAYA - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
+    "nif": "5002458136",
+    "liquidado": true,
+    "total": 460000.0,
+    "valor_pago": 460000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 460000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/21",
+    "data": "2026-11-17",
+    "hora": "15:47",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/21",
+    "cliente": "Mamadu iai djalo",
+    "nif": "000267719",
+    "liquidado": true,
+    "total": 525000.0,
+    "valor_pago": 525000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 525000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77745N/7",
+    "data": "2026-11-17",
+    "hora": "15:54",
+    "rota": "1009",
+    "promotor": "Efrem Bokre",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77745N/7",
+    "cliente": "BRANCA FILIPE SIMIAO",
+    "nif": "004898350BO042",
+    "liquidado": true,
+    "total": 740000.0,
+    "valor_pago": 740000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 740000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/16",
+    "data": "2026-11-18",
+    "hora": "08:49",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/16",
+    "cliente": "FOFANA MAMADOU - COMERCIO GERAL E PRESTAÇAO DE SERVIÇOS (SU),LDA.",
+    "nif": "5001790374",
+    "liquidado": true,
+    "total": 195000.0,
+    "valor_pago": 195000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 195000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/11",
+    "data": "2026-11-18",
+    "hora": "09:38",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/11",
+    "cliente": "MULUGIETA W. ANDETSION - COMERCIO E PRESTAÇAO DE SERVIÇOS (SU), LDA",
+    "nif": "5001743163",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/12",
+    "data": "2026-11-18",
+    "hora": "09:51",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/12",
+    "cliente": "H.J.ZERAY - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
+    "nif": "5003245322",
+    "liquidado": true,
+    "total": 225000.0,
+    "valor_pago": 225000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 225000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77755N/12",
+    "data": "2026-11-18",
+    "hora": "10:11",
+    "rota": "1002",
+    "promotor": "Cristina Sachuma",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77755N/12",
+    "cliente": "ALHASSNE DIALLO - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5001719777",
+    "liquidado": true,
+    "total": 312500.0,
+    "valor_pago": 312500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 312500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/17",
+    "data": "2026-11-18",
+    "hora": "10:16",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/17",
+    "cliente": "OMAR BAH - COMERCIO E SERVIÇOS (SU), LDA.",
+    "nif": "5001981749",
+    "liquidado": true,
+    "total": 137500.0,
+    "valor_pago": 137500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 137500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/13",
+    "data": "2026-11-18",
+    "hora": "10:25",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/13",
+    "cliente": "MAMADOU ALPHA DIALLO",
+    "nif": "0000081655",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/18",
+    "data": "2026-11-18",
+    "hora": "10:50",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/18",
+    "cliente": "BALDE ALHASSANE - COMERCIO E SERVIÇOS, (SU), LDA",
+    "nif": "5001127314",
+    "liquidado": true,
+    "total": 50000.0,
+    "valor_pago": 50000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 50000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/19",
+    "data": "2026-11-18",
+    "hora": "11:01",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/19",
+    "cliente": "LAMARANA BARRY - COMÉRCIO GERAL",
+    "nif": "5001905040",
+    "liquidado": true,
+    "total": 87500.0,
+    "valor_pago": 87500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 87500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/22",
+    "data": "2026-11-18",
+    "hora": "11:13",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/22",
+    "cliente": "ABDOU RAHIM DIALLO - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
+    "nif": "5002214911",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77755N/13",
+    "data": "2026-11-18",
+    "hora": "11:22",
+    "rota": "1002",
+    "promotor": "Cristina Sachuma",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77755N/13",
+    "cliente": "BALDE FULADU - COMÉRCIO E SERVIÇOS, LDA",
+    "nif": "5003142418",
+    "liquidado": true,
+    "total": 162500.0,
+    "valor_pago": 162500.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 122000.0
+      },
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 40500.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC, Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/14",
+    "data": "2026-11-18",
+    "hora": "11:36",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/14",
+    "cliente": "ANGO ISAGA - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS",
+    "nif": "5002113716",
+    "liquidado": true,
+    "total": 75000.0,
+    "valor_pago": 75000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 75000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/20",
+    "data": "2026-11-18",
+    "hora": "11:37",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/20",
+    "cliente": "YOHANNES YEMANE HADGU",
+    "nif": "0000042703",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/15",
+    "data": "2026-11-18",
+    "hora": "12:08",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/15",
+    "cliente": "BOBO MD - COMÉRCIO GERAL, (SU), LDA",
+    "nif": "5002766655",
+    "liquidado": true,
+    "total": 50000.0,
+    "valor_pago": 50000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 50000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77764N/21",
+    "data": "2026-11-18",
+    "hora": "12:23",
+    "rota": "1003",
+    "promotor": "Joceil Prata",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77764N/21",
+    "cliente": "DIARE BINTIA-COMERCIO GERAL, LDA",
+    "nif": "5402142106",
+    "liquidado": true,
+    "total": 155000.0,
+    "valor_pago": 155000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 155000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77782N/6",
+    "data": "2026-11-18",
+    "hora": "12:42",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/6",
+    "cliente": "SAMSON ABRAHA ZEREMICHAEL - COMERCIO GERAL (SU), LDA",
+    "nif": "5000131717",
+    "liquidado": true,
+    "total": 248000.0,
+    "valor_pago": 248000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 248000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77782N/7",
+    "data": "2026-11-18",
+    "hora": "12:43",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/7",
+    "cliente": "SAMSON ABRAHA ZEREMICHAEL - COMERCIO GERAL (SU), LDA",
+    "nif": "5000131717",
+    "liquidado": true,
+    "total": 634500.0,
+    "valor_pago": 634500.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 634500.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S77782N/8",
+    "data": "2026-11-18",
+    "hora": "12:57",
+    "rota": "1010",
+    "promotor": "Nahom Areaya",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77782N/8",
+    "cliente": "MEKLIT-COMERCIO GERAL IMPORTAÇAO E EXPORTAÇAO,(SU),LDA",
+    "nif": "5000782149",
+    "liquidado": true,
+    "total": 155000.0,
+    "valor_pago": 155000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 155000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/23",
+    "data": "2026-11-18",
+    "hora": "13:33",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/23",
+    "cliente": "AGOSTINHO BILA - COM. GERAL E PREST. DE SERVIÇOS",
+    "nif": "5000561991",
+    "liquidado": true,
+    "total": 45000.0,
+    "valor_pago": 45000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 45000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78519N/16",
+    "data": "2026-11-18",
+    "hora": "13:53",
+    "rota": "1001",
+    "promotor": "Andrea Santos",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78519N/16",
+    "cliente": "MATEUS MATAMBA GONGA",
+    "nif": "002829516ME031",
+    "liquidado": true,
+    "total": 125000.0,
+    "valor_pago": 125000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 125000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S78515N/24",
+    "data": "2026-11-18",
+    "hora": "14:01",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/24",
+    "cliente": "M.A.A.D. ALPHA - COMERCIO GERAL, (SU), LDA",
+    "nif": "5001551485",
+    "liquidado": true,
+    "total": 120000.0,
+    "valor_pago": 120000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 120000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
+  },
+  {
+    "chave": "FR FR0126S78515N/25",
+    "data": "2026-11-18",
+    "hora": "14:16",
+    "rota": "1004",
+    "promotor": "Nelson Bumba",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S78515N/25",
+    "cliente": "DIALLO SANOUSSY - COMÉRCIO GERAL",
+    "nif": "5001888820",
+    "liquidado": true,
+    "total": 302000.0,
+    "valor_pago": 302000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 14000.0
+      },
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 288000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC, Numerário"
+  },
+  {
+    "chave": "FR FR0126S77694N/4",
+    "data": "2026-11-18",
+    "hora": "14:39",
+    "rota": "1008",
+    "promotor": "Daniel Mihreteab",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77694N/4",
+    "cliente": "AFEWERKI SIUM - COMÉRCIO GERAL E PRESTAÇÃO DE SERVIÇOS, (SU), LDA",
+    "nif": "5002294338",
+    "liquidado": true,
+    "total": 930000.0,
+    "valor_pago": 930000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 746000.0
+      },
+      {
+        "codigo": "MCA",
+        "meio": "Multicaixa - ATLANTICO",
+        "valor": 184000.0
+      }
+    ],
+    "meio_pagamento": "Numerário, Multicaixa - ATLANTICO"
+  },
+  {
+    "chave": "FR FR0126S77774N/2",
+    "data": "2026-11-18",
+    "hora": "14:49",
+    "rota": "1007",
+    "promotor": "Awet Weldemenkorios",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77774N/2",
+    "cliente": "NETSEREAB MUSSIE HABTAY",
+    "nif": "0000238330",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77774N/3",
+    "data": "2026-11-18",
+    "hora": "15:46",
+    "rota": "1007",
+    "promotor": "Awet Weldemenkorios",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77774N/3",
+    "cliente": "ESROM GRMAY - COMÉRCIO GERAL, (SU), LDA",
+    "nif": "5002214296",
+    "liquidado": true,
+    "total": 450000.0,
+    "valor_pago": 450000.0,
+    "pagamentos": [
+      {
+        "codigo": "MCB",
+        "meio": "Multicaixa - BPC",
+        "valor": 450000.0
+      }
+    ],
+    "meio_pagamento": "Multicaixa - BPC"
+  },
+  {
+    "chave": "FR FR0126S77745N/8",
+    "data": "2026-11-18",
+    "hora": "15:55",
+    "rota": "1009",
+    "promotor": "Efrem Bokre",
+    "tipo": "Factura-recibo",
+    "tipo_codigo": "FR",
+    "nc": false,
+    "documento": "FR FR0126S77745N/8",
+    "cliente": "DAHIR HASSAN - COMERCIO GERAL, (SU), LDA",
+    "nif": "5001501321",
+    "liquidado": true,
+    "total": 150000.0,
+    "valor_pago": 150000.0,
+    "pagamentos": [
+      {
+        "codigo": "NU",
+        "meio": "Numerário",
+        "valor": 150000.0
+      }
+    ],
+    "meio_pagamento": "Numerário"
   }
 ]

@@ -50,7 +50,18 @@ Os filtros aplicam-se a quadros, tabelas e Excel (a capa do Excel indica os filt
 | `cargas.json`   | Plano de cargas (transportes) | Carrinha, motorista, zonas e caixas carregadas por categoria                                                                  |
 | `rotas.json`    | Pinguim BO                    | Rota → promotor                                                                                                               |
 
-Ainda por receber do Pinguim BO: meio de pagamento de cada documento, linhas de venda por artigo (com IVA e desconto) e stock por armazém/carrinha. As páginas correspondentes mostram os campos necessários.
+Ainda por receber do Pinguim BO: linhas de venda por artigo completas (com IVA e desconto) e stock por armazém/carrinha. As páginas correspondentes mostram os campos necessários.
+
+### Sincronização dos dados estáticos
+
+`reports/data/rotas.json`, `vendas.json` e `clientes.json` podem ser atualizados directamente da base `PingWinBO` com:
+
+```powershell
+python -m pip install pyodbc
+npm run sync:pinguim
+```
+
+A ligação usa as chaves `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do `.env` e mantém o acesso só de leitura. Os dados gerados são JSON público; não escreve na base do Pinguim BO.
 
 ## Aviso
 
