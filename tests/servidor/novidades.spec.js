@@ -6,10 +6,18 @@ import { entrar, API } from './ajuda.js';
 
 test.describe.configure({ mode: 'serial' });
 
-test('outros perfis: 403', async () => {
+test('outros perfis: só o aviso aos utilizadores (nunca o resumo técnico); «Li e compreendi» com CSRF', async () => {
   for (const conta of ['ti', 'dir', 'com']) {
     const { ctx } = await entrar(conta);
-    expect((await ctx.get(API + 'novidades')).status(), conta).toBe(403);
+    const d = await (await ctx.get(API + 'novidades')).json();
+    expect(d.actualizacoes, conta).toBeUndefined();
+    expect(Array.isArray(d.avisos), conta).toBe(true);
+    const csrf = (await (await ctx.get(API + 'sessao')).json()).csrf;
+    expect((await ctx.post(API + 'novidades', { data: { vistas: ['x'], csrf } })).status(), conta).toBe(403);
+    expect((await ctx.post(API + 'novidades', { data: { confirmar: d.avisos.map((a) => a.id) } })).status(), conta).toBe(403);
+    const r = await (await ctx.post(API + 'novidades', { data: { confirmar: d.avisos.map((a) => a.id), csrf } })).json();
+    expect(r.confirmadas, conta).toBe(d.avisos.length);
+    expect((await (await ctx.get(API + 'novidades')).json()).avisos, conta).toEqual([]);
   }
 });
 
@@ -31,7 +39,7 @@ test('super administrador: actualizações por ver, marcar como vistas (com CSRF
   expect((await ctx.post(API + 'novidades', { data: { vistas: [id] } })).status()).toBe(403);
   const csrf = (await (await ctx.get(API + 'sessao')).json()).csrf;
   const m = await (await ctx.post(API + 'novidades', { data: { vistas: [id, 'nao-existe'], csrf } })).json();
-  expect(m).toEqual({ ok: true, marcadas: 1 });
+  expect(m).toEqual({ ok: true, marcadas: 1, confirmadas: 0 });
   expect((await (await ctx.get(API + 'novidades')).json()).actualizacoes).toEqual([]);
   // a mesma actualização não volta a ser detectada (secções já conhecidas)
   rmSync('tests/servidor/ambiente/dados-privados/novidades/vistas.json', { force: true });

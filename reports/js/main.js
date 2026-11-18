@@ -261,10 +261,9 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
     LD.marcar('pronto', 'feito');
     clearTimeout(ldLimite);
     LD.fechar();
-    // Super administrador: resumo das actualizações do portal ainda por ver (módulo carregado só para esse perfil)
-    // no modo apresentação não abrem janelas automáticas à frente da administração
-    if (SESSAO && SESSAO.perfil === 'SADM' && !SESSAO.apresentacao && window.self === window.top)
-      import('./novidades.js').then((m) => m.mostrarNovidades()).catch(() => {});
+    // depois de cada actualização: o aviso a todos (o que muda e como proceder) e, ao super administrador, o resumo
+    // completo; no modo apresentação não abrem janelas automáticas à frente da administração
+    if (SESSAO && !SESSAO.apresentacao && window.self === window.top) import('./novidades.js').then((m) => m.mostrarNovidades()).catch(() => {});
   })
   .catch((e) => {
     console.error(e);

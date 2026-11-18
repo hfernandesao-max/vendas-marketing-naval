@@ -5550,3 +5550,62 @@ body.apres-lado {
 .pa-revisao .inp {
   margin: 8px 0;
 }
+
+/* Aviso aos utilizadores depois de uma actualização: faixa azul, cartões por alteração e passos numerados */
+.nov-aviso {
+  text-align: justify;
+}
+.nov-faixa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgb(var(--az5-rgb)), rgb(var(--az3-rgb)));
+  color: #fff;
+  font-weight: 600;
+}
+.nov-cartao {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--lin1-rgb) / 0.3);
+  border-left: 4px solid rgb(var(--az3-rgb));
+  border-radius: 10px;
+}
+.nov-cartao h3 {
+  margin: 0 0 6px;
+  font-size: 1.02rem;
+}
+.nov-cartao h4 {
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
+}
+.nov-cartao ul,
+.nov-passos {
+  margin: 0;
+  padding-left: 20px;
+}
+.nov-cartao li {
+  margin: 3px 0;
+}
+.nov-passos li::marker {
+  font-weight: 700;
+  color: rgb(var(--az3-rgb));
+}
+
+.act-aviso {
+  margin: 6px 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid rgb(var(--az3-rgb));
+  border-radius: 6px;
+  background: rgb(var(--az3-rgb) / 0.08);
+}
+.act-aviso ul,
+.act-aviso ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.act-faltam summary {
+  cursor: pointer;
+}

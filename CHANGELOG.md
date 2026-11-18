@@ -1,3 +1,85 @@
+## 18-11-2026
+
+### Aviso a todos depois de cada actualização: o que muda para si e como proceder
+
+<!-- paginas: actualizacoes, suporte, conciliacao-carrinha -->
+<!-- publico: todos -->
+<!-- tipo: funcionalidade -->
+
+> titulo: Pedidos de acesso, acessos temporários e contagem às cegas
+> titulo [en]: Access requests, temporary access and blind counting
+> titulo [ti]: ሕቶታት ፍቓድ፡ ግዝያዊ ፍቓድን ዕዉር ቆጸራን
+> - A partir de agora, depois de cada actualização, o portal mostra este aviso com o que muda para si e como proceder.
+> [en] From now on, after each update, the portal shows this notice with what changes for you and what to do.
+> [ti] ካብ ሕጂ ንደሓር፡ ድሕሪ ነፍሲ ወከፍ ምሕዳስ፡ ፖርታል እንታይ ከም ዝቕየረልኩምን ከመይ ከም እትቕጽሉን ዝገልጽ መልእኽቲ የርኢ።
+> - Para ter acesso a uma página ou função nova, faça o pedido em Suporte › Pedidos de acesso. Quem autoriza é o responsável dessa função.
+> [en] To get access to a new page or role, make the request in Support › Access requests. The owner of that role authorises it.
+> [ti] ናብ ሓድሽ ገጽ ወይ ሓላፍነት ፍቓድ ንምርካብ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተቱ። ዋና እቲ ሓላፍነት የጽድቖ።
+> - Os acessos temporários (férias, substituições) terminam sozinhos no dia seguinte ao último dia pedido.
+> [en] Temporary access (holidays, cover) ends automatically the day after the last day requested.
+> [ti] ግዝያዊ ፍቓድ (ዕረፍቲ፡ ምትካእ) ድሕሪ እቲ ዝተሓተ ናይ መወዳእታ መዓልቲ ንጽባሒቱ ባዕሉ ይውዳእ።
+> - Na conciliação da carrinha, até a rota ser contada, ninguém vê as quantidades do sistema (contagem às cegas). Quem acompanha a contagem pode imprimir a folha de contagem no cartão da rota.
+> [en] In the van reconciliation, until the route has been counted, nobody sees the system quantities (blind count). Whoever follows the count can print the count sheet from the route card.
+> [ti] ኣብ ምስምማዕ መኪና፡ እቲ መስመር ክሳብ ዝቑጸር፡ ዋላ ሓደ ብዝሒ ስርዓት ኣይርእን (ዕዉር ቆጸራ)። ነቲ ቆጸራ ዝከታተል ካብ ካርድ እቲ መስመር ወረቐት ቆጸራ ክሕትም ይኽእል።
+> 1. Leia este aviso e carregue em «Li e compreendi». Se carregar em «Mais tarde», volta a aparecer na próxima entrada.
+> [en] Read this notice and press «I have read and understood». If you press «Later», it appears again at your next sign-in.
+> [ti] ነዚ መልእኽቲ ኣንቢብኩም «ኣንቢበ ተረዲኡኒ» ጠውቑ። «ጸኒሑ» እንተ ጠዊቕኩም፡ ኣብ ዝቕጽል ምእታው ተመሊሱ ይርአ።
+> 2. Se não encontrar uma página de que precisa, peça o acesso em Suporte › Pedidos de acesso, com o motivo.
+> [en] If you cannot find a page you need, request access in Support › Access requests, giving the reason.
+> [ti] ዘድልየኩም ገጽ እንተ ዘይረኺብኩም፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ምስ ምኽንያቱ ፍቓድ ሕተቱ።
+> 3. Se algo não funcionar como descrito, abra um pedido em Suporte.
+> [en] If something does not work as described, open a request in Support.
+> [ti] ገለ ነገር ከም ዝተገለጸ እንተ ዘይሰሪሑ፡ ኣብ ደገፍ ሕቶ ክፈቱ።
+
+- Depois de cada actualização, todos os utilizadores vêem um **aviso** com o que muda nas páginas a que têm acesso e
+  como proceder, na sua língua (português, inglês ou tigrínia), seguindo a comunicação das alterações da ISO/IEC
+  20000-1 (8.5.3) e a sensibilização da ISO/IEC 27001 (A.6.3).
+- «**Li e compreendi**» fica registado (prova de quem tomou conhecimento); «Mais tarde» volta a mostrar o aviso na
+  próxima entrada. O super administrador continua a ver primeiro o resumo técnico completo.
+- Em **Actualizações**, o super administrador vê, antes de aprovar, a pré-visualização do aviso de cada versão (com
+  alerta se faltar tradução) e, em «Avisos aos utilizadores», quantas pessoas já tomaram conhecimento e quem falta.
+- O aviso escreve-se no registo de alterações de cada versão (linhas «> »): o que muda, os passos a seguir e as
+  traduções; o público são as pessoas que vêem as páginas da alteração, ou todos.
+
+### Acessos: funções do responsável da área RTM e do coordenador dos promotores, reconfiguradas automaticamente
+
+<!-- paginas: acessos, multicaixa-tpa, sap-exportar -->
+<!-- tipo: impacto -->
+
+> titulo: Novas funções de acesso: responsável da área RTM e coordenação dos promotores
+> titulo [en]: New access roles: RTM area manager and sales-rep coordination
+> titulo [ti]: ሓደስቲ ሓላፍነታት ፍቓድ፡ ሓላፊ ክፍሊ RTM ን ምውህሃድ ሸየጥትን
+> - Se é responsável da área RTM ou coordena os promotores, as suas funções no portal foram ajustadas ao seu trabalho.
+> [en] If you manage the RTM area or coordinate the sales reps, your portal roles have been adjusted to your job.
+> [ti] ሓላፊ ክፍሊ RTM እንተ ኾንኩም ወይ ንሸየጥቲ እንተ ኣወሃሂድኩም፡ ሓላፍነታትኩም ኣብ ፖርታል ምስ ስራሕኩም ተሰማሚዖም።
+> - Quem aprova a caixa passa a ver o Multicaixa por TPA, onde se decidem as correcções da forma de pagamento.
+> [en] Whoever approves the cash sheet can now see Multicaixa by POS terminal, where payment-method corrections are decided.
+> [ti] ሳጹን ዘጽድቕ ሕጂ Multicaixa ብ TPA ይርኢ፡ ኣብኡ ድማ ምእራም ኣገባብ ክፍሊት ይውሰን።
+> 1. Na próxima entrada, se o portal pedir, configure a verificação em dois passos com a aplicação de autenticação.
+> [en] At your next sign-in, if the portal asks, set up two-step verification with the authenticator app.
+> [ti] ኣብ ዝቕጽል ምእታው፡ ፖርታል እንተ ሓቲቱ፡ ብመተግበሪ Authenticator ናይ ክልተ ስጉምቲ መረጋገጺ ኣዳልዉ።
+> 2. Confirme que vê as páginas de que precisa. Se faltar alguma, peça-a em Suporte › Pedidos de acesso.
+> [en] Check that you can see the pages you need. If one is missing, request it in Support › Access requests.
+> [ti] ዘድልዩኹም ገጻት ከም እትርእዩ ኣረጋግጹ። እንተ ጎዲሉ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተትዎ።
+
+- Nova função-base **«Coordenação comercial e operacional»** (P-COORD): coordena todos os promotores e as rotas, sem
+  limite por rota — vendas, clientes, cargas, stock da carrinha e do armazém, requisições e terreno. Exige os dois
+  passos na entrada.
+- Nova função **«Gerar e enviar o ficheiro SAP»** (C-SAP-EXPORTAR), com os dois passos. A estrutura do ficheiro não
+  muda; cada geração continua registada.
+- Quem aprova a caixa (1.º nível e final) passa a ver o **Multicaixa por TPA**: o 1.º nível decide aí as correcções da
+  forma de pagamento.
+- Reconfiguração automática, uma só vez, das contas pedidas pelo super administrador, com o estado anterior registado:
+  - **Michael Samson** (responsável da área de negócio RTM): Direcção comercial e marketing, aprovação final da caixa,
+    fecho das conciliações e ficheiro SAP. Fica dono das funções da caixa, da conciliação, do supervisor, do promotor e
+    da coordenação: autoriza os pedidos de acesso da equipa e revê-os por trimestre (o seu próprio acesso revê-o o
+    super administrador).
+  - **Nathan Alemayehu** (coordenador de todos os promotores): Coordenação comercial e operacional e aprovação das
+    conciliações no 1.º nível.
+  - Se uma conta não for encontrada pelo nome, ou houver mais de uma, não muda nada e o aviso aparece em Acessos ›
+    Governação dos acessos.
+- Na revisão trimestral, cada dono revê os outros, nunca o seu próprio acesso.
+
 ## 17-11-2026
 
 ### Acessos: pedidos de acesso autorizados pelo dono da função, revisão por área e novas regras de separação de funções

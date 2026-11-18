@@ -48,15 +48,69 @@ test('super administrador: janela com o resumo; ao fechar marca como visto', asy
   expect(erros).toEqual([]);
 });
 
-test('outros perfis: nunca pedem o resumo nem vêem a janela', async ({ page }) => {
-  let pedidos = 0;
+const AVISOS = [
+  {
+    id: '20261118090000-aaaa1111',
+    versao: 'v2026.11.18.124',
+    detectada_em: '2026-11-18 09:00:00',
+    seccoes: [
+      {
+        id: 's1',
+        titulo: 'Técnico',
+        tipo: 'funcionalidade',
+        aviso: {
+          titulo: { pt: 'Pedidos de acesso' },
+          resumo: [{ pt: 'Peça acessos em **Suporte**.', en: 'Request access in **Support**.' }],
+          passos: [{ pt: 'Carregue em «Li e compreendi».' }, { pt: 'Abra o Suporte <b>já</b>.' }],
+        },
+      },
+    ],
+  },
+];
+
+test('todos os perfis: aviso do que muda e como proceder; «Mais tarde» volta a mostrar, «Li e compreendi» regista', async ({ page }) => {
+  const posts = [];
+  let avisos = AVISOS;
   await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { login: 'ana', perfil: 'TI', csrf: 'x', permissoes: {} } }));
   await page.route('**/v1/novidades*', (r) => {
-    pedidos++;
-    return r.fulfill({ json: { ok: true, actualizacoes: ACTUALIZACOES } });
+    if (r.request().method() === 'POST') {
+      posts.push(r.request().postDataJSON());
+      avisos = [];
+      return r.fulfill({ json: { ok: true, marcadas: 0, confirmadas: 1 } });
+    }
+    // outros perfis: nunca o resumo técnico
+    return r.fulfill({ json: { ok: true, avisos } });
   });
+  const erros = await abrir(page);
+  const dlg = page.locator('dialog.dlg-aviso');
+  await expect(dlg).toBeVisible();
+  await expect(dlg.locator('h3').first()).toHaveText('O portal foi actualizado');
+  await expect(dlg.locator('.nov-faixa')).toContainText('Versão v2026.11.18.124 · instalada em 18-11-2026 09:00');
+  const c = dlg.locator('.nov-cartao');
+  await expect(c.locator('h3')).toContainText('Pedidos de acesso');
+  await expect(c.locator('h3 .pill')).toHaveText('Nova funcionalidade');
+  await expect(c.locator('ul li strong')).toHaveText('Suporte');
+  await expect(c.locator('ol.nov-passos li')).toHaveText(['Carregue em «Li e compreendi».', 'Abra o Suporte <b>já</b>.']);
+  // «Mais tarde»: não regista; volta na próxima entrada
+  await dlg.getByRole('button', { name: 'Mais tarde' }).click();
+  await expect(dlg).toHaveCount(0);
+  expect(posts).toEqual([]);
+  await page.reload();
+  await expect(dlg).toBeVisible();
+  await dlg.getByRole('button', { name: 'Li e compreendi' }).click();
+  await expect.poll(() => posts[0]).toMatchObject({ confirmar: ['20261118090000-aaaa1111'], csrf: 'x' });
+  await page.reload();
+  await page.waitForTimeout(600);
+  await expect(dlg).toHaveCount(0);
+  expect(erros).toEqual([]);
+});
+
+test('super administrador: depois do resumo técnico, o aviso que os utilizadores vão ver', async ({ page }) => {
+  await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { login: 'henrique', perfil: 'SADM', csrf: 'x', permissoes: {} } }));
+  await page.route('**/v1/novidades*', (r) =>
+    r.fulfill({ json: r.request().method() === 'POST' ? { ok: true } : { ok: true, actualizacoes: ACTUALIZACOES, avisos: AVISOS } }),
+  );
   await abrir(page);
-  await page.waitForTimeout(800);
-  await expect(page.locator('dialog.dlg-largo')).toHaveCount(0);
-  expect(pedidos).toBe(0);
+  await page.locator('dialog.dlg-largo').getByRole('button', { name: 'Fechar' }).click();
+  await expect(page.locator('dialog.dlg-aviso')).toBeVisible();
 });

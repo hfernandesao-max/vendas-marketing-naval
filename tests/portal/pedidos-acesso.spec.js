@@ -183,6 +183,10 @@ test('Acessos: governação — contas em conflito, passar para funções sem mu
       u('chefe', 'Chefe Logística'),
       u('ana', 'Ana', { funcoes: ['C-CONC-COORD', 'P-LOG'] }),
     ],
+    ajustes_contas: [
+      { em: '2026-11-18 09:00', ok: true, conta: 'chefe', funcoes: ['P-LOG'] },
+      { em: '2026-11-18 09:00', ok: false, nome: 'Nathan Alemayehu', motivo: 'não há nenhuma conta activa com este nome' },
+    ],
     contas_conflito: [{ login: 'ana', nome: 'Ana', funcoes: ['C-CONC-COORD', 'P-LOG'], nomes: ['Aprovar conciliações (coordenador)', 'Logística'] }],
     sem_funcoes: [
       { login: 'chefe', nome: 'Chefe Logística', perfil: 'LOG', perfil_nome: 'Logística', funcao: 'P-LOG', diferencas: [] },
@@ -214,6 +218,10 @@ test('Acessos: governação — contas em conflito, passar para funções sem mu
   await page.route('**/v1/sessao*', (r) => r.fulfill({ json: { csrf: 'x' } }));
   const erros = await abrir(page, '#acessos');
   const gov = page.locator('.ac-gov');
+  await expect(gov).toContainText('18-11-2026 09:00 · Chefe Logística: Logística');
+  await expect(gov.locator('li.aviso')).toContainText(
+    'Nathan Alemayehu: não aplicada (não há nenhuma conta activa com este nome). Atribua as funções em Utilizadores › Gerir.',
+  );
   await expect(gov).toContainText('Ana (ana): «Aprovar conciliações (coordenador)» e «Logística»');
   await expect(gov).toContainText('Nada (mesmos acessos)');
   await expect(gov).toContainText('V → —');

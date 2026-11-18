@@ -292,6 +292,26 @@ export function seccaoGovernanca(G, pedirGestao, recarregar) {
   const conflito = G.contas_conflito || [];
   const sem = G.sem_funcoes || [];
   const pedidos = G.pedidos_acesso || [];
+  const ajustes = G.ajustes_contas || [];
+  // reconfigurações de contas feitas pelo sistema depois de uma actualização (pedidas pelo super administrador)
+  if (ajustes.length) {
+    sec.append(el('h3', null, t('Reconfigurações automáticas de contas')));
+    const F = G.funcoes || {};
+    const ul = el('ul', 'ac-gov-l');
+    ajustes.forEach((a) => {
+      const quando = String(a.em || '').replace(/^(\d{4})-(\d{2})-(\d{2})/, '$3-$2-$1');
+      ul.append(
+        el(
+          'li',
+          a.ok ? null : 'aviso',
+          a.ok
+            ? quando + ' · ' + nomeConta(G, a.conta) + ': ' + a.funcoes.map((c) => t((F[c] || {}).nome || c)).join(', ')
+            : quando + ' · ' + a.nome + ': ' + t('não aplicada ({m}). Atribua as funções em Utilizadores › Gerir.', { m: t(a.motivo) }),
+        ),
+      );
+    });
+    sec.append(ul);
+  }
   if (!conflito.length && !sem.length && !pedidos.length) {
     sec.append(el('p', 'note', t('Todas as contas usam funções, sem combinações proibidas, e não há pedidos de acesso por aplicar.')));
     return sec;

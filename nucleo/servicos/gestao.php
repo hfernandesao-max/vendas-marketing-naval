@@ -364,6 +364,7 @@ function naval_gestao_vista(): array
         'perfis_info' => naval_gestao_perfis_vista(),
         'funcoes' => (object) naval_funcoes(),
         'contas_conflito' => naval_funcoes_contas_conflito(),
+        'ajustes_contas' => array_values(array_filter(naval_json_ler(naval_funcoes_ficheiro_ajustes()), 'is_array')),
         'sem_funcoes' => naval_funcoes_sem_funcoes(),
         'pedidos_acesso' => (function () {
             naval_servico('acessos-pedidos');
