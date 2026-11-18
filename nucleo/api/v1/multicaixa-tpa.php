@@ -14,7 +14,9 @@
  * POST {accao: corrigir, dia, rota, docs: [{documento, numerario, multicaixa}], justificacao, evidencia, csrf}
  *      (pedir a correcção: «caixa-marketing» G, a Tesouraria)
  * POST {accao: aprovar_correcao | recusar_correcao | anular_correcao, id, motivo, csrf}
- *      (decidir: «caixa-aprovacao» G, outra pessoa que não quem pediu)
+ *      (decidir: quem aprova a caixa, no 1.º nível ou o final, «caixa-aprovacao» G ou «caixa-aprovacao-final» G;
+ *      sempre outra pessoa que não quem pediu)
+ * POST {accao: aprovar_correcoes, ids: [..], motivo, csrf}   aprovar várias de uma vez (as mesmas regras, uma a uma)
  */
 defined('NAVAL_API') || exit;
 naval_exigir(['multicaixa-tpa']);
@@ -24,7 +26,8 @@ naval_servico('tpa');
 naval_servico('formas-pagamento');
 $gere = naval_pode('multicaixa-tpa', 'G');
 $pedeCorr = naval_pode('caixa-marketing', 'G');
-$aprovaCorr = naval_pode('caixa-aprovacao', 'G');
+// decide as correcções quem aprova a caixa: o 1.º nível ou, acima dele, o responsável da aprovação final
+$aprovaCorr = naval_pode('caixa-aprovacao', 'G') || naval_pode('caixa-aprovacao-final', 'G');
 $login = (string) (((array) naval_utilizador())['login'] ?? '');
 $base = function () use ($gere) {
     return ['ok' => true, 'gere' => $gere, 'terminais' => array_values(naval_tpa_terminais()), 'situacoes' => NAVAL_TPA_SITUACOES, 'empresas' => NAVAL_CAIXA_EMPRESAS,
@@ -56,12 +59,24 @@ switch ((string) ($p['accao'] ?? '')) {
         if (!$pedeCorr) throw new NavalErro('Só a Tesouraria (quem lança a caixa) pede a correcção da forma de pagamento.', 403);
         naval_json(['ok' => true, 'correcoes' => naval_fp_pedir((string) ($p['dia'] ?? ''), (string) ($p['rota'] ?? ''), (array) ($p['docs'] ?? []),
             (string) ($p['justificacao'] ?? ''), (string) ($p['evidencia'] ?? ''), $login)]);
+    case 'aprovar_correcoes':
+        if (!$aprovaCorr) throw new NavalErro('Só quem aprova a caixa decide as correcções da forma de pagamento.', 403);
+        $ids = array_slice(array_values(array_unique(array_map('strval', (array) ($p['ids'] ?? [])))), 0, 500);
+        $feitas = $falhas = [];
+        foreach ($ids as $id) {
+            try {
+                $feitas[] = naval_fp_decidir($id, true, (string) ($p['motivo'] ?? ''), $login)['id'];
+            } catch (NavalErro $e) {
+                $falhas[] = ['id' => $id, 'erro' => $e->getMessage()];
+            }
+        }
+        naval_json(['ok' => true, 'aprovadas' => $feitas, 'falhas' => $falhas]);
     case 'aprovar_correcao':
     case 'recusar_correcao':
-        if (!$aprovaCorr) throw new NavalErro('Só quem aprova a caixa (1.º nível) decide as correcções da forma de pagamento.', 403);
+        if (!$aprovaCorr) throw new NavalErro('Só quem aprova a caixa decide as correcções da forma de pagamento.', 403);
         naval_json(['ok' => true, 'correcao' => naval_fp_decidir((string) ($p['id'] ?? ''), $p['accao'] === 'aprovar_correcao', (string) ($p['motivo'] ?? ''), $login)]);
     case 'anular_correcao':
-        if (!$aprovaCorr) throw new NavalErro('Só quem aprova a caixa (1.º nível) anula uma correcção.', 403);
+        if (!$aprovaCorr) throw new NavalErro('Só quem aprova a caixa anula uma correcção.', 403);
         naval_json(['ok' => true, 'correcao' => naval_fp_anular((string) ($p['id'] ?? ''), (string) ($p['motivo'] ?? ''), $login)]);
 }
 if (!$gere) throw new NavalErro('O seu perfil só permite ver o relatório.', 403);

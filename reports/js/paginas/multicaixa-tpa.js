@@ -682,15 +682,68 @@ function decidirCorrecao(c, accao) {
   );
 }
 
+/** Aprovar de uma vez as correcções por aprovar que esta pessoa pode decidir (não as que pediu). */
+function aprovarVarias(lista) {
+  const soma = (k) => lista.reduce((a, c) => a + Number(c[k] || 0), 0);
+  janela(
+    t('Aprovar {n} correcções?', { n: n0(lista.length) }),
+    t('Fica registado, uma a uma, quem aprovou e quando. Reveja a lista antes de aprovar.'),
+    (b, ft, fechar) => {
+      const ul = el('ul', 'fp-lista-aprovar');
+      lista.forEach((c) =>
+        ul.append(el('li', null, c.id + ' · ' + dl(c.dia) + ' · ' + prom(c.rota) + ' · ' + c.documento + ': ' + formasTxt(c.pinguim) + ' → ' + formasTxt(c))),
+      );
+      b.append(el('p', 'note', t('Total corrigido: numerário {a} · Multicaixa {b}', { a: kz(soma('numerario')), b: kz(soma('multicaixa')) })), ul);
+      const m = el('textarea');
+      m.rows = 2;
+      m.maxLength = 300;
+      m.setAttribute('aria-label', t('Nota (opcional)'));
+      m.placeholder = t('Nota (opcional)');
+      const e2 = msgErro();
+      b.append(m, e2);
+      ft.append(
+        botao(t('Cancelar'), 'ghost', fechar),
+        botao(t('Aprovar {n}', { n: n0(lista.length) }), null, () =>
+          postJson('multicaixa-tpa', { accao: 'aprovar_correcoes', ids: lista.map((c) => c.id), motivo: m.value }).then((x) => {
+            if (!x || !x.ok) {
+              e2.hidden = false;
+              e2.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+              return;
+            }
+            fechar();
+            toast(
+              x.falhas.length
+                ? t('{n} aprovadas; {f} não foram aprovadas: {e}', { n: n0(x.aprovadas.length), f: n0(x.falhas.length), e: t(x.falhas[0].erro) })
+                : t('{n} correcções aprovadas.', { n: n0(x.aprovadas.length) }),
+              6000,
+            );
+            F = null;
+            draw();
+          }),
+        ),
+      );
+    },
+  );
+}
+
 function correcoes(pg) {
   const lista = F.correcoes || [];
   const pend = lista.filter((c) => c.estado === 'pendente').length;
+  const minhas = F.aprova_correcao ? lista.filter((c) => c.estado === 'pendente' && c.pedido_por !== F.eu) : [];
+  if (minhas.length > 1) {
+    const barra = el('div', 'glass fp-barra');
+    barra.append(
+      el('span', null, t('{n} correcções esperam a sua decisão.', { n: n0(minhas.length) })),
+      botao(t('Rever e aprovar todas'), 'sm', () => aprovarVarias(minhas)),
+    );
+    pg.append(barra);
+  }
   pg.append(
     tabelaB({
       id: 'fp-corr',
       titulo: t('Correcções da forma de pagamento ({n} por aprovar)', { n: n0(pend) }),
       nota: t(
-        'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa (1.º nível de aprovação da caixa). Só as aprovadas contam; nada se apaga.',
+        'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa que aprove a caixa (1.º nível ou aprovação final). Só as aprovadas contam; nada se apaga.',
       ),
       rows: lista.map((c, i) => ({
         ...c,

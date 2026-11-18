@@ -4465,6 +4465,16 @@ export const TI = {
   'Avisos aos utilizadores': 'መልእኽታት ንተጠቀምቲ',
   'Depois de cada actualização, cada pessoa vê o que muda nas páginas a que tem acesso e como proceder. «Li e compreendi» fica registado.':
     'ድሕሪ ነፍሲ ወከፍ ምሕዳስ፡ ነፍሲ ወከፍ ሰብ ኣብቶም ዝኣትዎም ገጻት እንታይ ከም ዝቕየርን ከመይ ከም ዝቕጽልን ይርኢ። «ኣንቢበ ተረዲኡኒ» ይምዝገብ።',
+  'Aprovar {n} correcções?': '{n} ምእራማት ተጽድቑ ዶ?',
+  'Fica registado, uma a uma, quem aprovou e quando. Reveja a lista antes de aprovar.': 'መን ከም ዘጽደቐን መዓስን ንነፍሲ ወከፍ ይምዝገብ። ቅድሚ ምጽዳቕ ነቲ ዝርዝር ርኣዩ።',
+  'Total corrigido: numerário {a} · Multicaixa {b}': 'ጠቕላላ ዝተኣረመ፡ ጥረ ገንዘብ {a} · Multicaixa {b}',
+  'Aprovar {n}': '{n} ኣጽድቑ',
+  '{n} aprovadas; {f} não foram aprovadas: {e}': '{n} ጸዲቐን፡ {f} ኣይጸደቓን፡ {e}',
+  '{n} correcções aprovadas.': '{n} ምእራማት ጸዲቐን።',
+  '{n} correcções esperam a sua decisão.': '{n} ምእራማት ውሳነኹም ይጽበያ።',
+  'Rever e aprovar todas': 'ኩሉ ርኣዩን ኣጽድቑን',
+  'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa que aprove a caixa (1.º nível ou aprovação final). Só as aprovadas contam; nada se apaga.':
+    'ሰነድ Pinguim BO ኣይቕየርን። ግምጃ ቤት ምስ ምኽንያት ይሓትት፡ ሳጹን ዘጽድቕ ካልእ ሰብ (1ይ ደረጃ ወይ ናይ መወዳእታ ምጽዳቕ) የጽድቕ ወይ ይነጽግ። ዝጸደቓ ጥራይ ይቑጸራ፡ ዋላ ሓንቲ ኣይድምሰስን።',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

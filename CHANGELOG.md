@@ -1,5 +1,32 @@
 ## 18-11-2026
 
+### Correcções da forma de pagamento: também as decide quem aprova a caixa no fim, e várias de uma vez
+
+<!-- paginas: multicaixa-tpa -->
+<!-- tipo: correcao -->
+
+> titulo: Correcções da forma de pagamento
+> titulo [en]: Payment-method corrections
+> titulo [ti]: ምእራም ኣገባብ ክፍሊት
+> - Quem aprova a caixa no fim (aprovação final) passa também a aprovar ou recusar as correcções da forma de pagamento, como o 1.º nível.
+> [en] Whoever gives the final cash-sheet approval can now also approve or refuse payment-method corrections, as the 1st level does.
+> [ti] ሳጹን ኣብ መወዳእታ ዘጽድቕ (ናይ መወዳእታ ምጽዳቕ) ከም 1ይ ደረጃ ምእራም ኣገባብ ክፍሊት ከጽድቕ ወይ ክነጽግ ይኽእል።
+> - Quando há várias por decidir, pode revê-las numa lista e aprová-las de uma vez. Quem pediu uma correcção nunca a aprova.
+> [en] When several are waiting, you can review them in a list and approve them at once. Whoever requested a correction never approves it.
+> [ti] ብዙሓት ውሳነ ክጽበያ ከለዋ፡ ኣብ ዝርዝር ርእዩኹም ብሓንሳብ ከተጽድቕዎን ትኽእሉ። ምእራም ዝሓተተ ሰብ ፈጺሙ ኣየጽድቖን።
+> 1. Abra Multicaixa por TPA › Formas de pagamento e desça até «Correcções da forma de pagamento».
+> [en] Open Multicaixa by POS terminal › Payment methods and scroll down to «Payment-method corrections».
+> [ti] Multicaixa ብ TPA › ኣገባባት ክፍሊት ክፈቱ፡ ናብ «ምእራም ኣገባብ ክፍሊት» ውረዱ።
+> 2. Carregue em «Rever e aprovar todas», confirme a lista e carregue em «Aprovar», ou decida uma a uma na tabela.
+> [en] Press «Review and approve all», check the list and press «Approve», or decide one by one in the table.
+> [ti] «ኩሉ ርኣዩን ኣጽድቑን» ጠውቑ፡ ነቲ ዝርዝር ኣረጋጊጽኩም «ኣጽድቑ» ጠውቑ፡ ወይ ኣብቲ ሰንጠረዥ ሓደ ብሓደ ውሰኑ።
+
+- **Quem decide:** as correcções pedidas pela Tesouraria passam a poder ser aprovadas, recusadas ou anuladas por quem
+  aprova a caixa no 1.º nível **ou** na aprovação final (ex.: o responsável da área RTM). Até aqui só o 1.º nível as
+  via, e o responsável da aprovação final não tinha o botão. Quem pediu continua a não poder aprovar.
+- **Várias de uma vez:** «Rever e aprovar todas» mostra a lista das correcções que a pessoa pode decidir (nunca as que
+  pediu), com o total corrigido; cada aprovação fica registada uma a uma, com quem e quando.
+
 ### Aviso a todos depois de cada actualização: o que muda para si e como proceder
 
 <!-- paginas: actualizacoes, suporte, conciliacao-carrinha -->

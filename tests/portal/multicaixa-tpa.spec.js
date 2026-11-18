@@ -263,6 +263,7 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
       gravados.push(b);
       if (b.accao === 'corrigir') return r.fulfill({ json: { ok: true, correcoes: [{ id: 'FP-2026-00008' }] } });
       if (b.accao === 'aprovar_correcao') return r.fulfill({ json: { ok: true, correcao: { id: b.id, estado: 'aprovada' } } });
+      if (b.accao === 'aprovar_correcoes') return r.fulfill({ json: { ok: true, aprovadas: b.ids, falhas: [] } });
       return r.fulfill({ json: { ok: true, formas: FORMAS } });
     }
     const base = {
@@ -319,6 +320,34 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
               evidencia: '',
               decidido_por: '',
             },
+            {
+              id: 'FP-2026-00009',
+              dia: '2026-11-13',
+              rota: '1001',
+              documento: 'FR A1001/4',
+              estado: 'pendente',
+              pedido_por: 'henrique',
+              numerario: 50000,
+              multicaixa: 0,
+              pinguim: { numerario: 0, multicaixa: 50000, invalida: 0 },
+              justificacao: 'Conciliação de contas correntes / bancos.',
+              evidencia: '',
+              decidido_por: '',
+            },
+            {
+              id: 'FP-2026-00010',
+              dia: '2026-11-13',
+              rota: '1001',
+              documento: 'FR A1001/5',
+              estado: 'pendente',
+              pedido_por: 'sara',
+              numerario: 10000,
+              multicaixa: 0,
+              pinguim: { numerario: 0, multicaixa: 10000, invalida: 0 },
+              justificacao: 'Pedida por mim: não a posso aprovar.',
+              evidencia: '',
+              decidido_por: '',
+            },
           ],
         },
       });
@@ -361,5 +390,14 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
   expect(gravados[2]).toMatchObject({ accao: 'formas', rotas: { 1001: 'BPC', 1002: 'BAI' } });
   expect(gravados[2].codigos.MCA).toEqual({ forma: 'multicaixa', banco: '' });
   expect(gravados[2].codigos.NU).toEqual({ forma: 'numerario', banco: '' });
+  // aprovar várias de uma vez: só as que esta pessoa pode decidir (não a que ela própria pediu), revistas na lista
+  await expect(page.locator('.fp-barra')).toContainText('2 correcções esperam a sua decisão.');
+  await page.getByRole('button', { name: 'Rever e aprovar todas' }).click();
+  const d = page.locator('dialog[open]');
+  await expect(d.locator('.fp-lista-aprovar li')).toHaveCount(2);
+  await expect(d.locator('.fp-lista-aprovar')).not.toContainText('FP-2026-00010');
+  await d.getByRole('button', { name: 'Aprovar 2' }).click();
+  await expect.poll(() => gravados.length).toBe(4);
+  expect(gravados[3]).toMatchObject({ accao: 'aprovar_correcoes', ids: ['FP-2026-00007', 'FP-2026-00009'] });
   expect(erros).toEqual([]);
 });
