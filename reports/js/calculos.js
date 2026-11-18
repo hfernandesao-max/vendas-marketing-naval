@@ -59,8 +59,7 @@ export const pendentesDe = (V) => sum(V, pendenteDe);
 export const recebidoBruto = (V) => sum(V, recebidoEfectivoDe);
 export const recebidoLiquido = (V) => sum(V, recebidoEfectivoDe) - notasCredito(V);
 export const temMeio = () => DB.vendas.some((x) => pagosDe(x).some((p) => p.codigo !== '?'));
-export const valorCat = (V, cat) =>
-  V.reduce((s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + (catMeio(p) === cat ? +p.valor || 0 : 0), 0), 0);
+export const valorCat = (V, cat) => V.reduce((s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + (catMeio(p) === cat ? +p.valor || 0 : 0), 0), 0);
 // Soma por meio de pagamento real (nome do Pinguim BO), ordenado do maior para o menor
 export function porMeio(V) {
   const m = new Map();

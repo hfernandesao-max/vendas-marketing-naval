@@ -328,7 +328,7 @@ R.pagamentos = (pg) => {
   // Colunas por meio real presente no período
   const meios = PM.map((o) => o.meio);
   const linha = (rs, base) => {
-    const ncM = -sum(rs.filter(eNC), (x) => sum(pagosEfectivosDe(x), 'valor'));
+    const ncM = -sum(rs.filter(eNC), (x) => sum(pagosDe(x), 'valor'));
     const o = {
       ...base,
       total: sum(rs, totalVendaDe),
@@ -336,10 +336,7 @@ R.pagamentos = (pg) => {
       nc: -Math.max(0, notasCredito(rs) - ncM),
     };
     meios.forEach((m, i) => {
-      o['m' + i] = rs.reduce(
-        (s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0),
-        0,
-      );
+      o['m' + i] = rs.reduce((s, x) => s + pagosEfectivosDe(x).reduce((a, p) => a + ((p.meio || p.codigo || '?') === m ? +p.valor || 0 : 0), 0), 0);
     });
     o.por_liquidar = sum(rs, pendenteDe);
     return o;
