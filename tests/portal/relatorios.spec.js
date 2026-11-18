@@ -51,6 +51,12 @@ test('menu em acordeão: áreas fechadas, só uma aberta de cada vez, a da pági
 });
 
 test('menu organizado por secções da cadeia de valor (Comercial, Operações, Análise) e Sistema em baixo', async ({ page }) => {
+  await page.route('**/data/clientes.json', async (route) => {
+    const response = await route.fetch();
+    const clientes = await response.json();
+    clientes.push({ ...clientes[0], codigo: 'TEST-INACTIVO', nome: 'CLIENTE INACTIVO', estado: 'Inactivo' });
+    await route.fulfill({ response, json: clientes });
+  });
   await abrir(page, '#inicio');
   await expect(page.locator('#nav .nav-sec')).toHaveText(['Comercial', 'Operações', 'Análise', 'Sistema']);
   await expect(page.locator('#nav .navg .navg-t')).toHaveText([
