@@ -4547,6 +4547,17 @@ export const EN = {
   'Avisos aos utilizadores': 'Notices to users',
   'Depois de cada actualização, cada pessoa vê o que muda nas páginas a que tem acesso e como proceder. «Li e compreendi» fica registado.':
     'After each update, each person sees what changes on the pages they can access and what to do. «I have read and understood» is recorded.',
+  'Aprovar {n} correcções?': 'Approve {n} corrections?',
+  'Fica registado, uma a uma, quem aprovou e quando. Reveja a lista antes de aprovar.':
+    'Who approved and when is recorded for each one. Review the list before approving.',
+  'Total corrigido: numerário {a} · Multicaixa {b}': 'Total corrected: cash {a} · Multicaixa {b}',
+  'Aprovar {n}': 'Approve {n}',
+  '{n} aprovadas; {f} não foram aprovadas: {e}': '{n} approved; {f} were not approved: {e}',
+  '{n} correcções aprovadas.': '{n} corrections approved.',
+  '{n} correcções esperam a sua decisão.': '{n} corrections await your decision.',
+  'Rever e aprovar todas': 'Review and approve all',
+  'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa que aprove a caixa (1.º nível ou aprovação final). Só as aprovadas contam; nada se apaga.':
+    'The Pinguim BO document does not change. Treasury requests it, with a justification; another person who approves the cash sheet (1st level or final approval) approves or refuses it. Only approved ones count; nothing is deleted.',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -5609,3 +5609,18 @@ body.apres-lado {
 .act-faltam summary {
   cursor: pointer;
 }
+
+/* Correcções da forma de pagamento: aprovar várias de uma vez */
+.fp-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+}
+.fp-lista-aprovar {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 0.9em;
+}
