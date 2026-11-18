@@ -220,6 +220,8 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
         promotor: 'Bruno Miguel',
         banco_tpa: 'ATLANTICO',
         documentos: 1,
+        corrigiveis: 1,
+        corrigidos: 1,
         numerario: 0,
         multicaixa: 880000,
         invalida: 780000,
@@ -292,6 +294,17 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
               pinguim: { numerario: 0, multicaixa: 795800, invalida: 0, total_pago: 795800 },
               correcoes: [],
             },
+            {
+              documento: 'FR A1001/9',
+              hora: '18:25',
+              cliente: 'Loja 2',
+              total: 100000,
+              nc: false,
+              corrigivel: true,
+              meio_pinguim: 'Multicaixa',
+              pinguim: { numerario: 0, multicaixa: 100000, invalida: 0, total_pago: 100000 },
+              correcoes: [{ id: 'FP-2026-00003', estado: 'aprovada', numerario: 100000, multicaixa: 0, codigo_multicaixa: 'MC' }],
+            },
           ],
         },
       });
@@ -360,7 +373,20 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
   await expect(page.locator('#s-fp-rec tbody tr').first()).toContainText('1001 · Andrea Santos');
   await expect(page.locator('#s-fp-rec tbody tr').first().locator('.rv-dif').first()).toBeVisible();
   // correcção de um dia e promotor: documento a documento, com justificação
+  // linha com tudo corrigido: estado em vez do botão
+  await expect(page.locator('#s-fp-rec tbody tr', { hasText: '1002' }).getByRole('button', { name: 'Corrigir' })).toHaveCount(0);
+  await expect(page.locator('#s-fp-rec tbody tr', { hasText: '1002' })).toContainText('Corrigido');
   await page.locator('#s-fp-rec tbody tr').first().getByRole('button', { name: 'Corrigir' }).click();
+  // documento já corrigido e aprovado: só leitura, sem campos
+  const ja = page.locator('.fp-tab tr.fp-corrigido', { hasText: 'FR A1001/9' });
+  await expect(ja).toContainText('Aprovada');
+  await expect(ja.locator('input, select')).toHaveCount(0);
+  await expect(ja).toContainText('18:25');
+  // sem mudar nada: não pede, e diz porquê
+  await page.getByLabel('Justificação (obrigatória)').fill('O cliente pagou em dinheiro; o promotor escolheu Multicaixa por engano.');
+  await page.getByRole('button', { name: 'Pedir a correcção' }).click();
+  await expect(page.locator('dialog[open] .erro, dialog[open] [role=alert]').first()).toContainText('Altere o numerário, o Multicaixa ou o banco');
+  expect(gravados.length).toBe(0);
   await page.getByLabel('Numerário do documento FR A1001/10').fill('577700');
   await expect(page.getByLabel('Multicaixa do documento FR A1001/10', { exact: true })).toHaveValue('218100');
   await expect(page.getByLabel('Banco do Multicaixa do documento FR A1001/10').locator('option')).toHaveText(['MC', 'BPC']);

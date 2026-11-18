@@ -5624,3 +5624,31 @@ body.apres-lado {
   padding-left: 18px;
   font-size: 0.9em;
 }
+
+/* Correcção da forma de pagamento: documentos já corrigidos só em leitura */
+.fp-fixo {
+  display: inline-block;
+  padding: 6px 4px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.fp-tab tr.fp-corrigido td {
+  background: rgb(var(--az3-rgb) / 0.06);
+}
+.fp-nada {
+  margin-top: 10px;
+}
+
+/* Início: formas de pagamento conciliadas (Pinguim BO × conciliado) */
+.ini-conc-t td.n,
+.ini-conc-t th.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ini-conc-d {
+  font-weight: 700;
+}
+.ini-conc-tot td {
+  font-weight: 700;
+  border-top: 1px solid rgb(var(--lin1-rgb) / 0.4);
+}

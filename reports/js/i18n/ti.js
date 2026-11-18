@@ -4475,6 +4475,19 @@ export const TI = {
   'Rever e aprovar todas': 'ኩሉ ርኣዩን ኣጽድቑን',
   'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa que aprove a caixa (1.º nível ou aprovação final). Só as aprovadas contam; nada se apaga.':
     'ሰነድ Pinguim BO ኣይቕየርን። ግምጃ ቤት ምስ ምኽንያት ይሓትት፡ ሳጹን ዘጽድቕ ካልእ ሰብ (1ይ ደረጃ ወይ ናይ መወዳእታ ምጽዳቕ) የጽድቕ ወይ ይነጽግ። ዝጸደቓ ጥራይ ይቑጸራ፡ ዋላ ሓንቲ ኣይድምሰስን።',
+  'Todos os documentos deste dia já têm a correcção aprovada ou por aprovar. Para mudar uma correcção aprovada, quem aprova a caixa anula-a primeiro.':
+    'ኩሎም ሰነዳት ናይዚ መዓልቲ ዝጸደቐ ወይ ዝጽበ ምእራም ኣለዎም። ዝጸደቐ ምእራም ንምቕያር፡ ሳጹን ዘጽድቕ ቅድም ይስርዞ።',
+  'Altere o numerário, o Multicaixa ou o banco de pelo menos um documento: os valores ainda são os do Pinguim BO.':
+    'ጥረ ገንዘብ፡ Multicaixa ወይ ባንክ ናይ እንተወሓደ ሓደ ሰነድ ቀይሩ፡ እቶም ዋጋታት ገና ናይ Pinguim BO እዮም።',
+  '{n} documento(s) seguem com a forma de pagamento corrigida e aprovada na reconciliação (Multicaixa por TPA › Formas de pagamento).':
+    '{n} ሰነድ(ታት) ምስቲ ኣብ ምስምማዕ ዝተኣረመን ዝጸደቐን ኣገባብ ክፍሊት ይኸዱ (Multicaixa ብ TPA › ኣገባባት ክፍሊት)።',
+  'Formas de pagamento conciliadas': 'ዝተሰማምዑ ኣገባባት ክፍሊት',
+  '{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima já mostram o que se recebeu de facto.':
+    '{n} ሰነድ(ታት) ዝተኣረመን ዝጸደቐን ኣገባብ ክፍሊት ዘለዎም። እቶም ላዕሊ ዘለዉ ቁጽርታት ብሓቂ ዝተቐበልናዮ የርእዩ።',
+  'No Pinguim BO (na venda)': 'ኣብ Pinguim BO (ኣብ ግዜ መሸጣ)',
+  'Conciliado (aprovado)': 'ዝተሰማምዐ (ዝጸደቐ)',
+  'Sem forma válida': 'ቅቡል ኣገባብ የብሉን',
+  'Ver as correcções em Multicaixa por TPA › Formas de pagamento': 'ምእራማት ኣብ Multicaixa ብ TPA › ኣገባባት ክፍሊት ርኣዩ',
   'Abrir o documento {d}': 'ሰነድ {d} ክፈት',
   'Representação do documento': 'ምርኢት ናይቲ ሰነድ',
   'Rota {r}': 'መስመር {r}',

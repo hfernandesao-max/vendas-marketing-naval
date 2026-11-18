@@ -532,6 +532,10 @@ function abrirCorrecao(linha) {
           return;
         }
         const mcs = Object.entries(F.formas.codigos).filter(([, x]) => x.forma === 'multicaixa');
+        const bancoDe = (cod) => {
+          const x = F.formas.codigos[cod];
+          return x && x.banco ? banco(x.banco) : cod || '—';
+        };
         const comCorr = d.documentos.some((doc) => (doc.correcoes || []).some((c) => c.estado === 'pendente' || c.estado === 'aprovada'));
         const tab = el('table', 'fp-tab');
         const cab = el('tr');
@@ -550,17 +554,25 @@ function abrirCorrecao(linha) {
           const alvo = doc.pinguim.total_pago > 0 ? doc.pinguim.total_pago : doc.total;
           const base = emVigor || { numerario: doc.pinguim.numerario, multicaixa: doc.pinguim.multicaixa + (doc.pinguim.invalida || 0) };
           const bloqueado = !doc.corrigivel || !!emVigor;
+          // documentos já corrigidos (aprovada ou por aprovar) ou que não se corrigem: só leitura, nunca campos
           const num = (v, rot) => {
+            if (bloqueado) {
+              const x = el('span', 'fp-fixo', v ? kz(v) : '—');
+              x.setAttribute('aria-label', rot);
+              x.value = v;
+              return x;
+            }
             const i = entrada('number', v || '', { min: 0, step: '0.01', inputMode: 'decimal', placeholder: '0' });
             i.setAttribute('aria-label', rot);
-            i.disabled = bloqueado;
             return i;
           };
           const nu = num(base.numerario, t('Numerário do documento {d}', { d: doc.documento }));
           const mc = num(base.multicaixa, t('Multicaixa do documento {d}', { d: doc.documento }));
           // ao mudar um valor, o outro completa o total cobrado
-          nu.addEventListener('input', () => (mc.value = Math.max(0, Math.round((alvo - (+nu.value || 0)) * 100) / 100)));
-          mc.addEventListener('input', () => (nu.value = Math.max(0, Math.round((alvo - (+mc.value || 0)) * 100) / 100)));
+          if (!bloqueado) {
+            nu.addEventListener('input', () => (mc.value = Math.max(0, Math.round((alvo - (+nu.value || 0)) * 100) / 100)));
+            mc.addEventListener('input', () => (nu.value = Math.max(0, Math.round((alvo - (+mc.value || 0)) * 100) / 100)));
+          }
           const bs = el('select');
           bs.setAttribute('aria-label', t('Banco do Multicaixa do documento {d}', { d: doc.documento }));
           const codAtual = (emVigor && emVigor.codigo_multicaixa) || doc.pinguim.codigo_multicaixa || (mcs[0] || [''])[0];
@@ -571,7 +583,8 @@ function abrirCorrecao(linha) {
             bs.append(o);
           });
           bs.disabled = bloqueado;
-          if (!bloqueado) valores.push({ documento: doc.documento, nu, mc, bs });
+          if (!bloqueado)
+            valores.push({ documento: doc.documento, nu, mc, bs, orig: { nu: doc.pinguim.numerario || 0, mc: doc.pinguim.multicaixa || 0, cod: codAtual } });
           // documento, hora e o que está no Pinguim BO na mesma célula (sem colunas a mais)
           const tdD = el('td', 'fp-doc');
           const formaP = [
@@ -590,8 +603,9 @@ function abrirCorrecao(linha) {
             c2.append(x);
             return c2;
           };
+          if (bloqueado) tr.classList.add('fp-corrigido');
           tr.append(tdD, cel(kz(alvo), 'n', t('Cobrado')), cel(nu, 'n', t('Numerário')), cel(mc, 'n', t('Multicaixa')));
-          if (mcs.length > 1) tr.append(cel(bs, '', t('Banco')));
+          if (mcs.length > 1) tr.append(cel(bloqueado ? el('span', 'fp-fixo', bancoDe(codAtual)) : bs, '', t('Banco')));
           if (comCorr) {
             const es = el('td');
             if (emVigor) es.append(pillCorr(emVigor.estado));
@@ -610,31 +624,50 @@ function abrirCorrecao(linha) {
         const at = el('div', 'fp-atalhos');
         if (valores.length) at.append(botao(t('Tudo em Numerário'), 'ghost sm', tudo('nu')), botao(t('Tudo em Multicaixa'), 'ghost sm', tudo('mc')));
         corpo.append(tab, at);
-      });
-      ft.append(
-        botao(t('Cancelar'), 'ghost', fechar),
-        botao(t('Pedir a correcção'), null, () => {
-          const docs = valores.map((x) => ({
-            documento: x.documento,
-            numerario: +x.nu.value || 0,
-            multicaixa: +x.mc.value || 0,
-            codigo_multicaixa: x.bs.value,
-          }));
-          postJson('multicaixa-tpa', { accao: 'corrigir', dia: linha.dia, rota: linha.rota, docs, justificacao: just.value, evidencia: evid.value }).then(
-            (x) => {
-              if (!x || !x.ok) {
-                e2.hidden = false;
-                e2.textContent = t((x && x.erro) || 'Não foi possível gravar.');
-                return;
-              }
-              fechar();
-              toast(t('Correcção pedida: {n} documento(s). Fica por aprovar.', { n: x.correcoes.length }), 4000);
-              F = null;
-              draw();
-            },
+        // tudo corrigido (ou por aprovar): não há nada para pedir
+        if (!valores.length) {
+          corpo.append(
+            el(
+              'p',
+              'note fp-nada',
+              t(
+                'Todos os documentos deste dia já têm a correcção aprovada ou por aprovar. Para mudar uma correcção aprovada, quem aprova a caixa anula-a primeiro.',
+              ),
+            ),
           );
-        }),
-      );
+          campos.hidden = true;
+          pedir.hidden = true;
+        }
+      });
+      const pedir = botao(t('Pedir a correcção'), null, () => {
+        // só os documentos que mudam de facto (numerário, Multicaixa ou banco)
+        const muda = valores.filter(
+          (x) => Math.abs((+x.nu.value || 0) - x.orig.nu) > 0.005 || Math.abs((+x.mc.value || 0) - x.orig.mc) > 0.005 || x.bs.value !== x.orig.cod,
+        );
+        if (!muda.length) {
+          e2.hidden = false;
+          e2.textContent = t('Altere o numerário, o Multicaixa ou o banco de pelo menos um documento: os valores ainda são os do Pinguim BO.');
+          return;
+        }
+        const docs = muda.map((x) => ({
+          documento: x.documento,
+          numerario: +x.nu.value || 0,
+          multicaixa: +x.mc.value || 0,
+          codigo_multicaixa: x.bs.value,
+        }));
+        postJson('multicaixa-tpa', { accao: 'corrigir', dia: linha.dia, rota: linha.rota, docs, justificacao: just.value, evidencia: evid.value }).then((x) => {
+          if (!x || !x.ok) {
+            e2.hidden = false;
+            e2.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+            return;
+          }
+          fechar();
+          toast(t('Correcção pedida: {n} documento(s). Fica por aprovar.', { n: x.correcoes.length }), 4000);
+          F = null;
+          draw();
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), pedir);
     },
   );
 }
@@ -875,7 +908,19 @@ function formas(pg) {
         { key: 'total', label: t('Total'), type: 'kz', sum: true, p: 0 },
         { key: 'corrigidos', label: t('Corrigidos'), type: 'n', sum: true, p: 3 },
         ...(F.pede_correcao
-          ? [{ key: 'corrigir', label: t('Correcção'), p: 0, render: (v, x) => botao(t('Corrigir'), 'ghost sm', () => abrirCorrecao(x)) }]
+          ? [
+              {
+                key: 'corrigir',
+                label: t('Correcção'),
+                p: 0,
+                render: (v, x) => {
+                  // tudo corrigido (aprovado ou por aprovar): estado em vez do botão; o resto da diferença é da folha de caixa
+                  if (x.corrigiveis > 0 && x.corrigidos + (x.por_aprovar || 0) >= x.corrigiveis)
+                    return pill(x.por_aprovar ? t('Por aprovar') : t('Corrigido'), x.por_aprovar ? 'p-warn' : 'p-ok');
+                  return botao(t('Corrigir'), 'ghost sm', () => abrirCorrecao(x));
+                },
+              },
+            ]
           : []),
       ],
     }),

@@ -4558,6 +4558,19 @@ export const EN = {
   'Rever e aprovar todas': 'Review and approve all',
   'O documento do Pinguim BO não muda. Pede a Tesouraria, com justificação; aprova ou recusa outra pessoa que aprove a caixa (1.º nível ou aprovação final). Só as aprovadas contam; nada se apaga.':
     'The Pinguim BO document does not change. Treasury requests it, with a justification; another person who approves the cash sheet (1st level or final approval) approves or refuses it. Only approved ones count; nothing is deleted.',
+  'Todos os documentos deste dia já têm a correcção aprovada ou por aprovar. Para mudar uma correcção aprovada, quem aprova a caixa anula-a primeiro.':
+    'Every document of this day already has an approved or pending correction. To change an approved correction, the cash-sheet approver cancels it first.',
+  'Altere o numerário, o Multicaixa ou o banco de pelo menos um documento: os valores ainda são os do Pinguim BO.':
+    'Change the cash, the Multicaixa or the bank of at least one document: the values are still those in Pinguim BO.',
+  '{n} documento(s) seguem com a forma de pagamento corrigida e aprovada na reconciliação (Multicaixa por TPA › Formas de pagamento).':
+    '{n} document(s) go with the payment method corrected and approved in the reconciliation (Multicaixa by POS terminal › Payment methods).',
+  'Formas de pagamento conciliadas': 'Reconciled payment methods',
+  '{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima já mostram o que se recebeu de facto.':
+    '{n} document(s) with the payment method corrected and approved. The figures above already show what was actually received.',
+  'No Pinguim BO (na venda)': 'In Pinguim BO (at the sale)',
+  'Conciliado (aprovado)': 'Reconciled (approved)',
+  'Sem forma válida': 'No valid method',
+  'Ver as correcções em Multicaixa por TPA › Formas de pagamento': 'See the corrections in Multicaixa by POS terminal › Payment methods',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',
