@@ -4564,6 +4564,13 @@ export const EN = {
     'Change the cash, the Multicaixa or the bank of at least one document: the values are still those in Pinguim BO.',
   '{n} documento(s) seguem com a forma de pagamento corrigida e aprovada na reconciliação (Multicaixa por TPA › Formas de pagamento).':
     '{n} document(s) go with the payment method corrected and approved in the reconciliation (Multicaixa by POS terminal › Payment methods).',
+  'Formas de pagamento conciliadas': 'Reconciled payment methods',
+  '{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima já mostram o que se recebeu de facto.':
+    '{n} document(s) with the payment method corrected and approved. The figures above already show what was actually received.',
+  'No Pinguim BO (na venda)': 'In Pinguim BO (at the sale)',
+  'Conciliado (aprovado)': 'Reconciled (approved)',
+  'Sem forma válida': 'No valid method',
+  'Ver as correcções em Multicaixa por TPA › Formas de pagamento': 'See the corrections in Multicaixa by POS terminal › Payment methods',
   'Abrir o documento {d}': 'Open document {d}',
   'Representação do documento': 'Document representation',
   'Rota {r}': 'Route {r}',

@@ -16,6 +16,7 @@ import {
   temMeio,
   valorCat,
   vendasR,
+  catMeio,
 } from '../calculos.js';
 import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
@@ -702,5 +703,83 @@ R.inicio = (pg) => {
     );
   const kp = pg.querySelector('.tiles');
   if (kp) kp.classList.add('tiles-kpi');
+  if (['vendas-promotor', 'documentos', 'pagamentos'].some(podeVer)) {
+    const q = quadroConciliado(V);
+    if (q) pg.append(q);
+  }
   painelInicio(pg);
 };
+
+/**
+ * Formas de pagamento conciliadas: o que estava no Pinguim BO no momento da venda, o que ficou depois das correcções
+ * aprovadas (o que se recebeu de facto) e a diferença, só dos documentos corrigidos. Os quadros acima já mostram os
+ * valores conciliados.
+ */
+function quadroConciliado(V) {
+  const corr = V.filter((v) => v.forma_corrigida);
+  if (!corr.length) return null;
+  const por = (lista) => {
+    const o = { dinheiro: 0, multicaixa: 0, outro: 0 };
+    lista.forEach((p) => {
+      const c = catMeio(p);
+      if (c === 'compensacao') return;
+      o[c === 'dinheiro' || c === 'multicaixa' ? c : 'outro'] += +p.valor || 0;
+    });
+    return o;
+  };
+  const antes = { dinheiro: 0, multicaixa: 0, outro: 0 },
+    depois = { dinheiro: 0, multicaixa: 0, outro: 0 };
+  corr.forEach((v) => {
+    const a = por(v.pagamentos_pinguim || []),
+      b = por(v.pagamentos || []);
+    Object.keys(antes).forEach((k) => {
+      antes[k] += a[k];
+      depois[k] += b[k];
+    });
+  });
+  const sec = el('section', 'glass sec ini-conc');
+  sec.append(
+    el('h2', null, t('Formas de pagamento conciliadas')),
+    el(
+      'p',
+      'note',
+      t('{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima já mostram o que se recebeu de facto.', { n: n0(corr.length) }),
+    ),
+  );
+  const tb = el('table', 'cc-tab ini-conc-t');
+  const cab = el('tr');
+  [t('Forma de pagamento'), t('No Pinguim BO (na venda)'), t('Conciliado (aprovado)'), t('Diferença')].forEach((x, i) =>
+    cab.append(el('th', i ? 'n' : null, x)),
+  );
+  tb.append(cab);
+  const linhas = [
+    ['dinheiro', t('Numerário')],
+    ['multicaixa', t('Multicaixa')],
+    ['outro', t('Sem forma válida')],
+  ];
+  linhas.forEach(([k, rot]) => {
+    if (!antes[k] && !depois[k]) return;
+    const tr = el('tr');
+    const dif = depois[k] - antes[k];
+    tr.append(
+      el('td', null, rot),
+      el('td', 'n', kz2(antes[k])),
+      el('td', 'n', kz2(depois[k])),
+      el('td', 'n' + (Math.abs(dif) > 0.005 ? ' ini-conc-d' : ''), (dif > 0 ? '+' : '') + kz2(dif)),
+    );
+    tb.append(tr);
+  });
+  const tot = (o) => o.dinheiro + o.multicaixa + o.outro;
+  const tr = el('tr', 'ini-conc-tot');
+  tr.append(el('td', null, t('Total')), el('td', 'n', kz2(tot(antes))), el('td', 'n', kz2(tot(depois))), el('td', 'n', kz2(tot(depois) - tot(antes))));
+  tb.append(tr);
+  const w = el('div', 'cc-scroll');
+  w.append(tb);
+  sec.append(w);
+  if (podeVer('multicaixa-tpa')) {
+    const a = el('a', 'note', t('Ver as correcções em Multicaixa por TPA › Formas de pagamento'));
+    a.href = '#multicaixa-tpa';
+    sec.append(a);
+  }
+  return sec;
+}

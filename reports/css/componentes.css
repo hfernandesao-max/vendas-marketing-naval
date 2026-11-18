@@ -5638,3 +5638,17 @@ body.apres-lado {
 .fp-nada {
   margin-top: 10px;
 }
+
+/* Início: formas de pagamento conciliadas (Pinguim BO × conciliado) */
+.ini-conc-t td.n,
+.ini-conc-t th.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ini-conc-d {
+  font-weight: 700;
+}
+.ini-conc-tot td {
+  font-weight: 700;
+  border-top: 1px solid rgb(var(--lin1-rgb) / 0.4);
+}

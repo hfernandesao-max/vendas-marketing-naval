@@ -93,7 +93,9 @@ if (!$soArtigos) $chaves['vendas'] = 'vendas2|' . $base;
 if ($itens || $soArtigos) $chaves['artigos'] = 'artigos|' . $base;
 $tempo = naval_cache_periodo($ate);
 $fresco = ($_GET['fresco'] ?? '') === '1';
-$codigo = [__FILE__, dirname(__DIR__, 2) . '/servicos/vendas.php'];
+// as correcções da forma de pagamento aprovadas mudam a resposta: entram na versão (ETag)
+naval_servico('formas-pagamento');
+$codigo = [__FILE__, dirname(__DIR__, 2) . '/servicos/vendas.php', dirname(__DIR__, 2) . '/servicos/formas-pagamento.php', naval_fp_correcoes_ficheiro()];
 $metas = function () use ($chaves, $tempo) {
     $m = [];
     foreach ($chaves as $k) {
@@ -137,6 +139,24 @@ if (isset($chaves['artigos'])) {
 // ETag da resposta a partir das entradas agora gravadas: o pedido seguinte pode acabar logo no 304
 $cabecalhosFonte();
 naval_etag_antecipado($metas(), $codigo);
+// formas de pagamento conciliadas: os documentos com a correcção aprovada levam o numerário e o Multicaixa da
+// reconciliação (o que se recebeu de facto) em todos os ecrãs; o original do Pinguim BO segue em «pagamentos_pinguim»
+$d['vendas'] = naval_fp_aplicar((array) $d['vendas']);
+// nos ecrãs, o meio corrigido tem o mesmo nome que o Pinguim BO dá a esse código (os totais por meio não se partem)
+$nomes = [];
+foreach ($d['vendas'] as $v) {
+    if (!empty($v['forma_corrigida'])) continue;
+    foreach ((array) ($v['pagamentos'] ?? []) as $p) if (!isset($nomes[(string) ($p['codigo'] ?? '')])) $nomes[(string) ($p['codigo'] ?? '')] = (string) ($p['meio'] ?? '');
+}
+foreach ($d['vendas'] as $i => $v) {
+    if (empty($v['forma_corrigida'])) continue;
+    foreach ((array) $v['pagamentos'] as $j => $p) {
+        if (empty($p['corrigido'])) continue;
+        $cod = (string) $p['codigo'];
+        $d['vendas'][$i]['pagamentos'][$j]['meio'] = ($nomes[$cod] ?? '') !== '' ? $nomes[$cod] : (NAVAL_MEIOS_PAGAMENTO[$cod] ?? ($cod === 'NU' ? 'Numerário' : 'Multicaixa'));
+    }
+    $d['vendas'][$i]['meio_pagamento'] = implode(', ', array_unique(array_column($d['vendas'][$i]['pagamentos'], 'meio')));
+}
 $d = naval_vendas_ambito($d, naval_rotas(), naval_ve_nif(), naval_ve_vendas());
 if ($soArtigos) naval_json(['artigos' => $d['artigos']]);
 naval_json($itens ? $d : $d['vendas']);

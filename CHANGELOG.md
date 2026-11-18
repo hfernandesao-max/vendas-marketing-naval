@@ -20,6 +20,9 @@
 > - A hora dos documentos passa a ser a do registo no Pinguim BO (ex.: 18:25, e não 00:18).
 > [en] Document times are now the registration time in Pinguim BO (e.g. 18:25, not 00:18).
 > [ti] ሰዓት ሰነዳት ሕጂ ናይቲ ኣብ Pinguim BO ዝተመዝገበሉ እዩ (ንኣብነት 18:25፡ ኣይኮነን 00:18)።
+> - No Início, «Recebido», «Em dinheiro» e «Em Multicaixa» passam a mostrar o que se recebeu de facto, com as correcções aprovadas. O quadro «Formas de pagamento conciliadas» mostra o que estava no Pinguim BO, o conciliado e a diferença.
+> [en] On the Home page, «Received», «Cash» and «Multicaixa» now show what was actually received, with the approved corrections. The «Reconciled payment methods» table shows what was in Pinguim BO, the reconciled amount and the difference.
+> [ti] ኣብ መእተዊ ገጽ፡ «ዝተቐበልናዮ»፡ «ብጥረ ገንዘብ»ን «ብ Multicaixa»ን ሕጂ ምስቶም ዝጸደቑ ምእራማት ብሓቂ ዝተቐበልናዮ የርእዩ። ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ኣብ Pinguim BO ዝነበረ፡ ዝተሰማምዐን ፍልልይን የርኢ።
 > 1. Para mudar uma correcção já aprovada, peça a quem aprova a caixa que a anule e volte a pedir a correcção.
 > [en] To change an already approved correction, ask the cash-sheet approver to cancel it, then request the correction again.
 > [ti] ዝጸደቐ ምእራም ንምቕያር፡ ነቲ ሳጹን ዘጽድቕ ክስርዞ ሕተትዎ፡ ድሕሪኡ ምእራም ደጊምኩም ሕተቱ።
@@ -39,6 +42,11 @@
   ficheiro mantêm-se. A página diz quantos documentos seguem com a forma corrigida. Exemplo: FP-2026-00045 (FR
   FR0126S78515N 13, Nelson, 22-10-2026), Multicaixa 1 568 000,00 no Pinguim BO → CASH AMOUNT 907 600,00 e CARD AMOUNT
   660 400,00 em todas as linhas do documento.
+- **Recebido conciliado em todos os ecrãs:** as vendas do portal (v1/vendas) passam a trazer as correcções aprovadas da
+  forma de pagamento, com o original do Pinguim BO ao lado. O Início, as Cobranças, os documentos e o ficheiro para o
+  SAP mostram os mesmos valores da reconciliação e da folha de caixa. No Início, o quadro **«Formas de pagamento
+  conciliadas»** mostra, só dos documentos corrigidos, o que estava no Pinguim BO na venda, o conciliado (aprovado) e a
+  diferença por forma; o total não muda, só a forma.
 - **Hora dos documentos:** lia-se o campo CLOCK_HOUR do Pinguim BO como minutos desde a meia-noite, mas só tem a hora;
   as 18:25 apareciam como 00:18. Passa a ser a hora do registo (CLOCK_DATE).
 
