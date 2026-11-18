@@ -1,12 +1,13 @@
 // Menu da conta no canto superior direito: nome, perfil e Terminar sessão (com o código anti-falsificação).
 import { test, expect } from '@playwright/test';
-import { SENHA } from './ajuda.js';
+import { SENHA, fecharAviso } from './ajuda.js';
 
 test('conta no topo: nome e perfil, preferências de favoritos guardadas na conta, terminar sessão @navegador', async ({ page }) => {
   await page.goto('/geo/login.php');
   await page.fill('#usuario', 'dir');
   await page.fill('#senha', SENHA);
   await Promise.all([page.waitForURL(/\/reports\/$/), page.click('.btn-submit')]);
+  await fecharAviso(page);
   const conta = page.locator('#conta-b');
   await expect(conta).toBeVisible();
   await expect(page.locator('#conta-p')).toBeHidden();

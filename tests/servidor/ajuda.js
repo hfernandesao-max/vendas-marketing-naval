@@ -88,3 +88,18 @@ export function totp(segredo, quando = Date.now()) {
   const o = h[19] & 0xf;
   return String((h.readUInt32BE(o) & 0x7fffffff) % 1000000).padStart(6, '0');
 }
+
+/**
+ * Depois de entrar no portal no navegador: o aviso da actualização (o que muda e como proceder) aparece na primeira
+ * entrada; os testes que não são sobre ele tomam conhecimento e seguem.
+ */
+export async function fecharAviso(page) {
+  const d = page.locator('dialog.dlg-aviso');
+  try {
+    await d.waitFor({ state: 'visible', timeout: 4000 });
+  } catch {
+    return;
+  }
+  await d.getByRole('button', { name: 'Li e compreendi' }).click();
+  await d.waitFor({ state: 'detached' });
+}

@@ -27,7 +27,10 @@ function naval_nov_seccoes(string $md): array
 {
     $out = [];
     $data = '';
+    /** @var array<string, mixed>|null $actual */
     $actual = null;
+    /** @var array{0: string, 1: int, 2: string}|null $ultimo */
+    $ultimo = null;   // ponto do aviso em curso: [resumo|passos, posição, língua]
     $ids = [];
     foreach (preg_split('/\r\n|\n|\r/', $md) ?: [] as $l) {
         if (preg_match('/^##\s+(.+?)\s*$/', $l, $m) && strpos($l, '###') !== 0) {
@@ -42,9 +45,37 @@ function naval_nov_seccoes(string $md): array
             for ($n = 2; isset($ids[$id]); $n++) $id = substr(hash('sha256', $data . '|' . $m[1] . '|' . $n), 0, 16);
             $ids[$id] = true;
             $actual = ['id' => $id, 'data' => $data, 'titulo' => $m[1], 'itens' => [], 'paginas' => [], 'tipo' => ''];
+            $ultimo = null;
             continue;
         }
         if ($actual === null) continue;
+        // aviso aos utilizadores (linhas «> »): «> - » o que muda, «> 1. » como proceder, «> [en] » / «> [ti] » a
+        // tradução do ponto anterior; as outras linhas «> » continuam o ponto anterior, «>» sozinho fecha-o
+        if (preg_match('/^>\s?(.*)$/', $l, $m)) {
+            $x = trim($m[1]);
+            if (!isset($actual['aviso'])) $actual['aviso'] = ['titulo' => ['pt' => $actual['titulo']], 'resumo' => [], 'passos' => []];
+            if ($x === '') {
+                $ultimo = null;
+            } elseif (preg_match('/^\[(en|ti)\]\s*(.*)$/', $x, $t) && $ultimo) {
+                $actual['aviso'][$ultimo[0]][$ultimo[1]][$t[1]] = $t[2];
+                $ultimo[2] = $t[1];
+            } elseif (preg_match('/^titulo(?:\s+\[(en|ti)\])?:\s*(.+)$/', $x, $t)) {
+                $actual['aviso']['titulo'][$t[1] !== '' ? $t[1] : 'pt'] = $t[2];
+                $ultimo = null;
+            } elseif (preg_match('/^(?:[-*]|(\d+)\.)\s+(.*)$/', $x, $t)) {
+                $k = $t[1] !== '' ? 'passos' : 'resumo';
+                $actual['aviso'][$k][] = ['pt' => $t[2]];
+                $ultimo = [$k, count($actual['aviso'][$k]) - 1, 'pt'];
+            } elseif ($ultimo) {
+                $actual['aviso'][$ultimo[0]][$ultimo[1]][$ultimo[2]] .= ' ' . $x;
+            }
+            continue;
+        }
+        // público do aviso: <!-- publico: todos --> (por omissão, quem vê alguma das páginas da secção)
+        if (preg_match('/^<!--\s*publico:\s*todos\s*-->$/', trim($l))) {
+            $actual['publico'] = 'todos';
+            continue;
+        }
         // páginas a que a secção diz respeito (selo «Novo» no menu durante 24 h): <!-- paginas: pagamentos, vendas -->
         if (preg_match('/^<!--\s*paginas:\s*(.+?)\s*-->$/', trim($l), $m)) {
             $actual['paginas'] = array_values(array_filter(array_map('trim', explode(',', $m[1]))));
@@ -165,4 +196,81 @@ function naval_nov_marcar(string $login, array $ids): int
         naval_json_gravar($dir . '/vistas.json', $vistas);
         return count($ids);
     });
+}
+
+
+// ── Aviso a todos os utilizadores depois de cada actualização (ISO/IEC 20000-1 8.5.1 e 8.5.3; ISO/IEC 27001 A.6.3,
+// A.8.32): o que muda para a pessoa e como proceder, só sobre as páginas a que tem acesso, na sua língua; fica a prova
+// de quem tomou conhecimento («Li e compreendi»); «Mais tarde» volta a mostrar na próxima entrada. ──
+
+/** A secção diz respeito a esta conta? Público «todos», sem páginas, ou alguma página que vê (nível da matriz). */
+function naval_nov_para(array $s, callable $ve): bool
+{
+    if (empty($s['aviso']) || (empty($s['aviso']['resumo']) && empty($s['aviso']['passos']))) return false;
+    if (($s['publico'] ?? '') === 'todos' || empty($s['paginas'])) return true;
+    foreach ((array) $s['paginas'] as $p) if ($ve((string) $p)) return true;
+    return false;
+}
+
+/** Avisos por confirmar para a conta em sessão: actualizações com as secções que lhe dizem respeito. */
+function naval_nov_avisos(string $login): array
+{
+    $conf = naval_json_ler(naval_pasta('novidades') . '/confirmacoes.json');
+    $out = [];
+    foreach (naval_nov_detectar() as $a) {
+        if (isset($conf[$a['id']][$login])) continue;
+        $ss = array_values(array_filter((array) ($a['seccoes'] ?? []), function ($s) {
+            return naval_nov_para($s, function ($p) { return naval_pode($p, 'Vr'); });
+        }));
+        if (!$ss) continue;
+        $out[] = ['id' => $a['id'], 'versao' => (string) ($a['versao'] ?? ''), 'detectada_em' => (string) ($a['detectada_em'] ?? ''),
+            'seccoes' => array_map(function ($s) { return ['id' => $s['id'], 'titulo' => $s['titulo'], 'tipo' => $s['tipo'], 'aviso' => $s['aviso']]; }, $ss)];
+    }
+    return $out;
+}
+
+/** «Li e compreendi»: regista quando esta conta tomou conhecimento (prova para a auditoria). */
+function naval_nov_confirmar(string $login, array $ids): int
+{
+    return naval_exclusivo('novidades', function () use ($login, $ids) {
+        $dir = naval_pasta('novidades');
+        $existentes = array_column(naval_json_ler($dir . '/actualizacoes.json'), 'id');
+        $ids = array_values(array_intersect(array_map('strval', $ids), $existentes));
+        $conf = naval_json_ler($dir . '/confirmacoes.json');
+        foreach ($ids as $id) if (!isset($conf[$id][$login])) $conf[$id][$login] = date('Y-m-d H:i:s');
+        // só as actualizações guardadas
+        $conf = array_intersect_key($conf, array_flip($existentes));
+        naval_json_gravar($dir . '/confirmacoes.json', $conf);
+        if ($ids) naval_registar('novidades_confirmadas', ['actualizacoes' => $ids]);
+        return count($ids);
+    });
+}
+
+/**
+ * Adesão aos avisos (super administrador): por actualização com aviso, quantas contas activas devem tomar
+ * conhecimento e quantas já confirmaram, com os nomes de quem falta.
+ */
+function naval_nov_adesao(): array
+{
+    $conf = naval_json_ler(naval_pasta('novidades') . '/confirmacoes.json');
+    $m = naval_matriz();
+    $contas = array_filter(naval_utilizadores(), 'naval_conta_valida');
+    $out = [];
+    foreach (naval_nov_detectar() as $a) {
+        $ss = array_values(array_filter((array) ($a['seccoes'] ?? []), function ($s) { return !empty($s['aviso']); }));
+        if (!$ss) continue;
+        $devem = $faltam = [];
+        foreach ($contas as $l => $u) {
+            $perfil = (string) ($u['perfil'] ?? '');
+            $ve = function ($p) use ($m, $perfil) { return $perfil === 'SADM' || (NAVAL_ORDEM_NIVEIS[(string) ($m[$p][$perfil] ?? '')] ?? 0) >= NAVAL_ORDEM_NIVEIS['Vr']; };
+            $diz = false;
+            foreach ($ss as $s) if (naval_nov_para($s, $ve)) $diz = true;
+            if (!$diz) continue;
+            $devem[] = (string) $l;
+            if (!isset($conf[$a['id']][$l])) $faltam[] = (string) ($u['nome'] ?? $l);
+        }
+        $out[] = ['id' => $a['id'], 'versao' => (string) ($a['versao'] ?? ''), 'detectada_em' => (string) ($a['detectada_em'] ?? ''),
+            'titulos' => array_column($ss, 'titulo'), 'destinatarios' => count($devem), 'confirmaram' => count($devem) - count($faltam), 'faltam' => $faltam];
+    }
+    return $out;
 }

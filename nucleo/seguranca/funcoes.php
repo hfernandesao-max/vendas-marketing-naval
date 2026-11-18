@@ -33,6 +33,25 @@ const NAVAL_FUNCOES_CONFLITOS_SISTEMA = [
 /** Ajustes ao catálogo gravado, aplicados uma só vez cada (id => [função, página, nível mínimo]). */
 const NAVAL_FUNCOES_AJUSTES = [
     '2026-11-bo-conciliacao' => ['P-BO', 'conciliacao-carrinha', 'V'],   // o apoio administrativo vê a conciliação e imprime a folha
+    // quem aprova a caixa vê o Multicaixa por TPA: o 1.º nível decide aí as correcções da forma de pagamento
+    '2026-11-caixa-tpa-1' => ['C-CAIXA-APROVAR-1', 'multicaixa-tpa', 'V'],
+    '2026-11-caixa-tpa-final' => ['C-CAIXA-APROVAR', 'multicaixa-tpa', 'V'],
+];
+
+/**
+ * Reconfiguração de contas pedida pelo super administrador, aplicada uma só vez depois da actualização (id => conta
+ * pelo nome, funções, funções de que fica dono e quem pediu). A conta tem de ser única e activa; as funções substituem
+ * as que tinha (o perfil é recalculado) e tudo fica registado com o estado anterior. Se não se puder aplicar (conta
+ * não encontrada, ambígua ou combinação proibida), não muda nada e fica registado para o super administrador decidir.
+ */
+const NAVAL_CONTAS_AJUSTES = [
+    // responsável da área de negócio RTM: aprovação final da caixa e da conciliação, ficheiro SAP, mobilidade das rotas
+    // e consolidado das vendas; dono das funções da operação que coordena
+    '2026-11-michael-samson' => ['nome' => 'Michael Samson', 'funcoes' => ['P-COM', 'C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR'],
+        'dono_de' => ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR', 'C-CONC-CONTAR', 'C-CONC-COORD', 'C-CONC-FECHO', 'P-SUP', 'P-PRO', 'P-COORD'],
+        'pedido' => 'HF, 18-11-2026'],
+    // coordenador de todos os promotores: gestão operacional e 1.º nível de aprovação das diferenças de stock
+    '2026-11-nathan-alemayehu' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD'], 'dono_de' => [], 'pedido' => 'HF, 18-11-2026'],
 ];
 
 /** Catálogo inicial: as funções-base copiam os perfis do sistema; as complementares juntam-se a elas. */
@@ -69,6 +88,12 @@ function naval_funcoes_iniciais(): array
         'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'inicio' => 'V', 'alertas' => 'V', 'suporte' => 'V', 'documentos' => 'V',
             'relatorio-vendas' => 'V', 'clientes' => 'V', 'pagamentos' => 'E', 'pendentes' => 'E', 'multicaixa-tpa' => 'V'],
         'por_rota' => false, 'dois_passos' => true, 'conflitos' => ['C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR'], 'activo' => true];
+    // Coordenação comercial e operacional: o supervisor de vendas em todas as rotas (sem limite por rota), com o stock
+    // do armazém para acompanhar as cargas e as requisições. Junta-se «Aprovar conciliações (coordenador)».
+    $coord = [];
+    foreach ($dePerfil('SUP') as $rec => $n) $coord[$rec] = ['Vr' => 'V', 'Er' => 'E'][$n] ?? $n;
+    $f['P-COORD'] = ['nome' => 'Coordenação comercial e operacional', 'descricao' => 'Coordena todos os promotores e as rotas: vendas, clientes, cargas, stock, requisições e terreno.',
+        'tipo' => 'base', 'permissoes' => $coord + ['stock-armazem' => 'V', 'plano-cargas' => 'V'], 'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
     $comp = function (string $nome, string $desc, array $perm, array $conflitos = [], bool $mfa = false) {
         return ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'complementar', 'permissoes' => $perm, 'por_rota' => false,
             'dois_passos' => $mfa, 'conflitos' => $conflitos, 'activo' => true];
@@ -76,15 +101,17 @@ function naval_funcoes_iniciais(): array
     $f['C-CAIXA-LANCAR'] = $comp('Lançar e validar o fecho de caixa', 'Quem recebe o dinheiro: lança entregas, talões e depósitos e valida com a contagem.',
         ['caixa-marketing' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-APROVAR-1', 'C-CAIXA-APROVAR']);
     $f['C-CAIXA-APROVAR-1'] = $comp('Aprovar o fecho de caixa (1.º nível)', 'Superior de quem lança: aprova os depósitos e a folha validada.',
-        ['caixa-marketing' => 'V', 'caixa-aprovacao' => 'G'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR', 'P-TES'], true);
+        ['caixa-marketing' => 'V', 'caixa-aprovacao' => 'G', 'multicaixa-tpa' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR', 'P-TES'], true);
     $f['C-CAIXA-APROVAR'] = $comp('Aprovar o fecho de caixa (final)', 'Responsável máximo: aprovação final da folha e dos depósitos.',
-        ['caixa-marketing' => 'V', 'caixa-aprovacao-final' => 'G', 'relatorio-vendas' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1', 'P-TES'], true);
+        ['caixa-marketing' => 'V', 'caixa-aprovacao-final' => 'G', 'relatorio-vendas' => 'V', 'multicaixa-tpa' => 'V'], ['C-CAIXA-LANCAR', 'C-CAIXA-APROVAR-1', 'P-TES'], true);
     $f['C-CONC-CONTAR'] = $comp('Contar as carrinhas', 'Técnico do armazém: contagem às cegas e validação da conciliação.',
         ['conciliacao-carrinha' => 'G', 'stock-carrinha' => 'V'], ['C-CONC-COORD', 'C-CONC-FECHO']);
     $f['C-CONC-COORD'] = $comp('Aprovar conciliações (coordenador)', '1.º nível de aprovação das diferenças da carrinha.',
         ['conciliacao-carrinha' => 'V', 'conciliacao-coordenacao' => 'G'], ['C-CONC-CONTAR', 'C-CONC-FECHO'], true);
     $f['C-CONC-FECHO'] = $comp('Fechar conciliações (responsável)', '2.º nível: aprovação final e fecho da conciliação.',
         ['conciliacao-carrinha' => 'V', 'conciliacao-fecho' => 'G'], ['C-CONC-CONTAR', 'C-CONC-COORD'], true);
+    // ficheiro para o SAP: gerar e enviar, sem alterar a estrutura do ficheiro; cada geração fica registada
+    $f['C-SAP-EXPORTAR'] = $comp('Gerar e enviar o ficheiro SAP', 'Gera a exportação das vendas para o SAP (estrutura fixa) e envia-a.', ['sap-exportar' => 'E'], [], true);
     // só permissões que existem na matriz e níveis que cada página admite
     foreach ($f as $c => $x) $f[$c]['permissoes'] = naval_funcoes_limpar((array) $x['permissoes']);
     return $f;
@@ -118,7 +145,96 @@ function naval_funcoes(bool $recarregar = false): array
     // as funções gravadas mantêm-se como estão; as do sistema acrescentadas depois (ex.: P-TES) juntam-se ao catálogo
     $f = naval_funcoes_regras($g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais());
     if ($g && naval_funcoes_ajustes_pendentes()) $f = naval_funcoes_regras(naval_funcoes_ajustar((array) $g) + naval_funcoes_iniciais());
+    if (naval_contas_ajustes_pendentes()) naval_contas_ajustar();   // pode recarregar o catálogo (donos)
     return $f;
+}
+
+function naval_contas_ajustes_pendentes(): array
+{
+    return array_diff_key(NAVAL_CONTAS_AJUSTES, naval_json_ler(naval_funcoes_ficheiro_ajustes()));
+}
+
+/** Aplica, uma vez cada, as reconfigurações de contas pendentes (ver NAVAL_CONTAS_AJUSTES). */
+function naval_contas_ajustar(): array
+{
+    static $emCurso = false;
+    if ($emCurso || !naval_contas_ajustes_pendentes()) return [];
+    $emCurso = true;
+    try {
+        return naval_exclusivo('utilizadores', function () {
+            $res = [];
+            foreach (naval_contas_ajustes_pendentes() as $id => $a) {
+                $res[$id] = naval_contas_ajuste_um((array) $a);
+                $feitos = naval_json_ler(naval_funcoes_ficheiro_ajustes());
+                $feitos[$id] = ['em' => date('Y-m-d H:i')] + $res[$id];
+                naval_json_gravar(naval_funcoes_ficheiro_ajustes(), $feitos);
+            }
+            return $res;
+        });
+    } finally {
+        $emCurso = false;
+    }
+}
+
+function naval_contas_nome_normal(string $n): string
+{
+    $n = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $n)));
+    return strtr($n, ['á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'é' => 'e', 'ê' => 'e', 'í' => 'i', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ú' => 'u', 'ç' => 'c']);
+}
+
+/** Uma reconfiguração: conta única e activa (pelo nome), funções sem conflitos; depois os donos das funções. */
+function naval_contas_ajuste_um(array $a): array
+{
+    $nome = naval_contas_nome_normal((string) ($a['nome'] ?? ''));
+    $d = naval_utilizadores();
+    $cand = [];
+    foreach ($d as $l => $u) {
+        if (!naval_conta_valida($u) || ($u['perfil'] ?? '') === 'SADM') continue;
+        if (naval_contas_nome_normal((string) ($u['nome'] ?? '')) === $nome) $cand[] = (string) $l;
+    }
+    $falha = function (string $motivo) use ($a) {
+        naval_registar('conta_ajuste_nao_aplicado', ['nome' => (string) ($a['nome'] ?? ''), 'motivo' => $motivo], 'sistema');
+        return ['ok' => false, 'nome' => (string) ($a['nome'] ?? ''), 'motivo' => $motivo];
+    };
+    if (count($cand) !== 1) return $falha(count($cand) ? 'há mais de uma conta activa com este nome' : 'não há nenhuma conta activa com este nome');
+    $f = naval_funcoes();
+    $funcoes = array_values(array_unique(array_map('strval', (array) ($a['funcoes'] ?? []))));
+    sort($funcoes);
+    foreach ($funcoes as $c) if (empty($f[$c]['activo'])) return $falha('a função ' . $c . ' não existe ou está desactivada');
+    if (naval_funcoes_conflitos($funcoes)) return $falha('as funções formam uma combinação proibida');
+    $l = $cand[0];
+    $u = $d[$l];
+    $antes = ['perfil' => (string) ($u['perfil'] ?? ''), 'funcoes' => array_values((array) ($u['funcoes'] ?? []))];
+    try {
+        $perfil = naval_funcoes_perfil($funcoes, 'sistema');
+    } catch (NavalErro $e) {
+        return $falha($e->getMessage());
+    }
+    $u['perfil'] = $perfil;
+    $u['funcoes'] = $funcoes;
+    $fim = array_intersect_key((array) ($u['funcoes_fim'] ?? []), array_flip($funcoes));
+    if ($fim) $u['funcoes_fim'] = $fim; else unset($u['funcoes_fim']);
+    if (!in_array($perfil, naval_perfis_por_rota(), true)) $u['rotas'] = [];
+    $u['alterado'] = date('Y-m-d H:i');
+    $u['alterado_por'] = 'sistema';
+    $d[$l] = $u;
+    naval_gravar_utilizadores($d);
+    naval_registar('conta_alterada', ['conta' => $l, 'funcoes' => implode(', ', $funcoes), 'perfil' => $perfil, 'antes' => $antes,
+        'motivo' => 'reconfiguração pedida pelo super administrador (' . (string) ($a['pedido'] ?? '') . ')'], 'sistema');
+    // donos das funções (autorizam os pedidos de acesso e revêem quem as tem)
+    $donos = array_values(array_filter(array_map('strval', (array) ($a['dono_de'] ?? [])), function ($c) use ($f) { return isset($f[$c]); }));
+    if ($donos) {
+        $g = naval_json_ler(naval_ficheiro_funcoes());
+        $g = ($g ? (array) $g : []) + naval_funcoes_iniciais();
+        foreach ($donos as $c) {
+            $g[$c]['dono'] = $l;
+            unset($g[$c]['conflitos_sistema']);
+        }
+        naval_json_gravar(naval_ficheiro_funcoes(), $g);
+        naval_funcoes(true);
+        naval_registar('funcoes_donos', ['dono' => $l, 'funcoes' => $donos], 'sistema');
+    }
+    return ['ok' => true, 'conta' => $l, 'funcoes' => $funcoes, 'perfil' => $perfil, 'antes' => $antes, 'dono_de' => $donos];
 }
 
 /** Junta ao catálogo os conflitos impostos pelo sistema (simétricos), marcados em «conflitos_sistema». */

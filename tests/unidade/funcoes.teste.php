@@ -175,3 +175,76 @@ teste('funções: dono validado; contas em conflito; passagem para funções só
         fn_limpar();
     }
 });
+
+teste('funções: coordenação operacional em todas as rotas; ficheiro SAP; quem aprova a caixa vê o Multicaixa por TPA', function () {
+    fn_limpar();
+    $f = naval_funcoes();
+    $c = $f['P-COORD'];
+    verdade(!$c['por_rota'] && $c['dois_passos']);
+    igual('G', $c['permissoes']['requisicoes-carrinha']);
+    igual('V', $c['permissoes']['vendas-dia'], 'Vr do supervisor passa a V (todas as rotas)');
+    igual('E', $c['permissoes']['cadastros-clientes']);
+    igual('V', $c['permissoes']['stock-armazem']);
+    igual(['sap-exportar' => 'E'], $f['C-SAP-EXPORTAR']['permissoes']);
+    igual('V', $f['C-CAIXA-APROVAR-1']['permissoes']['multicaixa-tpa']);
+    igual('V', $f['C-CAIXA-APROVAR']['permissoes']['multicaixa-tpa']);
+    // catálogo gravado antes: os ajustes juntam o Multicaixa às duas aprovações
+    $g = naval_funcoes_iniciais();
+    unset($g['C-CAIXA-APROVAR-1']['permissoes']['multicaixa-tpa'], $g['C-CAIXA-APROVAR']['permissoes']['multicaixa-tpa'], $g['P-COORD'], $g['C-SAP-EXPORTAR']);
+    naval_json_gravar(naval_ficheiro_funcoes(), $g);
+    naval_json_gravar(naval_funcoes_ficheiro_ajustes(), ['2026-11-bo-conciliacao' => 'x'] + array_fill_keys(array_keys(NAVAL_CONTAS_AJUSTES), 'x'));
+    $f = naval_funcoes(true);
+    igual('V', $f['C-CAIXA-APROVAR-1']['permissoes']['multicaixa-tpa']);
+    verdade(isset($f['P-COORD'], $f['C-SAP-EXPORTAR']), 'funções novas juntam-se ao catálogo gravado');
+    fn_limpar();
+});
+
+teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, com o estado anterior registado e os donos', function () {
+    fn_limpar();
+    $antes = fn_contas([
+        'michael.samson' => ['nome' => 'Michael  Samson', 'perfil' => 'DIR'],
+        'nathan' => ['nome' => 'Nathan Alemayehu', 'perfil' => 'SUP', 'rotas' => ['1001']],
+        'outro' => ['nome' => 'Nathan Alemayehu', 'perfil' => 'COM', 'activo' => false],
+    ]);
+    try {
+        @unlink(naval_funcoes_ficheiro_ajustes());
+        naval_funcoes(true);
+        $u = naval_utilizadores();
+        igual(['C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR', 'P-COM'], $u['michael.samson']['funcoes']);
+        igual(naval_funcoes_codigo($u['michael.samson']['funcoes']), $u['michael.samson']['perfil']);
+        igual(['C-CONC-COORD', 'P-COORD'], $u['nathan']['funcoes']);
+        igual([], $u['nathan']['rotas'], 'todas as rotas');
+        $m = naval_matriz(true);
+        igual('G', $m['caixa-aprovacao-final'][$u['michael.samson']['perfil']]);
+        igual('G', $m['conciliacao-fecho'][$u['michael.samson']['perfil']]);
+        igual('E', $m['sap-exportar'][$u['michael.samson']['perfil']]);
+        igual('E', $m['relatorio-vendas'][$u['michael.samson']['perfil']]);
+        igual('G', $m['conciliacao-coordenacao'][$u['nathan']['perfil']]);
+        igual('', $m['caixa-aprovacao'][$u['nathan']['perfil']] ?? '', 'o Nathan não aprova a caixa');
+        $f = naval_funcoes();
+        igual('michael.samson', $f['C-CONC-COORD']['dono']);
+        igual('michael.samson', $f['P-COORD']['dono']);
+        igual('', (string) ($f['C-SAP-EXPORTAR']['dono'] ?? ''));
+        $r = naval_json_ler(naval_funcoes_ficheiro_ajustes());
+        igual(['perfil' => 'DIR', 'funcoes' => []], $r['2026-11-michael-samson']['antes']);
+        verdade($r['2026-11-nathan-alemayehu']['ok']);
+        // uma vez só: alterações seguintes do super administrador mantêm-se
+        $d = naval_utilizadores();
+        $d['nathan']['funcoes'] = ['P-COORD'];
+        naval_gravar_utilizadores($d);
+        naval_funcoes(true);
+        igual(['P-COORD'], naval_utilizadores()['nathan']['funcoes']);
+        // conta ambígua: não muda nada e fica registado
+        @unlink(naval_funcoes_ficheiro_ajustes());
+        $d['nathan2'] = $d['nathan'];
+        naval_gravar_utilizadores($d);
+        naval_funcoes(true);
+        $r = naval_json_ler(naval_funcoes_ficheiro_ajustes());
+        verdade(!$r['2026-11-nathan-alemayehu']['ok']);
+        igual('há mais de uma conta activa com este nome', $r['2026-11-nathan-alemayehu']['motivo']);
+        igual(['P-COORD'], naval_utilizadores()['nathan']['funcoes']);
+    } finally {
+        fn_repor($antes);
+        fn_limpar();
+    }
+});

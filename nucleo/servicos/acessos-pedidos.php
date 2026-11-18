@@ -308,12 +308,13 @@ function naval_pa_funcoes_do_dono(string $login): array
 }
 
 /** Contas com cada uma das funções indicadas (agora), para a revisão do dono. */
-function naval_pa_contas_com(array $funcoes): array
+function naval_pa_contas_com(array $funcoes, string $excepto = ''): array
 {
     $f = naval_funcoes();
     $out = [];
     foreach (naval_utilizadores() as $l => $u) {
-        if (!naval_conta_valida($u)) continue;
+        // ninguém revê o seu próprio acesso: esse fica para a revisão do super administrador
+        if (!naval_conta_valida($u) || ($excepto !== '' && (string) $l === $excepto)) continue;
         foreach (array_intersect((array) ($u['funcoes'] ?? []), $funcoes) as $c) {
             $out[] = ['conta' => (string) $l, 'nome' => (string) ($u['nome'] ?? $l), 'funcao' => (string) $c, 'funcao_nome' => (string) ($f[$c]['nome'] ?? $c),
                 'ate' => (string) ($u['funcoes_fim'][$c] ?? '')];
@@ -330,7 +331,7 @@ function naval_pa_revisao_area(array $eu): ?array
     if (!$minhas) return null;
     $r = naval_pa_revisao_aberta();
     if (!$r) return null;
-    return ['trimestre' => $r['trimestre'], 'contas' => naval_pa_contas_com($minhas), 'confirmada' => $r['donos'][$login] ?? null];
+    return ['trimestre' => $r['trimestre'], 'contas' => naval_pa_contas_com($minhas, $login), 'confirmada' => $r['donos'][$login] ?? null];
 }
 
 /** O dono confirma a sua parte: mantém todos, ou indica a quem retirar a função (o super administrador retira). */
@@ -343,7 +344,7 @@ function naval_pa_revisao_confirmar(array $eu, array $retirar, string $notas): a
     if (!$r) throw new NavalErro('Não há revisão de acessos aberta.', 404);
     if (!empty($r['donos'][$login])) throw new NavalErro('Já confirmou a sua parte da revisão de ' . $r['trimestre'] . '.', 409);
     $validas = [];
-    foreach (naval_pa_contas_com($minhas) as $x) $validas[$x['conta'] . '|' . $x['funcao']] = $x;
+    foreach (naval_pa_contas_com($minhas, $login) as $x) $validas[$x['conta'] . '|' . $x['funcao']] = $x;
     $ret = [];
     foreach ($retirar as $x) {
         $k = (string) ($x['conta'] ?? '') . '|' . (string) ($x['funcao'] ?? '');

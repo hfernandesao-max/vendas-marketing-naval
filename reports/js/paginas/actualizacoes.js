@@ -19,14 +19,59 @@ const horaNoite = () => (ESTADO && ESTADO.noite && ESTADO.noite.instalar) || '03
 let aCarregar = false;
 let aSeguir = null;
 
+let ADESAO = null;
 function carregar() {
   if (aCarregar) return;
   aCarregar = true;
-  apiJson('actualizacoes').then((d) => {
+  Promise.all([apiJson('actualizacoes'), apiJson('novidades?adesao=1')]).then(([d, n]) => {
     aCarregar = false;
     ESTADO = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler as actualizações.') };
+    ADESAO = n && n.ok && Array.isArray(n.adesao) ? n.adesao : [];
     if (atual === 'actualizacoes') draw();
   });
+}
+
+/** Pré-visualização do aviso que os utilizadores vão ver (o que muda e como proceder), em português. */
+function avisoPrevia(s) {
+  const a = s.aviso;
+  if (!a || (!a.resumo.length && !a.passos.length)) return null;
+  const box = el('div', 'act-aviso');
+  box.append(el('strong', null, t('Aviso aos utilizadores')));
+  if (a.resumo.length) {
+    const ul = el('ul');
+    a.resumo.forEach((r) => ul.append(textoFormatado(el('li'), r.pt)));
+    box.append(ul);
+  }
+  if (a.passos.length) {
+    box.append(el('em', null, t('Como proceder')));
+    const ol = el('ol');
+    a.passos.forEach((r) => ol.append(textoFormatado(el('li'), r.pt)));
+    box.append(ol);
+  }
+  if (a.resumo.concat(a.passos).some((r) => !r.en || !r.ti)) box.append(el('p', 'aviso', t('Falta a tradução de parte do aviso para inglês ou tigrínia.')));
+  return box;
+}
+
+/** Quem já tomou conhecimento de cada aviso (prova da comunicação das alterações). */
+function blocoAdesao() {
+  const box = el('div', 'act-hist');
+  if (!ADESAO || !ADESAO.length) {
+    box.append(el('p', 'note', t('Ainda sem avisos aos utilizadores.')));
+    return box;
+  }
+  for (const a of ADESAO) {
+    const l = el('div', 'act-hist-l');
+    l.append(el('strong', null, a.versao || t('Actualização')), el('span', null, dataHora(a.detectada_em)), el('span', null, a.titulos.join(' · ')));
+    const todos = a.confirmaram >= a.destinatarios;
+    l.append(pill(t('Tomaram conhecimento: {c} de {n}', { c: a.confirmaram, n: a.destinatarios }), todos ? 'p-ok' : 'p-warn'));
+    if (a.faltam.length) {
+      const det = el('details', 'act-faltam');
+      det.append(el('summary', null, t('Faltam {n}', { n: a.faltam.length })), el('p', null, a.faltam.join(', ')));
+      l.append(det);
+    }
+    box.append(l);
+  }
+  return box;
 }
 const recarregar = () => {
   ESTADO = null;
@@ -159,6 +204,8 @@ function resumo(v) {
       const ul = el('ul');
       for (const i of s.itens) ul.append(textoFormatado(el('li'), i));
       box.append(ul);
+      const av = avisoPrevia(s);
+      if (av) box.append(av);
     }
   } else {
     const linhas = String(v.notas || '')
@@ -393,6 +440,13 @@ R.actualizacoes = (pg) => {
   accoes.append(botao(t('Actualizar'), 'ghost', recarregar));
   hist.append(accoes);
   pg.append(secBox(t('Histórico'), t('Versões instaladas ou anteriores à instalada, com a decisão e o resultado.'), hist));
+  pg.append(
+    secBox(
+      t('Avisos aos utilizadores'),
+      t('Depois de cada actualização, cada pessoa vê o que muda nas páginas a que tem acesso e como proceder. «Li e compreendi» fica registado.'),
+      blocoAdesao(),
+    ),
+  );
 
   const certs = el('div', 'act-hist');
   const lc = (E.certificados && E.certificados.lista) || [];

@@ -1,7 +1,7 @@
 // Prospecção (GeoMobilidade): matriz de acessos, âmbito por rota, resultado da visita do vendedor e página do mapa.
 import { test, expect } from '@playwright/test';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { entrar, API, BASE, csrf } from './ajuda.js';
+import { entrar, API, BASE, csrf, fecharAviso } from './ajuda.js';
 
 test.describe.configure({ mode: 'serial' });
 const PRIV = 'tests/servidor/ambiente/dados-privados/geo';
@@ -125,6 +125,7 @@ test('prospecção: separadores de clientes sem compras, coordenadas e resultado
   // a página GEO abre dentro do portal (mesmo menu e mesma sessão); o endereço directo passa para o portal
   await page.goto('/geo/prospeccao.php');
   await expect(page).toHaveURL(/\/reports\/#geo-prospeccao/);
+  await fecharAviso(page);
   const f = page.frameLocator('iframe.geo-quadro');
   await expect(f.locator('#ppTituloLista')).toContainText('Potenciais clientes');
   await expect(f.locator('.app-header')).toBeHidden();
