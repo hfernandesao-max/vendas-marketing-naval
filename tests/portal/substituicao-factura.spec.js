@@ -76,6 +76,25 @@ test('substituição de factura: fora das cobranças e das vendas, desconto em p
   expect(erros).toEqual([]);
 });
 
+test('desconto da substituição é aplicado ao total efectivo sem reescrever a factura original', async ({ page }) => {
+  const original = {
+    ...base,
+    data: '2026-10-21',
+    chave: 'S0',
+    documento: 'FR R1004/2026/1',
+    total: 1500000,
+    total_sem_iva: 1315789.47,
+    ajustes_substituicao: [{ nota: marca.nota, factura: 'FR R1004/2026/1', desconto: 20000, desconto_sem_iva: 17543.86 }],
+  };
+  delete original.substituicao;
+  const api = (r) => r.fulfill({ json: { vendas: [...vendas, original, ...SUBST], artigos } });
+  const erros = await abrir(page, '#inicio', { api });
+  await expect(page.locator('.tile').filter({ hasText: 'Vendas líquidas s/ IVA' })).toContainText('com IVA: 1 600 000,00 Kz');
+  await page.goto('/reports/index.html#documentos');
+  await expect(page.locator('#page')).toContainText('FR R1004/2026/1');
+  expect(erros).toEqual([]);
+});
+
 test('substituição de factura no ficheiro para o SAP: os dois documentos seguem e a conciliação com as vendas explica o desconto', async ({ page }) => {
   const la = artigos.find((a) => a.rota === '1004');
   const linha = (doc, q, v) => ({

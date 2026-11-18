@@ -400,6 +400,27 @@ function naval_vendas_substituicoes(array $vendas): array
         $acerto = [];
         foreach ($porMeio as $m => $val) if (abs($val) > 0.005) $acerto[] = ['meio' => $m, 'valor' => $val];
         $marca = ['nota' => $nc['documento'], 'factura' => $f['documento'], 'desconto' => $desc, 'desconto_sem_iva' => $descSi, 'acerto' => $acerto];
+        if ($desc > 0.005) {
+            $originais = array_values(array_filter($porCli[$k] ?? [], function ($i) use ($vendas, $nc, $valor, $r) {
+                return $i !== $r && empty($vendas[$i]['substituicao'])
+                    && ($vendas[$i]['data'] ?? '') < ($nc['data'] ?? '')
+                    && abs(abs((float) $vendas[$i]['total']) - $valor) < 0.005;
+            }));
+            usort($originais, function ($a, $b) use ($vendas) {
+                $quandoA = ($vendas[$a]['data'] ?? '') . ' ' . ($vendas[$a]['hora'] ?? '');
+                $quandoB = ($vendas[$b]['data'] ?? '') . ' ' . ($vendas[$b]['hora'] ?? '');
+                return strcmp($quandoB, $quandoA);
+            });
+            if ($originais) {
+                $i = $originais[0];
+                $vendas[$i]['ajustes_substituicao'][] = [
+                    'nota' => $nc['documento'],
+                    'factura' => $vendas[$i]['documento'],
+                    'desconto' => $desc,
+                    'desconto_sem_iva' => $descSi,
+                ];
+            }
+        }
         $meio = 'Substituição de factura';
         $vendas[$r]['pagamentos_origem'] = $f['pagamentos'] ?? [];
         $vendas[$r]['pagamentos'] = [['codigo' => 'CMP', 'meio' => $meio, 'valor' => round((float) $f['total'], 2), 'atribuido' => $nc['documento']]];
@@ -422,7 +443,19 @@ function naval_vendas_substituicoes(array $vendas): array
  */
 function naval_vendas_efectivas(array $vendas): array
 {
-    return array_values(array_filter($vendas, function ($v) { return empty($v['substituicao']); }));
+    $efectivas = [];
+    foreach ($vendas as $v) {
+        if (!empty($v['substituicao'])) continue;
+        $ajustes = (array) ($v['ajustes_substituicao'] ?? []);
+        if ($ajustes) {
+            $v['total'] = round((float) $v['total'] - array_sum(array_column($ajustes, 'desconto')), 2);
+            if (isset($v['total_sem_iva'])) {
+                $v['total_sem_iva'] = round((float) $v['total_sem_iva'] - array_sum(array_column($ajustes, 'desconto_sem_iva')), 2);
+            }
+        }
+        $efectivas[] = $v;
+    }
+    return $efectivas;
 }
 
 /** Linhas de artigo das vendas efectivas (sem as dos documentos de substituições). */

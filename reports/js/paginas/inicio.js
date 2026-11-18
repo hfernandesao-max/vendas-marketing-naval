@@ -14,6 +14,7 @@ import {
   recebidoLiquido,
   temCad,
   temMeio,
+  totalVendaDe,
   valorCat,
   vendasR,
   catMeio,
@@ -587,7 +588,7 @@ const metricas = (V) => {
     liq = recebidoLiquido(V);
   return {
     tot,
-    totIva: sum(V, 'total'),
+    totIva: sum(V, totalVendaDe),
     liq,
     din: valorCat(V, 'dinheiro'),
     mc: valorCat(V, 'multicaixa'),
@@ -627,7 +628,7 @@ function serie(V, f) {
 R.inicio = (pg) => {
   const V = vendasR(),
     tot = sum(V, liquidoDe),
-    totIva = sum(V, 'total'),
+    totIva = sum(V, totalVendaDe),
     liq = recebidoLiquido(V);
   const din = valorCat(V, 'dinheiro'),
     mc = valorCat(V, 'multicaixa');

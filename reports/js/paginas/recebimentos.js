@@ -15,6 +15,7 @@ import {
   recebidoDe,
   recebidoLiquido,
   temMeio,
+  totalVendaDe,
   valorCat,
   vendasR,
 } from '../calculos.js';
@@ -43,7 +44,7 @@ R.pendentes = (pg) => {
   const pond = tot ? sum(P, (x) => x.pendente * x.dias) / tot : null;
   // PMR: só com período fechado em datas (em «Tudo» conta desde a primeira venda)
   const V = vendasR(),
-    fact = sum(docsVenda(V), 'total'),
+    fact = sum(docsVenda(V), totalVendaDe),
     de = st.de || V.map((x) => x.data).sort()[0],
     ate = st.ate && st.ate < hoje() ? st.ate : hoje(),
     nd = de ? Math.max(1, Math.round((Date.parse(ate) - Date.parse(de)) / 864e5) + 1) : 0,

@@ -77,8 +77,13 @@ export function porMeio(V) {
     .map((o) => ({ ...o, docs: o.docs.size }))
     .sort((a, b) => b.valor - a.valor);
 }
+const descontoSubstituicao = (x, campo) =>
+  (x.ajustes_substituicao || []).reduce((total, ajuste) => total + (+ajuste[campo] || 0), 0);
+/** Total efectivo com IVA, sem alterar o valor original apresentado no documento. */
+export const totalVendaDe = (x) => (+x.total || 0) - descontoSubstituicao(x, 'desconto');
 /** Vendas líquidas sem IVA de um documento (base de gestão); sem esse valor, o total do documento. */
-export const liquidoDe = (x) => (x.liquido != null ? x.liquido : x.total_sem_iva != null ? x.total_sem_iva : x.total) || 0;
+export const liquidoDocumentoDe = (x) => (x.liquido != null ? x.liquido : x.total_sem_iva != null ? x.total_sem_iva : x.total) || 0;
+export const liquidoDe = (x) => liquidoDocumentoDe(x) - descontoSubstituicao(x, 'desconto_sem_iva') || 0;
 
 export function porPromotor(V) {
   const vendasPorRota = group(V, 'rota');
@@ -91,7 +96,7 @@ export function porPromotor(V) {
       fs = docsVenda(rs);
     // total: vendas líquidas sem IVA (base de gestão); total_iva: o mesmo com IVA (o que o cliente paga)
     const tot = sum(rs, liquidoDe),
-      tiva = sum(rs, 'total'),
+      tiva = sum(rs, totalVendaDe),
       liq = recebidoLiquido(rs);
     return {
       rota,
@@ -136,7 +141,7 @@ export function visitasPlaneadas() {
         const docs = (porDiaRota[d + '|' + c.rota] || []).filter((x) =>
           x.cliente_codigo ? String(x.cliente_codigo) === String(c.codigo) : String(x.nif) === String(c.nif),
         );
-        out.push({ data: d, rota: c.rota, codigo: c.codigo, cliente: c.nome, nif: c.nif, visitado: docs.length > 0, total: sum(docs, 'total') });
+        out.push({ data: d, rota: c.rota, codigo: c.codigo, cliente: c.nome, nif: c.nif, visitado: docs.length > 0, total: sum(docs, totalVendaDe) });
       });
   }
   return out;

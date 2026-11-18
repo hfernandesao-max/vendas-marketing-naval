@@ -1,5 +1,13 @@
 ## 18-11-2026
 
+### Total efectivo de vendas: desconto de substituição na factura original
+
+<!-- paginas: inicio, vendas-promotor, vendas-dia, vendas-cliente -->
+<!-- tipo: impacto -->
+
+- Quando uma nota de crédito substitui uma factura anterior por outra de menor valor, o total efectivo passa a reflectir o desconto na venda original.
+- Os valores originais dos documentos, pagamentos, lista de documentos e ficheiro SAP permanecem inalterados.
+
 ### Total de vendas com IVA: apenas facturas, facturas-recibo e notas de crédito
 
 <!-- paginas: inicio, documentos -->

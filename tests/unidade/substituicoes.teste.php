@@ -52,6 +52,24 @@ teste('substituição: anulação de uma factura do próprio dia e consumidor fi
     igual([false, false], array_map(function ($x) { return !empty($x['substituicao']); }, $v));
 });
 
+teste('substituição: o desconto ajusta a venda original sem alterar os documentos do Pinguim BO', function () {
+    $original = sb_doc('FR 1008/2026/1', '09:00', 1500000, false, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1500000.0]]);
+    $original['data'] = '2026-10-21';
+    $v = naval_vendas_substituicoes(naval_vendas_devolucoes([
+        $original,
+        sb_doc('NC 1008/2026/3', '10:00', -1500000, true, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => -1500000.0]]),
+        sb_doc('FR 1008/2026/90', '10:05', 1480000, false, [['codigo' => 'MC', 'meio' => 'Multicaixa', 'valor' => 1480000.0]]),
+    ]));
+    igual(1500000.0, $v[0]['total']);
+    igual(round(1500000 / 1.14, 2), $v[0]['total_sem_iva']);
+    igual(20000.0, $v[0]['ajustes_substituicao'][0]['desconto']);
+    $efectivas = naval_vendas_efectivas($v);
+    igual(1, count($efectivas));
+    igual('FR 1008/2026/1', $efectivas[0]['documento']);
+    igual(1480000.0, $efectivas[0]['total']);
+    igual(1298245.61, $efectivas[0]['total_sem_iva']);
+});
+
 teste('substituição: fecho do dia, dinheiro esperado na caixa e vendas efectivas alinhados com o portal', function () {
     naval_servico('operacao');
     naval_servico('relatorio-vendas');

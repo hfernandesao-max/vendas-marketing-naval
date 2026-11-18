@@ -24,12 +24,14 @@ import {
   eNC,
   isCF,
   liquidoDe,
+  liquidoDocumentoDe,
   notasCredito,
   pendenteDe,
   pendentesDe,
   porPromotor,
   promotorRota,
   recebidoLiquido,
+  totalVendaDe,
   vendasR,
 } from '../calculos.js';
 import { aguardar, pill, tabela, tiles } from '../componentes/blocos.js';
@@ -47,7 +49,7 @@ R['vendas-promotor'] = (pg) => {
     F = docsVenda(V),
     todas = porPromotor(V),
     tot = sum(V, liquidoDe),
-    totIva = sum(V, 'total');
+    totIva = sum(V, totalVendaDe);
   // Só as rotas com movimento no período e filtros escolhidos (prática dos relatórios de gestão: sem linhas a zero);
   // as rotas sem movimento ficam indicadas por baixo da tabela, para não se perder essa informação
   const comMovimento = (x) => x.docs > 0 || x.total || x.notas_credito || x.recebido || x.por_liquidar;
@@ -119,7 +121,7 @@ R['vendas-dia'] = (pg) => {
     docs: docsVenda(rs).length,
     promotores: new Set(docsVenda(rs).map((x) => x.rota)).size,
     total: sum(rs, liquidoDe),
-    total_iva: sum(rs, 'total'),
+    total_iva: sum(rs, totalVendaDe),
     recebido: recebidoLiquido(rs),
   }));
   const secs = el('div', 'secs');
@@ -186,7 +188,7 @@ R['vendas-cliente'] = (pg) => {
       promotor: [...new Set(rs.map((x) => promotorRota(x.rota)))].join(', '),
       docs: fs.length,
       total: liq,
-      total_iva: sum(rs, 'total'),
+      total_iva: sum(rs, totalVendaDe),
       medio: fs.length ? liq / fs.length : null,
       ultima: fs
         .map((x) => x.data)
@@ -255,7 +257,7 @@ R.documentos = (pg) => {
   const V = todos,
     F = docsVenda(V),
     nc = notasCredito(V);
-  const tot = sum(V, liquidoDe),
+  const totOriginal = sum(V, liquidoDocumentoDe),
     totIva = sum(V, 'total'),
     liq = recebidoLiquido(V),
     pend = pendentesDe(V),
@@ -265,7 +267,7 @@ R.documentos = (pg) => {
     tiles([
       {
         l: t('Vendas líquidas s/ IVA'),
-        v: mkz(tot),
+        v: mkz(totOriginal),
         s: t('com IVA: {v}', { v: mkz(totIva) }) + ' · ' + (nc ? sRotas + ' · ' + t('notas de crédito: −{v}', { v: mkz(nc) }) : sRotas),
       },
       { l: t('Documentos'), v: n0(F.length), s: t('{n} dias com vendas', { n: new Set(F.map((x) => x.data)).size }) },
@@ -277,7 +279,7 @@ R.documentos = (pg) => {
         s: t('{n} documentos', { n: V.filter((x) => pendenteDe(x) > 0).length }),
       },
       { l: t('Clientes com compras'), v: n0(cli) },
-      { l: t('Média por documento'), v: mkz(F.length ? tot / F.length : 0), s: t('sem IVA') },
+      { l: t('Média por documento'), v: mkz(F.length ? totOriginal / F.length : 0), s: t('sem IVA') },
     ]),
   );
 
