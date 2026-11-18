@@ -192,7 +192,12 @@ da App, que não expira) ou código de acesso pessoal. **Servidor como código:*
 30, 14, 7, 3 e 1 dias; a renovação é automática no servidor (ACME). Conflitos com ficheiros alterados à mão resolvem-se
 no portal («Aplicar mesmo assim»).
 
-Comandos: `configurar`, `tarefa` (cria as duas tarefas), `apache`, `certificados`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
+O comando `php ferramentas/actualizar.php tarefa` cria também «Portal RTM - Sincronizar Pinguim» (depois da janela
+nocturna de instalação, conta SYSTEM), que actualiza `reports/data/rotas.json`, `vendas.json` e `clientes.json` através de
+`ferramentas/sincronizar-pinguim.php`. A sincronização é só de leitura e falha explicitamente se a base de dados não
+estiver acessível. Executar novamente `tarefa` no servidor, como administrador, para instalar esta nova tarefa.
+
+Comandos: `configurar`, `tarefa` (cria as tarefas), `apache`, `certificados`, `estado`, `verificar` (só mostra), `aplicar`, `reverter`, `automatico`, `urgente`. Nunca apaga ficheiros do
 servidor (só os que a própria actualização criou, ao repor) e guarda as 5 últimas cópias de segurança.
 
 ## Gestão com IA e cartaz do cliente

@@ -57,11 +57,10 @@ Ainda por receber do Pinguim BO: linhas de venda por artigo completas (com IVA e
 `reports/data/rotas.json`, `vendas.json` e `clientes.json` podem ser atualizados directamente da base `PingWinBO` com:
 
 ```powershell
-python -m pip install pyodbc
-npm run sync:pinguim
+php ferramentas/sincronizar-pinguim.php
 ```
 
-A ligação usa as chaves `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do `.env` e mantém o acesso só de leitura. Os dados gerados são JSON público; não escreve na base do Pinguim BO.
+A ligação usa as chaves `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do `.env` e mantém o acesso só de leitura. O actualizador configura uma tarefa diária no servidor para correr a sincronização depois da janela de instalação nocturna. Os dados gerados são JSON público; não escreve na base do Pinguim BO. Para instalar a tarefa nova no servidor, executar uma vez, como administrador, `php ferramentas/actualizar.php tarefa`.
 
 ## Aviso
 
