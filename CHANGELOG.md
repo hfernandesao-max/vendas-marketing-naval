@@ -3,7 +3,7 @@
 ### Formas de pagamento: documentos corrigidos só em leitura, ficheiro SAP com as formas da reconciliação e horas certas
 
 <!-- paginas: multicaixa-tpa, sap-exportar, documentos -->
-<!-- tipo: correcao -->
+<!-- tipo: impacto -->
 
 > titulo: Correcções da forma de pagamento e ficheiro para o SAP
 > titulo [en]: Payment-method corrections and the SAP file
