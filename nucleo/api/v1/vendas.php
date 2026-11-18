@@ -89,8 +89,8 @@ $fiscal = ($_GET['fiscal'] ?? '') === '1';
 if ($fiscal) $GLOBALS['naval_fontes_fiscal'] = true;
 $base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom)) . ($fiscal ? '|fiscal' : '');
 $chaves = [];
-if (!$soArtigos) $chaves['vendas'] = 'vendas2|' . $base;
-if ($itens || $soArtigos) $chaves['artigos'] = 'artigos|' . $base;
+if (!$soArtigos) $chaves['vendas'] = 'vendas3|' . $base;
+if ($itens || $soArtigos) $chaves['artigos'] = 'artigos2|' . $base;
 $tempo = naval_cache_periodo($ate);
 $fresco = ($_GET['fresco'] ?? '') === '1';
 // as correcções da forma de pagamento aprovadas mudam a resposta: entram na versão (ETag)

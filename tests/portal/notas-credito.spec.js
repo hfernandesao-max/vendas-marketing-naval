@@ -103,6 +103,13 @@ test('notas de crédito: mesmo total em todos os ecrãs; não contam como docume
   await expect(page.locator('.tile', { hasText: 'Valor recebido' }).first()).toContainText('64,7%');
 });
 
+test('Início: o total com IVA soma o total dos documentos, incluindo notas de crédito', async ({ page }) => {
+  const V = [factura(11400, { total_sem_iva: 10000 }), nota(1140, { total_sem_iva: -1000 })];
+  await abrir(page, '#inicio', { api: api(V) });
+  const tile = page.locator('.tiles-kpi .tile', { hasText: 'Vendas líquidas s/ IVA' }).first();
+  await expect(tile).toContainText('com IVA: 10 260,00 Kz');
+});
+
 test('vendas por promotor: só as rotas com movimento; as outras indicadas por baixo; nunca «−0,00»', async ({ page }) => {
   const V = [nota(780000, { rota: '1011', documento: 'NC 9/1' })];
   const erros = await abrir(page, '#vendas-promotor', { api: api(V) });

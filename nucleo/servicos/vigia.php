@@ -104,7 +104,9 @@ function naval_vigia_negocio(int $agora): array
         try {
             // as mesmas condições das vendas do portal (naval_vendas_sql), com e sem a regra dos eliminados e anulados
             $p = [':de' => $dia, ':ate' => $dia];
-            $sinal = '((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0)) AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate';
+            $sinal = 'DC.CODE IN ' . naval_vendas_tipos_sql()
+                . ' AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))'
+                . ' AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate';
             $c = naval_bd_consultar('SELECT SUM(CASE WHEN DH.DELETED = 0 THEN 1 ELSE 0 END) AS BRUTO, SUM(CASE WHEN ' . naval_vendas_condicao_validos() . ' THEN 1 ELSE 0 END) AS VALIDOS'
                 . ' FROM DOCHEADER DH INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID WHERE ' . $sinal, $p);
             $bruto = (int) ($c[0]['BRUTO'] ?? 0);
@@ -170,6 +172,7 @@ function naval_vigia_conferencia(string $dia): ?array
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
             WHERE " . naval_vendas_condicao_validos() . "
+              AND DC.CODE IN " . naval_vendas_tipos_sql() . "
               AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
               AND DH.DOC_DATE >= :de AND DH.DOC_DATE <= :ate
             GROUP BY COALESCE(STORE.CODE, SUBSTRING(STORE.DESCRIPTION, 1, 4))", [':de' => $dia, ':ate' => $dia]);

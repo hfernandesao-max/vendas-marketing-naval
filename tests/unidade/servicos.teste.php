@@ -21,6 +21,8 @@ function xml_vendas(): SimpleXMLElement
       <total>500</total><transaction_date>2026-10-24</transaction_date><transaction_time>10:00</transaction_time><tax_number>999999999</tax_number><deleted>0</deleted>
       <footer><line><payment_code>MC</payment_code><amount>200</amount></line></footer>
     </transaction>
+    <transaction><document_type>OR</document_type><document_nr>OR 1/1</document_nr><store_code>1001</store_code>
+      <total>90000</total><transaction_date>2026-10-24</transaction_date><deleted>0</deleted></transaction>
     <transaction><document_type>FR</document_type><document_nr>FR 1/2</document_nr><store_code>1001</store_code><total>50</total><deleted>1</deleted></transaction>
     <transaction><document_type>FT</document_type><document_nr>FT 1/3</document_nr><store_code>1001</store_code><total>70</total><deleted>0</deleted><document_status>8002</document_status><cancel_reason>Erro no cliente</cancel_reason></transaction>
     <transaction><document_type>NC</document_type><document_nr>NC 1/1</document_nr><store_code>1001</store_code><total>-50</total><deleted>0</deleted></transaction>
@@ -29,6 +31,12 @@ function xml_vendas(): SimpleXMLElement
 XML
     );
 }
+
+teste('vendas: o total inclui só FR, FT e NC', function () {
+    igual(['FR', 'FT', 'NC'], NAVAL_VENDAS_TIPOS);
+    igual("('FR', 'FT', 'NC')", naval_vendas_tipos_sql());
+    igual(['FR 1/1', 'FT 1/1', 'NC 1/1'], array_column(naval_vendas_do_xml(xml_vendas(), [], false)['vendas'], 'documento'));
+});
 
 teste('vendas: FR/FT e notas de crédito não anuladas, cliente, NIF da entidade, troco e nomes dos meios', function () {
     $d = naval_vendas_do_xml(xml_vendas(), ['1001' => 'Ana'], true);

@@ -12,6 +12,13 @@ defined('NAVAL_NUCLEO') || exit;
 
 /** Meios de pagamento sem descrição no XML; os nomes que vêm do Pinguim BO prevalecem. */
 const NAVAL_MEIOS_PAGAMENTO = ['NU' => 'Numerário', 'MC' => 'Multicaixa', 'TB' => 'Transferência Bancária', 'CS' => 'Adiantamento'];
+const NAVAL_VENDAS_TIPOS = ['FR', 'FT', 'NC'];
+
+/** Lista SQL dos tipos de documento que contam como vendas, para manter Pinguim BO e OLAP alinhados. */
+function naval_vendas_tipos_sql(): string
+{
+    return "('" . implode("', '", NAVAL_VENDAS_TIPOS) . "')";
+}
 
 /**
  * Documentos anulados no Pinguim BO. Nunca entram nas vendas, nas linhas de artigos nem nos pagamentos.
@@ -89,7 +96,7 @@ function naval_vendas_do_xml(SimpleXMLElement $xml, array $promotores, bool $ite
     foreach ($xml->transactions->transaction as $tx) {
         $tipo = (string) $tx->document_type;
         // Documentos de venda (Factura-recibo / Factura) e notas de crédito, sem os anulados
-        if (!in_array($tipo, ['FR', 'FT', 'NC'], true) || (string) $tx->deleted === '1') continue;
+        if (!in_array($tipo, NAVAL_VENDAS_TIPOS, true) || (string) $tx->deleted === '1') continue;
         // anulado (estado do documento, quando a exportação o traz)
         $estado = trim((string) $tx->document_status) ?: trim((string) $tx->status);
         if ($estado !== '' && in_array((int) $estado, naval_vendas_estados_anulados(), true)) continue;
@@ -521,6 +528,7 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
     try {
         $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
         $validos = naval_vendas_condicao_validos();
+        $tipos = naval_vendas_tipos_sql();
 
         // 1. Documentos de venda (sem os eliminados nem os anulados)
         $docs = naval_bd_consultar("
@@ -545,6 +553,7 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
             WHERE $validos
+              AND DC.CODE IN $tipos
               AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate
@@ -556,8 +565,10 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
             SELECT DMD.DOCHEADER_ID, CAST(SUM(DMD.TOTAL) AS FLOAT) AS SEM_IVA
             FROM DOCMOVDETAIL DMD
             INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             WHERE DMD.DELETED = 0
               AND $validos
+              AND DC.CODE IN $tipos
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate
             GROUP BY DMD.DOCHEADER_ID", $p) as $l) {
@@ -570,9 +581,11 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
             SELECT DF.DOCHEADER_ID, PM.CODE AS CODIGO, PM.DESCRIPTION AS MEIO, CAST(DF.PAYVALUE AS FLOAT) AS VALOR
             FROM DOCFOOTER DF
             INNER JOIN DOCHEADER DH ON DH.ID = DF.DOCHEADER_ID
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN PAYMETHOD PM ON PM.ID = DF.PAYMETHOD_ID
             WHERE DF.DELETED = 0
               AND $validos
+              AND DC.CODE IN $tipos
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate", $p) as $pg) {
             $pagamentosPorDoc[$pg['DOCHEADER_ID']][] = ['codigo' => $pg['CODIGO'] ?? '?', 'meio' => $pg['MEIO'] ?? 'Sem meio indicado', 'valor' => (float) $pg['VALOR']];
@@ -678,6 +691,7 @@ function naval_vendas_artigos_pinguim(string $inicio, string $fim, array $promot
     try {
         $p = [':de' => naval_bd_data($inicio), ':ate' => naval_bd_data($fim)];
         $validos = naval_vendas_condicao_validos();
+        $tipos = naval_vendas_tipos_sql();
         $artigos = [];
         foreach (naval_bd_consultar("
             SELECT
@@ -698,10 +712,12 @@ function naval_vendas_artigos_pinguim(string $inicio, string $fim, array $promot
                 CAST(CASE WHEN DH.CALC_SALES_SIGNAL < 0 THEN -ABS(DMD.GROSS_TOTAL) ELSE DMD.GROSS_TOTAL END AS FLOAT) AS GROSS_TOTAL
             FROM DOCMOVDETAIL DMD
             INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE ON STORE.ID = DH.STORE_ID
             LEFT JOIN UNIT U ON U.ID = DMD.UNIT_ID
             WHERE DMD.DELETED = 0
               AND $validos
+              AND DC.CODE IN $tipos
               AND ((DH.CALC_TOTAL_W_TAX * DH.CALC_SALES_SIGNAL) > 0 OR (DH.CALC_SALES_SIGNAL < 0 AND DH.CALC_TOTAL_W_TAX <> 0))
               AND DH.DOC_DATE >= :de
               AND DH.DOC_DATE <= :ate

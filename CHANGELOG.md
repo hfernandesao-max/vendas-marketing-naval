@@ -1,5 +1,13 @@
 ## 18-11-2026
 
+### Total de vendas com IVA: apenas facturas, facturas-recibo e notas de crédito
+
+<!-- paginas: inicio, documentos -->
+<!-- tipo: impacto -->
+
+- O total com IVA deixa de incluir documentos do Pinguim BO que não sejam vendas (FR, FT ou NC); as notas de crédito continuam a abater ao total.
+- A cache das vendas é renovada para aplicar imediatamente o filtro corrigido.
+
 ### Sincronização do Pinguim BO de 30 em 30 segundos
 
 <!-- tipo: impacto -->

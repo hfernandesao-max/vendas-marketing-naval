@@ -78,6 +78,8 @@ utilizador do `.env` só com a função `db_datareader` no SQL Server.
 | Estrutura (`api.php?estrutura=1`)    | `DOCCONFIG`, `PAYMETHOD`, `STORE`, `sys.tables`                                     | estrutura da exportação REST                             |
 | Estado da ligação (`api.php?ping=1`) | `SELECT 1`                                                                          | pedido curto à exportação REST                           |
 
+O total de vendas usa apenas documentos FR (factura-recibo), FT (factura) e NC (nota de crédito), com o valor do cabeçalho já com IVA; as notas de crédito entram a negativo. Esta restrição é igual na leitura SQL, no OLAP e na exportação REST.
+
 Os dados próprios do portal (contas, matriz, plano de cargas, lotes do SAP, registos) ficam em ficheiros na
 pasta privada: o portal nunca escreve na base de dados do Pinguim BO.
 

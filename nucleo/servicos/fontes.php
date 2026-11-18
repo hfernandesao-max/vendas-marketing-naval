@@ -295,6 +295,7 @@ function naval_fontes_vendas_olap(string $de, string $ate, array $promotores, bo
     naval_servico('vendas');
     $p = [':de' => $de, ':ate' => $ate];
     $v = naval_fontes_condicao_validos();
+    $tipos = naval_vendas_tipos_sql();
     $sinal = '((D.TOTAL_COM_IVA * D.SINAL_VENDAS) > 0 OR (D.SINAL_VENDAS < 0 AND D.TOTAL_COM_IVA <> 0))';
     $vendas = [];
     if (!$soArtigos) {
@@ -305,13 +306,13 @@ function naval_fontes_vendas_olap(string $de, string $ate, array $promotores, bo
                 CAST((CASE WHEN D.SINAL_VENDAS < 0 THEN -ABS(D.TOTAL_COM_IVA) ELSE D.TOTAL_COM_IVA * D.SINAL_VENDAS END) AS FLOAT) AS TOTAL,
                 CAST(D.TOTAL_PAGO AS FLOAT) AS TOTAL_PAID
             FROM rtm.f_documento D
-            WHERE $v AND $sinal AND D.DATA >= :de AND D.DATA <= :ate
+            WHERE $v AND D.TIPO_CODIGO IN $tipos AND $sinal AND D.DATA >= :de AND D.DATA <= :ate
             ORDER BY D.DATA DESC, D.DOC_ID DESC", $p);
         $semIva = [];
         foreach (naval_fontes_olap_consultar("
             SELECT L.DOC_ID, CAST(SUM(L.VALOR_SEM_IVA) AS FLOAT) AS SEM_IVA
             FROM rtm.f_venda_linha L INNER JOIN rtm.f_documento D ON D.DOC_ID = L.DOC_ID
-            WHERE L.ELIMINADA = 0 AND $v AND D.DATA >= :de AND D.DATA <= :ate
+            WHERE L.ELIMINADA = 0 AND $v AND D.TIPO_CODIGO IN $tipos AND D.DATA >= :de AND D.DATA <= :ate
             GROUP BY L.DOC_ID", $p) as $l) {
             $semIva[$l['DOC_ID']] = (float) $l['SEM_IVA'];
         }
@@ -319,7 +320,7 @@ function naval_fontes_vendas_olap(string $de, string $ate, array $promotores, bo
         foreach (naval_fontes_olap_consultar("
             SELECT P.DOC_ID, P.MEIO_CODIGO AS CODIGO, P.MEIO, CAST(P.VALOR AS FLOAT) AS VALOR
             FROM rtm.f_pagamento P INNER JOIN rtm.f_documento D ON D.DOC_ID = P.DOC_ID
-            WHERE P.ELIMINADO = 0 AND $v AND D.DATA >= :de AND D.DATA <= :ate", $p) as $pg) {
+            WHERE P.ELIMINADO = 0 AND $v AND D.TIPO_CODIGO IN $tipos AND D.DATA >= :de AND D.DATA <= :ate", $p) as $pg) {
             $pags[$pg['DOC_ID']][] = ['codigo' => $pg['CODIGO'] ?? '?', 'meio' => $pg['MEIO'] ?? 'Sem meio indicado', 'valor' => (float) $pg['VALOR']];
         }
         $vendas = naval_vendas_montar($docs, $semIva, $pags, $promotores);
@@ -338,7 +339,7 @@ function naval_fontes_vendas_olap(string $de, string $ate, array $promotores, bo
                 CAST(CASE WHEN D.SINAL_VENDAS < 0 THEN -ABS(L.TOTAL_COM_IVA) ELSE L.TOTAL_COM_IVA END AS FLOAT) AS TOTAL,
                 CAST(CASE WHEN D.SINAL_VENDAS < 0 THEN -ABS(L.TOTAL_BRUTO) ELSE L.TOTAL_BRUTO END AS FLOAT) AS GROSS_TOTAL
             FROM rtm.f_venda_linha L INNER JOIN rtm.f_documento D ON D.DOC_ID = L.DOC_ID
-            WHERE L.ELIMINADA = 0 AND $v AND $sinal AND D.DATA >= :de AND D.DATA <= :ate
+            WHERE L.ELIMINADA = 0 AND $v AND D.TIPO_CODIGO IN $tipos AND $sinal AND D.DATA >= :de AND D.DATA <= :ate
             ORDER BY D.DATA DESC, D.DOC_ID DESC, L.LINHA ASC", $p) as $a) {
             $artigos[] = naval_vendas_artigo($a, $promotores);
         }
