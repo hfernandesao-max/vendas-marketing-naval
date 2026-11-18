@@ -2,7 +2,8 @@
 /**
  * Actualiza os dados estáticos do portal a partir do Pinguim BO (só leitura).
  *
- *   php ferramentas/sincronizar-pinguim.php
+ *   php ferramentas/sincronizar-pinguim.php              uma sincronização
+ *   php ferramentas/sincronizar-pinguim.php --continuo   sincronizações de 30 em 30 segundos
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
@@ -13,7 +14,8 @@ require_once dirname(__DIR__) . '/nucleo/arranque.php';
 naval_servico('bd');
 naval_servico('vendas');
 
-try {
+function naval_pinguim_sincronizar(): array
+{
     if (naval_ensaio()) throw new RuntimeException('A sincronização está desactivada na pré-produção.');
     if (!naval_bd_configurada()) throw new RuntimeException('A base de dados do Pinguim BO não está configurada.');
 
@@ -85,13 +87,69 @@ try {
     naval_json_gravar($dir . '/rotas.json', $rotas);
     naval_json_gravar($dir . '/vendas.json', $dados['vendas']);
     naval_json_gravar($dir . '/clientes.json', $clientes);
-    echo json_encode([
-        'ok' => true,
+    return [
         'rotas' => count($rotas),
         'vendas' => count($dados['vendas']),
         'clientes' => count($clientes),
         'actualizado_em' => date('Y-m-d H:i:s'),
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    ];
+}
+
+function naval_pinguim_sincronizacao_unica(): array
+{
+    $dir = naval_pasta('sincronizacao-pinguim');
+    $lock = fopen($dir . '/execucao.lock', 'c');
+    if ($lock === false) throw new RuntimeException('Não foi possível abrir o bloqueio da sincronização.');
+    if (!flock($lock, LOCK_EX | LOCK_NB)) {
+        fclose($lock);
+        throw new RuntimeException('Já existe uma sincronização do Pinguim BO em curso.');
+    }
+
+    try {
+        $resultado = naval_pinguim_sincronizar();
+        naval_json_gravar($dir . '/estado.json', ['ok' => true] + $resultado);
+        $erro = $dir . '/erro.json';
+        if (is_file($erro)) unlink($erro);
+        return $resultado;
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+function naval_pinguim_sincronizacao_continua(): void
+{
+    if (naval_ensaio()) throw new RuntimeException('A sincronização contínua está desactivada na pré-produção.');
+    $dir = naval_pasta('sincronizacao-pinguim');
+    $lock = fopen($dir . '/daemon.lock', 'c');
+    if ($lock === false) throw new RuntimeException('Não foi possível abrir o bloqueio do processo de sincronização.');
+    if (!flock($lock, LOCK_EX | LOCK_NB)) {
+        fclose($lock);
+        throw new RuntimeException('O processo contínuo de sincronização já está em execução.');
+    }
+
+    while (true) {
+        $inicio = microtime(true);
+        $saida = [];
+        $comando = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' --uma-vez 2>&1';
+        exec($comando, $saida, $codigo);
+        if ($codigo !== 0) {
+            naval_json_gravar($dir . '/erro.json', [
+                'em' => date('Y-m-d H:i:s'),
+                'erro' => mb_substr(implode("\n", $saida), 0, 4000),
+            ]);
+        }
+        sleep(max(1, (int) ceil(30 - (microtime(true) - $inicio))));
+    }
+}
+
+try {
+    if (in_array('--continuo', $argv, true)) {
+        naval_pinguim_sincronizacao_continua();
+    } else {
+        $resultado = naval_pinguim_sincronizacao_unica();
+        echo json_encode(['ok' => true] + $resultado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    }
 } catch (Throwable $e) {
     fwrite(STDERR, 'Falha na sincronização do Pinguim BO: ' . $e->getMessage() . "\n");
     exit(1);

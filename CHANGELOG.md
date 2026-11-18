@@ -1,5 +1,12 @@
 ## 18-11-2026
 
+### Sincronização do Pinguim BO de 30 em 30 segundos
+
+<!-- tipo: impacto -->
+
+- A tarefa do servidor passa a actualizar vendas, clientes e rotas a cada 30 segundos, sem sincronizações simultâneas.
+- O estado da última sincronização e os erros ficam registados na pasta privada do portal.
+
 ### Vendas e ficheiro para o SAP: exactamente como no Pinguim BO; a conciliação das formas de pagamento fica à parte
 
 <!-- paginas: inicio, pagamentos, documentos, sap-exportar -->

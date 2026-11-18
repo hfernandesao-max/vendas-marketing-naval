@@ -4,7 +4,7 @@
  *
  *   php ferramentas/actualizar.php configurar        token do GitHub (só leitura) e correio para os avisos; uma vez
  *   php ferramentas/actualizar.php tarefa [HH:MM]    cria as tarefas agendadas do Windows: a nocturna (02:15 por omissão),
- *                                                     a de 5 em 5 minutos e a sincronização Pinguim BO (após as 03:00)
+ *                                                     a de 5 em 5 minutos e a sincronização Pinguim BO (a cada 30 segundos)
  *   php ferramentas/actualizar.php apache            inclui no httpd.conf a configuração gerida pelo portal (uma vez)
  *   php ferramentas/actualizar.php certificados      validade dos certificados HTTPS do portal (também todas as noites)
  *   php ferramentas/actualizar.php estado            versão instalada e versão mais recente publicada
@@ -98,17 +98,34 @@ try {
             $hora = (string) ($args[1] ?? '02:15');
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $falha('Hora inválida (HH:MM).');
             if (DIRECTORY_SEPARATOR !== '\\') $falha('A tarefa agendada é do Windows; noutro sistema use o cron com «php ' . __FILE__ . ' automatico».');
-            // A sincronização corre depois da instalação nocturna e da janela de aprovação automática.
-            $syncHora = date('H:i', max(strtotime($hora), strtotime('03:00')) + 15 * 60);
             // aspas interiores do /TR com \" (o escapeshellarg do Windows troca as aspas por espaços)
             foreach ([['Portal RTM - Actualizacao', '/SC DAILY /ST ' . $hora, 'automatico', 'todos os dias às ' . $hora, __FILE__],
-                      ['Portal RTM - Actualizacao urgente', '/SC MINUTE /MO 5', 'urgente', 'de 5 em 5 minutos (pedidos do portal)', __FILE__],
-                      ['Portal RTM - Sincronizar Pinguim', '/SC DAILY /ST ' . $syncHora, '', 'todos os dias às ' . $syncHora, dirname(__DIR__) . '/ferramentas/sincronizar-pinguim.php']] as [$nome, $quando, $cmdAct, $texto, $ficheiro]) {
-                $trTarefa = '/TR "\\"' . PHP_BINARY . '\\" \\"' . $ficheiro . '\\"' . ($cmdAct !== '' ? ' ' . $cmdAct : '');
-                passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $trTarefa . '"', $r);
+                      ['Portal RTM - Actualizacao urgente', '/SC MINUTE /MO 5', 'urgente', 'de 5 em 5 minutos (pedidos do portal)', __FILE__]] as [$nome, $quando, $cmdAct, $texto, $ficheiro]) {
+                $trTarefa = '/TR "\\"' . PHP_BINARY . '\\" \\"' . $ficheiro . '\\" ' . $cmdAct . '"';
+                passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $trTarefa, $r);
                 if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
                 echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
             }
+            $esc = function (string $v): string { return htmlspecialchars($v, ENT_XML1 | ENT_QUOTES, 'UTF-8'); };
+            $script = dirname(__DIR__) . '/ferramentas/sincronizar-pinguim.php';
+            $xml = '<?xml version="1.0" encoding="UTF-16"?>' . "\r\n"
+                . '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
+                . '<RegistrationInfo><Description>Sincroniza os dados do Pinguim BO de 30 em 30 segundos.</Description></RegistrationInfo>'
+                . '<Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>'
+                . '<Principals><Principal id="Author"><UserId>S-1-5-18</UserId><LogonType>ServiceAccount</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals>'
+                . '<Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>'
+                . '<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><AllowHardTerminate>true</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable>'
+                . '<AllowStartOnDemand>true</AllowStartOnDemand><Enabled>true</Enabled><Hidden>false</Hidden><ExecutionTimeLimit>PT0S</ExecutionTimeLimit>'
+                . '<Priority>7</Priority><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure></Settings>'
+                . '<Actions Context="Author"><Exec><Command>' . $esc(PHP_BINARY) . '</Command><Arguments>&quot;' . $esc($script) . '&quot; --continuo</Arguments>'
+                . '<WorkingDirectory>' . $esc(dirname(__DIR__)) . '</WorkingDirectory></Exec></Actions></Task>';
+            $xml = mb_convert_encoding($xml, 'UTF-16LE', 'UTF-8');
+            $ficheiroXml = naval_act_pasta() . '/tarefa-sincronizar-pinguim.xml';
+            if (file_put_contents($ficheiroXml, "\xFF\xFE" . $xml, LOCK_EX) === false) $falha('Não foi possível preparar a tarefa de sincronização.');
+            passthru('schtasks /Create /F /TN "Portal RTM - Sincronizar Pinguim" /XML ' . escapeshellarg($ficheiroXml), $r);
+            @unlink($ficheiroXml);
+            if ($r !== 0) $falha('Não foi possível criar a tarefa de sincronização contínua (abrir a linha de comandos como administrador).');
+            echo "  ok     tarefa «Portal RTM - Sincronizar Pinguim» a cada 30 segundos (iniciada no arranque do servidor)\n";
             exit(0);
 
         case 'apache':
