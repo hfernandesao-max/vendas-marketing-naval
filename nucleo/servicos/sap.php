@@ -93,23 +93,7 @@ function naval_sap_resumo(): array
     $resumo = array_map(function ($l) { unset($l['documentos']); return $l; }, array_reverse($lotes));
     $config = naval_sap_config();
     return ['config' => $config, 'origens' => naval_origem_stock($config['armazens']), 'lotes' => array_slice($resumo, 0, 200), 'exportados' => $exportados,
-        'segunda_via' => naval_sap_pode_segunda_via(), 'formas_corrigidas' => naval_sap_formas_corrigidas()];
-}
-
-/**
- * Correcções da forma de pagamento aprovadas (formas-pagamento.php): o ficheiro leva o numerário e o Multicaixa da
- * reconciliação dos documentos, não os do momento da venda. Só os valores mudam; a estrutura do ficheiro não.
- * {documento: {id, dia, rota, numerario, multicaixa, codigo_multicaixa}}
- */
-function naval_sap_formas_corrigidas(): array
-{
-    naval_servico('formas-pagamento');
-    $out = [];
-    foreach (naval_fp_correcoes_aprovadas() as $doc => $c) {
-        $out[(string) $doc] = ['id' => (string) $c['id'], 'dia' => (string) $c['dia'], 'rota' => (string) $c['rota'], 'numerario' => (float) $c['numerario'],
-            'multicaixa' => (float) $c['multicaixa'], 'codigo_multicaixa' => (string) ($c['codigo_multicaixa'] ?? 'MC')];
-    }
-    return $out;
+        'segunda_via' => naval_sap_pode_segunda_via()];
 }
 
 /** Segunda via do lote N (só auditoria): ficheiro original, com o nome marcado como segunda via. */

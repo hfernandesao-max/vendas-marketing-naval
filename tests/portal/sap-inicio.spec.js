@@ -109,25 +109,19 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
   expect(+linhaNcXml.N).toBe(-1000);
 });
 
-test('SAP: forma de pagamento corrigida e aprovada (FP-2026-00045): CASH e CARD do documento são os da reconciliação', async ({ page }) => {
-  // como a FR FR0126S78515N 13 do Nelson a 22-10-2026: Pinguim BO Multicaixa 1 568 000 → numerário 907 600 + Multicaixa 660 400
+test('SAP: as formas de pagamento seguem como foram registadas na venda, mesmo com correcção aprovada na reconciliação', async ({ page }) => {
+  // FR com Multicaixa no Pinguim BO e uma correcção aprovada (ex.: FP-2026-00045): o ficheiro leva o Pinguim BO
   const f = vendas.find((v) => !v.nc && (v.pagamentos || []).some((p) => p.codigo === 'MC'));
-  const total = (f.pagamentos || []).reduce((s, p) => s + (+p.valor || 0), 0);
-  const nu = Math.round(total * 0.6 * 100) / 100;
-  const mc = Math.round((total - nu) * 100) / 100;
-  const corr = {
-    [f.documento]: { id: 'FP-2026-00045', dia: String(f.data).slice(0, 10), rota: f.rota, numerario: nu, multicaixa: mc, codigo_multicaixa: 'MC' },
-  };
+  const pinguim = { nu: 0, mc: 0 };
+  (f.pagamentos || []).forEach((p) => (p.codigo === 'NU' ? (pinguim.nu += +p.valor) : p.codigo === 'MC' ? (pinguim.mc += +p.valor) : 0));
+  const lista = vendas.map((v) => (v.documento === f.documento ? { ...v, conciliacao: { id: 'FP-2026-00045', numerario: pinguim.mc, multicaixa: 0 } } : v));
   const rotas = Object.fromEntries([...new Set(vendas.map((v) => v.rota))].map((r) => [r, { local: 'RTM' + r.slice(-1) }]));
   await page.route('**/v1/sap**', (r) => {
     if (r.request().method() === 'POST') return r.fulfill({ json: { ok: true, lote: { numero: 1, ficheiro: 'teste.xlsx' } } });
-    return r.fulfill({
-      json: { config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', rotas }, lotes: [], exportados: {}, pode_gerar: true, formas_corrigidas: corr },
-    });
+    return r.fulfill({ json: { config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', rotas }, lotes: [], exportados: {}, pode_gerar: true } });
   });
-  await abrir(page, '#sap-exportar');
+  await abrir(page, '#sap-exportar', { api: (r) => r.fulfill({ json: { vendas: lista, artigos } }) });
   await expect(page.locator('#s-sap-l')).toBeVisible();
-  await expect(page.locator('.sap-corr')).toContainText('1 documento(s) seguem com a forma de pagamento corrigida');
   await page.click('.sap-barra button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
   const zip = await JSZip.loadAsync(readFileSync(await dl.path()));
@@ -142,9 +136,8 @@ test('SAP: forma de pagamento corrigida e aprovada (FP-2026-00045): CASH e CARD 
   );
   const linhas = rows.slice(1).filter((r) => String(r.A).includes(f.documento.split(' ').pop()) && String(r.A).includes(f.documento.split(' ')[0]));
   expect(linhas.length, 'o documento segue no ficheiro').toBeGreaterThan(0);
-  // em todas as linhas do documento: CASH AMOUNT (N) = numerário corrigido, CARD AMOUNT (O) = Multicaixa corrigido
   for (const l of linhas) {
-    expect(+l.N).toBe(nu);
-    expect(+l.O).toBe(mc);
+    expect(+(l.N || 0)).toBe(pinguim.nu);
+    expect(+(l.O || 0)).toBe(pinguim.mc);
   }
 });
