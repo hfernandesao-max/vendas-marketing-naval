@@ -1982,6 +1982,8 @@ export const EN = {
   'quantidades sugeridas pela previsão: média das últimas {n} cargas × tendência das vendas da rota ({p})':
     "quantities suggested by the forecast: average of the last {n} loads × the route's sales trend ({p})",
   Gestão: 'Management',
+  Configurações: 'Settings',
+  'Códigos e bancos': 'Codes and banks',
   'Previsão de vendas': 'Sales forecast',
   'Assistente IA': 'AI assistant',
   'Resumo diário por correio electrónico (07:00)': 'Daily summary by email (07:00)',

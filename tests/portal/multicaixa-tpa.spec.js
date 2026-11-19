@@ -84,6 +84,8 @@ test('Multicaixa por TPA: relatório por máquina, banco e conta; conferir no ex
     return r.fulfill({ json: { ...base, relatorio: RELATORIO } });
   });
   const erros = await abrir(page, '#multicaixa-tpa?de=2026-11-13&ate=2026-11-13');
+  await expect(page.locator('.mc-page')).toBeVisible();
+  await expect(page.locator('.mc-nav-grupos .btn').first()).toHaveCSS('min-height', '40px');
   await expect(page.locator('.tile', { hasText: 'Diferença' })).toContainText(/65\s?000,00/);
   const porTpa = page.locator('.sec', { hasText: 'Por TPA (máquina)' });
   await expect(porTpa.locator('tr')).toHaveCount(4); // cabeçalho, 2 fechos, total
@@ -101,9 +103,12 @@ test('Multicaixa por TPA: relatório por máquina, banco e conta; conferir no ex
   await expect
     .poll(() => pedidos.find((x) => x.accao === 'conferir'))
     .toMatchObject({ dia: '2026-11-13', tpa: '00516385', periodo: '87', ref: 'MOV-2', data: '2026-11-14' });
+  await expect(page.getByRole('button', { name: 'Gestão', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
+  await expect(page.locator('.mc-page .mc-barra')).toHaveCount(0);
   // registo dos terminais
   await page.getByRole('button', { name: 'Terminais (TPA)' }).click();
-  await expect(page.locator('.sec', { hasText: 'Terminais (TPA)' }).locator('tr')).toHaveCount(3);
+  await expect(page.locator('.mc-page .sec:not(.mc-nav)', { hasText: 'Terminais (TPA)' }).locator('tr')).toHaveCount(3);
   await page.getByRole('button', { name: 'Registar TPA' }).click();
   const t = page.locator('dialog[open]');
   await t.getByLabel('Ident. TPA (8 dígitos)').fill('00445736');
@@ -116,7 +121,7 @@ test('Multicaixa por TPA: relatório por máquina, banco e conta; conferir no ex
   await expect
     .poll(() => pedidos.find((x) => x.accao === 'terminal'))
     .toMatchObject({ tpa: '00445736', empresa: 'HIGITEC', banco: 'BPC', serie: '223367303061245428241423', situacao: 'avariado', defeito: 'desliga sozinho' });
-  await expect(page.locator('.sec', { hasText: 'Terminais (TPA)' })).toContainText('00445736');
+  await expect(page.locator('.mc-page .sec:not(.mc-nav)', { hasText: 'Terminais (TPA)' })).toContainText('00445736');
   // associar o promotor ao TPA, na própria tabela (lista dos promotores)
   await page.getByLabel('Promotor do TPA 00444134').selectOption('1002');
   await expect.poll(() => pedidos.find((x) => x.accao === 'associar')).toMatchObject({ tpa: '00444134', rota: '1002' });
@@ -173,6 +178,8 @@ test('folha de caixa com o registo dos TPA: talão de fecho com TPA (o da rota),
     });
   });
   const erros = await abrir(page, '#caixa-marketing');
+  await expect(page.locator('.cx-page')).toBeVisible();
+  await expect(page.locator('.cx-page .btn:not(.sm)').first()).toHaveCSS('min-height', '40px');
   const s = page.locator('.cx-sec', { hasText: 'Talões de fecho do TPA' });
   // linha sugerida para o promotor com Multicaixa no Pinguim BO, já com o TPA da rota e sem valor (às cegas)
   await expect(s.getByLabel('Promotor · 1')).toHaveValue('1001');
@@ -408,6 +415,9 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
   expect(gravados[1]).toMatchObject({ accao: 'aprovar_correcao', id: 'FP-2026-00007' });
   await expect.poll(() => leituras).toBe(3); // a página volta a ler depois de cada decisão
   await expect(page.locator('#s-fp-corr')).toBeVisible();
+  // configurações separadas: códigos válidos e bancos por rota
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
+  await page.getByRole('button', { name: 'Códigos e bancos' }).click();
   // tabela das formas: muda o banco da rota 1002 e acrescenta um código
   await page.getByLabel('Banco do TPA da rota 1002').selectOption('BAI');
   await page.getByLabel('Novo código').fill('mca');
@@ -416,6 +426,9 @@ test('formas de pagamento: reconciliação por dia e promotor, excepções e tab
   expect(gravados[2]).toMatchObject({ accao: 'formas', rotas: { 1001: 'BPC', 1002: 'BAI' } });
   expect(gravados[2].codigos.MCA).toEqual({ forma: 'multicaixa', banco: '' });
   expect(gravados[2].codigos.NU).toEqual({ forma: 'numerario', banco: '' });
+  await page.getByRole('button', { name: 'Gestão', exact: true }).click();
+  await page.getByRole('button', { name: 'Formas de pagamento' }).click();
+  await expect(page.locator('#s-fp-corr')).toBeVisible();
   // aprovar várias de uma vez: só as que esta pessoa pode decidir (não a que ela própria pediu), revistas na lista
   await expect(page.locator('.fp-barra')).toContainText('2 correcções esperam a sua decisão.');
   await page.getByRole('button', { name: 'Rever e aprovar todas' }).click();

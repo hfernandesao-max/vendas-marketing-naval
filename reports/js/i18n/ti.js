@@ -1953,6 +1953,8 @@ export const TI = {
   'quantidades sugeridas pela previsão: média das últimas {n} cargas × tendência das vendas da rota ({p})':
     'ብትንበያ ዝቐረቡ ብዝሒታት፦ ማእከላይ ናይ ዝሓለፉ {n} ጽዕነታት × ኣንፈት መሸጣ መስመር ({p})',
   Gestão: 'ምሕደራ',
+  Configurações: 'ቅንብራት',
+  'Códigos e bancos': 'ኮዳትን ባንክታትን',
   'Previsão de vendas': 'ትንበያ መሸጣ',
   'Assistente IA': 'ናይ ብልሒ ሓጋዚ',
   'Resumo diário por correio electrónico (07:00)': 'ዕለታዊ ጽማቕ ብኢመይል (07:00)',
@@ -4192,8 +4194,11 @@ export const TI = {
   'Actualizar bases históricas em aberto': 'ክፉታት ታሪኻዊ መሰረታት ኣሐድስ',
   'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; se a base mudar, invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.':
     'ክሳብ ቅድሚ ሎሚ ዘለዉ ዘይተዓጽዉ ምስምማዓት ብግዜ ዝተመዝገቡ ምንቅስቓሳት Pinguim BO የሐድስ። ዝተቖጸሩ ብዝሒ ይሕሎ፤ መሰረት እንተተቐይሩ፡ ንዳግማይ ምርግጋጽ ዝተጸበዩ ምርግጋጻትን ፍቓዳትን ይስረዙ። ዝተዓጽዉ ምስምማዓት ኣይቅየሩን።',
+  'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.':
+    'ክሳብ ቅድሚ ሎሚ ዘለዉ ዘይተዓጽዉ ምስምማዓት ብግዜ ዝተመዝገቡ ምንቅስቓሳት Pinguim BO የሐድስ። ዝተቖጸሩ ብዝሒ ይሕሎ፤ ንዳግማይ ምርግጋጽ ዝተጸበዩ ምርግጋጻትን ፍቓዳትን ይስረዙ። ዝተዓጽዉ ምስምማዓት ኣይቅየሩን።',
   'Actualizadas: {n}; contagens preservadas e a revalidar: {c}; ignoradas: {i}; falhas: {f}.':
     'ዝተሓደሱ፦ {n}; ዝተሓለዉን እንደገና ዝረጋገጹን ቆጸራታት፦ {c}; ዝተሓለፉ፦ {i}; ጌጋታት፦ {f}።',
+  'Actualizadas: {n}; ignoradas: {i}; falhas: {f}.': 'ዝተሓደሱ፦ {n}; ዝተሓለፉ፦ {i}; ጌጋታት፦ {f}።',
   'Não foi possível actualizar os históricos.': 'ታሪኻዊ ምስምማዓት ምሕዳስ ኣይተኻእለን።',
   'Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.':
     'ናይ ምስምማዕ መሰረት ኣብ {h} ተዓጽዩ፣ ኣብቲ ግዜ ኣብ Pinguim BO ዝተመዝገበ ክምችትን ምንቅስቓሳትን ተጠቒሙ።',

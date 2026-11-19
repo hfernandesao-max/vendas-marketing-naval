@@ -4633,6 +4633,24 @@ body.inicio-apertado .inicio-ecra .tiles-kpi .tile .v {
   display: grid;
   gap: 10px;
 }
+.cx-page,
+.mc-page {
+  display: grid;
+  width: min(100%, 1680px);
+  gap: 12px;
+  margin-inline: auto;
+}
+.cx-page .btn:not(.sm),
+.mc-page .btn:not(.sm) {
+  min-height: 40px;
+  padding: 9px 14px;
+  font-size: 13px;
+}
+.cx-page .btn.sm,
+.mc-page .btn.sm {
+  min-height: 34px;
+  padding: 6px 10px;
+}
 /* fechos por rever pela Tesouraria: atalhos para cada dia */
 .cx-rever {
   display: grid;
@@ -5521,12 +5539,33 @@ body.apres-lado {
 .mc-barra {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   gap: 12px;
   padding: 12px 16px;
 }
-.mc-barra .seg {
-  margin-left: auto;
+.mc-nav {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+}
+.mc-nav-grupos,
+.mc-nav-vistas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mc-nav-vistas {
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+.mc-page .mc-nav .btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.mc-barra .campo {
+  min-width: 150px;
 }
 .mc-sim {
   display: flex;
@@ -5539,6 +5578,38 @@ body.apres-lado {
 }
 .tile.tile-alerta .v {
   color: var(--warn-t, #9a3412);
+}
+@media (max-width: 640px) {
+  .cx-page,
+  .mc-page {
+    gap: 10px;
+  }
+  .mc-nav {
+    padding: 10px;
+  }
+  .mc-nav-grupos,
+  .mc-nav-vistas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+  .mc-page .mc-nav .btn {
+    justify-content: center;
+    min-height: 42px;
+    padding-inline: 8px;
+  }
+  .mc-barra {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+  .mc-barra .campo {
+    min-width: 0;
+  }
+  .cx-page .btn:not(.sm),
+  .mc-page .btn:not(.sm) {
+    min-height: 42px;
+  }
 }
 
 /* Acessos: último dia de uma função temporária, junto da função; governação dos acessos */
@@ -5653,16 +5724,16 @@ body.apres-lado {
   margin-top: 10px;
 }
 
-/* Início: formas de pagamento conciliadas (Pinguim BO × conciliado) */
-.ini-conc-t td.n,
-.ini-conc-t th.n {
+/* Finanças: formas de pagamento conciliadas (Pinguim BO × conciliado) */
+.fp-conc-t td.n,
+.fp-conc-t th.n {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.ini-conc-d {
+.fp-conc-d {
   font-weight: 700;
 }
-.ini-conc-tot td {
+.fp-conc-tot td {
   font-weight: 700;
   border-top: 1px solid rgb(var(--lin1-rgb) / 0.4);
 }

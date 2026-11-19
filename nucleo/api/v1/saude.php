@@ -10,6 +10,15 @@ $ok = true;
 foreach (['sessoes', 'cache', 'registos'] as $sub) {
     $d = naval_pasta_privada() . '/' . $sub;
     if (!is_dir($d)) @mkdir($d, 0770, true);
-    if (!is_dir($d) || !is_writable($d)) $ok = false;
+    $escrevivel = is_dir($d) && is_writable($d);
+    if (!$escrevivel && is_dir($d)) {
+        $prova = $d . '/.saude-' . bin2hex(random_bytes(8));
+        $ficheiro = @fopen($prova, 'x');
+        if ($ficheiro !== false) {
+            fclose($ficheiro);
+            $escrevivel = @unlink($prova);
+        }
+    }
+    if (!$escrevivel) $ok = false;
 }
 naval_json(['ok' => $ok, 'hora' => date('c')], $ok ? 200 : 503);

@@ -136,6 +136,9 @@ function naval_jwt_autenticar(): array
     naval_iniciar_sessao();
     $u = naval_autenticado() ? naval_utilizador() : null;
     if (!$u || (string) $u['login'] !== (string) $c['sub'] || !hash_equals(naval_jwt_sid(session_id(), $c['_chave']), (string) $c['sid'])) {
+        // Uma resposta tardia sem sessão não deve substituir o cookie de uma nova entrada.
+        session_abort();
+        header_remove('Set-Cookie');
         throw new NavalErro('A sessão terminou. Entre de novo.', 401, ['codigo' => 'sessao_terminada']);
     }
     if ((int) ($u['versao'] ?? 0) !== (int) $c['ver']) throw new NavalErro('As credenciais mudaram. Entre de novo.', 401, ['codigo' => 'credenciais_alteradas']);

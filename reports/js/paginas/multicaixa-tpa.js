@@ -18,6 +18,7 @@ let D = null;
 let chave = '';
 let aLer = false;
 let vista = 'relatorio';
+const VISTAS_CONFIGURACAO = new Set(['terminais', 'config-formas', 'correio']);
 const param = (k) => new URLSearchParams(location.hash.split('?')[1] || '').get(k) || '';
 const dataOk = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 let de = '';
@@ -27,6 +28,8 @@ function periodoInicial() {
   if (de) return;
   const a = param('ate'),
     d = param('de');
+  const v = param('vista');
+  if (['relatorio', 'formas', ...VISTAS_CONFIGURACAO].includes(v)) vista = v;
   ate = dataOk(a) ? a : somaDias(hoje(), -1);
   de = dataOk(d) && d <= ate ? d : ate;
 }
@@ -498,6 +501,67 @@ const formasTxt = (x) =>
     .filter(Boolean)
     .join(' · ') || '—';
 
+function quadroConciliado(correcoes) {
+  const aprovadas = correcoes.filter((c) => c.estado === 'aprovada');
+  if (!aprovadas.length) return null;
+  const antes = { numerario: 0, multicaixa: 0, invalida: 0 };
+  const depois = { numerario: 0, multicaixa: 0, invalida: 0 };
+  aprovadas.forEach((c) => {
+    antes.numerario += +(c.pinguim && c.pinguim.numerario) || 0;
+    antes.multicaixa += +(c.pinguim && c.pinguim.multicaixa) || 0;
+    antes.invalida += +(c.pinguim && c.pinguim.invalida) || 0;
+    depois.numerario += +c.numerario || 0;
+    depois.multicaixa += +c.multicaixa || 0;
+  });
+  const sec = el('section', 'glass sec fp-conc');
+  sec.append(
+    el('h2', null, t('Formas de pagamento conciliadas')),
+    el(
+      'p',
+      'note',
+      t(
+        '{n} documento(s) com a forma de pagamento corrigida e aprovada. Os quadros acima mostram o Pinguim BO, sem alterações; aqui, o que se recebeu de facto.',
+        { n: n0(aprovadas.length) },
+      ),
+    ),
+  );
+  const tb = el('table', 'cc-tab fp-conc-t');
+  const cab = el('tr');
+  [t('Forma de pagamento'), t('No Pinguim BO (na venda)'), t('Conciliado (aprovado)'), t('Diferença')].forEach((x, i) =>
+    cab.append(el('th', i ? 'n' : null, x)),
+  );
+  tb.append(cab);
+  [
+    ['numerario', t('Numerário')],
+    ['multicaixa', t('Multicaixa')],
+    ['invalida', t('Sem forma válida')],
+  ].forEach(([k, rot]) => {
+    if (!antes[k] && !depois[k]) return;
+    const tr = el('tr');
+    const dif = depois[k] - antes[k];
+    tr.append(
+      el('td', null, rot),
+      el('td', 'n', kz(antes[k])),
+      el('td', 'n', kz(depois[k])),
+      el('td', 'n' + (Math.abs(dif) > 0.005 ? ' fp-conc-d' : ''), (dif > 0 ? '+' : '') + kz(dif)),
+    );
+    tb.append(tr);
+  });
+  const total = (x) => x.numerario + x.multicaixa + x.invalida;
+  const tr = el('tr', 'fp-conc-tot');
+  tr.append(
+    el('td', null, t('Total')),
+    el('td', 'n', kz(total(antes))),
+    el('td', 'n', kz(total(depois))),
+    el('td', 'n', kz(total(depois) - total(antes))),
+  );
+  tb.append(tr);
+  const w = el('div', 'cc-scroll');
+  w.append(tb);
+  sec.append(w);
+  return sec;
+}
+
 // Correcção da forma de pagamento de um dia e promotor: documento a documento, com justificação e evidência. O
 // documento do Pinguim BO não muda; a correcção só conta depois de aprovada por outra pessoa.
 function abrirCorrecao(linha) {
@@ -850,6 +914,8 @@ function formas(pg) {
       },
     ]),
   );
+  const q = quadroConciliado(F.correcoes || []);
+  if (q) pg.append(q);
   if (r.excepcoes.length)
     pg.append(
       tabelaB({
@@ -926,7 +992,6 @@ function formas(pg) {
     }),
   );
   correcoes(pg);
-  configFormas(pg);
 }
 
 // tabela das formas de pagamento válidas e banco do TPA de cada rota (quem gere o Multicaixa por TPA altera)
@@ -1018,7 +1083,21 @@ function configFormas(pg) {
       }),
     );
   }
+
   pg.append(s);
+}
+
+function vistaConfigFormas(pg) {
+  if (!F || chaveF !== de + '|' + ate) {
+    pg.append(el('div', 'glass empty', t('A carregar…')));
+    lerFormas();
+    return;
+  }
+  if (F.falhou) {
+    pg.append(el('div', 'glass empty', t(F.falhou)));
+    return;
+  }
+  configFormas(pg);
 }
 
 function correio(pg) {
@@ -1061,57 +1140,88 @@ function correio(pg) {
 }
 
 R['multicaixa-tpa'] = (pg) => {
+  const pagina = el('div', 'mc-page');
+  pg.append(pagina);
   periodoInicial();
-  // período (até 62 dias) e separadores
-  const barra = el('div', 'glass mc-barra');
-  const fd = entrada('date', de, { max: hoje() });
-  fd.setAttribute('aria-label', t('De'));
-  const fa = entrada('date', ate, { max: hoje() });
-  fa.setAttribute('aria-label', t('Até'));
-  const mudar = () => {
-    if (!dataOk(fd.value) || !dataOk(fa.value)) return;
-    de = fd.value <= fa.value ? fd.value : fa.value;
-    ate = fd.value <= fa.value ? fa.value : fd.value;
-    D = null;
-    draw();
+  const configuracao = VISTAS_CONFIGURACAO.has(vista);
+  const navegacao = el('section', 'glass sec mc-nav');
+  const grupos = el('div', 'mc-nav-grupos');
+  const vistas = el('div', 'mc-nav-vistas');
+  const mudarGrupo = (paraConfiguracao) => {
+    if (paraConfiguracao !== VISTAS_CONFIGURACAO.has(vista)) {
+      vista = paraConfiguracao ? 'terminais' : 'relatorio';
+      draw();
+    }
   };
-  fd.addEventListener('change', mudar);
-  fa.addEventListener('change', mudar);
-  const l1 = el('label', 'campo');
-  l1.append(el('span', null, t('De')), fd);
-  const l2 = el('label', 'campo');
-  l2.append(el('span', null, t('Até')), fa);
-  const seps = el('div', 'seg');
-  seps.setAttribute('role', 'group');
-  seps.setAttribute('aria-label', t('Vista'));
   [
-    ['relatorio', t('Relatório')],
-    ['formas', t('Formas de pagamento')],
-    ['terminais', t('Terminais (TPA)')],
-    ['correio', t('Resumo por correio')],
-  ].forEach(([id, nome]) => {
+    [false, 'Gestão'],
+    [true, 'Configurações'],
+  ].forEach(([paraConfiguracao, nome]) => {
+    const b = botao(t(nome), 'sm' + (configuracao === paraConfiguracao ? '' : ' ghost'), () => mudarGrupo(paraConfiguracao));
+    b.setAttribute('aria-pressed', String(configuracao === paraConfiguracao));
+    grupos.append(b);
+  });
+  const opcoesVista = configuracao
+    ? [
+        ['terminais', t('Terminais (TPA)')],
+        ['config-formas', t('Códigos e bancos')],
+        ['correio', t('Resumo por correio')],
+      ]
+    : [
+        ['relatorio', t('Relatório')],
+        ['formas', t('Formas de pagamento')],
+      ];
+  opcoesVista.forEach(([id, nome]) => {
     const b = botao(nome, 'sm' + (vista === id ? '' : ' ghost'), () => {
       vista = id;
       draw();
     });
     b.setAttribute('aria-pressed', String(vista === id));
-    seps.append(b);
+    vistas.append(b);
   });
-  barra.append(l1, l2, seps);
-  pg.append(barra);
+  grupos.setAttribute('role', 'group');
+  grupos.setAttribute('aria-label', t('Área'));
+  vistas.setAttribute('role', 'group');
+  vistas.setAttribute('aria-label', t('Vista'));
+  navegacao.append(grupos, vistas);
+  pagina.append(navegacao);
+  if (!configuracao) {
+    const barra = el('div', 'glass mc-barra');
+    const fd = entrada('date', de, { max: hoje() });
+    fd.setAttribute('aria-label', t('De'));
+    const fa = entrada('date', ate, { max: hoje() });
+    fa.setAttribute('aria-label', t('Até'));
+    const mudar = () => {
+      if (!dataOk(fd.value) || !dataOk(fa.value)) return;
+      de = fd.value <= fa.value ? fd.value : fa.value;
+      ate = fd.value <= fa.value ? fa.value : fd.value;
+      D = null;
+      draw();
+    };
+    fd.addEventListener('change', mudar);
+    fa.addEventListener('change', mudar);
+    const l1 = el('label', 'campo');
+    l1.append(el('span', null, t('De')), fd);
+    const l2 = el('label', 'campo');
+    l2.append(el('span', null, t('Até')), fa);
+    barra.append(l1, l2);
+    pagina.append(barra);
+  }
   if (!D || chave !== de + '|' + ate) {
-    pg.append(el('div', 'glass empty', t('A carregar…')));
+    pagina.append(el('div', 'glass empty', t('A carregar…')));
     ler();
     return;
   }
   if (D.falhou) {
-    pg.append(el('div', 'glass empty', t(D.falhou)));
+    pagina.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
-  if (vista === 'formas') formas(pg);
-  else if (vista === 'terminais') terminais(pg);
-  else if (vista === 'correio') correio(pg);
-  else relatorio(pg);
+  if (vista === 'formas') formas(pagina);
+  else if (vista === 'terminais') terminais(pagina);
+  else if (vista === 'config-formas') vistaConfigFormas(pagina);
+  else if (vista === 'correio') correio(pagina);
+  else relatorio(pagina);
 };
 // período no endereço (#multicaixa-tpa?de=…&ate=…): o correio do Financeiro abre o dia certo
-R['multicaixa-tpa'].estadoURL = () => (de ? 'de=' + de + '&ate=' + ate : '');
+R['multicaixa-tpa'].estadoURL = () =>
+  [de ? 'de=' + de + '&ate=' + ate : '', vista !== 'relatorio' ? 'vista=' + encodeURIComponent(vista) : ''].filter(Boolean).join('&');

@@ -52,6 +52,7 @@ test('token de outra pessoa ou de outra sessão não serve (ligado à sessão)',
   expect((await r.json()).codigo).toBe('sessao_terminada');
   const semCookie = await (await novo()).get(API + 'sessao', bearer(tDir)); // token roubado, sem a sessão
   expect(semCookie.status()).toBe(401);
+  expect(semCookie.headers()['set-cookie']).toBeUndefined(); // pedido atrasado não substitui o cookie de uma nova entrada
 });
 
 test('sair termina a sessão e invalida o token; mudar a palavra-passe também', async () => {

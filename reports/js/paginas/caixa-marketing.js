@@ -387,6 +387,8 @@ function rastreio(c) {
 }
 
 R['caixa-marketing'] = (pg) => {
+  const pagina = el('div', 'cx-page');
+  pg.append(pagina);
   dia = dia || hoje();
   const barra = el('section', 'glass sec pc-barra');
   const d = el('div', 'pc-dia');
@@ -402,14 +404,14 @@ R['caixa-marketing'] = (pg) => {
   dc.append(di, el('span', 'dv', dl(dia)));
   d.append(ant, el('b', 'pc-dia-t', ds(dia)), dc, seg);
   barra.append(d);
-  pg.append(barra);
+  pagina.append(barra);
   if (!D) {
-    pg.append(el('div', 'glass empty', t('A carregar…')));
+    pagina.append(el('div', 'glass empty', t('A carregar…')));
     ler();
     return;
   }
   if (D.falhou) {
-    pg.append(el('div', 'glass empty', t(D.falhou)));
+    pagina.append(el('div', 'glass empty', t(D.falhou)));
     return;
   }
   // com o registo dos TPA: o TPA da rota vem já escolhido (muda-se se o promotor usou outro)
@@ -480,7 +482,7 @@ R['caixa-marketing'] = (pg) => {
     si = ed.saldo_inicial == null ? null : +ed.saldo_inicial,
     teorico = si == null ? null : si + ent - sai;
   const [txt, cls] = c.estado === 'fechada' && D.dois_niveis === false ? ['Validada, por aprovar', 'p-serio'] : ESTADOS[c.estado] || [c.estado, 'p-mut'];
-  pg.append(
+  pagina.append(
     tiles([
       { l: t('Saldo inicial'), v: kz(si), s: c.saldo_inicial_origem === 'manual' ? t('primeiro dia: escrito à mão') : t('saldo aprovado do dia anterior') },
       { l: t('Dinheiro entregue'), v: kz(ent), s: t('{n} entregas', { n: ed.entregas.length }) },
@@ -519,13 +521,13 @@ R['caixa-marketing'] = (pg) => {
       l.append(b);
     });
     s.append(l);
-    pg.append(s);
+    pagina.append(s);
   }
   if (c.diferenca != null && Math.abs(c.diferenca) >= 0.01)
     cab.append(pill(t('Diferença na contagem: {v}', { v: kz(c.diferenca) }) + (c.explicacao ? ' · ' + c.explicacao : ''), 'p-bad'));
-  pg.append(cab);
+  pagina.append(cab);
   if (aberta && ed.sugerido)
-    pg.append(
+    pagina.append(
       el(
         'p',
         'note cx-sugerido',
@@ -559,9 +561,9 @@ R['caixa-marketing'] = (pg) => {
       linha,
       el('span', 'note', t('Só no primeiro dia; a partir daí é o saldo aprovado do dia anterior. Sem valor, deixe vazio ou escreva 0 (0,00 Kz).')),
     );
-    pg.append(s);
+    pagina.append(s);
   }
-  pg.append(
+  pagina.append(
     grelha(
       t('Dinheiro entregue pelos promotores'),
       t('Uma linha por entrega; o valor é o total das notas e moedas contadas. Compara-se com o dinheiro recebido no Pinguim BO.'),
@@ -678,10 +680,10 @@ R['caixa-marketing'] = (pg) => {
     const w = el('div', 'cc-scroll');
     w.append(tab);
     s.append(h, w);
-    pg.append(s);
+    pagina.append(s);
     conferir();
-  } else if (c.estado === 'aberta') pg.append(el('p', 'note', t('Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.')));
-  pg.append(rastreio(c));
+  } else if (c.estado === 'aberta') pagina.append(el('p', 'note', t('Sem ligação ao Pinguim BO: a conferência por promotor aparece quando a ligação voltar.')));
+  pagina.append(rastreio(c));
   const erro = msgErro();
   erro.id = 'cx-erro';
   const estado = el('p', 'note');
@@ -866,5 +868,5 @@ R['caixa-marketing'] = (pg) => {
     pdf.id = 'cx-pdf';
     acc.append(pdf);
   }
-  pg.append(estado, erro, acc);
+  pagina.append(estado, erro, acc);
 };
