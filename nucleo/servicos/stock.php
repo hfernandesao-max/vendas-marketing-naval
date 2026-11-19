@@ -136,7 +136,8 @@ function naval_stock_consulta(string $data, string $armazem, array $col): array
     $naoApagado = function (string $t, string $alias) use ($tem): string {
         return $tem($t, 'DELETED') ? ' AND ' . $alias . '.DELETED = 0' : '';
     };
-    // Aceita uma data (stock até ao fim do dia) ou uma data/hora (stock no instante indicado).
+    // GET_STOCK recebe DATETIME, mas o cálculo interno de stock do Pinguim BO reduz a referência a DATE.
+    // O corte intradiário das carrinhas é reconstruído a partir dos movimentos com hora, não deste parâmetro.
     // O formato canónico ODBC evita depender do idioma da sessão e não usa o «T» recusado pelo Driver 17.
     $dataHora = preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $data)
         ? $data
@@ -223,8 +224,8 @@ function naval_stock_consulta(string $data, string $armazem, array $col): array
 }
 
 /**
- * Stock na data indicada (AAAA-MM-DD) ou no instante (AAAA-MM-DD hh:mm:ss) e armazém/rota, calculado no SQL Server
- * pelo próprio Pinguim BO
+ * Stock na data indicada (AAAA-MM-DD) e armazém/rota, calculado no SQL Server pelo próprio Pinguim BO.
+ * Um argumento com hora é aceite pela função SQL, mas o cálculo interno do Pinguim BO usa apenas a data.
  * (dbo.GET_STOCK, só SELECT); null se a base de dados não estiver configurada ou não responder.
  *
  * Artigos considerados em cada armazém (como no Pinguim): os que tiveram movimentos (DOCMOV), contagens de

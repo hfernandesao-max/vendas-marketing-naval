@@ -417,7 +417,7 @@ R['conciliacao-carrinha'] = (pg) => {
     ]),
   );
   if (CC.pode && CC.pode.corrigir) {
-    pg.append(botao(t('Actualizar históricos por contar'), 'ghost sm cc-corrigir', () => actualizarHistoricosAbertos()));
+    pg.append(botao(t('Actualizar bases históricas em aberto'), 'ghost sm cc-corrigir', () => actualizarHistoricosAbertos()));
   }
   if (CC.movimentos === 'saldo')
     pg.append(
@@ -488,15 +488,15 @@ R['conciliacao-carrinha'] = (pg) => {
 
 function actualizarHistoricosAbertos() {
   janela(
-    t('Actualizar históricos por contar'),
+    t('Actualizar bases históricas em aberto'),
     t(
-      'Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.',
+      'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.',
     ),
     (b, ft, fechar) => {
       const resultado = msgErro();
       const actualizar = botao(t('Actualizar'), null, () => {
         actualizar.disabled = true;
-        const total = { actualizadas: 0, ignoradas: 0, falhas: [] };
+        const total = { actualizadas: 0, contagensPreservadas: 0, ignoradas: 0, falhas: [] };
         let cursor = '';
         const executar = async () => {
           while (true) {
@@ -509,6 +509,7 @@ function actualizarHistoricosAbertos() {
             }
             const r = x.resultado || {};
             total.actualizadas += (r.actualizadas || []).length;
+            total.contagensPreservadas += (r.actualizadas || []).filter((a) => a.contagem_preservada).length;
             total.ignoradas += r.ignoradas || 0;
             total.falhas.push(...(r.falhas || []));
             if (!r.mais) break;
@@ -516,8 +517,9 @@ function actualizarHistoricosAbertos() {
           }
           resultado.hidden = false;
           resultado.textContent =
-            t('Actualizadas: {n}; ignoradas: {i}; falhas: {f}.', {
+            t('Actualizadas: {n}; contagens preservadas e a revalidar: {c}; ignoradas: {i}; falhas: {f}.', {
               n: n0(total.actualizadas),
+              c: n0(total.contagensPreservadas),
               i: n0(total.ignoradas),
               f: n0(total.falhas.length),
             }) +

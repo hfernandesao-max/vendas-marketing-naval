@@ -52,6 +52,41 @@ teste('sem movimentos separados: carregado e devolvido pelo saldo; tem de voltar
     igual(0.0, $l['B2']['esperado']);
 });
 
+teste('stock no corte é reconstruído pelo saldo de abertura e movimentos até à hora', function () {
+    $mov = [
+        '10000332' => ['va' => 19.0, 'vd' => 0.0, 'ca' => 0.0, 'da' => 0.0],
+        '10000386' => ['va' => 0.0, 'vd' => 0.0, 'ca' => 105.0, 'da' => 0.0],
+        '10000292' => ['va' => 0.0, 'vd' => 0.0, 'ca' => 0.0, 'da' => 3.0],
+    ];
+    $stock = naval_carr_stock_por_movimentos([
+        '10000332' => ['n' => 'Fraldas', 'q' => 80.0],
+        '10000386' => ['n' => 'Sabão', 'q' => 0.0],
+        '10000292' => ['n' => 'Sabão verde', 'q' => 7.0],
+    ], $mov);
+    igual([61.0, 105.0, 4.0], [
+        $stock['10000332']['q'],
+        $stock['10000386']['q'],
+        $stock['10000292']['q'],
+    ], 'stock inicial + entradas − saídas − vendas antes do corte');
+
+    $movDepois = ['10000332' => ['va' => 0.0, 'vd' => 10.0, 'ca' => 0.0, 'da' => 0.0]];
+    $stock = naval_carr_stock_por_movimentos(
+        ['10000332' => ['n' => 'Fraldas', 'q' => 150.0]],
+        $movDepois
+    );
+    igual(150.0, $stock['10000332']['q'], 'a venda depois do corte não reduz o saldo contado');
+});
+
+teste('actualização histórica inclui apenas registos abertos ainda não corrigidos', function () {
+    foreach (['', 'por_contar', 'por_validar', 'por_aprovar', 'por_fechar'] as $estado) {
+        verdade(naval_carr_registo_aberto_actualizavel(['estado' => $estado]), 'estado aberto ' . $estado);
+    }
+    verdade(!naval_carr_registo_aberto_actualizavel(['estado' => 'aprovada']), 'conciliação fechada não muda');
+    verdade(!naval_carr_registo_aberto_actualizavel([
+        'estado' => 'por_validar', 'base_congelada_motivo' => 'corte_movimentos_v1',
+    ]), 'base já actualizada não é processada outra vez');
+});
+
 teste('nada para contar: stock do dia anterior retirado ou corrigido no Pinguim BO, sem vendas, não pede contagem', function () {
     // rota 1011 em 12-11-2026: 90 caixas no fim do dia 11, corrigidas no Pinguim BO para zero, nenhuma venda
     $r = ['s0' => ['10000009' => ['n' => 'Fraldas', 'q' => 65.0], '10000386' => ['n' => 'Sabão', 'q' => 15.0]], 's1' => [], 'v' => [], 'mov' => null];
@@ -215,12 +250,13 @@ teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e sa
         ['ROTA' => '1005', 'CODIGO' => '10000292', 'ANTES' => 1, 'ENTRADAS' => 15.0, 'SAIDAS' => 0.0],
         ['ROTA' => '1005', 'CODIGO' => '10000293', 'ANTES' => 1, 'ENTRADAS' => 15.0, 'SAIDAS' => 0.0],
         ['ROTA' => '1005', 'CODIGO' => '10000382', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 12.0],
+        ['ROTA' => '1005', 'CODIGO' => '10000332', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 27.0],
         ['ROTA' => '1005', 'CODIGO' => '10000332', 'ANTES' => 0, 'ENTRADAS' => 200.0, 'SAIDAS' => 0.0],
         ['ROTA' => '1000', 'CODIGO' => '10000382', 'ANTES' => 1, 'ENTRADAS' => 12.0, 'SAIDAS' => 0.0],   // armazém principal: não é carrinha
     ];
     $mov = naval_carr_movimentos_agrupar($rows, ['1005', '1006']);
     igual(['1005'], array_map('strval', array_keys($mov)));
-    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0], $mov['1005']['10000332']);
+    igual(['c' => 200.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 27.0, 'vd' => 0.0], $mov['1005']['10000332']);
     $r = ['s0' => ['10000292' => ['n' => 'Sabão verde', 'q' => 7.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 7.0], '10000382' => ['n' => 'Sabão branco', 'q' => 12.0],
         '10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
         's1' => ['10000292' => ['n' => 'Sabão verde', 'q' => 22.0], '10000293' => ['n' => 'Sabão castanho', 'q' => 22.0], '10000332' => ['n' => 'Fraldas', 'q' => 237.0]],
@@ -240,8 +276,8 @@ teste('corte pelos documentos do Pinguim BO (DOCMOVDETAIL): carga de manhã e sa
     igual('estimado', naval_carr_stock_corte($data, '1005', $r, '16:00')['origem']);
 });
 
-teste('corte por fotografia: as vendas registadas depois do corte saem do esperado (facturas às 18:30)', function () {
-    // rota 1009 a 23-10-2026: fotografia às 15:50 com 40 fraldas; três facturas entre as 18:25 e as 18:44 (30 fraldas)
+teste('corte por movimentos horários: as vendas depois do corte não reduzem o saldo contado', function () {
+    // rota 1009: 40 fraldas no início, três facturas depois das 18:25 (30 fraldas), fotografia antiga desactualizada
     $rows = [
         ['ROTA' => '1009', 'CODIGO' => '10000332', 'ANTES' => 0, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 30.0],
         ['ROTA' => '1009', 'CODIGO' => '10000015', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 0.0, 'VENDIDO' => 5.0],
@@ -249,16 +285,19 @@ teste('corte por fotografia: as vendas registadas depois do corte saem do espera
     $mov = naval_carr_movimentos_agrupar($rows, ['1009']);
     igual([30.0, 0.0, 5.0], [$mov['1009']['10000332']['vd'], $mov['1009']['10000015']['vd'], $mov['1009']['10000015']['va']], 'separa vendas antes e depois do corte');
     $data = date('Y-m-d', time() - 5 * 86400);
-    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', ['hora' => '15:50', 'rotas' => ['1009' => ['10000332' => ['q' => 40.0], '10000015' => ['q' => 6.0]]]]);
-    $c = naval_carr_stock_corte($data, '1009', ['mov' => $mov['1009']], '16:00');
-    igual(['fotografia', 10.0, 6.0, 30.0], [$c['origem'], $c['q']['10000332'], $c['q']['10000015'], $c['vendido_depois']]);
+    naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', ['hora' => '15:50', 'rotas' => ['1009' => ['10000332' => ['q' => 10.0], '10000015' => ['q' => 6.0]]]]);
+    $c = naval_carr_stock_corte($data, '1009', [
+        's0' => ['10000332' => ['n' => 'Fraldas', 'q' => 40.0], '10000015' => ['n' => 'Produto B', 'q' => 6.0]],
+        'mov' => $mov['1009'],
+    ], '16:00');
+    igual(['documentos', 40.0, 1.0, 30.0], [$c['origem'], $c['q']['10000332'], $c['q']['10000015'], $c['vendido_depois']]);
     @unlink(naval_carr_pasta($data) . '/_corte.json');
 });
 
 teste('a base da contagem fica congelada e não recebe uma fotografia posterior', function () {
     $r = [
         's0' => ['10000332' => ['n' => 'Fraldas', 'q' => 64.0]],
-        's1' => ['10000332' => ['n' => 'Fraldas', 'q' => 110.0]],
+        's1' => ['10000332' => ['n' => 'Fraldas', 'q' => 4.0]],
         'v' => ['10000332' => ['n' => 'Fraldas', 'u' => 'CX', 'q' => 60.0, 't' => 900000.0]],
         'mov' => null,
     ];
@@ -268,6 +307,8 @@ teste('a base da contagem fica congelada e não recebe uma fotografia posterior'
     ], $mov);
     $linha = naval_carr_linhas($base, ['10000332' => 10], ['10000332' => 15000.0])[0];
     igual([25.0, 39.0, -29.0], [$linha['vendido'], $linha['esperado'], $linha['diferenca']]);
+    igual([4.0, -35.0], [$base['s1']['10000332']['q'], $linha['depois_do_corte']],
+        'preserva o saldo de fim do dia e mostra as vendas posteriores ao corte');
     $data = date('Y-m-d', time() - 2 * 86400);
     naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', [
         'data' => $data, 'hora' => '15:50',

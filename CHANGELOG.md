@@ -1,5 +1,12 @@
 ## 19-11-2026
 
+### Stock de corte das carrinhas calculado pelos movimentos horários
+
+<!-- tipo: impacto -->
+
+- O saldo no corte passa a ser reconstruído a partir do stock de abertura e de vendas, cargas e devoluções registadas até à hora operacional; `dbo.GET_STOCK` recebe uma data sem hora e já não é usado como fotografia intradiária.
+- O super administrador pode actualizar as bases históricas de todas as conciliações ainda abertas. Quantidades contadas são preservadas; validações e aprovações pendentes são invalidadas para nova conferência. Conciliações fechadas não são alteradas.
+
 ### Verificações do GitHub novamente a verde
 
 <!-- tipo: correcao -->
@@ -19,7 +26,7 @@
 - A primeira geração da folha congela no servidor o stock e os movimentos do Pinguim BO; reimpressões e submissão reutilizam a mesma base.
 - O PDF regista a hora de referência e a conciliação deixa de ser alterada por fotografias posteriores; movimentos e vendas são apurados até ao instante congelado.
 - A variação líquida após o corte deixa de ser apresentada como carga.
-- O super administrador pode actualizar em bloco as conciliações históricas ainda por contar, usando o stock e os movimentos do Pinguim BO no corte operacional; contagens feitas e aprovações não são alteradas.
+- O super administrador pode actualizar em bloco as conciliações históricas ainda abertas. As quantidades contadas são preservadas; validações e aprovações pendentes são invalidadas para nova conferência. Conciliações fechadas não são alteradas.
 
 ### Consultar o dicionário técnico sem exportar Excel
 

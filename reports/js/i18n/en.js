@@ -4266,9 +4266,11 @@ export const EN = {
   'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.':
     'The count covers what was in the van at the {h} cut-off ({o}). The load for the next day is not part of this count: it becomes van stock tomorrow at 00:00.',
   'Base do sistema congelada em: {h}.': 'System baseline frozen at: {h}.',
-  'Actualizar históricos por contar': 'Update uncounted historical reconciliations',
-  'Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.':
-    'Updates every pre-today reconciliation still awaiting a count using historical Pinguim BO data. Existing counts and approved reconciliations are not changed. The baseline will be frozen for the sheet and count.',
+  'Actualizar bases históricas em aberto': 'Update open historical baselines',
+  'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; se a base mudar, invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.':
+    'Updates pre-today reconciliations that are not yet closed using timestamped Pinguim BO movements. Counted quantities are preserved; if the baseline changes, pending validations and approvals are invalidated for review. Closed reconciliations are not changed.',
+  'Actualizadas: {n}; contagens preservadas e a revalidar: {c}; ignoradas: {i}; falhas: {f}.':
+    'Updated: {n}; counts preserved and requiring revalidation: {c}; skipped: {i}; failures: {f}.',
   'Actualizadas: {n}; ignoradas: {i}; falhas: {f}.': 'Updated: {n}; skipped: {i}; failures: {f}.',
   'Não foi possível actualizar os históricos.': 'Historical reconciliations could not be updated.',
   'Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.':

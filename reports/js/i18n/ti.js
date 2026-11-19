@@ -4189,10 +4189,11 @@ export const TI = {
   'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.':
     'እቲ ቆጸራ ኣብ ናይ {h} መቑረጺ ኣብ መኪና ዝነበረ ይሽፍን ({o})። ናይ ጽባሕ ጽዕነት ኣብዚ ቆጸራ ኣይኣቱን፦ ጽባሕ ኣብ 00:00 ናይ መኪና ክምችት ይኸውን።',
   'Base do sistema congelada em: {h}.': 'መሰረት ስርዓት ኣብዚ ግዜ ተዓጽዩ፦ {h}።',
-  'Actualizar históricos por contar': 'ዘይተቖጸሩ ታሪኻዊ ምስምማዓት ኣሐድስ',
-  'Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.':
-    'ክሳብ ቅድሚ ሎሚ ዘለዉ ዘይተቖጸሩ ምስምማዓት ብታሪኻዊ ሓበሬታ Pinguim BO የሐድስ። ዝተወድኡ ቆጸራታትን ዝተጸደቑ ምስምማዓትን ኣይቀይርን። እቲ መሰረት ንወረቐትን ቆጸራን ይዕጾ።',
-  'Actualizadas: {n}; ignoradas: {i}; falhas: {f}.': 'ዝተሓደሱ፦ {n}; ዝተሓለፉ፦ {i}; ጌጋታት፦ {f}።',
+  'Actualizar bases históricas em aberto': 'ክፉታት ታሪኻዊ መሰረታት ኣሐድስ',
+  'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; se a base mudar, invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.':
+    'ክሳብ ቅድሚ ሎሚ ዘለዉ ዘይተዓጽዉ ምስምማዓት ብግዜ ዝተመዝገቡ ምንቅስቓሳት Pinguim BO የሐድስ። ዝተቖጸሩ ብዝሒ ይሕሎ፤ መሰረት እንተተቐይሩ፡ ንዳግማይ ምርግጋጽ ዝተጸበዩ ምርግጋጻትን ፍቓዳትን ይስረዙ። ዝተዓጽዉ ምስምማዓት ኣይቅየሩን።',
+  'Actualizadas: {n}; contagens preservadas e a revalidar: {c}; ignoradas: {i}; falhas: {f}.':
+    'ዝተሓደሱ፦ {n}; ዝተሓለዉን እንደገና ዝረጋገጹን ቆጸራታት፦ {c}; ዝተሓለፉ፦ {i}; ጌጋታት፦ {f}።',
   'Não foi possível actualizar os históricos.': 'ታሪኻዊ ምስምማዓት ምሕዳስ ኣይተኻእለን።',
   'Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.':
     'ናይ ምስምማዕ መሰረት ኣብ {h} ተዓጽዩ፣ ኣብቲ ግዜ ኣብ Pinguim BO ዝተመዝገበ ክምችትን ምንቅስቓሳትን ተጠቒሙ።',
