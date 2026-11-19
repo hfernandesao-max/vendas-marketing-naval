@@ -106,7 +106,7 @@ teste('contagem cega: sem os números do sistema', function () {
     igual(['codigo', 'artigo', 'unidade', 'contado', 'alertas'], array_keys($c[0]));
 });
 
-teste('contar e aprovar: motivo obrigatório por diferença; «outro» exige nota; aprovada não volta a mudar', function () {
+teste('contar e aprovar: motivo livre até 255 caracteres obrigatório por diferença; aprovada não volta a mudar', function () {
     $data = date('Y-m-d');
     naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', ['data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
         'precos' => ['A1' => 1000.0, 'B2' => 500.0], 'rotas' => ['1001' => $GLOBALS['cc_rota']]]);
@@ -127,14 +127,16 @@ teste('contar e aprovar: motivo obrigatório por diferença; «outro» exige not
     naval_carr_validar($data, '1001', $eu);
     $coord = ['login' => 'coord', 'nome' => 'Coordenador', 'email' => ''];
     lanca(400, function () use ($data, $coord) { naval_carr_aprovar($data, '1001', [], $coord); });
-    lanca(400, function () use ($data, $coord) { naval_carr_aprovar($data, '1001', ['A1' => ['motivo' => 'outro', 'nota' => '']], $coord); });
-    naval_carr_aprovar($data, '1001', ['A1' => ['motivo' => 'avaria', 'nota' => 'caixa molhada']], $coord);
+    lanca(400, function () use ($data, $coord) { naval_carr_aprovar($data, '1001', ['A1' => ['motivo' => str_repeat('x', 256)]], $coord); });
+    $motivo = str_repeat('x', 255);
+    naval_carr_aprovar($data, '1001', ['A1' => ['motivo' => $motivo]], $coord);
     $a = naval_carr_fechar($data, '1001', ['login' => 'resp', 'nome' => 'Responsável', 'email' => '']);
     igual('aprovada', $a['resumo']['estado']);
     lanca(409, function () use ($data, $eu) { naval_carr_contar($data, '1001', ['A1' => 4], $eu); });
     $v = naval_carr_vista($data, null, true);
     igual('aprovada', $v['rotas'][0]['resumo']['estado']);
     igual(4, count($v['rotas'][0]['historico']));
+    igual($motivo, naval_carr_ler($data, '1001')['motivos']['A1']['motivo']);
     igual([], naval_carr_vista($data, ['1002'], true)['rotas'], 'âmbito por rota');
     lanca(400, function () use ($eu) { naval_carr_contar(date('Y-m-d', time() + 2 * 86400), '1001', [], $eu); });
 });
@@ -185,7 +187,7 @@ teste('dois níveis de aprovação com segregação de funções: coordenador e,
     $reg = naval_carr_ler($data, '1001');
     igual(['tec', 'tec', 'coord', 'resp'], [$reg['contado_por'], $reg['validado_por'], $reg['coordenado_por'], $reg['aprovado_por']]);
     igual(['contagem', 'validada', 'aprovada_coordenador', 'aprovada'], array_column($reg['historico'], 'accao'));
-    igual('avaria', $reg['motivos']['A1']['motivo']);
+    igual('avaria', $reg['motivos']['A1']['motivo'], 'motivos já usados continuam aceites');
 });
 
 teste('limite de peso: planeado + o que está na carrinha não passa a capacidade da viatura', function () {

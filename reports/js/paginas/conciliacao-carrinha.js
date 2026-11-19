@@ -304,18 +304,10 @@ function tabelaRota(r) {
     const ult = el('td', 'cc-g-mot');
     if (est === 'por_contar') l.alertas.forEach((a) => ult.append(pill(t(ALERTAS[a] || a), 'p-warn')));
     else if (l.diferenca && aprovar) {
-      const s = el('select');
-      s.append(el('option', null, t('Escolha o motivo')));
-      s.firstChild.value = '';
-      Object.entries(CC.motivos).forEach(([k, v]) => {
-        const o = el('option', null, t(v));
-        o.value = k;
-        s.append(o);
-      });
-      const nota = entrada('text', '', { maxLength: 300, placeholder: t('Nota') });
-      s.setAttribute('aria-label', t('Motivo') + ' · ' + l.artigo);
-      escolhas[l.codigo] = { s, nota };
-      ult.append(s, nota);
+      const motivo = entrada('text', '', { maxLength: 255, placeholder: t('Escreva o motivo') });
+      motivo.setAttribute('aria-label', t('Motivo') + ' · ' + l.artigo);
+      escolhas[l.codigo] = motivo;
+      ult.append(motivo);
     } else if (l.diferenca) {
       const m = (r.motivos || {})[l.codigo];
       ult.textContent = m ? t(CC.motivos[m.motivo] || m.motivo) + (m.nota ? ' · ' + m.nota : '') : '—';
@@ -371,7 +363,7 @@ function tabelaRota(r) {
       acc.append(
         botao(t('Aprovar (coordenador)'), null, () => {
           const motivos = {};
-          Object.entries(escolhas).forEach(([c, x]) => (motivos[c] = { motivo: x.s.value, nota: x.nota.value }));
+          Object.entries(escolhas).forEach(([c, campo]) => (motivos[c] = { motivo: campo.value }));
           enviar({ accao: 'aprovar', motivos }, 'Aprovada pelo coordenador; segue para o responsável.');
         }),
       );

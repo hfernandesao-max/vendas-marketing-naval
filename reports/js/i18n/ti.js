@@ -2097,6 +2097,7 @@ export const TI = {
   'Contagem gravada: {n} diferença(s) a aprovar.': 'ቆጸራ ተዓቂቡ፦ {n} ፍልልይ ንምጽዳቕ።',
   'Contagem gravada, sem diferenças.': 'ቆጸራ ተዓቂቡ፡ ፍልልይ የለን።',
   'Escolha o motivo': 'ምኽንያት ምረጹ',
+  'Escreva o motivo': 'ምኽንያቱ ጸሓፉ',
   Recontar: 'ደጊምካ ቍጸር',
   'Aprovar com as diferenças': 'ምስቲ ፍልልያት ኣጽድቕ',
   'Conciliação aprovada.': 'ምዝማድ ጸዲቑ።',

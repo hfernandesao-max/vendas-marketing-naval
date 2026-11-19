@@ -915,7 +915,7 @@ function naval_carr_validar(string $data, string $rota, array $eu): array
 }
 
 /**
- * 1.º nível (coordenador): aprova a contagem validada, com o motivo de cada diferença (e nota em «outro»);
+ * 1.º nível (coordenador): aprova a contagem validada, com um motivo de até 255 caracteres por diferença;
  * estado → por_fechar. Quem contou não aprova (segregação de funções).
  */
 function naval_carr_aprovar(string $data, string $rota, array $motivos, array $eu): array
@@ -933,15 +933,16 @@ function naval_carr_aprovar(string $data, string $rota, array $motivos, array $e
         foreach ($linhas as $l) {
             if ($l['diferenca'] === null || abs($l['diferenca']) <= NAVAL_CARR_TOLERANCIA) continue;
             $x = (array) ($motivos[$l['codigo']] ?? []);
-            $mot = (string) ($x['motivo'] ?? '');
+            $motivoEntrada = $x['motivo'] ?? null;
+            $mot = naval_texto(is_string($motivoEntrada) ? $motivoEntrada : '', 256);
             $nota = naval_texto($x['nota'] ?? '', 300);
-            if (!isset(NAVAL_CARR_MOTIVOS[$mot]) || ($mot === 'outro' && mb_strlen($nota) < 5)) {
+            if ($mot === '' || mb_strlen($mot) > 255) {
                 $faltam[] = $l['artigo'];
                 continue;
             }
             $m[$l['codigo']] = ['motivo' => $mot, 'nota' => $nota];
         }
-        if ($faltam) throw new NavalErro('Indique o motivo de cada diferença:', 400, ['erros' => $faltam]);
+        if ($faltam) throw new NavalErro('Indique um motivo de até 255 caracteres para cada diferença:', 400, ['erros' => $faltam]);
         $reg['motivos'] = $m;
         $reg['estado'] = 'por_fechar';
         $reg['coordenado_por'] = (string) $eu['login'];
@@ -999,9 +1000,12 @@ function naval_carr_avisar_falta(string $data, string $rota, array $linhas, arra
     $linhasHtml = '';
     foreach ($linhas as $l) {
         if ($l['diferenca'] === null || abs($l['diferenca']) <= NAVAL_CARR_TOLERANCIA) continue;
+        $motivo = (string) ($motivos[$l['codigo']]['motivo'] ?? '');
+        $textoMotivo = NAVAL_CARR_MOTIVOS[$motivo] ?? $motivo;
+        $nota = (string) ($motivos[$l['codigo']]['nota'] ?? '');
         $linhasHtml .= '<tr><td ' . $td . '>' . $h($l['artigo']) . '</td><td ' . $td . ' align="right">' . $h(number_format($l['diferenca'], 0, ',', ' '))
             . '</td><td ' . $td . ' align="right">' . $h(number_format((float) $l['valor'], 2, ',', ' ')) . ' Kz</td><td ' . $td . '>'
-            . $h(NAVAL_CARR_MOTIVOS[$motivos[$l['codigo']]['motivo'] ?? ''] ?? '') . ' ' . $h($motivos[$l['codigo']]['nota'] ?? '') . '</td></tr>';
+            . $h($textoMotivo . ($nota !== '' ? ' · ' . $nota : '')) . '</td></tr>';
     }
     $html = '<div style="font:14px Segoe UI,Arial,sans-serif;color:#0a2a52;text-align:justify">'
         . '<p>A conciliação da carrinha da rota <b>' . $h($rota) . '</b> de ' . $h(naval_data_pt($data)) . ' foi aprovada por ' . $h($eu['nome'] ?? $eu['login'])

@@ -2126,6 +2126,7 @@ export const EN = {
   'Contagem gravada: {n} diferença(s) a aprovar.': 'Count saved: {n} difference(s) to approve.',
   'Contagem gravada, sem diferenças.': 'Count saved, no differences.',
   'Escolha o motivo': 'Choose the reason',
+  'Escreva o motivo': 'Enter the reason',
   Recontar: 'Recount',
   'Aprovar com as diferenças': 'Approve with the differences',
   'Conciliação aprovada.': 'Reconciliation approved.',

@@ -53,9 +53,10 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
         return r.fulfill({ json: { ok: true } });
       }
       if (b.accao === 'aprovar') {
-        if (!b.motivos.A1 || !b.motivos.A1.motivo) return r.fulfill({ json: { ok: false, erro: 'Indique o motivo de cada diferença:', erros: ['Fraldas M'] } });
+        if (!b.motivos.A1 || !b.motivos.A1.motivo)
+          return r.fulfill({ json: { ok: false, erro: 'Indique um motivo de até 255 caracteres para cada diferença:', erros: ['Fraldas M'] } });
         estado = 'por_fechar';
-        Object.assign(reg, { coordenado_por: eu, coordenado_em: agora });
+        Object.assign(reg, { coordenado_por: eu, coordenado_em: agora, motivos: b.motivos });
         return r.fulfill({ json: { ok: true } });
       }
       estado = 'aprovada';
@@ -94,7 +95,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
             cega: !contada,
             linhas,
             ...reg,
-            motivos: ['por_fechar', 'aprovada'].includes(estado) ? { A1: { motivo: 'avaria', nota: '' } } : {},
+            motivos: ['por_fechar', 'aprovada'].includes(estado) ? reg.motivos : {},
             resumo: { estado, artigos: 2, alertas: 0, diferencas: contada ? 1 : 0, falta_kz: contada ? 1000 : 0, sobra_kz: 0 },
             historico: [],
           },
@@ -168,11 +169,14 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await actualizar();
   await det.getByRole('button', { name: 'Aprovar (coordenador)' }).click();
   await expect(det.locator('.erro')).toContainText('Fraldas M');
-  await det.getByLabel('Motivo · Fraldas M').selectOption('avaria');
+  const campoMotivo = det.getByLabel('Motivo · Fraldas M');
+  await expect(campoMotivo).toHaveAttribute('maxlength', '255');
+  const textoMotivo = 'Contagem manual';
+  await campoMotivo.fill(textoMotivo);
   await expect(page.locator('#toast')).not.toBeVisible({ timeout: 15000 });
   await det.getByRole('button', { name: 'Aprovar (coordenador)' }).click();
   await expect(rota).toContainText('Por aprovar (responsável)');
-  expect(pedidos.find((x) => x.accao === 'aprovar' && x.motivos.A1.motivo).motivos.A1.motivo).toBe('avaria');
+  expect(pedidos.find((x) => x.accao === 'aprovar' && x.motivos.A1.motivo).motivos.A1.motivo).toBe(textoMotivo);
   await expect(det.getByRole('button', { name: 'Aprovar e fechar' })).toHaveCount(0);
 
   // 3. responsável: aprovação final, fica fechada
@@ -187,7 +191,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   expect(res.nome).toBe('CC-1001-20261026_resultado-da-contagem.pdf');
   expect(res.texto).toContain('Sistema');
   expect(res.texto).toContain('Devolvido');
-  expect(res.texto).toContain('Produto danificado');
+  expect(res.texto).toContain(textoMotivo);
   expect(res.texto).toContain('coord');
   expect(res.texto).toContain('resp');
   // rastreabilidade: nome completo e utilizador de quem assinou, no registo e nos blocos de assinatura
