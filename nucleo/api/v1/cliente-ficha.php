@@ -19,7 +19,7 @@ if (!naval_olap_configurado()) throw new NavalErro('O servidor OLAP não está c
 $fresco = ($_GET['actualizar'] ?? '') === '1';
 try {
     // a versão na chave muda quando as colunas lidas mudam (uma cópia antiga não serve à ficha nova)
-    $bruto = naval_cache('olap-cliente-v2|' . $codigo, 600, function () use ($codigo) { return naval_olapcli_ler($codigo); }, $fresco);
+    $bruto = naval_cache('olap-cliente-v3|' . $codigo, 600, function () use ($codigo) { return naval_olapcli_ler($codigo); }, $fresco);
 } catch (Throwable $e) {
     error_log('[ficha do cliente OLAP] ' . $e->getMessage());
     throw new NavalErro('Não foi possível ler o OLAP.', 503);

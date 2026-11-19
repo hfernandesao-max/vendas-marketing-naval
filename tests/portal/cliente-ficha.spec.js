@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs';
 import { abrir, artigos, vendas } from './dados.js';
 
 const carteira = JSON.parse(readFileSync('reports/data/clientes.json', 'utf8'));
-const cli = carteira.find((x) => x.codigo && x.codigo !== '0000000000' && x.nome && x.rota);
+const cli = carteira.find((x) => x.codigo && x.codigo !== '0000000000' && x.nome && x.rota && x.nif && !/^9{9,}$/.test(x.nif));
+// as vendas identificam o cliente pelo identificador interno do Pinguim BO (ENTITY.ID), não pelo código da carteira
+const ID_INTERNO = '569716347978999001';
 
 // duas facturas do cliente: uma factura-recibo paga em numerário e uma factura a crédito com parte em Multicaixa
 const doCliente = [
@@ -18,7 +20,7 @@ const doCliente = [
     tipo_codigo: 'FR',
     documento: 'FR FC/2026/1',
     cliente: cli.nome,
-    cliente_codigo: cli.codigo,
+    cliente_codigo: ID_INTERNO,
     nif: cli.nif,
     liquidado: true,
     total: 11400,
@@ -36,8 +38,8 @@ const doCliente = [
     tipo_codigo: 'FT',
     documento: 'FT FC/2026/2',
     cliente: cli.nome,
-    cliente_codigo: cli.codigo,
-    nif: cli.nif,
+    cliente_codigo: ID_INTERNO,
+    nif: '',
     liquidado: false,
     total: 22800,
     total_sem_iva: 20000,
@@ -49,7 +51,7 @@ const doCliente = [
 const fichaOlap = {
   ok: true,
   origem: 'olap',
-  cliente: { codigo: cli.codigo, nome: cli.nome, nome_fiscal: 'Nome Fiscal, Lda', nif: null, tipologia: 'MINI-MERCADO', actualizado: null },
+  cliente: { codigo: cli.codigo, id: ID_INTERNO, nome: cli.nome, nome_fiscal: 'Nome Fiscal, Lda', nif: null, tipologia: 'MINI-MERCADO', actualizado: null },
   localizacao: { municipio: 'VIANA', cidade: null, lat: -8.877767, lng: 13.330733, gps_invalido: false },
   atribuicao: {
     rota: cli.rota,
@@ -229,6 +231,7 @@ test('ficha do cliente: sem OLAP, mostra o aviso e continua com os dados da cart
   await dlg.getByRole('tab', { name: 'Mapa' }).click();
   await expect(dlg.locator('#cf-p-mapa .cf-erro')).toContainText('O servidor OLAP não está configurado.');
   await dlg.getByRole('tab', { name: 'Vendas' }).click();
-  await expect(dlg.locator('#cf-p-vendas .cf-tab tbody tr')).toHaveCount(2);
+  // sem OLAP não há o identificador interno: só a factura com o NIF do cliente
+  await expect(dlg.locator('#cf-p-vendas .cf-tab tbody tr')).toHaveCount(1);
   expect(erros).toEqual([]);
 });

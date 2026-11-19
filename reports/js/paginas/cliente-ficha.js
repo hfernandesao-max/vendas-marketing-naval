@@ -33,11 +33,15 @@ const CATEGORIA = {
 };
 const ULTIMOS_DOCS = 15;
 
-/** Documentos do cliente no período: pelo código do Pinguim BO; sem código no documento, pelo NIF (nunca o Consumidor Final). */
-export function vendasDoCliente(V, c) {
-  const cod = String(c.codigo || '');
+/**
+ * Documentos do cliente no período. As vendas identificam o cliente pelo identificador interno do Pinguim BO
+ * (ENTITY.ID, que o OLAP devolve em cliente.id); a carteira usa o código (ENTITY.CODE). Conta o documento cujo
+ * cliente_codigo é um dos dois ou, como recurso, com o mesmo NIF (nunca o Consumidor Final).
+ */
+export function vendasDoCliente(V, c, id = '') {
+  const ids = new Set([String(c.codigo || ''), String(id || '')].filter(Boolean));
   const nif = String(c.nif || '');
-  return V.filter((x) => (x.cliente_codigo ? cod !== '' && String(x.cliente_codigo) === cod : nif !== '' && !isCF(nif) && String(x.nif) === nif));
+  return V.filter((x) => ids.has(String(x.cliente_codigo || '')) || (nif !== '' && !isCF(nif) && String(x.nif) === nif));
 }
 
 // ── pequenas peças, fora do registo da página (a ficha não entra no Excel da página) ─────────────────────────────────
@@ -485,10 +489,9 @@ function painelMapa(c, o, fechar) {
 export function abrirFicha(c, inicial = 'dados') {
   return janela(c.nome || c.codigo || t('Cliente'), [c.codigo, promotorRota(c.rota)].filter(Boolean).join(' · '), (b, ft, fechar, d) => {
     d.classList.add('dlg-largo', 'cf-dlg');
-    const V = vendasDoCliente(
-      (DB.vendas || []).filter((x) => inR(x.data)),
-      c,
-    );
+    const doPeriodo = (DB.vendas || []).filter((x) => inR(x.data));
+    // até chegar o identificador interno do OLAP, só o código e o NIF; depois, também o identificador das vendas
+    let V = vendasDoCliente(doPeriodo, c);
     let olap = null; // {ok, …} ou {erro}
     const lista = el('div', 'rel-tabs rel-tabs-2 cf-sep');
     lista.setAttribute('role', 'tablist');
@@ -563,6 +566,10 @@ export function abrirFicha(c, inicial = 'dados') {
         olap = x && x.ok ? x : { erro: (x && x.erro) || 'Não foi possível ler o OLAP.' };
         if (!d.open) return;
         DO_OLAP.forEach(desenhar);
+        if (olap.cliente && olap.cliente.id) {
+          V = vendasDoCliente(doPeriodo, c, olap.cliente.id);
+          ['vendas', 'pagamentos'].forEach(desenhar);
+        }
       });
   });
 }

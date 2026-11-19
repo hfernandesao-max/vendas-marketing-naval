@@ -27,6 +27,7 @@ teste('ficha OLAP: textos em UTF-8, município, GPS, dias de visita (1 = domingo
     $f = naval_olapcli_ficha(olapcli_bruto(), true);
     igual('Loja Bom Preço', $f['cliente']['nome']);
     igual('5000000000', $f['cliente']['nif']);
+    igual('5697', $f['cliente']['id'], 'identificador interno: é o que as vendas usam');
     igual('VIANA', $f['localizacao']['municipio']);
     igual(null, $f['localizacao']['cidade']);
     igual(-8.941857, $f['localizacao']['lat']);

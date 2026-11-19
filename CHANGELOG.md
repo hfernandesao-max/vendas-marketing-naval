@@ -1,5 +1,11 @@
 ## 19-11-2026
 
+### Ficha do cliente: vendas e pagamentos encontrados pelo identificador das vendas
+
+<!-- tipo: correcao -->
+
+- Os separadores Vendas e Pagamentos da ficha do cliente passam a encontrar os documentos pelo identificador interno do cliente no Pinguim BO (o mesmo das vendas, lido do OLAP) e, como recurso, pelo NIF. Antes procuravam pelo código da carteira, que as vendas não trazem, e ficavam vazios.
+
 ### Ficha do cliente na Carteira de clientes
 
 <!-- tipo: funcionalidade -->

@@ -192,6 +192,8 @@ function naval_olapcli_ficha(array $bruto, bool $veNif): array
     return [
         'cliente' => [
             'codigo' => (string) $c['CODE'],
+            // identificador interno (ENTITY.ID do Pinguim BO): é por ele que as vendas identificam o cliente
+            'id' => (string) $c['ID'],
             'nome' => naval_olapcli_txt($c['DESCRIPTION'] ?? null),
             'nome_fiscal' => naval_olapcli_txt($c['FISCALNAME'] ?? null),
             'nif' => $veNif ? naval_olapcli_txt($c['TAX_NUMBER'] ?? null) : null,
