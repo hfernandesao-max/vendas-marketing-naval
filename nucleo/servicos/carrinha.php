@@ -541,9 +541,9 @@ function naval_carr_actualizar_abertas_anteriores(array $eu, string $depoisDe = 
                         if (!is_array($r)) return false;
                         $r['post'] = naval_carr_posteriores($reg);
                         $r = naval_carr_congelar_base($r, $referencia, (array) ($stock[$rota] ?? []), (array) ($movimentos[$rota] ?? []));
-                        if (!naval_carr_linhas($r, null, (array) ($d['precos'] ?? []))) return false;
+                        if (!naval_carr_linhas($r, null, (array) $d['precos'])) return false;
                         $reg['base'] = array_diff_key($r, ['post' => 1]);
-                        $reg['precos'] = (array) ($d['precos'] ?? []);
+                        $reg['precos'] = (array) $d['precos'];
                         $reg['base_congelada_em'] = date('Y-m-d H:i:s');
                         $reg['base_congelada_por'] = (string) ($eu['login'] ?? '');
                         $reg['base_congelada_motivo'] = 'actualizacao_retroactiva';

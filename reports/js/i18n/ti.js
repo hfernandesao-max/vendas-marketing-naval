@@ -4197,8 +4197,7 @@ export const TI = {
   'Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.':
     'ናይ ምስምማዕ መሰረት ኣብ {h} ተዓጽዩ፣ ኣብቲ ግዜ ኣብ Pinguim BO ዝተመዝገበ ክምችትን ምንቅስቓሳትን ተጠቒሙ።',
   'Não foi possível congelar a base da contagem.': 'ናይ ቆጸራ መሰረት ምዕጻው ኣይተኻእለን።',
-  'Não foi possível congelar o stock e os movimentos no momento da contagem. Tente novamente.':
-    'ኣብ ግዜ ቆጸራ ክምችትን ምንቅስቓሳትን ምዕጻው ኣይተኻእለን። እንደገና ፈትኑ።',
+  'Não foi possível congelar o stock e os movimentos no momento da contagem. Tente novamente.': 'ኣብ ግዜ ቆጸራ ክምችትን ምንቅስቓሳትን ምዕጻው ኣይተኻእለን። እንደገና ፈትኑ።',
   'fotografia do stock antes do corte': 'ቅድሚ መቑረጺ ዝተወስደ ስእሊ ክምችት',
   'estimado: inicial − vendido + cargas confirmadas antes do corte': 'ግምት፦ መጀመርታ − ዝተሸጠ + ቅድሚ መቑረጺ ዝተረጋገጹ ጽዕነታት',
   'Variação líquida do stock depois do corte: {q}.': 'ድሕሪ መቑረጺ ዘሎ ናይ ክምችት ጠቕላላ ለውጢ፦ {q}።',

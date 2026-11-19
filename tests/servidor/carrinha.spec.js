@@ -42,9 +42,11 @@ test('conciliação da carrinha: acessos, contagem cega, âmbito, motivo e aprov
 
   const log = (await entrar('log')).ctx;
   expect(
-    (await log.post(API + 'conciliacao-carrinha', {
-      data: { accao: 'actualizar_abertas_anteriores', csrf: await csrf(log) },
-    })).status(),
+    (
+      await log.post(API + 'conciliacao-carrinha', {
+        data: { accao: 'actualizar_abertas_anteriores', csrf: await csrf(log) },
+      })
+    ).status(),
   ).toBe(403);
   const v = await (await log.get(URL)).json();
   expect(v.gere).toBe(true);

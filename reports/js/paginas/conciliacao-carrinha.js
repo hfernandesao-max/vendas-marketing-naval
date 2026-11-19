@@ -237,20 +237,21 @@ function tabelaRota(r) {
   // corte do dia (início do carregamento): a carga para o dia seguinte e as devoluções depois do corte não contam hoje
   if (r.corte) {
     const depois = r.linhas.reduce((a, l) => a + l.depois_do_corte, 0);
-    const nota = r.corte.origem === 'contagem'
-      ? t('Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.', { h: r.corte.hora })
-      : t(
-          'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.',
-          {
-            h: r.corte.hora,
-            o: t(
-              {
-                fotografia: 'fotografia do stock antes do corte',
-                documentos: 'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte',
-              }[r.corte.origem] || 'estimado: inicial − vendido + cargas confirmadas antes do corte',
-            ),
-          },
-        );
+    const nota =
+      r.corte.origem === 'contagem'
+        ? t('Base da conciliação congelada às {h}, com o stock e os movimentos registados no Pinguim BO nesse momento.', { h: r.corte.hora })
+        : t(
+            'Conta-se o que estava na carrinha no corte das {h} ({o}). A carga para o dia seguinte não entra nesta contagem: passa a stock da carrinha amanhã, às 00:00.',
+            {
+              h: r.corte.hora,
+              o: t(
+                {
+                  fotografia: 'fotografia do stock antes do corte',
+                  documentos: 'inicial − vendido + guias e saídas de armazém do Pinguim BO registadas antes do corte',
+                }[r.corte.origem] || 'estimado: inicial − vendido + cargas confirmadas antes do corte',
+              ),
+            },
+          );
     box.append(
       el(
         'p',
@@ -416,9 +417,7 @@ R['conciliacao-carrinha'] = (pg) => {
     ]),
   );
   if (CC.pode && CC.pode.corrigir) {
-    pg.append(
-      botao(t('Actualizar históricos por contar'), 'ghost sm cc-corrigir', () => actualizarHistoricosAbertos()),
-    );
+    pg.append(botao(t('Actualizar históricos por contar'), 'ghost sm cc-corrigir', () => actualizarHistoricosAbertos()));
   }
   if (CC.movimentos === 'saldo')
     pg.append(
@@ -490,7 +489,9 @@ R['conciliacao-carrinha'] = (pg) => {
 function actualizarHistoricosAbertos() {
   janela(
     t('Actualizar históricos por contar'),
-    t('Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.'),
+    t(
+      'Actualiza com os dados históricos do Pinguim BO todas as conciliações anteriores a hoje que ainda estão por contar. Não altera contagens já feitas nem conciliações aprovadas. A base ficará congelada para a folha e a contagem.',
+    ),
     (b, ft, fechar) => {
       const resultado = msgErro();
       const actualizar = botao(t('Actualizar'), null, () => {
@@ -514,11 +515,19 @@ function actualizarHistoricosAbertos() {
             cursor = r.continuar_de || cursor;
           }
           resultado.hidden = false;
-          resultado.textContent = t('Actualizadas: {n}; ignoradas: {i}; falhas: {f}.', {
-            n: n0(total.actualizadas),
-            i: n0(total.ignoradas),
-            f: n0(total.falhas.length),
-          }) + (total.falhas.length ? ' ' + total.falhas.slice(0, 10).map((f) => [f.data, f.rota, f.erro].filter(Boolean).join(' · ')).join(' | ') : '');
+          resultado.textContent =
+            t('Actualizadas: {n}; ignoradas: {i}; falhas: {f}.', {
+              n: n0(total.actualizadas),
+              i: n0(total.ignoradas),
+              f: n0(total.falhas.length),
+            }) +
+            (total.falhas.length
+              ? ' ' +
+                total.falhas
+                  .slice(0, 10)
+                  .map((f) => [f.data, f.rota, f.erro].filter(Boolean).join(' · '))
+                  .join(' | ')
+              : '');
           actualizar.disabled = true;
           CC = null;
           ler(true);

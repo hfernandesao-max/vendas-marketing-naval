@@ -63,34 +63,30 @@ export async function mostrarEstruturaJSON(bt) {
   try {
     const E = await lerEstrutura();
     const texto = JSON.stringify(E, null, 2);
-    janela(
-      t('Estrutura da base de dados'),
-      t('O catálogo contém apenas estrutura e metadados; não inclui linhas de negócio.'),
-      (b, ft, fechar) => {
-        const area = document.createElement('textarea');
-        area.id = 'estrutura-json';
-        area.className = 'estrutura-conteudo';
-        area.readOnly = true;
-        area.spellcheck = false;
-        area.setAttribute('aria-label', t('Estrutura da base de dados em JSON'));
-        area.value = texto;
-        b.append(area);
-        ft.append(
-          botao(t('Fechar'), 'ghost', fechar),
-          botao(t('Copiar JSON'), '', async () => {
-            try {
-              if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard API indisponível.');
-              await navigator.clipboard.writeText(texto);
-              toast(t('Copiado.'), 2500);
-            } catch {
-              area.focus();
-              area.select();
-              toast(t('Texto seleccionado. Prima Ctrl+C para copiar.'), 6000);
-            }
-          }),
-        );
-      },
-    ).classList.add('largo', 'estrutura-json');
+    janela(t('Estrutura da base de dados'), t('O catálogo contém apenas estrutura e metadados; não inclui linhas de negócio.'), (b, ft, fechar) => {
+      const area = document.createElement('textarea');
+      area.id = 'estrutura-json';
+      area.className = 'estrutura-conteudo';
+      area.readOnly = true;
+      area.spellcheck = false;
+      area.setAttribute('aria-label', t('Estrutura da base de dados em JSON'));
+      area.value = texto;
+      b.append(area);
+      ft.append(
+        botao(t('Fechar'), 'ghost', fechar),
+        botao(t('Copiar JSON'), '', async () => {
+          try {
+            if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard API indisponível.');
+            await navigator.clipboard.writeText(texto);
+            toast(t('Copiado.'), 2500);
+          } catch {
+            area.focus();
+            area.select();
+            toast(t('Texto seleccionado. Prima Ctrl+C para copiar.'), 6000);
+          }
+        }),
+      );
+    }).classList.add('largo', 'estrutura-json');
     toast(t('Catálogo carregado.'), 2500);
   } catch (e) {
     console.error(e);
