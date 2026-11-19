@@ -55,8 +55,19 @@
 }
 .pp-cab {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
+}
+/* nomes longos (ou só o código do cliente) partem a linha em vez de empurrar a etiqueta para fora do cartão */
+.pp-cab > b {
+  min-width: 0;
+  flex: 1 1 12em;
+  overflow-wrap: anywhere;
+}
+.pp-cab > span {
+  flex: none;
 }
 .pp-pont {
   min-width: 2.2em;
@@ -212,5 +223,25 @@
   background: #f08a8e;
 }
 .pp-prova.sem_coordenadas {
+  background: #f5b547;
+}
+/* Radar do dia: sugestões dentro do cartão da rota */
+.pp-sug {
+  border-top: 1px dashed var(--gray-600);
+  padding-top: 6px;
+  display: grid;
+  gap: 2px;
+}
+.pp-tipo {
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c2340;
+}
+.pp-tipo.recuperar {
+  background: #f0a46a;
+}
+.pp-tipo.conquistar {
   background: #f5b547;
 }

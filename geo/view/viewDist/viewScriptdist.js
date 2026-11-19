@@ -1637,8 +1637,9 @@ function desativarModoDesenho() {
   }
 }
 
-// Adicionar listener para o botão de download CSV
-document.getElementById("downloadCSV").addEventListener("click", () => {
+// Adicionar listener para o botão de download CSV (não existe nesta página: sem ele, um erro aqui parava o resto
+// do ficheiro e os clientes nunca carregavam)
+document.getElementById("downloadCSV")?.addEventListener("click", () => {
   if (optimizedRoute) {
     const BOM = "\uFEFF";
     const csvWithBOM = BOM + newSequenceCreated;

@@ -84,6 +84,8 @@ function naval_api_rotas(): array
         'v1/rotas-propostas' => [['GET', 'POST'], 'jwt', 'rotas-propostas.php', []],
         'v1/ocorrencias' => [['GET', 'POST'], 'jwt', 'ocorrencias.php', []],
         'v1/terreno/contagens' => [['GET'], 'jwt', 'terreno-contagens.php', []],
+        'v1/geo/radar' => [['GET'], 'jwt', 'geo-radar.php', []],
+        'v1/geo/entrada' => [['POST'], 'publico', 'geo-entrada.php', []],
         'v1/pedidos-clientes' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', []],
         'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
         'v1/modulos' => [['GET', 'POST'], 'jwt', 'modulos.php', []],
@@ -152,7 +154,7 @@ function naval_api_corpo(string $rota): void
 {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') return;
     // rotas públicas (sem conta): corpo pequeno, lido no máximo até ao limite (naval_pedido)
-    $max = in_array($rota, ['v1/cliente', 'v1/csp-relatorio'], true) ? 16384 : NAVAL_API_CORPO_MAX;
+    $max = in_array($rota, ['v1/cliente', 'v1/csp-relatorio'], true) ? 16384 : ($rota === 'v1/geo/entrada' ? 1048576 : NAVAL_API_CORPO_MAX);
     $GLOBALS['naval_corpo_max'] = $max;
     if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $max) throw new NavalErro('Pedido demasiado grande.', 413);
     $tipo = strtolower(trim(explode(';', (string) ($_SERVER['CONTENT_TYPE'] ?? ''))[0]));

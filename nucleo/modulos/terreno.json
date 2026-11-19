@@ -1,7 +1,7 @@
 {
   "id": "terreno",
   "nome": "Terreno",
-  "versao": "1.2.0",
+  "versao": "1.3.0",
   "descricao": "Operação do dia (visitas, percurso e ocorrências), planeamento (plano de visitas, optimização e rotas propostas), território e clientes (prospecção, zonas e distribuidores) e conversão das visitas.",
   "nucleo": false,
   "paginas": [
@@ -39,7 +39,9 @@
     "v1/rotas-propostas",
     "v1/conversao",
     "v1/ocorrencias",
-    "v1/terreno/contagens"
+    "v1/terreno/contagens",
+    "v1/geo/radar",
+    "v1/geo/entrada"
   ],
   "conectores": ["olap", "google-maps"],
   "eventos": {

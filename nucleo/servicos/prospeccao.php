@@ -27,17 +27,8 @@ require_once __DIR__ . '/rotas.php';
 require_once __DIR__ . '/analise.php';
 require_once __DIR__ . '/email.php';
 require_once dirname(__DIR__) . '/cliente-http.php';
+require_once __DIR__ . '/descoberta.php';
 
-const NAVAL_GEO_TIPOS_OSM = 'convenience|supermarket|kiosk|general|variety_store|beverages|chemist|cosmetics|wholesale|grocery|greengrocer|butcher|bakery|alcohol|deli|frozen_food|houseware|hardware';
-const NAVAL_GEO_AMENIDADES_OSM = 'bar|cafe|restaurant|fast_food|pharmacy|marketplace';
-const NAVAL_GEO_TIPOS_GOOGLE = ['convenience_store', 'grocery_store', 'supermarket', 'market', 'liquor_store', 'pharmacy', 'drugstore'];
-// peso do tipo de estabelecimento na prioridade (o que mais vende higiene e fraldas porta-a-porta)
-const NAVAL_GEO_PESO_TIPO = [
-    'supermarket' => 30, 'grocery_store' => 30, 'convenience' => 30, 'convenience_store' => 30, 'general' => 28, 'grocery' => 28, 'variety_store' => 26,
-    'wholesale' => 26, 'market' => 25, 'marketplace' => 25, 'kiosk' => 22, 'chemist' => 22, 'cosmetics' => 20, 'pharmacy' => 18, 'drugstore' => 18,
-    'beverages' => 14, 'liquor_store' => 14, 'alcohol' => 14, 'bakery' => 12, 'deli' => 12, 'houseware' => 12, 'hardware' => 8, 'greengrocer' => 10,
-    'butcher' => 8, 'frozen_food' => 10, 'bar' => 8, 'cafe' => 8, 'restaurant' => 6, 'fast_food' => 6,
-];
 const NAVAL_GEO_ESTADOS = ['visitado' => 'Visitado, ainda a decidir', 'interessado' => 'Interessado: a preparar a primeira compra', 'nao_interessado' => 'Não interessado', 'nao_existe' => 'Não existe / fechou', 'outro_fornecedor' => 'Compra a outro fornecedor'];
 
 /** Primeira chave de um array já ordenado (array_key_first, compatível com o PHP 7.1); '' se vazio. */
@@ -310,6 +301,30 @@ function naval_geo_clientes(array $agregados, bool $actualizar = false): array
         error_log('[geo clientes SQL] ' . $e->getMessage());
         return $cache ?: ['origem' => $origem, 'erro' => 'A consulta dos clientes no Pinguim BO falhou.', 'clientes' => []];
     }
+    if ($origem !== 'OLAP dbo.DIM_CLIENT') {
+        // clientes sem coordenadas válidas no Pinguim BO mas com GPS no OLAP (DIM_CLIENT.ID = ENTITY.ID): entram
+        // com as do OLAP; o OLAP também dá a tipologia quando a consulta não a traz
+        $olap = naval_geo_clientes_olap();
+        if ($olap) {
+            $tem = [];
+            foreach ($rows as $k => $r) {
+                if (naval_geo_valida($r['LATITUDE'] ?? null, $r['LONGITUDE'] ?? null)) $tem[trim((string) $r['CODIGO'])] = $k;
+            }
+            $n = 0;
+            foreach ($olap as $o) {
+                $c = trim((string) $o['CODIGO']);
+                if (isset($tem[$c])) {
+                    if (!isset($rows[$tem[$c]]['TIPO']) && ($o['TIPO'] ?? '') !== '') $rows[$tem[$c]]['TIPO'] = $o['TIPO'];
+                    continue;
+                }
+                if (!naval_geo_valida($o['LATITUDE'] ?? null, $o['LONGITUDE'] ?? null)) continue;
+                $rows[] = $o;
+                $tem[$c] = count($rows) - 1;
+                $n++;
+            }
+            if ($n) $origem .= ' + OLAP (' . $n . ')';
+        }
+    }
     $habitos = naval_geo_habitos($agregados);
     $out = [];
     foreach ($rows as $r) {
@@ -375,16 +390,24 @@ function naval_geo_caixa(array $clientes): ?array
     return [round(min($la) - $m, 4), round(min($lo) - $m, 4), round(max($la) + $m, 4), round(max($lo) + $m, 4)];
 }
 
+/** Caixa de leitura: a área de trabalho (Luanda + Ícolo e Bengo, GEO_AREA) junta à dos clientes. */
+function naval_geo_caixa_area(array $clientes): array
+{
+    $a = naval_desc_area();
+    $c = naval_geo_caixa($clientes);
+    if ($c === null) return $a;
+    return [min($a[0], $c[0]), min($a[1], $c[1]), max($a[2], $c[2]), max($a[3], $c[3])];
+}
+
 /** Lê do OpenStreetMap (Overpass) os estabelecimentos comerciais da caixa. Devolve [{id, n, t, lat, lng, f: osm}]. */
 function naval_geo_ler_osm(array $caixa, ?callable $http = null): array
 {
     $bb = implode(',', $caixa);
-    $q = '[out:json][timeout:90];('
-        . 'nwr["shop"~"^(' . NAVAL_GEO_TIPOS_OSM . ')$"](' . $bb . ');'
-        . 'nwr["amenity"~"^(' . NAVAL_GEO_AMENIDADES_OSM . ')$"](' . $bb . ');'
-        . ');out center tags;';
+    $q = '[out:json][timeout:170];(';
+    foreach (NAVAL_DESC_OSM as $k => $vals) $q .= 'nwr["' . $k . '"~"^(' . $vals . ')$"](' . $bb . ');';
+    $q .= ');out center tags;';
     $url = naval_config('GEO_OVERPASS_URL', 'https://overpass-api.de/api/interpreter');
-    $r = ($http ?? 'naval_http_pedido')('POST', $url, ['corpo' => http_build_query(['data' => $q]), 'tempo' => 120,
+    $r = ($http ?? 'naval_http_pedido')('POST', $url, ['corpo' => http_build_query(['data' => $q]), 'tempo' => 180,
         'cabecalhos' => ['Content-Type: application/x-www-form-urlencoded', 'User-Agent: PortalRTM-GrupoNaval/1.0']]);
     if ($r['corpo'] === false || $r['codigo'] !== 200) throw new RuntimeException('OpenStreetMap: HTTP ' . $r['codigo'] . ' ' . $r['erro']);
     $j = json_decode((string) $r['corpo'], true);
@@ -394,18 +417,27 @@ function naval_geo_ler_osm(array $caixa, ?callable $http = null): array
         $lo = $e['lon'] ?? $e['center']['lon'] ?? null;
         if (!naval_geo_valida($la, $lo)) continue;
         $tg = (array) ($e['tags'] ?? []);
-        $tipo = (string) ($tg['shop'] ?? $tg['amenity'] ?? '');
-        $out[] = ['id' => 'osm:' . substr((string) ($e['type'] ?? 'n'), 0, 1) . ($e['id'] ?? ''), 'n' => naval_texto($tg['name'] ?? '', 80), 't' => $tipo,
+        $tipo = (string) ($tg['shop'] ?? $tg['amenity'] ?? $tg['tourism'] ?? '');
+        if ($tipo === 'discount') $tipo = 'discount_store';
+        if ($tipo === 'food') $tipo = 'food_store';
+        $p = ['id' => 'osm:' . substr((string) ($e['type'] ?? 'n'), 0, 1) . ($e['id'] ?? ''), 'n' => naval_texto($tg['name'] ?? '', 80), 't' => $tipo,
             'lat' => round((float) $la, 6), 'lng' => round((float) $lo, 6), 'f' => ['osm']];
+        $tel = naval_desc_telefone((string) ($tg['phone'] ?? $tg['contact:phone'] ?? $tg['mobile'] ?? ''));
+        $web = naval_desc_sitio((string) ($tg['website'] ?? $tg['contact:website'] ?? ''));
+        if ($tel !== '') $p['tel'] = $tel;
+        if ($web !== '') $p['web'] = $web;
+        if (naval_desc_qualidade($p, $caixa) !== '') continue;
+        $out[] = $p;
     }
     return $out;
 }
 
 /**
- * Células de ~1 km (centros) onde procurar no Google: as que têm clientes e as vizinhas (território e arredores).
+ * Células de ~1 km (centros) onde procurar no Google: as que têm clientes e as vizinhas (território e arredores) e,
+ * depois, as que têm comércio conhecido noutras fontes ($comercio: OpenStreetMap e externas, dentro da área).
  * Chave «lat:lng» em centésimos de grau.
  */
-function naval_geo_celulas(array $clientes): array
+function naval_geo_celulas(array $clientes, array $comercio = []): array
 {
     $c = [];
     foreach ($clientes as $x) {
@@ -414,7 +446,15 @@ function naval_geo_celulas(array $clientes): array
         for ($dy = -1; $dy <= 1; $dy++) for ($dx = -1; $dx <= 1; $dx++) $c[($y + $dy) . ':' . ($z + $dx)] = true;
     }
     ksort($c);
-    return array_keys($c);
+    $out = array_keys($c);
+    $mais = [];
+    foreach ($comercio as $x) {
+        if (!naval_desc_na_area((float) $x['lat'], (float) $x['lng'])) continue;
+        $k = (int) floor($x['lat'] * 100) . ':' . (int) floor($x['lng'] * 100);
+        if (!isset($c[$k])) $mais[$k] = true;
+    }
+    ksort($mais);
+    return array_merge($out, array_keys($mais));
 }
 
 /**
@@ -440,7 +480,7 @@ function naval_geo_google_passagem(array $celulas, int $maximo, ?callable $http 
             if ($feitos >= $maximo || ($g['meses'][$mes] ?? 0) >= $limite) break;
             if (($g['celulas'][$cel] ?? 0) > $agora - 25 * 86400) break;   // as restantes foram vistas há menos de 25 dias
             [$y, $x] = array_map('intval', explode(':', $cel));
-            $corpo = json_encode(['includedTypes' => NAVAL_GEO_TIPOS_GOOGLE, 'maxResultCount' => 20, 'rankPreference' => 'DISTANCE',
+            $corpo = json_encode(['includedTypes' => NAVAL_DESC_GOOGLE, 'maxResultCount' => 20, 'rankPreference' => 'DISTANCE',
                 'locationRestriction' => ['circle' => ['center' => ['latitude' => ($y + 0.5) / 100, 'longitude' => ($x + 0.5) / 100], 'radius' => 800.0]]]);
             $r = ($http ?? 'naval_http_pedido')('POST', 'https://places.googleapis.com/v1/places:searchNearby', ['corpo' => $corpo, 'tempo' => 30,
                 'cabecalhos' => ['Content-Type: application/json', 'X-Goog-Api-Key: ' . $chave, 'X-Goog-FieldMask: places.id,places.displayName,places.location,places.primaryType']]);
@@ -456,8 +496,11 @@ function naval_geo_google_passagem(array $celulas, int $maximo, ?callable $http 
                 $la = $p['location']['latitude'] ?? null;
                 $lo = $p['location']['longitude'] ?? null;
                 if (empty($p['id']) || !naval_geo_valida($la, $lo)) continue;
-                $g['lugares'][(string) $p['id']] = ['n' => naval_texto($p['displayName']['text'] ?? '', 80), 't' => (string) ($p['primaryType'] ?? ''),
+                $l = ['n' => naval_texto($p['displayName']['text'] ?? '', 80), 't' => (string) ($p['primaryType'] ?? ''),
                     'lat' => round((float) $la, 6), 'lng' => round((float) $lo, 6), 'visto' => $agora];
+                // regras de qualidade: fora da área ou do portfólio não fica guardado
+                if (naval_desc_classificar($l['t'], $l['n']) === null) continue;
+                $g['lugares'][(string) $p['id']] = $l;
             }
         }
     }
@@ -488,6 +531,7 @@ function naval_geo_potenciais(array $pontos, array $clientes, array $vistosAntes
 {
     $junt = [];
     $idx = [];
+    $contacto = [];   // telefone ou sítio => índice (o mesmo contacto até 500 m é o mesmo estabelecimento)
     foreach ($pontos as $p) {
         $hit = null;
         foreach (naval_geo_vizinhos($junt, $idx, $p['lat'], $p['lng'], 25) as [$i]) {
@@ -495,14 +539,24 @@ function naval_geo_potenciais(array $pontos, array $clientes, array $vistosAntes
             if (naval_geo_nomes_parecidos($p['n'], $q['n']) || (($p['n'] === '' || $q['n'] === '') && $p['t'] === $q['t'])) { $hit = $i; break; }
         }
         if ($hit === null) {
+            foreach (['tel', 'web'] as $k) {
+                $v = (string) ($p[$k] ?? '');
+                if ($v === '' || !isset($contacto[$k . ':' . $v])) continue;
+                $i = $contacto[$k . ':' . $v];
+                if (naval_geo_dist($p['lat'], $p['lng'], $junt[$i]['lat'], $junt[$i]['lng']) <= 500) { $hit = $i; break; }
+            }
+        }
+        if ($hit === null) {
             $p['ids'] = [$p['id']];
             $junt[] = $p;
             $idx[(int) floor($p['lat'] * 100) . ':' . (int) floor($p['lng'] * 100)][] = count($junt) - 1;
+            foreach (['tel', 'web'] as $k) if (($p[$k] ?? '') !== '') $contacto[$k . ':' . $p[$k]] = count($junt) - 1;
             continue;
         }
         $junt[$hit]['f'] = array_values(array_unique(array_merge($junt[$hit]['f'], $p['f'])));
         $junt[$hit]['ids'][] = $p['id'];
         if ($junt[$hit]['n'] === '') $junt[$hit]['n'] = $p['n'];
+        foreach (['tel', 'web', 'mor'] as $k) if (($junt[$hit][$k] ?? '') === '' && ($p[$k] ?? '') !== '') $junt[$hit][$k] = $p[$k];
     }
     $ic = naval_geo_indice($clientes);
     $pot = [];
@@ -547,14 +601,12 @@ function naval_geo_atribuir(array $pot, array $clientes, float $raio = 1500.0): 
             $d = $dias ? (int) naval_geo_chave_maior($dias) : null;
             $dist = (int) round($viz[0][1]);
         }
-        // prioridade: confiança (n.º de fontes), tipo de estabelecimento, outros potenciais perto (zona comercial) e
-        // proximidade de clientes da rota (cabe na volta do dia)
+        // prioridade = ICP Score (descoberta.php): portfólio, volume do tipo, contacto, fontes, distância aos clientes
+        // da rota (cabe na volta do dia) e outros potenciais perto (zona comercial)
         $densidade = count(naval_geo_vizinhos($pot, $ip, $p['lat'], $p['lng'], 300)) - 1;
-        $s = (count($p['f']) > 1 ? 35 : (in_array('google', $p['f'], true) ? 22 : 18))
-            + (NAVAL_GEO_PESO_TIPO[$p['t']] ?? 8)
-            + min(15, $densidade * 3)
-            + ($dist === null ? 0 : ($dist <= 300 ? 20 : ($dist <= 800 ? 12 : 5)));
-        $pot[$k] += ['r' => $r, 'd' => $d, 'dc' => $dist, 's' => min(100, $s)];
+        [$s, $af, $tipo] = naval_desc_icp($p, $dist, $densidade);
+        $pot[$k]['t'] = $tipo;
+        $pot[$k] += ['r' => $r, 'd' => $d, 'dc' => $dist, 's' => $s, 'a' => $af];
     }
     usort($pot, function ($a, $b) { return $b['s'] <=> $a['s'] ?: strcmp($a['id'], $b['id']); });
     return $pot;
@@ -721,10 +773,18 @@ function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?ar
     $agregados = $agregados ?? array_filter($agregados120, function ($d) { return $d >= date('Y-m-d', time() - 56 * 86400); }, ARRAY_FILTER_USE_KEY);
     $cd = $clientesDados ?? naval_geo_clientes($agregados);
     $clientes = array_values(array_filter((array) $cd['clientes'], function ($c) { return naval_geo_valida($c['lat'], $c['lng']); }));
+    if (!$clientes && !empty($cd['erro'])) {
+        // a leitura dos clientes falhou (Pinguim BO sem resposta): fica o último cálculo, com o aviso
+        $antes = naval_json_ler(naval_geo_pasta() . '/vista.json');
+        if (!empty($antes['clientes'])) {
+            error_log('[prospecção] clientes por ler (' . $cd['erro'] . '): mantém-se o cálculo de ' . ($antes['gerado'] ?? '?'));
+            return ['erro_clientes' => $cd['erro'] . ' Mostra-se o último cálculo.'] + $antes;
+        }
+    }
     // rotas novas aprovadas no portal (Terreno › Rotas propostas): os clientes atribuídos contam já na rota nova
     naval_servico('rotas-propostas');
     $clientes = naval_rp_aplicar($clientes);
-    $fontes = $fontes ?? array_merge((array) (naval_json_ler(naval_geo_pasta() . '/osm.json')['pontos'] ?? []), naval_geo_google_pontos());
+    $fontes = $fontes ?? array_merge((array) (naval_json_ler(naval_geo_pasta() . '/osm.json')['pontos'] ?? []), naval_geo_google_pontos(), naval_desc_externos_pontos());
     $estados = naval_json_ler(naval_geo_pasta() . '/estados.json');
     $antes = naval_json_ler(naval_geo_pasta() . '/vista.json');
     $vistos = [];
@@ -769,6 +829,7 @@ function naval_geo_estado_fontes(): array
     $o = naval_json_ler(naval_geo_pasta() . '/osm.json');
     $g = naval_json_ler(naval_geo_pasta() . '/google.json');
     return ['osm_em' => $o['em'] ?? null, 'osm' => count((array) ($o['pontos'] ?? [])), 'google' => count((array) ($g['lugares'] ?? [])),
+        'externos' => count(naval_json_ler(naval_desc_externos_ficheiro())), 'area' => naval_desc_area(),
         'google_mes' => (int) (($g['meses'] ?? [])[date('Y-m')] ?? 0), 'google_limite' => (int) naval_geo_num('GEO_GOOGLE_PEDIDOS_MES', 4500),
         'google_activo' => naval_config('GOOGLE_PLACES_API_KEY') !== ''];
 }
@@ -854,7 +915,13 @@ function naval_geo_avisar(array $v): array
 function naval_geo_noite(int $agora): array
 {
     $ini = naval_config('GEO_HORA_INICIO', '01:00');
-    if (date('H:i', $agora) < $ini || date('H', $agora) >= '06') return [];
+    if (date('H:i', $agora) < $ini || date('H', $agora) >= '06') {
+        // de dia: só o novo cálculo pedido por uma entrada externa (webhook v1/geo/entrada)
+        $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
+        if (!naval_desc_recalculo_pendente($agora, (string) ($v['gerado'] ?? ''))) return [];
+        $v = naval_geo_calcular();
+        return ['calculo_externo' => count((array) ($v['potenciais'] ?? []))];
+    }
     $feito = [];
     $agregados120 = naval_analise_agregados(date('Y-m-d', $agora - 120 * 86400), date('Y-m-d', $agora - 86400));
     $agregados = array_filter($agregados120, function ($d) use ($agora) { return $d >= date('Y-m-d', $agora - 56 * 86400); }, ARRAY_FILTER_USE_KEY);
@@ -864,7 +931,7 @@ function naval_geo_noite(int $agora): array
     $osm = naval_json_ler($fo);
     if ($clientes && naval_config('GEO_OSM_ACTIVO', '1') !== '0' && ($osm['em'] ?? '') < date('Y-m-d', $agora - 7 * 86400)) {
         try {
-            $pts = naval_geo_ler_osm((array) naval_geo_caixa($clientes));
+            $pts = naval_geo_ler_osm(naval_geo_caixa_area($clientes));
             naval_json_gravar($fo, ['em' => date('Y-m-d', $agora), 'pontos' => $pts], false);
             $feito['osm'] = count($pts);
         } catch (Throwable $e) {
@@ -872,9 +939,12 @@ function naval_geo_noite(int $agora): array
             naval_json_gravar($fo, ['em' => date('Y-m-d', $agora - 6 * 86400)] + $osm, false);   // tenta de novo amanhã
         }
     }
-    if ($clientes) $feito['google'] = naval_geo_google_passagem(naval_geo_celulas($clientes), 40, null, $agora);
+    if ($clientes) {
+        $comercio = array_merge((array) (naval_json_ler($fo)['pontos'] ?? []), naval_desc_externos_pontos());
+        $feito['google'] = naval_geo_google_passagem(naval_geo_celulas($clientes, $comercio), (int) naval_geo_num('GEO_GOOGLE_POR_NOITE', 40), null, $agora);
+    }
     $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
-    if (substr((string) ($v['gerado'] ?? ''), 0, 10) !== date('Y-m-d', $agora) && date('H', $agora) >= '04') {
+    if ((substr((string) ($v['gerado'] ?? ''), 0, 10) !== date('Y-m-d', $agora) && date('H', $agora) >= '04') || naval_desc_recalculo_pendente($agora, (string) ($v['gerado'] ?? ''))) {
         $v = naval_geo_calcular($agregados, null, $cd, $agregados120);
         $feito['calculo'] = count($v['potenciais']);
         // rotas novas: propostas pendentes de aprovação (Terreno › Rotas propostas), antes do aviso por correio
@@ -888,10 +958,32 @@ function naval_geo_noite(int $agora): array
     return $feito;
 }
 
+/**
+ * Lê o OpenStreetMap quando ainda não há leitura ou tem mais de 7 dias (botão «Recalcular agora» antes da primeira
+ * noite). Falha sem parar o cálculo.
+ */
+function naval_geo_osm_se_preciso(?callable $http = null): ?int
+{
+    $fo = naval_geo_pasta() . '/osm.json';
+    $osm = naval_json_ler($fo);
+    if (naval_config('GEO_OSM_ACTIVO', '1') === '0' || ($osm['em'] ?? '') >= date('Y-m-d', time() - 7 * 86400)) return null;
+    @set_time_limit(300);
+    try {
+        $antes = naval_json_ler(naval_geo_pasta() . '/vista.json');
+        $pts = naval_geo_ler_osm(naval_geo_caixa_area((array) ($antes['clientes'] ?? [])), $http);
+        naval_json_gravar($fo, ['em' => date('Y-m-d'), 'pontos' => $pts], false);
+        return count($pts);
+    } catch (Throwable $e) {
+        error_log('[geo OSM] ' . $e->getMessage());
+        return null;
+    }
+}
+
 /** Vista no âmbito de quem pede: as suas rotas (SUP e PRO) e, para os outros, também as zonas sem rota. */
 function naval_geo_vista(?array $rotas, bool $actualizar = false): array
 {
     $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
+    if ($actualizar) naval_geo_osm_se_preciso();
     if (!$v || $actualizar) $v = naval_geo_calcular();
     if ($rotas !== null) {
         $dentro = function ($x) use ($rotas) { return in_array((string) ($x['r'] ?? $x['rota'] ?? ''), $rotas, true); };
@@ -909,13 +1001,14 @@ function naval_geo_vista(?array $rotas, bool $actualizar = false): array
     foreach ($v['potenciais'] as &$p) unset($p['ids']);
     unset($p);
     $v['estados'] = NAVAL_GEO_ESTADOS;
+    $v['afinidades'] = NAVAL_DESC_AFINIDADES;
     return $v;
 }
 
 /** O vendedor regista o que encontrou num potencial cliente (fica no histórico; «não existe» tira-o do mapa). */
 function naval_geo_marcar(string $id, string $estado, array $eu, ?array $rotas): array
 {
-    if (!preg_match('/^(osm:[nwr]\d{1,15}|g:[A-Za-z0-9_-]{10,200})$/', $id)) throw new NavalErro('Potencial cliente desconhecido.', 404);
+    if (!preg_match('/^(osm:[nwr]\d{1,15}|g:[A-Za-z0-9_-]{10,200}|x:[a-f0-9]{16})$/', $id)) throw new NavalErro('Potencial cliente desconhecido.', 404);
     if ($estado !== '' && !isset(NAVAL_GEO_ESTADOS[$estado])) throw new NavalErro('Estado inválido.', 400);
     $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
     $p = null;

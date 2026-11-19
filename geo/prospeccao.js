@@ -37,7 +37,40 @@
     cafe: 'Café',
     restaurant: 'Restaurante',
     fast_food: 'Comida rápida',
+    wholesaler: 'Armazém grossista',
+    cash_and_carry: 'Cash and carry',
+    warehouse: 'Armazém',
+    hypermarket: 'Hipermercado',
+    food_store: 'Loja alimentar',
+    discount_store: 'Loja de desconto',
+    department_store: 'Grande armazém',
+    store: 'Loja',
+    home_goods_store: 'Utilidades domésticas',
+    household_linen: 'Têxteis do lar',
+    beauty: 'Beleza',
+    laundry: 'Lavandaria',
+    dry_cleaning: 'Limpeza a seco',
+    school: 'Escola',
+    college: 'Colégio',
+    university: 'Universidade',
+    kindergarten: 'Creche / jardim de infância',
+    clinic: 'Clínica',
+    hospital: 'Hospital',
+    doctors: 'Consultório',
+    dentist: 'Dentista',
+    pastry: 'Pastelaria',
+    confectionery: 'Doçaria',
+    canteen: 'Cantina / refeitório',
+    food_court: 'Zona de restauração',
+    meal_takeaway: 'Take-away',
+    catering: 'Catering',
+    hotel: 'Hotel',
+    lodging: 'Alojamento',
+    guest_house: 'Hospedaria / pensão',
+    hostel: 'Hostel',
+    motel: 'Motel',
   };
+  const fonteTxt = (f) => (f.length > 1 ? 'confirmado em ' + f.length + ' fontes' : f[0] === 'google' ? 'Google' : f[0] === 'osm' ? 'OpenStreetMap' : 'fonte externa');
   // azuis Naval por rota (sem verde); potenciais em âmbar; zonas sem rota em vermelho
   const CORES = ['#0057b8', '#1a73c9', '#4f8fd6', '#0a2a52', '#2b6cb0', '#6aa6e8', '#123f7a', '#3d7fd0', '#8bb8ef', '#1d4f91', '#5b95db'];
   let V = null;
@@ -45,7 +78,9 @@
   let mapa = null;
   let camadas = [];
   let info = null;
-  let vista = 'potenciais'; // potenciais | esquecidos | coordenadas | funil
+  let vista = 'potenciais'; // potenciais | esquecidos | coordenadas | funil | radar
+  let R = null; // radar do dia (v1/geo/radar)
+  let rDia = '';
   // dias sem compras: âmbar, laranja e vermelho, sempre com o texto do escalão (nunca só a cor)
   const FAIXAS = { 14: ['14 a 29 dias', '#f5b547'], 30: ['30 a 59 dias', '#e0661c'], 60: ['60 dias ou mais', '#c0262d'] };
   const kz = (v) => Math.round(v || 0).toLocaleString('pt-PT') + ' Kz';
@@ -256,6 +291,7 @@
     if (vista === 'esquecidos') return listaEsquecidos();
     if (vista === 'coordenadas') return listaCoordenadas();
     if (vista === 'funil') return listaFunil();
+    if (vista === 'radar') return listaRadar();
     const box = $('ppLista');
     box.replaceChildren();
     const ps = filtrados();
@@ -274,7 +310,8 @@
       if (p.dc != null) det.push(`a ${p.dc} m de um cliente`);
       if (p.r === '') det.push('fora das rotas');
       else if (p.d) det.push('rota ' + p.r + ' · ' + DIAS[p.d]);
-      det.push(p.f.length > 1 ? 'confirmado em 2 fontes' : p.f[0] === 'google' ? 'Google' : 'OpenStreetMap');
+      if (p.a && V.afinidades) det.push(V.afinidades[p.a] || p.a);
+      det.push(fonteTxt(p.f));
       const acc = el('div', 'pp-acc');
       const ir = el('a', 'pp-ir', 'Ir');
       ir.href = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
@@ -303,6 +340,87 @@
       c.addEventListener('click', (e) => {
         if (mapa && e.target === c) mapa.panTo({ lat: p.lat, lng: p.lng });
       });
+      box.append(c);
+    });
+  }
+  // Radar do dia: o que juntar ao dia de cada rota sem passar a capacidade (e o que adiar quando passa)
+  function dataDoDia() {
+    const d = diaEscolhido();
+    const h = new Date();
+    if (d != null) h.setDate(h.getDate() + ((d - (h.getDay() || 7) + 7) % 7));
+    return h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0') + '-' + String(h.getDate()).padStart(2, '0');
+  }
+  function listaRadar() {
+    const box = $('ppLista');
+    const dia = dataDoDia();
+    if (rDia !== dia) {
+      rDia = dia;
+      R = null;
+      box.replaceChildren(el('p', 'pp-nota', 'A calcular o radar…'));
+      api('geo/radar?dia=' + dia)
+        .then((d) => {
+          if (rDia !== dia) return;
+          if (!d.ok) throw new Error(d.erro || 'Não foi possível calcular o radar.');
+          R = d;
+          if (vista === 'radar') desenhar();
+        })
+        .catch((e) => box.replaceChildren(el('p', 'pp-nota', e.message)));
+      return;
+    }
+    if (!R) return;
+    box.replaceChildren();
+    const rs = R.rotas.filter((x) => daRota({ r: x.rota }));
+    const n = rs.reduce((s, x) => s + x.sugestoes.length, 0);
+    $('ppTituloLista').textContent = `Radar do dia · ${dl(R.dia)} (${n})`;
+    box.append(
+      el(
+        'p',
+        'pp-nota',
+        'Visitas a juntar ao dia de cada rota, só nos lugares livres (capacidade por vendedor): recuperar clientes parados e conquistar potenciais clientes perto do caminho do dia. Quando o plano passa a capacidade, as visitas em dia de menor valor ficam para a próxima.',
+      ),
+    );
+    if (!rs.length) box.append(el('p', 'pp-nota', 'Sem rotas para esta escolha.'));
+    rs.forEach((x) => {
+      const c = el('article', 'pp-item' + (x.excesso ? ' pp-f60' : ''));
+      const h = el('div', 'pp-cab');
+      h.append(
+        el('b', null, 'Rota ' + x.rota + (x.promotor ? ' · ' + x.promotor : '')),
+        el('span', 'pp-pont', x.planeadas + '/' + x.capacidade),
+      );
+      c.append(
+        h,
+        el(
+          'p',
+          'pp-nota',
+          x.excesso
+            ? `${x.planeadas} visitas planeadas para ${x.capacidade} de capacidade: adiar ${x.excesso}.`
+            : `${x.planeadas} visitas planeadas · ${x.livres} lugares livres · ${x.sugestoes.length} sugestões de ${x.candidatos} candidatos.`,
+        ),
+      );
+      x.sugestoes.forEach((s) => {
+        const l = el('div', 'pp-sug');
+        const cab = el('div', 'pp-cab');
+        cab.append(el('b', null, s.n), el('span', 'pp-tipo ' + s.tipo, s.tipo === 'recuperar' ? 'Recuperar' : 'Conquistar'));
+        const det = [s.motivo];
+        if (s.tipo === 'conquistar') det.push(TIPOS[s.t] || s.t || 'Comércio', (R.afinidades || {})[s.a] || '');
+        l.append(cab, el('p', 'pp-nota', det.filter(Boolean).join(' · ')));
+        if (s.lat != null) {
+          const ir = el('a', 'pp-ir', 'Ir');
+          ir.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+          ir.target = '_blank';
+          ir.rel = 'noopener noreferrer';
+          const acc = el('div', 'pp-acc');
+          acc.append(ir);
+          l.append(acc);
+          l.addEventListener('click', (e) => {
+            if (mapa && e.target.tagName !== 'A') mapa.panTo({ lat: s.lat, lng: s.lng });
+          });
+        }
+        c.append(l);
+      });
+      if (x.adiar.length) {
+        c.append(el('p', 'pp-nota', 'Adiar: ' + x.adiar.map((a) => a.n).join(' · ')));
+      }
       box.append(c);
     });
   }
@@ -397,6 +515,22 @@
         camadas.push(m);
         limites.extend({ lat: g.lat, lng: g.lng });
       });
+    if (vista === 'radar' && R)
+      R.rotas.filter((x) => daRota({ r: x.rota })).forEach((x) =>
+        x.sugestoes.forEach((s) => {
+          if (s.lat == null) return;
+          const m = new google.maps.Marker({
+            position: { lat: s.lat, lng: s.lng },
+            map: mapa,
+            title: s.n,
+            label: { text: s.tipo === 'recuperar' ? 'R' : 'C', color: '#fff', fontSize: '11px', fontWeight: '700' },
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: s.tipo === 'recuperar' ? '#e0661c' : '#f5b547', fillOpacity: 1, strokeColor: '#1c2340', strokeWeight: 1 },
+          });
+          m.addListener('click', () => abrir(m.getPosition(), `<b>${String(s.n).replace(/</g, '&lt;')}</b><br>Rota ${x.rota} · ${String(s.motivo).replace(/</g, '&lt;')}`));
+          camadas.push(m);
+          limites.extend({ lat: s.lat, lng: s.lng });
+        }),
+      );
     (vista === 'potenciais' ? filtrados() : []).forEach((p) => {
       const m = new google.maps.Marker({
         position: { lat: p.lat, lng: p.lng },
@@ -446,6 +580,7 @@
       return;
     }
     V = d;
+    rDia = '';
     const sel = $('ppRota');
     const antes = sel.value;
     sel.replaceChildren();
@@ -458,6 +593,7 @@
     $('ppFontes').textContent =
       `Clientes: Pinguim BO${V.origem_clientes ? ' (' + V.origem_clientes + ')' : ''}. Estabelecimentos: © contribuidores do OpenStreetMap (ODbL)` +
       (f.google_activo ? `, Google (${f.google_mes} de ${f.google_limite} pedidos este mês)` : '') +
+      (f.externos ? `, fontes externas (${f.externos})` : '') +
       `. Calculado em ${String(V.gerado || '').slice(8, 10)}-${String(V.gerado || '').slice(5, 7)}-${String(V.gerado || '').slice(0, 4)} ${String(V.gerado || '').slice(11, 16)}.`;
     if (V.erro_clientes) alerta(V.erro_clientes);
     desenhar();

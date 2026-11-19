@@ -1,5 +1,24 @@
 ## 19-11-2026
 
+### Prospecção: descoberta automática em Luanda e Ícolo e Bengo, ICP Score e Radar do dia
+
+<!-- tipo: funcionalidade -->
+
+- A descoberta de potenciais clientes cobre toda a área de Luanda e Ícolo e Bengo (já não só à volta dos clientes) e procura o que compra higiene e limpeza e alimentar: supermercados, mercearias, cantinas, armazéns e cash-and-carry, padarias, restaurantes, hotéis, cantinas e refeitórios, drogarias, escolas e clínicas. O nome também conta («Armazém…», «Comércio geral», «Panificadora…»).
+- Cada potencial cliente tem um ICP Score de 0 a 100 (adequação ao portfólio, volume do tipo, contacto, fontes e distância aos clientes da rota) e a afinidade: higiene e limpeza, alimentar ou as duas.
+- Fontes externas (n8n, Make, Apify, Scrapfly, Clay) podem enviar listas de estabelecimentos por uma entrada própria protegida por chave; passam as mesmas regras de qualidade e de duplicados e entram no cálculo 10 minutos depois. Contrato e plano em docs/DESCOBERTA.md.
+- O mesmo estabelecimento com o mesmo telefone ou sítio em fontes diferentes conta uma só vez.
+- Novo separador «Radar do dia» na Prospecção: para cada rota, os lugares livres do dia (30 visitas por vendedor) e o que lhes juntar perto do caminho — recuperar clientes regulares parados e conquistar potenciais clientes do território. Quando o plano passa a capacidade, mostra as visitas em dia de menor valor a adiar.
+
+### Correcções: Prospecção, Percurso do dia e Distribuidores sem dados
+
+<!-- tipo: correcao -->
+
+- A Prospecção mostrava 0 clientes e 0 potenciais quando a leitura dos clientes falhava no momento do cálculo: o cálculo vazio ficava gravado por cima do anterior. Agora mantém-se o último cálculo bom, com o aviso. O botão «Recalcular agora» também lê o OpenStreetMap quando ainda não há leitura.
+- O Percurso do dia mostrava as vendas com o código do cliente e «Cliente sem coordenadas» por causa desse cálculo vazio; passa a usar os clientes lidos no dia quando falta o cálculo. A etiqueta já não sai do cartão com nomes longos.
+- Os clientes sem coordenadas no Pinguim BO usam o GPS do OLAP, quando o tem (Optimização de rotas, Zonas, Prospecção).
+- Distribuidores: os clientes não carregavam (Total: 0) por um erro no arranque da página.
+
 ### Terreno: menu por tarefa, contadores do que pede acção e nova página Ocorrências
 
 <!-- tipo: funcionalidade -->

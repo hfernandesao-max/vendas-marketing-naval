@@ -65,6 +65,7 @@
             <button type="button" role="tab" class="pp-tab" data-vista="esquecidos" aria-selected="false">Sem compras</button>
             <button type="button" role="tab" class="pp-tab" data-vista="coordenadas" aria-selected="false">Coordenadas</button>
             <button type="button" role="tab" class="pp-tab" data-vista="funil" aria-selected="false">Resultados</button>
+            <button type="button" role="tab" class="pp-tab" data-vista="radar" aria-selected="false">Radar do dia</button>
           </div>
           <h2 id="ppTituloLista">Potenciais clientes</h2>
           <div id="ppLista" class="pp-lista"><p class="pp-nota">A carregar…</p></div>

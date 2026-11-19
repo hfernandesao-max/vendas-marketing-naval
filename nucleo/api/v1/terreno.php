@@ -19,6 +19,12 @@ if (!naval_data_valida($data)) throw new NavalErro('Data inválida.', 400);
 $rotas = naval_rotas();
 $d = naval_olap_dia($data, $rotas, ($_GET['actualizar'] ?? '') === '1' && naval_pode('geo-terreno', 'G'));
 $g = naval_json_ler(naval_geo_pasta() . '/vista.json');
+if (empty($g['clientes'])) {
+    // sem cálculo da prospecção (ou um cálculo vazio): os clientes com GPS lidos hoje, para o nome e a prova de visita
+    $ult = glob(naval_geo_pasta() . '/clientes-*.json') ?: [];
+    rsort($ult);
+    if ($ult) $g['clientes'] = (array) (naval_json_ler($ult[0])['clientes'] ?? []);
+}
 $clientes = array_values(array_filter((array) ($g['clientes'] ?? []), function ($c) use ($rotas) { return $rotas === null || in_array((string) $c['r'], $rotas, true); }));
 $terr = [];
 foreach ((array) ($g['rotas'] ?? []) as $r) $terr[(string) $r['rota']] = (array) ($r['territorio'] ?? []);
