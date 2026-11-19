@@ -4,7 +4,7 @@
  * pela mesma consulta da prospecção (nunca de ficheiros). No âmbito de quem pede (SUP e PRO: só as suas rotas).
  *
  * GET v1/geo-clientes   {clientes: [{Código, Nome, Vendedor, Rota, Dia, Estado, Latitude, Longitude, Distribuidor?,
- *                        «Tipo de estabelecimento»?}], origem, gerado}
+ *                        «Tipo de estabelecimento»?}], origem, gerado, territorios: {rota: [[lat, lng]…]}, promotores}
  * Recursos «geo-zonas» ou «geo-distribuidores» (V).
  */
 defined('NAVAL_API') || exit;
@@ -29,4 +29,13 @@ foreach ((array) ($d['clientes'] ?? []) as $c) {
     if (isset($c['tipo'])) $x['Tipo de estabelecimento'] = $c['tipo'];
     $out[] = $x;
 }
-naval_json(['ok' => true, 'origem' => $d['origem'] ?? '', 'gerado' => $d['gerado'] ?? null, 'erro' => $d['erro'] ?? null, 'clientes' => $out]);
+// geofences automáticas: território de cada rota (cálculo da prospecção da noite), no âmbito de quem pede
+$terr = [];
+foreach ((array) (naval_json_ler(naval_geo_pasta() . '/vista.json')['rotas'] ?? []) as $x) {
+    $r = (string) $x['rota'];
+    if (($rotas === null || in_array($r, $rotas, true)) && count((array) ($x['territorio'] ?? [])) >= 3) $terr[$r] = $x['territorio'];
+}
+$nomes = [];
+foreach ($prom as $r => $n) if ($rotas === null || in_array((string) $r, $rotas, true)) $nomes[(string) $r] = (string) $n;
+naval_json(['ok' => true, 'origem' => $d['origem'] ?? '', 'gerado' => $d['gerado'] ?? null, 'erro' => $d['erro'] ?? null, 'clientes' => $out,
+    'territorios' => (object) $terr, 'promotores' => (object) $nomes]);

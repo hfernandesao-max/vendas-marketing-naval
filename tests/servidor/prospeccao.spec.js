@@ -129,6 +129,8 @@ test('prospecção: separadores de clientes sem compras, coordenadas e resultado
   const f = page.frameLocator('iframe.geo-quadro');
   await expect(f.locator('#ppTituloLista')).toContainText('Potenciais clientes');
   await expect(f.locator('.app-header')).toBeHidden();
+  // o aviso das novidades pode abrir depois do primeiro fecho, por cima da página
+  await fecharAviso(page);
   await f.getByRole('tab', { name: 'Sem compras' }).click();
   await expect(f.locator('#ppTituloLista')).toHaveText('Clientes regulares sem compras (2)');
   await expect(f.locator('.pp-faixa').first()).toHaveText('44 dias');

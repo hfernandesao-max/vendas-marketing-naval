@@ -34,4 +34,11 @@
 
   --text-default: #0a0f1a;
   --text-muted: #272f43;
+}/* janelas de informação do Google Maps: texto escuro sobre o fundo branco do mapa (o tema escuro herdava texto claro) */
+.gm-style .gm-style-iw-c,
+.gm-style .gm-style-iw-d {
+  color: #1c2340;
+}
+.gm-style .gm-style-iw-d b {
+  color: #0a0f1a;
 }

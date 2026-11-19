@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="prospeccao.css?v=<?= (int) @filemtime(__DIR__ . '/prospeccao.css') ?>" />
   <title>GeoMobilidade Naval · Prospecção</title>
   <script src="vendor/lucide-1.62.0.min.js?v=<?= (int) @filemtime(__DIR__ . '/vendor/lucide-1.62.0.min.js') ?>"></script>
+  <script src="geo-cores.js?v=<?= (int) @filemtime(__DIR__ . '/geo-cores.js') ?>"></script>
   <script src="prospeccao.js?v=<?= (int) @filemtime(__DIR__ . '/prospeccao.js') ?>" defer></script>
   <?= naval_google_maps_script() ?>
 </head>
@@ -56,8 +57,13 @@
             </label>
           </div>
           <div id="ppAviso" class="pp-aviso" hidden></div>
+          <div id="ppEstado" class="pp-estado" role="status" aria-live="polite" hidden></div>
           <div id="ppIndicadores" class="pp-ind"></div>
-          <button id="ppRecalcular" class="action-btn" hidden><i data-lucide="refresh-cw"></i> <span>Recalcular agora</span></button>
+          <button id="ppRecalcular" class="action-btn" hidden title="Recalcula já os territórios e os potenciais clientes com os dados que há"><i data-lucide="refresh-cw"></i> <span>Recalcular agora</span></button>
+        </div>
+        <div class="sidebar-panel">
+          <h2>Legenda</h2>
+          <div id="ppLegenda" class="pp-legenda" role="group" aria-label="Rotas e símbolos do mapa"></div>
         </div>
         <div class="sidebar-panel">
           <div class="pp-tabs" role="tablist" aria-label="O que mostrar">

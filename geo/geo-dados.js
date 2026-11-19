@@ -46,15 +46,21 @@
       });
   }
   var temporizador = null;
+  var ultimaResposta = null;
   window.NavalGeo = {
     /** Clientes com coordenadas (estado: Activo / Inactivo / Todos), no formato das páginas do mapa. */
     clientes: function (estado) {
       return api('geo-clientes').then(function (d) {
         if (!d || !d.ok) throw new Error((d && d.erro) || 'Não foi possível ler os clientes.');
+        ultimaResposta = d;
         return (d.clientes || []).filter(function (c) {
           return !estado || estado === 'Todos' || String(c.Estado).toLowerCase() === String(estado).toLowerCase();
         });
       });
+    },
+    /** Última resposta completa de v1/geo-clientes (geofences das rotas, vendedores, origem e hora). */
+    ultima: function () {
+      return ultimaResposta || {};
     },
     /** Zonas guardadas no servidor. */
     zonas: function () {

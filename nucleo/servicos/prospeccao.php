@@ -150,8 +150,15 @@ function naval_geo_territorio(array $clientes, float $margem = 300.0): array
     sort($lo);
     $mla = $la[intdiv(count($la), 2)];
     $mlo = $lo[intdiv(count($lo), 2)];
+    // fora ficam só os erros de GPS: mais longe do centro do que 3 vezes a distância mediana dos clientes da rota
+    // (com um mínimo de 4 km), para o território cobrir a rota toda e não só o núcleo
+    $ds = [];
+    foreach ($clientes as $c) $ds[] = naval_geo_dist($c['lat'], $c['lng'], $mla, $mlo);
+    $ord = $ds;
+    sort($ord);
+    $lim = max(4000.0, 3 * $ord[intdiv(count($ord), 2)]);
     $pts = [];
-    foreach ($clientes as $c) if (naval_geo_dist($c['lat'], $c['lng'], $mla, $mlo) <= 5000) $pts[] = [$c['lat'], $c['lng']];
+    foreach ($clientes as $k => $c) if ($ds[$k] <= $lim) $pts[] = [$c['lat'], $c['lng']];
     if (!$pts) return [];
     // margem: cada vértice do invólucro rodeado por 12 pontos a $margem metros e novo invólucro (zona tampão)
     $h = naval_geo_involucro($pts);
@@ -399,15 +406,77 @@ function naval_geo_caixa_area(array $clientes): array
     return [min($a[0], $c[0]), min($a[1], $c[1]), max($a[2], $c[2]), max($a[3], $c[3])];
 }
 
+/** Quadrículas de leitura do OpenStreetMap (~0,25° × 0,25°, cerca de 28 km) que cobrem a caixa. Chave «s,o,n,e». */
+function naval_geo_osm_partes(array $caixa, float $passo = 0.25): array
+{
+    $out = [];
+    for ($la = $caixa[0]; $la < $caixa[2]; $la += $passo) {
+        for ($lo = $caixa[1]; $lo < $caixa[3]; $lo += $passo) {
+            $out[] = round($la, 4) . ',' . round($lo, 4) . ',' . round(min($caixa[2], $la + $passo), 4) . ',' . round(min($caixa[3], $lo + $passo), 4);
+        }
+    }
+    return $out;
+}
+
+/**
+ * Uma passagem da leitura do OpenStreetMap: lê até $maximo quadrículas por ler ou com mais de 7 dias (as mais
+ * antigas primeiro) e junta os pontos no osm.json, com o estado (partes lidas, erro). Depois de uma falha espera
+ * 1 hora. Quando a última parte em falta fica lida, pede um novo cálculo. Devolve o n.º de partes lidas.
+ */
+function naval_geo_osm_passo(array $clientes, int $agora, int $maximo = 2, ?callable $http = null): int
+{
+    if (naval_config('GEO_OSM_ACTIVO', '1') === '0') return 0;
+    $fo = naval_geo_pasta() . '/osm.json';
+    $osm = naval_json_ler($fo) + ['pontos' => [], 'partes' => []];
+    if (($osm['falhou'] ?? 0) > $agora - 3600) return 0;
+    $partes = naval_geo_osm_partes(naval_geo_caixa_area($clientes));
+    $lidas = (array) $osm['partes'];
+    $devidas = array_values(array_filter($partes, function ($p) use ($lidas, $agora) { return ($lidas[$p] ?? 0) < $agora - 7 * 86400; }));
+    usort($devidas, function ($a, $b) use ($lidas) { return ($lidas[$a] ?? 0) <=> ($lidas[$b] ?? 0); });
+    if (!$devidas) return 0;
+    $pontos = [];
+    foreach ((array) $osm['pontos'] as $p) $pontos[$p['id']] = $p;
+    $n = 0;
+    foreach (array_slice($devidas, 0, $maximo) as $parte) {
+        $cx = array_map('floatval', explode(',', $parte));
+        try {
+            $novos = naval_geo_ler_osm($cx, $http);
+        } catch (Throwable $e) {
+            error_log('[geo OSM] ' . $e->getMessage());
+            $osm['falhou'] = $agora;
+            $osm['erro'] = substr($e->getMessage(), 0, 200);
+            break;
+        }
+        // os pontos antigos desta parte saem (fecharam ou mudaram) e entram os lidos agora
+        foreach ($pontos as $id => $p) {
+            if ($p['lat'] >= $cx[0] && $p['lat'] < $cx[2] && $p['lng'] >= $cx[1] && $p['lng'] < $cx[3]) unset($pontos[$id]);
+        }
+        foreach ($novos as $p) $pontos[$p['id']] = $p;
+        $lidas[$parte] = $agora;
+        unset($osm['erro'], $osm['falhou']);
+        $n++;
+    }
+    $osm['partes'] = array_intersect_key($lidas, array_flip($partes));
+    $osm['pontos'] = array_values($pontos);
+    $faltam = count(array_filter($partes, function ($p) use ($osm, $agora) { return ($osm['partes'][$p] ?? 0) < $agora - 7 * 86400; }));
+    if ($n && !$faltam) {
+        $osm['em'] = date('Y-m-d', $agora);
+        naval_json_gravar(naval_geo_pasta() . '/recalcular.json', ['pedido' => $agora - 600, 'fonte' => 'osm', 'novos' => 0], false);
+    }
+    $osm['total_partes'] = count($partes);
+    naval_json_gravar($fo, $osm, false);
+    return $n;
+}
+
 /** Lê do OpenStreetMap (Overpass) os estabelecimentos comerciais da caixa. Devolve [{id, n, t, lat, lng, f: osm}]. */
 function naval_geo_ler_osm(array $caixa, ?callable $http = null): array
 {
     $bb = implode(',', $caixa);
-    $q = '[out:json][timeout:170];(';
+    $q = '[out:json][timeout:60];(';
     foreach (NAVAL_DESC_OSM as $k => $vals) $q .= 'nwr["' . $k . '"~"^(' . $vals . ')$"](' . $bb . ');';
     $q .= ');out center tags;';
     $url = naval_config('GEO_OVERPASS_URL', 'https://overpass-api.de/api/interpreter');
-    $r = ($http ?? 'naval_http_pedido')('POST', $url, ['corpo' => http_build_query(['data' => $q]), 'tempo' => 180,
+    $r = ($http ?? 'naval_http_pedido')('POST', $url, ['corpo' => http_build_query(['data' => $q]), 'tempo' => 75,
         'cabecalhos' => ['Content-Type: application/x-www-form-urlencoded', 'User-Agent: PortalRTM-GrupoNaval/1.0']]);
     if ($r['corpo'] === false || $r['codigo'] !== 200) throw new RuntimeException('OpenStreetMap: HTTP ' . $r['codigo'] . ' ' . $r['erro']);
     $j = json_decode((string) $r['corpo'], true);
@@ -828,7 +897,10 @@ function naval_geo_estado_fontes(): array
 {
     $o = naval_json_ler(naval_geo_pasta() . '/osm.json');
     $g = naval_json_ler(naval_geo_pasta() . '/google.json');
-    return ['osm_em' => $o['em'] ?? null, 'osm' => count((array) ($o['pontos'] ?? [])), 'google' => count((array) ($g['lugares'] ?? [])),
+    $agora = time();
+    $lidas = count(array_filter((array) ($o['partes'] ?? []), function ($t) use ($agora) { return $t >= $agora - 7 * 86400; }));
+    return ['osm_em' => $o['em'] ?? null, 'osm' => count((array) ($o['pontos'] ?? [])), 'osm_partes' => $lidas, 'osm_total' => (int) ($o['total_partes'] ?? 0),
+        'osm_erro' => $o['erro'] ?? null, 'google' => count((array) ($g['lugares'] ?? [])),
         'externos' => count(naval_json_ler(naval_desc_externos_ficheiro())), 'area' => naval_desc_area(),
         'google_mes' => (int) (($g['meses'] ?? [])[date('Y-m')] ?? 0), 'google_limite' => (int) naval_geo_num('GEO_GOOGLE_PEDIDOS_MES', 4500),
         'google_activo' => naval_config('GOOGLE_PLACES_API_KEY') !== ''];
@@ -916,11 +988,17 @@ function naval_geo_noite(int $agora): array
 {
     $ini = naval_config('GEO_HORA_INICIO', '01:00');
     if (date('H:i', $agora) < $ini || date('H', $agora) >= '06') {
-        // de dia: só o novo cálculo pedido por uma entrada externa (webhook v1/geo/entrada)
+        // de dia: a leitura do OpenStreetMap por partes (uma de 5 em 5 minutos) e o novo cálculo pedido por uma
+        // entrada externa (webhook v1/geo/entrada) ou pelo fim da leitura do OpenStreetMap
+        $feito = [];
         $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
-        if (!naval_desc_recalculo_pendente($agora, (string) ($v['gerado'] ?? ''))) return [];
-        $v = naval_geo_calcular();
-        return ['calculo_externo' => count((array) ($v['potenciais'] ?? []))];
+        $osm = naval_geo_osm_passo((array) ($v['clientes'] ?? []), $agora, 2);
+        if ($osm) $feito['osm_partes'] = $osm;
+        if (naval_desc_recalculo_pendente($agora, (string) ($v['gerado'] ?? ''))) {
+            $v = naval_geo_calcular();
+            $feito['calculo_pedido'] = count((array) ($v['potenciais'] ?? []));
+        }
+        return $feito;
     }
     $feito = [];
     $agregados120 = naval_analise_agregados(date('Y-m-d', $agora - 120 * 86400), date('Y-m-d', $agora - 86400));
@@ -928,16 +1006,9 @@ function naval_geo_noite(int $agora): array
     $cd = naval_geo_clientes($agregados);
     $clientes = (array) ($cd['clientes'] ?? []);
     $fo = naval_geo_pasta() . '/osm.json';
-    $osm = naval_json_ler($fo);
-    if ($clientes && naval_config('GEO_OSM_ACTIVO', '1') !== '0' && ($osm['em'] ?? '') < date('Y-m-d', $agora - 7 * 86400)) {
-        try {
-            $pts = naval_geo_ler_osm(naval_geo_caixa_area($clientes));
-            naval_json_gravar($fo, ['em' => date('Y-m-d', $agora), 'pontos' => $pts], false);
-            $feito['osm'] = count($pts);
-        } catch (Throwable $e) {
-            error_log('[geo OSM] ' . $e->getMessage());
-            naval_json_gravar($fo, ['em' => date('Y-m-d', $agora - 6 * 86400)] + $osm, false);   // tenta de novo amanhã
-        }
+    if ($clientes) {
+        $n = naval_geo_osm_passo($clientes, $agora, 3);
+        if ($n) $feito['osm_partes'] = $n;
     }
     if ($clientes) {
         $comercio = array_merge((array) (naval_json_ler($fo)['pontos'] ?? []), naval_desc_externos_pontos());
@@ -958,32 +1029,10 @@ function naval_geo_noite(int $agora): array
     return $feito;
 }
 
-/**
- * Lê o OpenStreetMap quando ainda não há leitura ou tem mais de 7 dias (botão «Recalcular agora» antes da primeira
- * noite). Falha sem parar o cálculo.
- */
-function naval_geo_osm_se_preciso(?callable $http = null): ?int
-{
-    $fo = naval_geo_pasta() . '/osm.json';
-    $osm = naval_json_ler($fo);
-    if (naval_config('GEO_OSM_ACTIVO', '1') === '0' || ($osm['em'] ?? '') >= date('Y-m-d', time() - 7 * 86400)) return null;
-    @set_time_limit(300);
-    try {
-        $antes = naval_json_ler(naval_geo_pasta() . '/vista.json');
-        $pts = naval_geo_ler_osm(naval_geo_caixa_area((array) ($antes['clientes'] ?? [])), $http);
-        naval_json_gravar($fo, ['em' => date('Y-m-d'), 'pontos' => $pts], false);
-        return count($pts);
-    } catch (Throwable $e) {
-        error_log('[geo OSM] ' . $e->getMessage());
-        return null;
-    }
-}
-
 /** Vista no âmbito de quem pede: as suas rotas (SUP e PRO) e, para os outros, também as zonas sem rota. */
 function naval_geo_vista(?array $rotas, bool $actualizar = false): array
 {
     $v = naval_json_ler(naval_geo_pasta() . '/vista.json');
-    if ($actualizar) naval_geo_osm_se_preciso();
     if (!$v || $actualizar) $v = naval_geo_calcular();
     if ($rotas !== null) {
         $dentro = function ($x) use ($rotas) { return in_array((string) ($x['r'] ?? $x['rota'] ?? ''), $rotas, true); };

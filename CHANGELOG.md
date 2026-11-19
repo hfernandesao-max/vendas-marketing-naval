@@ -1,3 +1,15 @@
+## 20-11-2026
+
+### Zonas de entrega e Distribuidores automáticos; mapas mais claros
+
+<!-- tipo: melhoria -->
+
+- Zonas de entrega: deixa de haver zonas desenhadas à mão. Cada rota tem a sua geofence, calculada sozinha todas as noites a partir dos seus clientes, com o código da rota no mapa. Os clientes fora da geofence da sua rota aparecem com contorno vermelho e contam à parte (coordenadas ou rota a confirmar).
+- Distribuidores: a zona de cada distribuidor (cliente com a tipologia «Distribuidor») monta-se sozinha com os seus clientes ou, sem essa indicação, com os mais próximos, e mostra a distância média.
+- Uma cor fixa por rota, a mesma em todas as páginas, e bem diferente das outras. A legenda e os números passam para a barra lateral: o mapa fica livre. Tocar numa rota mostra-a sozinha.
+- Exportações automáticas: todos os clientes, dentro e fora das geofences, resumo por rota ou distribuidor (CSV para o Excel) e as zonas em GeoJSON (Google Earth, QGIS, My Maps).
+- Prospecção: a geofence de cada rota cobre a rota toda (só ficam de fora os erros de GPS); o «Recalcular agora» responde logo e diz o que fez; o OpenStreetMap é lido sozinho em segundo plano, por partes, e o rodapé mostra quanto já leu e se falhou. As janelas do mapa voltam a ter o texto legível e os clientes no mesmo ponto mostram quantos são.
+
 ## 19-11-2026
 
 ### Prospecção: descoberta automática em Luanda e Ícolo e Bengo, ICP Score e Radar do dia

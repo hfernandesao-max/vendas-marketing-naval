@@ -71,8 +71,8 @@
     motel: 'Motel',
   };
   const fonteTxt = (f) => (f.length > 1 ? 'confirmado em ' + f.length + ' fontes' : f[0] === 'google' ? 'Google' : f[0] === 'osm' ? 'OpenStreetMap' : 'fonte externa');
-  // azuis Naval por rota (sem verde); potenciais em âmbar; zonas sem rota em vermelho
-  const CORES = ['#0057b8', '#1a73c9', '#4f8fd6', '#0a2a52', '#2b6cb0', '#6aa6e8', '#123f7a', '#3d7fd0', '#8bb8ef', '#1d4f91', '#5b95db'];
+  // uma cor fixa por rota (geo-cores.js); potenciais em âmbar; zonas sem rota e avisos em vermelho
+  const cor = (r) => window.NavalCores.rota(r);
   let V = null;
   let token = null;
   let mapa = null;
@@ -439,17 +439,30 @@
     limparMapa();
     const r = rotaEscolhida();
     const limites = new google.maps.LatLngBounds();
-    V.rotas.forEach((x, i) => {
+    V.rotas.forEach((x) => {
       if (r !== '' && r !== '_sem' && x.rota !== r) return;
       if (x.territorio.length >= 3) {
         const pol = new google.maps.Polygon({
           paths: x.territorio.map(([lat, lng]) => ({ lat, lng })),
-          strokeColor: CORES[i % CORES.length],
-          strokeWeight: 2,
-          fillColor: CORES[i % CORES.length],
-          fillOpacity: 0.08,
+          strokeColor: cor(x.rota),
+          strokeWeight: r ? 3 : 2,
+          strokeOpacity: 0.9,
+          fillColor: cor(x.rota),
+          fillOpacity: r ? 0.16 : 0.1,
           map: mapa,
         });
+        // código da rota no centro da geofence: cada área identifica-se sem legenda em cima do mapa
+        const n = x.territorio.length;
+        camadas.push(
+          new google.maps.Marker({
+            position: { lat: x.territorio.reduce((s, p) => s + p[0], 0) / n, lng: x.territorio.reduce((s, p) => s + p[1], 0) / n },
+            map: mapa,
+            clickable: false,
+            zIndex: 5,
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0 },
+            label: { text: x.rota, color: cor(x.rota), fontSize: '13px', fontWeight: '800', className: 'pp-rotulo' },
+          }),
+        );
         pol.addListener('click', (e) =>
           abrir(e.latLng, `<b>Rota ${x.rota}</b> · ${x.promotor}<br>${x.clientes} clientes · ${x.potenciais} potenciais · ocupação ${pct(x.ocupacao)}`),
         );
@@ -477,7 +490,7 @@
           position: { lat: c.lat, lng: c.lng },
           map: mapa,
           title: c.n,
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 3, fillColor: '#1a73c9', fillOpacity: 0.9, strokeWeight: 0 },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 4, fillColor: cor(c.r), fillOpacity: 0.95, strokeColor: '#ffffff', strokeWeight: 1 },
         }),
       );
     });
@@ -504,7 +517,9 @@
           position: { lat: g.lat, lng: g.lng },
           map: mapa,
           title: g.clientes.length + ' clientes no mesmo ponto',
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#c0262d', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 1 },
+          zIndex: 30,
+          label: { text: String(g.clientes.length), color: '#ffffff', fontSize: '10px', fontWeight: '700' },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#c0262d', fillOpacity: 0.85, strokeColor: '#ffffff', strokeWeight: 1.5 },
         });
         m.addListener('click', () =>
           abrir(
@@ -567,7 +582,37 @@
     info.open(mapa);
   }
 
+  function legenda() {
+    const box = $('ppLegenda');
+    if (!box) return;
+    box.replaceChildren();
+    const r = rotaEscolhida();
+    V.rotas.forEach((x) => {
+      const b = el('button', 'pp-leg' + (r === x.rota ? ' on' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', r === x.rota ? 'true' : 'false');
+      const c = el('span', 'pp-cor');
+      c.style.background = cor(x.rota);
+      b.append(c, el('span', null, x.rota + ' · ' + x.promotor), el('b', null, x.clientes + ' · ' + pct(x.ocupacao)));
+      b.title = `${x.clientes} clientes, ${x.potenciais} potenciais, ocupação ${pct(x.ocupacao)} da capacidade`;
+      b.addEventListener('click', () => {
+        $('ppRota').value = r === x.rota && V.rotas.length !== 1 ? '' : x.rota;
+        desenhar();
+      });
+      box.append(b);
+    });
+    const simb = {
+      potenciais: ['Área: geofence (território) da rota, com o código', 'Ponto pequeno: cliente, na cor da rota', 'Âmbar: potencial cliente (maior = mais prioritário)', 'Círculo vermelho: zona sem rota com muitos estabelecimentos'],
+      esquecidos: ['Âmbar, laranja, vermelho: sem compras há 14, 30 ou 60 dias ou mais'],
+      coordenadas: ['Vermelho com número: clientes diferentes no mesmo ponto (coordenadas copiadas)'],
+      funil: ['Área: geofence da rota · ponto: cliente'],
+      radar: ['R: recuperar cliente parado · C: conquistar potencial cliente'],
+    }[vista];
+    (simb || []).forEach((t) => box.append(el('p', 'pp-nota', t)));
+    box.append(el('p', 'pp-nota', 'Toque numa rota para a ver sozinha; outra vez para ver todas.'));
+  }
   function desenhar() {
+    legenda();
     indicadores();
     lista();
     desenharMapa();
@@ -577,6 +622,7 @@
     const d = await api('prospeccao' + (actualizar ? '?actualizar=1' : ''));
     if (!d.ok) {
       $('ppLista').replaceChildren(el('p', 'pp-nota', d.erro || 'Não foi possível ler os dados.'));
+      if (actualizar) throw new Error(d.erro || 'erro do servidor');
       return;
     }
     V = d;
@@ -593,6 +639,8 @@
     $('ppFontes').textContent =
       `Clientes: Pinguim BO${V.origem_clientes ? ' (' + V.origem_clientes + ')' : ''}. Estabelecimentos: © contribuidores do OpenStreetMap (ODbL)` +
       (f.google_activo ? `, Google (${f.google_mes} de ${f.google_limite} pedidos este mês)` : '') +
+      (f.osm_total && f.osm_partes < f.osm_total ? ` (a ler em segundo plano: ${f.osm_partes} de ${f.osm_total} partes da área, ${f.osm} estabelecimentos até agora)` : ` (${f.osm || 0} estabelecimentos)`) +
+      (f.osm_erro ? ` · última leitura falhou: ${f.osm_erro}` : '') +
       (f.externos ? `, fontes externas (${f.externos})` : '') +
       `. Calculado em ${String(V.gerado || '').slice(8, 10)}-${String(V.gerado || '').slice(5, 7)}-${String(V.gerado || '').slice(0, 4)} ${String(V.gerado || '').slice(11, 16)}.`;
     if (V.erro_clientes) alerta(V.erro_clientes);
@@ -612,7 +660,28 @@
   document.addEventListener('DOMContentLoaded', () => {
     $('ppRota').addEventListener('change', desenhar);
     $('ppDia').addEventListener('change', desenhar);
-    $('ppRecalcular').addEventListener('click', () => carregar(true));
+    $('ppRecalcular').addEventListener('click', async () => {
+      const b = $('ppRecalcular');
+      const st = $('ppEstado');
+      b.disabled = true;
+      b.querySelector('span').textContent = 'A recalcular…';
+      st.hidden = false;
+      st.textContent = 'A recalcular os territórios e os potenciais clientes…';
+      try {
+        await carregar(true);
+        const f = V.fontes || {};
+        st.textContent =
+          `Recalculado: ${V.clientes.length} clientes, ${V.potenciais.length} potenciais clientes e ${V.rotas.length} geofences.` +
+          (f.osm_total && f.osm_partes < f.osm_total
+            ? ` O OpenStreetMap ainda está a ser lido em segundo plano (${f.osm_partes} de ${f.osm_total} partes); os potenciais aparecem sozinhos à medida que chegam.`
+            : '');
+      } catch (e) {
+        st.textContent = 'Não foi possível recalcular: ' + e.message;
+      } finally {
+        b.disabled = false;
+        b.querySelector('span').textContent = 'Recalcular agora';
+      }
+    });
     document.querySelectorAll('.pp-tab').forEach((b) =>
       b.addEventListener('click', () => {
         vista = b.dataset.vista;

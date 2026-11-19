@@ -1,0 +1,132 @@
+/* GeoMobilidade › Zonas de entrega e Distribuidores (automáticos): legenda e números na barra lateral, mapa livre */
+.z-lado {
+  overflow-y: auto;
+}
+.z-campo {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--gray-300);
+}
+.z-ind,
+.z-detalhe {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 6px;
+}
+.z-i {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.z-i span {
+  color: var(--gray-300);
+}
+.z-i b {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.z-nota {
+  font-size: 0.78rem;
+  color: var(--gray-300);
+  text-align: justify;
+  margin: 6px 0 0;
+}
+.z-legenda {
+  display: grid;
+  gap: 4px;
+}
+.z-item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.z-item:hover,
+.z-item:focus-visible {
+  border-color: var(--gray-500);
+}
+.z-item.on {
+  border-color: var(--app-blue-light);
+  background: rgb(43 108 176 / 0.18);
+}
+.z-cor {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.z-todas {
+  background: conic-gradient(#1f77b4 0 25%, #2ca02c 0 50%, #9467bd 0 75%, #17becf 0);
+}
+.z-nome {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.z-num {
+  font-weight: 700;
+}
+.z-det {
+  grid-column: 2 / 4;
+  font-size: 0.75rem;
+  color: var(--gray-300);
+}
+.z-det.aviso {
+  color: #f08a8e;
+}
+.z-simbolos p {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--gray-300);
+}
+.z-exportar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.z-exportar .action-btn {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 0;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  text-align: left;
+}
+.z-exportar .action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.z-ir {
+  justify-self: start;
+  color: var(--app-blue-light);
+  font-size: 0.85rem;
+}
+.z-rotulo {
+  text-shadow:
+    0 0 3px #fff,
+    0 0 3px #fff,
+    0 0 3px #fff;
+}
+@media (max-width: 760px) {
+  .z-corpo {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .z-corpo .map-container {
+    height: 50vh;
+    min-height: 280px;
+  }
+}

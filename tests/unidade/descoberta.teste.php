@@ -123,3 +123,46 @@ teste('radar: lugares livres, recuperar e conquistar perto do caminho, adiar aci
     igual(['B'], array_column($l3[0]['adiar'], 'id'));
     igual([], $l3[0]['sugestoes']);
 });
+
+teste('OpenStreetMap por partes: uma ou duas quadrículas por passagem, falha espera 1 hora, fim pede novo cálculo', function () {
+    $fo = naval_pasta('geo') . '/osm.json';
+    @unlink($fo);
+    @unlink(naval_pasta('geo') . '/recalcular.json');
+    $partes = naval_geo_osm_partes(naval_desc_area());
+    igual(25, count($partes), 'Luanda + Ícolo e Bengo em 5 × 5 partes de 0,25°');
+    $pedidos = 0;
+    $falha = false;
+    $http = function ($m, $url, $o) use (&$pedidos, &$falha) {
+        $pedidos++;
+        if ($falha) return ['codigo' => 504, 'corpo' => 'tempo esgotado', 'erro' => ''];
+        preg_match('/\((-?[\d.]+),(-?[\d.]+),/', urldecode($o['corpo']), $m2);
+        $la = (float) $m2[1] + 0.01;
+        $lo = (float) $m2[2] + 0.01;
+        return ['codigo' => 200, 'erro' => '', 'corpo' => json_encode(['elements' => [
+            ['type' => 'node', 'id' => $pedidos, 'lat' => $la, 'lon' => $lo, 'tags' => ['shop' => 'supermarket', 'name' => 'Loja ' . $pedidos, 'phone' => '+244 923 000 00' . ($pedidos % 10)]],
+            ['type' => 'node', 'id' => 900 + $pedidos, 'lat' => $la, 'lon' => $lo, 'tags' => ['shop' => 'car_repair', 'name' => 'Oficina']],
+        ]])];
+    };
+    $t = 2000000000;
+    igual(2, naval_geo_osm_passo([], $t, 2, $http), 'duas partes nesta passagem');
+    $o = naval_json_ler($fo);
+    igual(2, count($o['pontos']), 'só os do portfólio (a oficina fica de fora)');
+    igual('923000001', $o['pontos'][0]['tel']);
+    igual(25, $o['total_partes']);
+    verdade(!isset($o['em']), 'ainda não acabou');
+    $falha = true;
+    igual(0, naval_geo_osm_passo([], $t + 300, 2, $http), 'falha: nenhuma parte lida');
+    verdade(isset(naval_json_ler($fo)['erro']), 'o erro fica registado para o ecrã');
+    $antes = $pedidos;
+    igual(0, naval_geo_osm_passo([], $t + 600, 2, $http), 'espera 1 hora depois de uma falha');
+    igual($antes, $pedidos, 'sem pedidos durante a espera');
+    $falha = false;
+    igual(23, naval_geo_osm_passo([], $t + 4000, 30, $http), 'as restantes 23');
+    $o = naval_json_ler($fo);
+    igual(25, count($o['pontos']));
+    verdade(isset($o['em']) && !isset($o['erro']), 'leitura completa');
+    verdade(naval_desc_recalculo_pendente($t + 4000, '1970-01-01 00:00:00'), 'pede o novo cálculo dos potenciais');
+    igual(0, naval_geo_osm_passo([], $t + 5000, 2, $http), 'nada a ler durante 7 dias');
+    @unlink($fo);
+    @unlink(naval_pasta('geo') . '/recalcular.json');
+});
