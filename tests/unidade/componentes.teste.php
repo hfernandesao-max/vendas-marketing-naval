@@ -9,7 +9,9 @@ teste('componentes: inventário completo, licenças permitidas, SHA-256 certo e 
         $n = basename($f);
         if ($n === 'componentes.json') continue;
         verdade(isset($listados[$n]), 'biblioteca sem inventário: ' . $n);
-        igual($listados[$n]['sha256'], hash_file('sha256', $f), 'SHA-256 de ' . $n);
+        // O Git calcula estes hashes sobre o conteúdo LF, mesmo quando o checkout Windows usa CRLF.
+        $conteudo = str_replace(["\r\n", "\r"], "\n", (string) file_get_contents($f));
+        igual($listados[$n]['sha256'], hash('sha256', $conteudo), 'SHA-256 de ' . $n);
         verdade(in_array($listados[$n]['licenca'], $inv['licencas_permitidas'], true), 'licença de ' . $n);
     }
     $saida = sys_get_temp_dir() . '/sbom-' . getmypid() . '.json';

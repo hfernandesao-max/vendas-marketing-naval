@@ -17,7 +17,9 @@ $versao = $argv[2];
 $comp = [];
 foreach ($inv['componentes'] as $c) {
     $f = $raiz . '/reports/vendor/' . $c['ficheiro'];
-    $sha = is_file($f) ? hash_file('sha256', $f) : '';
+    // O inventário fixa o conteúdo canónico do Git; no Windows, o checkout pode converter LF em CRLF.
+    $conteudo = is_file($f) ? (string) file_get_contents($f) : '';
+    $sha = hash('sha256', str_replace(["\r\n", "\r"], "\n", $conteudo));
     if ($sha !== $c['sha256']) {
         fwrite(STDERR, 'SHA-256 de ' . $c['ficheiro'] . " não confere com componentes.json\n");
         exit(1);

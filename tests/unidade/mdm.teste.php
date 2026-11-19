@@ -22,8 +22,17 @@ if (!function_exists('curl_init') || !function_exists('proc_open')) return;
 $mdmAmb = sys_get_temp_dir() . '/naval-mdm-' . getmypid();
 @mkdir($mdmAmb . '/privado', 0770, true);
 $mdmPorta = 18000 + getmypid() % 1000;
-$nulo = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
-$mdmSrv = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $mdmPorta, dirname(__DIR__) . '/dados/mdm-simulado.php'], [1 => ['file', $nulo, 'w'], 2 => ['file', $nulo, 'w']], $mdmTubos);
+$windows = DIRECTORY_SEPARATOR === '\\';
+$abrirProcesso = function ($comando, $descritores, &$tubos, $ambiente = null) use ($windows) {
+    if ($windows && PHP_VERSION_ID >= 70400) {
+        return proc_open($comando, $descritores, $tubos, null, $ambiente, ['bypass_shell' => true]);
+    }
+    return proc_open($comando, $descritores, $tubos, null, $ambiente);
+};
+$nulo = $windows ? 'NUL' : '/dev/null';
+$comandoServidor = escapeshellarg(PHP_BINARY) . ' -S 127.0.0.1:' . $mdmPorta . ' ' . escapeshellarg(dirname(__DIR__) . '/dados/mdm-simulado.php');
+if (!$windows) $comandoServidor = 'exec ' . $comandoServidor;
+$mdmSrv = $abrirProcesso($comandoServidor, [1 => ['file', $nulo, 'w'], 2 => ['file', $nulo, 'w']], $mdmTubos);
 verdade(is_resource($mdmSrv), 'não foi possível iniciar o servidor MDM simulado');
 for ($i = 0; $i < 50; $i++) {
     $socket = @fsockopen('127.0.0.1', $mdmPorta);
@@ -35,15 +44,18 @@ for ($i = 0; $i < 50; $i++) {
 }
 $bdMdm = $mdmAmb . '/atv.sqlite';
 (new PDO('sqlite:' . $bdMdm))->exec((string) file_get_contents(dirname(__DIR__) . '/dados/equipamentos-sqlite.sql'));
-$executarPhp = function (string $script, array $variaveis): array {
+$executarPhp = function (string $script, array $variaveis) use ($abrirProcesso): array {
     $ambiente = getenv();
     foreach ($variaveis as $nome => $valor) $ambiente[$nome] = $valor;
-    $processo = proc_open([PHP_BINARY, $script], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['redirect', 1]], $tubos, null, $ambiente);
+    $comando = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script);
+    $processo = $abrirProcesso($comando, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $tubos, $ambiente);
     verdade(is_resource($processo), 'não foi possível executar ' . basename($script));
     fclose($tubos[0]);
     $saida = stream_get_contents($tubos[1]);
+    $erro = stream_get_contents($tubos[2]);
     fclose($tubos[1]);
-    return [proc_close($processo), (string) $saida];
+    fclose($tubos[2]);
+    return [proc_close($processo), (string) $saida . (string) $erro];
 };
 $correrMdm = function (string $refresh, ?string $tokenGuardado = null) use ($mdmAmb, $mdmPorta, $bdMdm, $executarPhp): array {
     @unlink($mdmAmb . '/privado/mdm/token.json');

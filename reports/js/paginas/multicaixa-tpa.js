@@ -549,12 +549,7 @@ function quadroConciliado(correcoes) {
   });
   const total = (x) => x.numerario + x.multicaixa + x.invalida;
   const tr = el('tr', 'fp-conc-tot');
-  tr.append(
-    el('td', null, t('Total')),
-    el('td', 'n', kz(total(antes))),
-    el('td', 'n', kz(total(depois))),
-    el('td', 'n', kz(total(depois) - total(antes))),
-  );
+  tr.append(el('td', null, t('Total')), el('td', 'n', kz(total(antes))), el('td', 'n', kz(total(depois))), el('td', 'n', kz(total(depois) - total(antes))));
   tb.append(tr);
   const w = el('div', 'cc-scroll');
   w.append(tb);
