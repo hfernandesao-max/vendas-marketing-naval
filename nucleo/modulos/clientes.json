@@ -1,12 +1,12 @@
 {
   "id": "clientes",
   "nome": "Clientes",
-  "versao": "1.0.0",
-  "descricao": "Carteira de clientes, cadastros e análise de cadastros.",
+  "versao": "1.1.0",
+  "descricao": "Carteira de clientes com ficha do cliente (dados, localização, vendas, pagamentos e visitas), cadastros e análise de cadastros.",
   "nucleo": false,
   "paginas": ["clientes", "cadastros", "cadastros-analise", "cadastros-clientes"],
   "recursos": ["clientes", "cadastros", "cadastros-analise", "cadastros-clientes"],
-  "api": ["v1/cadastros", "v1/carteira"],
+  "api": ["v1/cadastros", "v1/carteira", "v1/clientes/ficha"],
   "conectores": ["pinguim-sql", "olap"],
   "eventos": {
     "publica": [],

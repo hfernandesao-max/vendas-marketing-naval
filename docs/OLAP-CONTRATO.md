@@ -48,3 +48,18 @@ e a fotografia diária do stock (`rtm.f_stock_dia`) entram nas versões seguinte
 `FONTE_VENDAS=pinguim` → `paralelo` (20 dias úteis seguidos sem diferenças) → `olap` (aprovação da Direcção
 Financeira). O ficheiro para o SAP e a Comunicação AGT só passam a usar o OLAP numa fase posterior, depois de um mês de
 fecho igual nas duas fontes; a estrutura do ficheiro para o SAP não muda.
+
+## Leitura actual do esquema dbo (ficha do cliente)
+
+Enquanto as vistas `rtm.*` não existem, a ficha do cliente (Clientes › Carteira de clientes) lê directamente as tabelas
+do armazém de dados que já estão no OLAP, só com SELECT (`nucleo/servicos/olap-clientes.php`, `GET v1/clientes/ficha`):
+
+| Tabela | Uso na ficha |
+| ------ | ------------ |
+| `dbo.DIM_CLIENT` | identificação, tipologia, município (coluna `STATE_PROVINCE`), GPS; liga-se ao Pinguim BO por `CODE` |
+| `dbo.DIM_CLIENT_HISTORY` (sem `END_DATE`) | rota, vendedor, coordenador, gestor, distribuidor, canal e subcanal; `VISIT_DAY1..7` = domingo..sábado |
+| `dbo.FACT_R1_MAP` | visitas dos últimos 180 dias: resultado (`DIM_OUTCOME_MOTIVE`), presencial ou remota, distância do GPS |
+
+O OLAP não tem meios de pagamento e só guarda cerca de um mês de vendas (`FACT_BONUS`): as vendas e os pagamentos da
+ficha vêm do Pinguim BO. Quando a vista `rtm.d_cliente` existir, a ficha passa a lê-la e estas consultas deixam de ser
+usadas.

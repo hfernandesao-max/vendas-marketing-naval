@@ -24,7 +24,34 @@ function naval_olap_configurado(): bool
     return naval_config('OLAP_DSN') !== '' || naval_config('OLAP_HOST') !== '';
 }
 
-/** Consulta de localização (ficheiro SQL próprio ou vista); [sql, origem] ou [null, motivo]. */
+/**
+ * Localização a partir das visitas do armazém de dados do OLAP (dbo.FACT_R1_MAP), usada quando não há ficheiro SQL
+ * próprio nem OLAP_VISTA. Cada visita com GPS dá um ponto no início (TIPO venda, com o documento, ou ponto) e, quando
+ * a hora de fim é coerente (mesmo dia, até 4 h depois do início), outro no fim, no mesmo sítio: as paragens do
+ * percurso do dia passam a medir o tempo no cliente. DIM_DATE_ID é AAAAMMDD; DIM_*_TIME_ID são segundos do dia.
+ */
+const NAVAL_OLAP_SQL_VISITAS = "WITH P AS (
+        SELECT CONVERT(INT, CONVERT(CHAR(8), CAST(:de AS DATETIME), 112)) AS DE, CONVERT(INT, CONVERT(CHAR(8), CAST(:ate AS DATETIME), 112)) AS ATE
+    ), V AS (
+        SELECT F.DIM_DATE_ID, F.DIM_START_TIME_ID, F.DIM_END_DATE_ID, F.DIM_END_TIME_ID, F.LAT, F.LNG, F.DOC_FULLNUMBER, R.CODE AS ROTA, C.CODE AS CLIENTE
+        FROM dbo.FACT_R1_MAP F
+        JOIN P ON F.DIM_DATE_ID >= P.DE AND F.DIM_DATE_ID < P.ATE
+        LEFT JOIN dbo.DIM_ROUTE R ON R.ID = F.DIM_ROUTE_ID
+        LEFT JOIN dbo.DIM_CLIENT C ON C.ID = F.DIM_CLIENT_ID
+        WHERE F.LAT IS NOT NULL AND F.LNG IS NOT NULL AND F.LAT <> 0 AND F.DIM_START_TIME_ID IS NOT NULL
+    )
+    SELECT CONVERT(VARCHAR(19), DATEADD(SECOND, V.DIM_START_TIME_ID, CAST(CONVERT(CHAR(8), V.DIM_DATE_ID) AS DATETIME)), 120) AS DATA_HORA,
+        V.ROTA, CAST(V.LAT AS FLOAT) AS LATITUDE, CAST(V.LNG AS FLOAT) AS LONGITUDE, V.DOC_FULLNUMBER AS DOCUMENTO, V.CLIENTE,
+        CAST(NULL AS FLOAT) AS PRECISAO, CASE WHEN V.DOC_FULLNUMBER IS NULL THEN 'ponto' ELSE 'venda' END AS TIPO
+    FROM V
+    UNION ALL
+    SELECT CONVERT(VARCHAR(19), DATEADD(SECOND, V.DIM_END_TIME_ID, CAST(CONVERT(CHAR(8), V.DIM_DATE_ID) AS DATETIME)), 120),
+        V.ROTA, CAST(V.LAT AS FLOAT), CAST(V.LNG AS FLOAT), NULL, V.CLIENTE, CAST(NULL AS FLOAT), 'ponto'
+    FROM V
+    WHERE V.DIM_END_DATE_ID = V.DIM_DATE_ID AND V.DIM_END_TIME_ID > V.DIM_START_TIME_ID AND V.DIM_END_TIME_ID - V.DIM_START_TIME_ID <= 14400
+    ORDER BY ROTA, DATA_HORA";
+
+/** Consulta de localização (ficheiro SQL próprio, vista ou as visitas do OLAP); [sql, origem] ou [null, motivo]. */
 function naval_olap_consulta(): array
 {
     $f = naval_raiz() . '/ferramentas/sql/olap-localizacao.sql';
@@ -37,7 +64,8 @@ function naval_olap_consulta(): array
         }
         return [$sql, 'ferramentas/sql/olap-localizacao.sql'];
     }
-    $vista = naval_config('OLAP_VISTA', 'dbo.vw_localizacao');
+    $vista = naval_config('OLAP_VISTA');
+    if ($vista === '') return [NAVAL_OLAP_SQL_VISITAS, 'dbo.FACT_R1_MAP (visitas)'];
     if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$/', $vista)) return [null, 'OLAP_VISTA inválida.'];
     return ["SELECT * FROM $vista WHERE DATA_HORA >= :de AND DATA_HORA < :ate", 'vista ' . $vista];
 }

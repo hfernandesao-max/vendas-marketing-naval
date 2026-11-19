@@ -1235,3 +1235,164 @@ p.aviso {
   font-size: 13px;
   white-space: nowrap;
 }
+
+/* Clientes › ficha do cliente (paginas/cliente-ficha.js): janela com separadores, quadros, pares e tabelas simples */
+.cf-abrir {
+  all: unset;
+  cursor: pointer;
+  color: var(--fg);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.cf-abrir:hover,
+.cf-abrir:focus-visible {
+  color: var(--accent);
+  text-decoration-style: solid;
+}
+.cf-abrir:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+dialog.dlg.cf-dlg {
+  width: min(980px, calc(100vw - 32px));
+}
+.cf-dlg .dlg-b {
+  overflow-y: auto;
+}
+.cf-sep {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(var(--p4-rgb) / 0.98);
+}
+.cf-painel {
+  display: grid;
+  gap: 14px;
+}
+.cf-tiles {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.cf-bloco h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cf-pares {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+.cf-pares dt {
+  color: var(--muted);
+}
+.cf-pares dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cf-scroll {
+  overflow-x: auto;
+}
+.cf-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cf-tab th,
+.cf-tab td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgb(var(--lin2-rgb) / 0.18);
+  text-align: left;
+  vertical-align: middle;
+}
+.cf-tab th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cf-tab .n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cf-aviso {
+  margin: 0;
+}
+.cf-seg {
+  display: grid;
+  gap: 2px;
+}
+.cf-seg .note {
+  font-size: 12px;
+}
+/* mapa do cliente e das visitas (SVG do portal): quadrado = cliente; círculos = visitas, verdes com venda */
+.cf-mapa {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+}
+.cf-mapa-fundo {
+  fill: rgb(var(--lin2-rgb) / 0.06);
+  stroke: rgb(var(--lin2-rgb) / 0.25);
+}
+.cf-mapa-liga {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.cf-mapa-escala {
+  stroke: var(--fg);
+  stroke-width: 2;
+}
+.cf-mapa-txt {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.cf-mapa-cliente,
+.glegenda i.cf-l-cliente {
+  fill: var(--accent);
+  background: var(--accent);
+}
+.cf-mapa-venda,
+.glegenda i.cf-l-venda {
+  fill: var(--ok);
+  background: var(--ok);
+}
+.cf-mapa-visita,
+.glegenda i.cf-l-visita {
+  fill: var(--muted);
+  background: var(--muted);
+}
+.cf-mapa circle {
+  stroke: var(--bg);
+  stroke-width: 2;
+  fill-opacity: 0.85;
+}
+.glegenda i.cf-l-venda,
+.glegenda i.cf-l-visita {
+  border-radius: 50%;
+}
+.cf-dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.cf-erro {
+  color: var(--warn);
+}
+@media (min-width: 760px) {
+  #cf-p-dados .cf-painel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #cf-p-dados .cf-painel > .cf-aviso {
+    grid-column: 1 / -1;
+  }
+}

@@ -6,6 +6,7 @@ import { barras, legenda } from '../componentes/graficos.js';
 import { diaCurto, dl, ds, n0, n1, pct } from '../formatos.js';
 import { t, tv } from '../i18n/i18n.js';
 import { R } from './registo.js';
+import { abrirFicha } from './cliente-ficha.js';
 import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum } from '../util.js';
 
@@ -61,7 +62,7 @@ R.clientes = (pg) => {
     tabela({
       id: 'cl-d',
       titulo: t('Clientes'),
-      nota: t('Um cliente por linha: rota, dias de visita, estado do cadastro, GPS e se comprou no período.'),
+      nota: t('Um cliente por linha: rota, dias de visita, estado do cadastro, GPS e se comprou no período. Toque no nome para abrir a ficha do cliente.'),
       rows,
       sort: 'nome',
       dir: 1,
@@ -69,7 +70,20 @@ R.clientes = (pg) => {
         { key: 'rota', label: t('Rota'), p: 4 },
         { key: 'promotor', label: t('Promotor'), p: 0 },
         { key: 'codigo', label: t('Código') },
-        { key: 'nome', label: t('Cliente'), wrap: true },
+        {
+          key: 'nome',
+          label: t('Cliente'),
+          wrap: true,
+          // ficha do cliente: dados e localização, vendas, pagamentos e visitas
+          render: (v, r) => {
+            const b = el('button', 'cf-abrir', v || r.codigo || '—');
+            b.type = 'button';
+            b.title = t('Abrir a ficha do cliente');
+            b.addEventListener('click', () => abrirFicha(r));
+            return b;
+          },
+          xl: (r) => r.nome,
+        },
         { key: 'nif', label: t('NIF') },
         { key: 'tipo', label: t('Tipo'), render: (v) => tv(v), xl: (r) => tv(r.tipo) },
         { key: 'dias', label: t('Dias de visita') },

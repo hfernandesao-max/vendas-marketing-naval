@@ -15,6 +15,19 @@ export const GEO_PAGINAS = {
   'geo-distribuidores': '../geo/view/viewDist/index.php',
 };
 
+/**
+ * Dia e rota pedidos no endereço do portal (ex.: #geo-terreno?data=2026-11-19&rota=1001, a partir da ficha do
+ * cliente), passados ao quadro; só estes dois valores e só com formato válido.
+ */
+export function quadroParametros(hash = location.hash) {
+  const q = new URLSearchParams(String(hash).split('?')[1] || '');
+  const p = new URLSearchParams();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(q.get('data') || '')) p.set('data', q.get('data'));
+  if (/^[A-Za-z0-9_-]{1,20}$/.test(q.get('rota') || '')) p.set('rota', q.get('rota'));
+  const s = p.toString();
+  return s ? '?' + s : '';
+}
+
 let ajuste = null;
 function ajustarAltura(q) {
   if (!q.isConnected) {
@@ -35,7 +48,7 @@ Object.entries(GEO_PAGINAS).forEach(([id, src]) => {
     }
     document.body.classList.add('pagina-mapa');
     const q = el('iframe', 'geo-quadro');
-    q.src = src;
+    q.src = src + quadroParametros();
     q.title = document.getElementById('titulo') ? document.getElementById('titulo').textContent : id;
     q.setAttribute('allow', 'geolocation; fullscreen');
     pg.append(q);

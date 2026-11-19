@@ -1,5 +1,18 @@
 ## 19-11-2026
 
+### Ficha do cliente na Carteira de clientes
+
+<!-- tipo: funcionalidade -->
+
+- Em Clientes › Carteira de clientes, o nome do cliente abre a ficha do cliente com cinco separadores: Dados e localização, Vendas, Pagamentos, Visitas e tempos, e Mapa.
+- Dados e localização: identificação, tipologia, rota e equipa (vendedor, coordenador, gestor, distribuidor, canal), dias de visita, município e GPS com ligação ao mapa, lidos do OLAP.
+- Vendas e Pagamentos: vendas do Pinguim BO no período da barra de filtros, com as regras de todos os ecrãs. Os pagamentos aparecem por modo (Numerário, Multicaixa…) e por tipo (pronto pagamento na factura-recibo ou a crédito na factura), com o pendente.
+- Visitas e tempos: histórico dos últimos 180 dias no OLAP, com o promotor, o resultado ou o motivo de não venda, visitas presenciais ou remotas, a distância entre o GPS da visita e o do cliente, o tempo no cliente (da abertura ao fecho da visita, até 4 h) e a deslocação até ao cliente seguinte do mesmo promotor no mesmo dia.
+- Mapa: o cliente e o sítio onde cada visita e cada venda foram feitas, com escala, e ligação ao percurso completo do promotor em cada dia.
+- O Percurso do dia (Terreno) passa a ler as visitas do OLAP (`dbo.FACT_R1_MAP`), quando não há outra consulta configurada: as paragens mostram o tempo em cada cliente. Também abre num dia e numa rota pedidos no endereço.
+- Só se vêem clientes das rotas de cada pessoa. Sem OLAP, a ficha mostra o aviso e continua com os dados da carteira, as vendas e os pagamentos.
+- O portal passa a aceitar no `.env` as chaves por servidor (`DB_HOST_PINWINBO`…, `DB_HOST_OLAP`…).
+
 ### Stock de corte das carrinhas calculado pelos movimentos horários
 
 <!-- tipo: impacto -->

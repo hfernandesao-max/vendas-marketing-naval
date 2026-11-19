@@ -49,6 +49,7 @@
     return r.json().catch(() => ({ ok: false, erro: 'Resposta inválida do servidor.' }));
   }
 
+  let rotaPedida = '';
   const rotaSel = () => $('tdRota').value;
   const rotasVis = () => (T ? T.rotas.filter((r) => !rotaSel() || r.rota === rotaSel()) : []);
 
@@ -269,7 +270,9 @@
     }
     T = d;
     const sel = $('tdRota');
-    const antes = sel.value;
+    // rota pedida no endereço (ficha do cliente › Mapa › «Percurso do promotor nesse dia»), só na primeira leitura
+    const antes = rotaPedida || sel.value;
+    rotaPedida = '';
     sel.replaceChildren();
     if (T.rotas.length !== 1) sel.append(new Option('Todas as rotas', ''));
     T.rotas.forEach((r) => sel.append(new Option('Rota ' + r.rota, r.rota)));
@@ -294,7 +297,12 @@
   };
   document.addEventListener('DOMContentLoaded', () => {
     const d = new Date();
-    $('tdDia').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    // dia e rota pedidos no endereço (terreno.php?data=AAAA-MM-DD&rota=1001), validados; senão, hoje e todas as rotas
+    const pedido = new URLSearchParams(location.search);
+    const diaPedido = pedido.get('data') || '';
+    $('tdDia').value = /^\d{4}-\d{2}-\d{2}$/.test(diaPedido) && diaPedido <= hoje ? diaPedido : hoje;
+    rotaPedida = /^[A-Za-z0-9_-]{1,20}$/.test(pedido.get('rota') || '') ? pedido.get('rota') : '';
     $('tdDia').addEventListener('change', () => carregar());
     $('tdRota').addEventListener('change', desenhar);
     document.querySelectorAll('.pp-tab[data-vista]').forEach((b) =>

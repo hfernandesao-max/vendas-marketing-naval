@@ -325,12 +325,12 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
 // Colunas agrupadas (período e período anterior) com linha de meta. Desenhado ao tamanho real do quadro
 // (sem ampliar o texto): eixo a começar em zero, colunas de largura limitada e centradas, meta como linha
 // tracejada com o rótulo à direita, valores só na série principal.
-export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0 }) {
+export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0, esquerda = 40 }) {
   const w = el('div', 'gwrap');
   const desenhar = (largura) => {
     const Lw = Math.max(cats.length * (series.length * 12 + 14) + 50, Math.floor(largura || 640)),
       H = altura,
-      L = 40,
+      L = esquerda, // margem dos números do eixo (valores em Kz precisam de mais)
       B = rot ? 46 : 28,
       T = 22,
       Rm = 12;
