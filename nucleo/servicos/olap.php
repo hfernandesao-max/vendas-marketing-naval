@@ -29,11 +29,15 @@ function naval_olap_configurado(): bool
  * próprio nem OLAP_VISTA. Cada visita com GPS dá um ponto no início (TIPO venda, com o documento, ou ponto) e, quando
  * a hora de fim é coerente (mesmo dia, até 4 h depois do início), outro no fim, no mesmo sítio: as paragens do
  * percurso do dia passam a medir o tempo no cliente. DIM_DATE_ID é AAAAMMDD; DIM_*_TIME_ID são segundos do dia.
+ * CLIENTE é o identificador interno (DIM_CLIENT.ID = ENTITY.ID), o mesmo dos clientes do mapa e das vendas; VALOR é
+ * o total do documento (DOC_TOTAL, com IVA).
  */
 const NAVAL_OLAP_SQL_VISITAS = "WITH P AS (
         SELECT CONVERT(INT, CONVERT(CHAR(8), CAST(:de AS DATETIME), 112)) AS DE, CONVERT(INT, CONVERT(CHAR(8), CAST(:ate AS DATETIME), 112)) AS ATE
     ), V AS (
-        SELECT F.DIM_DATE_ID, F.DIM_START_TIME_ID, F.DIM_END_DATE_ID, F.DIM_END_TIME_ID, F.LAT, F.LNG, F.DOC_FULLNUMBER, R.CODE AS ROTA, C.CODE AS CLIENTE
+        SELECT F.DIM_DATE_ID, F.DIM_START_TIME_ID, F.DIM_END_DATE_ID, F.DIM_END_TIME_ID, F.LAT, F.LNG,
+            NULLIF(LTRIM(RTRIM(F.DOC_FULLNUMBER)), '') AS DOC_FULLNUMBER, F.DOC_TOTAL, R.CODE AS ROTA,
+            CAST(C.ID AS VARCHAR(30)) AS CLIENTE
         FROM dbo.FACT_R1_MAP F
         JOIN P ON F.DIM_DATE_ID >= P.DE AND F.DIM_DATE_ID < P.ATE
         LEFT JOIN dbo.DIM_ROUTE R ON R.ID = F.DIM_ROUTE_ID
@@ -42,11 +46,11 @@ const NAVAL_OLAP_SQL_VISITAS = "WITH P AS (
     )
     SELECT CONVERT(VARCHAR(19), DATEADD(SECOND, V.DIM_START_TIME_ID, CAST(CONVERT(CHAR(8), V.DIM_DATE_ID) AS DATETIME)), 120) AS DATA_HORA,
         V.ROTA, CAST(V.LAT AS FLOAT) AS LATITUDE, CAST(V.LNG AS FLOAT) AS LONGITUDE, V.DOC_FULLNUMBER AS DOCUMENTO, V.CLIENTE,
-        CAST(NULL AS FLOAT) AS PRECISAO, CASE WHEN V.DOC_FULLNUMBER IS NULL THEN 'ponto' ELSE 'venda' END AS TIPO
+        CAST(NULL AS FLOAT) AS PRECISAO, CASE WHEN V.DOC_FULLNUMBER IS NULL THEN 'ponto' ELSE 'venda' END AS TIPO, CAST(V.DOC_TOTAL AS FLOAT) AS VALOR
     FROM V
     UNION ALL
     SELECT CONVERT(VARCHAR(19), DATEADD(SECOND, V.DIM_END_TIME_ID, CAST(CONVERT(CHAR(8), V.DIM_DATE_ID) AS DATETIME)), 120),
-        V.ROTA, CAST(V.LAT AS FLOAT), CAST(V.LNG AS FLOAT), NULL, V.CLIENTE, CAST(NULL AS FLOAT), 'ponto'
+        V.ROTA, CAST(V.LAT AS FLOAT), CAST(V.LNG AS FLOAT), NULL, V.CLIENTE, CAST(NULL AS FLOAT), 'ponto', CAST(NULL AS FLOAT)
     FROM V
     WHERE V.DIM_END_DATE_ID = V.DIM_DATE_ID AND V.DIM_END_TIME_ID > V.DIM_START_TIME_ID AND V.DIM_END_TIME_ID - V.DIM_START_TIME_ID <= 14400
     ORDER BY ROTA, DATA_HORA";
@@ -91,7 +95,8 @@ function naval_olap_normalizar(array $linhas, ?array $rotas = null): array
         if ($rotas !== null && !in_array($r, $rotas, true)) continue;
         $tipo = strtolower(trim((string) ($l['TIPO'] ?? '')));
         $out[] = ['t' => $t, 'r' => $r, 'lat' => round($la, 6), 'lng' => round($lo, 6), 'p' => $p, 'doc' => trim((string) ($l['DOCUMENTO'] ?? '')),
-            'cli' => trim((string) ($l['CLIENTE'] ?? '')), 'tipo' => in_array($tipo, ['venda', 'cliente', 'ponto'], true) ? $tipo : (($l['DOCUMENTO'] ?? '') !== '' ? 'venda' : 'ponto')];
+            'cli' => trim((string) ($l['CLIENTE'] ?? '')), 'tipo' => in_array($tipo, ['venda', 'cliente', 'ponto'], true) ? $tipo : (($l['DOCUMENTO'] ?? '') !== '' ? 'venda' : 'ponto')]
+            + (isset($l['VALOR']) && is_numeric($l['VALOR']) ? ['v' => round((float) $l['VALOR'], 2)] : []);
     }
     usort($out, function ($a, $b) { return strcmp($a['r'], $b['r']) ?: strcmp($a['t'], $b['t']); });
     return $out;
@@ -208,7 +213,7 @@ function naval_olap_terreno(array $pontos, array $clientes, array $territorios, 
         foreach ($vendas as $v) {
             $c = $pos[$v['cli']] ?? null;
             $d = $c ? naval_olap_dist($v['lat'], $v['lng'], (float) $c['lat'], (float) $c['lng']) : null;
-            $visitas[] = ['t' => $v['t'], 'doc' => $v['doc'], 'cli' => $v['cli'], 'n' => $c['n'] ?? $v['cli'], 'lat' => $v['lat'], 'lng' => $v['lng'],
+            $visitas[] = ['t' => $v['t'], 'doc' => $v['doc'], 'cli' => $v['cli'], 'n' => $c['n'] ?? $v['cli'], 'lat' => $v['lat'], 'lng' => $v['lng'], 'valor' => $v['v'] ?? null,
                 'dist' => $d === null ? null : (int) round($d), 'prova' => $d === null ? 'sem_coordenadas' : ($d <= $raio ? 'ok' : 'longe')];
             if ($v['cli'] !== '') $vendasCli[$v['cli']][] = $v;
         }

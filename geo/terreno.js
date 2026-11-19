@@ -26,6 +26,8 @@
   };
   const hm = (min) => (min >= 60 ? Math.floor(min / 60) + ' h ' + String(min % 60).padStart(2, '0') + ' min' : min + ' min');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  // valor do documento com IVA, como no resto do portal (1 234 567,00 Kz)
+  const kz = (v) => Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kz';
 
   async function pedirToken() {
     const r = await fetch(API + 'auth/token', {
@@ -85,13 +87,17 @@
     const rs = rotasVis();
     if (vista === 'visitas') {
       const vs = rs.flatMap((r) => r.visitas.map((v) => ({ ...v, r: r.rota })));
-      $('tdTituloLista').textContent = `Visitas com venda (${vs.length})`;
+      const total = vs.reduce((s, v) => s + (v.valor || 0), 0);
+      $('tdTituloLista').textContent = `Vendas do dia (${vs.length})` + (total ? ' · ' + kz(total) : '');
       if (!vs.length) box.append(el('p', 'pp-nota', 'Sem vendas com localização.'));
       vs.forEach((v) => {
         const c = el('article', 'pp-item' + (v.prova === 'longe' ? ' pp-f60' : ''));
         const h = el('div', 'pp-cab');
         h.append(el('b', null, v.t.slice(11, 16) + ' · ' + (v.n || v.cli || 'Sem cliente')), el('span', 'pp-prova ' + v.prova, PROVA[v.prova] || v.prova));
-        c.append(h, el('p', 'pp-nota', ['Rota ' + v.r, v.doc || '', v.dist != null ? v.dist + ' m do registo do cliente' : ''].filter(Boolean).join(' · ')));
+        c.append(
+          h,
+          el('p', 'pp-nota', ['Rota ' + v.r, v.doc || '', v.valor != null ? kz(v.valor) : '', v.dist != null ? v.dist + ' m do registo do cliente' : ''].filter(Boolean).join(' · ')),
+        );
         c.addEventListener('click', () => mapa && mapa.panTo({ lat: v.lat, lng: v.lng }));
         box.append(c);
       });
@@ -164,7 +170,7 @@
         const m = new google.maps.Marker({
           position: { lat: v.lat, lng: v.lng },
           map: mapa,
-          title: v.n,
+          title: v.n + (v.valor != null ? ' · ' + kz(v.valor) : ''),
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 6,
@@ -175,7 +181,13 @@
           },
         });
         m.addListener('click', () =>
-          abrir(m.getPosition(), `<b>${esc(v.n)}</b><br>${v.t.slice(11, 16)} · ${esc(PROVA[v.prova])}${v.dist != null ? ' · ' + v.dist + ' m' : ''}`),
+          abrir(
+            m.getPosition(),
+            `<b>${esc(v.n)}</b><br>${v.t.slice(11, 16)} · ${esc('Rota ' + r.rota)}` +
+              (v.doc ? `<br>${esc(v.doc)}` : '') +
+              (v.valor != null ? ` · <b>${esc(kz(v.valor))}</b>` : '') +
+              `<br>${esc(PROVA[v.prova])}${v.dist != null ? ' · ' + v.dist + ' m do cliente' : ''}`,
+          ),
         );
         camadas.push(m);
       });

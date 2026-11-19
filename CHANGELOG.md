@@ -1,5 +1,13 @@
 ## 19-11-2026
 
+### Percurso do dia: vendas no mapa com o cliente, o documento e o valor
+
+<!-- tipo: correcao -->
+
+- No Percurso do dia (Terreno), as vendas lidas do OLAP passam a identificar o cliente pelo mesmo identificador dos clientes do mapa: aparecem com o nome do cliente e com a prova de visita (no cliente ou longe dele). Antes apareciam só com um código e sem prova de visita.
+- Cada venda mostra o documento e o valor (com IVA) na lista e no balão do mapa; a lista passa a chamar-se «Vendas do dia», com o total.
+- Visitas sem documento no OLAP deixam de contar como vendas.
+
 ### Rotas propostas: aprovação de rotas novas no portal
 
 <!-- tipo: funcionalidade -->
