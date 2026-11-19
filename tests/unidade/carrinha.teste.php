@@ -280,6 +280,7 @@ teste('a base da contagem fica congelada e não recebe uma fotografia posterior'
 });
 
 teste('a primeira folha congela a base, a reimpressão reutiliza-a e a contagem mantém-na', function () {
+    // rota própria: a 1001 do mesmo dia já foi fechada pelo teste do fecho por excepção
     $data = date('Y-m-d', time() - 86400);
     igual($data . ' 23:59:59', naval_carr_hora_referencia($data), 'sem regra de corte: referência histórica ao fim do dia');
     $r = [
@@ -290,28 +291,30 @@ teste('a primeira folha congela a base, a reimpressão reutiliza-a e a contagem 
     ];
     naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', [
         'data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
-        'precos' => ['A1' => 1000.0], 'rotas' => ['1001' => $r],
+        'precos' => ['A1' => 1000.0], 'rotas' => ['1007' => $r],
     ]);
     $eu = ['login' => 'tec.armazem'];
-    verdade(naval_carr_juntar_posterior($data, '1001', 'RQ-1', ['B1' => 2.0], 'coord', date('Y-m-d H:i:s')), 'carga anterior à folha');
-    $primeira = naval_carr_preparar_folha($data, '1001', $eu);
-    igual(['A1', 'B1'], array_column($primeira['linhas'], 'codigo'), 'a folha inclui as cargas já autorizadas');
-    $base = naval_carr_ler($data, '1001');
+    verdade(naval_carr_juntar_posterior($data, '1007', 'RQ-1', ['B1' => 2.0], 'coord', date('Y-m-d H:i:s')), 'carga anterior à folha');
+    $primeira = naval_carr_preparar_folha($data, '1007', $eu);
+    $codigos = array_column($primeira['linhas'], 'codigo');
+    sort($codigos);   // a folha vem ordenada pelo nome do artigo; aqui só interessa que a carga autorizada esteja lá
+    igual(['A1', 'B1'], $codigos, 'a folha inclui as cargas já autorizadas');
+    $base = naval_carr_ler($data, '1007');
     naval_json_gravar(naval_carr_pasta($data) . '/_corte.json', [
-        'data' => $data, 'hora' => '15:50', 'rotas' => ['1001' => ['A1' => ['n' => 'Fraldas', 'q' => 0.0]]],
+        'data' => $data, 'hora' => '15:50', 'rotas' => ['1007' => ['A1' => ['n' => 'Fraldas', 'q' => 0.0]]],
     ]);
     $alterada = $r;
     $alterada['s1'] = ['A1' => ['n' => 'Fraldas', 'q' => 0.0]];
     naval_json_gravar(naval_carr_pasta($data) . '/_dados.json', [
         'data' => $data, 'gerado' => date('Y-m-d H:i:s'), 'movimentos' => 'separados',
-        'precos' => ['A1' => 1000.0], 'rotas' => ['1001' => $alterada],
+        'precos' => ['A1' => 1000.0], 'rotas' => ['1007' => $alterada],
     ]);
-    $segunda = naval_carr_preparar_folha($data, '1001', $eu);
+    $segunda = naval_carr_preparar_folha($data, '1007', $eu);
     igual($primeira, $segunda, 'reimpressão não muda a base nem a lista');
-    igual($base['base'], naval_carr_ler($data, '1001')['base']);
-    igual(1, count(array_filter(naval_carr_ler($data, '1001')['historico'], function ($h) { return $h['accao'] === 'folha_contagem_congelada'; })));
-    verdade(!naval_carr_juntar_posterior($data, '1001', 'RQ-2', ['B1' => 3.0], 'coord', date('Y-m-d H:i:s')), 'carga posterior à folha não altera a contagem');
-    $contagem = naval_carr_contar($data, '1001', ['A1' => 5.0, 'B1' => 2.0], $eu);
+    igual($base['base'], naval_carr_ler($data, '1007')['base']);
+    igual(1, count(array_filter(naval_carr_ler($data, '1007')['historico'], function ($h) { return $h['accao'] === 'folha_contagem_congelada'; })));
+    verdade(!naval_carr_juntar_posterior($data, '1007', 'RQ-2', ['B1' => 3.0], 'coord', date('Y-m-d H:i:s')), 'carga posterior à folha não altera a contagem');
+    $contagem = naval_carr_contar($data, '1007', ['A1' => 5.0, 'B1' => 2.0], $eu);
     $linhas = array_column($contagem['linhas'], null, 'codigo');
     igual([5.0, 0.0, 2.0, 0.0], [$linhas['A1']['esperado'], $linhas['A1']['diferenca'], $linhas['B1']['posterior'], $linhas['B1']['diferenca']]);
     @unlink(naval_carr_pasta($data) . '/_corte.json');

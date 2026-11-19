@@ -1,6 +1,20 @@
+## 19-11-2026
+
+### Verificações do GitHub novamente a verde
+
+<!-- tipo: correcao -->
+
+- O teste da folha de contagem das carrinhas passa a usar uma rota própria e a verificar apenas que a carga autorizada entra na folha, sem depender da ordem dos artigos.
+- As secções de 18-11-2026 do registo de alterações ficam classificadas, como exige a publicação das versões.
+- A verificação das traduções em tigrínia passa a aceitar «JSON» e «Ctrl», como já aceitava «PDF», «Alt» ou «Esc».
+- A análise do PHP deixa de assinalar uma protecção redundante na actualização das conciliações históricas (mesmo resultado).
+- Formatação do código alinhada com as regras do projecto. Sem alterações ao funcionamento do portal nem ao ficheiro SAP.
+
 ## 18-11-2026
 
 ### Conciliação das carrinhas: base congelada na primeira folha de contagem
+
+<!-- tipo: impacto -->
 
 - A primeira geração da folha congela no servidor o stock e os movimentos do Pinguim BO; reimpressões e submissão reutilizam a mesma base.
 - O PDF regista a hora de referência e a conciliação deixa de ser alterada por fotografias posteriores; movimentos e vendas são apurados até ao instante congelado.
@@ -8,6 +22,8 @@
 - O super administrador pode actualizar em bloco as conciliações históricas ainda por contar, usando o stock e os movimentos do Pinguim BO no corte operacional; contagens feitas e aprovações não são alteradas.
 
 ### Consultar o dicionário técnico sem exportar Excel
+
+<!-- tipo: funcionalidade -->
 
 - Administração › Acessos permite ver e copiar o catálogo das tabelas e relações em JSON, directamente no portal.
 - Mantém as permissões existentes; apresenta apenas metadados da estrutura, sem linhas de negócio.
