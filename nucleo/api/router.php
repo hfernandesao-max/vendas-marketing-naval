@@ -81,6 +81,7 @@ function naval_api_rotas(): array
         'v1/preferencias' => [['GET', 'POST'], 'jwt', 'preferencias.php', []],
         'v1/app-telemovel' => [['GET', 'POST'], 'jwt', 'app-telemovel.php', []],
         'v1/terreno' => [['GET'], 'jwt', 'terreno.php', []],
+        'v1/rotas-propostas' => [['GET', 'POST'], 'jwt', 'rotas-propostas.php', []],
         'v1/pedidos-clientes' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', []],
         'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
         'v1/modulos' => [['GET', 'POST'], 'jwt', 'modulos.php', []],

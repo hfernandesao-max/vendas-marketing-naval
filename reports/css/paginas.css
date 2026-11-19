@@ -1396,3 +1396,58 @@ dialog.dlg.cf-dlg {
     grid-column: 1 / -1;
   }
 }
+
+/* Terreno › Rotas propostas (paginas/rotas-propostas.js): território, impacto e decisão de cada proposta */
+.rp-proposta {
+  display: grid;
+  gap: 10px;
+}
+.rp-corpo {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+@media (min-width: 760px) {
+  .rp-corpo {
+    grid-template-columns: minmax(220px, 360px) 1fr;
+  }
+}
+.rp-mapa {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.rp-territorio {
+  fill: rgb(var(--lin2-rgb) / 0.12);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.rp-cliente {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+.rp-campos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  max-width: 560px;
+}
+.rp-campos .campo {
+  color: var(--muted);
+  font-size: 13px;
+}
+.rp-decidir,
+.rp-lista {
+  display: grid;
+  gap: 8px;
+}
+.rp-lista h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.rp-filtro {
+  margin: 0 0 10px;
+}

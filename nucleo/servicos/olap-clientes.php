@@ -241,6 +241,6 @@ function naval_olapcli_ficha(array $bruto, bool $veNif): array
 function naval_olapcli_no_ambito(array $ficha, ?array $rotas, array $rotasCarteira = []): bool
 {
     if ($rotas === null) return true;
-    $r = array_filter(array_merge([(string) ($ficha['atribuicao']['rota'] ?? '')], $rotasCarteira), 'strlen');
+    $r = array_filter(array_merge([(string) ($ficha['atribuicao']['rota'] ?? '')], $rotasCarteira), function ($x) { return (string) $x !== ''; });
     return (bool) array_intersect($r, $rotas);
 }

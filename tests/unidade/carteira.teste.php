@@ -38,6 +38,11 @@ teste('Carteira: encomenda sugerida, a propor (venda cruzada) e visitas do dia',
     $v = naval_cart_visitas(['clientes' => $c], '2026-11-03', null);
     igual('B', $v['1001'][0]['c'], 'o parado primeiro');
     igual([], naval_cart_visitas(['clientes' => $c], '2026-11-03', ['1002']), 'só as suas rotas');
+    // rota nova aprovada no portal: o cliente B passa a ser visitado pela rota 1015 (e só por ela)
+    $v2 = naval_cart_visitas(['clientes' => $c], '2026-11-03', null, ['B' => ['r' => '1015']]);
+    igual(['B'], array_column($v2['1015'], 'c'));
+    verdade(!in_array('B', array_column($v2['1001'] ?? [], 'c'), true));
+    igual(['B'], array_column(naval_cart_visitas(['clientes' => $c], '2026-11-03', ['1015'], ['B' => ['r' => '1015']])['1015'], 'c'), 'a rota nova vê o cliente');
 });
 
 teste('Carteira: risco de crédito pelas facturas em aberto', function () {

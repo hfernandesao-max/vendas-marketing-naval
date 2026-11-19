@@ -116,6 +116,8 @@ const NAVAL_MATRIZ_TXT = [
     'geo-zonas-gerir'      => 'G  -  -  -  -  -  -  -  G  -  -',
     'geo-distribuidores'   => 'V  V  V  Vr -  -  V  V  G  V  V',
     'geo-prospeccao'       => 'V  V  V  Vr Vr -  -  -  G  V  V',
+    // rotas novas propostas pelo portal: decidem a Direcção, o Comercial e a GEO; a Logística vê (viaturas e carga)
+    'rotas-propostas'      => 'V  G  G  Vr -  -  -  V  G  V  -',
     // terreno do dia (localização do OLAP): dado pessoal dos vendedores, só a quem acompanha as rotas (Lei 22/11)
     'geo-terreno'          => 'V  V  V  Vr Vr -  -  -  G  V  -',
     // Administração
@@ -246,6 +248,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'Vr', 'V', 'E', 'G'];
         case 'geo-rotas':
         case 'geo-prospeccao':
+        case 'rotas-propostas':
         case 'geo-terreno':
         case 'geo-zonas':
         case 'geo-distribuidores':

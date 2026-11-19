@@ -253,6 +253,35 @@ function naval_geo_consulta_clientes(): array
 }
 
 /**
+ * Clientes com GPS no OLAP (armazém de dados do Pinguim BO, só SELECT), nas mesmas colunas da consulta do Pinguim BO:
+ * CODIGO (= ENTITY.ID, o identificador das vendas), NOME, LATITUDE, LONGITUDE e TIPO (tipologia). null sem OLAP ou
+ * se a leitura falhar.
+ */
+function naval_geo_clientes_olap(): ?array
+{
+    naval_servico('olap');
+    if (!naval_olap_configurado()) return null;
+    $sql = "SELECT CAST(C.ID AS VARCHAR(30)) AS CODIGO, C.DESCRIPTION AS NOME, CAST(C.LATITUDE AS FLOAT) AS LATITUDE,
+                   CAST(C.LONGITUDE AS FLOAT) AS LONGITUDE, C.TYPOLOGY AS TIPO
+            FROM dbo.DIM_CLIENT C
+            WHERE C.LATITUDE IS NOT NULL AND C.LONGITUDE IS NOT NULL AND C.LATITUDE <> '' AND C.LONGITUDE <> ''
+              AND ISNUMERIC(C.LATITUDE) = 1 AND ISNUMERIC(C.LONGITUDE) = 1";
+    try {
+        naval_bd_so_leitura($sql);
+        $rows = naval_bd_criar('OLAP')->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log('[geo clientes OLAP] ' . $e->getMessage());
+        return null;
+    }
+    foreach ($rows as &$r) {
+        $r['NOME'] = naval_bd_utf8((string) ($r['NOME'] ?? ''));
+        $r['TIPO'] = naval_bd_utf8((string) ($r['TIPO'] ?? ''));
+    }
+    unset($r);
+    return $rows;
+}
+
+/**
  * Clientes com coordenadas válidas, rota e dia habitual de visita (das vendas): [{c, n, lat, lng, r, d, f, criado}].
  * Uma leitura por dia (clientes-AAAA-MM-DD.json). $agregados: últimos 56 dias (rota, dia e ritmo de compras).
  */
@@ -268,9 +297,15 @@ function naval_geo_clientes(array $agregados, bool $actualizar = false): array
         return $ult ? naval_json_ler($ult[0]) : ['origem' => '', 'erro' => 'Sem ligação à base de dados do Pinguim BO.', 'clientes' => []];
     }
     [$sql, $origem] = naval_geo_consulta_clientes();
-    if ($sql === null) return ['origem' => '', 'erro' => $origem, 'clientes' => []];
+    $rows = null;
+    if ($sql === null) {
+        // sem coordenadas na ENTITY nem consulta própria: o GPS dos clientes que o OLAP guarda (DIM_CLIENT.ID = ENTITY.ID)
+        $rows = naval_geo_clientes_olap();
+        if ($rows === null) return ['origem' => '', 'erro' => $origem, 'clientes' => []];
+        $origem = 'OLAP dbo.DIM_CLIENT';
+    }
     try {
-        $rows = naval_bd_consultar($sql);
+        if ($rows === null) $rows = naval_bd_consultar($sql);
     } catch (Throwable $e) {
         error_log('[geo clientes SQL] ' . $e->getMessage());
         return $cache ?: ['origem' => $origem, 'erro' => 'A consulta dos clientes no Pinguim BO falhou.', 'clientes' => []];
@@ -686,6 +721,9 @@ function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?ar
     $agregados = $agregados ?? array_filter($agregados120, function ($d) { return $d >= date('Y-m-d', time() - 56 * 86400); }, ARRAY_FILTER_USE_KEY);
     $cd = $clientesDados ?? naval_geo_clientes($agregados);
     $clientes = array_values(array_filter((array) $cd['clientes'], function ($c) { return naval_geo_valida($c['lat'], $c['lng']); }));
+    // rotas novas aprovadas no portal (Terreno › Rotas propostas): os clientes atribuídos contam já na rota nova
+    naval_servico('rotas-propostas');
+    $clientes = naval_rp_aplicar($clientes);
     $fontes = $fontes ?? array_merge((array) (naval_json_ler(naval_geo_pasta() . '/osm.json')['pontos'] ?? []), naval_geo_google_pontos());
     $estados = naval_json_ler(naval_geo_pasta() . '/estados.json');
     $antes = naval_json_ler(naval_geo_pasta() . '/vista.json');
@@ -698,6 +736,13 @@ function naval_geo_calcular(?array $agregados = null, ?array $fontes = null, ?ar
         return true;
     }));
     $pot = naval_geo_atribuir($pot, $clientes, naval_geo_num('GEO_RAIO_TERRITORIO', 1500));
+    // rota nova aprovada para uma zona sem rota: os potenciais clientes dentro do território passam a ser dela
+    $zonas = naval_rp_territorios_zona();
+    foreach ($pot as &$p) {
+        if ($p['r'] !== '') continue;
+        foreach ($zonas as $r => $pol) if (naval_geo_dentro((float) $p['lat'], (float) $p['lng'], $pol)) { $p['r'] = (string) $r; break; }
+    }
+    unset($p);
     foreach ($pot as &$p) {
         foreach ($p['ids'] as $id) if (isset($estados[$id])) { $p['e'] = $estados[$id]['e']; $p['em'] = $estados[$id]['em']; break; }
     }
@@ -794,7 +839,9 @@ function naval_geo_avisar(array $v): array
         $html .= '</ul>';
     }
     $url = rtrim(naval_config('PORTAL_URL'), '/');
-    $html .= '<p>Mapa dos territórios e da prospecção: Operações › Terreno › Prospecção de clientes' . ($url !== '' ? ' (' . $h($url) . '/geo/prospeccao.php)' : '') . '.</p></div>';
+    $html .= '<p>A proposta de rota nova, com o impacto em visitas e em carga, está pendente de aprovação em Operações › Terreno › Rotas propostas'
+        . ($url !== '' ? ' (' . $h($url) . '/reports/#rotas-propostas)' : '') . '. Mapa dos territórios e da prospecção: Operações › Terreno › Prospecção de clientes'
+        . ($url !== '' ? ' (' . $h($url) . '/geo/prospeccao.php)' : '') . '.</p></div>';
     $r = naval_enviar_email($dest, ($novas ? 'Rota cheia: criar nova rota (vendedor + viatura)' : 'Zonas sem rota com potenciais clientes') . ' · GeoMobilidade', $html);
     if ($r['ok']) naval_json_gravar($f, $av);
     return ['rotas' => $novas, 'zonas' => count($zonas), 'email' => $r['ok']];
@@ -830,6 +877,12 @@ function naval_geo_noite(int $agora): array
     if (substr((string) ($v['gerado'] ?? ''), 0, 10) !== date('Y-m-d', $agora) && date('H', $agora) >= '04') {
         $v = naval_geo_calcular($agregados, null, $cd, $agregados120);
         $feito['calculo'] = count($v['potenciais']);
+        // rotas novas: propostas pendentes de aprovação (Terreno › Rotas propostas), antes do aviso por correio
+        try {
+            $feito['propostas'] = count(naval_rp_noite($v, $agregados));
+        } catch (Throwable $e) {
+            error_log('[rotas propostas] ' . $e->getMessage());
+        }
         $feito['avisos'] = naval_geo_avisar($v);
     }
     return $feito;

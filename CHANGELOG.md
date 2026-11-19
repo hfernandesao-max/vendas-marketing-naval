@@ -1,5 +1,15 @@
 ## 19-11-2026
 
+### Rotas propostas: aprovação de rotas novas no portal
+
+<!-- tipo: funcionalidade -->
+
+- Nova página Operações › Terreno › Rotas propostas. Todas as noites o portal propõe uma rota nova quando uma rota passa 14 dias seguidos acima de 90 % das visitas que consegue fazer (dividir o território, passando a parte menor para a rota nova) ou quando uma zona sem rota tem muitos estabelecimentos. A proposta fica pendente de aprovação.
+- Cada proposta mostra o território no mapa, os clientes que passam, as visitas por semana face à capacidade, a ocupação da rota de origem antes e depois, as vendas por semana e a carga por dia de visita face à capacidade das viaturas (quando o Pinguim BO tem o peso dos artigos).
+- Decidem a Direcção, o Comercial e a GeoMobilidade (nova função «rotas-propostas» na matriz de acessos; a Logística, a TI e a Auditoria vêem; o supervisor vê as propostas da sua rota). Aprovar exige o código da rota nova; rejeitar exige o motivo.
+- Ao aprovar, os clientes passam para a rota nova no portal: visitas do dia de imediato, percursos optimizados a partir da noite seguinte, prospecção e territórios. Um cliente que já esteja noutra rota nova não é atribuído duas vezes. Sai a lista dos clientes (CSV) para registar a rota no Pinguim BO; a proposta passa a activa quando as vendas já mostram a rota nova.
+- Sem coordenadas dos clientes no Pinguim BO nem consulta própria, a GeoMobilidade passa a usar o GPS dos clientes guardado no OLAP.
+
 ### Ficha do cliente: vendas e pagamentos encontrados pelo identificador das vendas
 
 <!-- tipo: correcao -->

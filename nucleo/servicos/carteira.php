@@ -262,12 +262,18 @@ function naval_cart_calcular(array $agregados, array $vendas, string $hoje): arr
  * Visitas de um dia por rota: clientes do dia habitual de compra e os de ritmo vencido (próxima compra até ao dia),
  * os parados primeiro e, dentro de cada estado, os de maior valor por compra.
  */
-function naval_cart_visitas(array $carteira, string $dia, ?array $rotas): array
+function naval_cart_visitas(array $carteira, string $dia, ?array $rotas, ?array $atrib = null): array
 {
     $ds = naval_dia_semana($dia);
     $ordem = ['parado' => 0, 'a_abrandar' => 1, 'em_dia' => 2];
     $out = [];
+    // rota nova aprovada no portal (Terreno › Rotas propostas): o cliente já é visitado pela rota nova
+    if ($atrib === null) {
+        naval_servico('rotas-propostas');
+        $atrib = naval_rp_atribuicoes();
+    }
     foreach ((array) ($carteira['clientes'] ?? []) as $c) {
+        if (isset($atrib[(string) $c['c']]['r'])) $c['r'] = (string) $atrib[(string) $c['c']]['r'];
         if ($rotas !== null && !in_array((string) $c['r'], $rotas, true)) continue;
         $habitual = (int) $c['dia'] === $ds;
         $vencido = $c['proxima'] <= $dia && $c['estado'] !== 'em_dia';

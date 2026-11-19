@@ -49,6 +49,7 @@ export const PAGES = [
   { id: 'geo-terreno', grupo: 'Terreno', icon: 'pin', nome: 'Percurso do dia' },
   { id: 'geo-rotas', grupo: 'Terreno', icon: 'mapa', nome: 'Optimização de rotas' },
   { id: 'geo-prospeccao', grupo: 'Terreno', icon: 'radar', nome: 'Prospecção de clientes' },
+  { id: 'rotas-propostas', grupo: 'Terreno', icon: 'route', nome: 'Rotas propostas' },
   { id: 'geo-zonas', grupo: 'Terreno', icon: 'zona', nome: 'Zonas de entrega' },
   { id: 'geo-distribuidores', grupo: 'Terreno', icon: 'rede', nome: 'Distribuidores' },
   // Logística pela ordem do processo: plano → requisição → carga → stock → conciliação
@@ -98,6 +99,7 @@ export const NOMES_RECURSO = {
   'geo-zonas-gerir': 'GEO · desenhar, editar, importar e exportar zonas',
   'geo-distribuidores': 'GEO · gestão de distribuidores',
   'geo-prospeccao': 'GEO · prospecção: territórios das rotas e potenciais clientes',
+  'rotas-propostas': 'GEO · rotas propostas: aprovar uma rota nova (G) e atribuir-lhe os clientes da zona',
   'geo-terreno': 'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)',
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
