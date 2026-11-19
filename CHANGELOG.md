@@ -1,5 +1,15 @@
 ## 19-11-2026
 
+### Terreno: menu por tarefa, contadores do que pede acção e nova página Ocorrências
+
+<!-- tipo: funcionalidade -->
+
+- O menu do Terreno passa a estar organizado pela tarefa, com rótulos que não abrem nem fecham: Operação do dia (Visitas do dia, Percurso do dia, Ocorrências), Planeamento (Plano de visitas, Optimização de rotas, Rotas propostas), Território e clientes (Prospecção de clientes, Zonas de entrega, Distribuidores) e Análise (Conversão das visitas).
+- O menu mostra quantas rotas propostas esperam decisão e quantas ocorrências estão por tratar, também no título da área Terreno quando está fechada.
+- Nova página Ocorrências: numa só lista, o que pede acção no terreno — vendas longe do cliente, paragens longas sem vender, percurso fora do território, visitas do plano não feitas (depois das 18:00), clientes regulares sem comprar, clientes sem GPS ou no mesmo sítio e coordenadas a corrigir. Cada ocorrência leva ao mapa ou à página do pormenor e trata-se como os alertas: assumir, resolver com nota, silenciar até uma data ou reabrir.
+- Tratam as ocorrências a Direcção, o Comercial, a GeoMobilidade e os supervisores nas suas rotas (nova função «ocorrencias» na matriz de acessos); a TI e a Auditoria só vêem.
+- As Rotas propostas e as Ocorrências deixam de mostrar o filtro de período, que não se aplica a elas.
+
 ### Percurso do dia: vendas no mapa com o cliente, o documento e o valor
 
 <!-- tipo: correcao -->

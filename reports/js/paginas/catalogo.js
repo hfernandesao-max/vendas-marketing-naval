@@ -42,16 +42,19 @@ export const PAGES = [
   { id: 'pendentes', grupo: 'Finanças', icon: 'clock', nome: 'Contas a receber (antiguidade)' },
   { id: 'caixa-marketing', grupo: 'Finanças', icon: 'caixa', nome: 'Fecho de caixa' },
   { id: 'multicaixa-tpa', grupo: 'Finanças', icon: 'tpa', nome: 'Multicaixa por TPA' },
-  // Operações: trabalho de terreno (visitas, rotas e mapas) e logística das carrinhas
-  { id: 'visitas-dia', grupo: 'Terreno', icon: 'check', nome: 'Visitas do dia' },
-  { id: 'conversao-visitas', grupo: 'Terreno', icon: 'funil', nome: 'Conversão das visitas' },
-  { id: 'plano-visitas', grupo: 'Terreno', icon: 'agenda', nome: 'Plano de visitas' },
-  { id: 'geo-terreno', grupo: 'Terreno', icon: 'pin', nome: 'Percurso do dia' },
-  { id: 'geo-rotas', grupo: 'Terreno', icon: 'mapa', nome: 'Optimização de rotas' },
-  { id: 'geo-prospeccao', grupo: 'Terreno', icon: 'radar', nome: 'Prospecção de clientes' },
-  { id: 'rotas-propostas', grupo: 'Terreno', icon: 'route', nome: 'Rotas propostas' },
-  { id: 'geo-zonas', grupo: 'Terreno', icon: 'zona', nome: 'Zonas de entrega' },
-  { id: 'geo-distribuidores', grupo: 'Terreno', icon: 'rede', nome: 'Distribuidores' },
+  // Operações: trabalho de terreno e logística das carrinhas. O Terreno divide-se em subgrupos pela tarefa
+  // (ISO 9241-110): o dia (o que se usa todas as manhãs), o planeamento, o território e clientes, e a análise.
+  // Os subgrupos são só rótulos dentro da área (sem um terceiro nível que abre e fecha).
+  { id: 'visitas-dia', grupo: 'Terreno', sub: 'Operação do dia', icon: 'check', nome: 'Visitas do dia' },
+  { id: 'geo-terreno', grupo: 'Terreno', sub: 'Operação do dia', icon: 'pin', nome: 'Percurso do dia' },
+  { id: 'ocorrencias', grupo: 'Terreno', sub: 'Operação do dia', icon: 'aviso', nome: 'Ocorrências' },
+  { id: 'plano-visitas', grupo: 'Terreno', sub: 'Planeamento', icon: 'agenda', nome: 'Plano de visitas' },
+  { id: 'geo-rotas', grupo: 'Terreno', sub: 'Planeamento', icon: 'mapa', nome: 'Optimização de rotas' },
+  { id: 'rotas-propostas', grupo: 'Terreno', sub: 'Planeamento', icon: 'route', nome: 'Rotas propostas' },
+  { id: 'geo-prospeccao', grupo: 'Terreno', sub: 'Território e clientes', icon: 'radar', nome: 'Prospecção de clientes' },
+  { id: 'geo-zonas', grupo: 'Terreno', sub: 'Território e clientes', icon: 'zona', nome: 'Zonas de entrega' },
+  { id: 'geo-distribuidores', grupo: 'Terreno', sub: 'Território e clientes', icon: 'rede', nome: 'Distribuidores' },
+  { id: 'conversao-visitas', grupo: 'Terreno', sub: 'Análise', icon: 'funil', nome: 'Conversão das visitas' },
   // Logística pela ordem do processo: plano → requisição → carga → stock → conciliação
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Cargas planeadas' },
   { id: 'requisicoes-carrinha', grupo: 'Logística', icon: 'requisicao', nome: 'Requisições ao armazém' },
@@ -100,6 +103,7 @@ export const NOMES_RECURSO = {
   'geo-distribuidores': 'GEO · gestão de distribuidores',
   'geo-prospeccao': 'GEO · prospecção: territórios das rotas e potenciais clientes',
   'rotas-propostas': 'GEO · rotas propostas: aprovar uma rota nova (G) e atribuir-lhe os clientes da zona',
+  ocorrencias: 'GEO · ocorrências do terreno: ver e tratar (G; Vr: as das suas rotas)',
   'geo-terreno': 'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)',
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',

@@ -7,6 +7,7 @@ import { carregarPagina } from './paginas/modulos.js';
 import { atual, contarAlertas, paginasVisiveis } from './perfil.js';
 import { $, el, svg } from './util.js';
 import { novoDe, seloNovo } from './componentes/novo.js';
+import { CONTAGENS, lerContagens } from './contagens.js';
 
 // Cada secção de uma página passa a ser um relatório: mostra-se um de cada vez (separadores no topo e
 // sub-itens no menu), com os indicadores e os filtros da página sempre visíveis.
@@ -152,6 +153,8 @@ const ICONE_GRUPO = {
 export function rotuloAlerta(id, n) {
   if (id === 'clientes') return t('{n} clientes não activos', { n });
   if (id === 'pagamentos' || id === 'pendentes') return t('{n} facturas por receber', { n });
+  if (id === 'rotas-propostas') return t('{n} rotas propostas por decidir', { n });
+  if (id === 'ocorrencias') return t('{n} ocorrências por tratar', { n });
   return t('{n} itens a tratar', { n });
 }
 const contador = (cls, n, rotulo) => {
@@ -190,7 +193,9 @@ function abrirGrupo(n, alvo) {
 export function nav() {
   const n = $('#nav');
   n.replaceChildren();
-  const al = contarAlertas(),
+  // contadores calculados no navegador e, do servidor, os do Terreno (pedidos de 5 em 5 minutos)
+  lerContagens(nav);
+  const al = { ...contarAlertas(), ...CONTAGENS },
     q = filtrosURL(atual),
     grupoAtual = (PAGES.find((x) => x.id === atual) || {}).grupo;
   // Ao mudar de página, abre a área dessa página; ao voltar ao Início o menu volta ao estado inicial
@@ -280,6 +285,17 @@ export function nav() {
       n.append(b, lista);
       caixa = dentro;
     } else if (!p.grupo) caixa = n;
+    // Subgrupo dentro da área (ex.: Terreno › Operação do dia): rótulo só de leitura, sem abrir nem fechar, e
+    // só quando a área tem mais de um subgrupo visível para a pessoa
+    if (p.sub && p.grupo && (i === 0 || arr[i - 1].grupo !== p.grupo || arr[i - 1].sub !== p.sub)) {
+      const subs = new Set(visiveis.filter((x) => x.grupo === p.grupo && x.sub).map((x) => x.sub));
+      if (subs.size > 1) {
+        const r = el('div', 'navl-subg' + (visiveis.some((x) => x.id === atual && x.grupo === p.grupo && x.sub === p.sub) ? ' atual' : ''), t(p.sub));
+        r.setAttribute('role', 'heading');
+        r.setAttribute('aria-level', '3');
+        caixa.append(r);
+      }
+    }
     const a = ligacao(p, true);
     // Início: fecha todas as áreas do menu (mesmo já estando no Início) e volta ao topo
     if (p.id === 'inicio')

@@ -1451,3 +1451,26 @@ dialog.dlg.cf-dlg {
 .rp-filtro {
   margin: 0 0 10px;
 }
+
+/* Terreno › Ocorrências (paginas/ocorrencias.js) */
+.oc-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 0 0 10px;
+}
+.oc-filtros .rel-tabs {
+  margin: 0;
+}
+.oc-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.oc-item .gst-trat-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

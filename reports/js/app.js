@@ -86,6 +86,9 @@ const SEM_PERIODO = [
   'geo-terreno',
   'geo-zonas',
   'geo-distribuidores',
+  // têm o seu próprio dia ou não dependem do período (o filtro de datas só confundiria)
+  'rotas-propostas',
+  'ocorrencias',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'vendas-promotor-artigo', 'sap-exportar']);

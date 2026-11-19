@@ -87,6 +87,7 @@ const ICON = {
   // terminal de pagamento (TPA): corpo, ecrã e teclado
   tpa: 'M6 2h12v20H6zM9 5h6v4H9zM9 13h.01M12 13h.01M15 13h.01M9 16h.01M12 16h.01M15 16h.01M9 19h6',
   funil: 'M3 4h18l-7 8v6l-4 2v-8z',
+  aviso: 'M12 3 2 20h20zM12 9v5M12 17h.01',
 };
 export const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
 export const toast = (m, ms) => {

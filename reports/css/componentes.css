@@ -903,6 +903,22 @@ select.nivel.pendente {
 .navl.aberta .navl-in {
   margin-bottom: 4px;
 }
+/* subgrupo dentro de uma área (ex.: Terreno › Planeamento): rótulo pequeno, não clicável, fora da tabulação */
+.nav .navl-subg {
+  margin: 8px 10px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  user-select: none;
+}
+.nav .navl-subg:first-child {
+  margin-top: 4px;
+}
+.nav .navl-subg.atual {
+  color: var(--muted);
+}
 .nav .navl a {
   font-size: 13px;
   padding: 6px 10px;

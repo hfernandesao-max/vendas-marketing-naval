@@ -1,15 +1,27 @@
 {
   "id": "terreno",
   "nome": "Terreno",
-  "versao": "1.1.0",
-  "descricao": "Visitas do dia, plano de visitas, percurso do dia, optimização de rotas, prospecção, rotas propostas (aprovação de rotas novas), zonas e distribuidores.",
+  "versao": "1.2.0",
+  "descricao": "Operação do dia (visitas, percurso e ocorrências), planeamento (plano de visitas, optimização e rotas propostas), território e clientes (prospecção, zonas e distribuidores) e conversão das visitas.",
   "nucleo": false,
-  "paginas": ["visitas-dia", "conversao-visitas", "plano-visitas", "geo-terreno", "geo-rotas", "geo-prospeccao", "rotas-propostas", "geo-zonas", "geo-distribuidores"],
+  "paginas": [
+    "visitas-dia",
+    "geo-terreno",
+    "ocorrencias",
+    "plano-visitas",
+    "geo-rotas",
+    "rotas-propostas",
+    "geo-prospeccao",
+    "geo-zonas",
+    "geo-distribuidores",
+    "conversao-visitas"
+  ],
   "recursos": [
     "visitas-dia",
     "conversao-visitas",
     "plano-visitas",
     "geo-terreno",
+    "ocorrencias",
     "geo-rotas",
     "geo-rotas-descarregar",
     "geo-prospeccao",
@@ -18,7 +30,17 @@
     "geo-zonas-gerir",
     "geo-distribuidores"
   ],
-  "api": ["v1/terreno", "v1/rotas-optimizadas", "v1/geo-clientes", "v1/geo-zonas", "v1/prospeccao", "v1/rotas-propostas", "v1/conversao"],
+  "api": [
+    "v1/terreno",
+    "v1/rotas-optimizadas",
+    "v1/geo-clientes",
+    "v1/geo-zonas",
+    "v1/prospeccao",
+    "v1/rotas-propostas",
+    "v1/conversao",
+    "v1/ocorrencias",
+    "v1/terreno/contagens"
+  ],
   "conectores": ["olap", "google-maps"],
   "eventos": {
     "publica": [],

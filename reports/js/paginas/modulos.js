@@ -31,6 +31,7 @@ const MODULOS = {
   apresentacao: () => import('./apresentacao.js'),
   geo: () => import('./geo.js'),
   'rotas-propostas': () => import('./rotas-propostas.js'),
+  ocorrencias: () => import('./ocorrencias.js'),
   'admin-modulos': () => import('./admin-modulos.js'),
   conformidade: () => import('./conformidade.js'),
   suporte: () => import('./suporte.js'),
@@ -96,6 +97,7 @@ export const MODULO_DA_PAGINA = {
   'geo-zonas': 'geo',
   'geo-distribuidores': 'geo',
   'rotas-propostas': 'rotas-propostas',
+  ocorrencias: 'ocorrencias',
 };
 
 const pedidos = new Map();

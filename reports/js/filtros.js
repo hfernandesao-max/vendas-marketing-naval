@@ -36,6 +36,8 @@ const FILTROS_PAGINA = {
   // stock: data = fim do período; rotas/armazéns e artigo pelos filtros gerais (sem filtros próprios na página)
   'stock-carrinha': ['rota', 'artigo'],
   'requisicoes-carrinha': [],
+  'rotas-propostas': [],
+  ocorrencias: [],
   'relatorio-vendas': [],
   'caixa-marketing': [],
   'stock-armazem': ['armazem', 'artigo'],

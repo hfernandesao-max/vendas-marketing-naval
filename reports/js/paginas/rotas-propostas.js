@@ -3,6 +3,7 @@
 // da zona passam para a rota nova no portal e sai a lista para registar no Pinguim BO.
 // Servidor: nucleo/api/v1/rotas-propostas.php e nucleo/servicos/rotas-propostas.php.
 import { apiJson } from '../api.js';
+import { actualizarContagem } from '../contagens.js';
 import { draw } from '../app.js';
 import { download, pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, entrada, msgErro } from '../componentes/janelas.js';
@@ -25,6 +26,7 @@ function ler() {
   apiJson('rotas-propostas').then((d) => {
     aLer = false;
     RP = d && d.ok ? d : { falhou: (d && d.erro) || t('Não foi possível ler os dados.') };
+    if (RP.propostas) actualizarContagem('rotas-propostas', RP.propostas.filter((p) => p.estado === 'pendente').length);
     if (atual === 'rotas-propostas') draw();
   });
 }
