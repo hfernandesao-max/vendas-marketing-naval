@@ -103,8 +103,20 @@ function naval_env_fontes_ensaio(array $env): array
 /** Valor de uma chave do .env; vazio ou ausente devolve a omissão. */
 function naval_config(string $chave, string $omissao = ''): string
 {
-    $v = naval_env()[$chave] ?? '';
+    $env = naval_env();
+    $v = $env[$chave] ?? '';
+    if ($v === '' && ($alt = naval_config_nome_alternativo($chave)) !== null) $v = $env[$alt] ?? '';
     return $v !== '' ? $v : $omissao;
+}
+
+/**
+ * Nome alternativo das chaves das bases de dados, por servidor: DB_HOST_PINWINBO em vez de DB_HOST (Pinguim BO) e
+ * DB_HOST_OLAP em vez de OLAP_HOST (OLAP). O nome do .env.exemplo tem sempre prioridade. Função pura, testada.
+ */
+function naval_config_nome_alternativo(string $chave): ?string
+{
+    if (!preg_match('/^(DB|OLAP)_(DRIVER|HOST|PORT|NAME|USER|PASS)$/', $chave, $m)) return null;
+    return 'DB_' . $m[2] . '_' . ($m[1] === 'DB' ? 'PINWINBO' : 'OLAP');
 }
 
 /** Pasta privada (fora da pasta pública): contas, registos, planos, lotes do SAP. */

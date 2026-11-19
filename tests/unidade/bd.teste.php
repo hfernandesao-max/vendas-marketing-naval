@@ -151,3 +151,13 @@ teste('ligação: controlos de conformidade (certificado não validado e control
     verdade(naval_bd_erro_controlador(new RuntimeException('SQLSTATE[IM002] [Microsoft][ODBC Driver Manager] Data source name not found')));
     verdade(!naval_bd_erro_controlador(new RuntimeException('SSL Provider: The certificate chain was issued by an authority that is not trusted')));
 });
+
+teste('chaves do .env por servidor: DB_*_PINWINBO e DB_*_OLAP como nomes alternativos', function () {
+    igual('DB_HOST_PINWINBO', naval_config_nome_alternativo('DB_HOST'));
+    igual('DB_PASS_PINWINBO', naval_config_nome_alternativo('DB_PASS'));
+    igual('DB_NAME_OLAP', naval_config_nome_alternativo('OLAP_NAME'));
+    igual('DB_USER_OLAP', naval_config_nome_alternativo('OLAP_USER'));
+    igual(null, naval_config_nome_alternativo('DB_DSN'));
+    igual(null, naval_config_nome_alternativo('OLAP_VISTA'));
+    igual(null, naval_config_nome_alternativo('JWT_SEGREDO'));
+});

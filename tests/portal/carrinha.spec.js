@@ -172,7 +172,9 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   const campoMotivo = det.getByLabel('Motivo · Fraldas M');
   await expect(campoMotivo).toHaveAttribute('maxlength', '255');
   const textoMotivo = 'Contagem manual';
-  await campoMotivo.fill(textoMotivo);
+  await campoMotivo.click();
+  await page.keyboard.type(textoMotivo, { delay: 30 });
+  await expect(campoMotivo).toHaveValue(textoMotivo);
   await expect(page.locator('#toast')).not.toBeVisible({ timeout: 15000 });
   await det.getByRole('button', { name: 'Aprovar (coordenador)' }).click();
   await expect(rota).toContainText('Por aprovar (responsável)');
