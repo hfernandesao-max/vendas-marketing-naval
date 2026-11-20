@@ -1,5 +1,14 @@
 ## 20-11-2026
 
+### PO: aprovação antes da carga, fecho das PO em aberto e requisitado × carregado
+
+<!-- tipo: funcionalidade -->
+
+- As PO só ficam disponíveis para a carga no cais depois de aprovadas pelo supervisor da rota (ou Comercial / Direcção), que não as pode ter criado nem emitido. Em Logística › Requisições ficam «Por aprovar» até lá, com o botão «Aprovar para a carga»; no cais, uma PO por aprovar não se confere. Vale para as PO emitidas a partir de 21-11-2026.
+- As PO emitidas que não vão ser carregadas fecham-se com motivo («Fechar a PO»); as esquecidas fecham-se sozinhas ao fim de 3 dias e os rascunhos antigos anulam-se, para nada ficar aberto para sempre.
+- No documento da PO, as colunas passam a «Requisitado» e «Carregado»: quando o carregado é igual ao pedido aparece um visto verde; quando não, a diferença a vermelho (com o motivo ao passar o rato). Na edição, o vendido no dia aparece por baixo do requisitado.
+- Conciliação da carrinha: ao validar a contagem, o painel da rota fecha e o portal pergunta se quer imprimir a contagem e mostra a PO de reposição criada sozinha, com o botão para a abrir.
+
 ### Conciliação das carrinhas: a revisão respeita o instante da folha de contagem
 
 <!-- tipo: correcao -->

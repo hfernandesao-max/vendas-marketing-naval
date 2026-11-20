@@ -11,6 +11,8 @@
  * POST {accao: emitir, numero, versao, csrf}            fecha o documento (PDF / impressão)
  * POST {accao: reimprimir, numero, csrf}                2.ª via de um documento emitido
  * POST {accao: anular, numero, versao, motivo, csrf}
+ * POST {accao: aprovar, numero, csrf}                   aprova a PO para a carga («requisicoes-aprovacao» G; quem a criou ou emitiu não)
+ * POST {accao: fechar, numero, motivo, csrf}            fecha uma PO emitida que não vai ser carregada
  * POST {accao: confirmar_carga, numero, entregue: {codigo: quantidade}, motivos: {codigo: {codigo, texto}}, csrf}
  *      o Fiel de Armazém confere a carga no cais (motivo obrigatório em cada diferença; só com
  *      os fechos das carrinhas feitos, ou com a autorização de carga antes do fecho)
@@ -44,7 +46,8 @@ if (!naval_e_post()) {
     if (isset($_GET['numero'])) {
         $r = naval_req_ler((string) $_GET['numero']);
         if (!$r || !naval_rota_permitida($r['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
-        naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicao' => $r, 'motivos' => NAVAL_REQ_MOTIVOS, 'eu' => $login]);
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => naval_pode('requisicoes-aprovacao', 'G'), 'requisicao' => $r + ['pronta_carga' => naval_req_pronta_carga($r),
+            'precisa_aprovacao' => naval_req_precisa_aprovacao($r)], 'motivos' => NAVAL_REQ_MOTIVOS, 'eu' => $login]);
     }
     $de = (string) ($_GET['de'] ?? date('Y-m-d', time() - 30 * 86400));
     $ate = (string) ($_GET['ate'] ?? date('Y-m-d'));
@@ -52,7 +55,8 @@ if (!naval_e_post()) {
     $rotas = naval_rotas();
     $promotores = naval_promotores();
     if ($rotas !== null) $promotores = array_intersect_key($promotores, array_flip($rotas));
-    naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicoes' => naval_req_listar($de, $ate, $rotas), 'rotas' => (object) $promotores]);
+    $lista = array_map(function ($r) { return $r + ['pronta_carga' => naval_req_pronta_carga($r), 'precisa_aprovacao' => naval_req_precisa_aprovacao($r)]; }, naval_req_listar($de, $ate, $rotas));
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => naval_pode('requisicoes-aprovacao', 'G'), 'eu' => $login, 'requisicoes' => $lista, 'rotas' => (object) $promotores]);
 }
 
 $p = naval_pedido();
@@ -67,6 +71,16 @@ if ($accao === 'autorizar_carga') {
     $alvo = naval_req_ler((string) ($p['numero'] ?? ''));
     if (!$alvo || !naval_rota_permitida($alvo['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
     naval_json_assinado(['ok' => true, 'requisicao' => naval_req_autorizar_carga((string) $p['numero'], (string) ($p['motivo'] ?? ''), $login)]);
+}
+// aprovação da PO para a carga: quem responde pela rota (não precisa de gerir requisições)
+if ($accao === 'aprovar') {
+    if (!naval_pode('requisicoes-aprovacao', 'G')) {
+        naval_registar('alteracao_recusada', ['accao' => 'aprovar_po', 'motivo' => 'perfil']);
+        throw new NavalErro('O seu perfil não permite aprovar PO.', 403);
+    }
+    $alvo = naval_req_ler((string) ($p['numero'] ?? ''));
+    if (!$alvo || !naval_rota_permitida($alvo['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
+    naval_json_assinado(['ok' => true, 'requisicao' => naval_req_aprovar((string) $p['numero'], $login)]);
 }
 // validação do Back-Office (não precisa de gerir requisições)
 if ($accao === 'validar') {
@@ -111,5 +125,7 @@ switch ($accao) {
         naval_json_assinado(['ok' => true, 'requisicao' => naval_req_confirmar($numero, (array) ($p['entregue'] ?? []), $login, (array) ($p['motivos'] ?? []))]);
     case 'anular':
         naval_json_assinado(['ok' => true, 'requisicao' => naval_req_anular($numero, (string) ($p['motivo'] ?? ''), $versao, $login)]);
+    case 'fechar':
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_fechar($numero, (string) ($p['motivo'] ?? ''), $login)]);
 }
 throw new NavalErro('Acção desconhecida.', 400);

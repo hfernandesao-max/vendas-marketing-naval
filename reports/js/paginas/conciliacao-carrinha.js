@@ -75,6 +75,62 @@ function barra() {
 }
 
 /** Botão que gera um PDF da contagem (fica inactivo enquanto o gera; avisa se falhar). */
+/**
+ * Depois de validar a contagem: o painel da rota fecha, pergunta-se se quer imprimir a contagem e mostra-se a PO de
+ * reposição criada sozinha com o que foi vendido (rascunho, para o promotor rever e emitir).
+ */
+function depoisDeValidar(r, x, eu, motivos) {
+  aberta = null;
+  draw();
+  const validada = {
+    ...r,
+    linhas: x.linhas || r.linhas,
+    resumo: x.resumo || r.resumo,
+    validado_por: eu || r.validado_por,
+    validado_em: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' '), // hora local
+  };
+  janela(t('Contagem validada · rota {r}', { r: r.rota }), t('Segue para a aprovação do coordenador.'), (b, ft, fechar) => {
+    if (x.requisicao)
+      b.append(
+        el(
+          'p',
+          'note',
+          t(
+            'Foi criada a PO {n} com o que foi vendido (rascunho): o promotor revê as quantidades e emite-a; depois de aprovada fica disponível para a carga.',
+            {
+              n: x.requisicao,
+            },
+          ),
+        ),
+      );
+    b.append(el('p', null, t('Quer imprimir a contagem?')));
+    const abrirPO = x.requisicao
+      ? botao(t('Abrir a PO'), 'ghost', () => {
+          try {
+            sessionStorage.setItem('vm-requisicao-abrir', x.requisicao);
+          } catch (e) {
+            /* sem armazenamento: abre a lista */
+          }
+          fechar();
+          location.hash = '#requisicoes-carrinha';
+        })
+      : null;
+    ft.append(
+      botao(t('Agora não'), 'ghost', fechar),
+      ...(abrirPO ? [abrirPO] : []),
+      botao(t('Imprimir a contagem'), null, () => {
+        fechar();
+        Promise.resolve()
+          .then(() => resultadoContagem(validada, dia, motivos))
+          .catch((e) => {
+            console.error(e);
+            toast(t('Não foi possível gerar o PDF.'), 5000);
+          });
+      }),
+    );
+  });
+}
+
 function pdfBotao(txt, gerar) {
   const b = botao(txt, 'ghost sm cc-pdf', () => {
     b.disabled = true;
@@ -388,17 +444,18 @@ function tabelaRota(r) {
   // Acções do passo em que a conciliação está, só para quem o pode fazer (segregação de funções)
   const erro = msgErro();
   const acc = el('div', 'cc-acc');
-  const enviar = (corpo, ok) =>
+  const enviar = (corpo, ok, depois) =>
     postJson('conciliacao-carrinha', { data: dia, rota: r.rota, ...corpo }).then((x) => {
       if (!x.ok) {
         erro.hidden = false;
         erro.textContent = t(x.erro || 'Não foi possível gravar.') + (x.erros ? ' ' + x.erros.join(', ') : '');
         return;
       }
-      toast(t(ok), 4000);
+      if (ok) toast(t(ok), 4000);
       CC = null;
       ler();
       draw();
+      if (depois) depois(x);
     });
   const recontar = botao(t('Recontar'), 'ghost', () => {
     r.linhas = r.linhas.map((l) => ({ ...l, contado: null }));
@@ -411,9 +468,11 @@ function tabelaRota(r) {
     if (fui('contado_por')) {
       acc.append(
         recontar,
-        botao(t('Validar contagem'), null, () =>
-          enviar({ accao: 'validar' }, 'Contagem validada; segue para o coordenador. Foi criada a requisição de reposição com o que foi vendido.'),
-        ),
+        botao(t('Validar contagem'), null, () => {
+          const eu0 = CC.eu,
+            mot0 = CC.motivos;
+          enviar({ accao: 'validar' }, null, (x) => depoisDeValidar(r, x, eu0, mot0));
+        }),
       );
       espera(t('Confira os números: se estiverem certos, valide; se não, reconte. Depois de validada segue para o coordenador.'));
     } else espera(t('Aguarda a validação de {p}, que fez a contagem.', { p: r.contado_por || '—' }));

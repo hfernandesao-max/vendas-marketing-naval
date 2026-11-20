@@ -172,3 +172,79 @@ test('nova requisição: «Criar» só abre o formulário (nada se regista); esc
   expect(pedidos[0]).toMatchObject({ accao: 'criar', rota: '1005', linhas: [{ codigo: 'C3', quantidade: 3 }] });
   await expect(ed).toContainText('Requisição RQ-2026-000020');
 });
+
+test('PO: por aprovar até o supervisor aprovar; requisitado × carregado com visto verde ou a diferença a vermelho; fechar com motivo', async ({ page }) => {
+  const base = { ano: '2026', rota: '1001', promotor: 'Andrea Santos', data: '2026-11-21', origem: { tipo: 'manual' }, versao: 2, nota: '', criado_por: 'pro' };
+  const po = {
+    ...base,
+    numero: 'PO-2026-000051',
+    estado: 'emitida',
+    emitida_por: 'pro',
+    emitida_em: '2026-11-21 08:00:00',
+    precisa_aprovacao: true,
+    pronta_carga: false,
+    impressoes: [{ via: 1 }],
+    linhas: [{ codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX', sugerida: 26, quantidade: 26 }],
+  };
+  const carregada = {
+    ...base,
+    numero: 'PO-2026-000050',
+    estado: 'carregada',
+    emitida_por: 'pro',
+    emitida_em: '2026-11-20 08:00:00',
+    confirmado_por: 'log',
+    confirmado_em: '2026-11-20 09:00:00',
+    impressoes: [{ via: 1 }],
+    linhas: [
+      { codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX', sugerida: 26, quantidade: 26, entregue: 26 },
+      { codigo: 'B2', artigo: 'Sabão verde', unidade: 'CX', sugerida: 10, quantidade: 10, entregue: 8, motivo: { codigo: 'falta_armazem', texto: '' } },
+    ],
+  };
+  const pedidos = [];
+  await page.route('**/v1/requisicoes**', (rt) => {
+    const req = rt.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      if (b.accao === 'aprovar') Object.assign(po, { aprovada_por: 'sup', aprovada_em: '2026-11-21 08:30:00', pronta_carga: true });
+      if (b.accao === 'fechar') Object.assign(po, { estado: 'fechada', fechada_por: 'sup', fechada_em: '2026-11-21 09:00:00', motivo_fecho: b.motivo });
+      return rt.fulfill({ json: { ok: true, requisicao: { ...po } } });
+    }
+    const u = new URL(req.url());
+    const n = u.searchParams.get('numero');
+    if (n) return rt.fulfill({ json: { ok: true, gere: true, aprova: true, requisicao: n === po.numero ? { ...po } : { ...carregada } } });
+    return rt.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        aprova: true,
+        rotas: { 1001: 'Andrea Santos' },
+        requisicoes: [po, carregada].map((x) => ({ ...x, n_linhas: x.linhas.length, quantidade: 26 })),
+      },
+    });
+  });
+  await page.addInitScript(() => (window.open = () => null));
+  const erros = await abrir(page, '#requisicoes-carrinha');
+  await expect(page.locator('#s-req tbody tr', { hasText: 'PO-2026-000051' })).toContainText('Por aprovar');
+  // carregada: requisitado e carregado; igual → visto verde; diferença → a vermelho
+  await page.getByRole('button', { name: 'PO-2026-000050' }).click();
+  const ed = page.locator('#req-editor');
+  await expect(ed.locator('th')).toHaveText(['Código', 'Artigo', 'Un.', 'Requisitado', 'Carregado', 'Conferência']);
+  await expect(ed.locator('tr', { hasText: 'Fraldas M' }).locator('.req-ok')).toHaveText('✓');
+  const dif = ed.locator('tr', { hasText: 'Sabão verde' }).locator('.req-conf');
+  await expect(dif).toHaveText('-2');
+  await expect(dif).toHaveClass(/cc-neg/);
+  await expect(dif).toHaveAttribute('title', 'Falta no armazém');
+  // por aprovar: aviso, aprovar e fechar com motivo
+  await page.getByRole('button', { name: 'PO-2026-000051' }).click();
+  await expect(ed).toContainText('Por aprovar: a PO só fica disponível para a carga');
+  await ed.getByRole('button', { name: 'Aprovar para a carga' }).click();
+  await expect(ed).toContainText('Aprovada para a carga por');
+  await ed.getByRole('button', { name: 'Fechar a PO' }).click();
+  const dlg = page.getByRole('dialog');
+  await dlg.getByRole('textbox').fill('O promotor já não precisa');
+  await dlg.getByRole('button', { name: 'Fechar a PO' }).click();
+  await expect(ed).toContainText('O promotor já não precisa');
+  expect(pedidos.map((p) => p.accao)).toEqual(['aprovar', 'fechar']);
+  expect(erros).toEqual([]);
+});

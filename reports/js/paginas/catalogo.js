@@ -109,6 +109,7 @@ export const NOMES_RECURSO = {
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
   'cargas-po': 'Cargas (PO) · conferência no cais, validação e ordens ao Pinguim BO (ver)',
+  'requisicoes-aprovacao': 'Requisições (PO) · aprovar a PO para a carga no cais (G; o supervisor nas suas rotas)',
   'validacao-carga': 'Cargas (PO) · validar a carga conferida e tratar as ordens da Guia de Remessa ao Pinguim BO (G)',
   'conciliacao-fecho': 'Conciliação da carrinha · aprovação final do responsável (2.º nível, fecha)',
   'caixa-aprovacao': 'Fecho de caixa · aprovação do superior de quem o lança (1.º nível)',

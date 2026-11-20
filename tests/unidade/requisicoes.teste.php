@@ -30,6 +30,13 @@ teste('rascunho editável (com controlo de versão); emitida fica fechada; 2.ª 
     lanca(409, function () use ($e) { naval_req_gravar($e['numero'], [['codigo' => 'A1', 'quantidade' => 1]], '', $e['versao'], 'pro'); });
     lanca(409, function () use ($e) { naval_req_anular($e['numero'], 'já não é precisa', null, 'pro'); });
     igual(2, count(naval_req_reimprimir($e['numero'], 'pro')['impressoes']), '2.ª via registada');
+    // por aprovar: não se carrega; quem criou/emitiu não aprova; aprovada uma só vez
+    verdade(naval_req_precisa_aprovacao($e) && !naval_req_pronta_carga($e));
+    lanca(409, function () use ($e) { naval_req_confirmar($e['numero'], [], 'log'); });
+    lanca(403, function () use ($e) { naval_req_aprovar($e['numero'], 'pro'); });
+    $ap = naval_req_aprovar($e['numero'], 'sup');
+    verdade(naval_req_pronta_carga($ap) && $ap['aprovada_por'] === 'sup');
+    lanca(409, function () use ($e) { naval_req_aprovar($e['numero'], 'sup'); });
     lanca(403, function () use ($e) { naval_req_confirmar($e['numero'], [], 'pro'); }); // quem emitiu não confirma
     $c = naval_req_confirmar($e['numero'], ['C3' => 1], 'log', ['C3' => 'falta_armazem']);
     igual('carregada', $c['estado']);
@@ -107,6 +114,7 @@ teste('fecho antes da carga: só se carrega com as conciliações anteriores fec
     igual([['data' => $ontem, 'estado' => 'por_contar']], $f['pendentes']);
     $r = naval_req_criar($rota, date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 5]], 'pro');
     $r = naval_req_emitir($r['numero'], $r['versao'], 'pro');
+    naval_req_aprovar($r['numero'], 'sup');
     $e = lanca(409, function () use ($r) { naval_req_confirmar($r['numero'], [], 'arm'); });
     verdade(strpos($e->getMessage(), 'ainda não tem o fecho de ' . naval_data_pt($ontem) . ' (por contar)') !== false, $e->getMessage());
     lanca(400, function () use ($r) { naval_req_autorizar_carga($r['numero'], 'curto', 'resp'); });
@@ -159,4 +167,23 @@ teste('plano de cargas: a requisição emitida fixa o documento, as quantidades 
     $c = naval_plano_carga($hoje, $listas, ['1017']);
     igual(['RTM HIGITEC PIV – NON FOOD', 'RTM REFITEC/FOODTEC PIV – FOOD'], $c['rotas']['1017']['armazens']);
     unset($GLOBALS['naval_req_armazens_teste']);
+});
+
+teste('PO: fechar com motivo; as esquecidas fecham-se sozinhas e os rascunhos antigos anulam-se', function () {
+    $r = naval_req_criar('1005', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 2]], 'pro');
+    lanca(409, function () use ($r) { naval_req_fechar($r['numero'], 'não vai ser carregada', 'pro'); });   // rascunho: anula-se
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro');
+    lanca(400, function () use ($e) { naval_req_fechar($e['numero'], 'x', 'pro'); });
+    $f = naval_req_fechar($e['numero'], 'O promotor já não precisa', 'pro');
+    igual(['fechada', 'pro', 'O promotor já não precisa'], [$f['estado'], $f['fechada_por'], $f['motivo_fecho']]);
+    lanca(409, function () use ($e) { naval_req_confirmar($e['numero'], [], 'log'); });
+    // esquecidas: emitida e rascunho de há 5 dias (a regra é 3)
+    $dia = date('Y-m-d', time() - 5 * 86400);
+    $velha = naval_req_emitir(($x = naval_req_criar('1006', $dia, [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 1]], 'pro'))['numero'], $x['versao'], 'pro');
+    $rasc = naval_req_criar('1007', $dia, [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 1]], 'pro');
+    $nova = naval_req_emitir(($y = naval_req_criar('1008', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 1]], 'pro'))['numero'], $y['versao'], 'pro');
+    $o = naval_req_fechar_antigas();
+    verdade(in_array($velha['numero'], $o['fechadas'], true) && in_array($rasc['numero'], $o['anuladas'], true), json_encode($o));
+    igual(['fechada', 'anulada', 'emitida'], [naval_req_ler($velha['numero'])['estado'], naval_req_ler($rasc['numero'])['estado'], naval_req_ler($nova['numero'])['estado']]);
+    igual('automatico', naval_req_ler($velha['numero'])['fechada_por']);
 });

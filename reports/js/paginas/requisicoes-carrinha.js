@@ -9,6 +9,7 @@ import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { botao, confirmarAccao, entrada, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
 import { escolherArtigo } from '../componentes/escolher-artigo.js';
+import { MOTIVOS_CARGA as MOTIVO_TXT } from '../componentes/motivos-carga.js';
 import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -27,9 +28,15 @@ let CAT = null; // catálogo de artigos
 export const ESTADOS_REQ = {
   rascunho: ['Rascunho', 'p-warn'],
   emitida: ['Emitida · a carregar', 'p-serio'],
+  por_aprovar: ['Por aprovar', 'p-warn'],
+  aprovada: ['Aprovada · a carregar', 'p-serio'],
   carregada: ['Carregada', 'p-ok'],
+  fechada: ['Fechada', 'p-mut'],
   anulada: ['Anulada', 'p-mut'],
 };
+/** Estado a mostrar: uma PO emitida está «por aprovar» até ser aprovada para a carga (se precisar de aprovação). */
+export const estadoReq = (r) =>
+  r.estado !== 'emitida' ? r.estado : r.precisa_aprovacao && !r.aprovada_em ? 'por_aprovar' : r.precisa_aprovacao ? 'aprovada' : 'emitida';
 const PEDIDO_ABRIR = 'vm-requisicao-abrir';
 
 function ler() {
@@ -109,7 +116,7 @@ function editor() {
   s.id = 'req-editor';
   const h = el('div', 'sec-h');
   const hl = el('div');
-  const [txt, cls] = ESTADOS_REQ[r.estado] || [r.estado, 'p-mut'];
+  const [txt, cls] = ESTADOS_REQ[estadoReq(r)] || [r.estado, 'p-mut'];
   // nova requisição ainda não gravada: só existe no ecrã; ganha número ao gravar com pelo menos um artigo
   const tit = el('h2', null, (r.novo ? t('Nova requisição') : t('Requisição {n}', { n: r.numero })) + ' ');
   tit.append(pill(r.novo ? t('Por gravar') : t(txt), r.novo ? 'p-warn' : cls));
@@ -142,21 +149,18 @@ function editor() {
   // Linhas
   const tab = el('table', 'cc-tab req-tab');
   const cab = el('tr');
-  const comEntregue = r.estado === 'carregada';
-  [t('Código'), t('Artigo'), t('Un.'), t('Vendido'), t('Stock (armazém principal)'), t('Quantidade'), ...(comEntregue ? [t('Entregue')] : []), ''].forEach(
-    (x, i) => cab.append(el('th', i >= 3 && x ? 'n' : null, x)),
-  );
+  // Requisitado (o pedido) e, depois da conferência no cais, o Carregado: igual ao pedido → visto verde; senão a
+  // diferença a vermelho. Na edição, o vendido no dia (a sugestão da conciliação) aparece por baixo do requisitado.
+  const cols = rasc
+    ? [t('Código'), t('Artigo'), t('Un.'), t('Stock (armazém principal)'), t('Requisitado'), '']
+    : [t('Código'), t('Artigo'), t('Un.'), t('Requisitado'), t('Carregado'), t('Conferência')];
+  cols.forEach((x, i) => cab.append(el('th', i >= 3 && x ? 'n' : null, x)));
   tab.append(cab);
   edicao.linhas.forEach((l, i) => {
     const tr = el('tr', l.origem === 'adicionado' ? 'req-adicionado' : null);
     const sk = stockDe(l.codigo);
-    tr.append(
-      el('td', null, l.codigo),
-      el('td', null, l.artigo),
-      el('td', null, l.unidade || ''),
-      el('td', 'n', l.sugerida == null ? '—' : n0(l.sugerida)),
-      el('td', 'n req-stock', sk == null ? (CAT && CAT.a_ler ? '…' : '—') : n0(sk)),
-    );
+    tr.append(el('td', null, l.codigo), el('td', null, l.artigo), el('td', null, l.unidade || ''));
+    if (rasc) tr.append(el('td', 'n req-stock', sk == null ? (CAT && CAT.a_ler ? '…' : '—') : n0(sk)));
     const tq = el('td', 'n');
     if (rasc) {
       // sem setas (campo de texto numérico): a quantidade escreve-se; nunca mais do que o stock do armazém principal
@@ -176,9 +180,26 @@ function editor() {
       });
       marcar();
       tq.append(q);
+      if (l.sugerida != null) tq.append(el('small', 'req-vendido', t('vendido {q}', { q: n0(l.sugerida) })));
     } else tq.textContent = n0(l.quantidade);
     tr.append(tq);
-    if (comEntregue) tr.append(el('td', 'n' + (l.entregue !== l.quantidade ? ' cc-neg' : ''), n0(l.entregue)));
+    if (!rasc) {
+      const car = l.entregue == null ? null : +l.entregue;
+      const dif = car == null ? null : Math.round((car - (+l.quantidade || 0)) * 1000) / 1000;
+      tr.append(el('td', 'n', car == null ? '—' : n0(car)));
+      const conf = el('td', 'n req-conf');
+      if (dif === 0) {
+        const ok = el('span', 'req-ok', '✓');
+        ok.setAttribute('aria-label', t('Carregado igual ao requisitado'));
+        ok.title = t('Carregado igual ao requisitado');
+        conf.append(ok);
+      } else if (dif != null) {
+        conf.classList.add('cc-neg');
+        conf.textContent = (dif > 0 ? '+' : '') + n0(dif);
+        if (l.motivo) conf.title = t(MOTIVO_TXT[l.motivo.codigo] || l.motivo.codigo) + (l.motivo.texto ? ': ' + l.motivo.texto : '');
+      } else conf.textContent = '—';
+      tr.append(conf);
+    }
     const tx = el('td');
     if (rasc) {
       const b = botao('×', 'ghost sm', () => {
@@ -189,13 +210,13 @@ function editor() {
       b.setAttribute('aria-label', t('Retirar {a}', { a: l.artigo }));
       tx.append(b);
     }
-    tr.append(tx);
+    if (rasc) tr.append(tx);
     tab.append(tr);
   });
   if (!edicao.linhas.length) {
     const tr = el('tr');
     const td = el('td', 'note', t('Sem artigos. Adicione os artigos a requisitar.'));
-    td.colSpan = 7;
+    td.colSpan = 6;
     tr.append(td);
     tab.append(tr);
   }
@@ -352,6 +373,21 @@ function editor() {
     const anular = r.novo ? botao(t('Descartar'), 'ghost', fecharEditor) : botao(t('Anular'), 'ghost', () => pedirMotivo(r, depois));
     acc.append(anular, gravar, emitir);
   } else if (r.estado === 'emitida' || r.estado === 'carregada') {
+    if (r.estado === 'emitida' && r.precisa_aprovacao)
+      s.append(
+        el(
+          'p',
+          r.aprovada_em ? 'note' : 'aviso',
+          r.aprovada_em
+            ? t('Aprovada para a carga por {p} em {d}', {
+                p: assinante(r.aprovada_por),
+                d: dl(String(r.aprovada_em).slice(0, 10)) + ' ' + String(r.aprovada_em).slice(11, 16),
+              })
+            : t(
+                'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo supervisor da rota (ou Comercial / Direcção), que não a pode ter emitido.',
+              ),
+        ),
+      );
     if (r.estado === 'carregada')
       s.append(
         el(
@@ -378,34 +414,59 @@ function editor() {
         }),
       ),
     );
+    if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && L && L.aprova)
+      acc.append(
+        botao(t('Aprovar para a carga'), null, (e) => {
+          e.target.disabled = true;
+          enviar({ accao: 'aprovar', numero: r.numero }, erro).then((x) => {
+            e.target.disabled = false;
+            depois(x, 'PO aprovada: já está disponível para a carga no cais.');
+          });
+        }),
+      );
+    if (r.estado === 'emitida' && L && L.gere) acc.append(botao(t('Fechar a PO'), 'ghost', () => pedirMotivo(r, depois, 'fechar')));
     if (L && L.gere) acc.append(botao(t('Nova requisição para esta rota'), null, () => nova(r.rota)));
-  } else if (r.estado === 'anulada') s.append(el('p', 'note', t('Anulada por {p}: {m}', { p: r.anulada_por, m: r.motivo_anulacao })));
+  } else if (r.estado === 'fechada')
+    s.append(el('p', 'note', t('Fechada por {p} em {d}: {m}', { p: assinante(r.fechada_por), d: dl(String(r.fechada_em).slice(0, 10)), m: r.motivo_fecho })));
+  else if (r.estado === 'anulada') s.append(el('p', 'note', t('Anulada por {p}: {m}', { p: r.anulada_por, m: r.motivo_anulacao })));
   s.append(acc);
   return s;
 }
 
-function pedirMotivo(r, depois) {
+/** Motivo para anular um rascunho ou fechar uma PO emitida que não vai ser carregada. */
+function pedirMotivo(r, depois, accao = 'anular') {
+  const f = accao === 'fechar';
   import('../componentes/janelas.js').then(({ janela }) =>
-    janela(t('Anular a requisição {n}?', { n: r.numero }), t('A requisição fica registada como anulada, com o motivo.'), (b, ft, fechar) => {
-      const m = el('textarea');
-      m.rows = 3;
-      m.maxLength = 300;
-      m.setAttribute('aria-label', t('Motivo da anulação'));
-      m.placeholder = t('Motivo da anulação');
-      const e2 = msgErro();
-      b.append(m, e2);
-      ft.append(
-        botao(t('Cancelar'), 'ghost', fechar),
-        botao(t('Anular'), null, () =>
-          enviar({ accao: 'anular', numero: r.numero, versao: r.versao, motivo: m.value }, e2).then((x) => {
-            if (x) {
-              fechar();
-              depois(x, 'Requisição anulada.');
-            }
-          }),
-        ),
-      );
-    }),
+    janela(
+      f ? t('Fechar a PO {n}?', { n: r.numero }) : t('Anular a requisição {n}?', { n: r.numero }),
+      f
+        ? t('A PO deixa de estar disponível para a carga e fica registada como fechada, com o motivo.')
+        : t('A requisição fica registada como anulada, com o motivo.'),
+      (b, ft, fechar) => {
+        const m = el('textarea');
+        m.rows = 3;
+        m.maxLength = 300;
+        const rot = f ? t('Motivo do fecho') : t('Motivo da anulação');
+        m.setAttribute('aria-label', rot);
+        m.placeholder = rot;
+        const e2 = msgErro();
+        b.append(m, e2);
+        ft.append(
+          botao(t('Cancelar'), 'ghost', fechar),
+          botao(f ? t('Fechar a PO') : t('Anular'), null, () =>
+            enviar(
+              f ? { accao: 'fechar', numero: r.numero, motivo: m.value } : { accao: 'anular', numero: r.numero, versao: r.versao, motivo: m.value },
+              e2,
+            ).then((x) => {
+              if (x) {
+                fechar();
+                depois(x, f ? 'PO fechada.' : 'Requisição anulada.');
+              }
+            }),
+          ),
+        );
+      },
+    ),
   );
 }
 
@@ -469,8 +530,14 @@ R['requisicoes-carrinha'] = (pg) => {
       { l: t('Em rascunho'), v: n0(n('rascunho')), tone: n('rascunho') ? 'warn' : null, s: t('por rever e emitir') },
       { l: t('Emitidas'), v: n0(n('emitida') + n('carregada')), s: t('fechadas · por carregar: {n}', { n: n0(n('emitida')) }) },
       {
+        l: t('Por aprovar'),
+        v: n0(rs.filter((r) => estadoReq(r) === 'por_aprovar').length),
+        tone: rs.some((r) => estadoReq(r) === 'por_aprovar') ? 'warn' : null,
+        s: t('PO à espera de aprovação para a carga'),
+      },
+      {
         l: t('Quantidade requisitada'),
-        v: n0(rs.filter((r) => r.estado !== 'anulada').reduce((s, r) => s + r.quantidade, 0)),
+        v: n0(rs.filter((r) => r.estado !== 'anulada' && r.estado !== 'fechada').reduce((s, r) => s + r.quantidade, 0)),
         s: t('{n} anuladas', { n: n0(n('anulada')) }),
       },
     ]),
@@ -535,7 +602,7 @@ R['requisicoes-carrinha'] = (pg) => {
       nota: t('Uma requisição por documento; o número é sequencial por ano. Abra para rever, gravar, emitir ou reimprimir.'),
       rows: rs.map((r) => ({
         ...r,
-        estado_txt: t((ESTADOS_REQ[r.estado] || [r.estado])[0]),
+        estado_txt: t((ESTADOS_REQ[estadoReq(r)] || [r.estado])[0]),
         origem_txt: r.origem && r.origem.tipo === 'conciliacao' ? t('Conciliação') : t('Pedido do promotor'),
         promotor_rota: r.rota + ' · ' + r.promotor,
       })),
@@ -549,7 +616,7 @@ R['requisicoes-carrinha'] = (pg) => {
           key: 'estado_txt',
           label: t('Estado'),
           p: 1,
-          render: (v, r) => pill(v, (ESTADOS_REQ[r.estado] || [0, 'p-mut'])[1]),
+          render: (v, r) => pill(v, (ESTADOS_REQ[estadoReq(r)] || [0, 'p-mut'])[1]),
         },
         { key: 'n_linhas', label: t('Artigos'), type: 'n', p: 3 },
         { key: 'quantidade', label: t('Quantidade'), type: 'n', p: 2 },

@@ -112,11 +112,29 @@ test('requisição de reposição: criada pela conciliação, editada e emitida 
   const log = (await entrar('log')).ctx;
   const carga = await (await log.get(RQ + '?carga=1&data=' + dia)).json();
   expect(carga.rotas['1001'][0].estado).toBe('emitida');
+  // por aprovar: o armazém ainda não carrega; quem emitiu não aprova; a Logística não tem o perfil; a Direcção aprova
+  const porAprovar = await post(log, { accao: 'confirmar_carga', numero: r.numero, entregue: {} });
+  expect(porAprovar.status).toBe(409);
+  expect(porAprovar.json.erro).toContain('aprovada');
+  expect((await post(sup, { accao: 'aprovar', numero: r.numero })).status).toBe(403);
+  expect((await post(log, { accao: 'aprovar', numero: r.numero })).status).toBe(403);
+  const dirCtx = (await entrar('dir')).ctx;
+  const ap = (await post(dirCtx, { accao: 'aprovar', numero: r.numero })).json.requisicao;
+  expect(ap).toMatchObject({ estado: 'emitida', aprovada_por: 'dir' });
+  expect((await post(dirCtx, { accao: 'aprovar', numero: r.numero })).status).toBe(409);
   expect((await post(sup, { accao: 'confirmar_carga', numero: r.numero, entregue: {} })).status).toBe(403);
   const c = (await post(log, { accao: 'confirmar_carga', numero: r.numero, entregue: { B9: 3 }, motivos: { B9: { codigo: 'falta_armazem' } } })).json
     .requisicao;
   expect(c.estado).toBe('carregada');
   expect(c.linhas.map((l) => l.entregue)).toEqual([26, 3]);
+  // uma PO que não vai ser carregada fecha-se com motivo e deixa de estar disponível para a carga
+  const n = (await post(sup, { accao: 'criar', rota: '1001', data: dia, linhas: [{ codigo: 'A1', artigo: 'Fralda', quantidade: 2 }] })).json.requisicao;
+  await post(sup, { accao: 'emitir', numero: n.numero, versao: n.versao });
+  expect((await post(sup, { accao: 'fechar', numero: n.numero, motivo: '' })).status).toBe(400);
+  const f = (await post(sup, { accao: 'fechar', numero: n.numero, motivo: 'O promotor já não precisa' })).json.requisicao;
+  expect(f).toMatchObject({ estado: 'fechada', fechada_por: 'sup', motivo_fecho: 'O promotor já não precisa' });
+  expect((await post(log, { accao: 'confirmar_carga', numero: n.numero, entregue: {} })).status).toBe(409);
+  expect((await post(dirCtx, { accao: 'aprovar', numero: n.numero })).status).toBe(409);
 });
 
 test('correcção do registo de quem contou / validou: só o super administrador, com motivo, fica no histórico', async () => {

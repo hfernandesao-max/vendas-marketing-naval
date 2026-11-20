@@ -5753,3 +5753,18 @@ body.apres-lado {
   font-weight: 700;
   border-top: 1px solid rgb(var(--lin1-rgb) / 0.4);
 }
+
+/* PO: requisitado × carregado (visto verde quando bate; senão a diferença a vermelho) */
+.req-ok {
+  display: inline-block;
+  min-width: 1.4em;
+  color: var(--ok);
+  font-weight: 700;
+  font-size: 1.1em;
+}
+.req-vendido {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}

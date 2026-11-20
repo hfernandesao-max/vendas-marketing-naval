@@ -154,13 +154,40 @@ function vistaConferir() {
     return w;
   }
   const r = PO.requisicao;
+  const porAprovar = r.estado === 'emitida' && r.pronta_carga === false;
   const cab = el('div', 'cp-cab');
   cab.append(
     el('b', null, r.numero),
     el('span', 'note', [t('rota {r}', { r: r.rota }), r.promotor, r.data].filter(Boolean).join(' · ')),
-    pill(t(r.estado === 'emitida' ? 'Por conferir' : r.estado === 'carregada' ? 'Conferida no cais' : r.estado), r.estado === 'emitida' ? 'p-warn' : 'p-ok'),
+    pill(
+      t(
+        porAprovar
+          ? 'Por aprovar'
+          : r.estado === 'emitida'
+            ? 'Por conferir'
+            : r.estado === 'carregada'
+              ? 'Conferida no cais'
+              : r.estado === 'fechada'
+                ? 'Fechada'
+                : r.estado,
+      ),
+      r.estado === 'emitida' ? 'p-warn' : r.estado === 'carregada' ? 'p-ok' : 'p-mut',
+    ),
   );
   w.append(cab);
+  // a PO só fica disponível para a carga depois de aprovada (supervisor da rota, Comercial ou Direcção)
+  if (porAprovar) {
+    w.append(
+      el(
+        'p',
+        'aviso',
+        t(
+          'Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo supervisor da rota (Logística › Requisições). Não carregue.',
+        ),
+      ),
+    );
+    return w;
+  }
   if (r.estado !== 'emitida') {
     const fase =
       { conferida: 'à espera do Back-Office', validada: 'validada: guia pedida ao Pinguim BO', transferida: 'guia gerada no Pinguim BO' }[r.fase] || '';

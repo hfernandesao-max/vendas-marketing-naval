@@ -17,6 +17,9 @@
  *             a autorização de quem fecha as conciliações (motivo, outra pessoa que não a que confirma) e a carga
  *             fica fora da contagem desses dias (naval_carr_juntar_posterior)
  *   anulada   rascunho que não vai ser usado (fica registado, com o motivo)
+ *   fechada   PO emitida que não vai ser carregada (com motivo), ou esquecida há mais de REQ_FECHO_DIAS dias
+ * Entre emitida e carregada, a PO tem de ser aprovada (aprovada_por/aprovada_em) por quem responde pela rota, que não
+ * a criou nem emitiu; só então fica disponível para a conferência no cais (naval_req_pronta_carga).
  * O âmbito por rota (SUP e PRO só as suas rotas) verifica-se na API (nucleo/api/v1/requisicoes.php).
  * Numeração sequencial por ano, sem saltos nem repetições: PO-AAAA-000001 («Requisição Interna / PO»; as antigas
  * RQ-AAAA-NNNNNN continuam válidas e partilham a mesma sequência). Cada passo fica no histórico do documento
@@ -261,6 +264,108 @@ function naval_req_reimprimir(string $id, string $login): array
     });
 }
 
+// ── Aprovação e fecho das PO ─────────────────────────────────────────────────────────────────────────────────
+//
+// Uma PO emitida só fica disponível para carga no cais depois de aprovada (REQ_APROVACAO=0 desliga): o pedido do
+// promotor é aprovado por quem responde pela rota (supervisor da rota, Comercial ou Direcção, recurso
+// «requisicoes-aprovacao» G), nunca por quem a criou ou emitiu (segregação de funções, como nas compras dos ERP:
+// requisitante → aprovador → armazém). As PO emitidas antes da regra (REQ_APROVACAO_DESDE) não precisam.
+// As PO que não vão ser carregadas fecham-se com motivo («fechada»); as esquecidas fecham-se sozinhas ao fim de
+// REQ_FECHO_DIAS dias (3), e os rascunhos esquecidos anulam-se, para nada ficar aberto para sempre.
+
+const NAVAL_REQ_APROVACAO_DESDE = '2026-11-21';
+
+/** Esta PO precisa de aprovação antes da carga? */
+function naval_req_precisa_aprovacao(array $r): bool
+{
+    if (naval_config('REQ_APROVACAO', '1') === '0') return false;
+    return substr((string) ($r['emitida_em'] ?? ''), 0, 10) >= naval_config('REQ_APROVACAO_DESDE', NAVAL_REQ_APROVACAO_DESDE);
+}
+
+/** Pronta para a carga no cais: emitida e (se precisar) aprovada. */
+function naval_req_pronta_carga(array $r): bool
+{
+    return ($r['estado'] ?? '') === 'emitida' && (!naval_req_precisa_aprovacao($r) || !empty($r['aprovada_em']));
+}
+
+/** Aprova uma PO emitida para a carga. Quem a criou ou emitiu não a aprova. */
+function naval_req_aprovar(string $id, string $login): array
+{
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $login) {
+        $r = naval_req_ler($id);
+        if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+        if ($r['estado'] !== 'emitida') throw new NavalErro('Só se aprova uma PO emitida e ainda por carregar.', 409);
+        if (!empty($r['aprovada_em'])) throw new NavalErro('Esta PO já foi aprovada.', 409);
+        if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0') {
+            foreach (['criado_por', 'emitida_por'] as $k) {
+                if ($login !== '' && strcasecmp((string) ($r[$k] ?? ''), $login) === 0) {
+                    throw new NavalErro('Segregação de funções: quem criou ou emitiu a PO não a aprova.', 403);
+                }
+            }
+        }
+        $r['aprovada_por'] = $login;
+        $r['aprovada_em'] = date('Y-m-d H:i:s');
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'aprovada', $login);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    naval_registar('requisicao_aprovada', ['numero' => $id, 'rota' => $r['rota']]);
+    return $r;
+}
+
+/** Fecha uma PO emitida que não vai ser carregada (fica registada, com o motivo). */
+function naval_req_fechar(string $id, string $motivo, string $login): array
+{
+    $motivo = naval_texto($motivo, 300);
+    if (mb_strlen($motivo) < 5) throw new NavalErro('Indique o motivo do fecho.', 400);
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $motivo, $login) {
+        $r = naval_req_ler($id);
+        if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+        if ($r['estado'] !== 'emitida') throw new NavalErro('Só se fecha uma PO emitida e ainda por carregar.', 409);
+        $r['estado'] = 'fechada';
+        $r['fechada_por'] = $login;
+        $r['fechada_em'] = date('Y-m-d H:i:s');
+        $r['motivo_fecho'] = $motivo;
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'fechada', $login, ['motivo' => $motivo]);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    naval_registar('requisicao_fechada', ['numero' => $id, 'rota' => $r['rota'], 'automatico' => $login === 'automatico']);
+    return $r;
+}
+
+/**
+ * Rotina periódica: PO emitidas e não carregadas há mais de REQ_FECHO_DIAS dias (3) fecham-se; rascunhos com mais de
+ * REQ_FECHO_DIAS dias anulam-se. Devolve ['fechadas' => [...], 'anuladas' => [...]].
+ */
+function naval_req_fechar_antigas(?int $agora = null): array
+{
+    $agora = $agora ?? time();
+    $dias = max(1, (int) naval_config('REQ_FECHO_DIAS', '3'));
+    $limite = date('Y-m-d', $agora - $dias * 86400);
+    $out = ['fechadas' => [], 'anuladas' => []];
+    foreach ([(int) date('Y', $agora) - 1, (int) date('Y', $agora)] as $a) {
+        foreach (naval_req_ficheiros((string) $a) as $f) {
+            $x = naval_json_ler((string) $f);
+            if (!$x || (string) $x['data'] >= $limite) continue;
+            try {
+                if ($x['estado'] === 'emitida') {
+                    naval_req_fechar((string) $x['numero'], 'Fechada automaticamente: não foi carregada em ' . $dias . ' dias.', 'automatico');
+                    $out['fechadas'][] = (string) $x['numero'];
+                } elseif ($x['estado'] === 'rascunho') {
+                    naval_req_anular((string) $x['numero'], 'Rascunho não emitido em ' . $dias . ' dias, anulado automaticamente.', null, 'automatico');
+                    $out['anuladas'][] = (string) $x['numero'];
+                }
+            } catch (Throwable $e) {
+                error_log('[requisições fecho automático] ' . $x['numero'] . ': ' . $e->getMessage());
+            }
+        }
+    }
+    return $out;
+}
+
 /** Anula um rascunho, com motivo. */
 function naval_req_anular(string $id, string $motivo, ?int $versao, string $login): array
 {
@@ -473,6 +578,7 @@ function naval_req_confirmar(string $id, array $entregue, string $login, array $
         if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
         if ($r['estado'] === 'carregada') throw new NavalErro('A carga desta requisição já foi confirmada.', 409);
         if ($r['estado'] !== 'emitida') throw new NavalErro('Só se confirma a carga de uma requisição emitida.', 409);
+        if (!naval_req_pronta_carga($r)) throw new NavalErro('Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo supervisor da rota (Logística › Requisições).', 409, ['codigo' => 'po_por_aprovar']);
         if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0' && strcasecmp((string) $r['emitida_por'], $login) === 0) {
             throw new NavalErro('Segregação de funções: quem emitiu a requisição não confirma a carga.', 403);
         }

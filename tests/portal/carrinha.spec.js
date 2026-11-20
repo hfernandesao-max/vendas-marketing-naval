@@ -159,7 +159,16 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await expect(det.locator('.cc-circuito li.actual')).toContainText('Validada por quem contou');
   await expect(page.locator('#toast')).not.toBeVisible({ timeout: 15000 });
   await det.getByRole('button', { name: 'Validar contagem' }).click();
+  // depois de validada: o painel da rota fecha e pergunta se quer imprimir a contagem
+  const dlg = page.getByRole('dialog');
+  await expect(dlg).toContainText('Contagem validada · rota 1001');
+  await expect(dlg).toContainText('Quer imprimir a contagem?');
+  await expect(det).toHaveCount(0);
+  const impressa = await pdfTexto(dlg.getByRole('button', { name: 'Imprimir a contagem' }));
+  expect(impressa.nome).toMatch(/CC-1001-.*\.pdf$/);
+  await expect(dlg).toHaveCount(0);
   await expect(rota).toContainText('Por aprovar (coordenador)');
+  await rota.getByRole('button', { name: 'Ver' }).click();
   // quem contou não aprova (segregação de funções)
   await expect(det.getByRole('button', { name: 'Aprovar (coordenador)' })).toHaveCount(0);
   await expect(det).toContainText('quem contou não aprova');

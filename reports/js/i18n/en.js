@@ -4908,4 +4908,40 @@ export const EN = {
   'esperado {e}, Pinguim BO {f}': 'expected {e}, Pinguim BO {f}',
   'Inventário no Pinguim BO: {d}': 'Stock count in Pinguim BO: {d}',
   'Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»': 'Pinguim BO stock count adjustments included in «Must come back»',
+  'Aprovada · a carregar': 'Approved · to load',
+  'vendido {q}': 'sold {q}',
+  'Carregado igual ao requisitado': 'Loaded as requested',
+  'Aprovada para a carga por {p} em {d}': 'Approved for loading by {p} on {d}',
+  'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo supervisor da rota (ou Comercial / Direcção), que não a pode ter emitido.':
+    'Awaiting approval: the PO is only available for loading at the dock after approval by the route supervisor (or Sales / Board), who cannot have issued it.',
+  'Aprovar para a carga': 'Approve for loading',
+  'PO aprovada: já está disponível para a carga no cais.': 'PO approved: it is now available for loading at the dock.',
+  'Fechar a PO': 'Close the PO',
+  'Fechada por {p} em {d}: {m}': 'Closed by {p} on {d}: {m}',
+  'Fechar a PO {n}?': 'Close PO {n}?',
+  'A PO deixa de estar disponível para a carga e fica registada como fechada, com o motivo.':
+    'The PO is no longer available for loading and is recorded as closed, with the reason.',
+  'Motivo do fecho': 'Reason for closing',
+  'PO fechada.': 'PO closed.',
+  'PO à espera de aprovação para a carga': 'POs awaiting approval for loading',
+  'Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo supervisor da rota (Logística › Requisições). Não carregue.':
+    'This PO has not been approved yet: it is only available for loading after approval by the route supervisor (Logistics › Requisitions). Do not load.',
+  'Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo supervisor da rota (Logística › Requisições).':
+    'This PO has not been approved yet: it is only available for loading after approval by the route supervisor (Logistics › Requisitions).',
+  'Contagem validada · rota {r}': 'Count validated · route {r}',
+  'Segue para a aprovação do coordenador.': 'It goes to the coordinator for approval.',
+  'Foi criada a PO {n} com o que foi vendido (rascunho): o promotor revê as quantidades e emite-a; depois de aprovada fica disponível para a carga.':
+    'PO {n} was created with what was sold (draft): the sales rep reviews the quantities and issues it; once approved it is available for loading.',
+  'Quer imprimir a contagem?': 'Do you want to print the count?',
+  'Abrir a PO': 'Open the PO',
+  'Agora não': 'Not now',
+  'Imprimir a contagem': 'Print the count',
+  'Requisições (PO) · aprovar a PO para a carga no cais (G; o supervisor nas suas rotas)':
+    'Requisitions (PO) · approve the PO for loading at the dock (G; the supervisor for their routes)',
+  'Segregação de funções: quem criou ou emitiu a PO não a aprova.': 'Segregation of duties: whoever created or issued the PO cannot approve it.',
+  'Só se aprova uma PO emitida e ainda por carregar.': 'Only an issued PO not yet loaded can be approved.',
+  'Esta PO já foi aprovada.': 'This PO has already been approved.',
+  'Só se fecha uma PO emitida e ainda por carregar.': 'Only an issued PO not yet loaded can be closed.',
+  'Indique o motivo do fecho.': 'Give the reason for closing.',
+  'O seu perfil não permite aprovar PO.': 'Your profile does not allow approving POs.',
 };

@@ -269,6 +269,16 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conciliação carrinha] corte: ' . $e->getMessage());
     }
+    // PO esquecidas: emitidas e não carregadas, ou rascunhos, há mais de REQ_FECHO_DIAS dias (uma vez por hora chega)
+    if ((int) date('i', $agora) < 5) {
+        try {
+            naval_servico('requisicoes');
+            $fx = naval_req_fechar_antigas($agora);
+            if ($fx['fechadas'] || $fx['anuladas']) $feito['requisicoes_fechadas'] = count($fx['fechadas']) + count($fx['anuladas']);
+        } catch (Throwable $e) {
+            error_log('[requisições fecho automático] ' . $e->getMessage());
+        }
+    }
     // conciliação das carrinhas: rever as bases congeladas contra o Pinguim BO (guias anuladas ou corrigidas depois)
     try {
         $rv = naval_carr_rever_tick($agora);
