@@ -307,6 +307,33 @@ function naval_vigia_ciclo(int $agora, array $o = []): ?array
                 }
             }
         }
+        // 2c. prova do stock das carrinhas do dia anterior: o portal tem de explicar todo o stock do Pinguim BO
+        // (inicial + carregado − devolvido − vendido ± inventário = final), uma vez por dia depois das 02:00
+        if (array_key_exists('prova', $o) || (date('H', $agora) >= '02' && ($e['prova_dia'] ?? '') !== $ontem)) {
+            try {
+                if (!function_exists('naval_carr_prova_dia')) naval_servico('carrinha');
+                $prova = array_key_exists('prova', $o) ? $o['prova'] : naval_carr_prova_dia($ontem);
+                if (is_array($prova)) {
+                    $e['prova_dia'] = $prova['data'];
+                    $porRota = [];
+                    foreach ($prova['falhas'] as $f) $porRota[$f['rota']][] = $f;
+                    foreach ($porRota as $rota => $fs) {
+                        $ocorr[] = ['tipo' => 'prova_carrinha', 'ficheiro' => '', 'linha' => 0, 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora),
+                            'mensagem' => 'Prova do stock de ' . $prova['data'] . ', carrinha ' . $rota . ': ' . count($fs) . ' artigo(s) em que inicial + carregado − devolvido − vendido ± inventário não dá o stock final do Pinguim BO ('
+                                . implode('; ', array_map(function ($f) { return $f['artigo'] . ': esperado ' . (0 + $f['esperado']) . ', Pinguim BO ' . (0 + $f['final']); }, array_slice($fs, 0, 3))) . ').'];
+                    }
+                    if ($porRota && empty($o['sem_email'])) {
+                        naval_servico('notificacoes');
+                        naval_notificar('conferencia', 'Prova do stock das carrinhas de ' . date('d-m-Y', strtotime($prova['data'])) . ': ' . count($porRota) . ' carrinha(s) não batem com o Pinguim BO',
+                            'Carrinhas: ' . implode(', ', array_keys($porRota)) . '. A aprovação destas conciliações fica bloqueada até a diferença ser explicada.',
+                            ['chave' => 'prova|' . $prova['data'], 'url' => '../reports/#conciliacao-carrinha'], $agora);
+                    }
+                }
+            } catch (Throwable $ex) {
+                $ocorr[] = ['tipo' => 'prova_carrinha', 'ficheiro' => '', 'linha' => 0, 'rota' => '', 'data' => date('Y-m-d H:i:s', $agora),
+                    'mensagem' => 'A prova do stock das carrinhas de ' . $ontem . ' falhou: ' . naval_vigia_limpar($ex->getMessage())];
+            }
+        }
         // 3. agrupar, guardar, enviar
         $probs = naval_vigia_problemas();
         $novos = [];

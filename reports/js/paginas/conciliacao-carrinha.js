@@ -184,6 +184,12 @@ const GRUPOS = [
   { id: 'dif', nome: 'Diferença', cols: ['Diferença', 'Valor'] },
 ];
 const quando = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
+/** Com acertos de inventário do Pinguim BO no dia, o sistema ganha a coluna «Inventário» (contado − teórico). */
+const comInventario = (r) => r.linhas.some((l) => Math.abs(+l.inventario || 0) > 0.0001);
+const gruposDe = (r) =>
+  comInventario(r)
+    ? GRUPOS.map((x) => (x.id === 'sis' ? { ...x, cols: ['Inicial', 'Carregado', 'Vendido', 'Devolvido', 'Inventário', 'Tem de voltar'] } : x))
+    : GRUPOS;
 
 /** Circuito de aprovação: contada → validada por quem contou → coordenador (1.º nível) → responsável (2.º nível, fecha). */
 function circuito(r) {
@@ -301,12 +307,32 @@ function tabelaRota(r) {
         }),
       ),
     );
+  // a prova do dia: o stock desta carrinha no Pinguim BO não se explica pelos documentos (aprovação bloqueada)
+  if ((r.prova || []).length)
+    box.append(
+      el(
+        'p',
+        'cc-aviso',
+        t(
+          'O stock desta carrinha neste dia não bate com o Pinguim BO em {n} artigo(s): {a}. A aprovação fica bloqueada até a diferença ser explicada no Pinguim BO.',
+          {
+            n: r.prova.length,
+            a: r.prova
+              .slice(0, 3)
+              .map((f) => f.artigo + ' (' + t('esperado {e}, Pinguim BO {f}', { e: q(f.esperado), f: q(f.final) }) + ')')
+              .join('; '),
+          },
+        ),
+      ),
+    );
+  const inv = comInventario(r);
+  const grupos = gruposDe(r);
   const tab = el('table', 'cc-tab cc-cores');
   const g = el('tr', 'cc-grupos');
   const vazio = el('th', null, '');
   vazio.colSpan = 2;
   g.append(vazio);
-  GRUPOS.forEach((x) => {
+  grupos.forEach((x) => {
     const th = el('th', 'cc-g-' + x.id, t(x.nome));
     th.colSpan = x.cols.length;
     th.scope = 'colgroup';
@@ -315,7 +341,7 @@ function tabelaRota(r) {
   g.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Justificação')));
   const th = el('tr');
   th.append(el('th', null, t('Código')), el('th', null, t('Artigo')));
-  GRUPOS.forEach((x) => x.cols.forEach((c) => th.append(el('th', 'n cc-g-' + x.id, t(c)))));
+  grupos.forEach((x) => x.cols.forEach((c) => th.append(el('th', 'n cc-g-' + x.id, t(c)))));
   th.append(el('th', 'cc-g-mot', t(est === 'por_contar' ? 'Alertas' : 'Motivo')));
   const cab = el('thead');
   cab.append(g, th);
@@ -325,7 +351,13 @@ function tabelaRota(r) {
   r.linhas.forEach((l) => {
     const tr = el('tr', l.diferenca ? (l.diferenca < 0 ? 'cc-falta' : 'cc-sobra') : l.alertas.length ? 'cc-alerta' : null);
     tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, l.artigo));
-    [l.inicial, l.carregado, l.vendido, l.devolvido, l.esperado].forEach((v) => tr.append(el('td', 'n cc-g-sis', q(v))));
+    [l.inicial, l.carregado, l.vendido, l.devolvido].forEach((v) => tr.append(el('td', 'n cc-g-sis', q(v))));
+    if (inv) {
+      const ci = el('td', 'n cc-g-sis', l.inventario ? (l.inventario > 0 ? '+' : '') + q(l.inventario) : q(0));
+      if ((l.inventario_docs || []).length) ci.title = t('Inventário no Pinguim BO: {d}', { d: l.inventario_docs.join(', ') });
+      tr.append(ci);
+    }
+    tr.append(el('td', 'n cc-g-sis', q(l.esperado)));
     tr.append(el('td', 'n cc-g-cont', q(l.contado)));
     const sinal = l.diferenca ? (l.diferenca < 0 ? ' cc-neg' : ' cc-pos') : '';
     tr.append(el('td', 'n cc-g-dif' + sinal, difTxt(l.diferenca)), el('td', 'n cc-g-dif' + sinal, l.valor == null ? '—' : kz(l.valor)));
@@ -348,7 +380,7 @@ function tabelaRota(r) {
   wrap.append(tab);
   box.append(wrap);
   const legenda = el('p', 'note cc-legenda');
-  GRUPOS.forEach((x) => legenda.append(el('span', 'cc-g-' + x.id, t(x.nome))));
+  grupos.forEach((x) => legenda.append(el('span', 'cc-g-' + x.id, t(x.nome))));
   legenda.append(el('span', 'cc-neg', t('falta')), el('span', 'cc-pos', t('sobra')));
   box.append(legenda);
   if (est !== 'por_contar') box.prepend(pdfBotao(t('PDF da contagem'), () => resultadoContagem(r, dia, CC.motivos)));

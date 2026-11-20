@@ -4904,4 +4904,10 @@ export const EN = {
     'Pinguim BO changed after this reconciliation was approved ({d}): {a}. The approved reconciliation is not changed; review it with Logistics and the Board.',
   'Base actualizada em {d}: o Pinguim BO mudou depois de congelada (documento anulado ou corrigido) em {a}. A contagem ficou; volte a validar.':
     'Baseline updated on {d}: Pinguim BO changed after it was frozen (document cancelled or corrected) for {a}. The count was kept; validate again.',
+  'O stock desta carrinha neste dia não bate com o Pinguim BO em {n} artigo(s): {a}. A aprovação fica bloqueada até a diferença ser explicada no Pinguim BO.':
+    'The stock of this van on this day does not match Pinguim BO for {n} item(s): {a}. Approval is blocked until the difference is explained in Pinguim BO.',
+  'esperado {e}, Pinguim BO {f}': 'expected {e}, Pinguim BO {f}',
+  'Inventário no Pinguim BO: {d}': 'Stock count in Pinguim BO: {d}',
+  'Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»': 'Pinguim BO stock count adjustments included in «Must come back»',
+  Inventário: 'Stock count',
 };

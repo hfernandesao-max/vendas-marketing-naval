@@ -389,3 +389,39 @@ teste('revisão contra o Pinguim BO: uma guia anulada depois de congelar a base 
     igual(['inicial' => [50.0, 0.0], 'esperado' => [150.0, 100.0]], $dif[0]['mudou']);
     igual([], naval_carr_comparar_bases($base(0.0), $base(0.0)));
 });
+
+teste('inventário do Pinguim BO: conta no dia seguinte, na conciliação e na prova; a prova apanha o que não se explica', function () {
+    // INV A1000/49 de 11-11 na carrinha 1011: 65 → 0 (entra no stock do Pinguim BO a 12-11)
+    $inv = naval_carr_inventarios_agrupar([
+        ['ARM_COD' => '10001011', 'ARM' => 'Armazém 1011 - FHR PIV', 'CODIGO' => '10000009', 'DOC' => 'INV A1000/49', 'ACERTO' => -65.0],
+        ['ARM_COD' => '1000', 'ARM' => 'HIGITEC PIV - NON FOOD', 'CODIGO' => '10000009', 'DOC' => 'INV A1000/50', 'ACERTO' => 10.0],   // armazém central
+    ]);
+    igual(['1011'], array_map('strval', array_keys($inv)));
+    $mov = naval_carr_movimentos_com_inventario([], $inv);
+    igual([-65.0, -65.0, ['INV A1000/49']], [$mov['1011']['10000009']['i'], $mov['1011']['10000009']['ia'], $mov['1011']['10000009']['idocs']]);
+    $s0 = ['1011' => ['10000009' => ['n' => 'Massa', 'q' => 65.0]]];
+    $s1 = ['1011' => []];
+    igual([], naval_carr_prova_calcular($s0, $s1, $mov)['falhas'], 'com o inventário bate');
+    $p = naval_carr_prova_calcular($s0, $s1, []);
+    igual([1, 65.0, 0.0], [count($p['falhas']), $p['falhas'][0]['esperado'], $p['falhas'][0]['final']], 'sem o inventário não bate');
+    // na conciliação: coluna inventário e o esperado já com o acerto
+    $l = naval_carr_linhas(['s0' => $s0['1011'], 's1' => [], 'v' => [], 'mov' => $mov['1011']], null);
+    igual([65.0, -65.0, 0.0, []], [$l[0]['inicial'], $l[0]['inventario'], $l[0]['esperado'], $l[0]['alertas']]);
+});
+
+teste('prova do dia: a aprovação de uma rota que não bate com o Pinguim BO fica bloqueada', function () {
+    $data = date('Y-m-d', time() - 9 * 86400);
+    naval_json_gravar(naval_carr_pasta($data) . '/_prova.json', ['data' => $data, 'ok' => false, 'falhas' => [
+        ['rota' => '1004', 'codigo' => 'X1', 'artigo' => 'Fraldas', 'esperado' => 10, 'final' => 4]]]);
+    igual(1, count(naval_carr_prova_rota($data, '1004')));
+    igual([], naval_carr_prova_rota($data, '1005'));
+    $erro = null;
+    try {
+        naval_carr_exigir_prova($data, '1004');
+    } catch (NavalErro $e) {
+        $erro = $e->estado();
+    }
+    igual(409, $erro);
+    naval_carr_exigir_prova($data, '1005');
+    @unlink(naval_carr_pasta($data) . '/_prova.json');
+});

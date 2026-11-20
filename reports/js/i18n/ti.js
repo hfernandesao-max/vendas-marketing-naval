@@ -4820,4 +4820,10 @@ export const TI = {
     'ድሕሪ እዚ ምትዕርራይ ምጽዳቑ Pinguim BO ተቐይሩ ({d}): {a}። እቲ ዝጸደቐ ምትዕርራይ ኣይቀየርን፤ ምስ ሎጂስቲክስን ምሕደራን ርኣዩዎ።',
   'Base actualizada em {d}: o Pinguim BO mudou depois de congelada (documento anulado ou corrigido) em {a}. A contagem ficou; volte a validar.':
     'መሰረት ኣብ {d} ተሓዲሱ: ድሕሪ ምዕጻዉ Pinguim BO ተቐይሩ (ሰነድ ተሰሪዙ ወይ ተዓሪዩ) ኣብ {a}። እቲ ቆጸራ ተሓሊዉ፤ ደጊምኩም ኣረጋግጹ።',
+  'O stock desta carrinha neste dia não bate com o Pinguim BO em {n} artigo(s): {a}. A aprovação fica bloqueada até a diferença ser explicada no Pinguim BO.':
+    'ክምችት እዛ መኪና ኣብዚ መዓልቲ ምስ Pinguim BO ኣብ {n} ኣቕሓ ኣይሰማማዕን: {a}። እቲ ፍልልይ ኣብ Pinguim BO ክሳዕ ዝግለጽ ምጽዳቕ ተዓጊቱ ኣሎ።',
+  'esperado {e}, Pinguim BO {f}': 'ዝተጸበየ {e}፡ Pinguim BO {f}',
+  'Inventário no Pinguim BO: {d}': 'ቆጸራ ክምችት ኣብ Pinguim BO: {d}',
+  'Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»': 'ናይ Pinguim BO ምስተኻኽል ቆጸራ ክምችት ኣብ «ክምለስ ዘለዎ» ተኣትዩ',
+  Inventário: 'ቆጸራ ክምችት',
 };

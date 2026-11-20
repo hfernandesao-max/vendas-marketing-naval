@@ -396,6 +396,31 @@ export async function resultadoContagem(r, dia, motivos) {
     },
   });
   y = doc.lastAutoTable.finalY + 6;
+  // acertos de inventário do Pinguim BO no dia (já incluídos em «Tem de voltar»)
+  const invs = r.linhas.filter((l) => Math.abs(+l.inventario || 0) > 0.0001);
+  if (invs.length) {
+    const txt =
+      tp('Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»') +
+      ': ' +
+      invs
+        .map(
+          (l) =>
+            l.artigo +
+            ' ' +
+            (l.inventario > 0 ? '+' : '') +
+            q(l.inventario) +
+            ((l.inventario_docs || []).length ? ' (' + l.inventario_docs.join(', ') + ')' : ''),
+        )
+        .join('; ') +
+      '.';
+    const linhas = doc
+      .setFont('helvetica', 'normal')
+      .setFontSize(8)
+      .setTextColor(...AZUL)
+      .splitTextToSize(txt, 268);
+    doc.text(linhas, 14, y);
+    y += linhas.length * 4 + 3;
+  }
   // Circuito de aprovação (quem e quando, em cada passo)
   const auto = r.aprovado_por === 'automatico';
   const passos = [

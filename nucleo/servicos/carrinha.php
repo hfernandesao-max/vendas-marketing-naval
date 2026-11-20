@@ -226,7 +226,7 @@ function naval_carr_stock_por_movimentos(array $inicial, array $mov, array $dado
             $q[$codigo] = ['n' => (string) $nome, 'q' => 0.0];
         }
         $q[$codigo]['q'] = round($q[$codigo]['q'] - (float) ($x['va'] ?? 0)
-            + (float) ($x['ca'] ?? 0) - (float) ($x['da'] ?? 0), 3);
+            + (float) ($x['ca'] ?? 0) - (float) ($x['da'] ?? 0) + (float) ($x['ia'] ?? 0), 3);
     }
     return $q;
 }
@@ -357,7 +357,10 @@ function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
         error_log('[carrinha movimentos SQL] ' . $e->getMessage());
         return null;
     }
-    return naval_carr_movimentos_agrupar($rows, array_keys(naval_promotores()), naval_stock_carrinhas_confirmadas());
+    $mov = naval_carr_movimentos_agrupar($rows, array_keys(naval_promotores()), naval_stock_carrinhas_confirmadas());
+    // inventários das carrinhas: sem eles o portal não explicaria o stock do Pinguim BO (falha = sem movimentos fiáveis)
+    $inv = naval_carr_inventarios_sql($data);
+    return $inv === null ? null : naval_carr_movimentos_com_inventario($mov, $inv);
 }
 
 /**
@@ -665,7 +668,7 @@ function naval_carr_dados_frescos(string $data): ?array
 
 /**
  * Diferenças entre duas bases de uma rota (função pura, testada): por artigo, os números que mudaram
- * (inicial, carregado, vendido, devolvido, esperado). Lista vazia = iguais.
+ * (inicial, carregado, vendido, devolvido, inventário, esperado). Lista vazia = iguais.
  */
 function naval_carr_comparar_bases(array $antiga, array $nova): array
 {
@@ -679,7 +682,7 @@ function naval_carr_comparar_bases(array $antiga, array $nova): array
     $out = [];
     foreach (array_unique(array_merge(array_keys($a), array_keys($b))) as $c) {
         $mud = [];
-        foreach (['inicial', 'carregado', 'vendido', 'devolvido', 'esperado'] as $k) {
+        foreach (['inicial', 'carregado', 'vendido', 'devolvido', 'inventario', 'esperado'] as $k) {
             $x = (float) ($a[$c][$k] ?? 0);
             $y = (float) ($b[$c][$k] ?? 0);
             if (abs($x - $y) > NAVAL_CARR_TOLERANCIA) $mud[$k] = [$x, $y];
@@ -794,6 +797,134 @@ function naval_carr_rever_tick(int $agora): ?array
     return $r;
 }
 
+/**
+ * Acertos de inventário das carrinhas que contam no dia (função pura do resultado: naval_carr_inventarios_agrupar).
+ * Um inventário do Pinguim BO (INVENTORYHEADER com SET_QNT = 1: põe o stock igual ao contado) com a data D entra no
+ * stock (dbo.GET_STOCK) a partir de D+1: o fim de D ainda não o tem, o fim de D+1 já tem (confirmado em todas as
+ * carrinhas desde 01-10-2026). Por isso conta na conciliação de D+1, antes do corte. Acerto = contado − teórico.
+ * {rota: {codigo: ['q' => acerto, 'docs' => ['INV A1000/49', …]]}}; null sem ligação ou se a consulta falhar.
+ */
+function naval_carr_inventarios_sql(string $data): ?array
+{
+    if (!naval_bd_configurada()) return null;
+    $dia = date('Y-m-d', strtotime($data . ' 12:00') - 86400);
+    try {
+        $rows = naval_bd_consultar("
+            SELECT E.CODE AS ARM_COD, E.DESCRIPTION AS ARM, LTRIM(RTRIM(P.CODE)) AS CODIGO,
+                   LTRIM(RTRIM(COALESCE(IH.DOC_PREFIX, 'INV'))) + '/' + CAST(IH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
+                   CAST(SUM(ID.PHYSICAL_QNT - ID.THEORETICAL_QNT) AS FLOAT) AS ACERTO
+            FROM INVENTORYHEADER IH
+            INNER JOIN INVENTORYDETAIL ID ON ID.INVENTORYHEADER_ID = IH.ID AND ID.DELETED = 0
+            INNER JOIN ENTITY E ON E.ID = IH.WAREHOUSE_ID
+            INNER JOIN PRODUCT P ON P.ID = ID.PRODUCT_ID
+            WHERE IH.DELETED = 0 AND IH.SET_QNT = 1 AND IH.INVENTORY_DATE >= :de AND IH.INVENTORY_DATE < DATEADD(day, 1, :ate)
+            GROUP BY E.CODE, E.DESCRIPTION, P.CODE, IH.DOC_PREFIX, IH.DOC_NUMBER", [':de' => naval_bd_data($dia), ':ate' => naval_bd_data($dia)]);
+    } catch (Throwable $e) {
+        error_log('[carrinha inventários SQL] ' . $e->getMessage());
+        return null;
+    }
+    return naval_carr_inventarios_agrupar($rows, naval_stock_carrinhas_confirmadas());
+}
+
+/** Agrupa os acertos de inventário por rota (armazém da carrinha) e artigo; ignora armazéns centrais e acertos nulos. */
+function naval_carr_inventarios_agrupar(array $rows, array $confirmadas = []): array
+{
+    $out = [];
+    foreach ($rows as $r) {
+        [$rota] = naval_stock_rota_armazem(trim((string) ($r['ARM_COD'] ?? '')), trim((string) ($r['ARM'] ?? '')), $confirmadas);
+        $c = trim((string) ($r['CODIGO'] ?? ''));
+        $q = (float) ($r['ACERTO'] ?? 0);
+        if ($rota === '' || $c === '' || abs($q) <= NAVAL_CARR_TOLERANCIA) continue;
+        $x = $out[$rota][$c] ?? ['q' => 0.0, 'docs' => []];
+        $x['q'] = round($x['q'] + $q, 3);
+        $doc = trim((string) ($r['DOC'] ?? ''));
+        if ($doc !== '' && !in_array($doc, $x['docs'], true)) $x['docs'][] = $doc;
+        $out[$rota][$c] = $x;
+    }
+    return $out;
+}
+
+/** Junta os acertos de inventário aos movimentos do dia: 'i' (no dia) e 'ia' (antes do corte: entra às 00:00). */
+function naval_carr_movimentos_com_inventario(array $mov, array $inv): array
+{
+    foreach ($inv as $rota => $arts) {
+        foreach ($arts as $c => $x) {
+            $m = $mov[$rota][$c] ?? ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0];
+            $m['i'] = (float) $x['q'];
+            $m['ia'] = (float) $x['q'];
+            $m['idocs'] = (array) $x['docs'];
+            $mov[(string) $rota][(string) $c] = $m;
+        }
+    }
+    return $mov;
+}
+
+// ── Prova diária: o portal tem de explicar todo o stock das carrinhas do Pinguim BO ─────────────────────────────
+
+/**
+ * Prova de um dia (função pura, testada): por rota e artigo, inicial (stock do Pinguim BO no fim do dia anterior)
+ * + carregado − devolvido − vendido ± inventário tem de dar o stock final do Pinguim BO. Devolve as linhas que não
+ * batem: [{rota, codigo, artigo, inicial, carregado, devolvido, vendido, inventario, esperado, final}] e o total visto.
+ */
+function naval_carr_prova_calcular(array $s0, array $s1, array $mov): array
+{
+    $falhas = [];
+    $vistas = 0;
+    foreach (array_unique(array_merge(array_keys($s0), array_keys($s1), array_keys($mov))) as $rota) {
+        $rota = (string) $rota;
+        foreach (array_unique(array_merge(array_keys((array) ($s0[$rota] ?? [])), array_keys((array) ($s1[$rota] ?? [])), array_keys((array) ($mov[$rota] ?? [])))) as $c) {
+            $c = (string) $c;
+            $m = (array) ($mov[$rota][$c] ?? []);
+            $ini = (float) ($s0[$rota][$c]['q'] ?? 0);
+            $fim = (float) ($s1[$rota][$c]['q'] ?? 0);
+            $car = (float) ($m['c'] ?? 0);
+            $dev = (float) ($m['d'] ?? 0);
+            $ven = (float) ($m['va'] ?? 0) + (float) ($m['vd'] ?? 0);
+            $inv = (float) ($m['i'] ?? 0);
+            $esp = round($ini + $car - $dev - $ven + $inv, 3);
+            $vistas++;
+            if (abs($esp - $fim) <= 0.001) continue;
+            $falhas[] = ['rota' => $rota, 'codigo' => $c, 'artigo' => (string) ($s1[$rota][$c]['n'] ?? $s0[$rota][$c]['n'] ?? $c),
+                'inicial' => $ini, 'carregado' => $car, 'devolvido' => $dev, 'vendido' => $ven, 'inventario' => $inv, 'esperado' => $esp, 'final' => $fim];
+        }
+    }
+    return ['vistas' => $vistas, 'falhas' => $falhas];
+}
+
+/** Prova de um dia fechado, lida do Pinguim BO e guardada em carrinha/AAAA-MM-DD/_prova.json. Null sem ligação. */
+function naval_carr_prova_dia(string $data): ?array
+{
+    if (!naval_data_valida($data) || $data >= date('Y-m-d') || !naval_bd_configurada()) return null;
+    $s0 = naval_carr_stock(date('Y-m-d', strtotime($data . ' 12:00') - 86400));
+    $s1 = naval_carr_stock($data);
+    $mov = naval_carr_movimentos_sql($data, '23:59:59');
+    if ($s0 === null || $s1 === null || $mov === null) return null;
+    $r = naval_carr_prova_calcular($s0, $s1, $mov);
+    $p = ['data' => $data, 'em' => date('Y-m-d H:i:s'), 'ok' => !$r['falhas'], 'vistas' => $r['vistas'], 'falhas' => $r['falhas']];
+    naval_json_gravar(naval_carr_pasta($data) . '/_prova.json', $p, false);
+    if ($r['falhas']) naval_registar('carrinha_prova_falhou', ['data' => $data, 'linhas' => count($r['falhas']), 'rotas' => array_values(array_unique(array_column($r['falhas'], 'rota')))]);
+    return $p;
+}
+
+/** Linhas da prova guardada que não batem, de uma rota ([] sem prova ou se bate). */
+function naval_carr_prova_rota(string $data, string $rota): array
+{
+    $p = naval_json_ler(naval_carr_pasta($data) . '/_prova.json');
+    if (!$p || !empty($p['ok'])) return [];
+    return array_values(array_filter((array) ($p['falhas'] ?? []), function ($f) use ($rota) { return (string) $f['rota'] === $rota; }));
+}
+
+/** A aprovação de uma rota cujo dia não bate com o Pinguim BO fica bloqueada até a diferença ser explicada. */
+function naval_carr_exigir_prova(string $data, string $rota): void
+{
+    if (naval_config('CARRINHA_PROVA_BLOQUEIA', '1') === '0') return;
+    $f = naval_carr_prova_rota($data, $rota);
+    if (!$f) return;
+    throw new NavalErro('O stock desta carrinha neste dia não bate com o Pinguim BO (' . count($f) . ' artigo(s): '
+        . implode(', ', array_slice(array_column($f, 'artigo'), 0, 3)) . '). Corrija no Pinguim BO ou peça à Informática para analisar antes de aprovar.', 409,
+        ['codigo' => 'prova_pinguim', 'linhas' => $f]);
+}
+
 /** Preço médio de venda de cada artigo no dia (todas as rotas): para dar valor às diferenças. */
 function naval_carr_precos(array $vendido): array
 {
@@ -830,6 +961,7 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         $ini = (float) ($s0[$c]['q'] ?? 0);
         $fim = (float) ($s1[$c]['q'] ?? 0);
         $ven = (float) ($v[$c]['q'] ?? 0);
+        $inv = (float) ($mov[$c]['i'] ?? 0);   // acerto de inventário do Pinguim BO (conta no dia, antes do corte)
         $alertas = [];
         $corte = isset($r['corte']['q']) ? (array) $r['corte']['q'] : null;
         $depois = 0.0;
@@ -837,7 +969,7 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         if ($corte !== null) {
             // até à referência congelada: o que entrou e saiu até esse instante; o restante fica de fora
             $noCorte = (float) ($corte[$c] ?? 0);
-            $saldo = $noCorte - $ini + $ven;
+            $saldo = $noCorte - $ini + $ven - $inv;
             $car = max(0.0, $saldo);
             $dev = max(0.0, -$saldo);
             if (is_array($mov) && naval_carr_mov_com_hora($mov) && in_array(($r['corte']['origem'] ?? ''), ['documentos', 'contagem'], true)) {
@@ -850,10 +982,10 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         } elseif (is_array($mov)) {
             $car = (float) ($mov[$c]['c'] ?? 0);
             $dev = (float) ($mov[$c]['d'] ?? 0);
-            $esperado = $ini + $car - $ven;
+            $esperado = $ini + $car - $ven + $inv;
             if (abs($esperado - $dev - $fim) > NAVAL_CARR_TOLERANCIA) $alertas[] = 'nao_explicado';
         } else {
-            $saldo = $fim - $ini + $ven;
+            $saldo = $fim - $ini + $ven - $inv;
             $car = max(0.0, $saldo);
             $dev = max(0.0, -$saldo);
             $esperado = $fim;
@@ -861,22 +993,23 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
         if ($fim < -NAVAL_CARR_TOLERANCIA || $esperado < -NAVAL_CARR_TOLERANCIA) $alertas[] = 'negativo';
         // a carga posterior está fisicamente na carrinha: soma-se ao que se conta, para não entrar na conciliação do dia
         $pos = (float) ($post[$c] ?? 0);
-        if ($ven > $ini + $car + NAVAL_CARR_TOLERANCIA) $alertas[] = 'sem_carga';
+        if ($ven > $ini + $car + max(0.0, $inv) + NAVAL_CARR_TOLERANCIA) $alertas[] = 'sem_carga';
         $contado = ($contagem !== null && array_key_exists($c, $contagem)) ? (float) $contagem[$c] : ($contagem !== null ? 0.0 : null);
         $dif = $contado === null ? null : round($contado - $esperado - $pos, 3);
         $preco = (float) ($precos[$c] ?? (($v[$c]['q'] ?? 0) > 0 ? $v[$c]['t'] / $v[$c]['q'] : 0));
-        if (!$ini && !$fim && !$ven && !$car && !$dev && !$contado && !$pos && !$depois) continue;
+        if (!$ini && !$fim && !$ven && !$car && !$dev && !$inv && !$contado && !$pos && !$depois) continue;
         // nada para contar: o artigo não devia estar na carrinha no fim do dia e não houve vendas (ex.: stock do dia
         // anterior retirado ou corrigido no Pinguim BO). Sem alertas e sem contagem feita, não entra na conciliação.
         $zero = function (float $x): bool { return abs($x) <= NAVAL_CARR_TOLERANCIA; };
         // (com o corte, a carga só para amanhã também fica de fora: não há nada dela para contar hoje)
         // (um artigo com documento de entrada ou saída antes do corte fica, para se ver o movimento: ex. devolução ao armazém)
-        if (!$alertas && $zero($esperado) && ($corte !== null || $zero($fim)) && $zero($ven) && !$contado && $zero($pos) && !($deDocs && ($car > 0 || $dev > 0))) continue;
+        if (!$alertas && $zero($esperado) && ($corte !== null || $zero($fim)) && $zero($ven) && !$contado && $zero($pos) && !($deDocs && ($car > 0 || $dev > 0)) && $zero($inv)) continue;
         $out[] = [
             'codigo' => $c,
             'artigo' => (string) ($v[$c]['n'] ?? $s1[$c]['n'] ?? $s0[$c]['n'] ?? $c),
             'unidade' => (string) ($v[$c]['u'] ?? ''),
             'inicial' => round($ini, 3), 'carregado' => round($car, 3), 'vendido' => round($ven, 3), 'devolvido' => round($dev, 3),
+            'inventario' => round($inv, 3), 'inventario_docs' => (array) ($mov[$c]['idocs'] ?? []),
             'final' => round($fim, 3), 'esperado' => round($esperado, 3), 'depois_do_corte' => $depois, 'posterior' => round($pos, 3), 'contado' => $contado, 'diferenca' => $dif,
             'preco' => round($preco, 2), 'valor' => $dif === null ? null : round($dif * $preco, 2), 'alertas' => $alertas,
         ];
@@ -991,6 +1124,7 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
             'coordenado_por' => $reg['coordenado_por'] ?? null, 'coordenado_em' => $reg['coordenado_em'] ?? null,
             'aprovado_por' => $reg['aprovado_por'] ?? null, 'aprovado_em' => $reg['aprovado_em'] ?? null,
             'motivos' => (object) ($reg['motivos'] ?? []), 'historico' => array_slice((array) $reg['historico'], -20), 'revisao_pinguim' => $reg['revisao_pinguim'] ?? null,
+            'prova' => naval_carr_prova_rota($data, $rota),
             'requisicao' => naval_req_da_conciliacao_numero($data, $rota),
             'corte' => isset($base['corte']) ? ['hora' => $base['corte']['hora'], 'origem' => $base['corte']['origem'],
                 'vendido_depois' => (float) ($base['corte']['vendido_depois'] ?? 0)] : null,
@@ -1100,6 +1234,7 @@ function naval_carr_aprovar(string $data, string $rota, array $motivos, array $e
         if ($reg['estado'] === 'por_validar') throw new NavalErro('A contagem ainda não foi validada por quem a fez.', 409);
         if ($reg['estado'] !== 'por_aprovar') throw new NavalErro('Esta conciliação já foi aprovada pelo coordenador.', 409);
         naval_carr_segregar($reg, (string) $eu['login'], ['contado_por']);
+        naval_carr_exigir_prova($data, $rota);
         $linhas = naval_carr_linhas(naval_carr_base($data, $rota, (array) $reg['base'], $reg), $reg['contagem'], (array) ($reg['precos'] ?? []));
         $m = [];
         $faltam = [];
@@ -1140,6 +1275,7 @@ function naval_carr_fechar(string $data, string $rota, array $eu): array
         if ($reg['estado'] === 'aprovada') throw new NavalErro('Esta conciliação já foi aprovada.', 409);
         if ($reg['estado'] !== 'por_fechar' || !is_array($reg['base'] ?? null)) throw new NavalErro('Falta a aprovação do coordenador.', 409);
         naval_carr_segregar($reg, (string) $eu['login'], ['contado_por', 'coordenado_por']);
+        naval_carr_exigir_prova($data, $rota);
         $linhas = naval_carr_linhas(naval_carr_base($data, $rota, (array) $reg['base'], $reg), $reg['contagem'], (array) ($reg['precos'] ?? []));
         $m = (array) ($reg['motivos'] ?? []);
         $reg['estado'] = 'aprovada';

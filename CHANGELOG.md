@@ -9,6 +9,9 @@
 - Quando um documento é anulado ou corrigido no Pinguim BO depois de a base da conciliação ter sido congelada, a conciliação é revista sozinha (de hora a hora os últimos 3 dias, de madrugada os últimos 45): se estiver aberta, a base é actualizada, a contagem fica e volta a pedir a validação; se já estiver aprovada, não se altera e fica assinalada para revisão.
 - Nova ferramenta para rever os dias passados (php ferramentas/carrinha-rever-pinguim.php, em ensaio; --aplicar para aplicar).
 
+- Os inventários lançados no Pinguim BO nas carrinhas entram na conciliação, numa coluna própria «Inventário» (contado − teórico, com o número do inventário), no dia em que passam a contar no stock do Pinguim BO (o dia seguinte ao do inventário).
+- Prova diária: todas as noites, por carrinha e artigo, inicial + carregado − devolvido − vendido ± inventário tem de dar o stock final do Pinguim BO. O que não bate abre um problema na Vigia, avisa por e-mail e bloqueia a aprovação dessa conciliação até ser explicado (CARRINHA_PROVA_BLOQUEIA=0 desliga o bloqueio).
+- A ferramenta php ferramentas/carrinha-rever-pinguim.php faz a prova de todos os dias desde 01-01-2026 antes de rever as conciliações.
 ### Cargas (PO): o documento mostra o pedido e o carregado
 
 <!-- tipo: melhoria -->
