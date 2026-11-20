@@ -4890,4 +4890,14 @@ export const EN = {
   'à espera do Back-Office': 'waiting for the back office',
   'validada: guia pedida ao Pinguim BO': 'validated: note requested from Pinguim BO',
   'guia gerada no Pinguim BO': 'note created in Pinguim BO',
+  Validada: 'Approved',
+  'por validar (Back-Office)': 'awaiting approval (Back-Office)',
+  'Guia no Pinguim BO': 'Pinguim BO delivery note',
+  'por gerar': 'not yet created',
+  'Diferença {d}': 'Difference {d}',
+  Carregado: 'Loaded',
+  'PDF: pedido e carregado': 'PDF: ordered and loaded',
+  PDF: 'PDF',
+  'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
+    'Sold: quantity sold on the day. Requested: what the sales rep asked for. Loaded: what the Warehouse Keeper confirmed at the dock; each difference shows its reason below the item.',
 };

@@ -1,5 +1,12 @@
 ## 20-11-2026
 
+### Cargas (PO): o documento mostra o pedido e o carregado
+
+<!-- tipo: melhoria -->
+
+- Depois da conferência no cais, o PDF da PO mostra lado a lado o que foi requisitado e o que foi carregado, com a diferença e o motivo de cada linha, os totais, quem conferiu, quem validou e o número da guia no Pinguim BO.
+- Logística › Cargas (PO): botão «PDF» em cada carga por validar e «PDF: pedido e carregado» ao rever a carga.
+
 ### Equipamentos: base de dados do módulo em dois passos
 
 <!-- tipo: melhoria -->

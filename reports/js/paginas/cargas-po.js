@@ -11,6 +11,7 @@ import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { campoMotivo, MOTIVOS_CARGA } from '../componentes/motivos-carga.js';
+import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
 import { n0 } from '../formatos.js';
 import { t, tv } from '../i18n/i18n.js';
 import { atual, podeGerir, podeVer, SESSAO } from '../perfil.js';
@@ -302,6 +303,9 @@ function validar(numeros, fechar, erro) {
       },
     );
 }
+/** PDF da PO com o que foi pedido e o que foi carregado (diferenças e motivos, quem conferiu e validou, guia). */
+const pdfCarga = (r) => requisicaoPdf(r, true).catch(() => toast(t('Não foi possível gerar o PDF.'), 5000));
+
 function rever(r) {
   janela(t('Rever a carga {n}', { n: r.numero }), t('rota {r}', { r: r.rota }) + ' · ' + (r.promotor || ''), (b, ft, fechar) => {
     const tab = el('table', 'cc-tab');
@@ -316,7 +320,10 @@ function rever(r) {
     });
     const erro = msgErro();
     b.append(el('p', 'note', t('Conferida por {p} em {d}.', { p: r.confirmado_por || '—', d: quando(r.confirmado_em) })), tab, erro);
-    ft.append(botao(t('Cancelar'), 'ghost', fechar));
+    ft.append(
+      botao(t('Cancelar'), 'ghost', fechar),
+      botao(t('PDF: pedido e carregado'), 'ghost', () => pdfCarga(r)),
+    );
     if (V.gere) ft.append(botao(t('Validar e pedir a guia'), null, () => validar([r.numero], fechar, erro)));
   });
 }
@@ -349,7 +356,10 @@ function vistaValidar() {
           validar([r.numero]);
         }),
       );
-    acc.append(botao(t('Rever'), 'ghost sm', () => rever(r)));
+    acc.append(
+      botao(t('Rever'), 'ghost sm', () => rever(r)),
+      botao(t('PDF'), 'ghost sm', () => pdfCarga(r)),
+    );
     tr.append(
       el('td', null, r.numero),
       el('td', null, r.rota + (r.promotor ? ' · ' + r.promotor : '')),

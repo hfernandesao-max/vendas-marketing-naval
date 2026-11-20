@@ -4806,4 +4806,14 @@ export const TI = {
   'à espera do Back-Office': 'ንቤት-ጽሕፈት ይጽበ',
   'validada: guia pedida ao Pinguim BO': 'ጸዲቑ፡ ሰነድ ካብ Pinguim BO ተሓቲቱ',
   'guia gerada no Pinguim BO': 'ሰነድ ኣብ Pinguim BO ተፈጢሩ',
+  Validada: 'ጸዲቑ',
+  'por validar (Back-Office)': 'ምጽዳቕ ይጽበ (ቤት-ጽሕፈት)',
+  'Guia no Pinguim BO': 'ሰነድ ኣብ Pinguim BO',
+  'por gerar': 'ገና ኣይተፈጠረን',
+  'Diferença {d}': 'ፍልልይ {d}',
+  Carregado: 'ዝተጻዕነ',
+  'PDF: pedido e carregado': 'PDF: ዝተሓተተን ዝተጻዕነን',
+  PDF: 'PDF',
+  'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
+    'ዝተሸጠ: ኣብቲ መዓልቲ ዝተሸጠ ብዝሒ። ዝተሓተተ: እቲ ሸያጢ ዝሓተቶ። ዝተጻዕነ: ሓላዊ መኽዘን ኣብ መጽዓኒ ዘረጋገጾ፤ ነፍሲ ወከፍ ፍልልይ ምኽንያቱ ኣብ ትሕቲ እቲ ኣቕሓ ኣለዎ።',
 };

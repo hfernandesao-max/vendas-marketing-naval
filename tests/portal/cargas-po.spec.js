@@ -114,3 +114,33 @@ test('cargas (PO): o Back-Office valida e trata a ordem da guia no Pinguim BO', 
   expect(pedidos[1]).toMatchObject({ accao: 'executada_manual', id: 'GUIA-PO-2026-000412', documento: 'GTC 2026/0042' });
   expect(erros).toEqual([]);
 });
+
+test('cargas (PO): o documento da carga conferida mostra o pedido, o carregado, a diferença e o motivo', async ({ page }) => {
+  const carga = {
+    ...po('carregada'),
+    diferencas: 1,
+    linhas: [
+      { codigo: '10000332', artigo: 'FRALDAS NAVAL MEDIUM', quantidade: 400, entregue: 400, visto: true },
+      { codigo: '10000292', artigo: 'SABAO VERDE', quantidade: 30, entregue: 28, visto: true, motivo: { codigo: 'falta_armazem', texto: '' } },
+    ],
+  };
+  await page.route('**/v1/ordens-pinguim**', (r) => r.fulfill({ json: { ok: true, gere: true, modo: 'manual', por_validar: [carga], ordens: [] } }));
+  await page.route('**/v1/requisicoes**', (r) => r.fulfill({ json: { ok: true, gere: true, requisicao: null, motivos: {} } }));
+  // PDF: sem separador novo (bloqueado), descarrega; o texto lê-se do ficheiro (jsPDF sem compressão)
+  await page.addInitScript(() => (window.open = () => null));
+  const erros = await abrir(page, '#cargas-po');
+  await page.getByRole('tab', { name: 'Validar' }).click();
+  const linha = page.locator('tr', { hasText: 'PO-2026-000412' });
+  const [d] = await Promise.all([page.waitForEvent('download'), linha.getByRole('button', { name: 'PDF', exact: true }).click()]);
+  const fs = await import('node:fs');
+  const texto = fs.readFileSync(await d.path(), 'latin1');
+  expect(texto).toContain('Carregado');
+  expect(texto).toContain('Conferida no cais');
+  expect(texto).toContain('por validar'); // parênteses escapados no PDF
+  expect(texto).toContain('Diferen');
+  expect(texto).toContain('-2');
+  expect(texto).toContain('Falta no armaz');
+  expect(texto).toContain('428'); // total carregado (400 + 28), ao lado do total pedido (430)
+  expect(texto).toContain('430');
+  expect(erros).toEqual([]);
+});
