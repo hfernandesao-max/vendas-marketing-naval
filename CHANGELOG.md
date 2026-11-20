@@ -4,8 +4,8 @@
 
 <!-- tipo: melhoria -->
 
-- Novo script para a Informática criar a base de dados própria do módulo Equipamentos e a conta do portal, só com acesso a essa base de dados (ferramentas/sql/equipamentos-criar-bd.sql).
-- Nova ferramenta no servidor (php ferramentas/configurar-equipamentos.php): liga o portal a essa base de dados, cria as tabelas se ainda não existirem, grava a configuração e verifica o módulo e o cruzamento com o MDM. Recusa a base de dados do Pinguim BO.
+- Novo script para a Informática criar a base de dados própria do módulo Equipamentos no SQL Server do OLAP e a conta do portal, só com acesso a essa base de dados (ferramentas/sql/equipamentos-criar-bd.sql).
+- Nova ferramenta no servidor (php ferramentas/configurar-equipamentos.php): liga o portal a essa base de dados, cria as tabelas se ainda não existirem, grava a configuração e verifica o módulo e o cruzamento com o MDM. Recusa as bases de dados do Pinguim BO e do OLAP.
 
 ### Mapas mais rápidos, zoom só no mapa e local exacto das vendas
 

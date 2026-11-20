@@ -6,7 +6,8 @@
  *
  * Antes: a Informática cria a base de dados e a conta com ferramentas/sql/equipamentos-criar-bd.sql (sysadmin).
  * Esta ferramenta:
- *  1. pede o servidor (por omissão o do Pinguim BO, DB_HOST), a base de dados, a conta e a palavra-passe;
+ *  1. pede o servidor (por omissão o do OLAP, OLAP_HOST, onde fica a base de dados própria do módulo; sem OLAP, o do
+ *     Pinguim BO), a base de dados, a conta e a palavra-passe;
  *  2. liga-se e, se as tabelas ATV_* ainda não existirem, cria-as (ferramentas/sql/equipamentos-sqlserver.sql);
  *  3. grava ATV_DB_* no .env (com cópia de segurança do .env anterior) e corre ferramentas/verificar-equipamentos.php
  *     e ferramentas/verificar-mdm.php (cruzamento dos equipamentos do MDM com o portal).
@@ -39,7 +40,13 @@ function equip_lotes(string $sql): array
 }
 
 echo "Equipamentos: ligar o portal à base de dados do módulo\n\n";
-$host = equip_pergunta('Servidor SQL Server (nome ou IP; vazio = o do Pinguim BO)', 'CONF_ATV_DB_HOST', naval_config('ATV_DB_HOST', naval_config('DB_HOST')));
+$olap = naval_config('OLAP_HOST');
+$host = equip_pergunta('Servidor SQL Server (nome ou IP; Enter = ' . ($olap !== '' ? 'o do OLAP' : 'o do Pinguim BO') . ')', 'CONF_ATV_DB_HOST',
+    naval_config('ATV_DB_HOST', $olap !== '' ? $olap : naval_config('DB_HOST')));
+// as definições que faltam herdam-se de DB_* (Pinguim BO); no servidor do OLAP valem as do OLAP (porta, certificado)
+$doOlap = $olap !== '' && strcasecmp($host, $olap) === 0;
+$herdadas = [];
+if ($doOlap) foreach (['PORT', 'DRIVER', 'ENCRYPT', 'NOME_CERTIFICADO'] as $k) if (naval_config('OLAP_' . $k) !== '') $herdadas[$k] = naval_config('OLAP_' . $k);
 $nome = equip_pergunta('Base de dados', 'CONF_ATV_DB_NAME', naval_config('ATV_DB_NAME', 'GN_EQUIPAMENTOS'));
 $user = equip_pergunta('Conta', 'CONF_ATV_DB_USER', naval_config('ATV_DB_USER', 'portal_equipamentos'));
 $pass = equip_pergunta('Palavra-passe da conta', 'CONF_ATV_DB_PASS', '');
@@ -52,13 +59,15 @@ if (!preg_match('/^[A-Za-z0-9_]{1,128}$/', $nome)) {
     fwrite(STDERR, "Nome da base de dados inválido (só letras, números e _).\n");
     exit(1);
 }
-if (strcasecmp($nome, naval_config('DB_NAME')) === 0 && strcasecmp($host, naval_config('DB_HOST')) === 0) {
-    fwrite(STDERR, "Essa é a base de dados do Pinguim BO: o portal só a lê. Crie uma base de dados própria (ferramentas/sql/equipamentos-criar-bd.sql).\n");
+if ((strcasecmp($nome, naval_config('DB_NAME')) === 0 && strcasecmp($host, naval_config('DB_HOST')) === 0)
+    || ($doOlap && strcasecmp($nome, naval_config('OLAP_NAME')) === 0)) {
+    fwrite(STDERR, "Essa é a base de dados do Pinguim BO ou do OLAP: o portal só as lê. Crie uma base de dados própria no mesmo servidor (ferramentas/sql/equipamentos-criar-bd.sql).
+");
     exit(1);
 }
 
 try {
-    $pdo = naval_bd_criar('ATV_DB', true, ['HOST' => $host, 'NAME' => $nome, 'USER' => $user, 'PASS' => $pass]);
+    $pdo = naval_bd_criar('ATV_DB', true, array_merge($herdadas, ['HOST' => $host, 'NAME' => $nome, 'USER' => $user, 'PASS' => $pass]));
     echo "  ok     ligação a $nome em $host\n";
 } catch (Throwable $e) {
     fwrite(STDERR, '  FALHA  ligação: ' . $e->getMessage() . "\n");
@@ -83,6 +92,7 @@ if ($existe) {
 }
 
 $grava = ['ATV_DB_NAME' => $nome, 'ATV_DB_USER' => $user, 'ATV_DB_PASS' => $pass];
+foreach ($herdadas as $k => $v) if (naval_config('ATV_DB_' . $k) === '') $grava['ATV_DB_' . $k] = $v;
 if ($host !== naval_config('DB_HOST')) $grava['ATV_DB_HOST'] = $host;
 try {
     $copia = naval_env_gravar($grava, 'equipamentos');

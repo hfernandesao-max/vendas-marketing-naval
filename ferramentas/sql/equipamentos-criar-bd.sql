@@ -2,9 +2,10 @@
 -- SQL Server 2016+ | Executar UMA vez, como administrador do SQL Server (sysadmin), no SSMS em «Modo SQLCMD»
 -- (menu Consulta › Modo SQLCMD) ou na linha de comandos:
 --     sqlcmd -S <servidor> -E -I -f 65001 -v SENHA="<palavra-passe forte>" -i equipamentos-criar-bd.sql
--- Passo 2: na base de dados criada, executar equipamentos-sqlserver.sql (as tabelas ATV_*).
+-- Passo 2: no servidor do portal, php ferramentas/configurar-equipamentos.php (cria as tabelas ATV_* e liga o portal).
 --
--- Base de dados SEPARADA da do Pinguim BO (o portal só lê o Pinguim BO; nunca escreve lá). A conta do portal só tem
+-- Recomendado: no SQL Server do OLAP (10.30.10.14), ao lado da base de dados do OLAP. Base de dados SEPARADA da do
+-- Pinguim BO e da do OLAP (o portal só lê essas duas; nunca escreve lá). A conta do portal só tem
 -- acesso a esta base de dados: ler, escrever e executar (db_datareader, db_datawriter, EXECUTE) e alterar o esquema
 -- nas actualizações (db_ddladmin; as migrações de ferramentas/sql/migracoes). Sem sysadmin nem acesso a outras bases.
 -- Palavra-passe: pelo menos 16 caracteres, gerada e guardada no cofre da Informática; vai para o .env do servidor do
