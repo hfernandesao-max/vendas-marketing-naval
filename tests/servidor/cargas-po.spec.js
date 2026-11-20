@@ -61,7 +61,7 @@ test('PO: emitida pelo promotor, conferida no cais com motivo, validada pelo Bac
   ]);
 });
 
-test('robô: só com a chave; executa a ordem nos ecrãs do Pinguim BO e devolve o número do documento', async () => {
+test('robô: só com a chave; executa a ordem nos ecrãs do Pinguim BO e devolve o número do documento @navegador', async () => {
   const anon = await request.newContext({ baseURL: BASE });
   expect((await anon.get(API + 'robo/ordens')).status()).toBe(401);
   expect((await anon.get(API + 'robo/ordens', { headers: { Authorization: 'Bearer errada' } })).status()).toBe(401);
