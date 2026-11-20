@@ -214,7 +214,9 @@ function naval_olap_terreno(array $pontos, array $clientes, array $territorios, 
             $c = $pos[$v['cli']] ?? null;
             $d = $c ? naval_olap_dist($v['lat'], $v['lng'], (float) $c['lat'], (float) $c['lng']) : null;
             $visitas[] = ['t' => $v['t'], 'doc' => $v['doc'], 'cli' => $v['cli'], 'n' => $c['n'] ?? $v['cli'], 'lat' => $v['lat'], 'lng' => $v['lng'], 'valor' => $v['v'] ?? null,
-                'dist' => $d === null ? null : (int) round($d), 'prova' => $d === null ? 'sem_coordenadas' : ($d <= $raio ? 'ok' : 'longe')];
+                'dist' => $d === null ? null : (int) round($d), 'prova' => $d === null ? 'sem_coordenadas' : ($d <= $raio ? 'ok' : 'longe'),
+                // precisão do GPS da venda (metros) e o ponto registado do cliente: o mapa mostra o local exacto e a distância
+                'p' => $v['p'] ?? null, 'clat' => $c ? (float) $c['lat'] : null, 'clng' => $c ? (float) $c['lng'] : null];
             if ($v['cli'] !== '') $vendasCli[$v['cli']][] = $v;
         }
         $par = naval_olap_paragens($pts);

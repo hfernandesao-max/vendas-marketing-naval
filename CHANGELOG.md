@@ -1,5 +1,15 @@
 ## 20-11-2026
 
+### Mapas mais rápidos, zoom só no mapa e local exacto das vendas
+
+<!-- tipo: melhoria -->
+
+- Nos mapas, a roda do rato e os dedos aproximam e afastam só o mapa, nunca a página inteira.
+- Os clientes e os potenciais clientes desenham-se todos numa só camada, em vez de um marcador por ponto: milhares de pontos sem o mapa abrandar, também ao arrastar e aproximar. O Google Maps carrega mais cedo.
+- Percurso do dia: tocar numa venda (no mapa ou na lista) aproxima até ao local exacto onde foi registada, com a vista de satélite disponível, a precisão do GPS, as coordenadas, a linha até ao ponto registado do cliente e a ligação ao Google Maps.
+- Conformidade: o aviso do certificado das bases de dados diz porque falhou a validação e o que fazer. Nova ferramenta para a Informática (php ferramentas/configurar-conformidade.php) que gera a chave das cópias, confirma as pastas externas e guarda o nome do certificado do SQL Server quando a ligação é pelo IP.
+- MDM Plus: o conector também lê a localização dos telemóveis (só leitura), confirmada na verificação da ligação.
+
 ### Cargas (PO): conferência no cais, validação do Back-Office e Guia de Remessa ordenada ao Pinguim BO
 
 <!-- tipo: funcionalidade -->

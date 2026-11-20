@@ -25,6 +25,7 @@ $titulo = $modo === 'zonas' ? 'Geofences das rotas' : 'Distribuidores e as suas 
   <script src="<?= $v('vendor/lucide-1.62.0.min.js') ?>"></script>
   <script src="<?= $v('geo-dados.js') ?>"></script>
   <script src="<?= $v('geo-cores.js') ?>"></script>
+  <script src="<?= $v('pontos-canvas.js') ?>"></script>
   <script src="<?= $v('zonas.js') ?>" defer></script>
   <?= naval_google_maps_script() ?>
 </head>

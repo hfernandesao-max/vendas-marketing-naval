@@ -76,6 +76,7 @@
   let V = null;
   let token = null;
   let mapa = null;
+  let pontos = null; // camada rápida de pontos (geo/pontos-canvas.js)
   let camadas = [];
   let info = null;
   let vista = 'potenciais'; // potenciais | esquecidos | coordenadas | funil | radar
@@ -433,6 +434,7 @@
   function limparMapa() {
     camadas.forEach((x) => x.setMap(null));
     camadas = [];
+    if (pontos) pontos.limpar();
   }
   function desenharMapa() {
     if (!mapa) return;
@@ -449,6 +451,7 @@
           strokeOpacity: 0.9,
           fillColor: cor(x.rota),
           fillOpacity: r ? 0.16 : 0.1,
+          clickable: false,
           map: mapa,
         });
         // código da rota no centro da geofence: cada área identifica-se sem legenda em cima do mapa
@@ -463,9 +466,6 @@
             label: { text: x.rota, color: cor(x.rota), fontSize: '13px', fontWeight: '800', className: 'pp-rotulo' },
           }),
         );
-        pol.addListener('click', (e) =>
-          abrir(e.latLng, `<b>Rota ${x.rota}</b> · ${x.promotor}<br>${x.clientes} clientes · ${x.potenciais} potenciais · ocupação ${pct(x.ocupacao)}`),
-        );
         camadas.push(pol);
         x.territorio.forEach(([lat, lng]) => limites.extend({ lat, lng }));
       }
@@ -478,87 +478,78 @@
             strokeWeight: 2,
             strokeOpacity: 0.9,
             fillOpacity: 0,
+            clickable: false,
             map: mapa,
           }),
         );
       });
     });
+    // todos os pontos numa só camada (milhares sem abrandar o mapa); cada um com a sua janela de informação
+    const pts = [];
+    const esc = (t) => String(t == null ? '' : t).replace(/</g, '&lt;');
+    const junta = (p) => {
+      pts.push(p);
+      if (p.ajusta) limites.extend({ lat: p.lat, lng: p.lng });
+    };
     V.clientes.forEach((c) => {
       if (r !== '' && r !== '_sem' && c.r !== r) return;
-      camadas.push(
-        new google.maps.Marker({
-          position: { lat: c.lat, lng: c.lng },
-          map: mapa,
-          title: c.n,
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 4, fillColor: cor(c.r), fillOpacity: 0.95, strokeColor: '#ffffff', strokeWeight: 1 },
-        }),
-      );
+      junta({ lat: c.lat, lng: c.lng, r: 4, cor: cor(c.r), z: 1, info: `<b>${esc(c.n || c.c)}</b><br>Cliente · rota ${esc(c.r || '—')}`, titulo: c.n });
     });
     if (vista === 'esquecidos')
       ((V.carteira || {}).esquecidos || [])
         .filter((x) => daRota(x) && x.lat != null)
         .forEach((x) => {
-          const [txt, cor] = FAIXAS[x.faixa];
-          const m = new google.maps.Marker({
-            position: { lat: x.lat, lng: x.lng },
-            map: mapa,
-            title: x.n,
-            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: cor, fillOpacity: 0.95, strokeColor: '#1c2340', strokeWeight: 1 },
-          });
-          m.addListener('click', () =>
-            abrir(m.getPosition(), `<b>${String(x.n || x.c).replace(/</g, '&lt;')}</b><br>Sem compras: ${txt} (${x.dias} dias) · ${kz(x.media)} por compra`),
-          );
-          camadas.push(m);
-          limites.extend({ lat: x.lat, lng: x.lng });
+          const [txt, c] = FAIXAS[x.faixa];
+          junta({ lat: x.lat, lng: x.lng, r: 7, cor: c, borda: '#1c2340', z: 3, ajusta: true, titulo: x.n, info: `<b>${esc(x.n || x.c)}</b><br>Sem compras: ${txt} (${x.dias} dias) · ${kz(x.media)} por compra` });
         });
     if (vista === 'coordenadas')
       ((V.carteira || {}).duplicados || []).filter(daRota).forEach((g) => {
-        const m = new google.maps.Marker({
-          position: { lat: g.lat, lng: g.lng },
-          map: mapa,
-          title: g.clientes.length + ' clientes no mesmo ponto',
-          zIndex: 30,
-          label: { text: String(g.clientes.length), color: '#ffffff', fontSize: '10px', fontWeight: '700' },
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#c0262d', fillOpacity: 0.85, strokeColor: '#ffffff', strokeWeight: 1.5 },
+        junta({
+          lat: g.lat,
+          lng: g.lng,
+          r: 7,
+          cor: '#c0262d',
+          bordaL: 1.5,
+          rotulo: String(g.clientes.length),
+          z: 4,
+          ajusta: true,
+          titulo: g.clientes.length + ' clientes no mesmo ponto',
+          info: '<b>Clientes no mesmo ponto</b><br>' + g.clientes.map((x) => esc(x.n) + ' (' + esc(x.c) + ')').join('<br>'),
         });
-        m.addListener('click', () =>
-          abrir(
-            m.getPosition(),
-            '<b>Clientes no mesmo ponto</b><br>' + g.clientes.map((x) => String(x.n).replace(/</g, '&lt;') + ' (' + x.c + ')').join('<br>'),
-          ),
-        );
-        camadas.push(m);
-        limites.extend({ lat: g.lat, lng: g.lng });
       });
     if (vista === 'radar' && R)
       R.rotas.filter((x) => daRota({ r: x.rota })).forEach((x) =>
         x.sugestoes.forEach((s) => {
           if (s.lat == null) return;
-          const m = new google.maps.Marker({
-            position: { lat: s.lat, lng: s.lng },
-            map: mapa,
-            title: s.n,
-            label: { text: s.tipo === 'recuperar' ? 'R' : 'C', color: '#fff', fontSize: '11px', fontWeight: '700' },
-            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: s.tipo === 'recuperar' ? '#e0661c' : '#f5b547', fillOpacity: 1, strokeColor: '#1c2340', strokeWeight: 1 },
+          junta({
+            lat: s.lat,
+            lng: s.lng,
+            r: 9,
+            cor: s.tipo === 'recuperar' ? '#e0661c' : '#f5b547',
+            borda: '#1c2340',
+            rotulo: s.tipo === 'recuperar' ? 'R' : 'C',
+            z: 5,
+            ajusta: true,
+            titulo: s.n,
+            info: `<b>${esc(s.n)}</b><br>Rota ${x.rota} · ${esc(s.motivo)}`,
           });
-          m.addListener('click', () => abrir(m.getPosition(), `<b>${String(s.n).replace(/</g, '&lt;')}</b><br>Rota ${x.rota} · ${String(s.motivo).replace(/</g, '&lt;')}`));
-          camadas.push(m);
-          limites.extend({ lat: s.lat, lng: s.lng });
         }),
       );
     (vista === 'potenciais' ? filtrados() : []).forEach((p) => {
-      const m = new google.maps.Marker({
-        position: { lat: p.lat, lng: p.lng },
-        map: mapa,
-        title: p.n || 'Estabelecimento sem nome',
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 4 + p.s / 20, fillColor: '#f5b547', fillOpacity: 0.95, strokeColor: '#7a4a00', strokeWeight: 1 },
+      junta({
+        lat: p.lat,
+        lng: p.lng,
+        r: 4 + p.s / 20,
+        cor: '#f5b547',
+        borda: '#7a4a00',
+        z: 2 + p.s / 100,
+        ajusta: true,
+        titulo: p.n || 'Estabelecimento sem nome',
+        info: `<b>${esc(p.n || 'Estabelecimento sem nome')}</b><br>${esc(TIPOS[p.t] || p.t || '')} · prioridade ${p.s}<br><a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}" target="_blank" rel="noopener noreferrer">Ir</a>`,
       });
-      m.addListener('click', () =>
-        abrir(m.getPosition(), `<b>${(p.n || 'Estabelecimento sem nome').replace(/</g, '&lt;')}</b><br>${TIPOS[p.t] || p.t || ''} · prioridade ${p.s}`),
-      );
-      camadas.push(m);
-      limites.extend({ lat: p.lat, lng: p.lng });
     });
+    if (!pontos) pontos = window.NavalPontos.criar(mapa, { aoClicar: (p, pos) => abrir(pos, p.info), titulo: (p) => p.titulo || '' });
+    pontos.definir(pts);
     if (r === '' || r === '_sem')
       V.zonas_sem_rota.forEach((z) => {
         const c = new google.maps.Circle({
@@ -568,9 +559,9 @@
           strokeWeight: 2,
           fillColor: '#c0262d',
           fillOpacity: 0.12,
+          clickable: false,
           map: mapa,
         });
-        c.addListener('click', () => abrir(c.getCenter(), `<b>Zona sem rota</b><br>${z.potenciais} potenciais clientes: candidata a uma rota nova`));
         camadas.push(c);
       });
     if (!limites.isEmpty()) mapa.fitBounds(limites);
@@ -654,6 +645,7 @@
       mapTypeControl: false,
       streetViewControl: false,
       clickableIcons: false,
+      gestureHandling: 'greedy',
     });
     if (V) desenharMapa();
   };

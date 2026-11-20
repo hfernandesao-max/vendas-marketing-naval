@@ -228,6 +228,7 @@
 
   window.initMap = function () {
     mapa = new google.maps.Map($('map'), {
+      gestureHandling: 'greedy', // a roda e os dedos aproximam o mapa, nunca a página
       center: { lat: -8.84, lng: 13.29 },
       zoom: 11,
       mapTypeControl: false,

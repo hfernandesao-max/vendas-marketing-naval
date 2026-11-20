@@ -77,7 +77,7 @@ test('estado do Pinguim BO: endereço interno só para SADM/TI', async () => {
 test('GEO: chave do Google Maps vem do .env (escapada) e as bibliotecas são locais', async () => {
   const { ctx } = await entrar('sadm');
   const html = await (await ctx.get('/geo/geo.php')).text();
-  expect(html).toContain('https://maps.googleapis.com/maps/api/js?key=chave-de-teste&amp;v=3.64&amp;callback=initMap');
+  expect(html).toContain('https://maps.googleapis.com/maps/api/js?key=chave-de-teste&amp;v=3.64&amp;loading=async&amp;callback=initMap');
   expect(html).not.toMatch(/AIza[0-9A-Za-z_-]{20,}/);
   expect(html).toContain('vendor/lucide-1.62.0.min.js');
   expect(html).not.toContain('unpkg.com');

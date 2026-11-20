@@ -161,3 +161,14 @@ teste('chaves do .env por servidor: DB_*_PINWINBO e DB_*_OLAP como nomes alterna
     igual(null, naval_config_nome_alternativo('OLAP_VISTA'));
     igual(null, naval_config_nome_alternativo('JWT_SEGREDO'));
 });
+
+teste('certificado do SQL Server: nome do certificado ao ligar pelo IP e causa da falha da validação', function () {
+    $c = ['host' => '10.30.10.11', 'port' => '1433', 'nome' => 'PingWinBO', 'timeout' => 5, 'app' => 'PortalRTM', 'cert' => 'sql01.naval.local'];
+    verdade(strpos(naval_bd_dsn($c, 'ODBC Driver 18 for SQL Server', true, true), 'HostNameInCertificate=sql01.naval.local;') !== false, 'ODBC 18');
+    verdade(strpos(naval_bd_dsn($c, 'sqlsrv', true, true), ';HostNameInCertificate=sql01.naval.local') !== false, 'pdo_sqlsrv');
+    verdade(strpos(naval_bd_dsn($c, 'ODBC Driver 18 for SQL Server', true, false), 'HostNameInCertificate') === false, 'sem validar não se usa');
+    verdade(strpos(naval_bd_dsn(['cert' => ''] + $c, 'ODBC Driver 18 for SQL Server', true, true), 'HostNameInCertificate') === false, 'sem nome, como antes');
+    verdade(strpos(naval_bd_causa_certificado('[Microsoft][ODBC Driver 18 for SQL Server]SSL Provider: The certificate chain was issued by an authority that is not trusted.'), 'certlm.msc') !== false);
+    verdade(strpos(naval_bd_causa_certificado('SSL Provider: The target principal name is incorrect.'), '_NOME_CERTIFICADO') !== false);
+    verdade(strpos(naval_bd_causa_certificado(''), 'configurar-conformidade') !== false);
+});

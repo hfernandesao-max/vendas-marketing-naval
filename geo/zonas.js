@@ -21,6 +21,7 @@
   let mapa = null;
   let info = null;
   let camadas = [];
+  let camadaPontos = null; // camada rápida dos clientes (geo/pontos-canvas.js)
   let D = null; // resposta de v1/geo-clientes
   let grupos = []; // [{chave, nome, cor, clientes, poligono, fora, ...}]
   let escolhido = ''; // chave do grupo seleccionado na legenda ('' = todos)
@@ -243,12 +244,14 @@
   function limpar() {
     camadas.forEach((x) => x.setMap(null));
     camadas = [];
+    if (camadaPontos) camadaPontos.limpar();
   }
   function desenharMapa() {
     if (!mapa || !D) return;
     limpar();
     const lim = new google.maps.LatLngBounds();
     const vis = grupos.filter((g) => escolhido === '' || g.chave === escolhido);
+    const pts = [];
     vis.forEach((g) => {
       if (g.poligono.length >= 3) {
         const pol = new google.maps.Polygon({
@@ -258,12 +261,9 @@
           strokeOpacity: 0.9,
           fillColor: g.cor,
           fillOpacity: escolhido ? 0.18 : 0.1,
-          clickable: true,
+          clickable: false,
           map: mapa,
         });
-        pol.addListener('click', (e) =>
-          abrir(e.latLng, `<b>${esc(g.nome)}</b><br>${num(g.clientes.length)} clientes` + (MODO === 'zonas' && g.fora ? ` · ${g.fora} fora da geofence` : '')),
-        );
         camadas.push(pol);
         // rótulo da rota no centro da geofence (só com todas: identifica cada área sem legenda em cima do mapa)
         const c = centro(g.poligono);
@@ -295,32 +295,24 @@
         lim.extend(b);
       }
       g.clientes.forEach((c) => {
-        const m = new google.maps.Marker({
-          position: { lat: c.lat, lng: c.lng },
-          map: mapa,
-          title: c.Nome,
-          zIndex: c.fora ? 20 : 10,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: c.fora ? 7 : 5.5,
-            fillColor: g.cor,
-            fillOpacity: 0.95,
-            strokeColor: c.fora ? NavalCores.AVISO : '#ffffff',
-            strokeWeight: c.fora ? 3 : 1.5,
-          },
-        });
-        m.addListener('click', () => {
-          detalhe(c, g);
-          abrir(
-            m.getPosition(),
-            `<b>${esc(c.Nome)}</b><br>${esc(c.Vendedor || 'Sem rota')}${c.Dia ? ' · ' + esc(c.Dia.toLowerCase()) : ''}` +
-              (c.fora ? '<br><span style="color:#c0262d">Fora da geofence da sua rota</span>' : ''),
-          );
-        });
-        camadas.push(m);
+        pts.push({ lat: c.lat, lng: c.lng, r: c.fora ? 7 : 5.5, cor: g.cor, borda: c.fora ? NavalCores.AVISO : '#ffffff', bordaL: c.fora ? 3 : 1.5, z: c.fora ? 2 : 1, c, g });
         lim.extend({ lat: c.lat, lng: c.lng });
       });
     });
+    if (!camadaPontos)
+      camadaPontos = window.NavalPontos.criar(mapa, {
+        titulo: (p) => p.c.Nome,
+        aoClicar: (p, pos) => {
+          const c = p.c;
+          detalhe(c, p.g);
+          abrir(
+            pos,
+            `<b>${esc(c.Nome)}</b><br>${esc(c.Vendedor || 'Sem rota')}${c.Dia ? ' · ' + esc(c.Dia.toLowerCase()) : ''}` +
+              (c.fora ? '<br><span style="color:#c0262d">Fora da geofence da sua rota</span>' : ''),
+          );
+        },
+      });
+    camadaPontos.definir(pts);
     if (!lim.isEmpty()) mapa.fitBounds(lim, 40);
   }
   function abrir(pos, html) {
@@ -429,6 +421,7 @@
       mapTypeControlOptions: { position: google.maps.ControlPosition.LEFT_BOTTOM },
       streetViewControl: false,
       clickableIcons: false,
+      gestureHandling: 'greedy',
     });
     if (D) desenharMapa();
   };

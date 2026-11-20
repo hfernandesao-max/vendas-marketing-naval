@@ -124,3 +124,16 @@ $GLOBALS['casos'][] = ['MDM: fim do servidor simulado', function () use ($mdmSrv
     foreach (['/privado/mdm/token.json', '/.env', '/atv.sqlite'] as $f) @unlink($mdmAmb . $f);
     verdade(true);
 }];
+
+teste('MDM: última localização do equipamento (tempos em milissegundos), sem coordenadas inválidas', function () {
+    $j = ['locations' => [
+        ['latitude' => '-8.8391', 'longitude' => '13.2894', 'located_time' => 1763622000000],
+        ['latitude' => '-8.8401234', 'longitude' => '13.2904567', 'located_time' => 1763625600000],
+        ['latitude' => 'x', 'longitude' => '13.2', 'located_time' => 1763629200000],
+    ]];
+    $l = naval_mdm_ultima_localizacao($j);
+    igual([-8.840123, 13.290457], [$l['lat'], $l['lng']], 'a mais recente válida');
+    igual(date('Y-m-d H:i:s', 1763625600), $l['em']);
+    igual(null, naval_mdm_ultima_localizacao(['locations' => []]));
+    lanca(0, function () { try { naval_mdm_localizacao('1; DROP'); } catch (InvalidArgumentException $e) { throw new NavalErro('id', 0); } });
+});

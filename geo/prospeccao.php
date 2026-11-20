@@ -13,6 +13,7 @@
   <title>GeoMobilidade Naval · Prospecção</title>
   <script src="vendor/lucide-1.62.0.min.js?v=<?= (int) @filemtime(__DIR__ . '/vendor/lucide-1.62.0.min.js') ?>"></script>
   <script src="geo-cores.js?v=<?= (int) @filemtime(__DIR__ . '/geo-cores.js') ?>"></script>
+  <script src="pontos-canvas.js?v=<?= (int) @filemtime(__DIR__ . '/pontos-canvas.js') ?>"></script>
   <script src="prospeccao.js?v=<?= (int) @filemtime(__DIR__ . '/prospeccao.js') ?>" defer></script>
   <?= naval_google_maps_script() ?>
 </head>

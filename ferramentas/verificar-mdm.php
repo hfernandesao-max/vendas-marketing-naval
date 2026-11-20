@@ -47,6 +47,15 @@ try {
     $linha(false, 'lista de equipamentos: ' . $e->getMessage());
     exit(1);
 }
+// localização (só se confirma que a API a devolve; as coordenadas não se mostram: são dados pessoais)
+if ($mdm) {
+    try {
+        $loc = naval_mdm_localizacao((string) ($mdm[0]['device_id'] ?? ''));
+        $linha(true, 'localização dos equipamentos pela API: ' . ($loc ? 'disponível (última em ' . ($loc['em'] ?? '?') . ')' : 'sem localização ainda (localização desligada no perfil do MDM?)'));
+    } catch (Throwable $e) {
+        $linha(false, 'localização dos equipamentos: ' . $e->getMessage() . ' (o Self Client precisa do scope MDMOnDemand.MDMInventory.READ)');
+    }
+}
 
 if (!naval_atv_configurada()) {
     echo "  aviso  a base de dados do módulo Equipamentos não está configurada: sem cruzamento com o portal\n";

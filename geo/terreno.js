@@ -98,7 +98,7 @@
           h,
           el('p', 'pp-nota', ['Rota ' + v.r, v.doc || '', v.valor != null ? kz(v.valor) : '', v.dist != null ? v.dist + ' m do registo do cliente' : ''].filter(Boolean).join(' · ')),
         );
-        c.addEventListener('click', () => mapa && mapa.panTo({ lat: v.lat, lng: v.lng }));
+        c.addEventListener('click', () => mapa && verVenda(v, { rota: v.r }));
         box.append(c);
       });
     } else if (vista === 'paragens') {
@@ -180,15 +180,8 @@
             strokeWeight: 1,
           },
         });
-        m.addListener('click', () =>
-          abrir(
-            m.getPosition(),
-            `<b>${esc(v.n)}</b><br>${v.t.slice(11, 16)} · ${esc('Rota ' + r.rota)}` +
-              (v.doc ? `<br>${esc(v.doc)}` : '') +
-              (v.valor != null ? ` · <b>${esc(kz(v.valor))}</b>` : '') +
-              `<br>${esc(PROVA[v.prova])}${v.dist != null ? ' · ' + v.dist + ' m do cliente' : ''}`,
-          ),
-        );
+        m.addListener('click', () => verVenda(v, r));
+        v._m = m;
         camadas.push(m);
       });
     });
@@ -297,11 +290,51 @@
     desenhar();
   }
 
+  // Local exacto de uma venda: aproxima (satélite), mostra a precisão do GPS e a linha até ao ponto registado do cliente
+  let exacto = [];
+  function verVenda(v, r) {
+    exacto.forEach((x) => x.setMap(null));
+    exacto = [];
+    const pos = { lat: v.lat, lng: v.lng };
+    if (v.p) exacto.push(new google.maps.Circle({ center: pos, radius: v.p, strokeColor: '#1a73c9', strokeWeight: 1, fillColor: '#1a73c9', fillOpacity: 0.15, clickable: false, map: mapa }));
+    if (v.clat != null) {
+      exacto.push(
+        new google.maps.Polyline({
+          path: [pos, { lat: v.clat, lng: v.clng }],
+          strokeOpacity: 0,
+          icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.9, strokeColor: v.prova === 'longe' ? '#c0262d' : '#1a73c9', scale: 3 }, offset: '0', repeat: '10px' }],
+          clickable: false,
+          map: mapa,
+        }),
+        new google.maps.Marker({
+          position: { lat: v.clat, lng: v.clng },
+          map: mapa,
+          title: 'Ponto registado do cliente',
+          icon: { path: 'M -5,-5 5,5 M -5,5 5,-5', strokeColor: '#1c2340', strokeWeight: 3, scale: 1 },
+        }),
+      );
+    }
+    if (mapa.getZoom() < 18) mapa.setZoom(19);
+    mapa.panTo(pos);
+    abrir(
+      pos,
+      `<b>${esc(v.n)}</b><br>${v.t.slice(11, 16)} · ${esc('Rota ' + r.rota)}` +
+        (v.doc ? `<br>${esc(v.doc)}` : '') +
+        (v.valor != null ? ` · <b>${esc(kz(v.valor))}</b>` : '') +
+        `<br>${esc(PROVA[v.prova])}${v.dist != null ? ' · ' + v.dist + ' m do ponto registado do cliente (×)' : ''}` +
+        `<br>Local exacto da venda: ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}${v.p ? ' (precisão ± ' + Math.round(v.p) + ' m)' : ''}` +
+        `<br><a href="https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}" target="_blank" rel="noopener noreferrer">Abrir no Google Maps</a>`,
+    );
+  }
   window.initMap = function () {
     mapa = new google.maps.Map($('map'), {
       center: { lat: -8.84, lng: 13.29 },
       zoom: 11,
-      mapTypeControl: false,
+      maxZoom: 21,
+      gestureHandling: 'greedy', // a roda e os dedos aproximam o mapa, nunca a página
+      // satélite para ver o local exacto (porta da loja, rua) onde a venda foi registada
+      mapTypeControl: true,
+      mapTypeControlOptions: { mapTypeIds: ['roadmap', 'hybrid'], position: google.maps.ControlPosition.TOP_LEFT },
       streetViewControl: false,
       clickableIcons: false,
     });

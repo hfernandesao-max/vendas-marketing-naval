@@ -445,7 +445,8 @@ function naval_conf_noite(int $agora): ?array
         $l = naval_conf_ligacoes(true);
         foreach ($l as $x) {
             foreach ($x['controlos'] as $c) {
-                if (!$c['ok']) $problemas[] = 'ligação ' . $x['nome'] . ' fora da norma (' . $c['norma'] . '): ' . $c['id'] . ' = ' . $c['valor'];
+                if (!$c['ok']) $problemas[] = 'ligação ' . $x['nome'] . ' fora da norma (' . $c['norma'] . '): ' . $c['id'] . ' = ' . $c['valor']
+                    . ($c['id'] === 'certificado' ? ' — ' . naval_bd_causa_certificado((string) ($c['erro'] ?? '')) : '');
             }
             if (!empty($x['erro'])) $problemas[] = 'ligação ' . $x['nome'] . ' sem resposta: ' . $x['erro'];
         }

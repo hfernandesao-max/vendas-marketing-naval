@@ -92,6 +92,33 @@ function naval_mdm_dispositivos(array $filtros = []): array
 }
 
 /**
+ * Última localização conhecida de um equipamento (GET /api/v1/mdm/devices/{id}/locations, scope
+ * MDMOnDemand.MDMInventory.READ): {lat, lng, em} ou null. Dado pessoal do trabalhador (Lei 22/11): só para o
+ * acompanhamento das rotas, no âmbito de cada perfil, nunca guardado em histórico pelo portal.
+ */
+function naval_mdm_localizacao(string $id): ?array
+{
+    if (!preg_match('/^d{1,25}$/', $id)) throw new InvalidArgumentException('ID do equipamento inválido.');
+    return naval_mdm_ultima_localizacao(naval_mdm_get('/devices/' . $id . '/locations'));
+}
+
+/** A localização mais recente de uma resposta da API de localizações (função pura, testada). */
+function naval_mdm_ultima_localizacao(array $j): ?array
+{
+    $l = $j['locations'] ?? (isset($j['latitude']) ? [$j] : []);
+    $melhor = null;
+    foreach ((array) $l as $x) {
+        if (!is_array($x) || !is_numeric($x['latitude'] ?? null) || !is_numeric($x['longitude'] ?? null)) continue;
+        $t = (int) ($x['located_time'] ?? $x['added_time'] ?? 0);
+        if ($melhor === null || $t > $melhor['t']) $melhor = ['t' => $t, 'lat' => (float) $x['latitude'], 'lng' => (float) $x['longitude']];
+    }
+    if ($melhor === null) return null;
+    // a API dá os tempos em milissegundos desde 1970
+    $s = $melhor['t'] > 100000000000 ? intdiv($melhor['t'], 1000) : $melhor['t'];
+    return ['lat' => round($melhor['lat'], 6), 'lng' => round($melhor['lng'], 6), 'em' => $s > 0 ? date('Y-m-d H:i:s', $s) : null];
+}
+
+/**
  * Cruza os equipamentos do MDM com os do portal (ATV_ACTIVO, smartphones): pelo ID do MDM, pelo IMEI (1 ou 2) e pelo
  * n.º de série. Devolve, por equipamento do portal, o equipamento do MDM encontrado (ou null) e se o ID guardado bate.
  */

@@ -51,13 +51,34 @@ function naval_bd_dsn(array $c, string $tipo, bool $cifrar, bool $validar): stri
     $app = preg_replace('/[^\w.\-]/', '', (string) $c['app']);
     if ($tipo === 'sqlsrv') {
         return 'sqlsrv:Server=' . $servidor . ';Database=' . $c['nome'] . ';Encrypt=' . ($cifrar ? 'true' : 'false')
-            . ';TrustServerCertificate=' . ($validar ? 'false' : 'true') . ';LoginTimeout=' . $tempo . ';APP=' . $app . ';ApplicationIntent=ReadOnly';
+            . ';TrustServerCertificate=' . ($validar ? 'false' : 'true') . ';LoginTimeout=' . $tempo . ';APP=' . $app . ';ApplicationIntent=ReadOnly'
+            . ($validar && !empty($c['cert']) ? ';HostNameInCertificate=' . $c['cert'] : '');
     }
     $dsn = 'odbc:Driver={' . $tipo . '};Server=' . $servidor . ';Database=' . $c['nome'] . ';Encrypt=' . ($cifrar ? 'yes' : 'no')
         . ';TrustServerCertificate=' . ($validar ? 'no' : 'yes') . ';LoginTimeout=' . $tempo . ';APP=' . $app . ';';
     // o controlador antigo não conhece ApplicationIntent
     if ($tipo !== NAVAL_BD_ODBC_ANTIGO) $dsn .= 'ApplicationIntent=ReadOnly;';
+    // nome do certificado quando se liga pelo IP (ODBC 18+): valida o certificado pelo nome dele, não pelo endereço
+    if ($validar && !empty($c['cert']) && $tipo !== NAVAL_BD_ODBC_ANTIGO) $dsn .= 'HostNameInCertificate=' . $c['cert'] . ';';
     return $dsn;
+}
+
+/**
+ * Causa provável de uma falha da validação do certificado do SQL Server e o que fazer (ISO/IEC 27001 A.8.24), pela
+ * mensagem do controlador (função pura, testada).
+ */
+function naval_bd_causa_certificado(string $erro): string
+{
+    if (preg_match('/not trusted|n.o .{0,12}confi|untrusted|certificate chain|cadeia/i', $erro)) {
+        return 'a autoridade que emitiu o certificado do SQL Server não é de confiança no servidor do portal: instalar o certificado da AC '
+            . 'interna (ou o do SQL Server) em «Autoridades de Certificação de Raiz Fidedigna» do computador local (certlm.msc)';
+    }
+    if (preg_match('/principal name|nome .{0,25}incorrect|does not match|n.o corresponde|host ?name/i', $erro)) {
+        return 'o nome no certificado não coincide com o endereço usado (o IP): indicar o nome do certificado em …_NOME_CERTIFICADO '
+            . '(php ferramentas/configurar-conformidade.php) ou usar no .env o nome DNS do servidor';
+    }
+    if (trim($erro) === '') return 'sem detalhe guardado: correr php ferramentas/configurar-conformidade.php no servidor';
+    return 'mensagem do controlador: ' . mb_substr($erro, 0, 160);
 }
 
 /** O que se aprendeu nas últimas ligações desta fonte (controlador que serve, certificado validado ou não). */
@@ -96,7 +117,8 @@ function naval_bd_criar(string $p, bool $herdar = false, array $sobrepor = []): 
     };
     $driver = strtolower($cfg('DRIVER', 'sqlsrv'));
     $c = ['host' => $cfg('HOST'), 'port' => $cfg('PORT', '1433'), 'nome' => $cfg('NAME'), 'timeout' => $cfg('TIMEOUT', '5'),
-        'app' => 'PortalRTM' . ($p === 'DB' ? '' : '-' . ucfirst(strtolower(str_replace('_DB', '', $p))))];
+        'app' => 'PortalRTM' . ($p === 'DB' ? '' : '-' . ucfirst(strtolower(str_replace('_DB', '', $p)))),
+        'cert' => preg_match('/^[A-Za-z0-9.*-]{1,253}$/', $cfg('NOME_CERTIFICADO')) ? $cfg('NOME_CERTIFICADO') : ''];
     // vazio = autenticação integrada do Windows: o PDO recebe null (com «» o ODBC acrescentaria UID= e PWD= vazios)
     $user = $cfg('USER') !== '' ? $cfg('USER') : null;
     $pass = $cfg('PASS') !== '' ? $cfg('PASS') : null;

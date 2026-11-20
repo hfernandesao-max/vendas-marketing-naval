@@ -53,6 +53,9 @@ function naval_google_maps_script(array $parametros = []): string
         error_log('[geo] GOOGLE_MAPS_API_KEY em falta no .env: o mapa não carrega.');
         return '<script>console.error("Mapa indisponível: falta GOOGLE_MAPS_API_KEY no .env do servidor.");</script>';
     }
-    $url = 'https://maps.googleapis.com/maps/api/js?' . http_build_query(['key' => $chave, 'v' => '3.64'] + $parametros + ['callback' => 'initMap'], '', '&', PHP_QUERY_RFC3986);
-    return '<script src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" defer></script>';
+    $url = 'https://maps.googleapis.com/maps/api/js?' . http_build_query(['key' => $chave, 'v' => '3.64'] + $parametros + ['loading' => 'async', 'callback' => 'initMap'], '', '&', PHP_QUERY_RFC3986);
+    // ligação antecipada aos servidores do Google (DNS, TCP e TLS em paralelo com o resto da página) e carregamento
+    // assíncrono recomendado pelo Google (loading=async): o mapa aparece mais cedo
+    return '<link rel="preconnect" href="https://maps.googleapis.com" /><link rel="preconnect" href="https://maps.gstatic.com" crossorigin />'
+        . '<script src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" defer></script>';   // defer (não async): o initMap da página já existe quando o Google o chama
 }
