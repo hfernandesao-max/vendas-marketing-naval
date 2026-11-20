@@ -262,6 +262,34 @@ function tabelaRota(r) {
       ),
     );
   }
+  // o Pinguim BO mudou depois de a base ser congelada (guia anulada ou corrigida): actualizada (aberta) ou assinalada (aprovada)
+  const actualizada = (r.historico || []).filter((h) => h.accao === 'base_actualizada_pinguim').pop();
+  const artigosMudados = (dif) => (dif || []).map((d) => d.artigo).join(', ');
+  if (r.revisao_pinguim)
+    box.append(
+      el(
+        'p',
+        'cc-aviso',
+        t(
+          'O Pinguim BO mudou depois desta conciliação ter sido aprovada ({d}): {a}. A conciliação aprovada não se altera; reveja com a Logística e a Direcção.',
+          {
+            d: String(r.revisao_pinguim.em).slice(0, 16),
+            a: artigosMudados(r.revisao_pinguim.diferencas),
+          },
+        ),
+      ),
+    );
+  else if (actualizada && r.resumo.estado !== 'aprovada')
+    box.append(
+      el(
+        'p',
+        'cc-aviso',
+        t('Base actualizada em {d}: o Pinguim BO mudou depois de congelada (documento anulado ou corrigido) em {a}. A contagem ficou; volte a validar.', {
+          d: String(actualizada.em).slice(0, 16),
+          a: artigosMudados(actualizada.diferencas),
+        }),
+      ),
+    );
   // carga de um dia seguinte autorizada antes do fecho: já está na carrinha, soma-se ao que se conta (fora da conciliação)
   if ((r.cargas_posteriores || []).length)
     box.append(

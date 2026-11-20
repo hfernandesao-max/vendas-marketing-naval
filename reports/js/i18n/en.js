@@ -4900,4 +4900,8 @@ export const EN = {
   PDF: 'PDF',
   'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
     'Sold: quantity sold on the day. Requested: what the sales rep asked for. Loaded: what the Warehouse Keeper confirmed at the dock; each difference shows its reason below the item.',
+  'O Pinguim BO mudou depois desta conciliação ter sido aprovada ({d}): {a}. A conciliação aprovada não se altera; reveja com a Logística e a Direcção.':
+    'Pinguim BO changed after this reconciliation was approved ({d}): {a}. The approved reconciliation is not changed; review it with Logistics and the Board.',
+  'Base actualizada em {d}: o Pinguim BO mudou depois de congelada (documento anulado ou corrigido) em {a}. A contagem ficou; volte a validar.':
+    'Baseline updated on {d}: Pinguim BO changed after it was frozen (document cancelled or corrected) for {a}. The count was kept; validate again.',
 };

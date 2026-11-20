@@ -362,3 +362,30 @@ teste('a primeira folha congela a base, a reimpressão reutiliza-a e a contagem 
     igual([5.0, 0.0, 2.0, 0.0], [$linhas['A1']['esperado'], $linhas['A1']['diferenca'], $linhas['B1']['posterior'], $linhas['B1']['diferenca']]);
     @unlink(naval_carr_pasta($data) . '/_corte.json');
 });
+
+teste('movimentos pelo armazém da linha (como o stock): a guia conta na carrinha, o armazém central fica de fora', function () {
+    $rows = [
+        // guia de transporte na loja 1010 para o armazém da carrinha 1010
+        ['ROTA' => '1010', 'ARM_COD' => '10001010', 'ARM' => 'Armazém 1010 - FHR PIV', 'CODIGO' => '10000332', 'ANTES' => 1, 'ENTRADAS' => 100.0, 'SAIDAS' => 0.0],
+        // a saída do armazém central no mesmo documento não é da carrinha
+        ['ROTA' => '1010', 'ARM_COD' => '1000', 'ARM' => 'HIGITEC PIV - NON FOOD', 'CODIGO' => '10000332', 'ANTES' => 1, 'ENTRADAS' => 0.0, 'SAIDAS' => 100.0],
+        // documento lançado na loja central mas para o armazém da carrinha 1003: é da 1003
+        ['ROTA' => '1000', 'ARM_COD' => '10001003', 'ARM' => 'Armazém 1003 - FHR PIV', 'CODIGO' => '10000292', 'ANTES' => 1, 'ENTRADAS' => 5.0, 'SAIDAS' => 0.0],
+    ];
+    $mov = naval_carr_movimentos_agrupar($rows, ['1003', '1010']);
+    igual(['c' => 100.0, 'd' => 0.0, 'ca' => 100.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0], $mov['1010']['10000332']);
+    igual(5.0, $mov['1003']['10000292']['ca']);
+});
+
+teste('revisão contra o Pinguim BO: uma guia anulada depois de congelar a base aparece como diferença', function () {
+    // 19-11 rota 1010: congelada com o inicial de 50 (a GTC A1000/93 de 17-11 ainda não estava anulada); hoje o inicial é 0
+    $mov = ['10000332' => ['c' => 100.0, 'd' => 0.0, 'ca' => 100.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0]];
+    $base = function (float $ini) use ($mov) {
+        $r = ['s0' => ['10000332' => ['n' => 'Fraldas', 'q' => $ini]], 's1' => ['10000332' => ['n' => 'Fraldas', 'q' => 100.0]], 'v' => []];
+        return naval_carr_congelar_base($r, '2026-11-19 15:27:18', naval_carr_stock_por_movimentos($r['s0'], $mov, $r), $mov);
+    };
+    $dif = naval_carr_comparar_bases($base(50.0), $base(0.0));
+    igual(1, count($dif));
+    igual(['inicial' => [50.0, 0.0], 'esperado' => [150.0, 100.0]], $dif[0]['mudou']);
+    igual([], naval_carr_comparar_bases($base(0.0), $base(0.0)));
+});

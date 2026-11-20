@@ -269,6 +269,13 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conciliação carrinha] corte: ' . $e->getMessage());
     }
+    // conciliação das carrinhas: rever as bases congeladas contra o Pinguim BO (guias anuladas ou corrigidas depois)
+    try {
+        $rv = naval_carr_rever_tick($agora);
+        if ($rv !== null) $feito['carrinha_revisao'] = count($rv['actualizadas']) + count($rv['aprovadas_com_diferencas']);
+    } catch (Throwable $e) {
+        error_log('[conciliação carrinha] revisão: ' . $e->getMessage());
+    }
     // conciliação das carrinhas: aviso do fim do dia a quem conta e aprova (CARRINHA_HORA_AVISO, 19:30)
     if (naval_config('CARRINHA_AVISO_ACTIVO', '1') !== '0') {
         try {

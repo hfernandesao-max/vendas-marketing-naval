@@ -4816,4 +4816,8 @@ export const TI = {
   PDF: 'PDF',
   'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
     'ዝተሸጠ: ኣብቲ መዓልቲ ዝተሸጠ ብዝሒ። ዝተሓተተ: እቲ ሸያጢ ዝሓተቶ። ዝተጻዕነ: ሓላዊ መኽዘን ኣብ መጽዓኒ ዘረጋገጾ፤ ነፍሲ ወከፍ ፍልልይ ምኽንያቱ ኣብ ትሕቲ እቲ ኣቕሓ ኣለዎ።',
+  'O Pinguim BO mudou depois desta conciliação ter sido aprovada ({d}): {a}. A conciliação aprovada não se altera; reveja com a Logística e a Direcção.':
+    'ድሕሪ እዚ ምትዕርራይ ምጽዳቑ Pinguim BO ተቐይሩ ({d}): {a}። እቲ ዝጸደቐ ምትዕርራይ ኣይቀየርን፤ ምስ ሎጂስቲክስን ምሕደራን ርኣዩዎ።',
+  'Base actualizada em {d}: o Pinguim BO mudou depois de congelada (documento anulado ou corrigido) em {a}. A contagem ficou; volte a validar.':
+    'መሰረት ኣብ {d} ተሓዲሱ: ድሕሪ ምዕጻዉ Pinguim BO ተቐይሩ (ሰነድ ተሰሪዙ ወይ ተዓሪዩ) ኣብ {a}። እቲ ቆጸራ ተሓሊዉ፤ ደጊምኩም ኣረጋግጹ።',
 };

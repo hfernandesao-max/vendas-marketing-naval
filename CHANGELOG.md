@@ -1,5 +1,14 @@
 ## 20-11-2026
 
+### Conciliação das carrinhas igual ao stock do Pinguim BO, também quando um documento é anulado depois
+
+<!-- tipo: correcao -->
+
+- As guias e saídas de armazém anuladas no Pinguim BO deixam de contar como carga ou devolução (o stock do Pinguim BO já não as contava): nos dias 16 e 17-11 havia 30 linhas com o carregado a mais.
+- Os movimentos de cada carrinha passam a contar pelo armazém da linha, o mesmo do stock, e não pela loja do documento.
+- Quando um documento é anulado ou corrigido no Pinguim BO depois de a base da conciliação ter sido congelada, a conciliação é revista sozinha (de hora a hora os últimos 3 dias, de madrugada os últimos 45): se estiver aberta, a base é actualizada, a contagem fica e volta a pedir a validação; se já estiver aprovada, não se altera e fica assinalada para revisão.
+- Nova ferramenta para rever os dias passados (php ferramentas/carrinha-rever-pinguim.php, em ensaio; --aplicar para aplicar).
+
 ### Cargas (PO): o documento mostra o pedido e o carregado
 
 <!-- tipo: melhoria -->
