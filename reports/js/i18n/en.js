@@ -4953,4 +4953,8 @@ export const EN = {
   'PO {n}: aprovar para a carga': 'PO {n}: approve for loading',
   'emitida por {n}': 'issued by {n}',
   'Não obrigatório': 'Not required',
+  'Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
+    'Requested: what the sales rep asked for. Loaded: what the Warehouse Keeper confirmed at the dock; each difference shows its reason below the item.',
+  'Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.':
+    'Requested: what the sales rep asks the warehouse for. Delivered: to be filled in by the warehouse.',
 };

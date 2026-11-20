@@ -1,5 +1,11 @@
 ## 20-11-2026
 
+### PDF da PO sem a coluna «Vendido»
+
+<!-- tipo: melhoria -->
+
+- A PO é um pedido ao armazém e não uma venda: o PDF passa a ter só «Requisitado» (e «Entregue» / «Carregado»), sem a coluna «Vendido».
+
 ### Tempo real na app, fontes de dados certas, consolidado sem esperar pela caixa e PO aprovadas pelo coordenador
 
 <!-- tipo: melhoria -->

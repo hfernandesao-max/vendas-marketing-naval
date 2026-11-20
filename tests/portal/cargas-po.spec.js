@@ -135,6 +135,7 @@ test('cargas (PO): o documento da carga conferida mostra o pedido, o carregado, 
   const fs = await import('node:fs');
   const texto = fs.readFileSync(await d.path(), 'latin1');
   expect(texto).toContain('Carregado');
+  expect(texto).not.toContain('Vendido'); // a PO é um pedido ao armazém, não uma venda
   expect(texto).toContain('Conferida no cais');
   expect(texto).toContain('por validar'); // parênteses escapados no PDF
   expect(texto).toContain('Diferen');

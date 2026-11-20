@@ -45,16 +45,17 @@ export async function requisicaoPdf(r, imprimir = true) {
       conferida && Math.abs(d) > 0.0001
         ? l.artigo + '\n' + tp('Diferença {d}', { d: (d > 0 ? '+' : '') + n0(d) }) + (motivo(l) ? ' · ' + motivo(l) : '')
         : l.artigo;
-    return [String(i + 1), l.codigo, art, l.unidade || '', l.sugerida == null ? '—' : n0(l.sugerida), n0(l.quantidade), conferida ? n0(l.entregue) : ''];
+    return [String(i + 1), l.codigo, art, l.unidade || '', n0(l.quantidade), conferida ? n0(l.entregue) : ''];
   });
   const total = r.linhas.reduce((s, l) => s + (+l.quantidade || 0), 0);
   const totalEntregue = r.linhas.reduce((s, l) => s + (+l.entregue || 0), 0);
   doc.autoTable({
     startY: y,
     margin: { left: 14, right: 14, bottom: 16 },
-    head: [['#', tp('Código'), tp('Artigo'), tp('Un.'), tp('Vendido'), tp('Requisitado'), conferida ? tp('Carregado') : tp('Entregue')]],
+    // sem «Vendido»: a PO é um pedido ao armazém, não uma venda
+    head: [['#', tp('Código'), tp('Artigo'), tp('Un.'), tp('Requisitado'), conferida ? tp('Carregado') : tp('Entregue')]],
     body: corpo,
-    foot: [['', '', tp('Total ({n} artigos)', { n: n0(r.linhas.length) }), '', '', n0(total), conferida ? n0(totalEntregue) : '']],
+    foot: [['', '', tp('Total ({n} artigos)', { n: n0(r.linhas.length) }), '', n0(total), conferida ? n0(totalEntregue) : '']],
     styles: { ...estiloTabela, minCellHeight: 8 },
     headStyles: estiloCabeca,
     footStyles: { fillColor: [234, 240, 249], textColor: AZUL, fontStyle: 'bold' },
@@ -63,13 +64,12 @@ export async function requisicaoPdf(r, imprimir = true) {
       0: { cellWidth: 8, halign: 'right', textColor: CINZA },
       1: { cellWidth: 22 },
       3: { cellWidth: 12 },
-      4: { cellWidth: 20, halign: 'right', textColor: CINZA },
-      5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
-      6: { cellWidth: 24 },
+      4: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
+      5: { cellWidth: 24 },
     },
     didParseCell: (d) => {
       if ((d.section === 'head' || d.section === 'foot') && d.column.index >= 4) d.cell.styles.halign = 'right';
-      if (!conferida || d.column.index !== 6) return;
+      if (!conferida || d.column.index !== 5) return;
       d.cell.styles.halign = 'right';
       d.cell.styles.fontStyle = 'bold';
       // linha com diferença: o carregado a vermelho (o motivo está por baixo do artigo)
@@ -89,10 +89,8 @@ export async function requisicaoPdf(r, imprimir = true) {
   doc.text(
     doc.splitTextToSize(
       conferida
-        ? tp(
-            'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.',
-          )
-        : tp('Vendido: quantidade vendida no dia (reposição pelo consumo). Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.'),
+        ? tp('Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.')
+        : tp('Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.'),
       182,
     ),
     14,

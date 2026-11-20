@@ -4868,4 +4868,7 @@ export const TI = {
   'PO {n}: aprovar para a carga': 'ጠለብ {n}: ንጽዕነት ኣጽድቕ',
   'emitida por {n}': 'ብ{n} ዝወጸ',
   'Não obrigatório': 'ግዴታ ኣይኮነን',
+  'Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
+    'ዝተሓተተ: እቲ ሸያጢ ዝሓተቶ። ዝተጻዕነ: ሓላዊ መኽዘን ኣብ መጽዓኒ ዘረጋገጾ፤ ነፍሲ ወከፍ ፍልልይ ምኽንያቱ ኣብ ትሕቲ እቲ ኣቕሓ ኣለዎ።',
+  'Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.': 'ዝተሓተተ: እቲ ሸያጢ ካብ መኽዘን ዝሓቶ። ዝተረከበ: ብመኽዘን ዝምላእ።',
 };
