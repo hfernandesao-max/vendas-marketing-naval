@@ -98,7 +98,7 @@ test('robô: só com a chave; executa a ordem nos ecrãs do Pinguim BO e devolve
   await r.dispose();
 });
 
-test('ordens: Back-Office cancela com motivo; executada à mão; perfis sem acesso', async () => {
+test('ordens: Back-Office cancela com motivo; executada à mão; perfis sem acesso @navegador', async () => {
   const bo = (await entrar('bo')).ctx;
   const id = 'GUIA-' + numero;
   expect((await post(bo, 'ordens-pinguim', { accao: 'executada_manual', id, documento: 'GTC 2026/9' })).status).toBe(409); // já gerada

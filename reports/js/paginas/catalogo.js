@@ -58,7 +58,7 @@ export const PAGES = [
   // Logística pela ordem do processo: plano → requisição → carga → stock → conciliação
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Cargas planeadas' },
   { id: 'requisicoes-carrinha', grupo: 'Logística', icon: 'requisicao', nome: 'Requisições ao armazém' },
-  { id: 'cargas-po', grupo: 'Logística', icon: 'truck', nome: 'Cargas (PO)' },
+  { id: 'cargas-po', grupo: 'Logística', icon: 'conferir', nome: 'Cargas (PO)' },
   { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Cargas realizadas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
