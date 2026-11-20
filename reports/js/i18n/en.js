@@ -4895,7 +4895,6 @@ export const EN = {
   'Guia no Pinguim BO': 'Pinguim BO delivery note',
   'por gerar': 'not yet created',
   'Diferença {d}': 'Difference {d}',
-  Carregado: 'Loaded',
   'PDF: pedido e carregado': 'PDF: ordered and loaded',
   PDF: 'PDF',
   'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
@@ -4909,5 +4908,4 @@ export const EN = {
   'esperado {e}, Pinguim BO {f}': 'expected {e}, Pinguim BO {f}',
   'Inventário no Pinguim BO: {d}': 'Stock count in Pinguim BO: {d}',
   'Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»': 'Pinguim BO stock count adjustments included in «Must come back»',
-  Inventário: 'Stock count',
 };

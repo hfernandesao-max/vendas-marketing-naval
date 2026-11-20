@@ -4811,7 +4811,6 @@ export const TI = {
   'Guia no Pinguim BO': 'ሰነድ ኣብ Pinguim BO',
   'por gerar': 'ገና ኣይተፈጠረን',
   'Diferença {d}': 'ፍልልይ {d}',
-  Carregado: 'ዝተጻዕነ',
   'PDF: pedido e carregado': 'PDF: ዝተሓተተን ዝተጻዕነን',
   PDF: 'PDF',
   'Vendido: quantidade vendida no dia. Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
@@ -4825,5 +4824,4 @@ export const TI = {
   'esperado {e}, Pinguim BO {f}': 'ዝተጸበየ {e}፡ Pinguim BO {f}',
   'Inventário no Pinguim BO: {d}': 'ቆጸራ ክምችት ኣብ Pinguim BO: {d}',
   'Acertos de inventário do Pinguim BO incluídos em «Tem de voltar»': 'ናይ Pinguim BO ምስተኻኽል ቆጸራ ክምችት ኣብ «ክምለስ ዘለዎ» ተኣትዩ',
-  Inventário: 'ቆጸራ ክምችት',
 };
