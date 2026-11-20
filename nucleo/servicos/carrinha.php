@@ -693,6 +693,28 @@ function naval_carr_comparar_bases(array $antiga, array $nova): array
 }
 
 /**
+ * Instante a que a base da contagem foi congelada da primeira vez (a folha impressa ou a contagem gravada): é o que
+ * a contagem física reflecte, por isso a revisão volta a congelar sempre nesse instante e nunca à hora do corte
+ * (uma guia para o dia seguinte lançada entre a folha e o corte não estava na carrinha quando se contou).
+ * Pelo histórico (folha_contagem_congelada), senão pela hora em que a folha foi congelada, senão pela da base.
+ */
+function naval_carr_referencia_original(array $reg, string $dia): string
+{
+    $ok = function ($x) use ($dia) { return is_string($x) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $x) && substr($x, 0, 10) === $dia; };
+    foreach ((array) ($reg['historico'] ?? []) as $h) {
+        if (($h['accao'] ?? '') === 'folha_contagem_congelada' && $ok($h['referencia'] ?? null)) return (string) $h['referencia'];
+    }
+    $folha = (string) ($reg['folha_congelada_em'] ?? '');
+    if ($ok($folha)) {
+        $corte = naval_carr_corte($dia);
+        $limite = $dia . ' ' . ($corte !== null ? $corte . ':00' : '23:59:59');
+        return $folha < $limite ? $folha : $limite;
+    }
+    $base = $reg['base']['corte']['hora'] ?? null;
+    return $ok($base) ? (string) $base : naval_carr_hora_referencia($dia);
+}
+
+/**
  * Revê as conciliações de um intervalo de dias contra o Pinguim BO de agora (documentos anulados, corrigidos ou
  * lançados depois de a base ter sido congelada). Por rota com base congelada:
  *  - aberta (por contar até por fechar): a base passa a ser a do Pinguim BO de agora; a contagem fica, a validação e
@@ -719,15 +741,20 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
             continue;
         }
         $res['dias']++;
+        $movPorHora = [];
         foreach ($regs as $f) {
             $rota = basename($f, '.json');
             try {
-                $r = naval_exclusivo('carrinha-' . $dia . '-' . naval_carr_nome_rota($rota), function () use ($dia, $rota, $d, $eu, $ensaio) {
+                $r = naval_exclusivo('carrinha-' . $dia . '-' . naval_carr_nome_rota($rota), function () use ($dia, $rota, $d, $eu, $ensaio, &$movPorHora) {
                     $reg = naval_carr_ler($dia, $rota);
                     if (!is_array($reg['base'] ?? null)) return 'igual';
+                    // o mesmo instante da primeira congelação (o que a contagem física reflecte), não a hora do corte
+                    $ref = naval_carr_referencia_original($reg, $dia);
+                    if (!array_key_exists($ref, $movPorHora)) $movPorHora[$ref] = $ref === $d['referencia'] ? $d['movimentos_rota'] : naval_carr_movimentos_sql($dia, substr($ref, 11, 8));
+                    if ($movPorHora[$ref] === null) throw new NavalErro('O Pinguim BO não respondeu (movimentos até ' . $ref . ').', 503);
                     $fresca = (array) ($d['rotas'][$rota] ?? ['s0' => [], 's1' => [], 'v' => [], 'mov' => []]);
-                    $mov = (array) ($d['movimentos_rota'][$rota] ?? []);
-                    $fresca = naval_carr_congelar_base($fresca, $d['referencia'], naval_carr_stock_por_movimentos((array) ($fresca['s0'] ?? []), $mov, $fresca), $mov);
+                    $mov = (array) ($movPorHora[$ref][$rota] ?? []);
+                    $fresca = naval_carr_congelar_base($fresca, $ref, naval_carr_stock_por_movimentos((array) ($fresca['s0'] ?? []), $mov, $fresca), $mov);
                     $dif = naval_carr_comparar_bases((array) $reg['base'], $fresca);
                     if (!$dif) return 'igual';
                     $agora = date('Y-m-d H:i:s');
@@ -756,7 +783,7 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
                         foreach (['validado_por', 'validado_em', 'coordenado_por', 'coordenado_em'] as $k) $reg[$k] = null;
                         $reg['motivos'] = [];
                     }
-                    $reg['historico'][] = ['em' => $agora, 'por' => $quem, 'accao' => 'base_actualizada_pinguim', 'referencia' => $d['referencia'],
+                    $reg['historico'][] = ['em' => $agora, 'por' => $quem, 'accao' => 'base_actualizada_pinguim', 'referencia' => $ref,
                         'diferencas' => $dif, 'contagem_preservada' => $contagem, 'aprovacoes_invalidadas' => $anteriores];
                     naval_json_gravar(naval_carr_pasta($dia) . '/' . $rota . '.json', $reg);
                     naval_registar('carrinha_base_actualizada_pinguim', ['data' => $dia, 'rota' => $rota, 'artigos' => count($dif)]);

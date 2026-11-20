@@ -1,5 +1,11 @@
 ## 20-11-2026
 
+### Conciliação das carrinhas: a revisão respeita o instante da folha de contagem
+
+<!-- tipo: correcao -->
+
+- A revisão automática contra o Pinguim BO voltava a congelar a base à hora do corte, em vez do instante em que a folha de contagem foi impressa: uma guia para o dia seguinte lançada entre a folha e o corte (ex.: rota 1004, GTC A1000/122 às 15:42) passava a contar como se estivesse na carrinha. Passa a usar sempre o instante original; as conciliações afectadas são repostas sozinhas na revisão seguinte.
+
 ### Conciliação das carrinhas igual ao stock do Pinguim BO, também quando um documento é anulado depois
 
 <!-- tipo: correcao -->
