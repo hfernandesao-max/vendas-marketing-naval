@@ -242,7 +242,7 @@ function naval_carr_mov_com_hora(array $mov): bool
 function naval_carr_cargas_portal(string $data, string $rota, string $hora): array
 {
     $q = [];
-    foreach ((array) glob(naval_req_pasta(substr($data, 0, 4)) . '/RQ-*.json') as $f) {
+    foreach (naval_req_ficheiros(substr($data, 0, 4)) as $f) {
         $r = naval_json_ler((string) $f);
         if (!$r || $r['estado'] !== 'carregada' || (string) $r['rota'] !== $rota) continue;
         $em = (string) ($r['confirmado_em'] ?? '');

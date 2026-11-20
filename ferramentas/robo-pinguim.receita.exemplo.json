@@ -1,0 +1,38 @@
+{
+  "_nota": "Receita do robô do Pinguim BO: copiar para robo-pinguim.receita.json e acertar os seletores pelos ecrãs reais do Pinguim BO. Valores: {url}, {utilizador}, {senha}, {referencia}, {armazem_destino}, {rota}, {data}, {linha.codigo}, {linha.quantidade}, {linha.armazem_origem}. Passos: ir, preencher+valor, escolher+valor, clicar, tecla, esperar, esperar_ms, ler_texto+guardar, para_cada_linha. Este exemplo é o da página de ensaio tests/dados/pinguim-falso/.",
+  "ignorar_certificado": false,
+  "erro_negocio": ".erro-negocio",
+  "entrar": [
+    { "ir": "{url}/index.html" },
+    { "preencher": "#utilizador", "valor": "{utilizador}" },
+    { "preencher": "#senha", "valor": "{senha}" },
+    { "clicar": "#entrar" },
+    { "esperar": "#menu" }
+  ],
+  "documentos": {
+    "guia_remessa": {
+      "procurar": [
+        { "clicar": "#menu-procurar" },
+        { "preencher": "#procurar-referencia", "valor": "{referencia}" },
+        { "clicar": "#procurar" },
+        { "esperar_ms": 300 },
+        { "ler_texto": "#resultado-numero", "guardar": "documento", "tempo": 1500 }
+      ],
+      "criar": [
+        { "clicar": "#menu-guia" },
+        { "esperar": "#guia" },
+        { "escolher": "#armazem-destino", "valor": "{armazem_destino}" },
+        { "preencher": "#referencia", "valor": "{referencia}" },
+        {
+          "para_cada_linha": [
+            { "clicar": "#nova-linha" },
+            { "preencher": "#linhas tr:last-child .artigo", "valor": "{linha.codigo}" },
+            { "preencher": "#linhas tr:last-child .quantidade", "valor": "{linha.quantidade}" }
+          ]
+        },
+        { "clicar": "#gravar" },
+        { "ler_texto": "#numero-documento", "guardar": "documento" }
+      ]
+    }
+  }
+}

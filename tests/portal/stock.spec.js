@@ -169,11 +169,17 @@ test('stock por carrinha: coluna da requisição ao armazém — âmbar a carreg
   await sec.getByRole('button', { name: 'Confirmar carga' }).click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByLabel('Entregue · DETERGENTE NOVO').fill('2');
+  await dlg.getByLabel('Motivo · DETERGENTE NOVO').selectOption('falta_armazem');
   await dlg.getByRole('button', { name: 'Confirmar carga' }).click();
   await expect(sec.locator('.req-carregado')).toHaveCount(2);
   await expect(sec.locator('.req-a-carregar')).toHaveCount(0);
   await expect(sec.locator('.req-linha')).toContainText('Carregado · RQ-2026-000007');
-  expect(pedidos[0]).toMatchObject({ accao: 'confirmar_carga', numero: 'RQ-2026-000007', entregue: { 10000009: 8, 10000777: 2 } });
+  expect(pedidos[0]).toMatchObject({
+    accao: 'confirmar_carga',
+    numero: 'RQ-2026-000007',
+    entregue: { 10000009: 8, 10000777: 2 },
+    motivos: { 10000777: { codigo: 'falta_armazem' } },
+  });
   expect(erros).toEqual([]);
 });
 

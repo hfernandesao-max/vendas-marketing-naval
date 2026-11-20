@@ -1,7 +1,9 @@
-// Requisição de reposição da carrinha ao armazém em PDF (A4, texto vectorial, gerado no navegador). Documento de
+// Requisição Interna / PO da carrinha ao armazém em PDF (A4, texto vectorial, gerado no navegador), com o QR do número
+// (o Fiel de Armazém lê-o em Logística › Cargas (PO) para conferir a carga no cais). Documento de
 // armazém com número sequencial, as quantidades requisitadas, coluna para o armazém escrever o que entregou e as
 // assinaturas de quem requisita, de quem avia e de quem recebe. As reimpressões saem marcadas «2.ª via» (ou seguinte).
 import { dl, n0 } from '../formatos.js';
+import { carregarScript } from '../servidor.js';
 import { quem } from './assinantes.js';
 import { assinaturas, cabecalho, entregar, estiloCabeca, estiloTabela, lerEmblema, novoDoc, rodapes, tp } from './contagem-pdf.js';
 
@@ -11,12 +13,12 @@ const quando = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11
 
 /** Gera o PDF e abre-o para imprimir (ou descarrega-o, se o navegador não deixar abrir outro separador). */
 export async function requisicaoPdf(r, imprimir = true) {
-  const [doc, img] = await Promise.all([novoDoc('portrait'), lerEmblema()]);
+  const [doc, img] = await Promise.all([novoDoc('portrait'), lerEmblema(), carregarScript('qrcode.js', 'qrcode').catch(() => null)]);
   const via = (r.impressoes || []).length || 1;
   const viaTxt = via > 1 ? tp('{n}.ª via', { n: via }) : tp('Original');
-  doc.setProperties({ title: tp('Requisição de reposição') + ' ' + r.numero, subject: tp('Requisição ao armazém'), creator: 'Portal RTM · Grupo Naval' });
+  doc.setProperties({ title: tp('Requisição Interna / PO') + ' ' + r.numero, subject: tp('Requisição ao armazém'), creator: 'Portal RTM · Grupo Naval' });
   const origem = r.origem && r.origem.tipo === 'conciliacao' ? tp('Conciliação da carrinha de {d}', { d: dl(r.origem.data) }) : tp('Pedido do promotor');
-  let y = cabecalho(doc, img, tp('Requisição de reposição'), r.numero + ' · ' + viaTxt, [
+  let y = cabecalho(doc, img, tp('Requisição Interna / PO'), r.numero + ' · ' + viaTxt, [
     [tp('Rota'), r.rota],
     [tp('Promotor'), r.promotor],
     [tp('Dia'), dl(r.data)],
@@ -64,6 +66,25 @@ export async function requisicaoPdf(r, imprimir = true) {
     14,
     y,
   );
+  // QR do número da PO (com a versão, para se ver se a impressão é a mais recente): leitura rápida no cais
+  if (window.qrcode) {
+    const q = window.qrcode(0, 'M');
+    q.addData(r.numero + '|v' + (r.versao || 1));
+    q.make();
+    const n = q.getModuleCount();
+    const lado = 26;
+    const c = lado / n;
+    const x0 = 196 - lado;
+    const y0 = y + 9; // por baixo da nota das colunas
+    doc.setFillColor(0, 0, 0);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (q.isDark(i, j)) doc.rect(x0 + j * c, y0 + i * c, c, c, 'F');
+    doc
+      .setFont('helvetica', 'normal')
+      .setFontSize(7)
+      .setTextColor(...CINZA);
+    doc.text(tp('Ler no portal: Logística › Cargas (PO)'), x0 + lado / 2, y0 + lado + 3, { align: 'center' });
+    y = y0 + lado - 2;
+  }
   y = assinaturas(doc, y + 12, [
     // o promotor da rota já preenchido (também nas requisições automáticas da conciliação); quem emitiu fica no cabeçalho
     [tp('Requisitado por (promotor)'), tp('Assinatura e data'), { nome: r.rota + ' · ' + (r.promotor || r.rota) }],

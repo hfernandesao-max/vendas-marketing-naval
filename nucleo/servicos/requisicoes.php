@@ -7,14 +7,19 @@
  * quantidades e juntar outros artigos. Ciclo de vida do documento (como os documentos de armazém dos ERP):
  *   rascunho  editável (gravar quantas vezes for preciso; controlo de versão contra gravações simultâneas)
  *   emitida   fechada ao emitir o PDF ou imprimir: não se altera mais; precisa de mais mercadoria → nova requisição
- *   carregada o armazém confirmou a carga na carrinha, com a quantidade entregue de cada artigo (por omissão a
- *             requisitada); quem emitiu não confirma a sua própria carga (segregação de funções). Só depois de
+ *   carregada o Fiel de Armazém conferiu a carga no cais, linha a linha, com a quantidade carregada de cada artigo
+ *             (por omissão a requisitada) e o motivo de cada diferença; quem emitiu não confirma a sua própria carga
+ *             (segregação de funções). Fases seguintes (campo «fase»): conferida → validada (o Back-Office valida e o
+ *             portal dá a ordem da Guia de Remessa ao Pinguim BO, nucleo/servicos/ordens-pinguim.php) → transferida
+ *             (a guia gerada no Pinguim BO foi encontrada e confere). Até lá a carga reserva o stock do armazém
+ *             principal (naval_req_reservas). Só depois de
  *             fechadas as conciliações dos dias anteriores da carrinha (naval_carr_fechos_pendentes); sem isso, só com
  *             a autorização de quem fecha as conciliações (motivo, outra pessoa que não a que confirma) e a carga
  *             fica fora da contagem desses dias (naval_carr_juntar_posterior)
  *   anulada   rascunho que não vai ser usado (fica registado, com o motivo)
  * O âmbito por rota (SUP e PRO só as suas rotas) verifica-se na API (nucleo/api/v1/requisicoes.php).
- * Numeração sequencial por ano, sem saltos nem repetições: RQ-AAAA-000001. Cada passo fica no histórico do documento
+ * Numeração sequencial por ano, sem saltos nem repetições: PO-AAAA-000001 («Requisição Interna / PO»; as antigas
+ * RQ-AAAA-NNNNNN continuam válidas e partilham a mesma sequência). Cada passo fica no histórico do documento
  * e no registo de auditoria. Reimprimir um documento emitido gera uma 2.ª via (marcada no PDF) e fica registado.
  *
  * Ficheiros (fora da pasta pública): dados-privados/requisicoes/<ano>/<numero>.json e _sequencia.json.
@@ -31,8 +36,21 @@ function naval_req_pasta(string $ano): string
 
 function naval_req_id_valido(string $id): bool
 {
-    return (bool) preg_match('/^RQ-\d{4}-\d{6}$/', $id);
+    return (bool) preg_match('/^(RQ|PO)-\d{4}-\d{6}$/', $id);
 }
+
+/** Ficheiros das requisições de um ano (as RQ antigas e as PO novas), por ordem do número. */
+function naval_req_ficheiros(string $ano): array
+{
+    $p = naval_req_pasta($ano);
+    $f = array_merge((array) glob($p . '/RQ-*.json'), (array) glob($p . '/PO-*.json'));
+    usort($f, function ($a, $b) { return strcmp(substr(basename((string) $a), 8), substr(basename((string) $b), 8)); });
+    return $f;
+}
+
+/** Motivos das diferenças entre o pedido e o carregado (lista fechada, como nos WMS). */
+const NAVAL_REQ_MOTIVOS = ['falta_armazem' => 'Falta no armazém', 'avaria' => 'Avaria ou embalagem danificada', 'pedido_vendedor' => 'A pedido do vendedor',
+    'arredondamento' => 'Arredondamento à embalagem', 'outro' => 'Outro'];
 
 /** Lê uma requisição (null se não existir). */
 function naval_req_ler(string $id): ?array
@@ -54,7 +72,7 @@ function naval_req_proximo(string $ano): string
     $s = naval_json_ler($f);
     $n = (int) ($s['ultimo'] ?? 0) + 1;
     naval_json_gravar($f, ['ultimo' => $n]);
-    return sprintf('RQ-%s-%06d', $ano, $n);
+    return sprintf('PO-%s-%06d', $ano, $n);
 }
 
 /** Limpa as linhas recebidas: artigo com código, quantidade ≥ 0 (as linhas a zero saem), sem códigos repetidos. */
@@ -105,7 +123,7 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
     return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
         // um só rascunho manual aberto por rota e dia (sem rascunhos repetidos nem números gastos por engano)
         if (($origem['tipo'] ?? '') !== 'conciliacao') {
-            foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+            foreach (naval_req_ficheiros($ano) as $f) {
                 $x = naval_json_ler((string) $f);
                 if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
                     throw new NavalErro('Já existe o rascunho ' . $x['numero'] . ' para este promotor neste dia: abra-o para adicionar artigos.', 409);
@@ -270,7 +288,7 @@ function naval_req_anular_vazios(?string $dia, string $login, ?array $rotas = nu
     $feitas = [];
     $hoje = date('Y-m-d');
     foreach ([(int) date('Y') - 1, (int) date('Y')] as $a) {
-        foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {
+        foreach (naval_req_ficheiros((string) $a) as $f) {
             $x = naval_json_ler((string) $f);
             if (!$x || $x['estado'] !== 'rascunho' || count((array) $x['linhas']) > 0) continue;
             if ($dia === null ? $x['data'] >= $hoje : $x['data'] !== $dia) continue;
@@ -289,7 +307,7 @@ function naval_req_listar(string $de, string $ate, ?array $rotas): array
     naval_req_anular_vazios(null, 'automatico');
     $out = [];
     for ($a = (int) substr($de, 0, 4); $a <= (int) substr($ate, 0, 4); $a++) {
-        foreach ((array) glob(naval_req_pasta((string) $a) . '/RQ-*.json') as $f) {
+        foreach (naval_req_ficheiros((string) $a) as $f) {
             $r = naval_json_ler((string) $f);
             if (!$r || $r['data'] < $de || $r['data'] > $ate) continue;
             if ($rotas !== null && !in_array((string) $r['rota'], $rotas, true)) continue;
@@ -334,7 +352,7 @@ function naval_req_catalogo(): array
     }
     if (!$art) {
         foreach ([date('Y'), (string) ((int) date('Y') - 1)] as $ano) {
-            foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+            foreach (naval_req_ficheiros($ano) as $f) {
                 foreach ((array) (naval_json_ler((string) $f)['linhas'] ?? []) as $l) {
                     $art[$l['codigo']] = $art[$l['codigo']] ?? ['codigo' => $l['codigo'], 'artigo' => $l['artigo'], 'unidade' => $l['unidade'], 'disponivel' => null];
                 }
@@ -375,6 +393,8 @@ function naval_req_stock_principal(): ?array
     if ($m !== null) return $m ?: null;
     $m = [];
     foreach (naval_req_catalogo() as $a) if ($a['disponivel'] !== null) $m[(string) $a['codigo']] = (float) $a['disponivel'];
+    // o que já saiu no cais sem guia ainda está no armazém no Pinguim BO: não se pode prometer outra vez
+    if ($m) foreach (naval_req_reservas() as $c => $q) if (isset($m[$c])) $m[$c] = max(0.0, $m[$c] - $q);
     return $m ?: null;
 }
 
@@ -443,12 +463,12 @@ function naval_req_autorizar_carga(string $id, string $motivo, string $login): a
     return $r;
 }
 
-function naval_req_confirmar(string $id, array $entregue, string $login): array
+function naval_req_confirmar(string $id, array $entregue, string $login, array $motivos = []): array
 {
     $antes = naval_req_ler($id);
     if (!$antes) throw new NavalErro('Requisição não encontrada.', 404);
     $pendentes = $antes['estado'] === 'emitida' ? naval_req_verificar_fecho($antes, $login) : [];
-    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $entregue, $login) {
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $entregue, $login, $motivos) {
         $r = naval_req_ler($id);
         if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
         if ($r['estado'] === 'carregada') throw new NavalErro('A carga desta requisição já foi confirmada.', 409);
@@ -460,9 +480,21 @@ function naval_req_confirmar(string $id, array $entregue, string $login): array
             $q = $entregue[$l['codigo']] ?? $l['quantidade'];
             if (!is_numeric($q) || (float) $q < 0 || (float) $q > 1000000) throw new NavalErro('Quantidade entregue inválida no artigo ' . $l['codigo'] . '.', 400);
             $l['entregue'] = round((float) $q, 3);
+            $l['visto'] = true;
+            unset($l['motivo']);
+            if (abs($l['entregue'] - (float) $l['quantidade']) > 0.0001) {
+                // diferença: motivo obrigatório (lista fechada; «outro» com texto)
+                $m = $motivos[$l['codigo']] ?? null;
+                $cod = is_array($m) ? (string) ($m['codigo'] ?? '') : (string) $m;
+                $txt = is_array($m) ? naval_texto((string) ($m['texto'] ?? ''), 200) : '';
+                if (!isset(NAVAL_REQ_MOTIVOS[$cod])) throw new NavalErro('Indique o motivo da diferença no artigo ' . $l['codigo'] . ' (' . $l['artigo'] . ').', 400, ['codigo' => 'motivo', 'artigo' => $l['codigo']]);
+                if ($cod === 'outro' && mb_strlen($txt) < 3) throw new NavalErro('Descreva o motivo da diferença no artigo ' . $l['codigo'] . '.', 400, ['codigo' => 'motivo', 'artigo' => $l['codigo']]);
+                $l['motivo'] = ['codigo' => $cod, 'texto' => $txt];
+            }
         }
         unset($l);
         $r['estado'] = 'carregada';
+        $r['fase'] = 'conferida';
         $r['confirmado_por'] = $login;
         $r['confirmado_em'] = date('Y-m-d H:i:s');
         $r['versao'] = (int) $r['versao'] + 1;
@@ -510,7 +542,7 @@ function naval_req_carga(string $data, ?array $rotas): array
     $out = [];
     $anos = array_unique([substr($data, 0, 4), (string) ((int) substr($data, 0, 4) - 1)]);
     foreach ($anos as $ano) {
-        foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+        foreach (naval_req_ficheiros($ano) as $f) {
             $r = naval_json_ler((string) $f);
             if (!$r || ($rotas !== null && !in_array((string) $r['rota'], $rotas, true))) continue;
             $pendente = $r['estado'] === 'emitida' && substr((string) $r['emitida_em'], 0, 10) <= $data;
@@ -518,10 +550,83 @@ function naval_req_carga(string $data, ?array $rotas): array
             if (!$pendente && !$carregada) continue;
             $out[(string) $r['rota']][] = ['numero' => $r['numero'], 'estado' => $r['estado'], 'linhas' => $r['linhas'], 'emitida_em' => $r['emitida_em'],
                 'emitida_por' => $r['emitida_por'], 'confirmado_em' => $r['confirmado_em'] ?? null, 'confirmado_por' => $r['confirmado_por'] ?? null,
-                'excepcao_fecho' => $r['excepcao_fecho'] ?? null];
+                'excepcao_fecho' => $r['excepcao_fecho'] ?? null, 'fase' => $r['fase'] ?? null, 'ordem' => $r['ordem'] ?? null];
         }
     }
     foreach ($out as &$l) usort($l, function ($a, $b) { return strcmp($a['numero'], $b['numero']); });
     unset($l);
+    return $out;
+}
+
+/**
+ * Validação do Back-Office (1 clique): a carga conferida no cais passa a «validada» e o portal dá a ordem da Guia de
+ * Remessa ao Pinguim BO (fila de ordens). Segregação de funções: quem emitiu ou conferiu a carga não a valida.
+ */
+function naval_req_validar(string $id, string $login): array
+{
+    naval_servico('ordens-pinguim');
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $login) {
+        $r = naval_req_ler($id);
+        if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+        if ($r['estado'] !== 'carregada') throw new NavalErro('Só se valida uma carga já conferida no cais.', 409);
+        if (($r['fase'] ?? 'conferida') !== 'conferida') throw new NavalErro('Esta carga já foi validada.', 409);
+        if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0') {
+            foreach (['emitida_por' => 'emitiu a requisição', 'confirmado_por' => 'conferiu a carga'] as $k => $o) {
+                if (strcasecmp((string) ($r[$k] ?? ''), $login) === 0) throw new NavalErro('Segregação de funções: quem ' . $o . ' não a valida.', 403);
+            }
+        }
+        $r['fase'] = 'validada';
+        $r['validado_por'] = $login;
+        $r['validado_em'] = date('Y-m-d H:i:s');
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'carga_validada', $login);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    $o = naval_ord_da_requisicao($r, $login);
+    naval_exclusivo('requisicao-' . $id, function () use ($id, $o) {
+        $x = naval_req_ler($id);
+        if (!$x) return;
+        $x['ordem'] = $o['id'];
+        naval_req_gravar_ficheiro($x);
+    });
+    $r['ordem'] = $o['id'];
+    naval_registar('requisicao_validada', ['numero' => $id, 'rota' => $r['rota'], 'ordem' => $o['id']], $login);
+    return $r;
+}
+
+/** A guia do Pinguim BO foi encontrada e confere (fila de ordens): a carga fica «transferida» e a reserva cai. */
+function naval_req_transferida(string $id, array $doc): void
+{
+    naval_exclusivo('requisicao-' . $id, function () use ($id, $doc) {
+        $r = naval_req_ler($id);
+        if (!$r || ($r['fase'] ?? '') === 'transferida') return;
+        $r['fase'] = 'transferida';
+        $r['guia'] = ['numero' => (string) ($doc['numero'] ?? ''), 'id' => $doc['id'] ?? null, 'em' => date('Y-m-d H:i:s')];
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'guia_gerada', 'sistema', ['guia' => $r['guia']['numero']]);
+        naval_req_gravar_ficheiro($r);
+    });
+}
+
+/**
+ * Reservas no armazém principal {código: quantidade}: cargas conferidas no cais ou validadas cuja guia ainda não
+ * existe no Pinguim BO (a mercadoria já saiu fisicamente mas o stock ainda está no armazém principal). Caem ao fim de
+ * REQ_RESERVA_HORAS (24) sem guia, com uma ocorrência.
+ */
+function naval_req_reservas(?int $agora = null): array
+{
+    $agora = $agora ?? time();
+    $horas = (int) naval_config('REQ_RESERVA_HORAS', '24');
+    $out = [];
+    foreach ([(string) ((int) date('Y', $agora) - 1), date('Y', $agora)] as $ano) {
+        foreach (naval_req_ficheiros($ano) as $f) {
+            $r = naval_json_ler((string) $f);
+            if (!$r || $r['estado'] !== 'carregada' || !in_array($r['fase'] ?? 'conferida', ['conferida', 'validada'], true)) continue;
+            if (!isset($r['fase'])) continue;   // cargas confirmadas antes das fases (sem reserva)
+            if (strtotime((string) $r['confirmado_em']) < $agora - $horas * 3600) continue;
+            foreach ($r['linhas'] as $l) $out[(string) $l['codigo']] = round(($out[(string) $l['codigo']] ?? 0) + (float) ($l['entregue'] ?? 0), 3);
+        }
+    }
     return $out;
 }

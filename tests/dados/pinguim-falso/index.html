@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pinguim BO (ensaio do robô)</title>
+  </head>
+  <body>
+    <!-- Página de ensaio do robô (ferramentas/robo-pinguim.mjs): imita a entrada, a guia e a procura por referência.
+         Os documentos ficam no localStorage; o número sai «GTC 2026/NNNN». Artigo «SEMSTOCK» dá um erro de negócio. -->
+    <form id="entrada">
+      <input id="utilizador" /> <input id="senha" type="password" />
+      <button id="entrar" type="button">Entrar</button>
+    </form>
+    <nav id="menu" hidden>
+      <button id="menu-guia" type="button">Nova guia</button>
+      <button id="menu-procurar" type="button">Procurar</button>
+    </nav>
+    <section id="guia" hidden>
+      <select id="armazem-destino">
+        <option value="">—</option>
+        <option>10001001</option>
+        <option>10001002</option>
+        <option>10001008</option>
+      </select>
+      <input id="referencia" />
+      <table>
+        <tbody id="linhas"></tbody>
+      </table>
+      <button id="nova-linha" type="button">+</button>
+      <button id="gravar" type="button">Gravar</button>
+      <p id="numero-documento"></p>
+      <p class="erro-negocio" hidden></p>
+    </section>
+    <section id="procura" hidden>
+      <input id="procurar-referencia" /> <button id="procurar" type="button">Procurar</button>
+      <p id="resultado-numero"></p>
+    </section>
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const docs = () => JSON.parse(localStorage.getItem('docs') || '[]');
+      $('#entrar').onclick = () => {
+        if ($('#utilizador').value === 'robo' && $('#senha').value === 'segredo') {
+          $('#entrada').hidden = true;
+          $('#menu').hidden = false;
+        }
+      };
+      $('#menu-guia').onclick = () => {
+        $('#procura').hidden = true;
+        $('#guia').hidden = false;
+      };
+      $('#menu-procurar').onclick = () => {
+        $('#guia').hidden = true;
+        $('#procura').hidden = false;
+      };
+      $('#nova-linha').onclick = () => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td><input class="artigo"></td><td><input class="quantidade"></td>';
+        $('#linhas').append(tr);
+      };
+      $('#gravar').onclick = () => {
+        const linhas = [...document.querySelectorAll('#linhas tr')].map((tr) => [tr.querySelector('.artigo').value, +tr.querySelector('.quantidade').value]);
+        if (linhas.some((l) => l[0] === 'SEMSTOCK')) {
+          $('.erro-negocio').hidden = false;
+          $('.erro-negocio').textContent = 'Stock insuficiente no artigo SEMSTOCK';
+          return;
+        }
+        const d = docs();
+        const numero = 'GTC 2026/' + String(d.length + 1).padStart(4, '0');
+        d.push({ numero, referencia: $('#referencia').value, destino: $('#armazem-destino').value, linhas });
+        localStorage.setItem('docs', JSON.stringify(d));
+        $('#numero-documento').textContent = numero;
+      };
+      $('#procurar').onclick = () => {
+        const d = docs().find((x) => x.referencia === $('#procurar-referencia').value);
+        $('#resultado-numero').textContent = d ? d.numero : '';
+      };
+    </script>
+  </body>
+</html>

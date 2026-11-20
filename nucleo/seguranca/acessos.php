@@ -58,6 +58,10 @@ const NAVAL_MATRIZ_TXT = [
     'conciliacao-fecho'    => '-  G  -  -  -  G  -  -  -  -  -',
     // requisições de reposição da carrinha ao armazém: o promotor e o supervisor (nas suas rotas) e a logística gerem
     'requisicoes-carrinha' => 'V  V  V  G  G  V  -  G  -  V  V',
+    // validação da carga conferida no cais pelo Back-Office e ordens da Guia de Remessa ao Pinguim BO
+    'validacao-carga'      => 'V  G  -  -  -  V  G  V  -  V  -',
+    // página «Cargas (PO)»: o Fiel de Armazém confere no cais (requisicoes-carrinha G) e o Back-Office valida (validacao-carga G)
+    'cargas-po'            => 'V  V  -  -  -  V  V  V  -  V  -',
     // Relatório de Vendas diário (gerar e exportar: E) e folha de caixa do Marketing (tesouraria e apoio RTM registam: G)
     'relatorio-vendas'     => 'V  E  E  -  -  E  V  -  -  E  -',
     'caixa-marketing'      => 'V  V  V  -  -  G  G  -  -  V  -',
@@ -225,6 +229,10 @@ function naval_niveis_recurso(string $rec): array
         case 'conciliacao-carrinha':
         case 'requisicoes-carrinha':
             return ['', 'Vr', 'V', 'G'];
+        case 'validacao-carga':
+            return ['', 'V', 'G'];
+        case 'cargas-po':
+            return ['', 'V'];
         case 'relatorio-vendas':
             return ['', 'V', 'E'];
         case 'caixa-marketing':

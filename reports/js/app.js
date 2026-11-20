@@ -89,6 +89,7 @@ const SEM_PERIODO = [
   // têm o seu próprio dia ou não dependem do período (o filtro de datas só confundiria)
   'rotas-propostas',
   'ocorrencias',
+  'cargas-po',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'vendas-promotor-artigo', 'sap-exportar']);

@@ -58,6 +58,7 @@ export const PAGES = [
   // Logística pela ordem do processo: plano → requisição → carga → stock → conciliação
   { id: 'plano-cargas', grupo: 'Logística', icon: 'clip', nome: 'Cargas planeadas' },
   { id: 'requisicoes-carrinha', grupo: 'Logística', icon: 'requisicao', nome: 'Requisições ao armazém' },
+  { id: 'cargas-po', grupo: 'Logística', icon: 'truck', nome: 'Cargas (PO)' },
   { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Cargas realizadas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
@@ -107,6 +108,8 @@ export const NOMES_RECURSO = {
   'geo-terreno': 'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)',
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
+  'cargas-po': 'Cargas (PO) · conferência no cais, validação e ordens ao Pinguim BO (ver)',
+  'validacao-carga': 'Cargas (PO) · validar a carga conferida e tratar as ordens da Guia de Remessa ao Pinguim BO (G)',
   'conciliacao-fecho': 'Conciliação da carrinha · aprovação final do responsável (2.º nível, fecha)',
   'caixa-aprovacao': 'Fecho de caixa · aprovação do superior de quem o lança (1.º nível)',
   'caixa-aprovacao-final': 'Fecho de caixa · aprovação final do responsável máximo (2.º nível)',

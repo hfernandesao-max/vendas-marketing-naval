@@ -113,7 +113,8 @@ test('requisição de reposição: criada pela conciliação, editada e emitida 
   const carga = await (await log.get(RQ + '?carga=1&data=' + dia)).json();
   expect(carga.rotas['1001'][0].estado).toBe('emitida');
   expect((await post(sup, { accao: 'confirmar_carga', numero: r.numero, entregue: {} })).status).toBe(403);
-  const c = (await post(log, { accao: 'confirmar_carga', numero: r.numero, entregue: { B9: 3 } })).json.requisicao;
+  const c = (await post(log, { accao: 'confirmar_carga', numero: r.numero, entregue: { B9: 3 }, motivos: { B9: { codigo: 'falta_armazem' } } })).json
+    .requisicao;
   expect(c.estado).toBe('carregada');
   expect(c.linhas.map((l) => l.entregue)).toEqual([26, 3]);
 });

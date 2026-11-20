@@ -710,7 +710,7 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
     // requisições ao armazém
     $catArm = null;
     foreach (array_unique([substr($ant, 0, 4), substr($data, 0, 4)]) as $ano) {
-        foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+        foreach (naval_req_ficheiros($ano) as $f) {
             $r = naval_json_ler((string) $f);
             if (!$r || $r['data'] < $ant || $r['data'] > $data) continue;
             $rota = (string) $r['rota'];
@@ -785,7 +785,7 @@ function naval_plano_com_requisicoes(array $p, array $listas, ?array $carga = nu
     $req = [];
     $grupo = [];
     foreach (array_unique([substr($ant, 0, 4), substr((string) $p['data'], 0, 4)]) as $ano) {
-        foreach ((array) glob(naval_req_pasta($ano) . '/RQ-*.json') as $f) {
+        foreach (naval_req_ficheiros($ano) as $f) {
             $r = naval_json_ler((string) $f);
             if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $p['data']) continue;
             $rt = (string) $r['rota'];

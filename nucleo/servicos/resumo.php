@@ -254,6 +254,14 @@ function naval_periodicas(?int $agora = null): array
             error_log('[prospecção] ' . $e->getMessage());
         }
     }
+    // ordens do portal ao Pinguim BO: confirma pelo Pinguim BO as guias geradas (robô ou Back-Office)
+    try {
+        naval_servico('ordens-pinguim');
+        $o = naval_bd_configurada() ? naval_ord_tick($agora) : [];
+        if ($o) $feito['ordens_pinguim'] = $o;
+    } catch (Throwable $e) {
+        error_log('[ordens Pinguim BO] ' . $e->getMessage());
+    }
     // conciliação das carrinhas: fotografia do stock antes do corte (início do carregamento)
     try {
         naval_servico('carrinha');

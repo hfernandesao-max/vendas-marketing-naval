@@ -833,12 +833,12 @@ p.aviso {
 }
 .mod-versao {
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
 }
 .mod-desc {
   margin: 0;
   font-size: 13px;
-  color: var(--mut);
+  color: var(--muted);
 }
 .mod-det,
 .pcar-det {
@@ -850,7 +850,7 @@ p.aviso {
 }
 .mod-det dt,
 .pcar-det dt {
-  color: var(--mut);
+  color: var(--muted);
 }
 .mod-det dd,
 .pcar-det dd {
@@ -909,7 +909,7 @@ p.aviso {
   margin: 0 0 12px;
   padding-left: 18px;
   font-size: 13px;
-  color: var(--mut);
+  color: var(--muted);
 }
 .sup-check {
   display: flex;
@@ -1473,4 +1473,64 @@ dialog.dlg.cf-dlg {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* Logística › Cargas (PO): conferência no cais, validação e ordens ao Pinguim BO */
+.cp-abrir {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cp-abrir input {
+  min-width: 14em;
+  font-family: ui-monospace, monospace;
+  text-transform: uppercase;
+}
+.cp-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 6px 0;
+}
+.cp-tab input[type='number'] {
+  width: 6.5em;
+  text-align: right;
+}
+.cp-tab input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+}
+.cp-tab tr.cp-dif td,
+.cc-tab tr.cp-dif td {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.cc-motivo {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  min-width: 12em;
+}
+.cp-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.cp-video {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 10px;
+  background: #000;
+}
+.cp-dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 8px 0;
+}
+.cp-dados dt {
+  color: var(--muted);
 }

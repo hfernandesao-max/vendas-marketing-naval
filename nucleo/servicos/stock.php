@@ -301,7 +301,16 @@ function naval_stock_organizar(array $rows, string $dataFim): array
             'armazem' => $nomeArmazem, 'codigo' => $codProduto, 'produto' => $nomeProduto, 'artigo' => $nomeProduto, 'quantidade' => $quantidade];
     }
     ksort($carrinhas);
-    foreach ($carrinhas as &$c) $c['armazens_origem'] = array_values($c['armazens_origem']);
+    foreach ($carrinhas as &$c) {
+        $c['armazens_origem'] = array_values($c['armazens_origem']);
+        // confirmação automática: um só armazém, com o código exacto 100010NN da própria rota (sem dúvida possível);
+        // pelo nome ou com mais de um armazém fica para SADM/TI confirmarem (STOCK_CONFIRMAR_AUTO=0 desliga)
+        $o = $c['armazens_origem'];
+        if (!$c['confirmado'] && naval_config('STOCK_CONFIRMAR_AUTO', '1') !== '0' && count($o) === 1 && $o[0]['como'] === 'codigo' && $o[0]['codigo'] === '1000' . $c['rota']) {
+            $c['confirmado'] = true;
+            $c['armazens_origem'][0]['como'] = 'automatico';
+        }
+    }
     unset($c);
     return [
         'origem' => 'SQL Server (dbo.GET_STOCK)', 'data' => $dataFim, 'datas_disponiveis' => [$dataFim], 'ultima_data' => $dataFim, 'dados_ate' => $dataFim,

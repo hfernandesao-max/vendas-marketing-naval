@@ -1,5 +1,16 @@
 ## 20-11-2026
 
+### Cargas (PO): conferência no cais, validação do Back-Office e Guia de Remessa ordenada ao Pinguim BO
+
+<!-- tipo: funcionalidade -->
+
+- As requisições ao armazém passam a chamar-se «Requisição Interna / PO», com o número PO-AAAA-NNNNNN e um QR no PDF. As RQ antigas continuam a abrir.
+- Nova página Logística › Cargas (PO). O Fiel de Armazém lê o QR (ou escreve o número), põe o visto em cada linha, indica o que carregou e o motivo de cada diferença. Nesta fase não há guia nem transferência: a carga fica reservada no armazém principal.
+- O Back-Office valida com um clique (ou todas as sem diferenças de uma vez). Quem emitiu ou conferiu a carga não a valida.
+- Ao validar, o portal dá a ordem da Guia de Remessa ao Pinguim BO. A guia é sempre criada no Pinguim BO, que a numera e assina; o portal encontra-a sozinho no Pinguim BO, confere-a com a carga e fecha o ciclo. Enquanto o robô do portal não estiver ligado aos ecrãs do Pinguim BO, o Back-Office cria a guia com os dados que o portal mostra e escreve o número.
+- A confirmação da carga na página do Stock também pede o motivo de cada diferença.
+- O armazém da carrinha confirma-se sozinho quando é o único e tem o código 100010NN da própria rota; os casos duvidosos continuam a pedir a confirmação de SADM/TI.
+
 ### Zonas de entrega e Distribuidores automáticos; mapas mais claros
 
 <!-- tipo: melhoria -->

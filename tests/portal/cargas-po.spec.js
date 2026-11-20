@@ -1,0 +1,116 @@
+// Logística › Cargas (PO): conferir a PO no cais (visto por linha e motivo de cada diferença), validar no Back-Office
+// e as ordens da Guia de Remessa ao Pinguim BO (execução à mão enquanto o robô não está ligado).
+import { test, expect } from '@playwright/test';
+import { abrir } from './dados.js';
+
+const po = (estado = 'emitida') => ({
+  numero: 'PO-2026-000412',
+  rota: '1008',
+  promotor: 'Daniel M.',
+  data: '2026-10-26',
+  estado,
+  fase: estado === 'carregada' ? 'conferida' : undefined,
+  emitida_por: 'sup',
+  versao: 2,
+  confirmado_por: estado === 'carregada' ? 'log' : null,
+  confirmado_em: estado === 'carregada' ? '2026-10-26 07:20:00' : null,
+  linhas: [
+    { codigo: '10000332', artigo: 'FRALDAS NAVAL MEDIUM', quantidade: 400, entregue: estado === 'carregada' ? 400 : undefined },
+    { codigo: '10000292', artigo: 'SABÃO VERDE', quantidade: 30, entregue: estado === 'carregada' ? 28 : undefined },
+  ],
+});
+
+test('cargas (PO): conferir no cais exige o visto em todas as linhas e o motivo de cada diferença', async ({ page }) => {
+  const pedidos = [];
+  let estado = 'emitida';
+  await page.route('**/v1/requisicoes**', (r) => {
+    if (r.request().method() === 'POST') {
+      pedidos.push(JSON.parse(r.request().postData()));
+      estado = 'carregada';
+      return r.fulfill({ json: { ok: true, requisicao: po(estado) } });
+    }
+    return r.fulfill({ json: { ok: true, gere: true, requisicao: po(estado), motivos: {} } });
+  });
+  await page.route('**/v1/ordens-pinguim**', (r) => r.fulfill({ json: { ok: true, gere: true, modo: 'manual', por_validar: [], ordens: [] } }));
+  const erros = await abrir(page, '#cargas-po');
+  await expect(page.getByRole('tab', { name: 'Conferir no cais' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByLabel('Número da PO').fill('po-2026-000412');
+  await page.getByRole('button', { name: 'Abrir' }).click();
+  await expect(page.locator('.cp-cab')).toContainText('PO-2026-000412');
+  // diferença: aparece o motivo; sem vistos não conclui
+  await page.getByLabel('Carregado · SABÃO VERDE').fill('28');
+  await expect(page.getByLabel('Motivo · SABÃO VERDE')).toBeVisible();
+  await expect(page.locator('.cp-res')).toContainText('0 de 2 conferidas · diferenças: 1 (-2 un.)');
+  await page.getByRole('button', { name: 'Concluir conferência' }).click();
+  await expect(page.locator('.cp-conf .erro')).toContainText('Ponha o visto em todas as linhas');
+  await page.getByLabel('Visto · FRALDAS NAVAL MEDIUM').check();
+  await page.getByLabel('Visto · SABÃO VERDE').check();
+  await page.getByRole('button', { name: 'Concluir conferência' }).click();
+  await expect(page.locator('.cp-conf .erro')).toContainText('Indique o motivo');
+  await page.getByLabel('Motivo · SABÃO VERDE').selectOption('falta_armazem');
+  await page.getByRole('button', { name: 'Concluir conferência' }).click();
+  await expect(page.locator('.cp-conf')).toContainText('Conferida por log');
+  expect(pedidos[0]).toMatchObject({
+    accao: 'confirmar_carga',
+    numero: 'PO-2026-000412',
+    entregue: { 10000332: 400, 10000292: 28 },
+    motivos: { 10000292: { codigo: 'falta_armazem' } },
+  });
+  expect(erros).toEqual([]);
+});
+
+test('cargas (PO): o Back-Office valida e trata a ordem da guia no Pinguim BO', async ({ page }) => {
+  const pedidos = [];
+  let validada = false;
+  let gerada = false;
+  const carga = { ...po('carregada'), diferencas: 1 };
+  const ordem = () => ({
+    id: 'GUIA-PO-2026-000412',
+    referencia: 'PO-2026-000412',
+    rota: '1008',
+    promotor: 'Daniel M.',
+    armazem_destino: '10001008',
+    modo: 'manual',
+    estado: gerada ? 'gerada' : 'por_executar',
+    documento: gerada ? { numero: 'GTC 2026/0042' } : null,
+    criada_em: '2026-10-26 08:00:00',
+    linhas: [
+      { codigo: '10000332', artigo: 'FRALDAS NAVAL MEDIUM', quantidade: 400, armazem_origem: 'HIGITEC PIV' },
+      { codigo: '10000292', artigo: 'SABÃO VERDE', quantidade: 28, armazem_origem: 'HIGITEC PIV' },
+    ],
+  });
+  await page.route('**/v1/requisicoes**', (r) => {
+    pedidos.push(JSON.parse(r.request().postData() || '{}'));
+    validada = true;
+    return r.fulfill({ json: { ok: true, requisicao: { ...carga, fase: 'validada' } } });
+  });
+  await page.route('**/v1/ordens-pinguim**', (r) => {
+    if (r.request().method() === 'POST') {
+      pedidos.push(JSON.parse(r.request().postData()));
+      gerada = true;
+      return r.fulfill({ json: { ok: true, ordem: ordem() } });
+    }
+    return r.fulfill({ json: { ok: true, gere: true, modo: 'manual', por_validar: validada ? [] : [carga], ordens: validada ? [ordem()] : [] } });
+  });
+  const erros = await abrir(page, '#cargas-po');
+  await page.getByRole('tab', { name: 'Validar' }).click();
+  await expect(page.locator('.tile').filter({ hasText: 'Por validar' }).locator('.v')).toHaveText('1');
+  // com diferenças: rever antes de validar (o motivo do Fiel de Armazém está à vista)
+  await page.getByRole('button', { name: 'Rever' }).click();
+  const dlg = page.locator('dialog[open]');
+  await expect(dlg).toContainText('SABÃO VERDE');
+  await dlg.getByRole('button', { name: 'Validar e pedir a guia' }).click();
+  await expect(page.locator('.tile').filter({ hasText: 'Por validar' }).locator('.v')).toHaveText('0');
+  expect(pedidos[0]).toMatchObject({ accao: 'validar', numero: 'PO-2026-000412' });
+  // ordem por executar (robô por ligar): o Back-Office cria-a no Pinguim BO e escreve o número
+  await page.getByRole('tab', { name: 'Ordens ao Pinguim BO' }).click();
+  await expect(page.locator('.cp-ordem')).toContainText('Guia de Remessa · PO-2026-000412');
+  await page.getByRole('button', { name: 'Executada no Pinguim BO' }).click();
+  const d2 = page.locator('dialog[open]');
+  await expect(d2).toContainText('10001008');
+  await d2.getByLabel('Número do documento no Pinguim BO').fill('GTC 2026/0042');
+  await d2.getByRole('button', { name: 'Gravar' }).click();
+  await expect(page.locator('.cp-ordem')).toContainText('Gerada · a confirmar');
+  expect(pedidos[1]).toMatchObject({ accao: 'executada_manual', id: 'GUIA-PO-2026-000412', documento: 'GTC 2026/0042' });
+  expect(erros).toEqual([]);
+});

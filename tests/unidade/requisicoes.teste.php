@@ -6,7 +6,7 @@ teste('conciliação validada cria a requisição com o vendido (uma só por rot
     $data = date('Y-m-d', time() - 3 * 86400);
     $linhas = [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'unidade' => 'CX', 'vendido' => 26.0], ['codigo' => 'B2', 'artigo' => 'Sabão', 'unidade' => 'UN', 'vendido' => 0.0]];
     $r = naval_req_da_conciliacao($data, '1001', $linhas, 'tec');
-    verdade((bool) preg_match('/^RQ-\d{4}-\d{6}$/', $r['numero']), 'número sequencial do ano');
+    verdade((bool) preg_match('/^PO-\d{4}-\d{6}$/', $r['numero']), 'número sequencial do ano');
     igual('rascunho', $r['estado']);
     igual([['codigo' => 'A1', 'quantidade' => 26.0, 'sugerida' => 26.0, 'origem' => 'vendido']],
         array_map(function ($l) { return ['codigo' => $l['codigo'], 'quantidade' => $l['quantidade'], 'sugerida' => $l['sugerida'], 'origem' => $l['origem']]; }, $r['linhas']),
@@ -31,7 +31,7 @@ teste('rascunho editável (com controlo de versão); emitida fica fechada; 2.ª 
     lanca(409, function () use ($e) { naval_req_anular($e['numero'], 'já não é precisa', null, 'pro'); });
     igual(2, count(naval_req_reimprimir($e['numero'], 'pro')['impressoes']), '2.ª via registada');
     lanca(403, function () use ($e) { naval_req_confirmar($e['numero'], [], 'pro'); }); // quem emitiu não confirma
-    $c = naval_req_confirmar($e['numero'], ['C3' => 1], 'log');
+    $c = naval_req_confirmar($e['numero'], ['C3' => 1], 'log', ['C3' => 'falta_armazem']);
     igual('carregada', $c['estado']);
     igual(['A1' => 8.0, 'C3' => 1.0], array_column($c['linhas'], 'entregue', 'codigo'), 'por omissão, o requisitado');
     lanca(409, function () use ($e) { naval_req_confirmar($e['numero'], [], 'log'); });
@@ -113,7 +113,7 @@ teste('fecho antes da carga: só se carrega com as conciliações anteriores fec
     $a = naval_req_autorizar_carga($r['numero'], 'Rota com clientes à espera; conciliação ao fim da manhã', 'resp');
     igual([$ontem], $a['excepcao_fecho']['dias']);
     lanca(403, function () use ($r) { naval_req_confirmar($r['numero'], [], 'resp'); });   // quem autorizou não confirma
-    $c = naval_req_confirmar($r['numero'], ['A1' => 5], 'arm');
+    $c = naval_req_confirmar($r['numero'], ['A1' => 5], 'arm', ['A1' => 'falta_armazem']);
     igual('carregada', $c['estado']);
     // a carga está na carrinha antes da contagem de ontem: conta-se, mas não entra na conciliação
     $reg = naval_carr_ler($ontem, $rota);

@@ -11,15 +11,18 @@
  * POST {accao: emitir, numero, versao, csrf}            fecha o documento (PDF / impressão)
  * POST {accao: reimprimir, numero, csrf}                2.ª via de um documento emitido
  * POST {accao: anular, numero, versao, motivo, csrf}
- * POST {accao: confirmar_carga, numero, entregue: {codigo: quantidade}, csrf}   o armazém confirma a carga (só com
+ * POST {accao: confirmar_carga, numero, entregue: {codigo: quantidade}, motivos: {codigo: {codigo, texto}}, csrf}
+ *      o Fiel de Armazém confere a carga no cais (motivo obrigatório em cada diferença; só com
  *      os fechos das carrinhas feitos, ou com a autorização de carga antes do fecho)
  * POST {accao: autorizar_carga, numero, motivo, csrf}   carga antes do fecho (quem fecha as conciliações, «conciliacao-fecho» G)
  * GET  v1/requisicoes?carga=1&data=AAAA-MM-DD          por rota: emitidas por carregar e carregadas no dia (stock)
+ * POST {accao: validar, numero, csrf}                  Back-Office valida a carga conferida e o portal ordena a Guia de
+ *      Remessa ao Pinguim BO («validacao-carga» G; quem emitiu ou conferiu não valida)
  */
 defined('NAVAL_API') || exit;
 naval_servico('rotas');
 naval_servico('requisicoes');
-naval_exigir(['requisicoes-carrinha']);
+naval_exigir(['requisicoes-carrinha', 'validacao-carga']);   // o Back-Office valida as cargas sem gerir requisições
 $gere = naval_pode('requisicoes-carrinha', 'G');
 $eu = (array) naval_utilizador();
 $login = (string) ($eu['login'] ?? '');
@@ -41,7 +44,7 @@ if (!naval_e_post()) {
     if (isset($_GET['numero'])) {
         $r = naval_req_ler((string) $_GET['numero']);
         if (!$r || !naval_rota_permitida($r['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
-        naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicao' => $r]);
+        naval_json_assinado(['ok' => true, 'gere' => $gere, 'requisicao' => $r, 'motivos' => NAVAL_REQ_MOTIVOS, 'eu' => $login]);
     }
     $de = (string) ($_GET['de'] ?? date('Y-m-d', time() - 30 * 86400));
     $ate = (string) ($_GET['ate'] ?? date('Y-m-d'));
@@ -64,6 +67,16 @@ if ($accao === 'autorizar_carga') {
     $alvo = naval_req_ler((string) ($p['numero'] ?? ''));
     if (!$alvo || !naval_rota_permitida($alvo['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
     naval_json_assinado(['ok' => true, 'requisicao' => naval_req_autorizar_carga((string) $p['numero'], (string) ($p['motivo'] ?? ''), $login)]);
+}
+// validação do Back-Office (não precisa de gerir requisições)
+if ($accao === 'validar') {
+    if (!naval_pode('validacao-carga', 'G')) {
+        naval_registar('alteracao_recusada', ['accao' => 'validar_carga', 'motivo' => 'perfil']);
+        throw new NavalErro('O seu perfil não permite validar cargas.', 403);
+    }
+    $alvo = naval_req_ler((string) ($p['numero'] ?? ''));
+    if (!$alvo || !naval_rota_permitida($alvo['rota'])) throw new NavalErro('Requisição não encontrada.', 404);
+    naval_json_assinado(['ok' => true, 'requisicao' => naval_req_validar((string) $p['numero'], $login)]);
 }
 if (!$gere) {
     naval_registar('alteracao_recusada', ['accao' => 'requisicao_' . $accao, 'motivo' => 'perfil']);
@@ -95,7 +108,7 @@ switch ($accao) {
     case 'reimprimir':
         naval_json_assinado(['ok' => true, 'requisicao' => naval_req_reimprimir($numero, $login)]);
     case 'confirmar_carga':
-        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_confirmar($numero, (array) ($p['entregue'] ?? []), $login)]);
+        naval_json_assinado(['ok' => true, 'requisicao' => naval_req_confirmar($numero, (array) ($p['entregue'] ?? []), $login, (array) ($p['motivos'] ?? []))]);
     case 'anular':
         naval_json_assinado(['ok' => true, 'requisicao' => naval_req_anular($numero, (string) ($p['motivo'] ?? ''), $versao, $login)]);
 }

@@ -33,6 +33,7 @@ function preparar_ambiente(string $amb, int $porta, array $extra): string
         'JWT_SEGREDO=' . bin2hex(random_bytes(32)),   // chave de teste, nova em cada execução
         'API_RITMO_TOKEN=1000',                        // os testes entram muitas vezes com a mesma conta
         'GEO_ENTRADA_CHAVE=chave-de-teste-da-entrada-geo-0123456789abcdef',   // webhook das fontes externas
+        'ROBO_PINGUIM_CHAVE=chave-de-teste-do-robo-pinguim-0123456789abcdef', 'ORDENS_PINGUIM_MODO=robo',   // robô do Pinguim BO
     ], $extra)) . "\n");
     return $priv;
 }

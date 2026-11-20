@@ -23,6 +23,7 @@ import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.j
 import { postJson } from '../servidor.js';
 import { DB, el, sum, toast } from '../util.js';
 import { R } from './registo.js';
+import { campoMotivo } from '../componentes/motivos-carga.js';
 
 // Estado do pedido de stock para a data do período: '' | 'a-carregar' | 'ok' | 'erro'
 let pedido = { data: '', estado: '', erro: '', em: 0 };
@@ -168,13 +169,19 @@ function confirmarCarga(r) {
       [t('Código'), t('Artigo'), t('Requisitado'), t('Entregue')].forEach((x, i) => cab.append(el('th', i > 1 ? 'n' : null, x)));
       tab.append(cab);
       const campos = {};
+      const motivos = {};
       r.linhas.forEach((l) => {
         const tr = el('tr');
         const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
         i.setAttribute('aria-label', t('Entregue') + ' · ' + l.artigo);
         campos[l.codigo] = i;
         const td = el('td', 'n');
-        td.append(i);
+        // diferença: o motivo é obrigatório (aparece só quando a quantidade muda)
+        const m = campoMotivo(t('Motivo') + ' · ' + l.artigo);
+        m.w.hidden = true;
+        motivos[l.codigo] = m;
+        i.addEventListener('input', () => (m.w.hidden = i.value === '' || Number(i.value) === Number(l.quantidade)));
+        td.append(i, m.w);
         tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
         tab.append(tr);
       });
@@ -182,6 +189,7 @@ function confirmarCarga(r) {
       b.append(tab, erro);
       const ok = botao(t('Confirmar carga'), null, () => {
         const entregue = {};
+        const porque = {};
         for (const [c, i] of Object.entries(campos)) {
           if (i.value === '' || Number(i.value) < 0) {
             erro.hidden = false;
@@ -189,9 +197,18 @@ function confirmarCarga(r) {
             return i.focus();
           }
           entregue[c] = Number(i.value);
+          if (!motivos[c].w.hidden) {
+            const v = motivos[c].valor();
+            if (!v || (v.codigo === 'outro' && v.texto.length < 3)) {
+              erro.hidden = false;
+              erro.textContent = t('Indique o motivo de cada diferença entre o pedido e o carregado.');
+              return motivos[c].sel.focus();
+            }
+            porque[c] = v;
+          }
         }
         ok.disabled = true;
-        postJson('requisicoes', { accao: 'confirmar_carga', numero: r.numero, entregue }).then((x) => {
+        postJson('requisicoes', { accao: 'confirmar_carga', numero: r.numero, entregue, motivos: porque }).then((x) => {
           ok.disabled = false;
           if (!x.ok) {
             erro.hidden = false;
@@ -312,7 +329,14 @@ function origemCarrinha(car) {
   if (car.confirmado === undefined) return box; // ficheiro sem esta informação
   box.append(pill(car.confirmado ? t('Armazém confirmado') : t('Armazém por confirmar'), car.confirmado ? 'p-ok' : 'p-warn'));
   ori.forEach((a) => {
-    const como = a.como === 'confirmado' ? t('confirmado') : a.como === 'codigo' ? t('pelo código') : t('pelo nome');
+    const como =
+      a.como === 'confirmado'
+        ? t('confirmado')
+        : a.como === 'automatico'
+          ? t('confirmado automaticamente: código da rota')
+          : a.como === 'codigo'
+            ? t('pelo código')
+            : t('pelo nome');
     const linha = el('span', 'stock-origem-arm', a.codigo + ' · ' + a.nome + ' (' + como + ')');
     if (podeConfirmar() && (!car.confirmado || ori.length > 1)) {
       const b = el('button', 'btn ghost sm', ori.length > 1 ? t('Só este é a carrinha') : t('Confirmar'));
