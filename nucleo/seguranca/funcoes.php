@@ -52,6 +52,8 @@ const NAVAL_CONTAS_AJUSTES = [
         'pedido' => 'HF, 18-11-2026'],
     // coordenador de todos os promotores: gestão operacional e 1.º nível de aprovação das diferenças de stock
     '2026-11-nathan-alemayehu' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD'], 'dono_de' => [], 'pedido' => 'HF, 18-11-2026'],
+    // o coordenador aprova as PO para a carga no cais
+    '2026-11-nathan-po' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD', 'C-PO-APROVAR'], 'dono_de' => [], 'pedido' => 'HF, 20-11-2026'],
 ];
 
 /** Catálogo inicial: as funções-base copiam os perfis do sistema; as complementares juntam-se a elas. */
@@ -110,6 +112,9 @@ function naval_funcoes_iniciais(): array
         ['conciliacao-carrinha' => 'V', 'conciliacao-coordenacao' => 'G'], ['C-CONC-CONTAR', 'C-CONC-FECHO'], true);
     $f['C-CONC-FECHO'] = $comp('Fechar conciliações (responsável)', '2.º nível: aprovação final e fecho da conciliação.',
         ['conciliacao-carrinha' => 'V', 'conciliacao-fecho' => 'G'], ['C-CONC-CONTAR', 'C-CONC-COORD'], true);
+    // PO: o coordenador aprova a PO para a carga no cais (quem a criou ou emitiu não a aprova: regra do servidor)
+    $f['C-PO-APROVAR'] = $comp('Aprovar as PO para a carga', 'Coordenador: aprova as PO emitidas pelos promotores antes da carga no cais.',
+        ['requisicoes-carrinha' => 'V', 'requisicoes-aprovacao' => 'G', 'cargas-po' => 'V', 'stock-armazem' => 'V'], [], true);
     // ficheiro para o SAP: gerar e enviar, sem alterar a estrutura do ficheiro; cada geração fica registada
     $f['C-SAP-EXPORTAR'] = $comp('Gerar e enviar o ficheiro SAP', 'Gera a exportação das vendas para o SAP (estrutura fixa) e envia-a.', ['sap-exportar' => 'E'], [], true);
     // só permissões que existem na matriz e níveis que cada página admite

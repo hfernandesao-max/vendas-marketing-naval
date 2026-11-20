@@ -1,7 +1,7 @@
 {
   "id": "nucleo",
   "nome": "Núcleo da plataforma",
-  "versao": "1.0.0",
+  "versao": "1.1.0",
   "descricao": "Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.",
   "nucleo": true,
   "paginas": ["inicio", "alertas", "apresentacao"],
@@ -11,6 +11,7 @@
     "v1/csp-relatorio",
     "v1/saude",
     "v1/sessao",
+    "v1/mudancas",
     "v1/vendas",
     "v1/vendas/estado",
     "v1/vendas/diagnostico",

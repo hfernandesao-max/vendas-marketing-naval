@@ -384,7 +384,7 @@ function editor() {
                 d: dl(String(r.aprovada_em).slice(0, 10)) + ' ' + String(r.aprovada_em).slice(11, 16),
               })
             : t(
-                'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo supervisor da rota (ou Comercial / Direcção), que não a pode ter emitido.',
+                'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo coordenador (ou pela Direcção), que não a pode ter emitido.',
               ),
         ),
       );

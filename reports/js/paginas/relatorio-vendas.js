@@ -27,7 +27,13 @@ export const CONTROLOS = [
   ['sap_ficheiro', 'Vendas do dia carregadas no SAP'],
   ['caixa', 'Fecho de caixa validado e aprovado'],
 ];
-const ESTADO_CTL = { ok: ['Completo', 'p-ok'], pendente: ['Em falta', 'p-warn'], erro: ['Sem ligação', 'p-bad'], por_ligar: ['Por ligar', 'p-mut'] };
+const ESTADO_CTL = {
+  ok: ['Completo', 'p-ok'],
+  pendente: ['Em falta', 'p-warn'],
+  aviso: ['Não obrigatório', 'p-serio'],
+  erro: ['Sem ligação', 'p-bad'],
+  por_ligar: ['Por ligar', 'p-mut'],
+};
 
 function ler() {
   if (aLer) return;

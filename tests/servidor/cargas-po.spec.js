@@ -33,9 +33,10 @@ test('PO: emitida pelo promotor, conferida no cais com motivo, validada pelo Bac
   expect(numero).toMatch(/^PO-\d{4}-\d{6}$/);
   const e = await post(sup, 'requisicoes', { accao: 'emitir', numero, versao: c.json.requisicao.versao });
   expect(e.json.requisicao.estado).toBe('emitida');
-  // a PO só fica disponível para a carga depois de aprovada (o Comercial; quem a emitiu não)
+  // a PO só fica disponível para a carga depois de aprovada (o coordenador ou a Direcção; quem a emitiu não)
   expect((await post(sup, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(403);
-  expect((await post((await entrar('com')).ctx, 'requisicoes', { accao: 'aprovar', numero })).json.requisicao.aprovada_por).toBe('com');
+  expect((await post((await entrar('com')).ctx, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(403); // o Comercial já não aprova
+  expect((await post((await entrar('dir')).ctx, 'requisicoes', { accao: 'aprovar', numero })).json.requisicao.aprovada_por).toBe('dir');
   // o Fiel de Armazém (LOG) confere: diferença sem motivo é recusada; com motivo passa
   const log = (await entrar('log')).ctx;
   const sem = await post(log, 'requisicoes', { accao: 'confirmar_carga', numero, entregue: { C1: 10, C2: 3 } });

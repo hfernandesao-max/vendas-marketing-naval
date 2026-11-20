@@ -122,8 +122,12 @@ function naval_olap_dia(string $dia, ?array $rotas = null, bool $actualizar = fa
             $linhas = $st->fetchAll(PDO::FETCH_ASSOC);
             $c = ['origem' => $origem, 'em' => date('Y-m-d H:i:s'), 'linhas' => $linhas];
             naval_json_gravar($f, $c, false);
+            naval_servico('fontes');
+            naval_fontes_saude_marcar('olap', true);
         } catch (Throwable $e) {
             error_log('[OLAP] ' . $e->getMessage());
+            naval_servico('fontes');
+            naval_fontes_saude_marcar('olap', false, $e->getMessage());
             if (!$c) return ['origem' => $origem, 'erro' => 'O servidor OLAP não respondeu.', 'pontos' => []];
         }
     }

@@ -735,6 +735,18 @@ function textoPendente(x, nomes) {
         .filter(Boolean)
         .join(' · '),
     ];
+  if (x.tipo === 'po')
+    return [
+      t('PO {n}: aprovar para a carga', { n: x.numero }),
+      [
+        t('rota {r}', { r: x.rota }),
+        x.promotor,
+        t('{a} artigos · {q} unidades', { a: n0(x.artigos), q: n0(x.quantidade) }),
+        por ? t('emitida por {n}', { n: por }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ];
   if (x.tipo === 'deposito')
     return [
       t('Depósito no banco de {d}: aprovar', { d }),
@@ -1884,6 +1896,23 @@ ligarConsulta({ E, desenhar, aoCarregar, abrirFolha, folhaRota, mudar, cartao, c
 })();
 window.addEventListener('online', desenhar);
 window.addEventListener('offline', desenhar);
+// Tempo real: de 20 em 20 segundos (app no ecrã) pergunta ao servidor se algo mudou (v1/mudancas: documentos novos ou
+// anulados no Pinguim BO, PO, conciliação, caixa); só então relê os números. Leve para o servidor e para os dados móveis.
+function verMudancas() {
+  if (document.visibilityState !== 'visible' || !E.ind || !navigator.onLine) return;
+  apiJson('mudancas').then(
+    (m) => {
+      if (!m || !m.ok) return;
+      const mudou = E.marca && m.marca !== E.marca;
+      E.marca = m.marca;
+      if (!mudou) return;
+      carregar(true);
+      if (pode('inicio')) carregarAgora(true);
+    },
+    () => {},
+  );
+}
+setInterval(verMudancas, 20000);
 // separador «Agora»: a cada minuto, só com ele aberto e a app no ecrã
 setInterval(() => {
   if (document.visibilityState === 'visible' && (E.sep === 'hoje' || E.sep === 'rotas' || E.sep === 'controlo') && E.ind && pode('inicio')) carregarAgora(true);

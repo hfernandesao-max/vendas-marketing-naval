@@ -242,8 +242,12 @@ function naval_stock_sql(string $data, string $armazem = ''): ?array
     } catch (Throwable $e) {
         error_log('[stock SQL] ' . $e->getMessage());
         naval_stock_erro($e->getMessage());
+        naval_servico('fontes');
+        naval_fontes_saude_marcar('stock', false, $e->getMessage());
         return null;
     }
+    naval_servico('fontes');
+    naval_fontes_saude_marcar('stock', true);
     return naval_stock_organizar($rows, substr($data, 0, 10));
 }
 

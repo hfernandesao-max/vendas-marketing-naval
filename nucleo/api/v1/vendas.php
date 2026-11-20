@@ -29,7 +29,8 @@ if (($_GET['ping'] ?? '') === '1') {
     if (naval_bd_configurada()) {
         try {
             naval_servico('fontes');
-            naval_json(naval_bd_estado() + ['erro' => null, 'hora' => date('Y-m-d H:i:s'), 'fontes' => naval_fontes_estado()]);
+            $est = naval_bd_estado();
+            naval_json($est + ['erro' => null, 'hora' => date('Y-m-d H:i:s'), 'fontes' => naval_fontes_estado() + ['stock' => naval_fontes_stock_verificar()]]);
         } catch (Throwable $e) {
             if (!naval_pinguim_configurado()) naval_json(['ok' => false, 'erro' => 'Sem ligação ao SQL Server: ' . $e->getMessage()]);
         }

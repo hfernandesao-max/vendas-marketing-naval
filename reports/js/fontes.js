@@ -15,6 +15,9 @@ export const LIGACOES = {
   stock: { estado: '?', txt: '' },
 };
 const NOMES_FONTE = { pinguim: 'Pinguim BO (vendas)', stock: 'Stock de artigos (BO)', olap: 'OLAP (histórico)' };
+// estado do stock dito pelo servidor (verificação no «ping»), para quando a página aberta não leu o stock
+let STOCK_SRV = null;
+const horaDe = (s) => (s ? dl(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) : '');
 // Páginas fiscais (ficheiro para o SAP): as vendas vêm sempre do Pinguim BO, a fonte de registo fiscal
 const PAGINAS_FISCAIS = ['sap-exportar'];
 const fiscal = () => (PAGINAS_FISCAIS.includes(atual) ? '&fiscal=1' : '');
@@ -33,12 +36,30 @@ function marcarPinguim(ok, erro) {
     : { estado: 'erro', txt: erro ? t(erro) : t('sem ligação'), hora: Date.now() };
   mostrarFontes();
 }
-/** OLAP (histórico): só aparece quando está configurado no servidor; diz até que dia o histórico está conferido. */
+/**
+ * OLAP: só aparece quando está configurado no servidor. Com as vendas lidas do Pinguim BO (metodologia em vigor), o
+ * OLAP serve a localização das visitas: o estado é o da última leitura real. Com o OLAP como fonte do histórico,
+ * diz até que dia o histórico está conferido com o Pinguim BO.
+ */
 function marcarOlap(f) {
+  if (f.stock) STOCK_SRV = f.stock;
   if (!f.olap) {
     delete LIGACOES.olap;
-    return mostrarFontes();
+    return avaliarFontes();
   }
+  if (f.olap_papel === 'localizacao') {
+    const s = (f.saude || {}).olap;
+    NOMES_FONTE.olap = 'OLAP (localização das visitas)';
+    LIGACOES.olap = f.disjuntor
+      ? { estado: 'erro', txt: t('em pausa depois de falhas') }
+      : !s
+        ? { estado: 'aviso', txt: t('ainda sem leituras das localizações') }
+        : s.ok
+          ? { estado: diasAtras(s.em) <= 1 ? 'ok' : 'aviso', txt: t('última leitura {h}', { h: horaDe(s.em) }) }
+          : { estado: 'erro', txt: t('a última leitura falhou ({h}): {e}', { h: horaDe(s.em), e: s.erro || '' }) };
+    return avaliarFontes();
+  }
+  NOMES_FONTE.olap = 'OLAP (histórico)';
   const c = f.conferido_ate;
   LIGACOES.olap = f.disjuntor
     ? { estado: 'erro', txt: t('em pausa depois de falhas; lê-se do Pinguim BO') }
@@ -50,13 +71,22 @@ function marcarOlap(f) {
             (f.vendas === 'olap' ? '' : ' · ' + t('em conferência (ainda não usado)')),
         }
       : { estado: 'aviso', txt: t('sem dias conferidos; lê-se do Pinguim BO') };
-  mostrarFontes();
+  avaliarFontes();
 }
+/** Stock: a posição já carregada nesta página; senão, a verificação do servidor (função do stock e última leitura). */
 export function avaliarFontes() {
   if (DB.stock && DB.stock.dados_ate) {
     const ns = diasAtras(DB.stock.dados_ate);
     LIGACOES.stock = { estado: ns <= 2 ? 'ok' : 'aviso', txt: t('dados até {d}', { d: dl(DB.stock.dados_ate) }) };
-  } else LIGACOES.stock = { estado: 'erro', txt: t('sem dados de stock') };
+  } else if (STOCK_SRV)
+    LIGACOES.stock = STOCK_SRV.ok
+      ? {
+          estado: 'ok',
+          txt: t('consulta directa') + (STOCK_SRV.ultima && STOCK_SRV.ultima.em ? ' · ' + t('última leitura {h}', { h: horaDe(STOCK_SRV.ultima.em) }) : ''),
+        }
+      : { estado: 'erro', txt: STOCK_SRV.erro ? t(STOCK_SRV.erro) : t('sem dados de stock') };
+  else if (LIGACOES.pinguim.estado === 'erro') LIGACOES.stock = { estado: 'erro', txt: t('sem ligação') };
+  else LIGACOES.stock = { estado: '?', txt: t('A verificar…') };
   mostrarFontes();
 }
 export function mostrarFontes() {

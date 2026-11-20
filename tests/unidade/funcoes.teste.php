@@ -212,7 +212,7 @@ teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, c
         $u = naval_utilizadores();
         igual(['C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR', 'P-COM'], $u['michael.samson']['funcoes']);
         igual(naval_funcoes_codigo($u['michael.samson']['funcoes']), $u['michael.samson']['perfil']);
-        igual(['C-CONC-COORD', 'P-COORD'], $u['nathan']['funcoes']);
+        igual(['C-CONC-COORD', 'C-PO-APROVAR', 'P-COORD'], $u['nathan']['funcoes']);
         igual([], $u['nathan']['rotas'], 'todas as rotas');
         $m = naval_matriz(true);
         igual('G', $m['caixa-aprovacao-final'][$u['michael.samson']['perfil']]);
@@ -220,6 +220,7 @@ teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, c
         igual('E', $m['sap-exportar'][$u['michael.samson']['perfil']]);
         igual('E', $m['relatorio-vendas'][$u['michael.samson']['perfil']]);
         igual('G', $m['conciliacao-coordenacao'][$u['nathan']['perfil']]);
+        igual('G', $m['requisicoes-aprovacao'][$u['nathan']['perfil']], 'o Nathan (coordenador) aprova as PO para a carga');
         igual('', $m['caixa-aprovacao'][$u['nathan']['perfil']] ?? '', 'o Nathan não aprova a caixa');
         $f = naval_funcoes();
         igual('michael.samson', $f['C-CONC-COORD']['dono']);

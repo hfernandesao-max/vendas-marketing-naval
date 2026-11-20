@@ -92,6 +92,7 @@ function naval_api_rotas(): array
         'v1/clientes-qr' => [['GET', 'POST'], 'jwt', 'pedidos-clientes.php', ['qr' => '1']],
         'v1/modulos' => [['GET', 'POST'], 'jwt', 'modulos.php', []],
         'v1/painel-carrinha' => [['GET'], 'jwt', 'painel-carrinha.php', []],
+        'v1/mudancas' => [['GET'], 'jwt', 'mudancas.php', []],
         'v1/suporte' => [['GET', 'POST'], 'jwt', 'suporte.php', []],
         'v1/pedidos-acesso' => [['GET', 'POST'], 'jwt', 'pedidos-acesso.php', []],
         'v1/conformidade' => [['GET', 'POST'], 'jwt', 'conformidade.php', []],

@@ -175,15 +175,13 @@ function vistaConferir() {
     ),
   );
   w.append(cab);
-  // a PO só fica disponível para a carga depois de aprovada (supervisor da rota, Comercial ou Direcção)
+  // a PO só fica disponível para a carga depois de aprovada (o coordenador ou a Direcção)
   if (porAprovar) {
     w.append(
       el(
         'p',
         'aviso',
-        t(
-          'Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo supervisor da rota (Logística › Requisições). Não carregue.',
-        ),
+        t('Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo coordenador (Logística › Requisições). Não carregue.'),
       ),
     );
     return w;

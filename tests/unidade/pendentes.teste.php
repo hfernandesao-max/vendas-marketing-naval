@@ -98,3 +98,18 @@ teste('notificações: folha de caixa e depósito por aprovar avisam quem aprova
         naval_gravar_utilizadores($antes);
     }
 });
+
+teste('à sua espera: PO por aprovar para quem aprova (o coordenador), nunca para quem a criou ou emitiu', function () {
+    naval_servico('requisicoes');
+    $r = naval_req_criar('1009', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 4]], 'pro9');
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro9');
+    $nathan = naval_pendentes('nathan', null, ['po' => true], time(), []);
+    $meu = array_values(array_filter($nathan['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; }));
+    igual(1, count($meu));
+    igual(['po', '1009', 1, 4.0, 'pro9'], [$meu[0]['tipo'], $meu[0]['rota'], $meu[0]['artigos'], $meu[0]['quantidade'], $meu[0]['por']]);
+    $proprio = naval_pendentes('pro9', null, ['po' => true], time(), []);
+    igual([], array_values(array_filter($proprio['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; })), 'quem emitiu não aprova');
+    naval_req_aprovar($e['numero'], 'nathan');
+    $depois = naval_pendentes('nathan', null, ['po' => true], time(), []);
+    igual([], array_values(array_filter($depois['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; })), 'aprovada sai da lista');
+});

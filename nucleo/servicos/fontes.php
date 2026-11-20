@@ -483,11 +483,67 @@ function naval_fontes_avisar(array $linhas): void
     }
 }
 
+/**
+ * Saúde de cada fonte medida no uso real (verificação de dependências, como nos «health checks» dos serviços): cada
+ * leitura do stock (dbo.GET_STOCK) e das localizações do OLAP regista se correu bem, quando e o erro. O indicador do
+ * portal mostra isto, e não se a página aberta por acaso já leu essa fonte.
+ */
+function naval_fontes_saude_marcar(string $fonte, bool $ok, string $erro = ''): void
+{
+    try {
+        $f = naval_fontes_pasta() . '/saude.json';
+        $s = naval_json_ler($f) ?: [];
+        $antes = $s[$fonte] ?? [];
+        // gravar no máximo de minuto a minuto quando nada muda (as leituras são frequentes)
+        if (($antes['ok'] ?? null) === $ok && time() - strtotime((string) ($antes['em'] ?? '2000-01-01')) < 60) return;
+        $s[$fonte] = ['ok' => $ok, 'em' => date('Y-m-d H:i:s'), 'erro' => $ok ? '' : mb_substr(naval_texto($erro, 300), 0, 200)]
+            + ($ok ? [] : ['ultimo_ok' => !empty($antes['ok']) ? $antes['em'] : ($antes['ultimo_ok'] ?? null)]);
+        naval_json_gravar($f, $s, false);
+    } catch (Throwable $e) {
+        error_log('[fontes] saúde: ' . $e->getMessage());
+    }
+}
+
+function naval_fontes_saude(): array
+{
+    return naval_json_ler(naval_fontes_pasta() . '/saude.json') ?: [];
+}
+
+/**
+ * Stock de artigos (dbo.GET_STOCK no Pinguim BO): verificação curta e barata (a função existe e responde), feita no
+ * «ping» do indicador; junta a última leitura real. ['ok', 'erro', 'ultima'].
+ */
+function naval_fontes_stock_verificar(): array
+{
+    // uma verificação a cada 5 minutos chega para todos os utilizadores (o indicador pergunta de 5 em 5 minutos)
+    $cache = naval_fontes_pasta() . '/stock-verificacao.json';
+    $c = naval_json_ler($cache);
+    if ($c && time() - (int) ($c['t'] ?? 0) < 300) return (array) $c['r'];
+    $r = naval_fontes_stock_verificar_agora();
+    naval_json_gravar($cache, ['t' => time(), 'r' => $r], false);
+    return $r;
+}
+
+function naval_fontes_stock_verificar_agora(): array
+{
+    $ultima = naval_fontes_saude()['stock'] ?? null;
+    try {
+        $x = naval_bd_consultar("SELECT CASE WHEN OBJECT_ID('dbo.GET_STOCK') IS NULL THEN 0 ELSE 1 END AS EXISTE");
+        $ok = (int) ($x[0]['EXISTE'] ?? 0) === 1;
+        return ['ok' => $ok && (!$ultima || !empty($ultima['ok'])), 'erro' => !$ok ? 'A função dbo.GET_STOCK não existe no Pinguim BO.' : ($ultima && empty($ultima['ok']) ? (string) $ultima['erro'] : ''),
+            'ultima' => $ultima];
+    } catch (Throwable $e) {
+        return ['ok' => false, 'erro' => mb_substr($e->getMessage(), 0, 200), 'ultima' => $ultima];
+    }
+}
+
 /** Estado das fontes (indicador do portal e página Conformidade). */
 function naval_fontes_estado(bool $detalhe = false): array
 {
     $modo = naval_fontes_modo('vendas');
-    $r = ['vendas' => $modo, 'olap' => naval_fontes_olap_configurado(), 'contrato' => NAVAL_FONTES_CONTRATO];
+    $r = ['vendas' => $modo, 'olap' => naval_fontes_olap_configurado(), 'contrato' => NAVAL_FONTES_CONTRATO, 'saude' => naval_fontes_saude(),
+        // papel do OLAP na metodologia em vigor: com as vendas lidas do Pinguim BO, serve a localização das visitas
+        'olap_papel' => $modo === 'pinguim' ? 'localizacao' : 'historico'];
     if (!$r['olap']) return $r;
     $dj = naval_fontes_disjuntor_estado();
     $r['disjuntor'] = (int) ($dj['aberto_ate'] ?? 0) > time() ? date('Y-m-d H:i:s', (int) $dj['aberto_ate']) : null;

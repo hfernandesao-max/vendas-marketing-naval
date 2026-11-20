@@ -18,7 +18,9 @@
  *      trabalho: 15:00 de segunda a sexta, 13:00 ao sábado; RELATORIO_HORA_FECHO no .env substitui-o);
  *   2. conciliação de todas as carrinhas com movimento fechada (contagem, validação e aprovações);
  *   3. vendas do dia no SAP: todos os documentos estão num ficheiro de carregamento marcado «carregado no SAP»;
- *   4. folha de caixa do dia validada e aprovada nos dois níveis;
+ *   4. folha de caixa do dia validada e aprovada nos dois níveis — SUSPENSO por decisão da gestão (20-11-2026), para o
+ *      consolidado diário sair logo: o estado da caixa aparece como aviso e não impede o relatório
+ *      (RELATORIO_EXIGE_CAIXA=1 no .env volta a exigi-lo);
  * Uma vez gerado, o relatório fica congelado (fotografia dos dados, com impressão digital SHA-256 e número de versão):
  * o PDF e o Excel saem sempre da mesma fotografia. Uma correcção posterior gera uma nova versão, com motivo.
  * Ao gerar, segue por correio um resumo para quem tem acesso ao relatório na matriz (sem os perfis limitados a rotas),
@@ -29,7 +31,7 @@ defined('NAVAL_NUCLEO') || exit;
 require_once __DIR__ . '/caixa.php';
 
 /** Controlos de prontidão do dia, a partir das fontes já lidas (função pura, testável). */
-function naval_rv_controlos(string $dia, array $f): array
+function naval_rv_controlos(string $dia, array $f, ?bool $exigeCaixa = null): array
 {
     $c = [];
     // 1. sincronização dos telemóveis
@@ -97,11 +99,14 @@ function naval_rv_controlos(string $dia, array $f): array
             : ($porCarregar ? ['estado' => 'pendente', 'detalhe' => 'Ficheiro(s) por confirmar como carregados no SAP: lote ' . implode(', ', array_keys($porCarregar)) . '.']
                 : ['estado' => 'ok', 'detalhe' => count($f['vendas']) . ' documentos carregados no SAP.']));
     }
-    // 4. caixa
+    // 4. caixa (obrigatória só com RELATORIO_EXIGE_CAIXA=1; suspensa: fica como aviso, não impede o relatório)
     $cx = $f['caixa'];
+    $exigeCaixa = $exigeCaixa ?? naval_config('RELATORIO_EXIGE_CAIXA', '0') === '1';
+    $txtCaixa = ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Fecho de caixa validado, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Fecho de caixa aprovado no 1.º nível, falta a aprovação final.' : 'Fecho de caixa por lançar e validar.');
     $c['caixa'] = ($cx['estado'] ?? '') === 'aprovada'
         ? ['estado' => 'ok', 'detalhe' => 'Fecho de caixa aprovado por ' . ($cx['aprovada_por'] ?? '') . '.']
-        : ['estado' => 'pendente', 'detalhe' => ($cx['estado'] ?? 'aberta') === 'fechada' ? 'Fecho de caixa validado, por aprovar no 1.º nível.' : (($cx['estado'] ?? '') === 'verificada' ? 'Fecho de caixa aprovado no 1.º nível, falta a aprovação final.' : 'Fecho de caixa por lançar e validar.')];
+        : ($exigeCaixa ? ['estado' => 'pendente', 'detalhe' => $txtCaixa]
+            : ['estado' => 'aviso', 'detalhe' => $txtCaixa . ' Não obrigatório: a exigência do fecho de caixa está suspensa (o consolidado sai sem ele).']);
     $bloqueia = array_filter($c, function ($x) { return in_array($x['estado'], ['pendente', 'erro'], true); });
     return ['controlos' => $c, 'pronto' => !$bloqueia, 'dia' => $dia];
 }

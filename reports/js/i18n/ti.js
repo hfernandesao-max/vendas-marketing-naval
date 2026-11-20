@@ -4828,8 +4828,6 @@ export const TI = {
   'vendido {q}': 'ዝተሸጠ {q}',
   'Carregado igual ao requisitado': 'ከም ዝተሓተቶ ተጻዒኑ',
   'Aprovada para a carga por {p} em {d}': 'ንጽዕነት ብ{p} ኣብ {d} ጸዲቑ',
-  'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo supervisor da rota (ou Comercial / Direcção), que não a pode ter emitido.':
-    'ምጽዳቕ ይጽበ: እዚ ጠለብ ብተቖጻጻሪ መስመር (ወይ ንግዲ / ምሕደራ) ድሕሪ ምጽዳቑ ጥራይ ኣብ መጽዓኒ ንጽዕነት ቅሩብ ይኸውን፤ እቲ ዘጽድቕ ክፈልጦ ዘይብሉ ኣውጺኡዎ ክኸውን የብሉን።',
   'Aprovar para a carga': 'ንጽዕነት ኣጽድቕ',
   'PO aprovada: já está disponível para a carga no cais.': 'ጠለብ ጸዲቑ: ሕጂ ኣብ መጽዓኒ ንጽዕነት ቅሩብ እዩ።',
   'Fechar a PO': 'ጠለብ ዕጸው',
@@ -4839,10 +4837,6 @@ export const TI = {
   'Motivo do fecho': 'ምኽንያት ምዕጻው',
   'PO fechada.': 'ጠለብ ተዓጽዩ።',
   'PO à espera de aprovação para a carga': 'ንጽዕነት ምጽዳቕ ዝጽበዩ ጠለባት',
-  'Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo supervisor da rota (Logística › Requisições). Não carregue.':
-    'እዚ ጠለብ ገና ኣይጸደቐን: ብተቖጻጻሪ መስመር ድሕሪ ምጽዳቑ ጥራይ ንጽዕነት ቅሩብ ይኸውን። ኣይትጽዓኑ።',
-  'Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo supervisor da rota (Logística › Requisições).':
-    'እዚ ጠለብ ገና ኣይጸደቐን: ብተቖጻጻሪ መስመር ድሕሪ ምጽዳቑ ጥራይ ንጽዕነት ቅሩብ ይኸውን።',
   'Contagem validada · rota {r}': 'ቆጸራ ተረጋጊጹ · መስመር {r}',
   'Segue para a aprovação do coordenador.': 'ናብ ምጽዳቕ ኣወሃሃዲ ይሓልፍ።',
   'Foi criada a PO {n} com o que foi vendido (rascunho): o promotor revê as quantidades e emite-a; depois de aprovada fica disponível para a carga.':
@@ -4851,11 +4845,27 @@ export const TI = {
   'Abrir a PO': 'ጠለብ ክፈት',
   'Agora não': 'ሕጂ ኣይኮነን',
   'Imprimir a contagem': 'ቆጸራ ሕተም',
-  'Requisições (PO) · aprovar a PO para a carga no cais (G; o supervisor nas suas rotas)': 'ጠለባት · ጠለብ ንጽዕነት ኣብ መጽዓኒ ምጽዳቕ (G፤ ተቖጻጻሪ ኣብ መስመራቱ)',
   'Segregação de funções: quem criou ou emitiu a PO não a aprova.': 'ምፍልላይ ሓላፍነት: ነቲ ጠለብ ዝፈጠሮ ወይ ዘውጽኦ ከጽድቖ ኣይኽእልን።',
   'Só se aprova uma PO emitida e ainda por carregar.': 'ዝወጸን ገና ዘይተጻዕነን ጠለብ ጥራይ ይጸድቕ።',
   'Esta PO já foi aprovada.': 'እዚ ጠለብ ድሮ ጸዲቑ እዩ።',
   'Só se fecha uma PO emitida e ainda por carregar.': 'ዝወጸን ገና ዘይተጻዕነን ጠለብ ጥራይ ይዕጸው።',
   'Indique o motivo do fecho.': 'ምኽንያት ምዕጻው ኣመልክቱ።',
   'O seu perfil não permite aprovar PO.': 'መገለጺኹም ጠለባት ከተጽድቑ ኣይፈቅደልኩምን።',
+  'Por aprovar: a PO só fica disponível para a carga no cais depois de aprovada pelo coordenador (ou pela Direcção), que não a pode ter emitido.':
+    'ምጽዳቕ ይጽበ: እዚ ጠለብ ብኣወሃሃዲ (ወይ ብምሕደራ) ድሕሪ ምጽዳቑ ጥራይ ኣብ መጽዓኒ ንጽዕነት ቅሩብ ይኸውን፤ እቲ ዘጽድቕ ክፈልጦ ዘይብሉ ኣውጺኡዎ ክኸውን የብሉን።',
+  'Esta PO ainda não foi aprovada: só fica disponível para a carga depois de aprovada pelo coordenador (Logística › Requisições). Não carregue.':
+    'እዚ ጠለብ ገና ኣይጸደቐን: ብኣወሃሃዲ ድሕሪ ምጽዳቑ ጥራይ ንጽዕነት ቅሩብ ይኸውን። ኣይትጽዓኑ።',
+  'Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo coordenador (Logística › Requisições).':
+    'እዚ ጠለብ ገና ኣይጸደቐን: ብኣወሃሃዲ ድሕሪ ምጽዳቑ ጥራይ ንጽዕነት ቅሩብ ይኸውን።',
+  'Requisições (PO) · aprovar a PO para a carga no cais (G: o coordenador, pela função «Aprovar as PO para a carga»)':
+    'ጠለባት · ጠለብ ንጽዕነት ኣብ መጽዓኒ ምጽዳቕ (G: ኣወሃሃዲ)',
+  'OLAP (localização das visitas)': 'OLAP (ቦታ ምብጻሓት)',
+  'em pausa depois de falhas': 'ድሕሪ ጌጋታት ተኣጊዱ',
+  'ainda sem leituras das localizações': 'ገና ናይ ቦታ ንባብ የለን',
+  'última leitura {h}': 'ናይ መወዳእታ ንባብ {h}',
+  'a última leitura falhou ({h}): {e}': 'ናይ መወዳእታ ንባብ ኣይሰለጠን ({h}): {e}',
+  'A função dbo.GET_STOCK não existe no Pinguim BO.': 'ናይ ክምችት ፋንክሽን ኣብ Pinguim BO የለን።',
+  'PO {n}: aprovar para a carga': 'ጠለብ {n}: ንጽዕነት ኣጽድቕ',
+  'emitida por {n}': 'ብ{n} ዝወጸ',
+  'Não obrigatório': 'ግዴታ ኣይኮነን',
 };

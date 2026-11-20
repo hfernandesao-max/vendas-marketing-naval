@@ -90,8 +90,11 @@ teste('prontidão: só gera com tudo completo; cada fonte em falta diz o que fal
     $x = naval_rv_controlos($dia, $f($dia, ['carrinhas' => [$f($dia)['carrinhas'][0], ['rota' => '1011', 'resumo' => ['estado' => 'por_contar'],
         'linhas' => [['codigo' => 'A1', 'vendido' => 0, 'carregado' => 0]]]]]));
     igual('ok', $x['controlos']['conciliacao']['estado'], 'carrinha sem vendas não impede o relatório');
+    $x = naval_rv_controlos($dia, $f($dia, ['caixa' => ['estado' => 'fechada']]), true);
+    igual('pendente', $x['controlos']['caixa']['estado'], 'com a caixa obrigatória (RELATORIO_EXIGE_CAIXA=1)');
+    // exigência suspensa (por omissão): a caixa por aprovar fica como aviso e não impede o relatório
     $x = naval_rv_controlos($dia, $f($dia, ['caixa' => ['estado' => 'fechada']]));
-    igual('pendente', $x['controlos']['caixa']['estado']);
+    igual(['aviso', true], [$x['controlos']['caixa']['estado'], $x['pronto']]);
     $x = naval_rv_controlos($dia, $f($dia, ['vendas' => [], 'sync' => []]));
     igual('erro', $x['controlos']['pinguim']['estado'], 'Pinguim sem documentos mas a carrinha vendeu: falha de dados');
     $vazio = $f($dia, ['vendas' => [], 'sync' => []]);
@@ -100,7 +103,7 @@ teste('prontidão: só gera com tudo completo; cada fonte em falta diz o que fal
     igual(['ok', true], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['sem_vendas']], 'feriado: dia sem vendas');
     $x = naval_rv_controlos($dia, $f($dia, ['vendas' => null]));
     igual('erro', $x['controlos']['pinguim']['estado']);
-    lanca(409, function () use ($dia, $f) { naval_rv_gerar($dia, '', 'dir', $f($dia, ['caixa' => ['estado' => 'aberta']])); });
+    lanca(409, function () use ($dia, $f) { naval_rv_gerar($dia, '', 'dir', $f($dia, ['vendas' => null])); });
 });
 
 teste('relatório: cobranças por promotor face à caixa e ao TPA; congelado, com versão e impressão digital', function () {

@@ -245,6 +245,16 @@ function naval_req_emitir(string $id, ?int $versao, string $login): array
         return $r;
     });
     naval_registar('requisicao_emitida', ['numero' => $id, 'rota' => $r['rota'], 'linhas' => count($r['linhas'])]);
+    // tempo real: quem aprova (o coordenador) recebe logo a notificação no telemóvel
+    if (naval_req_precisa_aprovacao($r)) {
+        try {
+            naval_servico('notificacoes');
+            $tx = naval_notif_txt('po', ['n' => $id, 'r' => $r['rota'], 'a' => count($r['linhas']), 'q' => (string) round(array_sum(array_column($r['linhas'], 'quantidade')))]);
+            naval_notificar('po_aprovar', $tx['pt'][0], $tx['pt'][1], ['chave' => 'po|' . $id, 'rota' => (string) $r['rota'], 'url' => '../reports/#requisicoes-carrinha', 'textos' => $tx]);
+        } catch (Throwable $e) {
+            error_log('[PO notificação] ' . $e->getMessage());
+        }
+    }
     return $r;
 }
 
@@ -267,7 +277,7 @@ function naval_req_reimprimir(string $id, string $login): array
 // ── Aprovação e fecho das PO ─────────────────────────────────────────────────────────────────────────────────
 //
 // Uma PO emitida só fica disponível para carga no cais depois de aprovada (REQ_APROVACAO=0 desliga): o pedido do
-// promotor é aprovado por quem responde pela rota (supervisor da rota, Comercial ou Direcção, recurso
+// promotor é aprovado pelo coordenador (função C-PO-APROVAR) ou pela Direcção (recurso
 // «requisicoes-aprovacao» G), nunca por quem a criou ou emitiu (segregação de funções, como nas compras dos ERP:
 // requisitante → aprovador → armazém). As PO emitidas antes da regra (REQ_APROVACAO_DESDE) não precisam.
 // As PO que não vão ser carregadas fecham-se com motivo («fechada»); as esquecidas fecham-se sozinhas ao fim de
@@ -578,7 +588,7 @@ function naval_req_confirmar(string $id, array $entregue, string $login, array $
         if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
         if ($r['estado'] === 'carregada') throw new NavalErro('A carga desta requisição já foi confirmada.', 409);
         if ($r['estado'] !== 'emitida') throw new NavalErro('Só se confirma a carga de uma requisição emitida.', 409);
-        if (!naval_req_pronta_carga($r)) throw new NavalErro('Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo supervisor da rota (Logística › Requisições).', 409, ['codigo' => 'po_por_aprovar']);
+        if (!naval_req_pronta_carga($r)) throw new NavalErro('Esta PO ainda não foi aprovada: só fica disponível para carga depois de aprovada pelo coordenador (Logística › Requisições).', 409, ['codigo' => 'po_por_aprovar']);
         if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0' && strcasecmp((string) $r['emitida_por'], $login) === 0) {
             throw new NavalErro('Segregação de funções: quem emitiu a requisição não confirma a carga.', 403);
         }

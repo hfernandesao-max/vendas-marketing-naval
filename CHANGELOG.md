@@ -1,5 +1,15 @@
 ## 20-11-2026
 
+### Tempo real na app, fontes de dados certas, consolidado sem esperar pela caixa e PO aprovadas pelo coordenador
+
+<!-- tipo: melhoria -->
+
+- App de gestão em tempo real: de 20 em 20 segundos pergunta ao servidor se algo mudou (documentos novos ou anulados no Pinguim BO, PO, conciliação, caixa) e só então relê os números; leve para o servidor e para os dados móveis.
+- As PO por aprovar aparecem em «À sua espera» na app de quem aprova, e o coordenador recebe uma notificação no telemóvel quando um promotor emite uma PO.
+- A aprovação das PO para a carga passa para o coordenador (Nathan Alemayehu, nova função «Aprovar as PO para a carga»), com a Direcção como alternativa.
+- Relatório de Vendas: o fecho de caixa validado e aprovado deixa de ser obrigatório para gerar o consolidado do dia (aparece como «Não obrigatório», com o estado da caixa).
+- Indicador das fontes: o «Stock de artigos» mostra o estado real (o servidor verifica a função do stock no Pinguim BO e guarda a última leitura), em vez de «sem dados» sempre que a página aberta não leu o stock; com as vendas lidas directamente do Pinguim BO, o OLAP aparece como «localização das visitas», com a hora da última leitura.
+
 ### PO: aprovação antes da carga, fecho das PO em aberto e requisitado × carregado
 
 <!-- tipo: funcionalidade -->

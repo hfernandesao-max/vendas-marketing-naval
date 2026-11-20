@@ -10,6 +10,7 @@
  *     aprovar (controlo duplo: quem requisita não aprova).
  *   - Conciliação das carrinhas (hoje): contar (a partir do fecho), validar a própria contagem, aprovar as diferenças
  *     (coordenador) e aprovação final (responsável).
+ *   - PO emitidas à espera de aprovação para a carga no cais (o coordenador; quem a criou ou emitiu não).
  */
 defined('NAVAL_NUCLEO') || exit;
 
@@ -80,6 +81,22 @@ function naval_pendentes(string $login, ?array $rotas, array $pode, int $agora, 
             }
         }
     }
+    // ── PO por aprovar para a carga ──
+    if (!empty($pode['po'])) {
+        naval_servico('requisicoes');
+        foreach ([(int) date('Y', $agora) - 1, (int) date('Y', $agora)] as $ano) {
+            foreach (naval_req_ficheiros((string) $ano) as $f) {
+                $r = naval_json_ler((string) $f);
+                if (!$r || $r['estado'] !== 'emitida' || !empty($r['aprovada_em']) || !naval_req_precisa_aprovacao($r)) continue;
+                if ($rotas !== null && !in_array((string) $r['rota'], $rotas, true)) continue;
+                if ($eu($r['criado_por'] ?? '') || $eu($r['emitida_por'] ?? '')) continue;   // quem criou ou emitiu não aprova
+                $itens[] = ['tipo' => 'po', 'dia' => (string) $r['data'], 'numero' => (string) $r['numero'], 'rota' => (string) $r['rota'],
+                    'promotor' => (string) ($r['promotor'] ?? ''), 'artigos' => count((array) $r['linhas']),
+                    'quantidade' => round(array_sum(array_column((array) $r['linhas'], 'quantidade')), 3), 'por' => (string) ($r['emitida_por'] ?? ''),
+                    'em' => (string) ($r['emitida_em'] ?? ''), 'atraso' => (string) $r['data'] < $hoje, 'url' => '../reports/#requisicoes-carrinha'];
+            }
+        }
+    }
     // os atrasados primeiro, depois os mais antigos
     $ordem = function ($x) { return [(int) !$x['atraso'], $x['dia'], $x['tipo'], $x['rota'] ?? '', $x['lacre'] ?? '']; };
     usort($itens, function ($a, $b) use ($ordem) { return $ordem($a) <=> $ordem($b); });
@@ -95,5 +112,6 @@ function naval_pendentes_conta(string $login): array
         'contar' => naval_pode('conciliacao-carrinha', 'G'),
         'coordenar' => naval_pode('conciliacao-coordenacao', 'G'),
         'fechar' => naval_pode('conciliacao-fecho', 'G'),
+        'po' => naval_pode('requisicoes-aprovacao', 'G'),
     ], time());
 }
