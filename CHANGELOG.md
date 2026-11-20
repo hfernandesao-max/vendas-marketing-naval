@@ -1,5 +1,13 @@
 ## 20-11-2026
 
+### Sala de resultados: Winrest sincroniza sozinho ao entrar na sala
+
+<!-- tipo: funcionalidade -->
+
+- Nova app «Naval Sala» para os Blackview (ferramentas/android-sala), gerida pelo ManageEngine MDM: detecta a entrada na sala do LCD pela rede Wi-Fi própria da sala (ponto de acesso e sinal, com histerese e espera entre disparos) e põe o Winrest em primeiro plano para sincronizar, sem toques.
+- O portal recebe a presença dos telemóveis (v1/sala/presenca, com chave própria) e, opcionalmente, pede ao MDM o quiosque do Winrest durante 3 minutos e retira-o sozinho.
+- Guia completo em docs/SALA-SINCRONIZACAO.md: arquitectura sem USB no LCD, configuração no ManageEngine, o que o Android permite e plano de teste.
+
 ### PDF da PO sem a coluna «Vendido»
 
 <!-- tipo: melhoria -->

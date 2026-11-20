@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_nome">Naval Sala</string>
+    <string name="canal">Sala de resultados</string>
+    <string name="notif_vigia">Pronto a sincronizar na sala de resultados</string>
+    <string name="notif_sala">Na sala: o Winrest está a sincronizar</string>
+    <string name="r_ssid">Nome (SSID) da rede Wi-Fi da sala</string>
+    <string name="r_bssids">BSSID dos pontos de acesso da sala (separados por vírgulas; vazio = qualquer um com o SSID)</string>
+    <string name="r_rssi_entrada">Sinal mínimo para contar como dentro da sala (dBm)</string>
+    <string name="r_leituras">Leituras seguidas acima do sinal para entrar</string>
+    <string name="r_saida">Minutos sem a rede da sala para contar como saída</string>
+    <string name="r_espera">Minutos mínimos entre duas sincronizações</string>
+    <string name="r_pacote">Pacote Android do Winrest</string>
+    <string name="r_modo">Modo: app (Winrest em primeiro plano) ou kiosk (quiosque temporário pelo MDM)</string>
+    <string name="r_dispositivo">ID do equipamento no MDM (só no modo kiosk)</string>
+    <string name="r_portal">Endereço do portal</string>
+    <string name="r_chave">Chave da app da sala no portal</string>
+    <string name="r_activo">Automação ligada</string>
+    <string-array name="modos">
+        <item>app</item>
+        <item>kiosk</item>
+    </string-array>
+    <string-array name="modos_nomes">
+        <item>App: Winrest em primeiro plano</item>
+        <item>Quiosque temporário no Winrest (MDM)</item>
+    </string-array>
+</resources>

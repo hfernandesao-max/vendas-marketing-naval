@@ -77,10 +77,10 @@ teste('rotas da API: lista fechada, versão e caracteres seguros', function () {
     igual('publico', $r['v1/csp-relatorio'][1]);
     // rotas públicas, sem conta (lista fechada): relatórios da CSP, verificação de saúde (sem informação interna),
     // painel da sala (com a ligação própria) e cartaz do cliente (com o código)
-    igual(['v1/csp-relatorio', 'v1/saude', 'v1/sala', 'v1/cliente', 'v1/robo/ordens', 'v1/geo/entrada'], array_keys(array_filter($r, function ($x) { return $x[1] === 'publico'; })));
+    igual(['v1/csp-relatorio', 'v1/saude', 'v1/sala', 'v1/cliente', 'v1/robo/ordens', 'v1/geo/entrada', 'v1/sala/presenca'], array_keys(array_filter($r, function ($x) { return $x[1] === 'publico'; })));
     igual(['GET'], $r['v1/sala'][0], 'painel da sala: só leitura');
     igual(['GET'], $r['v1/saude'][0], 'saúde: só leitura');
-    foreach ($r as $rota => $x) if (!in_array($rota, ['v1/auth/token', 'v1/csp-relatorio', 'v1/saude', 'v1/sala', 'v1/cliente', 'v1/robo/ordens', 'v1/geo/entrada'], true)) igual('jwt', $x[1], $rota);
+    foreach ($r as $rota => $x) if (!in_array($rota, ['v1/auth/token', 'v1/csp-relatorio', 'v1/saude', 'v1/sala', 'v1/cliente', 'v1/robo/ordens', 'v1/geo/entrada', 'v1/sala/presenca'], true)) igual('jwt', $x[1], $rota);
     foreach ($r as $x) verdade(is_file(dirname(__DIR__, 2) . '/nucleo/api/v1/' . $x[2]), $x[2]);
     $_SERVER['PATH_INFO'] = '/v1/vendas/estado';
     igual('v1/vendas/estado', naval_api_rota());

@@ -279,6 +279,16 @@ function naval_periodicas(?int $agora = null): array
             error_log('[requisições fecho automático] ' . $e->getMessage());
         }
     }
+    // sala de resultados: retirar os quiosques temporários do Winrest que passaram o prazo
+    if (naval_config('SALA_MODO', 'app') === 'kiosk') {
+        try {
+            naval_servico('sala-presenca');
+            $n = naval_sala_tick($agora);
+            if ($n) $feito['sala_kiosk_retirados'] = $n;
+        } catch (Throwable $e) {
+            error_log('[sala] ' . $e->getMessage());
+        }
+    }
     // conciliação das carrinhas: rever as bases congeladas contra o Pinguim BO (guias anuladas ou corrigidas depois)
     try {
         $rv = naval_carr_rever_tick($agora);

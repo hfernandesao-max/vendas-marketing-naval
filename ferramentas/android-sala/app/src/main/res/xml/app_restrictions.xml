@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configuração gerida (Android Enterprise «managed configurations»), preenchida no ManageEngine MDM:
+     Gestão de apps › App Repository › Naval Sala › Configuração da app. Mudar aqui não exige reinstalar a app. -->
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+    <restriction android:key="ssid_sala" android:title="@string/r_ssid" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="bssids_sala" android:title="@string/r_bssids" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="rssi_entrada" android:title="@string/r_rssi_entrada" android:restrictionType="integer"
+        android:defaultValue="-67" />
+    <restriction android:key="leituras_entrada" android:title="@string/r_leituras" android:restrictionType="integer"
+        android:defaultValue="2" />
+    <restriction android:key="saida_minutos" android:title="@string/r_saida" android:restrictionType="integer"
+        android:defaultValue="5" />
+    <restriction android:key="espera_minutos" android:title="@string/r_espera" android:restrictionType="integer"
+        android:defaultValue="30" />
+    <restriction android:key="winrest_pacote" android:title="@string/r_pacote" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="modo" android:title="@string/r_modo" android:restrictionType="choice"
+        android:entries="@array/modos_nomes" android:entryValues="@array/modos" android:defaultValue="app" />
+    <restriction android:key="dispositivo_mdm" android:title="@string/r_dispositivo" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="portal_url" android:title="@string/r_portal" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="portal_chave" android:title="@string/r_chave" android:restrictionType="string"
+        android:defaultValue="" />
+    <restriction android:key="activo" android:title="@string/r_activo" android:restrictionType="bool"
+        android:defaultValue="true" />
+</restrictions>

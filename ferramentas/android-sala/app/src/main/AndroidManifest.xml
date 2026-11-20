@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Naval Sala: app companheira (não é o Device Owner; o Device Owner é o ManageEngine MDM). Detecta a entrada na sala
+  pela rede Wi-Fi da sala (SSID + ponto de acesso + sinal) e põe o Winrest em primeiro plano para sincronizar. Todas
+  as permissões são concedidas pelo MDM na instalação, sem perguntas ao utilizador. Ver docs/SALA-SINCRONIZACAO.md.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- SSID e BSSID da rede só são visíveis com a localização (Android 8.1+), também em segundo plano -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- exigidas pelo tipo «connectedDevice» do serviço em primeiro plano (Android 14+) -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- abrir o Winrest a partir do segundo plano (excepção oficial do Android: «sobrepor a outras apps») -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- avisar o portal (presença no LCD e, no modo kiosk, o pedido do quiosque ao MDM) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 11+: ver as apps com ícone (para abrir o Winrest pelo nome do pacote configurado no MDM) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_nome"
+        android:icon="@android:drawable/ic_menu_compass"
+        android:supportsRtl="false">
+
+        <!-- configuração gerida pelo MDM (rede da sala, limiares, pacote do Winrest, modo, portal) -->
+        <meta-data
+            android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/app_restrictions" />
+
+        <service
+            android:name=".SalaServico"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <receiver
+            android:name=".ArranqueRecetor"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.APPLICATION_RESTRICTIONS_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ecrã de diagnóstico para a Informática (nunca precisa de ser aberto pelo comercial) -->
+        <activity
+            android:name=".DiagnosticoActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
