@@ -1204,6 +1204,10 @@ p.aviso {
 }
 
 /* Conciliação da carrinha: corte do dia (a carga para o dia seguinte não entra na contagem) */
+.cc-diagnostico {
+  color: var(--warn);
+  font-size: 12px;
+}
 .cc-regularizado {
   color: var(--ok);
   font-size: 12px;

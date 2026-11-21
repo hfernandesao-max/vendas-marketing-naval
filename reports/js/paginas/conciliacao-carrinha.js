@@ -443,6 +443,13 @@ function tabelaRota(r) {
       else ult.textContent = '';
       ult.append(rg);
     }
+    // diagnóstico automático do que fica por explicar (o documento do Pinguim BO a corrigir)
+    if (l.diagnostico) {
+      const dg = el('span', 'cc-diagnostico', t(l.diagnostico.texto));
+      if (ult.textContent && ult.textContent !== '—') ult.append(document.createTextNode(' · '));
+      else ult.textContent = '';
+      ult.append(dg);
+    }
     tr.append(ult);
     corpo.append(tr);
   });

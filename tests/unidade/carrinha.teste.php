@@ -518,3 +518,23 @@ teste('venda registada depois da contagem (impressora avariada): explica a falta
     igual(['385'], array_map('strval', array_keys($r)), 'só a 385 fica explicada');
     igual([-20.0, 'FR 4'], [$r['385']['q'], $r['385']['doc']]);
 });
+
+teste('devolução lançada no fecho (a partir das 15:30) é depois da contagem; diagnóstico de guia anulada e de sentido trocado', function () {
+    $row = ['ROTA' => '1007', 'ARM_COD' => '10001007', 'ARM' => 'Armazém 1007 - FHR PIV', 'CODIGO' => 'N', 'ANTES' => 1, 'VENDIDO' => 0.0];
+    $mov = naval_carr_movimentos_agrupar([
+        $row + ['HORA' => '2026-11-18 08:24:00', 'ENTRADAS' => 150.0, 'SAIDAS' => 0.0],
+        $row + ['HORA' => '2026-11-18 15:36:00', 'ENTRADAS' => 0.0, 'SAIDAS' => 110.0],    // SA 90 no fecho: depois da contagem
+        ['HORA' => '2026-11-18 11:00:00', 'ENTRADAS' => 0.0, 'SAIDAS' => 5.0, 'CODIGO' => 'M'] + $row,   // devolução de manhã: conta
+    ], ['1007'], [], '2026-11-18', '15:30:00');
+    igual([150.0, 0.0, 110.0], [$mov['1007']['N']['ca'], $mov['1007']['N']['da'], $mov['1007']['N']['df']]);
+    igual(5.0, $mov['1007']['M']['da']);
+    $guias = [
+        ['rota' => '1005', 'codigo' => '292', 'doc' => 'GTC A1000/61', 'hora' => '2026-11-16 08:54:00', 'q' => 15.0, 'anulada' => true],
+        ['rota' => '1011', 'codigo' => '332', 'doc' => 'GTC A1000/121', 'hora' => '2026-11-20 15:40:00', 'q' => 50.0, 'anulada' => false],
+    ];
+    $d = naval_carr_diagnosticos([['codigo' => '292', 'diferenca' => 15.0]], $guias, '1005');
+    igual(['guia_anulada', 'GTC A1000/61'], [$d['292']['tipo'], $d['292']['doc']]);
+    $d = naval_carr_diagnosticos([['codigo' => '332', 'diferenca' => -50.0], ['codigo' => '292', 'diferenca' => -7.0]], $guias, '1011');
+    igual(['sentido_trocado', 'GTC A1000/121'], [$d['332']['tipo'], $d['332']['doc']]);
+    igual(1, count($d), 'sem guia igual à diferença, sem diagnóstico');
+});

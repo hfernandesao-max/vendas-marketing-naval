@@ -1,5 +1,13 @@
 ## 21-11-2026
 
+### Conciliação: devoluções do fecho, fecho automático e diagnóstico do que fica por explicar
+
+<!-- tipo: melhoria -->
+
+- Devoluções ao armazém lançadas na janela do fecho (a partir das 15:30, calendário) contam como depois da contagem: conta-se a carrinha e só depois se lança a devolução (ex.: rota 1007, 18-11, SA 90 às 15:36).
+- Uma conciliação já validada que fica sem diferenças por explicar fecha sozinha na revisão automática.
+- Diagnóstico automático, com o documento a corrigir, das diferenças que ficam: sobra igual a uma guia anulada nesse dia (a mercadoria foi carregada) e falta igual a uma guia da tarde (provável devolução lançada como carga, com o sentido trocado).
+
 ### Conciliação: regularização documentada pelos acertos da Logística e alerta de vendas por sincronizar
 
 <!-- tipo: funcionalidade -->
