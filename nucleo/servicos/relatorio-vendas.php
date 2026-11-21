@@ -504,6 +504,38 @@ function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $font
     return $r;
 }
 
+/**
+ * Geração automática (gestão por excepção): o relatório de cada dia gera-se sozinho, como «sistema», logo que todas as
+ * fontes do dia ficam completas — ninguém precisa de carregar em «Gerar». Vê hoje (depois do fecho das vendas) e os
+ * RELATORIO_AUTO_DIAS (3) dias anteriores que ainda não têm relatório e tiveram vendas; uma nova versão (correcção)
+ * continua a ser pedida por uma pessoa, com motivo. RELATORIO_AUTOMATICO=0 no .env desliga.
+ * $gerar e $fontes são injectáveis (testes). Devolve os dias gerados.
+ */
+function naval_rv_automatico(int $agora, ?callable $fontes = null, ?callable $gerar = null): array
+{
+    if (naval_config('RELATORIO_AUTOMATICO', '1') === '0') return [];
+    $fontes = $fontes ?? 'naval_rv_fontes';
+    $gerar = $gerar ?? function (string $dia, array $f) { return naval_rv_gerar($dia, '', 'sistema', $f); };
+    $dias = max(0, min(10, (int) naval_config('RELATORIO_AUTO_DIAS', '3')));
+    $hoje = date('Y-m-d', $agora);
+    $feitos = [];
+    for ($k = 0; $k <= $dias; $k++) {
+        $dia = date('Y-m-d', strtotime($hoje . ' 12:00') - $k * 86400);
+        if ($k === 0 && date('H:i', $agora) < naval_rv_hora_fecho($dia)) continue;
+        if (naval_rv_versoes($dia)) continue;
+        $f = $fontes($dia);
+        if (!is_array($f['vendas'] ?? null) || !$f['vendas']) continue;   // sem ligação ou dia sem vendas (folga)
+        if (!naval_rv_controlos($dia, $f)['pronto']) continue;
+        try {
+            $gerar($dia, $f);
+            $feitos[] = $dia;
+        } catch (NavalErro $e) {
+            error_log('[relatório de vendas automático] ' . $dia . ': ' . $e->getMessage());
+        }
+    }
+    return $feitos;
+}
+
 /** Destinatários do resumo por correio: quem vê o relatório na matriz, sem os perfis limitados a rotas (vê o dia todo). */
 function naval_rv_destinatarios(): array
 {

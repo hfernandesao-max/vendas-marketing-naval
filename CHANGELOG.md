@@ -1,5 +1,13 @@
 ## 22-11-2026
 
+### Relatório de Vendas gerado sozinho
+
+<!-- tipo: funcionalidade -->
+
+- O consolidado diário gera-se e envia-se sozinho, como «sistema», logo que todas as fontes do dia ficam completas: telemóveis sincronizados, carrinhas fechadas e vendas confirmadas no SAP. Ninguém precisa de carregar em «Gerar».
+- Vê hoje (depois do fecho das vendas) e os 3 dias anteriores ainda sem relatório. Os dias sem vendas não geram relatório.
+- Uma nova versão (correcção) continua a ser pedida por uma pessoa, com motivo. `RELATORIO_AUTOMATICO=0` no .env desliga a geração automática.
+
 ### Notificações e cópias de segurança: auto-reparação e aviso
 
 <!-- tipo: correcao -->

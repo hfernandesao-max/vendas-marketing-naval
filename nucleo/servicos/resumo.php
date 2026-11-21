@@ -289,6 +289,16 @@ function naval_periodicas(?int $agora = null): array
             error_log('[sala] ' . $e->getMessage());
         }
     }
+    // relatório de vendas do dia: gera-se sozinho quando todas as fontes ficam completas (de 15 em 15 minutos chega)
+    if ((int) date('i', $agora) % 15 < 5) {
+        try {
+            naval_servico('relatorio-vendas');
+            $g = naval_bd_configurada() ? naval_rv_automatico($agora) : [];
+            if ($g) $feito['relatorio_vendas'] = $g;
+        } catch (Throwable $e) {
+            error_log('[relatório de vendas automático] ' . $e->getMessage());
+        }
+    }
     // conciliação das carrinhas: rever as bases congeladas contra o Pinguim BO (guias anuladas ou corrigidas depois)
     try {
         $rv = naval_carr_rever_tick($agora);

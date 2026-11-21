@@ -208,3 +208,22 @@ teste('caixa: revisão pela Tesouraria de um fecho validado por outra pessoa (ac
     lanca(409, function () use ($d, $r) { naval_caixa_rever($d, '', $r['versao'], 'josefa'); }); // uma vez por pessoa
     igual(false, in_array($d, naval_caixa_por_rever('josefa', 60), true));
 });
+
+teste('relatório automático: gera-se sozinho nos dias completos com vendas; espera pelo fecho; não repete', function () {
+    $f = $GLOBALS['rv_fontes'];
+    $agora = strtotime('2030-01-10 18:00:00');   // quinta-feira, depois do fecho das vendas
+    $gerados = [];
+    $fontes = function (string $dia) use ($f) {
+        if ($dia === '2030-01-09') return $f($dia, ['lotes' => [['numero' => 4, 'estado' => 'emitido', 'documentos' => ['FR A/1', 'FR A/2', 'NC B/1']]]]);   // SAP por confirmar
+        if ($dia === '2030-01-08') return $f($dia, ['vendas' => []]);   // sem vendas
+        if ($dia === '2030-01-07') return $f($dia, ['vendas' => null]);  // sem ligação
+        return $f($dia);
+    };
+    $gerar = function (string $dia) use (&$gerados) { $gerados[] = $dia; };
+    igual(['2030-01-10'], naval_rv_automatico($agora, $fontes, $gerar), 'só o dia completo e com vendas');
+    igual(['2030-01-10'], $gerados);
+    // antes do fecho das vendas de hoje, hoje não se gera
+    $gerados = [];
+    naval_rv_automatico(strtotime('2030-01-10 11:00:00'), $fontes, $gerar);
+    igual([], $gerados);
+});
