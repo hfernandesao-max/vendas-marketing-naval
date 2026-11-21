@@ -991,26 +991,28 @@ function naval_carr_acertos_sql(string $desde): ?array
     naval_servico('vendas');
     $anulados = naval_vendas_condicao_anulados();
     $naoAnulado = 'COALESCE(DH.CALC_ISCANCELED, 0) = 0' . ($anulados !== '' ? ' AND NOT ' . $anulados : '');
+    $validos = naval_vendas_condicao_validos();
     try {
         $rows = naval_bd_consultar("
             SELECT COALESCE(WE.CODE, '') AS ARM_COD, COALESCE(WE.DESCRIPTION, '') AS ARM, LTRIM(RTRIM(DMD.PRODUCT_CODE)) AS CODIGO,
                    LTRIM(RTRIM(COALESCE(DH.DOC_PREFIX, DC.CODE))) + '/' + CAST(DH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
                    CONVERT(VARCHAR(19), COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), 120) AS HORA,
-                   CAST(SUM(DMD.QNT * DC.STOCK_SIGNAL) AS FLOAT) AS EFEITO
+                   CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 THEN 'venda' WHEN DC.CODE = 'GTC' THEN 'carga' ELSE 'acerto' END AS TIPO,
+                   CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 THEN -DMD.QNT * DH.CALC_SALES_SIGNAL ELSE DMD.QNT * DC.STOCK_SIGNAL END) AS FLOAT) AS EFEITO
             FROM DOCMOVDETAIL DMD
             INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN ENTITY WE ON WE.ID = DMD.WAREHOUSE_ID
             WHERE DMD.DELETED = 0 AND DH.DELETED = 0 AND $naoAnulado
-              AND COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0 AND DC.CODE <> 'GTC'
+              AND ((COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0) OR (COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 AND $validos))
               AND COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) > :desde
-            GROUP BY WE.CODE, WE.DESCRIPTION, DMD.PRODUCT_CODE, DH.DOC_PREFIX, DC.CODE, DH.DOC_NUMBER, COALESCE(DH.CLOCK_DATE, DH.DOC_DATE)",
+            GROUP BY WE.CODE, WE.DESCRIPTION, DMD.PRODUCT_CODE, DH.DOC_PREFIX, DC.CODE, DH.DOC_NUMBER, COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), DH.CALC_SALES_SIGNAL",
             [':desde' => $desde]);
         $inv = naval_bd_consultar("
             SELECT E.CODE AS ARM_COD, E.DESCRIPTION AS ARM, LTRIM(RTRIM(P.CODE)) AS CODIGO,
                    LTRIM(RTRIM(COALESCE(IH.DOC_PREFIX, 'INV'))) + '/' + CAST(IH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
                    CONVERT(VARCHAR(19), DATEADD(day, 1, IH.INVENTORY_DATE), 120) AS HORA,
-                   CAST(SUM(ID.PHYSICAL_QNT - ID.THEORETICAL_QNT) AS FLOAT) AS EFEITO
+                   'acerto' AS TIPO, CAST(SUM(ID.PHYSICAL_QNT - ID.THEORETICAL_QNT) AS FLOAT) AS EFEITO
             FROM INVENTORYHEADER IH
             INNER JOIN INVENTORYDETAIL ID ON ID.INVENTORYHEADER_ID = IH.ID AND ID.DELETED = 0
             INNER JOIN ENTITY E ON E.ID = IH.WAREHOUSE_ID
@@ -1027,18 +1029,24 @@ function naval_carr_acertos_sql(string $desde): ?array
         [$rota] = naval_stock_rota_armazem(trim((string) $r['ARM_COD']), trim((string) $r['ARM']), $conf);
         $q = round((float) $r['EFEITO'], 3);
         if ($rota === '' || abs($q) <= NAVAL_CARR_TOLERANCIA) continue;
-        $out[] = ['rota' => $rota, 'codigo' => trim((string) $r['CODIGO']), 'doc' => trim((string) $r['DOC']), 'em' => (string) $r['HORA'], 'efeito' => $q];
+        $out[] = ['rota' => $rota, 'codigo' => trim((string) $r['CODIGO']), 'doc' => trim((string) $r['DOC']), 'em' => (string) $r['HORA'], 'efeito' => $q,
+            'tipo' => (string) ($r['TIPO'] ?? 'acerto')];
     }
     usort($out, function ($a, $b) { return strcmp($a['em'], $b['em']); });
     return $out;
 }
 
 /**
- * Regularização documentada (função pura, testada): para cada diferença da contagem, o primeiro acerto lançado no
- * Pinguim BO depois da contagem, na mesma carrinha e no mesmo artigo, com o mesmo sentido (falta → saída ou inventário
- * para menos; sobra → inventário para mais), explica a diferença até à quantidade desse acerto. Um mesmo acerto pode
- * explicar a mesma diferença em dias seguidos (o erro de registo arrastou-se até ser acertado).
- * Devolve {codigo: {q (a parte explicada, com sinal), doc, em}}.
+ * Regularização documentada (função pura, testada): o que o Pinguim BO registou depois da contagem e explica a
+ * diferença, na mesma carrinha e artigo, sem decisão humana:
+ *   1. acerto da Logística (saída de armazém, devolução ou inventário) — o primeiro depois da contagem, no mesmo
+ *      sentido da diferença, explica-a até à quantidade desse acerto;
+ *   2. venda registada depois da contagem (ex.: impressora avariada, factura emitida no dia seguinte) — numa falta, se a
+ *      carrinha vendeu depois da contagem, antes de nova carga desse artigo, mais do que tinha contado, esse excesso
+ *      saiu antes da contagem e só foi registado depois; explica até ao excesso. Não esconde faltas reais: o que podia
+ *      ter saído do que foi contado não conta.
+ * Um mesmo documento pode explicar a mesma diferença em dias seguidos. As guias de carga (GTC) nunca explicam: são o
+ * limite da regra 2. Devolve {codigo: {q (a parte explicada, com sinal), doc, em}}.
  */
 function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, string $referencia): array
 {
@@ -1046,12 +1054,44 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
     foreach ($linhas as $l) {
         $d = $l['diferenca_bruta'] ?? $l['diferenca'];
         if ($d === null || abs((float) $d) <= NAVAL_CARR_TOLERANCIA) continue;
+        $d = (float) $d;
+        $codigo = (string) $l['codigo'];
+        $falta = abs($d);
+        $explicado = 0.0;
+        $docs = [];
+        $em = '';
+        // 1. o primeiro acerto da Logística depois da contagem
         foreach ($acertos as $a) {
-            if ($a['rota'] !== $rota || $a['codigo'] !== (string) $l['codigo'] || $a['em'] <= $referencia) continue;
-            if (($a['efeito'] < 0) !== ($d < 0)) break;   // o primeiro acerto vai no sentido contrário: não explica
-            $q = ($d < 0 ? -1 : 1) * min(abs((float) $a['efeito']), abs((float) $d));
-            $out[(string) $l['codigo']] = ['q' => round($q, 3), 'doc' => $a['doc'], 'em' => $a['em']];
+            if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
+            if (($a['efeito'] < 0) === ($d < 0)) {
+                $explicado = min(abs((float) $a['efeito']), $falta);
+                $docs[] = $a['doc'];
+                $em = $a['em'];
+            }
             break;
+        }
+        // 2. falta: vendas registadas depois da contagem, até à carga seguinte do artigo, para lá do que foi contado
+        if ($d < 0 && $explicado < $falta - NAVAL_CARR_TOLERANCIA && isset($l['contado'])) {
+            $vendido = 0.0;
+            $docsV = [];
+            foreach ($acertos as $a) {
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia) continue;
+                $tipo = $a['tipo'] ?? 'acerto';
+                if ($tipo === 'carga' && $a['efeito'] > 0) break;
+                if ($tipo !== 'venda') continue;
+                $vendido += -(float) $a['efeito'];
+                $docsV[] = $a['doc'];
+                $emV = $a['em'];
+            }
+            $excesso = $vendido - (float) $l['contado'];
+            if ($excesso > NAVAL_CARR_TOLERANCIA) {
+                $explicado = min($falta, $explicado + $excesso);
+                $docs = array_merge($docs, array_values(array_unique($docsV)));
+                $em = $em ?: ($emV ?? '');
+            }
+        }
+        if ($explicado > NAVAL_CARR_TOLERANCIA) {
+            $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * $explicado, 3), 'doc' => implode(', ', $docs), 'em' => $em];
         }
     }
     return $out;

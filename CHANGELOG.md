@@ -5,6 +5,7 @@
 <!-- tipo: funcionalidade -->
 
 - Uma diferença da contagem que um acerto lançado depois no Pinguim BO corrige (saída de armazém, devolução ou inventário na mesma carrinha e artigo) fica «Regularizada no Pinguim BO», com o número do documento, e não conta como falta; o mesmo acerto explica a mesma diferença em dias seguidos. Sem diferenças por explicar, a conciliação validada fecha sozinha. Ex.: rota 1008 (SA A1000/118) e rota 1011 (SA A1000/119).
+- Venda facturada depois da contagem (ex.: impressora avariada, factura no dia seguinte): numa falta, se a carrinha vendeu depois da contagem, antes de nova carga do artigo, mais do que tinha contado, esse excesso saiu antes da contagem e fica regularizado pela factura (ex.: rota 1008, 17-11, FR 4 de 18-11). O que podia ter saído do que foi contado não conta, para não esconder faltas reais.
 - Vendas por sincronizar: uma rota carregada, sem vendas no Pinguim BO desde a carga e com o telemóvel sem sincronizar há mais de 6 horas aparece na Vigia e avisa por notificação quem acompanha a rota (SYNC_ALERTA_HORAS).
 - Contagens escritas no portal noutro dia referem-se ao corte do dia da conciliação (a contagem física é a do fim desse dia).
 

@@ -501,3 +501,20 @@ teste('regularização documentada: o acerto posterior da Logística no Pinguim 
     $l = naval_carr_linhas($base, ['332' => 100.0], ['332' => 15000.0])[0];
     igual([-350.0, -50.0, -750000.0, 'SA A1000/119'], [$l['diferenca_bruta'], $l['diferenca'], $l['valor'], $l['regularizado']['doc']]);
 });
+
+teste('venda registada depois da contagem (impressora avariada): explica a falta só no que excede o contado, até à carga seguinte', function () {
+    $ev = function ($cod, $tipo, $em, $q, $doc) { return ['rota' => '1008', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => $tipo]; };
+    $acertos = [
+        $ev('385', 'venda', '2026-11-18 14:39:00', -20.0, 'FR 4'),                                     // contou 0, vendeu 20 no dia seguinte
+        $ev('500', 'venda', '2026-11-18 14:39:00', -20.0, 'FR 4'),                                     // contou 30: os 20 podiam ser dos contados
+        $ev('600', 'carga', '2026-11-18 08:00:00', 40.0, 'GTC 99'), $ev('600', 'venda', '2026-11-18 10:00:00', -20.0, 'FR 5'),   // carga antes da venda
+    ];
+    $linhas = [
+        ['codigo' => '385', 'diferenca' => -20.0, 'contado' => 0.0],
+        ['codigo' => '500', 'diferenca' => -20.0, 'contado' => 30.0],
+        ['codigo' => '600', 'diferenca' => -20.0, 'contado' => 0.0],
+    ];
+    $r = naval_carr_regularizacoes($linhas, $acertos, '1008', '2026-11-17 16:00:00');
+    igual(['385'], array_map('strval', array_keys($r)), 'só a 385 fica explicada');
+    igual([-20.0, 'FR 4'], [$r['385']['q'], $r['385']['doc']]);
+});
