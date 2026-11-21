@@ -73,7 +73,7 @@ servidor (normalmente em segundos, às vezes mais) e enquanto dura o comercial f
 
    | Chave | Valor |
    |---|---|
-   | `ssid_sala` | `[INSERIR_SSID_SALA]` |
+   | `ssid_sala` | `Foodtec AP` |
    | `bssids_sala` | BSSID do(s) ponto(s) de acesso da sala, separados por vírgulas |
    | `rssi_entrada` / `leituras_entrada` | −67 / 2 (afinar no local) |
    | `saida_minutos` / `espera_minutos` | 5 / 30 |
