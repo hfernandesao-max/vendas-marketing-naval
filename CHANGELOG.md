@@ -1,5 +1,10 @@
 ## 21-11-2026
 
+### Contagem da carrinha: linha activa destacada e visto nas já contadas
+
+- A linha em que se está a escrever fica destacada a azul. **Enter** passa à linha seguinte, como o Tab, e na última vai para «Gravar contagem». O número já escrito fica seleccionado, para se poder corrigir logo.
+- Cada artigo já contado leva um visto verde à direita (o 0 também conta). Fica fácil ver o que falta.
+
 ### Conciliação: aviso automático de telemóvel sem sincronizar e de rota sem facturas
 
 - Cada rota em aberto mostra, no cartão e no detalhe, porque é que o Pinguim BO pode não ter as vendas do dia:

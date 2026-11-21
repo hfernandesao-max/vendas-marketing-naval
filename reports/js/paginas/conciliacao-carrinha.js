@@ -164,9 +164,13 @@ function formContagem(r) {
   const f = el('div', 'cc-contagem');
   const tab = el('table', 'cc-tab');
   const th = el('tr');
-  [t('Código'), t('Artigo'), t('Quantidade que voltou')].forEach((x) => th.append(el('th', null, x)));
+  [t('Código'), t('Artigo'), t('Quantidade que voltou'), ''].forEach((x) => th.append(el('th', null, x)));
   tab.append(th);
   const campos = {};
+  const ordem = [];
+  let gravar = null;
+  // linha preenchida: visto verde à direita (o 0 também conta: «não voltou nada» é uma contagem)
+  const marcar = (tr, i) => tr.classList.toggle('cc-feita', i.value !== '');
   // Rascunho da contagem: cada número escrito fica guardado neste navegador até gravar; a página pode actualizar
   // (ou voltar a abrir) sem apagar o que já foi contado
   const chave = 'contagem-' + dia + '-' + r.rota;
@@ -188,11 +192,31 @@ function formContagem(r) {
     const inicial = rasc && rasc.v[l.codigo] != null ? rasc.v[l.codigo] : l.contado == null ? '' : l.contado;
     const i = entrada('number', inicial, { min: 0, step: 'any', inputMode: 'decimal' });
     i.setAttribute('aria-label', l.artigo);
-    i.addEventListener('input', guardar);
+    i.addEventListener('input', () => {
+      guardar();
+      marcar(tr, i);
+    });
+    // a linha em que se está a escrever fica destacada; Enter passa à seguinte (como o Tab) e, na última, ao «Gravar»
+    i.addEventListener('focus', () => {
+      tr.classList.add('cc-activa');
+      i.select();
+    });
+    i.addEventListener('blur', () => tr.classList.remove('cc-activa'));
+    i.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const prox = ordem[ordem.indexOf(i) + 1];
+      if (prox) prox.focus();
+      else if (gravar) gravar.focus();
+    });
     campos[l.codigo] = i;
+    ordem.push(i);
     const td = el('td');
     td.append(i, el('span', 'cc-un', l.unidade || ''));
-    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td);
+    const ok = el('td', 'cc-visto', '✓');
+    ok.setAttribute('aria-hidden', 'true');
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td, ok);
+    marcar(tr, i);
     tab.append(tr);
   });
   const erro = msgErro();
@@ -201,7 +225,7 @@ function formContagem(r) {
     tab,
     estado,
     erro,
-    botao(t('Gravar contagem'), null, () => {
+    (gravar = botao(t('Gravar contagem'), null, () => {
       const contagem = {};
       for (const [c, i] of Object.entries(campos)) {
         if (i.value === '') {
@@ -229,7 +253,7 @@ function formContagem(r) {
         ler();
         draw();
       });
-    }),
+    })),
   );
   if (rasc) guardarRascunho(chave, rasc.v);
   return f;
@@ -594,9 +618,7 @@ R['conciliacao-carrinha'] = (pg) => {
     if (r.resumo.alertas) parte(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }), 'cc-neg');
     if (r.resumo.estado !== 'por_contar') parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
     if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
-    (r.avisos_rota || []).forEach((a) =>
-      parte(a.tipo === 'sincronizacao' ? t('telemóvel por sincronizar') : t('sem facturas no Pinguim BO'), 'cc-neg'),
-    );
+    (r.avisos_rota || []).forEach((a) => parte(a.tipo === 'sincronizacao' ? t('telemóvel por sincronizar') : t('sem facturas no Pinguim BO'), 'cc-neg'));
     c.append(h, det);
     const abrir = botao(
       aberta === r.rota ? t('Fechar') : r.cega ? t('Contar') : t('Ver'),

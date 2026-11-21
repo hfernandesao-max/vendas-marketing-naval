@@ -125,7 +125,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await expect(rota).toContainText('Fora do prazo do fecho (16:00)');
   await rota.getByRole('button', { name: 'Contar' }).click();
   // cega: só o artigo e a quantidade que voltou
-  await expect(rota.locator('th')).toHaveText(['Código', 'Artigo', 'Quantidade que voltou']);
+  await expect(rota.locator('th')).toHaveText(['Código', 'Artigo', 'Quantidade que voltou', '']);
   // folha de contagem às cegas para imprimir: artigos, sem as quantidades do sistema
   const folha = await pdfTexto(rota.getByRole('button', { name: 'Imprimir folha de contagem' }));
   expect(folha.nome).toBe('CC-1001-20261026_folha-de-contagem.pdf');
@@ -144,7 +144,22 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   expect(rasc.v).toEqual({ A1: '3', B2: '' });
   await rota.getByRole('button', { name: 'Gravar contagem' }).click();
   await expect(rota.locator('.erro')).toContainText('Preencha todos os artigos');
-  await rota.getByLabel('Sabão').fill('2');
+  // a linha em que se escreve fica destacada; a já contada leva o visto; Enter passa à seguinte e, na última, ao «Gravar»
+  const linhaFraldas = rota.locator('.cc-contagem tr', { has: page.getByLabel('Fraldas M') });
+  const linhaSabao = rota.locator('.cc-contagem tr', { has: page.getByLabel('Sabão') });
+  await expect(linhaFraldas).toHaveClass(/cc-feita/);
+  await expect(linhaSabao).not.toHaveClass(/cc-feita/);
+  await rota.getByLabel('Fraldas M').focus();
+  await expect(linhaFraldas).toHaveClass(/cc-activa/);
+  await page.keyboard.press('Enter');
+  await expect(rota.getByLabel('Sabão')).toBeFocused();
+  await expect(linhaSabao).toHaveClass(/cc-activa/);
+  await expect(linhaFraldas).not.toHaveClass(/cc-activa/);
+  await page.keyboard.type('2');
+  await expect(linhaSabao).toHaveClass(/cc-feita/);
+  await page.keyboard.press('Enter');
+  await expect(rota.getByRole('button', { name: 'Gravar contagem' })).toBeFocused();
+
   await rota.getByRole('button', { name: 'Gravar contagem' }).click();
   await expect.poll(() => pedidos.filter((p) => p.accao === 'contar').length).toBe(1);
   expect(pedidos.find((p) => p.accao === 'contar')).toMatchObject({ accao: 'contar', rota: '1001', contagem: { A1: 3, B2: 2 } });
