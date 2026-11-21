@@ -2121,6 +2121,8 @@ export const TI = {
   '{n} artigos': '{n} ኣቕሑ',
   '{n} com alerta automático': '{n} ኣውቶማቲክ መጠንቀቕታ ዘለዎም',
   'falta {v}': 'ጉድለት {v}',
+  'telemóvel por sincronizar': 'ሞባይል ኣይተሰናኸለን',
+  'sem facturas no Pinguim BO': 'ኣብ Pinguim BO ፋክቱራ የለን',
   Contar: 'ቍጸር',
   Ver: 'ርአ',
   'Carrinhas do dia': 'መካይን ናይቲ መዓልቲ',

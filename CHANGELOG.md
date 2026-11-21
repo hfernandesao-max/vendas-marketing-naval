@@ -1,5 +1,12 @@
 ## 21-11-2026
 
+### Conciliação: aviso automático de telemóvel sem sincronizar e de rota sem facturas
+
+- Cada rota em aberto mostra, no cartão e no detalhe, porque é que o Pinguim BO pode não ter as vendas do dia:
+  - **«O telemóvel desta rota não sincroniza com o Pinguim BO desde …»**, quando o telemóvel não sincronizou na última hora antes da referência da contagem. As vendas podem estar só no telemóvel; quando sincronizar, a conciliação actualiza-se sozinha.
+  - **«Esta rota não tem facturas no Pinguim BO desde …»**, quando a rota tem carga mas nenhuma factura há mais de 2 dias e o telemóvel sincroniza. Pede para confirmar com o promotor se está a emitir as facturas no Winrest.
+- A última carga, venda e sincronização de cada rota é lida uma só vez de 5 em 5 minutos e partilhada com o alerta de vendas por sincronizar, para não pesar no Pinguim BO.
+
 ### Conciliação: uma só cor por estado
 
 <!-- tipo: melhoria -->

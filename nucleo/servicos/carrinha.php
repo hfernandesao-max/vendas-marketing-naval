@@ -1271,7 +1271,7 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
             $dif = round($dif - $qr, 3);
             $regularizado = ['q' => round($qr, 3), 'doc' => (string) $regz['doc'], 'em' => (string) $regz['em']];
         }
-        $preco = (float) ($precos[$c] ?? (($v[$c]['q'] ?? 0) > 0 ? $v[$c]['t'] / $v[$c]['q'] : 0));
+        $preco = (float) ($precos[$c] ?? (($v[$c]['q'] ?? 0) > 0 ? (float) ($v[$c]['t'] ?? 0) / $v[$c]['q'] : 0));
         if (!$ini && !$fim && !$ven && !$car && !$dev && !$inv && !$contado && !$pos && !$depois) continue;
         // nada para contar: o artigo não devia estar na carrinha no fim do dia e não houve vendas (ex.: stock do dia
         // anterior retirado ou corrigido no Pinguim BO). Sem alertas e sem contagem feita, não entra na conciliação.
@@ -1381,6 +1381,12 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
 {
     $d = naval_carr_dados($data, $actualizar);
     $cega = naval_config('CARRINHA_CONTAGEM_CEGA', '1') !== '0';
+    naval_servico('sincronizacao-alertas');
+    try {
+        $avisosDados = naval_sync_rotas_dados();
+    } catch (Throwable $e) {
+        $avisosDados = null;
+    }
     $promotores = naval_promotores();
     $out = [];
     foreach ($d['rotas'] as $rota => $r) {
@@ -1405,7 +1411,10 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
             'requisicao' => naval_req_da_conciliacao_numero($data, $rota),
             'corte' => isset($base['corte']) ? ['hora' => $base['corte']['hora'], 'origem' => $base['corte']['origem'],
                 'vendido_depois' => (float) ($base['corte']['vendido_depois'] ?? 0)] : null,
-            'cargas_posteriores' => array_map(function ($x) { return ['numero' => $x['numero'], 'confirmado_em' => $x['confirmado_em'], 'autorizado_por' => $x['autorizado_por'] ?? '']; }, (array) ($reg['cargas_posteriores'] ?? []))];
+            'cargas_posteriores' => array_map(function ($x) { return ['numero' => $x['numero'], 'confirmado_em' => $x['confirmado_em'], 'autorizado_por' => $x['autorizado_por'] ?? '']; }, (array) ($reg['cargas_posteriores'] ?? [])),
+            // porque é que o Pinguim BO pode não ter as vendas do dia (telemóvel sem sincronizar, rota sem facturas)
+            'avisos_rota' => $resumo['estado'] === 'aprovada' || $avisosDados === null ? []
+                : naval_sync_avisos_rota($avisosDados[$rota] ?? null, $data, naval_carr_referencia_contagem($reg, $data))];
     }
     return ['data' => $data, 'gerado' => $d['gerado'], 'movimentos' => $d['movimentos'], 'rotas' => $out, 'motivos' => NAVAL_CARR_MOTIVOS];
 }

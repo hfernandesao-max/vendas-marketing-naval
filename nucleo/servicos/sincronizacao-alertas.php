@@ -40,10 +40,24 @@ function naval_sync_vendas_por_sincronizar(array $linhas, int $agora, ?string $t
 function naval_sync_por_sincronizar(?int $agora = null): ?array
 {
     $agora = $agora ?? time();
+    $rows = naval_sync_rotas_dados($agora);
+    if ($rows === null) return null;
+    naval_servico('calendario');
+    return naval_sync_vendas_por_sincronizar(array_values($rows), $agora, (string) (naval_cal_dia(date('Y-m-d', $agora))['tipo'] ?? ''));
+}
+
+/**
+ * Última carga (GTC dos últimos 3 dias), última venda e última sincronização do telemóvel de cada rota, do Pinguim BO
+ * (só SELECT), guardadas 5 minutos para todos: {rota: {ROTA, ULTIMA_CARGA, ULTIMA_VENDA, ULTIMA_SINCRONIZACAO}}.
+ */
+function naval_sync_rotas_dados(?int $agora = null): ?array
+{
+    $agora = $agora ?? time();
     naval_servico('bd');
     if (!naval_bd_configurada()) return null;
-    naval_servico('calendario');
-    $dia = date('Y-m-d', $agora);
+    $cache = naval_pasta('fontes') . '/rotas-sincronizacao.json';
+    $c = naval_json_ler($cache);
+    if ($c && $agora - (int) ($c['t'] ?? 0) < 300 && $agora >= (int) ($c['t'] ?? 0)) return (array) $c['rotas'];
     $desde = date('Y-m-d', $agora - 3 * 86400);
     try {
         $rows = naval_bd_consultar("
@@ -58,5 +72,38 @@ function naval_sync_por_sincronizar(?int $agora = null): ?array
         error_log('[vendas por sincronizar] ' . $e->getMessage());
         return null;
     }
-    return naval_sync_vendas_por_sincronizar($rows, $agora, (string) (naval_cal_dia($dia)['tipo'] ?? ''));
+    $out = [];
+    foreach ($rows as $r) $out[trim((string) $r['ROTA'])] = $r;
+    naval_json_gravar($cache, ['t' => $agora, 'rotas' => $out], false);
+    return $out;
+}
+
+/**
+ * Avisos da rota na conciliação (função pura, testada): porque é que o Pinguim BO pode não ter as vendas do dia.
+ *   - sincronizacao: o telemóvel não sincronizou depois do fim das vendas do dia (a referência da contagem): as vendas
+ *     feitas podem estar só no telemóvel;
+ *   - sem_faturas: a rota não tem nenhuma factura no Pinguim BO há mais de 2 dias, mas tem carga recente: o promotor
+ *     pode estar a entregar sem emitir factura no Winrest (documento fiscal em falta).
+ * $dados: {ULTIMA_CARGA, ULTIMA_VENDA, ULTIMA_SINCRONIZACAO}. Devolve [{tipo, desde, texto}].
+ */
+function naval_sync_avisos_rota(?array $dados, string $dia, string $referencia): array
+{
+    if (!$dados) return [];
+    $out = [];
+    $sync = (string) ($dados['ULTIMA_SINCRONIZACAO'] ?? '');
+    $venda = (string) ($dados['ULTIMA_VENDA'] ?? '');
+    $carga = (string) ($dados['ULTIMA_CARGA'] ?? '');
+    $fmt = function (string $d) { return $d === '' ? '—' : date('d-m-Y H:i', (int) strtotime($d)); };
+    // uma hora de folga: o telemóvel sincroniza de tempos a tempos, não a cada venda
+    if ($sync === '' || $sync < date('Y-m-d H:i:s', (int) strtotime($referencia) - 3600)) {
+        $out[] = ['tipo' => 'sincronizacao', 'desde' => $sync ?: null,
+            'texto' => 'O telemóvel desta rota não sincroniza com o Pinguim BO desde ' . $fmt($sync) . ': as vendas do dia podem estar só no telemóvel. Sincronize no Winrest e a conciliação actualiza-se sozinha.'];
+    }
+    $limite = date('Y-m-d H:i:s', strtotime($dia . ' 23:59:59') - 2 * 86400);
+    // com o telemóvel parado, a falta de facturas é consequência e não outro problema
+    if (!$out && $carga !== '' && ($venda === '' || $venda < $limite)) {
+        $out[] = ['tipo' => 'sem_faturas', 'desde' => $venda ?: null,
+            'texto' => 'Esta rota não tem facturas no Pinguim BO desde ' . ($venda === '' ? 'sempre' : date('d-m-Y', (int) strtotime($venda))) . ', mas tem carga: confirme com o promotor se está a emitir as facturas no Winrest (venda sem documento fiscal).'];
+    }
+    return $out;
 }

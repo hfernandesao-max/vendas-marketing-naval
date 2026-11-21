@@ -2150,6 +2150,8 @@ export const EN = {
   '{n} artigos': '{n} items',
   '{n} com alerta automático': '{n} with an automatic alert',
   'falta {v}': 'shortage {v}',
+  'telemóvel por sincronizar': 'phone not synced',
+  'sem facturas no Pinguim BO': 'no invoices in Pinguim BO',
   Contar: 'Count',
   Ver: 'View',
   'Carrinhas do dia': 'Vans of the day',

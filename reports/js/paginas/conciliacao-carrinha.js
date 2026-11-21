@@ -327,6 +327,8 @@ function tabelaRota(r) {
       ),
     );
   }
+  // porque é que o Pinguim BO pode não ter as vendas do dia: telemóvel sem sincronizar, rota sem facturas
+  (r.avisos_rota || []).forEach((a) => box.append(el('p', 'cc-aviso cc-aviso-rota', t(a.texto))));
   // o Pinguim BO mudou depois de a base ser congelada (guia anulada ou corrigida): actualizada (aberta) ou assinalada (aprovada)
   const actualizada = (r.historico || []).filter((h) => h.accao === 'base_actualizada_pinguim').pop();
   const artigosMudados = (dif) => (dif || []).map((d) => d.artigo).join(', ');
@@ -592,6 +594,9 @@ R['conciliacao-carrinha'] = (pg) => {
     if (r.resumo.alertas) parte(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }), 'cc-neg');
     if (r.resumo.estado !== 'por_contar') parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
     if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
+    (r.avisos_rota || []).forEach((a) =>
+      parte(a.tipo === 'sincronizacao' ? t('telemóvel por sincronizar') : t('sem facturas no Pinguim BO'), 'cc-neg'),
+    );
     c.append(h, det);
     const abrir = botao(
       aberta === r.rota ? t('Fechar') : r.cega ? t('Contar') : t('Ver'),

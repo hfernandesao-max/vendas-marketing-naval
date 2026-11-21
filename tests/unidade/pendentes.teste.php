@@ -129,3 +129,23 @@ teste('vendas por sincronizar: rota carregada, sem vendas desde a carga e telem�
     igual([], naval_sync_vendas_por_sincronizar($l, strtotime('2026-11-20 09:00:00'), 'normal'), 'de manhã não avisa');
     igual([], naval_sync_vendas_por_sincronizar($l, $agora, 'folga'), 'em dia de folga não avisa');
 });
+
+teste('conciliação: aviso de telemóvel sem sincronizar e de rota sem facturas no Pinguim BO', function () {
+    naval_servico('sincronizacao-alertas');
+    $ref = '2026-11-21 16:00:00';
+    $tipos = function ($d) use ($ref) { return array_column(naval_sync_avisos_rota($d, '2026-11-21', $ref), 'tipo'); };
+    // 1007: telemóvel parado desde 19-11
+    igual(['sincronizacao'], $tipos(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-19 15:00:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-19 15:10:00']));
+    // 1011: sincroniza mas não tem facturas desde 09-11, com carga
+    igual(['sem_faturas'], $tipos(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-09 13:34:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-21 15:40:00']));
+    // tudo em dia (sincronizou na última hora antes da referência): sem avisos
+    igual([], $tipos(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-21 14:00:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-21 15:05:00']));
+    // sem carga não pede facturas; sem dados, nada
+    igual(['sincronizacao'], $tipos(['ULTIMA_CARGA' => null, 'ULTIMA_VENDA' => null, 'ULTIMA_SINCRONIZACAO' => null]));
+    igual([], naval_sync_avisos_rota(null, '2026-11-21', $ref));
+    $a = naval_sync_avisos_rota(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-09 13:34:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-19 15:10:00'], '2026-11-21', $ref);
+    igual(true, strpos($a[0]['texto'], '19-11-2026 15:10') !== false);
+    igual(1, count($a), 'telemóvel parado: a falta de facturas é consequência, um só aviso');
+    $b = naval_sync_avisos_rota(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-09 13:34:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-21 15:40:00'], '2026-11-21', $ref);
+    igual(true, strpos($b[0]['texto'], '09-11-2026') !== false);
+});
