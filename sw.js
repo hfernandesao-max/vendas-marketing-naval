@@ -63,7 +63,8 @@ self.addEventListener('push', (e) => {
     timestamp: m.data ? Date.parse(String(m.data).replace(' ', 'T')) || Date.now() : Date.now(),
     data: { url: new URL(m.url || 'gestao/#alertas', BASE + 'app/').href, id: m.id || '' },
   };
-  const numero = typeof m.nao_lidas === 'number' && 'setAppBadge' in self.navigator ? self.navigator.setAppBadge(m.nao_lidas).catch(() => {}) : Promise.resolve();
+  const numero =
+    typeof m.nao_lidas === 'number' && 'setAppBadge' in self.navigator ? self.navigator.setAppBadge(m.nao_lidas).catch(() => {}) : Promise.resolve();
   e.waitUntil(Promise.all([self.registration.showNotification(titulo, opcoes), numero]));
 });
 
@@ -79,5 +80,10 @@ self.addEventListener('notificationclick', (e) => {
   );
 });
 
-// o telefone renovou a subscrição (raro): a app volta a registá-la da próxima vez que abrir
-self.addEventListener('pushsubscriptionchange', () => {});
+// o telefone renovou a subscrição: o service worker volta a subscrever com as mesmas opções (a mesma chave do
+// servidor) e a app regista a nova no servidor da próxima vez que abrir (auto-reparação em carregarNotif)
+self.addEventListener('pushsubscriptionchange', (e) => {
+  const opcoes = e.oldSubscription && e.oldSubscription.options;
+  if (e.newSubscription || !opcoes || !opcoes.applicationServerKey) return;
+  e.waitUntil(self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: opcoes.applicationServerKey }).catch(() => null));
+});

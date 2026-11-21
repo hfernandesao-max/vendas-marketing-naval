@@ -840,12 +840,34 @@ function carregarNotif() {
         if (d && d.ok) {
           E.notif = d;
           numeroNoIcone(d.nao_lidas);
+          repararSubscricao(s, d);
         }
         desenhar();
       },
       () => {},
     );
   });
+}
+/**
+ * Auto-reparação: com as notificações autorizadas neste telefone, se o telefone renovou a subscrição (ou a perdeu)
+ * e o servidor já não a conhece, volta a registá-la sozinha — sem isto, os avisos deixavam de chegar sem ninguém saber.
+ */
+function repararSubscricao(s, d) {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || d.subscrito || !d.chave) return;
+  } catch (e) {
+    return;
+  }
+  registo()
+    .then((r) => (s ? s : r && r.pushManager ? r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveBin(d.chave) }) : null))
+    .then((nova) => {
+      if (!nova) return;
+      E.notifEndpoint = nova.endpoint;
+      return postJson('notificacoes', { accao: 'subscrever', subscricao: nova.toJSON(), idioma: LANG }).then((x) => {
+        if (x && x.ok) E.notif = x;
+      });
+    })
+    .catch(() => {});
 }
 function accaoNotif(corpo) {
   return postJson('notificacoes', { endpoint: E.notifEndpoint, ...corpo }).then((d) => {

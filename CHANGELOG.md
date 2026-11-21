@@ -1,6 +1,15 @@
 ## 22-11-2026
 
+### Notificações e cópias de segurança: auto-reparação e aviso
+
+<!-- tipo: correcao -->
+
+- Quando o telemóvel renova sozinho a subscrição das notificações, a app volta a registá-la no servidor ao abrir. Antes, os avisos podiam deixar de chegar sem ninguém saber.
+- Enquanto a cópia de segurança diária ficar só neste servidor (sem pasta externa configurada), a verificação de conformidade avisa todas as segundas-feiras.
+
 ### Lançamento linha a linha igual em todo o portal
+
+<!-- tipo: funcionalidade -->
 
 Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmação da carga na Logística e às correcções dos TPA Multicaixa.
 
@@ -18,10 +27,14 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 
 ### Contagem da carrinha: linha activa destacada e visto nas já contadas
 
+<!-- tipo: melhoria -->
+
 - A linha em que se está a escrever fica destacada a azul. **Enter** passa à linha seguinte, como o Tab, e na última vai para «Gravar contagem». O número já escrito fica seleccionado, para se poder corrigir logo.
 - Cada artigo já contado leva um visto verde à direita (o 0 também conta). Fica fácil ver o que falta.
 
 ### Conciliação: aviso automático de telemóvel sem sincronizar e de rota sem facturas
+
+<!-- tipo: funcionalidade -->
 
 - Cada rota em aberto mostra, no cartão e no detalhe, porque é que o Pinguim BO pode não ter as vendas do dia:
   - **«O telemóvel desta rota não sincroniza com o Pinguim BO desde …»**, quando o telemóvel não sincronizou na última hora antes da referência da contagem. As vendas podem estar só no telemóvel; quando sincronizar, a conciliação actualiza-se sozinha.

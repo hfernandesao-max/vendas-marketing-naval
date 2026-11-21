@@ -439,6 +439,10 @@ function naval_conf_noite(int $agora): ?array
         $t = naval_conf_testar_recuperacao(naval_pasta('copias-dados') . '/' . $c['ficheiro']);
         if (!$t['ok']) $problemas[] = 'teste de recuperação da cópia falhou: ' . implode('; ', $t['falhas']);
         if ($c['externa'] === false) $problemas[] = 'a cópia não chegou à pasta externa (COPIAS_PASTA_EXTERNA)';
+        // sem pasta externa, um problema no disco ou no servidor leva os dados e a cópia ao mesmo tempo: avisa todas as
+        // segundas-feiras até ficar configurada (a cópia continua a ser feita e testada aqui)
+        if (naval_config('COPIAS_PASTA_EXTERNA') === '' && date('N', $agora) === '1')
+            $problemas[] = 'a cópia de segurança fica só neste servidor: defina COPIAS_PASTA_EXTERNA (outra máquina ou partilha de rede) para a cópia sair do servidor';
         return ['ok' => $t['ok'], 'copia' => $c, 'recuperacao' => $t];
     });
     $passo('ligacoes', function () use (&$problemas) {
