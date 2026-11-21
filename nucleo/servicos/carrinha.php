@@ -831,7 +831,9 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
     $diags = naval_carr_diagnosticos($linhasDepois, $guias[$dia], $rota);
     $antes = (array) ($reg['regularizacoes'] ?? []);
     // validada e sem nada por explicar: fecha sozinha mesmo sem regularizações novas (gestão por excepção)
-    $fecha = ($reg['estado'] ?? '') === 'por_aprovar' && naval_carr_fecha_sozinha(naval_carr_resumo($linhasDepois, $reg)) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0';
+    // (também sem artigos: contada e sem nada que o Pinguim BO diga que devia lá estar, não há nada para aprovar)
+    $resAgora = naval_carr_resumo($linhasDepois, $reg);
+    $fecha = ($reg['estado'] ?? '') === 'por_aprovar' && $resAgora['diferencas'] === 0 && $resAgora['alertas'] === 0 && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0';
     if ($novas == $antes && $diags == (array) ($reg['diagnosticos'] ?? []) && !$fecha) return [];
     if ($ensaio) return array_keys($novas);
     $agora = date('Y-m-d H:i:s');
@@ -841,7 +843,7 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
         $reg['historico'][] = ['em' => $agora, 'por' => 'sistema', 'accao' => 'regularizada_pinguim', 'regularizacoes' => $novas];
     }
     $res = naval_carr_resumo($linhasDepois, $reg);
-    if (($reg['estado'] ?? '') === 'por_aprovar' && naval_carr_fecha_sozinha($res) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0') {
+    if ($fecha || (($reg['estado'] ?? '') === 'por_aprovar' && naval_carr_fecha_sozinha($res) && naval_config('CARRINHA_FECHO_AUTOMATICO', '1') !== '0')) {
         $reg['estado'] = 'aprovada';
         $reg['aprovado_por'] = 'automatico';
         $reg['aprovado_em'] = $agora;

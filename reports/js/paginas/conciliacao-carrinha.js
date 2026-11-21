@@ -21,8 +21,11 @@ let CC = null;
 let dia = null;
 let aberta = null;
 let aLer = false;
+// Uma só linguagem de cor, a do passo do circuito: a etiqueta e o risco à esquerda do cartão têm sempre a mesma cor
+// (cinzento por contar, âmbar por validar, laranja por aprovar, azul fechada). As diferenças vêem-se no texto, a vermelho;
+// «fora do prazo» é a única etiqueta vermelha (atraso de quem tem de agir).
 const ESTADOS = {
-  por_contar: ['Por contar', 'p-warn'],
+  por_contar: ['Por contar', 'p-mut'],
   por_validar: ['Por validar', 'p-warn'],
   por_aprovar: ['Por aprovar (coordenador)', 'p-serio'],
   por_fechar: ['Por aprovar (responsável)', 'p-serio'],
@@ -572,17 +575,24 @@ R['conciliacao-carrinha'] = (pg) => {
   const atrasoFecho = foraDoPrazo(CC.horario, 'fecho');
   rs.forEach((r) => {
     const [txt, cls] = ESTADOS[r.resumo.estado] || [r.resumo.estado, 'p-mut'];
-    const c = el('article', 'gst-alerta cc-rota g-' + (r.resumo.estado === 'aprovada' ? 'info' : r.resumo.alertas || r.resumo.diferencas ? 'aviso' : 'info'));
+    const c = el('article', 'gst-alerta cc-rota cc-e-' + cls);
     c.dataset.rota = r.rota;
+    c.dataset.estado = r.resumo.estado;
     const h = el('div', 'cc-cab');
     h.append(el('b', null, r.rota + ' · ' + r.promotor), pill(t(txt), cls));
     if (atrasoFecho && ['por_contar', 'por_validar'].includes(r.resumo.estado))
       h.append(pill(t('Fora do prazo do fecho ({h})', { h: CC.horario.fecho[1] }), 'p-bad'));
-    const det = [t('{n} artigos', { n: n0(r.resumo.artigos) })];
-    if (r.resumo.alertas) det.push(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }));
-    if (r.resumo.estado !== 'por_contar') det.push(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }));
-    if (r.resumo.falta_kz) det.push(t('falta {v}', { v: kz(r.resumo.falta_kz) }));
-    c.append(h, el('p', 'note', det.join(' · ')));
+    // diferenças e alertas a vermelho no texto (não mudam a cor do cartão, que é a do estado)
+    const det = el('p', 'note');
+    const parte = (txt, cl) => {
+      if (det.childNodes.length) det.append(document.createTextNode(' · '));
+      det.append(cl ? el('span', cl, txt) : document.createTextNode(txt));
+    };
+    parte(t('{n} artigos', { n: n0(r.resumo.artigos) }));
+    if (r.resumo.alertas) parte(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }), 'cc-neg');
+    if (r.resumo.estado !== 'por_contar') parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
+    if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
+    c.append(h, det);
     const abrir = botao(
       aberta === r.rota ? t('Fechar') : r.cega ? t('Contar') : t('Ver'),
       'ghost sm',

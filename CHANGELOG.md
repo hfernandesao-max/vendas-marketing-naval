@@ -1,5 +1,12 @@
 ## 21-11-2026
 
+### Conciliação: uma só cor por estado
+
+<!-- tipo: melhoria -->
+
+- Cada carrinha tem uma só cor, a do passo em que está, igual na etiqueta e no risco do cartão: cinzento por contar, âmbar por validar, laranja por aprovar, azul fechada. As diferenças e a falta em Kz aparecem a vermelho no texto, e «Fora do prazo do fecho» continua a ser a única etiqueta vermelha.
+- Uma conciliação contada e validada sem nada por aprovar (sem diferenças nem alertas, mesmo sem artigos) fecha sozinha na revisão automática.
+
 ### Conciliação: devoluções do fecho, fecho automático e diagnóstico do que fica por explicar
 
 <!-- tipo: melhoria -->

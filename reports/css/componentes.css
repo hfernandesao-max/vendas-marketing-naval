@@ -2261,6 +2261,19 @@ table.ac-mig tr.ac-off td:not(:last-child) {
   display: grid;
   gap: 8px;
 }
+/* o risco à esquerda tem a cor do estado, a mesma da etiqueta */
+.gst-alerta.cc-rota.cc-e-p-mut {
+  border-left-color: var(--muted);
+}
+.gst-alerta.cc-rota.cc-e-p-warn {
+  border-left-color: var(--warn);
+}
+.gst-alerta.cc-rota.cc-e-p-serio {
+  border-left-color: var(--serio);
+}
+.gst-alerta.cc-rota.cc-e-p-ok {
+  border-left-color: var(--sky);
+}
 .cc-rota > .btn {
   justify-self: start;
 }

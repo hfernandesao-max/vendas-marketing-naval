@@ -118,6 +118,8 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   const erros = await abrir(page, '#conciliacao-carrinha');
   const rota = page.locator('.cc-rota', { hasText: '1001' });
   await expect(rota).toContainText('Por contar');
+  // uma só cor por estado: o risco do cartão tem a cor da etiqueta (por contar: cinzento)
+  await expect(rota).toHaveClass(/cc-e-p-mut/);
   // calendário de trabalho: horário do dia e prazo do fecho (16:00) ultrapassado
   await expect(page.locator('.cc-horario')).toContainText('fecho de contas com a tesouraria, contagem das carrinhas e requisição ao armazém 15:30–16:00');
   await expect(rota).toContainText('Fora do prazo do fecho (16:00)');
