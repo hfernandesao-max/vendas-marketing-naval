@@ -439,3 +439,29 @@ teste('referência da contagem: o momento em que se contou, no máximo o corte; 
     unset($reg['contagem'], $reg['contado_em']);
     igual('2026-11-20 13:29:58', naval_carr_referencia_contagem($reg, $dia), 'sem contagem: a hora da folha');
 });
+
+teste('carga do dia seguinte: guia à tarde depois da última venda fica fora da contagem; de manhã ou com vendas depois conta', function () {
+    $l = function ($rota, $art, $hora, $ent, $vend, $antes = 1) {
+        return ['ROTA' => $rota, 'ARM_COD' => '1000' . $rota, 'ARM' => 'Armazém ' . $rota . ' - FHR PIV', 'CODIGO' => $art, 'HORA' => '2026-11-20 ' . $hora,
+            'ANTES' => $antes, 'ENTRADAS' => $ent, 'SAIDAS' => 0.0, 'VENDIDO' => $vend];
+    };
+    $mov = naval_carr_movimentos_agrupar([
+        // rota 1004: venda às 13:57, guia GTC A1000/122 às 15:42 (antes do corte das 16:00) → carga de amanhã
+        $l('1004', 'N', '13:57:31', 0.0, 57.0), $l('1004', 'N', '15:42:21', 25.0, 0.0),
+        // rota 1003: guia de manhã e vendas depois → carga do próprio dia
+        $l('1003', 'N', '08:31:07', 40.0, 0.0), $l('1003', 'N', '11:20:00', 0.0, 10.0),
+        // rota 1005: guia à tarde mas o promotor ainda vendeu depois → do próprio dia
+        $l('1005', 'N', '14:10:00', 30.0, 0.0), $l('1005', 'N', '14:40:00', 0.0, 5.0),
+        // rota 1010: sem vendas no dia, guia à tarde → carga de amanhã
+        $l('1010', 'N', '15:04:53', 100.0, 0.0),
+    ], ['1003', '1004', '1005', '1010']);
+    igual([25.0, 0.0, 25.0, 57.0], [$mov['1004']['N']['c'], $mov['1004']['N']['ca'], $mov['1004']['N']['cs'], $mov['1004']['N']['va']], 'carga de amanhã');
+    igual([40.0, null], [$mov['1003']['N']['ca'], $mov['1003']['N']['cs'] ?? null], 'guia de manhã');
+    igual([30.0, null], [$mov['1005']['N']['ca'], $mov['1005']['N']['cs'] ?? null], 'vendeu depois da guia');
+    igual([0.0, 100.0], [$mov['1010']['N']['ca'], $mov['1010']['N']['cs']], 'sem vendas: carga de amanhã');
+    // na conciliação: o esperado é o que estava na carrinha (93 − 57 = 36); a carga de amanhã aparece «depois do corte»
+    $r = ['s0' => ['N' => ['n' => 'Fraldas', 'q' => 93.0]], 's1' => ['N' => ['n' => 'Fraldas', 'q' => 61.0]], 'v' => ['N' => ['n' => 'Fraldas', 'q' => 57.0]], 'mov' => $mov['1004']];
+    $r = naval_carr_congelar_base($r, '2026-11-20 16:00:00', naval_carr_stock_por_movimentos($r['s0'], $mov['1004'], $r), $mov['1004']);
+    $x = naval_carr_linhas($r, ['N' => 36])[0];
+    igual([0.0, 57.0, 36.0, 0.0, 25.0], [$x['carregado'], $x['vendido'], $x['esperado'], $x['diferenca'], $x['depois_do_corte']]);
+});

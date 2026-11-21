@@ -5,6 +5,7 @@
 <!-- tipo: correcao -->
 
 - A contagem da carrinha compara com o stock do momento em que se contou (no máximo a hora do corte), e não com o da hora em que a folha foi impressa: entre a folha e a contagem a carrinha continua a vender (ex.: rota 1004, folha às 13:29, venda às 13:57, contagem às 16:12). A revisão automática usa a mesma regra e repõe sozinha as conciliações afectadas.
+- Carga do dia seguinte, sem decisão humana: uma guia de transporte para a carrinha registada à tarde e depois da última venda da rota nesse dia é a carga de amanhã (a carrinha já acabou de vender); não entra no que tinha de estar na carrinha à contagem e passa ao inicial do dia seguinte, mesmo lançada antes da hora do corte. Confirmado com os dados do Pinguim BO de 17 a 20-11.
 - O indicador das fontes verifica o Pinguim BO, o stock e o OLAP logo ao entrar no portal (antes, só ao fim de 5 minutos: o OLAP não aparecia e o stock ficava «A verificar…»).
 
 ### Conciliação: «Actualizar bases históricas em aberto» com a regra certa

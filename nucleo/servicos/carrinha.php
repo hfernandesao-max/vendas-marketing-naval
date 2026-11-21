@@ -336,6 +336,7 @@ function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
             SELECT COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)) AS ROTA,
                    COALESCE(WE.CODE, '') AS ARM_COD, COALESCE(WE.DESCRIPTION, '') AS ARM,
                    LTRIM(RTRIM(DMD.PRODUCT_CODE)) AS CODIGO,
+                   CONVERT(VARCHAR(19), COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), 120) AS HORA,
                    Corte.ANTES,
                    CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND DMD.QNT * DC.STOCK_SIGNAL > 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS ENTRADAS,
                    CAST(SUM(CASE WHEN COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND DMD.QNT * DC.STOCK_SIGNAL < 0 THEN ABS(DMD.QNT) ELSE 0 END) AS FLOAT) AS SAIDAS,
@@ -351,7 +352,8 @@ function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
               AND $naoAnulado
               AND ((COALESCE(DH.CALC_SALES_SIGNAL, 0) = 0 AND COALESCE(DC.STOCK_SIGNAL, 0) <> 0)
                    OR (COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 AND $validos))
-            GROUP BY COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)), COALESCE(WE.CODE, ''), COALESCE(WE.DESCRIPTION, ''), LTRIM(RTRIM(DMD.PRODUCT_CODE)), Corte.ANTES",
+            GROUP BY COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)), COALESCE(WE.CODE, ''), COALESCE(WE.DESCRIPTION, ''), LTRIM(RTRIM(DMD.PRODUCT_CODE)),
+                     DH.ID, CONVERT(VARCHAR(19), COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), 120), Corte.ANTES",
             [':de' => naval_bd_data($data), ':ate' => naval_bd_data($data), ':limite' => $data . ' ' . $corte]);
     } catch (Throwable $e) {
         error_log('[carrinha movimentos SQL] ' . $e->getMessage());
@@ -363,31 +365,57 @@ function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
     return $inv === null ? null : naval_carr_movimentos_com_inventario($mov, $inv);
 }
 
+/** Hora a partir da qual uma carga na carrinha depois da última venda do dia é a carga do dia seguinte. */
+const NAVAL_CARR_CARGA_TARDE = '12:00:00';
+
 /**
  * Agrupa as linhas da consulta dos movimentos por rota (só as rotas conhecidas) e artigo (função pura, testável). A rota
  * sai do armazém da linha (ARM_COD/ARM, a mesma regra do stock: armazém confirmado, código 100010NN ou nome com 10NN);
  * uma linha num armazém central não é da carrinha. Sem armazém na linha, vale a loja do documento (ROTA).
+ *
+ * Carga do dia seguinte (regra automática, tirada do que está registado no Pinguim BO): uma entrada na carrinha (guia
+ * de transporte) registada à tarde (a partir das 12:00) e depois da última venda da rota nesse dia é a carga para o dia
+ * seguinte: a carrinha já acabou de vender e está a ser carregada para amanhã. Não entra no que tinha de estar na
+ * carrinha à contagem (fica «depois do corte»), mesmo lançada antes da hora do corte; entra no inicial do dia seguinte.
+ * As guias da manhã, ou com vendas depois delas, são do próprio dia. As saídas (devoluções) seguem a hora do corte.
  */
 function naval_carr_movimentos_agrupar(array $rows, array $rotas, array $confirmadas = []): array
 {
     $rotas = array_flip(array_map('strval', $rotas));
-    $out = [];
-    foreach ($rows as $r) {
+    $rotaDe = function (array $r) use ($confirmadas, $rotas): string {
         $armCod = trim((string) ($r['ARM_COD'] ?? ''));
         $arm = trim((string) ($r['ARM'] ?? ''));
         if ($armCod !== '' || $arm !== '') {
             [$rota] = naval_stock_rota_armazem($armCod, $arm, $confirmadas);
-            if ($rota === '') continue;   // armazém central: o movimento não é da carrinha
+            if ($rota === '') return '';   // armazém central: o movimento não é da carrinha
         } else {
             $rota = trim((string) $r['ROTA']);
         }
-        if (!preg_match('/^\d{4}$/', $rota) || ($rotas && !isset($rotas[$rota]))) continue;
+        return preg_match('/^\d{4}$/', $rota) && (!$rotas || isset($rotas[$rota])) ? $rota : '';
+    };
+    // última venda de cada rota no dia (com hora)
+    $ultimaVenda = [];
+    foreach ($rows as $r) {
+        $h = (string) ($r['HORA'] ?? '');
+        if ($h === '' || abs((float) ($r['VENDIDO'] ?? 0)) <= 0.0001) continue;
+        $rota = $rotaDe($r);
+        if ($rota !== '' && ($ultimaVenda[$rota] ?? '') < $h) $ultimaVenda[$rota] = $h;
+    }
+    $out = [];
+    foreach ($rows as $r) {
+        $rota = $rotaDe($r);
+        if ($rota === '') continue;
         $c = trim((string) $r['CODIGO']);
         if ($c === '') continue;
         $x = $out[$rota][$c] ?? ['c' => 0.0, 'd' => 0.0, 'ca' => 0.0, 'da' => 0.0, 'va' => 0.0, 'vd' => 0.0];
         $x['c'] = round($x['c'] + (float) $r['ENTRADAS'], 3);
         $x['d'] = round($x['d'] + (float) $r['SAIDAS'], 3);
-        if ((int) $r['ANTES'] === 1) {
+        $h = (string) ($r['HORA'] ?? '');
+        $soEntrada = (float) $r['ENTRADAS'] > 0 && (float) $r['SAIDAS'] <= 0 && abs((float) ($r['VENDIDO'] ?? 0)) <= 0.0001;
+        $cargaSeguinte = $soEntrada && $h !== '' && substr($h, 11) >= NAVAL_CARR_CARGA_TARDE && $h > ($ultimaVenda[$rota] ?? '');
+        if ($cargaSeguinte) {
+            $x['cs'] = round(($x['cs'] ?? 0) + (float) $r['ENTRADAS'], 3);   // carga para o dia seguinte (fora da contagem)
+        } elseif ((int) $r['ANTES'] === 1) {
             $x['ca'] = round($x['ca'] + (float) $r['ENTRADAS'], 3);
             $x['da'] = round($x['da'] + (float) $r['SAIDAS'], 3);
             $x['va'] = round($x['va'] + (float) ($r['VENDIDO'] ?? 0), 3);
