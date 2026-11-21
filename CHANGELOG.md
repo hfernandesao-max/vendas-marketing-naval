@@ -1,3 +1,12 @@
+## 21-11-2026
+
+### Conciliação: «Actualizar bases históricas em aberto» com a regra certa
+
+<!-- tipo: correcao -->
+
+- A actualização em bloco das bases históricas passa a usar a mesma regra da revisão automática: volta a congelar no instante da folha de contagem (nunca à hora do corte) e só mexe nas conciliações que mudaram mesmo no Pinguim BO; as iguais ficam como estão, sem perder validações.
+- O diálogo fecha sozinho no fim e mostra o resultado; só fica aberto, com o detalhe, se houver falhas.
+
 ## 20-11-2026
 
 ### Sala de resultados: Winrest sincroniza sozinho ao entrar na sala

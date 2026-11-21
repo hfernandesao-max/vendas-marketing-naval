@@ -601,13 +601,13 @@ function actualizarHistoricosAbertos() {
   janela(
     t('Actualizar bases históricas em aberto'),
     t(
-      'Actualiza com movimentos horários do Pinguim BO as conciliações anteriores a hoje que ainda não estão fechadas. Preserva as quantidades contadas; invalida validações e aprovações pendentes para nova conferência. Conciliações fechadas não são alteradas.',
+      'Compara as conciliações anteriores a hoje com o Pinguim BO de agora, no instante em que cada folha de contagem foi congelada. Só muda as que mudaram no Pinguim BO (documento anulado ou corrigido): a contagem fica e volta a pedir a validação. As iguais ficam como estão; as fechadas não se alteram e ficam assinaladas.',
     ),
     (b, ft, fechar) => {
       const resultado = msgErro();
       const actualizar = botao(t('Actualizar'), null, () => {
         actualizar.disabled = true;
-        const total = { actualizadas: 0, contagensPreservadas: 0, ignoradas: 0, falhas: [] };
+        const total = { actualizadas: 0, contagensPreservadas: 0, ignoradas: 0, assinaladas: 0, falhas: [] };
         let cursor = '';
         const executar = async () => {
           while (true) {
@@ -622,28 +622,35 @@ function actualizarHistoricosAbertos() {
             total.actualizadas += (r.actualizadas || []).length;
             total.contagensPreservadas += (r.actualizadas || []).filter((a) => a.contagem_preservada).length;
             total.ignoradas += r.ignoradas || 0;
+            total.assinaladas += r.assinaladas || 0;
             total.falhas.push(...(r.falhas || []));
             if (!r.mais) break;
             cursor = r.continuar_de || cursor;
           }
-          resultado.hidden = false;
-          resultado.textContent =
-            t('Actualizadas: {n}; contagens preservadas e a revalidar: {c}; ignoradas: {i}; falhas: {f}.', {
-              n: n0(total.actualizadas),
-              c: n0(total.contagensPreservadas),
-              i: n0(total.ignoradas),
-              f: n0(total.falhas.length),
-            }) +
-            (total.falhas.length
-              ? ' ' +
-                total.falhas
-                  .slice(0, 10)
-                  .map((f) => [f.data, f.rota, f.erro].filter(Boolean).join(' · '))
-                  .join(' | ')
-              : '');
-          actualizar.disabled = true;
+          const resumo = t('Actualizadas: {n} (contagens a revalidar: {c}); iguais ao Pinguim BO: {i}; fechadas assinaladas: {a}; falhas: {f}.', {
+            n: n0(total.actualizadas),
+            c: n0(total.contagensPreservadas),
+            i: n0(total.ignoradas),
+            a: n0(total.assinaladas),
+            f: n0(total.falhas.length),
+          });
           CC = null;
           ler(true);
+          // sem falhas: fecha e mostra o resultado; com falhas, fica aberto com o detalhe e pode tentar de novo
+          if (!total.falhas.length) {
+            fechar();
+            toast(resumo, 8000);
+            return;
+          }
+          resultado.hidden = false;
+          resultado.textContent =
+            resumo +
+            ' ' +
+            total.falhas
+              .slice(0, 10)
+              .map((f) => [f.data, f.rota, f.erro].filter(Boolean).join(' · '))
+              .join(' | ');
+          actualizar.disabled = false;
         };
         executar().catch((e) => {
           console.error(e);
@@ -653,7 +660,7 @@ function actualizarHistoricosAbertos() {
         });
       });
       b.append(resultado);
-      ft.append(botao(t('Cancelar'), 'ghost', fechar), actualizar);
+      ft.append(botao(t('Fechar'), 'ghost', fechar), actualizar);
     },
   );
 }

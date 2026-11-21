@@ -4871,4 +4871,8 @@ export const TI = {
   'Requisitado: o que o promotor pediu. Carregado: o que o Fiel de Armazém confirmou no cais; cada diferença tem o motivo por baixo do artigo.':
     'ዝተሓተተ: እቲ ሸያጢ ዝሓተቶ። ዝተጻዕነ: ሓላዊ መኽዘን ኣብ መጽዓኒ ዘረጋገጾ፤ ነፍሲ ወከፍ ፍልልይ ምኽንያቱ ኣብ ትሕቲ እቲ ኣቕሓ ኣለዎ።',
   'Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.': 'ዝተሓተተ: እቲ ሸያጢ ካብ መኽዘን ዝሓቶ። ዝተረከበ: ብመኽዘን ዝምላእ።',
+  'Compara as conciliações anteriores a hoje com o Pinguim BO de agora, no instante em que cada folha de contagem foi congelada. Só muda as que mudaram no Pinguim BO (documento anulado ou corrigido): a contagem fica e volta a pedir a validação. As iguais ficam como estão; as fechadas não se alteram e ficam assinaladas.':
+    'ቅድሚ ሎሚ ዘለዉ ምትዕርራያት ምስ ናይ ሕጂ Pinguim BO ይነጻጸሩ፡ ኣብቲ ነፍሲ ወከፍ ወረቐት ቆጸራ ዝተዓጽወሉ ግዜ። ኣብ Pinguim BO ዝተቐየሩ ጥራይ ይቕየሩ (ዝተሰረዘ ወይ ዝተዓረየ ሰነድ): እቲ ቆጸራ ይጸንሕ፡ ደጊሙ ምርግጋጽ ይሕተት። ዘይተቐየሩ ከምዘለዉ ይጸንሑ፤ ዝተዓጸዉ ኣይቕየሩን፡ ይምልከቱ።',
+  'Actualizadas: {n} (contagens a revalidar: {c}); iguais ao Pinguim BO: {i}; fechadas assinaladas: {a}; falhas: {f}.':
+    'ዝተሓደሱ: {n} (ደጊሞም ዝረጋገጹ ቆጸራታት: {c})፤ ምስ Pinguim BO ሓደ ዓይነት: {i}፤ ዝተዓጸዉ ዝተመልከቱ: {a}፤ ጌጋታት: {f}።',
 };

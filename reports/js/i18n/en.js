@@ -4957,4 +4957,8 @@ export const EN = {
     'Requested: what the sales rep asked for. Loaded: what the Warehouse Keeper confirmed at the dock; each difference shows its reason below the item.',
   'Requisitado: o que o promotor pede ao armazém. Entregue: a preencher pelo armazém.':
     'Requested: what the sales rep asks the warehouse for. Delivered: to be filled in by the warehouse.',
+  'Compara as conciliações anteriores a hoje com o Pinguim BO de agora, no instante em que cada folha de contagem foi congelada. Só muda as que mudaram no Pinguim BO (documento anulado ou corrigido): a contagem fica e volta a pedir a validação. As iguais ficam como estão; as fechadas não se alteram e ficam assinaladas.':
+    'Compares reconciliations before today with Pinguim BO as it is now, at the moment each count sheet was frozen. Only those that changed in Pinguim BO (cancelled or corrected document) change: the count is kept and validation is requested again. Unchanged ones stay as they are; closed ones are not altered and are flagged.',
+  'Actualizadas: {n} (contagens a revalidar: {c}); iguais ao Pinguim BO: {i}; fechadas assinaladas: {a}; falhas: {f}.':
+    'Updated: {n} (counts to revalidate: {c}); same as Pinguim BO: {i}; closed flagged: {a}; failures: {f}.',
 };
