@@ -19,6 +19,15 @@ export function janela(titulo, nota, montar) {
     if (d.open) d.close();
   };
   d.addEventListener('close', () => setTimeout(() => d.remove(), 0));
+  // atalhos iguais em todas as janelas: Esc fecha (do próprio navegador) e Ctrl+Enter carrega no botão principal
+  // (o último do rodapé que não é «Cancelar»/secundário)
+  d.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
+    const bs = [...ft.querySelectorAll('button')].filter((x) => !x.disabled && !x.hidden && !x.classList.contains('ghost'));
+    if (!bs.length) return;
+    e.preventDefault();
+    bs[bs.length - 1].click();
+  });
   montar(b, ft, fechar, d);
   d.showModal();
   return d;

@@ -41,6 +41,12 @@ test('cargas (PO): conferir no cais exige o visto em todas as linhas e o motivo 
   await page.getByLabel('Carregado · SABÃO VERDE').fill('28');
   await expect(page.getByLabel('Motivo · SABÃO VERDE')).toBeVisible();
   await expect(page.locator('.cp-res')).toContainText('0 de 2 conferidas · diferenças: 1 (-2 un.)');
+  // diferença viva ao lado do campo: ✓ verde se bate com o pedido, senão a diferença a vermelho
+  const linhaSabao = page.locator('.cp-tab tr', { has: page.getByLabel('Carregado · SABÃO VERDE') });
+  const linhaFraldas = page.locator('.cp-tab tr', { has: page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM') });
+  await expect(linhaSabao.locator('.lc-dif')).toHaveText('−2');
+  await expect(linhaSabao.locator('.lc-dif')).toHaveClass(/lc-dif-mal/);
+  await expect(linhaFraldas.locator('.lc-dif')).toHaveText('✓');
   await page.getByRole('button', { name: 'Concluir conferência' }).click();
   await expect(page.locator('.cp-conf .erro')).toContainText('Ponha o visto em todas as linhas');
   await page.getByLabel('Visto · FRALDAS NAVAL MEDIUM').check();
@@ -143,5 +149,57 @@ test('cargas (PO): o documento da carga conferida mostra o pedido, o carregado, 
   expect(texto).toContain('Falta no armaz');
   expect(texto).toContain('428'); // total carregado (400 + 28), ao lado do total pedido (430)
   expect(texto).toContain('430');
+  expect(erros).toEqual([]);
+});
+
+test('cargas (PO): valores fora do normal pedem confirmação; Enter passa à linha seguinte; o rascunho volta ao reabrir', async ({ page }) => {
+  const pedidos = [];
+  await page.route('**/v1/requisicoes**', (r) => {
+    if (r.request().method() === 'POST') {
+      pedidos.push(JSON.parse(r.request().postData()));
+      return r.fulfill({ json: { ok: true, requisicao: po('carregada') } });
+    }
+    return r.fulfill({ json: { ok: true, gere: true, requisicao: po('emitida'), motivos: {} } });
+  });
+  await page.route('**/v1/ordens-pinguim**', (r) => r.fulfill({ json: { ok: true, gere: true, modo: 'manual', por_validar: [], ordens: [] } }));
+  const erros = await abrir(page, '#cargas-po');
+  await page.getByLabel('Número da PO').fill('PO-2026-000412');
+  await page.getByRole('button', { name: 'Abrir' }).click();
+  const fraldas = page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM');
+  const linhaFraldas = page.locator('.cp-tab tr', { has: fraldas });
+  // a linha activa fica destacada; Enter passa ao visto e depois à linha seguinte
+  await fraldas.focus();
+  await expect(linhaFraldas).toHaveClass(/lc-activa/);
+  await page.keyboard.type('4000');
+  await expect(linhaFraldas).toHaveClass(/lc-atipico/);
+  await expect(linhaFraldas.locator('.lc-atipico-txt')).toContainText('mais do dobro do esperado (400)');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Visto · FRALDAS NAVAL MEDIUM')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Carregado · SABÃO VERDE')).toBeFocused();
+  // o rascunho guarda só o que mudou e volta ao reabrir a PO
+  await page.getByLabel('Visto · FRALDAS NAVAL MEDIUM').check();
+  await page.getByRole('button', { name: 'Abrir' }).click();
+  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM')).toHaveValue('4000');
+  await expect(page.getByLabel('Visto · FRALDAS NAVAL MEDIUM')).toBeChecked();
+  await expect(page.locator('.lc-reposto')).toContainText('Rascunho reposto');
+  await page.getByRole('button', { name: 'Marcar todas iguais ao pedido' }).click();
+  await page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM').fill('4000');
+  await page.getByLabel('Motivo · FRALDAS NAVAL MEDIUM').selectOption('falta_armazem');
+  // ao concluir, o valor fora do normal pede confirmação: «Corrigir» volta ao campo
+  await page.getByRole('button', { name: 'Concluir conferência' }).click();
+  const dlg = page.locator('dialog[open]');
+  await expect(dlg).toContainText('Valores fora do normal');
+  await expect(dlg).toContainText('10000332');
+  await dlg.getByRole('button', { name: 'Corrigir' }).click();
+  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM')).toBeFocused();
+  expect(pedidos).toEqual([]);
+  // «Gravar assim mesmo» segue
+  await page.getByRole('button', { name: 'Concluir conferência' }).click();
+  await page.locator('dialog[open]').getByRole('button', { name: 'Gravar assim mesmo' }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0].entregue).toEqual({ 10000332: 4000, 10000292: 30 });
+  // gravado: o rascunho sai deste navegador
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('vm-rascunho-po-conferencia-PO-2026-000412'))).toBeNull();
   expect(erros).toEqual([]);
 });

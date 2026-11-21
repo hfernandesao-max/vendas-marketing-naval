@@ -20,6 +20,8 @@ import { st } from '../periodo.js';
 import { SESSAO, podeVer } from '../perfil.js';
 import { apiJson } from '../api.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { diferencaViva, lancamento, quantidadeAtipica } from '../componentes/lancamento.js';
+import { marcarPorGravar } from '../componentes/rascunho.js';
 import { postJson } from '../servidor.js';
 import { DB, el, sum, toast } from '../util.js';
 import { R } from './registo.js';
@@ -163,13 +165,14 @@ function confirmarCarga(r) {
   janela(
     t('Confirmar a carga da requisição {n}', { n: r.numero }),
     t('Indique o que foi realmente carregado na carrinha (por omissão, o requisitado). Depois de confirmada, a coluna passa a «carregado».'),
-    (b, ft, fechar) => {
+    (b, ft, fechar, d) => {
       const tab = el('table', 'cc-tab');
       const cab = el('tr');
       [t('Código'), t('Artigo'), t('Requisitado'), t('Entregue')].forEach((x, i) => cab.append(el('th', i > 1 ? 'n' : null, x)));
       tab.append(cab);
       const campos = {};
       const motivos = {};
+      const linhasLc = [];
       r.linhas.forEach((l) => {
         const tr = el('tr');
         const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
@@ -181,13 +184,26 @@ function confirmarCarga(r) {
         m.w.hidden = true;
         motivos[l.codigo] = m;
         i.addEventListener('input', () => (m.w.hidden = i.value === '' || Number(i.value) === Number(l.quantidade)));
-        td.append(i, m.w);
+        // diferença viva: ✓ verde se bate com o requisitado, senão a diferença a vermelho
+        td.append(i, diferencaViva(i, l.quantidade), m.w);
         tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
         tab.append(tr);
+        linhasLc.push({
+          tr,
+          campos: [i],
+          codigo: l.codigo,
+          texto: l.artigo,
+          atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade, esperado: Number(l.quantidade) }),
+        });
       });
       const erro = msgErro();
-      b.append(tab, erro);
-      const ok = botao(t('Confirmar carga'), null, () => {
+      const ok = botao(t('Confirmar carga'), null, () => (Object.values(campos).some((i) => i.value === '') ? confirmar() : lc.confirmar(confirmar)));
+      // linha activa, Enter para a seguinte, Ctrl+Enter confirma, procurar, rascunho e valores fora do normal
+      const lc = lancamento({ tabela: tab, linhas: linhasLc, gravar: ok, progresso: false, chave: 'req-carga-' + r.numero });
+      b.append(lc.barra, tab, erro);
+      // fechar sem confirmar: o rascunho fica guardado para a próxima vez, mas a página deixa de estar «por gravar»
+      d.addEventListener('close', () => marcarPorGravar('req-carga-' + r.numero, false));
+      function confirmar() {
         const entregue = {};
         const porque = {};
         for (const [c, i] of Object.entries(campos)) {
@@ -215,12 +231,13 @@ function confirmarCarga(r) {
             erro.textContent = t(x.erro || 'Não foi possível gravar.');
             return;
           }
+          lc.limparRascunho();
           fechar();
           toast(t('Carga da requisição {n} confirmada.', { n: r.numero }), 4000);
           REQ.em = 0;
           garantirRequisicoes(REQ.data);
         });
-      });
+      }
       ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
     },
   );

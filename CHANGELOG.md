@@ -1,3 +1,19 @@
+## 22-11-2026
+
+### Lançamento linha a linha igual em todo o portal
+
+Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmação da carga na Logística e às correcções dos TPA Multicaixa.
+
+- **Linha activa:** a linha em que se escreve fica destacada. **Enter** passa ao campo seguinte e, no fim, ao botão de gravar; **Ctrl+Enter** grava de qualquer linha. O número já escrito fica seleccionado.
+- **Visto e progresso:** as linhas preenchidas levam um visto verde. O contador «N de M preenchidos» tem um botão «Ir ao primeiro em falta».
+- **Diferença em tempo real:** na conferência da PO e na confirmação da carga aparece ✓ verde quando bate com o pedido; se não bate, aparece a diferença a vermelho (+3, −5).
+- **Valores fora do normal:** casas decimais num artigo à unidade, mais do dobro do pedido ou números de 10 000 ou mais ficam a âmbar, com a explicação. Ao gravar, o portal pede para corrigir ou gravar assim mesmo.
+- **Rascunho:** a conferência da PO e a confirmação da carga guardam neste navegador o que mudou e repõem-no ao reabrir.
+- **Aviso ao sair:** mudar de página no portal com dados por gravar pergunta antes de sair («Sair sem gravar?»).
+- **Procurar:** nas listas com 8 ou mais linhas há uma caixa «Procurar artigo (código ou nome)».
+- **Telemóvel:** o cabeçalho da tabela fica fixo ao descer e o botão de gravar fica sempre visível no fundo do ecrã.
+- **Janelas:** em todas, Ctrl+Enter carrega no botão principal (Esc já fechava).
+
 ## 21-11-2026
 
 ### Contagem da carrinha: linha activa destacada e visto nas já contadas

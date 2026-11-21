@@ -6,6 +6,7 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, tabela as tabelaB, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { lancamento } from '../componentes/lancamento.js';
 import { dl, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
@@ -643,7 +644,14 @@ function abrirCorrecao(linha) {
           });
           bs.disabled = bloqueado;
           if (!bloqueado)
-            valores.push({ documento: doc.documento, nu, mc, bs, orig: { nu: doc.pinguim.numerario || 0, mc: doc.pinguim.multicaixa || 0, cod: codAtual } });
+            valores.push({
+              tr,
+              documento: doc.documento,
+              nu,
+              mc,
+              bs,
+              orig: { nu: doc.pinguim.numerario || 0, mc: doc.pinguim.multicaixa || 0, cod: codAtual },
+            });
           // documento, hora e o que está no Pinguim BO na mesma célula (sem colunas a mais)
           const tdD = el('td', 'fp-doc');
           const formaP = [
@@ -682,7 +690,17 @@ function abrirCorrecao(linha) {
           });
         const at = el('div', 'fp-atalhos');
         if (valores.length) at.append(botao(t('Tudo em Numerário'), 'ghost sm', tudo('nu')), botao(t('Tudo em Multicaixa'), 'ghost sm', tudo('mc')));
-        corpo.append(tab, at);
+        // linha activa destacada, Enter passa ao campo seguinte, Ctrl+Enter pede a correcção, procurar o documento
+        const lc = valores.length
+          ? lancamento({
+              tabela: tab,
+              linhas: valores.map((x) => ({ tr: x.tr, campos: [x.nu, x.mc], codigo: x.documento, texto: x.documento })),
+              gravar: pedir,
+              visto: false,
+              progresso: false,
+            })
+          : null;
+        corpo.append(...(lc ? [lc.barra] : []), tab, at);
         // tudo corrigido (ou por aprovar): não há nada para pedir
         if (!valores.length) {
           corpo.append(

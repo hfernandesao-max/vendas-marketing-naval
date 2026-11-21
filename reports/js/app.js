@@ -1,6 +1,7 @@
 // Desenho da página actual e encaminhamento pelo endereço (#página/relatório?filtros).
 import { FITS, REG, definirFits, definirReg } from './componentes/blocos.js';
-import { limparPorGravar } from './componentes/rascunho.js';
+import { botao, janela } from './componentes/janelas.js';
+import { haPorGravar, limparPorGravar } from './componentes/rascunho.js';
 import { NOME_CONSOLIDADO, exportarExcel, recolher } from './excel.js';
 import { exportarDados } from './dados-gestao.js';
 import { FV, desenharFiltros, filtroAberto, filtroAtivo, filtrosURL, lerFiltrosURL, prepararDados } from './filtros.js';
@@ -352,7 +353,33 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') $('#app').classList.remove('open');
 });
-addEventListener('hashchange', route);
+// Mudar de página com dados escritos e por gravar: pergunta antes (o navegador já pergunta ao fechar o separador)
+const paginaDoHash = (h) =>
+  String(h || '')
+    .replace(/^#/, '')
+    .split('?')[0]
+    .split('/')[0];
+let hashAnterior = location.hash;
+addEventListener('hashchange', () => {
+  const destino = location.hash;
+  if (haPorGravar() && paginaDoHash(destino) !== paginaDoHash(hashAnterior) && !document.querySelector('dialog[open]')) {
+    history.replaceState(null, '', hashAnterior || '#');
+    janela(t('Sair sem gravar?'), t('Tem dados escritos nesta página que ainda não foram gravados.'), (b, ft, fechar) => {
+      b.append(el('p', 'note', t('As contagens e conferências ficam em rascunho neste navegador e voltam quando abrir a página outra vez.')));
+      ft.append(
+        botao(t('Sair na mesma'), 'ghost', () => {
+          fechar();
+          limparPorGravar();
+          location.hash = destino;
+        }),
+        botao(t('Ficar e gravar'), null, fechar),
+      );
+    });
+    return;
+  }
+  route();
+  hashAnterior = location.hash;
+});
 let rz;
 addEventListener('resize', () => {
   clearTimeout(rz);

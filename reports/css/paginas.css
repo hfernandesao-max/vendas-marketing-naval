@@ -1524,23 +1524,6 @@ dialog.dlg.cf-dlg {
 .cc-tab tr.cp-dif td {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
-/* contagem: a linha em que se escreve fica destacada; as preenchidas levam um visto verde */
-.cc-contagem .cc-tab tr.cc-activa td {
-  background: color-mix(in srgb, var(--sky) 18%, transparent);
-}
-.cc-contagem .cc-tab tr.cc-activa td:first-child {
-  box-shadow: inset 3px 0 0 var(--sky);
-}
-.cc-contagem .cc-visto {
-  width: 28px;
-  text-align: center;
-  font-weight: 700;
-  color: var(--ok);
-  visibility: hidden;
-}
-.cc-contagem .cc-tab tr.cc-feita .cc-visto {
-  visibility: visible;
-}
 .cc-motivo {
   display: grid;
   gap: 4px;

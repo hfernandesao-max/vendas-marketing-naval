@@ -5781,3 +5781,87 @@ body.apres-lado {
   color: var(--muted);
   font-size: 11px;
 }
+
+/* Lançamento linha a linha (componentes/lancamento.js): linha activa, visto, progresso, procura e valores fora do normal */
+.lc-tab tr.lc-activa td {
+  background: color-mix(in srgb, var(--sky) 18%, transparent);
+}
+.lc-tab tr.lc-activa td:first-child {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+.lc-tab .lc-visto,
+.lc-tab .lc-visto-th {
+  width: 28px;
+  text-align: center;
+}
+.lc-tab .lc-visto {
+  font-weight: 700;
+  color: var(--ok);
+  visibility: hidden;
+}
+.lc-tab tr.lc-feita .lc-visto {
+  visibility: visible;
+}
+.lc-tab tr.lc-atipico td {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.lc-atipico-txt {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--warn);
+}
+.lc-dif {
+  display: inline-block;
+  min-width: 2.5em;
+  margin-left: 6px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.lc-dif-ok {
+  color: var(--ok);
+}
+.lc-dif-mal {
+  color: var(--bad);
+}
+.lc-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 6px 0;
+}
+.lc-procura {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+.lc-prog {
+  font-size: 13px;
+  color: var(--muted);
+}
+.lc-prog.lc-prog-ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+.lc-lista {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+/* cabeçalho da tabela fixo ao descer */
+.lc-tab th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg2);
+}
+/* telemóvel: o botão de gravar fica sempre à vista no fundo do ecrã */
+@media (max-width: 700px) {
+  .lc-gravar {
+    position: sticky;
+    bottom: 10px;
+    z-index: 3;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+}

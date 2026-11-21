@@ -139,6 +139,15 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   await page.locator('.pc-barra').getByRole('button', { name: 'Actualizar' }).click();
   await expect(rota.getByLabel('Fraldas M')).toHaveValue('3');
   await expect(rota.locator('.cc-rascunho')).toContainText('Rascunho reposto');
+  // mudar de página com a contagem por gravar: pergunta antes; «Ficar e gravar» fica na conciliação
+  const antes = await page.evaluate(() => location.hash);
+  await page.evaluate(() => (location.hash = '#inicio'));
+  const sair = page.locator('dialog[open]');
+  await expect(sair).toContainText('Sair sem gravar?');
+  await sair.getByRole('button', { name: 'Ficar e gravar' }).click();
+  await expect(sair).toHaveCount(0);
+  expect(await page.evaluate(() => location.hash)).toBe(antes);
+  await expect(rota.getByLabel('Fraldas M')).toHaveValue('3');
   // guardado neste navegador (para voltar a abrir depois de recarregar ou fechar o separador)
   const rasc = await page.evaluate(() => JSON.parse(localStorage.getItem('vm-rascunho-contagem-2026-10-26-1001')));
   expect(rasc.v).toEqual({ A1: '3', B2: '' });
@@ -147,16 +156,16 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   // a linha em que se escreve fica destacada; a já contada leva o visto; Enter passa à seguinte e, na última, ao «Gravar»
   const linhaFraldas = rota.locator('.cc-contagem tr', { has: page.getByLabel('Fraldas M') });
   const linhaSabao = rota.locator('.cc-contagem tr', { has: page.getByLabel('Sabão') });
-  await expect(linhaFraldas).toHaveClass(/cc-feita/);
-  await expect(linhaSabao).not.toHaveClass(/cc-feita/);
+  await expect(linhaFraldas).toHaveClass(/lc-feita/);
+  await expect(linhaSabao).not.toHaveClass(/lc-feita/);
   await rota.getByLabel('Fraldas M').focus();
-  await expect(linhaFraldas).toHaveClass(/cc-activa/);
+  await expect(linhaFraldas).toHaveClass(/lc-activa/);
   await page.keyboard.press('Enter');
   await expect(rota.getByLabel('Sabão')).toBeFocused();
-  await expect(linhaSabao).toHaveClass(/cc-activa/);
-  await expect(linhaFraldas).not.toHaveClass(/cc-activa/);
+  await expect(linhaSabao).toHaveClass(/lc-activa/);
+  await expect(linhaFraldas).not.toHaveClass(/lc-activa/);
   await page.keyboard.type('2');
-  await expect(linhaSabao).toHaveClass(/cc-feita/);
+  await expect(linhaSabao).toHaveClass(/lc-feita/);
   await page.keyboard.press('Enter');
   await expect(rota.getByRole('button', { name: 'Gravar contagem' })).toBeFocused();
 

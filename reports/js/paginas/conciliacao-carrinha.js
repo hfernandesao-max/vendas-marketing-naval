@@ -7,6 +7,7 @@ import { quem as assinante } from '../componentes/assinantes.js';
 import { foraDoPrazo, horarioTxt } from '../componentes/horario.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { lancamento, quantidadeAtipica } from '../componentes/lancamento.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
@@ -164,13 +165,11 @@ function formContagem(r) {
   const f = el('div', 'cc-contagem');
   const tab = el('table', 'cc-tab');
   const th = el('tr');
-  [t('Código'), t('Artigo'), t('Quantidade que voltou'), ''].forEach((x) => th.append(el('th', null, x)));
+  [t('Código'), t('Artigo'), t('Quantidade que voltou')].forEach((x) => th.append(el('th', null, x)));
   tab.append(th);
   const campos = {};
-  const ordem = [];
+  const linhasLc = [];
   let gravar = null;
-  // linha preenchida: visto verde à direita (o 0 também conta: «não voltou nada» é uma contagem)
-  const marcar = (tr, i) => tr.classList.toggle('cc-feita', i.value !== '');
   // Rascunho da contagem: cada número escrito fica guardado neste navegador até gravar; a página pode actualizar
   // (ou voltar a abrir) sem apagar o que já foi contado
   const chave = 'contagem-' + dia + '-' + r.rota;
@@ -192,69 +191,57 @@ function formContagem(r) {
     const inicial = rasc && rasc.v[l.codigo] != null ? rasc.v[l.codigo] : l.contado == null ? '' : l.contado;
     const i = entrada('number', inicial, { min: 0, step: 'any', inputMode: 'decimal' });
     i.setAttribute('aria-label', l.artigo);
-    i.addEventListener('input', () => {
-      guardar();
-      marcar(tr, i);
-    });
-    // a linha em que se está a escrever fica destacada; Enter passa à seguinte (como o Tab) e, na última, ao «Gravar»
-    i.addEventListener('focus', () => {
-      tr.classList.add('cc-activa');
-      i.select();
-    });
-    i.addEventListener('blur', () => tr.classList.remove('cc-activa'));
-    i.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const prox = ordem[ordem.indexOf(i) + 1];
-      if (prox) prox.focus();
-      else if (gravar) gravar.focus();
-    });
+    i.addEventListener('input', guardar);
     campos[l.codigo] = i;
-    ordem.push(i);
     const td = el('td');
     td.append(i, el('span', 'cc-un', l.unidade || ''));
-    const ok = el('td', 'cc-visto', '✓');
-    ok.setAttribute('aria-hidden', 'true');
-    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td, ok);
-    marcar(tr, i);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td);
     tab.append(tr);
+    // contagem às cegas: sem o esperado, só as casas decimais num artigo à unidade e os números muito altos
+    linhasLc.push({ tr, campos: [i], codigo: l.codigo, texto: l.artigo, atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade }) });
   });
   const erro = msgErro();
+  // primeiro o que falta preencher; depois, os valores fora do normal pedem confirmação
+  gravar = botao(t('Gravar contagem'), null, () => (Object.values(campos).some((i) => i.value === '') ? gravarContagem() : lc.confirmar(gravarContagem)));
+  // linha activa destacada, Enter para a seguinte, visto verde, «N de M preenchidos», procurar e valores fora do normal
+  const lc = lancamento({ tabela: tab, linhas: linhasLc, gravar });
   f.append(
     el('p', 'note', t('Conte o que voltou na carrinha (artigos por vender e devoluções). Os números do sistema só aparecem depois de gravar a contagem.')),
+    lc.barra,
     tab,
     estado,
     erro,
-    (gravar = botao(t('Gravar contagem'), null, () => {
-      const contagem = {};
-      for (const [c, i] of Object.entries(campos)) {
-        if (i.value === '') {
-          erro.hidden = false;
-          erro.textContent = t('Preencha todos os artigos (0 se não voltou nada).');
-          i.focus();
-          return;
-        }
-        contagem[c] = Number(i.value);
-      }
-      postJson('conciliacao-carrinha', { accao: 'contar', data: dia, rota: r.rota, contagem }).then((x) => {
-        if (!x.ok) {
-          erro.hidden = false;
-          erro.textContent = t(x.erro || 'Não foi possível gravar.');
-          return;
-        }
-        toast(
-          x.resumo.diferencas
-            ? t('Contagem gravada com {n} diferença(s): confira e valide.', { n: x.resumo.diferencas })
-            : t('Contagem gravada, sem diferenças: confira e valide.'),
-          4000,
-        );
-        apagarRascunho(chave);
-        CC = null;
-        ler();
-        draw();
-      });
-    })),
+    gravar,
   );
+  function gravarContagem() {
+    const contagem = {};
+    for (const [c, i] of Object.entries(campos)) {
+      if (i.value === '') {
+        erro.hidden = false;
+        erro.textContent = t('Preencha todos os artigos (0 se não voltou nada).');
+        i.focus();
+        return;
+      }
+      contagem[c] = Number(i.value);
+    }
+    postJson('conciliacao-carrinha', { accao: 'contar', data: dia, rota: r.rota, contagem }).then((x) => {
+      if (!x.ok) {
+        erro.hidden = false;
+        erro.textContent = t(x.erro || 'Não foi possível gravar.');
+        return;
+      }
+      toast(
+        x.resumo.diferencas
+          ? t('Contagem gravada com {n} diferença(s): confira e valide.', { n: x.resumo.diferencas })
+          : t('Contagem gravada, sem diferenças: confira e valide.'),
+        4000,
+      );
+      apagarRascunho(chave);
+      CC = null;
+      ler();
+      draw();
+    });
+  }
   if (rasc) guardarRascunho(chave, rasc.v);
   return f;
 }

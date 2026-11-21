@@ -10,6 +10,7 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { diferencaViva, lancamento, quantidadeAtipica } from '../componentes/lancamento.js';
 import { campoMotivo, MOTIVOS_CARGA } from '../componentes/motivos-carga.js';
 import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
 import { n0 } from '../formatos.js';
@@ -224,12 +225,13 @@ function vistaConferir() {
     q.addEventListener('input', actual);
     ck.addEventListener('change', resumo);
     const tq = el('td', 'n');
-    tq.append(q, m.w);
+    // diferença viva: ✓ verde se bate com o pedido, senão a diferença a vermelho
+    tq.append(q, diferencaViva(q, l.quantidade), m.w);
     const tc = el('td', 'n');
     tc.append(ck);
     tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), tq, tc);
     tab.append(tr);
-    return { l, q, ck, m };
+    return { l, q, ck, m, tr };
   });
   const res = el('p', 'note cp-res');
   function resumo() {
@@ -247,12 +249,17 @@ function vistaConferir() {
     linhas.forEach((x) => {
       x.q.value = x.l.quantidade;
       x.ck.checked = true;
-      x.m.w.hidden = true;
-      x.q.closest('tr').classList.remove('cp-dif');
+      x.q.dispatchEvent(new Event('input'));
+      x.ck.dispatchEvent(new Event('change'));
     });
     resumo();
+    lc.actualizar();
   });
   const ok = botao(t('Concluir conferência'), null, () => {
+    if (linhas.some((x) => !x.ck.checked || x.q.value === '')) concluir();
+    else lc.confirmar(concluir);
+  });
+  function concluir() {
     const entregue = {};
     const motivos = {};
     for (const x of linhas) {
@@ -286,19 +293,41 @@ function vistaConferir() {
         return;
       }
       toast(t('Carga da PO {n} conferida. Segue para a validação do Back-Office.', { n: r.numero }), 5000);
+      lc.limparRascunho();
       PO = { requisicao: d.requisicao };
       V = null;
       draw();
     });
-  });
+  }
   const acc = el('div', 'cp-acc');
   acc.append(todas, ok);
+  // linha activa, Enter para a seguinte, Ctrl+Enter conclui, procurar, rascunho e valores fora do normal (o visto e o
+  // contador já são os da conferência)
+  const lc = lancamento({
+    tabela: tab,
+    linhas: linhas.map((x) => ({
+      tr: x.tr,
+      campos: [x.q, x.ck],
+      codigo: x.l.codigo,
+      texto: x.l.artigo,
+      preenchida: () => x.ck.checked && x.q.value !== '',
+      atipico: () => quantidadeAtipica(x.q.value, { unidade: x.l.unidade, esperado: Number(x.l.quantidade) }),
+    })),
+    gravar: ok,
+    visto: false,
+    progresso: false,
+    fixar: acc,
+    chave: 'po-conferencia-' + r.numero,
+  });
+  // repõe o visto do rascunho no contador
+  resumo();
   w.append(
     el(
       'p',
       'note',
       t('Confirme linha a linha o que foi realmente carregado. Nesta fase não se gera a Guia de Remessa nem se transfere stock: a carga fica reservada.'),
     ),
+    lc.barra,
     tab,
     res,
     erro,
