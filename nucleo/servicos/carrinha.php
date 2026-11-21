@@ -321,10 +321,12 @@ function naval_carr_vendido(array $artigos): array
  * 'da' => devolvido antes do corte]}}. A hora é a do registo do documento (CLOCK_DATE). null sem ligação ou se a
  * consulta falhar (o cálculo usa então o saldo do dia).
  */
-function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
+function naval_carr_movimentos_sql(string $data, ?string $hora = null, ?string $ate = null): ?array
 {
     if (!naval_bd_configurada()) return null;
-    $corte = $hora ?? ((naval_carr_corte($data) ?? '23:59') . ':00');
+    // $ate: contagem feita noutro dia: movimentos desde o início de $data até $ate às $hora (o instante da contagem)
+    $ate = $ate !== null && naval_data_valida($ate) && $ate > $data ? $ate : $data;
+    $corte = $hora ?? ((naval_carr_corte($ate) ?? '23:59') . ':00');
     if (!preg_match('/^\d{2}:\d{2}:\d{2}$/', $corte)) throw new InvalidArgumentException('Hora de referência inválida.');
     naval_servico('vendas');
     $validos = naval_vendas_condicao_validos();
@@ -354,15 +356,31 @@ function naval_carr_movimentos_sql(string $data, ?string $hora = null): ?array
                    OR (COALESCE(DH.CALC_SALES_SIGNAL, 0) <> 0 AND $validos))
             GROUP BY COALESCE(S.CODE, SUBSTRING(S.DESCRIPTION, 1, 4)), COALESCE(WE.CODE, ''), COALESCE(WE.DESCRIPTION, ''), LTRIM(RTRIM(DMD.PRODUCT_CODE)),
                      DH.ID, CONVERT(VARCHAR(19), COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), 120), Corte.ANTES",
-            [':de' => naval_bd_data($data), ':ate' => naval_bd_data($data), ':limite' => $data . ' ' . $corte]);
+            [':de' => naval_bd_data($data), ':ate' => naval_bd_data($ate), ':limite' => $ate . ' ' . $corte]);
     } catch (Throwable $e) {
         error_log('[carrinha movimentos SQL] ' . $e->getMessage());
         return null;
     }
-    $mov = naval_carr_movimentos_agrupar($rows, array_keys(naval_promotores()), naval_stock_carrinhas_confirmadas());
-    // inventários das carrinhas: sem eles o portal não explicaria o stock do Pinguim BO (falha = sem movimentos fiáveis)
-    $inv = naval_carr_inventarios_sql($data);
-    return $inv === null ? null : naval_carr_movimentos_com_inventario($mov, $inv);
+    $mov = naval_carr_movimentos_agrupar($rows, array_keys(naval_promotores()), naval_stock_carrinhas_confirmadas(), $ate);
+    // inventários das carrinhas de cada dia do intervalo: sem eles o portal não explicaria o stock do Pinguim BO
+    $inv = [];
+    for ($d = $data; $d <= $ate; $d = date('Y-m-d', strtotime($d . ' 12:00') + 86400)) {
+        $x = naval_carr_inventarios_sql($d);
+        if ($x === null) return null;
+        foreach ($x as $rota => $arts) {
+            foreach ($arts as $c => $v) {
+                $inv[$rota][$c]['q'] = round(($inv[$rota][$c]['q'] ?? 0) + $v['q'], 3);
+                $inv[$rota][$c]['docs'] = array_values(array_unique(array_merge($inv[$rota][$c]['docs'] ?? [], $v['docs'])));
+            }
+        }
+    }
+    return naval_carr_movimentos_com_inventario($mov, $inv);
+}
+
+/** Movimentos desde o início do dia da conciliação até ao instante de referência (que pode ser de outro dia). */
+function naval_carr_movimentos_ate(string $data, string $referencia): ?array
+{
+    return naval_carr_movimentos_sql($data, substr($referencia, 11, 8), substr($referencia, 0, 10));
 }
 
 /** Hora a partir da qual uma carga na carrinha depois da última venda do dia é a carga do dia seguinte. */
@@ -379,7 +397,7 @@ const NAVAL_CARR_CARGA_TARDE = '12:00:00';
  * carrinha à contagem (fica «depois do corte»), mesmo lançada antes da hora do corte; entra no inicial do dia seguinte.
  * As guias da manhã, ou com vendas depois delas, são do próprio dia. As saídas (devoluções) seguem a hora do corte.
  */
-function naval_carr_movimentos_agrupar(array $rows, array $rotas, array $confirmadas = []): array
+function naval_carr_movimentos_agrupar(array $rows, array $rotas, array $confirmadas = [], ?string $diaLimite = null): array
 {
     $rotas = array_flip(array_map('strval', $rotas));
     $rotaDe = function (array $r) use ($confirmadas, $rotas): string {
@@ -393,13 +411,14 @@ function naval_carr_movimentos_agrupar(array $rows, array $rotas, array $confirm
         }
         return preg_match('/^\d{4}$/', $rota) && (!$rotas || isset($rotas[$rota])) ? $rota : '';
     };
-    // última venda de cada rota no dia (com hora)
+    // última venda de cada rota em cada dia (com hora)
     $ultimaVenda = [];
     foreach ($rows as $r) {
         $h = (string) ($r['HORA'] ?? '');
         if ($h === '' || abs((float) ($r['VENDIDO'] ?? 0)) <= 0.0001) continue;
         $rota = $rotaDe($r);
-        if ($rota !== '' && ($ultimaVenda[$rota] ?? '') < $h) $ultimaVenda[$rota] = $h;
+        $k = $rota . '|' . substr($h, 0, 10);
+        if ($rota !== '' && ($ultimaVenda[$k] ?? '') < $h) $ultimaVenda[$k] = $h;
     }
     $out = [];
     foreach ($rows as $r) {
@@ -412,7 +431,9 @@ function naval_carr_movimentos_agrupar(array $rows, array $rotas, array $confirm
         $x['d'] = round($x['d'] + (float) $r['SAIDAS'], 3);
         $h = (string) ($r['HORA'] ?? '');
         $soEntrada = (float) $r['ENTRADAS'] > 0 && (float) $r['SAIDAS'] <= 0 && abs((float) ($r['VENDIDO'] ?? 0)) <= 0.0001;
-        $cargaSeguinte = $soEntrada && $h !== '' && substr($h, 11) >= NAVAL_CARR_CARGA_TARDE && $h > ($ultimaVenda[$rota] ?? '');
+        // só no dia da contagem: a carga da tarde de um dia anterior já estava na carrinha quando se contou
+        $cargaSeguinte = $soEntrada && $h !== '' && ($diaLimite === null || substr($h, 0, 10) === $diaLimite)
+            && substr($h, 11) >= NAVAL_CARR_CARGA_TARDE && $h > ($ultimaVenda[$rota . '|' . substr($h, 0, 10)] ?? '');
         if ($cargaSeguinte) {
             $x['cs'] = round(($x['cs'] ?? 0) + (float) $r['ENTRADAS'], 3);   // carga para o dia seguinte (fora da contagem)
         } elseif ((int) $r['ANTES'] === 1) {
@@ -497,7 +518,7 @@ function naval_carr_base_no_instante(string $data, string $rota, array $r, strin
 {
     if (!naval_bd_configurada()) return $r;
     $stockInicial = naval_carr_stock(date('Y-m-d', strtotime($data . ' 12:00') - 86400));
-    $movimentos = naval_carr_movimentos_sql($data, substr($referencia, 11, 8));
+    $movimentos = naval_carr_movimentos_ate($data, $referencia);
     if ($stockInicial === null || $movimentos === null) {
         throw new NavalErro('Não foi possível congelar o stock e os movimentos no momento da contagem. Tente novamente.', 503,
             ['codigo' => 'contagem_base_indisponivel']);
@@ -653,7 +674,8 @@ function naval_carr_comparar_bases(array $antiga, array $nova): array
  * antes não conta: entre a folha e a contagem a carrinha continua a vender (ex.: rota 1004, 20-11: folha às 13:29,
  * venda às 13:57, contagem às 16:12 → referência 16:00).
  *   - com contagem gravada no próprio dia: a hora da contagem, no máximo a hora do corte;
- *   - com contagem gravada noutro dia: a referência do dia (corte, ou 23:59:59 sem corte);
+ *   - com contagem gravada noutro dia: o corte do dia da conciliação (a contagem física é a do fim desse dia, escrita
+ *     no portal mais tarde; a hora em que se escreve não é a hora em que se contou);
  *   - sem contagem: a hora da folha (no máximo a do corte), senão a da base, senão a do dia.
  */
 function naval_carr_referencia_contagem(array $reg, string $dia): string
@@ -663,6 +685,9 @@ function naval_carr_referencia_contagem(array $reg, string $dia): string
     $limite = $dia . ' ' . ($corte !== null ? $corte . ':00' : '23:59:59');
     $contado = (string) ($reg['contado_em'] ?? '');
     if (is_array($reg['contagem'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2} /', $contado)) {
+        // gravada noutro dia: a contagem física foi feita no fim do dia da conciliação e escrita depois (confirmado nos
+        // dados do Pinguim BO: as rotas 1001, 1002, 1004 e 1005 batem ao artigo no corte do próprio dia e não à hora
+        // em que foram escritas) → o corte do dia da conciliação
         return $ok($contado) && $contado < $limite ? $contado : $limite;
     }
     foreach ((array) ($reg['historico'] ?? []) as $h) {
@@ -710,7 +735,7 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
                     if (!is_array($reg['base'] ?? null)) return 'igual';
                     // o instante da contagem física (no máximo o corte), nunca o da folha impressa antes
                     $ref = naval_carr_referencia_contagem($reg, $dia);
-                    if (!array_key_exists($ref, $movPorHora)) $movPorHora[$ref] = $ref === $d['referencia'] ? $d['movimentos_rota'] : naval_carr_movimentos_sql($dia, substr($ref, 11, 8));
+                    if (!array_key_exists($ref, $movPorHora)) $movPorHora[$ref] = $ref === $d['referencia'] ? $d['movimentos_rota'] : naval_carr_movimentos_ate($dia, $ref);
                     if ($movPorHora[$ref] === null) throw new NavalErro('O Pinguim BO não respondeu (movimentos até ' . $ref . ').', 503);
                     $fresca = (array) ($d['rotas'][$rota] ?? ['s0' => [], 's1' => [], 'v' => [], 'mov' => []]);
                     $mov = (array) ($movPorHora[$ref][$rota] ?? []);

@@ -433,7 +433,7 @@ teste('referência da contagem: o momento em que se contou, no máximo o corte; 
     $reg = ['folha_congelada_em' => '2026-11-20 13:29:58', 'historico' => [['accao' => 'folha_contagem_congelada', 'referencia' => '2026-11-20 13:29:58']],
         'contagem' => ['10000332' => 36], 'contado_em' => '2026-11-20 16:12:00', 'base' => ['corte' => ['hora' => '2026-11-20 13:29:58']]];
     igual('2026-11-20 16:12:00', naval_carr_referencia_contagem($reg, $dia), 'conta a hora da contagem, não a da folha');
-    $reg['contado_em'] = '2026-11-21 09:00:00';   // contada no dia seguinte: a referência do próprio dia
+    $reg['contado_em'] = '2026-11-21 09:00:00';   // escrita no dia seguinte: a contagem física é a do fim do dia da conciliação
     igual('2026-11-20 23:59:59', naval_carr_referencia_contagem($reg, $dia));
     // ainda sem contagem: a folha (para a folha impressa mostrar o mesmo que se vai contar)
     unset($reg['contagem'], $reg['contado_em']);
@@ -464,4 +464,18 @@ teste('carga do dia seguinte: guia à tarde depois da última venda fica fora da
     $r = naval_carr_congelar_base($r, '2026-11-20 16:00:00', naval_carr_stock_por_movimentos($r['s0'], $mov['1004'], $r), $mov['1004']);
     $x = naval_carr_linhas($r, ['N' => 36])[0];
     igual([0.0, 57.0, 36.0, 0.0, 25.0], [$x['carregado'], $x['vendido'], $x['esperado'], $x['diferenca'], $x['depois_do_corte']]);
+});
+
+teste('contagem em atraso: a carga da tarde de um dia anterior já estava na carrinha; só no dia da contagem conta como carga de amanhã', function () {
+    $l = function ($dia, $hora, $ent, $vend) {
+        return ['ROTA' => '1004', 'ARM_COD' => '10001004', 'ARM' => 'Armazém 1004 - FHR PIV', 'CODIGO' => 'N', 'HORA' => $dia . ' ' . $hora,
+            'ANTES' => 1, 'ENTRADAS' => $ent, 'SAIDAS' => 0.0, 'VENDIDO' => $vend];
+    };
+    // conciliação de 19-11 contada a 20-11 às 12:38: guia da tarde de 19-11 (para 20-11) já na carrinha; vendas de 20-11 de manhã
+    $rows = [$l('2026-11-19', '11:00:00', 0.0, 18.0), $l('2026-11-19', '15:20:36', 50.0, 0.0), $l('2026-11-20', '10:00:00', 0.0, 12.0)];
+    $mov = naval_carr_movimentos_agrupar($rows, ['1004'], [], '2026-11-20');
+    igual([50.0, null, 30.0], [$mov['1004']['N']['ca'], $mov['1004']['N']['cs'] ?? null, $mov['1004']['N']['va']]);
+    // a mesma guia, numa contagem feita no próprio dia 19-11, é a carga de amanhã
+    $mov = naval_carr_movimentos_agrupar([$rows[0], $rows[1]], ['1004'], [], '2026-11-19');
+    igual([0.0, 50.0], [$mov['1004']['N']['ca'], $mov['1004']['N']['cs']]);
 });
