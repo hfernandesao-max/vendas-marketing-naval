@@ -426,14 +426,16 @@ teste('prova do dia: a aprovação de uma rota que não bate com o Pinguim BO fi
     @unlink(naval_carr_pasta($data) . '/_prova.json');
 });
 
-teste('revisão: volta a congelar no instante da folha, nunca à hora do corte (a carga para amanhã não entra)', function () {
-    // rota 1004, 20-11: folha às 15:30; GTC A1000/122 às 15:42 (para amanhã); corte às 16:00
+teste('referência da contagem: o momento em que se contou, no máximo o corte; nunca a hora da folha impressa antes', function () {
+    // rota 1004, 20-11: folha às 13:29 (antes da venda das 13:57), contagem às 16:12, corte às 16:00 (sem corte nos testes:
+    // limite 23:59:59)
     $dia = '2026-11-20';
-    $reg = ['folha_congelada_em' => '2026-11-20 15:30:05', 'historico' => [['accao' => 'folha_contagem_congelada', 'referencia' => '2026-11-20 15:30:05']],
-        'base' => ['corte' => ['hora' => '2026-11-20 16:00:00']]];
-    igual('2026-11-20 15:30:05', naval_carr_referencia_original($reg, $dia), 'pelo histórico da folha');
-    unset($reg['historico']);
-    igual('2026-11-20 15:30:05', naval_carr_referencia_original($reg, $dia), 'pela hora da folha (antes do corte)');
-    $reg['folha_congelada_em'] = '2026-11-21 09:00:00';   // folha de um dia passado impressa depois: vale a base
-    igual('2026-11-20 16:00:00', naval_carr_referencia_original($reg, $dia));
+    $reg = ['folha_congelada_em' => '2026-11-20 13:29:58', 'historico' => [['accao' => 'folha_contagem_congelada', 'referencia' => '2026-11-20 13:29:58']],
+        'contagem' => ['10000332' => 36], 'contado_em' => '2026-11-20 16:12:00', 'base' => ['corte' => ['hora' => '2026-11-20 13:29:58']]];
+    igual('2026-11-20 16:12:00', naval_carr_referencia_contagem($reg, $dia), 'conta a hora da contagem, não a da folha');
+    $reg['contado_em'] = '2026-11-21 09:00:00';   // contada no dia seguinte: a referência do próprio dia
+    igual('2026-11-20 23:59:59', naval_carr_referencia_contagem($reg, $dia));
+    // ainda sem contagem: a folha (para a folha impressa mostrar o mesmo que se vai contar)
+    unset($reg['contagem'], $reg['contado_em']);
+    igual('2026-11-20 13:29:58', naval_carr_referencia_contagem($reg, $dia), 'sem contagem: a hora da folha');
 });

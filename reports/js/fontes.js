@@ -129,7 +129,8 @@ export function mostrarFontes() {
   }
   $('#fontes').title = ks.map((k) => t(NOMES_FONTE[k]) + ': ' + LIGACOES[k].txt).join('\n');
 }
-function pingPinguim() {
+/** Verifica o Pinguim BO, o stock e o OLAP no servidor (ao entrar e depois de 5 em 5 minutos). */
+export function pingPinguim() {
   return apiFetch('vendas/estado')
     .then((r) => (r.status === 401 ? null : r.json()))
     .then((d) => {

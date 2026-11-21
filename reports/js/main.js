@@ -3,7 +3,7 @@
 // primeira página) partem todos em paralelo; o portal desenha-se quando chegam todos. As páginas e os idiomas
 // carregam-se a pedido (paginas/modulos.js, i18n/i18n.js); as linhas de artigos, quando uma página precisa delas.
 import { route } from './app.js';
-import { LIGACOES, avaliarFontes, fetchVendas, recalcularDias } from './fontes.js';
+import { LIGACOES, avaliarFontes, fetchVendas, pingPinguim, recalcularDias } from './fontes.js';
 import { n0 } from './formatos.js';
 import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
 import { aplicarPreferencias } from './barra-lateral.js';
@@ -248,6 +248,7 @@ Promise.all([idioma, sessao, base, cadastros, vendas])
     if (DB.cad && Array.isArray(DB.cad.carteira) && DB.cad.carteira.length) DB.clientes = DB.cad.carteira;
     recalcularDias(); // vendas e cargas chegaram por ordem qualquer
     avaliarFontes();
+    pingPinguim(); // estado real das fontes (stock e OLAP) logo ao entrar, sem esperar 5 minutos
     // Módulo da página que vai abrir (a pedida, se o perfil a vê; senão a primeira do perfil)
     const abre = podeVer(pedida) && MODULO_DA_PAGINA[pedida] ? pedida : (paginasVisiveis()[0] || {}).id;
     return abre ? carregarPagina(abre).catch((e) => console.error(e)) : null;

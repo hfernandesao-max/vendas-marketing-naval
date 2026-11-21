@@ -620,23 +620,28 @@ function naval_carr_comparar_bases(array $antiga, array $nova): array
 }
 
 /**
- * Instante a que a base da contagem foi congelada da primeira vez (a folha impressa ou a contagem gravada): é o que
- * a contagem física reflecte, por isso a revisão volta a congelar sempre nesse instante e nunca à hora do corte
- * (uma guia para o dia seguinte lançada entre a folha e o corte não estava na carrinha quando se contou).
- * Pelo histórico (folha_contagem_congelada), senão pela hora em que a folha foi congelada, senão pela da base.
+ * Instante de referência da contagem (regra de «cut-off» das contagens físicas): o stock esperado é o do momento em
+ * que se contou, até à hora do corte do dia (o que entra ou sai depois do corte é do dia seguinte). A folha impressa
+ * antes não conta: entre a folha e a contagem a carrinha continua a vender (ex.: rota 1004, 20-11: folha às 13:29,
+ * venda às 13:57, contagem às 16:12 → referência 16:00).
+ *   - com contagem gravada no próprio dia: a hora da contagem, no máximo a hora do corte;
+ *   - com contagem gravada noutro dia: a referência do dia (corte, ou 23:59:59 sem corte);
+ *   - sem contagem: a hora da folha (no máximo a do corte), senão a da base, senão a do dia.
  */
-function naval_carr_referencia_original(array $reg, string $dia): string
+function naval_carr_referencia_contagem(array $reg, string $dia): string
 {
     $ok = function ($x) use ($dia) { return is_string($x) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $x) && substr($x, 0, 10) === $dia; };
+    $corte = naval_carr_corte($dia);
+    $limite = $dia . ' ' . ($corte !== null ? $corte . ':00' : '23:59:59');
+    $contado = (string) ($reg['contado_em'] ?? '');
+    if (is_array($reg['contagem'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2} /', $contado)) {
+        return $ok($contado) && $contado < $limite ? $contado : $limite;
+    }
     foreach ((array) ($reg['historico'] ?? []) as $h) {
-        if (($h['accao'] ?? '') === 'folha_contagem_congelada' && $ok($h['referencia'] ?? null)) return (string) $h['referencia'];
+        if (($h['accao'] ?? '') === 'folha_contagem_congelada' && $ok($h['referencia'] ?? null)) return min((string) $h['referencia'], $limite);
     }
     $folha = (string) ($reg['folha_congelada_em'] ?? '');
-    if ($ok($folha)) {
-        $corte = naval_carr_corte($dia);
-        $limite = $dia . ' ' . ($corte !== null ? $corte . ':00' : '23:59:59');
-        return $folha < $limite ? $folha : $limite;
-    }
+    if ($ok($folha)) return min($folha, $limite);
     $base = $reg['base']['corte']['hora'] ?? null;
     return $ok($base) ? (string) $base : naval_carr_hora_referencia($dia);
 }
@@ -675,8 +680,8 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
                 $r = naval_exclusivo('carrinha-' . $dia . '-' . naval_carr_nome_rota($rota), function () use ($dia, $rota, $d, $eu, $ensaio, &$movPorHora) {
                     $reg = naval_carr_ler($dia, $rota);
                     if (!is_array($reg['base'] ?? null)) return 'igual';
-                    // o mesmo instante da primeira congelação (o que a contagem física reflecte), não a hora do corte
-                    $ref = naval_carr_referencia_original($reg, $dia);
+                    // o instante da contagem física (no máximo o corte), nunca o da folha impressa antes
+                    $ref = naval_carr_referencia_contagem($reg, $dia);
                     if (!array_key_exists($ref, $movPorHora)) $movPorHora[$ref] = $ref === $d['referencia'] ? $d['movimentos_rota'] : naval_carr_movimentos_sql($dia, substr($ref, 11, 8));
                     if ($movPorHora[$ref] === null) throw new NavalErro('O Pinguim BO não respondeu (movimentos até ' . $ref . ').', 503);
                     $fresca = (array) ($d['rotas'][$rota] ?? ['s0' => [], 's1' => [], 'v' => [], 'mov' => []]);
@@ -1100,11 +1105,15 @@ function naval_carr_contar(string $data, string $rota, array $contagem, array $e
         if ((!empty($reg['base_congelada_em']) || !empty($reg['folha_congelada_em'])) && !$congelada) {
             throw new NavalErro('A base congelada da folha de contagem está incompleta. Contacte a administração.', 503);
         }
-        $r = $congelada ? (array) $reg['base'] : ($d['rotas'][$rota] ?? null);
+        // a base é a do momento da contagem (no máximo o corte), mesmo com a folha impressa antes: entre a folha e a
+        // contagem a carrinha continua a vender e a receber; a folha congelada só serve para imprimir
+        $r = $d['rotas'][$rota] ?? ($congelada ? (array) $reg['base'] : null);
         if ($r === null) throw new NavalErro('Esta rota não teve movimentos na carrinha neste dia.', 404);
         $r['post'] = naval_carr_posteriores($reg);
-        if (!$congelada) $r = naval_carr_base_no_instante($data, $rota, $r, naval_carr_hora_referencia($data));
-        $precos = $congelada ? (array) ($reg['precos'] ?? $d['precos']) : $d['precos'];
+        $referencia = naval_carr_referencia_contagem(['contagem' => [], 'contado_em' => $contadoEm], $data);
+        if (naval_bd_configurada()) $r = naval_carr_base_no_instante($data, $rota, $r, $referencia);
+        elseif ($congelada) $r = (array) $reg['base'] + ['post' => $r['post']];
+        $precos = $d['precos'] ?? (array) ($reg['precos'] ?? []);
         $codigos = array_flip(array_map('strval', array_keys($r['s0'] + $r['s1'] + $r['v'] + (array) ($r['mov'] ?? []) + (array) ($r['post'] ?? []))));
         $c = [];
         foreach ($contagem as $cod => $q) {
@@ -1127,7 +1136,7 @@ function naval_carr_contar(string $data, string $rota, array $contagem, array $e
         $linhas = naval_carr_linhas($r, $c, $precos);
         $res = naval_carr_resumo($linhas, $reg);
         $reg['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => (string) $eu['login'], 'accao' => $novo ? 'recontagem' : 'contagem',
-            'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
+            'referencia' => $referencia, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
         naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
         return ['linhas' => $linhas, 'resumo' => $res];

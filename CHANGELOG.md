@@ -1,5 +1,12 @@
 ## 21-11-2026
 
+### Conciliação: o esperado é o do momento da contagem; fontes de dados logo ao entrar
+
+<!-- tipo: correcao -->
+
+- A contagem da carrinha compara com o stock do momento em que se contou (no máximo a hora do corte), e não com o da hora em que a folha foi impressa: entre a folha e a contagem a carrinha continua a vender (ex.: rota 1004, folha às 13:29, venda às 13:57, contagem às 16:12). A revisão automática usa a mesma regra e repõe sozinha as conciliações afectadas.
+- O indicador das fontes verifica o Pinguim BO, o stock e o OLAP logo ao entrar no portal (antes, só ao fim de 5 minutos: o OLAP não aparecia e o stock ficava «A verificar…»).
+
 ### Conciliação: «Actualizar bases históricas em aberto» com a regra certa
 
 <!-- tipo: correcao -->
