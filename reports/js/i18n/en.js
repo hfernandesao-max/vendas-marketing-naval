@@ -4961,4 +4961,5 @@ export const EN = {
     'Compares reconciliations before today with Pinguim BO as it is now, at the moment each count sheet was frozen. Only those that changed in Pinguim BO (cancelled or corrected document) change: the count is kept and validation is requested again. Unchanged ones stay as they are; closed ones are not altered and are flagged.',
   'Actualizadas: {n} (contagens a revalidar: {c}); iguais ao Pinguim BO: {i}; fechadas assinaladas: {a}; falhas: {f}.':
     'Updated: {n} (counts to revalidate: {c}); same as Pinguim BO: {i}; closed flagged: {a}; failures: {f}.',
+  'Regularizado no Pinguim BO: {doc} de {d} ({q})': 'Regularised in Pinguim BO: {doc} on {d} ({q})',
 };

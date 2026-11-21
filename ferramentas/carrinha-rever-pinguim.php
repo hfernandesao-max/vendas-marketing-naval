@@ -66,6 +66,8 @@ echo ($aplicar ? 'Actualizadas' : 'A actualizar') . ' (abertas): ' . count($r['a
 array_map($mostrar, $r['actualizadas']);
 echo "\nAprovadas com diferenças (não se alteram; ficam assinaladas" . ($aplicar ? '' : ' ao aplicar') . '): ' . count($r['aprovadas_com_diferencas']) . "\n";
 array_map($mostrar, $r['aprovadas_com_diferencas']);
+echo "\nRegularizadas por acertos posteriores no Pinguim BO (SA, DA, INV): " . count($r['regularizadas']) . "\n";
+foreach ($r['regularizadas'] as $x) echo '  ' . $x['data'] . ' rota ' . $x['rota'] . ': ' . implode(', ', $x['artigos']) . "\n";
 echo "\nIguais ao Pinguim BO: " . $r['iguais'] . ' · dias lidos: ' . $r['dias'] . "\n";
 foreach ($r['falhas'] as $f) echo '  FALHA  ' . $f['data'] . (isset($f['rota']) ? ' rota ' . $f['rota'] : '') . ': ' . $f['erro'] . "\n";
 exit($r['falhas'] || $falhasProva ? 1 : 0);

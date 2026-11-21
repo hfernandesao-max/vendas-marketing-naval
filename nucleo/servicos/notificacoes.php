@@ -18,6 +18,7 @@ defined('NAVAL_NUCLEO') || exit;
 /** tipo => [nome, descrição, recurso, nível mínimo, gravidade por omissão] */
 const NAVAL_NOTIF_TIPOS = [
     'rota_parada' => ['Rota parada', 'Uma rota com vendas hoje está há mais de uma hora sem vender, ou ainda não vendeu às 10:30.', 'alertas', 'Vr', 'aviso'],
+    'vendas_sincronizar' => ['Vendas por sincronizar', 'Uma rota carregada não tem vendas no Pinguim BO e o telemóvel não sincroniza há horas.', 'alertas', 'Vr', 'aviso'],
     'venda_anulada' => ['Venda anulada', 'Um documento de venda de hoje foi anulado no Pinguim BO.', 'alertas', 'Vr', 'aviso'],
     'caixa_verificar' => ['Caixa por aprovar (1.º nível)', 'Um fecho de caixa validado ou um depósito no banco espera pela aprovação de 1.º nível.', 'caixa-aprovacao', 'G', 'aviso'],
     'caixa_aprovar' => ['Caixa por aprovação final', 'Um fecho de caixa ou um depósito no banco espera pela aprovação final.', 'caixa-aprovacao-final', 'G', 'aviso'],
@@ -55,6 +56,9 @@ const NAVAL_NOTIF_TEXTOS = [
     'deposito' => ['pt' => ['Depósito no banco por aprovar', '{v} Kz no {b} (lacre {l}), folha de {d}.'],
         'en' => ['Bank deposit to approve', '{v} Kz at {b} (seal {l}), sheet of {d}.'],
         'ti' => ['ናብ ባንክ ዝኣቱ ገንዘብ ክጸድቕ', '{v} Kz ኣብ {b} (ማሕተም {l})፣ ወረቐት {d}።']],
+    'sincronizar' => ['pt' => ['Rota {r}: vendas por sincronizar', 'Carregada e sem vendas no Pinguim BO; o telemóvel não sincroniza desde {h}. Sincronize no Winrest.'],
+        'en' => ['Route {r}: sales not synced', 'Loaded and no sales in Pinguim BO; the phone has not synced since {h}. Sync in Winrest.'],
+        'ti' => ['መስመር {r}: ዘይተሰማምዑ መሸጣታት', 'ተጻዒኑ ግን ኣብ Pinguim BO መሸጣ የለን፤ እቲ ሞባይል ካብ {h} ኣይተሰማምዐን። ኣብ Winrest ኣሰማምዑ።']],
     'carrinha_falta' => ['pt' => [', falta de {v} Kz'], 'en' => [', {v} Kz short'], 'ti' => ['፣ ጉድለት {v} Kz']],
     'po' => ['pt' => ['PO {n} por aprovar · rota {r}', '{a} artigos ({q} unidades). Aprove-a para ficar disponível para a carga no cais.'],
         'en' => ['PO {n} to approve · route {r}', '{a} items ({q} units). Approve it so it becomes available for loading at the dock.'],

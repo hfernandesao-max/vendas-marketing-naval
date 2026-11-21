@@ -113,3 +113,19 @@ teste('à sua espera: PO por aprovar para quem aprova (o coordenador), nunca par
     $depois = naval_pendentes('nathan', null, ['po' => true], time(), []);
     igual([], array_values(array_filter($depois['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; })), 'aprovada sai da lista');
 });
+
+teste('vendas por sincronizar: rota carregada, sem vendas desde a carga e telemóvel parado há mais de 6 horas', function () {
+    naval_servico('sincronizacao-alertas');
+    $agora = strtotime('2026-11-20 16:30:00');
+    $l = [
+        ['ROTA' => '1011', 'ULTIMA_CARGA' => '2026-11-20 15:40:30', 'ULTIMA_VENDA' => '2026-11-09 13:34:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-20 09:32:00'],
+        ['ROTA' => '1008', 'ULTIMA_CARGA' => '2026-11-19 15:26:53', 'ULTIMA_VENDA' => '2026-11-20 15:02:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-20 09:00:00'],   // vendeu depois da carga
+        ['ROTA' => '1004', 'ULTIMA_CARGA' => '2026-11-20 15:42:21', 'ULTIMA_VENDA' => '2026-11-20 13:57:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-20 16:00:00'],   // sincronizou há pouco
+        ['ROTA' => '1002', 'ULTIMA_CARGA' => '2026-11-10 08:00:00', 'ULTIMA_VENDA' => '2026-11-09 10:00:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-10 09:00:00'],   // carga antiga
+    ];
+    $x = naval_sync_vendas_por_sincronizar($l, $agora, 'normal');
+    igual(['1011'], array_column($x, 'rota'));
+    igual(6, $x[0]['horas']);
+    igual([], naval_sync_vendas_por_sincronizar($l, strtotime('2026-11-20 09:00:00'), 'normal'), 'de manhã não avisa');
+    igual([], naval_sync_vendas_por_sincronizar($l, $agora, 'folga'), 'em dia de folga não avisa');
+});

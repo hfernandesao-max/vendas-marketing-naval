@@ -479,3 +479,25 @@ teste('contagem em atraso: a carga da tarde de um dia anterior já estava na car
     $mov = naval_carr_movimentos_agrupar([$rows[0], $rows[1]], ['1004'], [], '2026-11-19');
     igual([0.0, 50.0], [$mov['1004']['N']['ca'], $mov['1004']['N']['cs']]);
 });
+
+teste('regularização documentada: o acerto posterior da Logística no Pinguim BO explica a diferença (no todo ou em parte)', function () {
+    $linhas = [
+        ['codigo' => '292', 'diferenca' => -30.0], ['codigo' => '332', 'diferenca' => -350.0],
+        ['codigo' => '385', 'diferenca' => -20.0], ['codigo' => '015', 'diferenca' => 20.0], ['codigo' => '999', 'diferenca' => 0.0],
+    ];
+    $acertos = [
+        ['rota' => '1011', 'codigo' => '292', 'doc' => 'SA A1000/118', 'em' => '2026-11-21 08:55:00', 'efeito' => -30.0],
+        ['rota' => '1011', 'codigo' => '332', 'doc' => 'SA A1000/119', 'em' => '2026-11-21 08:58:00', 'efeito' => -300.0],
+        ['rota' => '1011', 'codigo' => '385', 'doc' => 'SA A1000/120', 'em' => '2026-11-20 10:00:00', 'efeito' => -20.0],   // antes da contagem: não conta
+        ['rota' => '1011', 'codigo' => '015', 'doc' => 'SA A1000/121', 'em' => '2026-11-21 09:00:00', 'efeito' => -5.0],    // sentido contrário
+        ['rota' => '1008', 'codigo' => '292', 'doc' => 'SA A1000/122', 'em' => '2026-11-21 09:00:00', 'efeito' => -30.0],   // outra carrinha
+    ];
+    $r = naval_carr_regularizacoes($linhas, $acertos, '1011', '2026-11-20 16:00:00');
+    igual(['292', '332'], array_map('strval', array_keys($r)));
+    igual([-30.0, 'SA A1000/118'], [$r['292']['q'], $r['292']['doc']]);
+    igual(-300.0, $r['332']['q'], 'acerto menor do que a diferença: explica só essa parte');
+    // na conciliação: o que fica por explicar e o valor só da parte que falta
+    $base = ['s0' => ['332' => ['n' => 'Fraldas', 'q' => 450.0]], 's1' => [], 'v' => [], 'mov' => [], 'regs' => $r];
+    $l = naval_carr_linhas($base, ['332' => 100.0], ['332' => 15000.0])[0];
+    igual([-350.0, -50.0, -750000.0, 'SA A1000/119'], [$l['diferenca_bruta'], $l['diferenca'], $l['valor'], $l['regularizado']['doc']]);
+});

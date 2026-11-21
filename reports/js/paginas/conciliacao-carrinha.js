@@ -428,6 +428,21 @@ function tabelaRota(r) {
       const m = (r.motivos || {})[l.codigo];
       ult.textContent = m ? t(CC.motivos[m.motivo] || m.motivo) + (m.nota ? ' · ' + m.nota : '') : '—';
     }
+    // regularização documentada: a parte da diferença que um acerto posterior no Pinguim BO já corrigiu
+    if (l.regularizado) {
+      const rg = el(
+        'span',
+        'cc-regularizado',
+        t('Regularizado no Pinguim BO: {doc} de {d} ({q})', {
+          doc: l.regularizado.doc,
+          d: dl(String(l.regularizado.em).slice(0, 10)),
+          q: (l.regularizado.q > 0 ? '+' : '') + q(l.regularizado.q),
+        }),
+      );
+      if (ult.textContent && ult.textContent !== '—') ult.append(document.createTextNode(' · '));
+      else ult.textContent = '';
+      ult.append(rg);
+    }
     tr.append(ult);
     corpo.append(tr);
   });

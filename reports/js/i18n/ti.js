@@ -4875,4 +4875,5 @@ export const TI = {
     'ቅድሚ ሎሚ ዘለዉ ምትዕርራያት ምስ ናይ ሕጂ Pinguim BO ይነጻጸሩ፡ ኣብቲ ነፍሲ ወከፍ ወረቐት ቆጸራ ዝተዓጽወሉ ግዜ። ኣብ Pinguim BO ዝተቐየሩ ጥራይ ይቕየሩ (ዝተሰረዘ ወይ ዝተዓረየ ሰነድ): እቲ ቆጸራ ይጸንሕ፡ ደጊሙ ምርግጋጽ ይሕተት። ዘይተቐየሩ ከምዘለዉ ይጸንሑ፤ ዝተዓጸዉ ኣይቕየሩን፡ ይምልከቱ።',
   'Actualizadas: {n} (contagens a revalidar: {c}); iguais ao Pinguim BO: {i}; fechadas assinaladas: {a}; falhas: {f}.':
     'ዝተሓደሱ: {n} (ደጊሞም ዝረጋገጹ ቆጸራታት: {c})፤ ምስ Pinguim BO ሓደ ዓይነት: {i}፤ ዝተዓጸዉ ዝተመልከቱ: {a}፤ ጌጋታት: {f}።',
+  'Regularizado no Pinguim BO: {doc} de {d} ({q})': 'ኣብ Pinguim BO ተስተኻኺሉ: {doc} ናይ {d} ({q})',
 };

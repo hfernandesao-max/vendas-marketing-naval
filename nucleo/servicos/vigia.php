@@ -99,6 +99,25 @@ function naval_vigia_negocio(int $agora): array
     } catch (Throwable $e) {
         return ['pinguim' => ['ok' => false, 'mensagem' => 'O Pinguim BO não responde: ' . naval_vigia_limpar($e->getMessage())]];
     }
+    // vendas por sincronizar: rota carregada, sem vendas no Pinguim BO desde a carga e telemóvel sem sincronizar
+    try {
+        naval_servico('sincronizacao-alertas');
+        foreach ((array) naval_sync_por_sincronizar($agora) as $x) {
+            $r['sync_' . $x['rota']] = ['ok' => false, 'rota' => $x['rota'], 'mensagem' => 'Rota ' . $x['rota'] . ': carregada a ' . substr($x['carga'], 0, 16)
+                . ' e sem vendas no Pinguim BO desde então (última venda: ' . ($x['venda'] ? substr($x['venda'], 0, 16) : 'nenhuma') . '); o telemóvel não sincroniza'
+                . ($x['sincronizacao'] ? ' desde ' . substr($x['sincronizacao'], 0, 16) : '') . '. Vendas por sincronizar: sincronizar o telemóvel no Winrest.'];
+            try {
+                naval_servico('notificacoes');
+                $tx = naval_notif_txt('sincronizar', ['r' => $x['rota'], 'h' => $x['sincronizacao'] ? substr($x['sincronizacao'], 11, 5) . ' de ' . date('d-m', strtotime($x['sincronizacao'])) : '—']);
+                naval_notificar('vendas_sincronizar', $tx['pt'][0], $tx['pt'][1], ['chave' => 'sincronizar|' . $x['rota'] . '|' . date('Y-m-d', $agora), 'rota' => $x['rota'],
+                    'url' => '../reports/#sincronizacao', 'textos' => $tx], $agora);
+            } catch (Throwable $e) {
+                error_log('[vigia] aviso de sincronização: ' . $e->getMessage());
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[vigia] vendas por sincronizar: ' . $e->getMessage());
+    }
     // ontem (dia fechado) e hoje depois das 12:00: documentos de venda no Pinguim BO mas nenhum no portal
     foreach ([date('Y-m-d', $agora - 86400)] + (date('H', $agora) >= '12' ? [1 => date('Y-m-d', $agora)] : []) as $dia) {
         try {

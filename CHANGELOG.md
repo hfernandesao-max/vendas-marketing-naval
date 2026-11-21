@@ -1,5 +1,13 @@
 ## 21-11-2026
 
+### Conciliação: regularização documentada pelos acertos da Logística e alerta de vendas por sincronizar
+
+<!-- tipo: funcionalidade -->
+
+- Uma diferença da contagem que um acerto lançado depois no Pinguim BO corrige (saída de armazém, devolução ou inventário na mesma carrinha e artigo) fica «Regularizada no Pinguim BO», com o número do documento, e não conta como falta; o mesmo acerto explica a mesma diferença em dias seguidos. Sem diferenças por explicar, a conciliação validada fecha sozinha. Ex.: rota 1008 (SA A1000/118) e rota 1011 (SA A1000/119).
+- Vendas por sincronizar: uma rota carregada, sem vendas no Pinguim BO desde a carga e com o telemóvel sem sincronizar há mais de 6 horas aparece na Vigia e avisa por notificação quem acompanha a rota (SYNC_ALERTA_HORAS).
+- Contagens escritas no portal noutro dia referem-se ao corte do dia da conciliação (a contagem física é a do fim desse dia).
+
 ### Conciliação: o esperado é o do momento da contagem; fontes de dados logo ao entrar
 
 <!-- tipo: correcao -->
