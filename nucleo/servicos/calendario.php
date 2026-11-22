@@ -132,6 +132,17 @@ function naval_cal_folga(string $dia): bool
     return naval_cal_dia($dia)['tipo'] === 'folga';
 }
 
+/** Último dia de trabalho antes de $dia (segunda-feira → sábado; depois de um feriado → o dia útil anterior). */
+function naval_cal_util_anterior(string $dia): string
+{
+    $t = strtotime($dia . ' 12:00');
+    for ($i = 1; $i <= 10; $i++) {
+        $d = date('Y-m-d', $t - $i * 86400);
+        if (!naval_cal_folga($d)) return $d;
+    }
+    return date('Y-m-d', $t - 86400);
+}
+
 /** Hora (HH:MM) a que terminam as vendas do dia; num dia de folga, a de um dia de semana. */
 function naval_cal_fim_vendas(string $dia): string
 {

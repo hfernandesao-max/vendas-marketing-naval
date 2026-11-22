@@ -76,8 +76,10 @@ function naval_op_plano_18h(int $agora): ?array
 {
     $hoje = date('Y-m-d', $agora);
     if (naval_config('PLANO_PROPOSTA_ACTIVA', '1') === '0' || date('H:i', $agora) < naval_op_hora('PLANO_HORA_PROPOSTA', '18:00')) return null;
-    if (!naval_op_marcar('plano', $hoje)) return null;
     $amanha = date('Y-m-d', strtotime($hoje . ' 12:00') + 86400);
+    naval_servico('calendario');
+    if (naval_cal_folga($amanha)) return null;   // amanhã é dia de descanso: não há cargas a propor
+    if (!naval_op_marcar('plano', $hoje)) return null;
     $p = naval_op_plano_proposto($amanha);
     if ($p === null) return ['data' => $amanha, 'resultado' => 'ja_existia'];
     naval_servico('email');

@@ -5,6 +5,7 @@ import { LANG, t } from '../i18n/i18n.js';
 import { atual, paginaAtual, podeExportar } from '../perfil.js';
 import { st } from '../periodo.js';
 import { el, sum } from '../util.js';
+import { celulaLigada, tipoLigacao } from './ligacoes.js';
 
 // Durante o desenho de uma página, cada tabela e cada grupo de indicadores fica registado aqui para o Excel e o CSV.
 export let REG = { tabelas: [], kpis: [] };
@@ -38,6 +39,9 @@ export const fname = (s, ext) => `${slug(t('Portal RTM'))}_${slug(s)}_${dl(st.de
 function cellNode(c, r, max) {
   const v = c.get ? c.get(r) : r[c.key];
   if (c.render) return c.render(v, r);
+  // drill-down: documento, cliente, artigo e rota (ou promotor) abrem a ficha respectiva (componentes/ligacoes.js)
+  const lig = !c.type && tipoLigacao(c);
+  if (lig) return celulaLigada(lig, v, r);
   if (c.type === 'kz') return document.createTextNode(kz(v));
   if (c.type === 'mkz') return document.createTextNode(mkz(v));
   if (c.type === 'n') return document.createTextNode(n0(v));

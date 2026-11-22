@@ -95,3 +95,25 @@ test('o documento ajusta-se à janela num ecrã pequeno, sem deslocação horizo
   const caixa = await p.locator('.doc-folha').boundingBox();
   expect(caixa.width).toBeLessThanOrEqual(390);
 });
+
+test('drill-down: do documento ao artigo, do artigo à rota e da rota de volta ao documento', async ({ page }) => {
+  const erros = await abrir(page, '#documentos', { api: (r) => r.fulfill({ json: { vendas: V, artigos: A } }) });
+  await page.getByRole('button', { name: 'Abrir o documento FR 1/7' }).first().click();
+  const p = page.locator('dialog.doc-painel');
+  // no documento, o artigo e a rota são ligações
+  await p
+    .locator('.df-linhas')
+    .getByRole('button', { name: /Fraldas Bebé M/ })
+    .click();
+  const art = page.locator('dialog.lig-dlg').last();
+  await expect(art).toContainText('Por rota');
+  await expect(art.locator('.lig-tiles')).toContainText('Quantidade');
+  await art.locator('.lig-rota').first().click();
+  const rota = page.locator('dialog.lig-dlg').last();
+  await expect(rota.locator('.lig-sec h3')).toHaveText(['Principais clientes', 'Principais artigos', 'Últimos documentos']);
+  await expect(rota.locator('.lig-tiles')).toContainText(/11\s400/);
+  // e daí de novo ao documento
+  await rota.locator('.lig-documento').first().click();
+  await expect(page.locator('dialog.doc-painel h2')).toHaveText('FR 1/7');
+  expect(erros).toEqual([]);
+});

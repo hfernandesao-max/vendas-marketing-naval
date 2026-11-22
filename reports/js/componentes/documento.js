@@ -9,6 +9,7 @@ import { t } from '../i18n/i18n.js';
 import { DB, el, sum, toast } from '../util.js';
 import { carregarScript } from '../servidor.js';
 import { botao } from './janelas.js';
+import { celulaLigada } from './ligacoes.js';
 
 const estado = (v) => (eNC(v) ? 'Nota de crédito' : v.liquidado && pendenteDe(v) <= 0.005 ? 'Pago' : 'Pendente');
 const qtd = (q) => (Number.isInteger(+q) ? n0(q) : (+q).toLocaleString(undefined, { maximumFractionDigits: 3 }));
@@ -57,12 +58,16 @@ function folha(v, linhas, pags) {
   const meta = el('dl', 'df-meta');
   const par = (k, val, cl) => {
     const d = el('div', cl || null);
-    d.append(el('dt', null, k), el('dd', null, val));
+    const dd = el('dd');
+    dd.append(val instanceof Node ? val : document.createTextNode(val == null ? '' : String(val)));
+    d.append(el('dt', null, k), dd);
     meta.append(d);
   };
   par(t('Data'), dl(v.data));
   if (v.hora) par(t('Hora'), v.hora);
-  par(t('Cliente'), v.cliente || t('Consumidor final'));
+  // ligações: o cliente abre a ficha do cliente e cada artigo a ficha do artigo (drill-down)
+  par(t('Cliente'), v.cliente ? celulaLigada('cliente', v.cliente, v) : t('Consumidor final'));
+  if (v.rota) par(t('Rota'), celulaLigada('rota', v.rota, v, String(v.rota) + (v.promotor ? ' · ' + v.promotor : '')));
   par(t('NIF'), v.nif || '—');
   if (v.cliente_codigo) par(t('Código do cliente'), v.cliente_codigo, String(v.cliente_codigo).length > 14 ? 'df-largo' : null);
   f.append(meta);
@@ -95,7 +100,11 @@ function folha(v, linhas, pags) {
     const tr = el('tr');
     tr.append(
       el('td', null, a.codigo || '—'),
-      el('td', null, a.artigo || '—'),
+      (() => {
+        const td = el('td');
+        td.append(celulaLigada('artigo', a.artigo, a, a.artigo || '—'));
+        return td;
+      })(),
       el('td', 'n', qtd(Math.abs(+a.quantidade || 0))),
       el('td', null, a.unidade || ''),
       el('td', 'n', kz(Math.abs(+a.preco_unitario || 0))),

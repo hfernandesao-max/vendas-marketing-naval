@@ -114,9 +114,9 @@ function naval_resumo_html(array $d, ?string $textoIa, string $ligacao): string
             . $e($pct($v)) . ' ' . $e($sub) . '</div></td>';
     };
     $h .= '<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><tr>'
-        . $cartao('Ontem · ' . $d['ontem']['documentos'] . ' documentos', $d['ontem']['total'], 'face ao habitual (' . naval_kz($d['ontem']['habitual']) . ')', $d['ontem']['variacao'])
+        . $cartao(ucfirst(naval_dia_nome_singular($d['dia'])) . ' · ' . $d['ontem']['documentos'] . ' documentos', $d['ontem']['total'], 'face ao habitual (' . naval_kz($d['ontem']['habitual']) . ')', $d['ontem']['variacao'])
         . $cartao('Últimos 7 dias', $d['semana']['total'], 'face à média das 4 semanas anteriores', $d['semana']['variacao'])
-        . $cartao('Mês até ontem (' . $d['mes']['dias'] . ' dias)', $d['mes']['total'], 'face ao mesmo período do mês anterior', $d['mes']['variacao'])
+        . $cartao('Mês até ' . naval_data_pt($d['dia']) . ' (' . $d['mes']['dias'] . ' dias)', $d['mes']['total'], 'face ao mesmo período do mês anterior', $d['mes']['variacao'])
         . '</tr></table>';
     if ($d['previsao_hoje']) {
         $p = $d['previsao_hoje'];
@@ -140,7 +140,7 @@ function naval_resumo_html(array $d, ?string $textoIa, string $ligacao): string
     }
     if ($d['rotas']) {
         $h .= '<div style="font-size:16px;font-weight:700;color:' . $azul . ';margin:6px 0">Rotas</div><table style="border-collapse:collapse;width:100%;font-size:13px">'
-            . '<tr style="background:' . $azul . ';color:#fff"><th style="padding:5px;text-align:left">Rota</th><th style="padding:5px;text-align:right">Ontem</th>'
+            . '<tr style="background:' . $azul . ';color:#fff"><th style="padding:5px;text-align:left">Rota</th><th style="padding:5px;text-align:right">Vendas do dia</th>'
             . '<th style="padding:5px;text-align:right">Habitual</th><th style="padding:5px;text-align:right">Variação</th></tr>';
         foreach ($d['rotas'] as $i => $r) {
             $h .= '<tr style="background:' . ($i % 2 ? '#E8F0FB' : '#fff') . '"><td style="padding:5px">' . $e($r['rota'] . ($r['promotor'] ? ' · ' . $r['promotor'] : ''))
@@ -224,11 +224,16 @@ function naval_periodicas(?int $agora = null): array
     $hora = naval_config('RESUMO_HORA', '07:00');
     if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $hora = '07:00';
     $ficheiro = naval_pasta('resumo') . '/' . date('Y-m-d', $agora) . '.json';
-    if (naval_config('RESUMO_ACTIVO', '1') !== '0' && date('H:i', $agora) >= $hora && !is_file($ficheiro)) {
+    // dias de descanso (domingo, feriado): não há resumo; no dia de trabalho seguinte o resumo é o do último dia de
+    // trabalho (à segunda-feira, o de sábado), nunca o de um domingo sem vendas
+    naval_servico('calendario');
+    $descansoHoje = naval_cal_folga(date('Y-m-d', $agora));
+    if (!$descansoHoje && naval_config('RESUMO_ACTIVO', '1') !== '0' && date('H:i', $agora) >= $hora && !is_file($ficheiro)) {
         try {
-            naval_exclusivo('resumo-diario', function () use ($ficheiro, &$feito) {
+            $diaResumo = naval_cal_util_anterior(date('Y-m-d', $agora));
+            naval_exclusivo('resumo-diario', function () use ($ficheiro, &$feito, $diaResumo) {
                 if (is_file($ficheiro)) return;
-                $feito['resumo'] = naval_resumo_enviar();
+                $feito['resumo'] = naval_resumo_enviar($diaResumo);
             });
         } catch (Throwable $e) {
             error_log('[resumo diário] ' . $e->getMessage());

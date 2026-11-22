@@ -51,3 +51,14 @@ teste('previsão: dia de folga prevê zero e os feriados passados não entram na
     $seg = naval_previsao_dia($serie, '2026-11-16', '2026-11-10');
     verdade(abs($seg['previsto'] - 100000) < 15000, 'segunda-feira: o zero do feriado de 02-11 não puxa a média para baixo (' . $seg['previsto'] . ')');
 });
+
+teste('dias de descanso: o último dia de trabalho antes de segunda-feira é o sábado; a carrinha sem movimento não se conta ao domingo', function () {
+    naval_servico('calendario');
+    naval_servico('carrinha');
+    igual('2026-11-21', naval_cal_util_anterior('2026-11-23'), 'segunda → sábado');
+    igual('2026-11-21', naval_cal_util_anterior('2026-11-22'), 'domingo → sábado');
+    igual('2026-11-24', naval_cal_util_anterior('2026-11-25'));
+    verdade(naval_cal_folga('2026-11-22'), 'domingo é descanso');
+    igual(false, naval_carr_teve_movimento([['inicial' => 40, 'carregado' => 0, 'vendido' => 0, 'devolvido' => 0, 'inventario' => 0]]), 'só stock do dia anterior');
+    verdade(naval_carr_teve_movimento([['inicial' => 40, 'carregado' => 0, 'vendido' => 2, 'devolvido' => 0, 'inventario' => 0]]), 'vendeu ao domingo: conta-se');
+});

@@ -1,3 +1,22 @@
+## 23-11-2026
+
+### Domingo e feriados como dias de descanso
+
+<!-- tipo: correcao -->
+
+- Num domingo, feriado ou folga da empresa, a conciliação já não pede para contar as carrinhas que não tiveram movimento nesse dia. Ficam como no último dia de trabalho e não aparece o aviso «telemóvel por sincronizar».
+- Sem lembrete das 19:30 nos dias de descanso, e sem proposta de plano de cargas para um dia de descanso.
+- O resumo diário não sai nos dias de descanso. À segunda-feira (ou depois de um feriado) traz o último dia de trabalho, por exemplo o sábado, em vez de um domingo sem vendas.
+
+### Ligações entre todas as tabelas (drill-down)
+
+<!-- tipo: funcionalidade -->
+
+- Em qualquer tabela do portal, o documento, o cliente, o artigo e a rota (ou o promotor) abrem a ficha respectiva.
+- Ficha do artigo, no período: quantidade, valor, documentos, clientes e preço médio; vendas por rota; principais clientes; últimos documentos.
+- Ficha da rota, no período: vendas, documentos, clientes, dias com vendas e média por dia; principais clientes e artigos; últimos documentos; atalhos à conciliação da carrinha e às requisições.
+- No painel do documento, o cliente, a rota e cada artigo também abrem a ficha. Dentro de cada ficha tudo volta a ser clicável: da venda ao documento, do documento ao artigo, do artigo aos clientes e à rota.
+
 ## 22-11-2026
 
 ### App «Naval Operações»: entrega do dinheiro, contagem da carrinha e carga pelo QR

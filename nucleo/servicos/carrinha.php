@@ -1301,6 +1301,17 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
     return $out;
 }
 
+/** A carrinha teve movimento no dia (carga, venda, devolução ou acerto de inventário)? */
+function naval_carr_teve_movimento(array $linhas): bool
+{
+    foreach ($linhas as $l) {
+        foreach (['carregado', 'vendido', 'devolvido', 'inventario'] as $k) {
+            if (abs((float) ($l[$k] ?? 0)) > NAVAL_CARR_TOLERANCIA) return true;
+        }
+    }
+    return false;
+}
+
 /** Resumo e estado de uma rota: sem_movimento | por_contar | por_validar | por_aprovar | por_fechar | aprovada. */
 function naval_carr_resumo(array $linhas, array $reg): array
 {
@@ -1392,6 +1403,10 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         $avisosDados = null;
     }
     $promotores = naval_promotores();
+    // dia de descanso (domingo, feriado ou folga da empresa): só entram as carrinhas que tiveram movimento nesse dia
+    // ou que já começaram a ser contadas; as outras ficam como no último dia de trabalho e não se contam
+    naval_servico('calendario');
+    $descanso = naval_cal_folga($data);
     $out = [];
     foreach ($d['rotas'] as $rota => $r) {
         $rota = (string) $rota;
@@ -1402,6 +1417,7 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? $d['precos'] ?? []));
         $resumo = naval_carr_resumo($linhas, $reg);
         if ($resumo['estado'] === 'sem_movimento') continue;
+        if ($descanso && $resumo['estado'] === 'por_contar' && !naval_carr_teve_movimento($linhas)) continue;
         $oculta = $cega && $resumo['estado'] === 'por_contar' && ($gere || !$veEsperado);
         if ($oculta) $linhas = naval_carr_cega($linhas);
         $out[] = ['rota' => $rota, 'promotor' => $promotores[$rota] ?? $rota, 'resumo' => $resumo, 'linhas' => $linhas,
@@ -1417,7 +1433,7 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
                 'vendido_depois' => (float) ($base['corte']['vendido_depois'] ?? 0)] : null,
             'cargas_posteriores' => array_map(function ($x) { return ['numero' => $x['numero'], 'confirmado_em' => $x['confirmado_em'], 'autorizado_por' => $x['autorizado_por'] ?? '']; }, (array) ($reg['cargas_posteriores'] ?? [])),
             // porque é que o Pinguim BO pode não ter as vendas do dia (telemóvel sem sincronizar, rota sem facturas)
-            'avisos_rota' => $resumo['estado'] === 'aprovada' || $avisosDados === null ? []
+            'avisos_rota' => $resumo['estado'] === 'aprovada' || $avisosDados === null || $descanso ? []
                 : naval_sync_avisos_rota($avisosDados[$rota] ?? null, $data, naval_carr_referencia_contagem($reg, $data))];
     }
     return ['data' => $data, 'gerado' => $d['gerado'], 'movimentos' => $d['movimentos'], 'rotas' => $out, 'motivos' => NAVAL_CARR_MOTIVOS];
@@ -1633,6 +1649,8 @@ function naval_carr_aviso_diario(int $agora): ?int
     $hora = naval_config('CARRINHA_HORA_AVISO', '19:30');
     if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) $hora = '19:30';
     $dia = date('Y-m-d', $agora);
+    naval_servico('calendario');
+    if (naval_cal_folga($dia)) return null;   // dia de descanso: não há fecho de carrinhas a lembrar
     $marca = naval_carr_pasta($dia) . '/_aviso.json';
     if (date('H:i', $agora) < $hora || is_file($marca)) return null;
     naval_json_gravar($marca, ['em' => date('Y-m-d H:i:s', $agora)]);

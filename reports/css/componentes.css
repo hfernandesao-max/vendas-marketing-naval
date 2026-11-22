@@ -5865,3 +5865,42 @@ body.apres-lado {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   }
 }
+
+/* Ligações entre tabelas (componentes/ligacoes.js): o valor é um botão com aspecto de ligação que abre a ficha */
+.lig {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sky);
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--sky) 40%, transparent);
+  text-underline-offset: 3px;
+}
+.lig:hover,
+.lig:focus-visible {
+  text-decoration-color: currentColor;
+}
+.lig-tiles {
+  margin-bottom: 12px;
+}
+.lig-sec {
+  margin-top: 14px;
+}
+.lig-sec h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.lig-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media print {
+  .lig {
+    color: inherit;
+    text-decoration: none;
+  }
+}
