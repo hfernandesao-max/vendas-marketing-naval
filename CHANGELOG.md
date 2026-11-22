@@ -1,5 +1,22 @@
 ## 23-11-2026
 
+### Perdas e tempo parado, calendário editável e navegação por ligações
+
+<!-- tipo: funcionalidade -->
+
+- **Perdas e tempo parado** (Inteligência de negócio), por rota e no período (até 31 dias), tudo das bases de dados:
+  - perdas efectivas: faltas na carrinha (conciliação), falta de dinheiro na entrega (declarado na app × contado) e custo do tempo parado sem vender (OLAP × `PERDAS_CUSTO_HORA`);
+  - à parte, as decisões comerciais do Pinguim BO: notas de crédito, descontos e documentos anulados;
+  - os números do topo levam ao detalhe, e as rotas abrem a ficha da rota.
+- **Ficha da rota com o desempenho do vendedor:** perdas, faltas, entrega do dinheiro, tempo parado e custo, quilómetros, notas de crédito, descontos e anulados.
+- **Calendário de trabalho** (Administração): horário, feriados de Angola e próximos dias fora do normal. A Direcção define folgas da empresa e dias de trabalho excepcionais, com motivo e registo, e todo o portal passa a usá-los. Na véspera de um feriado ou folga, às 17:30, vendedores e Logística são avisados no telemóvel.
+- **Pesquisa global (Ctrl+K):** além das funções, procura documentos, clientes, artigos, rotas e números de PO do período, e abre a ficha certa.
+- **Fichas com rasto, «Voltar» e «Copiar ligação»:** a ligação abre o portal com a mesma ficha, com as permissões de quem a abre.
+- **Números e gráficos clicáveis:**
+  - na página inicial, a barra do cliente abre a ficha do cliente e a do artigo a ficha do artigo (a do promotor continua a abrir os documentos dessa rota);
+  - os quadros das perdas levam às tabelas respectivas;
+  - as «Faltas» da conciliação levam às perdas por rota.
+
 ### Domingo e feriados como dias de descanso
 
 <!-- tipo: correcao -->

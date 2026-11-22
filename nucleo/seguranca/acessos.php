@@ -104,6 +104,10 @@ const NAVAL_MATRIZ_TXT = [
     'previsao'             => 'V  V  V  Vr -  -  -  -  -  V  V',
     // valor do portal para a Naval: Direcção gere os parâmetros (G); administrador da plataforma, Financeiro e auditoria vêem
     'valor-portal'         => 'V  G  -  -  -  V  -  -  -  V  -',
+    // perdas e tempo parado por rota (faltas na carrinha, entrega do dinheiro, tempo parado, notas de crédito, descontos, anulados)
+    'perdas'               => 'V  V  V  Vr -  V  -  V  -  V  -',
+    // calendário de trabalho (horário, feriados, folgas da empresa): todos vêem; a Direcção e a Informática definem
+    'calendario'           => 'G  G  V  V  V  V  V  V  -  V  -',
     // explorador de relatórios: todos criam e guardam os seus (V); partilhar com todos (G); os dados de cada área seguem
     // sempre as permissões e as rotas de quem abre o relatório. Certificar: outra pessoa que não o autor (quatro olhos)
     'relatorios'           => 'G  G  G  V  V  G  V  V  V  V  V',
@@ -222,6 +226,7 @@ function naval_niveis_recurso(string $rec): array
         case 'pendentes-escalamento':
             return ['', 'V'];
         case 'app-gestao':
+        case 'perdas':
             return ['', 'Vr', 'V'];
         case 'painel-sala':
         case 'clientes-qr':
@@ -247,6 +252,7 @@ function naval_niveis_recurso(string $rec): array
         case 'caixa-marketing':
         case 'multicaixa-tpa':
         case 'caixa-entrega':
+        case 'calendario':
             return ['', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':

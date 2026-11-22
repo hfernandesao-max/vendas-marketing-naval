@@ -294,6 +294,13 @@ function naval_periodicas(?int $agora = null): array
             error_log('[sala] ' . $e->getMessage());
         }
     }
+    // véspera de um feriado ou folga da empresa: aviso a vendedores e Logística (17:30)
+    try {
+        $vs = naval_cal_aviso_vespera($agora);
+        if ($vs) $feito['vespera'] = $vs;
+    } catch (Throwable $e) {
+        error_log('[calendário véspera] ' . $e->getMessage());
+    }
     // pendentes: resumo de cada pessoa às 07:30 e escalamento dos atrasados (10:00 e 16:30)
     try {
         naval_servico('pendentes');

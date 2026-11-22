@@ -91,6 +91,7 @@ const SEM_PERIODO = [
   'rotas-propostas',
   'ocorrencias',
   'cargas-po',
+  'calendario',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'vendas-promotor-artigo', 'sap-exportar']);
@@ -270,6 +271,8 @@ export function route() {
   definirAtual(PAGES.some((x) => x.id === h) && podeVer(h) ? h : primeira);
   draw();
   window.scrollTo(0, 0);
+  // ligação partilhada a uma ficha (#página?ficha=tipo:valor): abre-a quando os dados chegarem
+  if (qs && /(?:^|&)ficha=/.test(qs)) import('./componentes/ligacoes.js').then((m) => m.abrirFichaDoEndereco());
 }
 
 $('#xl-page').addEventListener('click', () => {

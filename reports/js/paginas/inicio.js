@@ -20,6 +20,7 @@ import {
 } from '../calculos.js';
 import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
+import { abrir as abrirLig } from '../componentes/ligacoes.js';
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
@@ -316,7 +317,7 @@ function painelInicio(pg) {
         'nif',
       ),
     )
-      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, liquidoDe), n: docsVenda(rs).length, nif: rs[0].nif }))
+      .map((rs) => ({ nome: nomeCli(rs[0]), v: sum(rs, liquidoDe), n: docsVenda(rs).length, nif: rs[0].nif, venda: rs[0] }))
       .sort((a, b) => b.v - a.v)
       .slice(0, 8);
     if (C.length)
@@ -333,6 +334,7 @@ function painelInicio(pg) {
                 itens: C.map((x) => ({
                   valor: x.v,
                   rot: x.nome,
+                  abrir: () => abrirLig('cliente', { codigo: x.venda.cliente_codigo || '', nif: x.nif || '', nome: x.nome, rota: String(x.venda.rota || '') }),
                   linhas: [
                     [kz(x.v), t('comprado')],
                     [n0(x.n), t('documentos')],
@@ -374,6 +376,7 @@ function painelInicio(pg) {
                 itens: rows.map((x) => ({
                   valor: comValor ? x.v : x.q,
                   rot: x.nome,
+                  abrir: () => abrirLig('artigo', { codigo: String(x.cod), artigo: x.nome }),
                   linhas: [
                     [comValor ? kz(x.v) : n0(x.q), comValor ? t('vendido') : t('quantidade')],
                     [n0(x.q), t('quantidade')],

@@ -110,7 +110,7 @@ test('drill-down: do documento ao artigo, do artigo à rota e da rota de volta a
   await expect(art.locator('.lig-tiles')).toContainText('Quantidade');
   await art.locator('.lig-rota').first().click();
   const rota = page.locator('dialog.lig-dlg').last();
-  await expect(rota.locator('.lig-sec h3')).toHaveText(['Principais clientes', 'Principais artigos', 'Últimos documentos']);
+  await expect(rota.locator('.lig-sec h3')).toHaveText(['Perdas e tempo parado', 'Principais clientes', 'Principais artigos', 'Últimos documentos']);
   await expect(rota.locator('.lig-tiles')).toContainText(/11\s400/);
   // e daí de novo ao documento
   await rota.locator('.lig-documento').first().click();

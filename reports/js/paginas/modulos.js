@@ -38,6 +38,8 @@ const MODULOS = {
   suporte: () => import('./suporte.js'),
   'painel-carrinha': () => import('./painel-carrinha.js'),
   'valor-portal': () => import('./valor-portal.js'),
+  perdas: () => import('./perdas.js'),
+  calendario: () => import('./calendario.js'),
   relatorios: () => import('./relatorios.js'),
 };
 
@@ -80,6 +82,8 @@ export const MODULO_DA_PAGINA = {
   conformidade: 'conformidade',
   suporte: 'suporte',
   'valor-portal': 'valor-portal',
+  perdas: 'perdas',
+  calendario: 'calendario',
   relatorios: 'relatorios',
   'painel-carrinha': 'painel-carrinha',
   'visitas-dia': 'carteira',

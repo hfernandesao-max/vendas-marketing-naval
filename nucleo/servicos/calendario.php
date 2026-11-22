@@ -15,6 +15,9 @@
  *   HORARIO_SEMANA=07:30-15:00   HORARIO_SABADO=07:30-13:00   HORARIO_FECHO=15:30-16:00   HORARIO_CARGA=16:00-17:00
  *   CALENDARIO_FOLGAS=AAAA-MM-DD,…   (pontes e outras folgas da empresa)
  *   CALENDARIO_TRABALHO=AAAA-MM-DD,… (dias que a empresa decide trabalhar apesar de serem feriado)
+ * As folgas da empresa e os dias de trabalho excepcionais também se definem no portal (Administração › Calendário),
+ * com motivo e registo de quem decidiu (dados-privados/calendario/dias.json); juntam-se aos do .env. Na véspera de um
+ * dia de descanso (feriado ou folga da empresa), às CALENDARIO_HORA_AVISO (17:30), vendedores e Logística são avisados.
  */
 defined('NAVAL_NUCLEO') || exit;
 
@@ -84,7 +87,101 @@ function naval_cal_lista(string $chave): array
 {
     $out = [];
     foreach (preg_split('/[\s,;]+/', naval_config($chave, '')) as $d) if (naval_data_valida($d)) $out[$d] = true;
+    // os definidos no portal (Administração › Calendário)
+    $tipo = ['CALENDARIO_FOLGAS' => 'folgas', 'CALENDARIO_TRABALHO' => 'trabalho'][$chave] ?? '';
+    if ($tipo !== '') foreach (array_keys((array) (naval_cal_portal()[$tipo] ?? [])) as $d) if (naval_data_valida((string) $d)) $out[(string) $d] = true;
     return $out;
+}
+
+/** Folgas e dias de trabalho definidos no portal: {folgas: {dia: {motivo, por, em}}, trabalho: {…}}. */
+function naval_cal_portal(bool $recarregar = false): array
+{
+    static $c = null;
+    if ($c === null || $recarregar) $c = naval_json_ler(naval_pasta('calendario') . '/dias.json') + ['folgas' => [], 'trabalho' => []];
+    return $c;
+}
+
+/**
+ * Define um dia no calendário: «folga» (a empresa não trabalha), «trabalho» (trabalha apesar de ser feriado) ou ''
+ * (volta ao normal). Só dias de hoje em diante; com motivo. Devolve o calendário do portal.
+ */
+function naval_cal_definir(string $dia, string $tipo, string $motivo, string $login): array
+{
+    if (!naval_data_valida($dia)) throw new NavalErro('Data inválida.', 400);
+    if ($dia < date('Y-m-d')) throw new NavalErro('Só se mudam dias de hoje em diante.', 400);
+    if (!in_array($tipo, ['folga', 'trabalho', ''], true)) throw new NavalErro('Tipo inválido.', 400);
+    $motivo = naval_texto($motivo, 120);
+    if ($tipo !== '' && mb_strlen($motivo) < 3) throw new NavalErro('Indique o motivo.', 400);
+    $f = naval_pasta('calendario') . '/dias.json';
+    $c = naval_exclusivo('calendario', function () use ($f, $dia, $tipo, $motivo, $login) {
+        $c = naval_json_ler($f) + ['folgas' => [], 'trabalho' => []];
+        unset($c['folgas'][$dia], $c['trabalho'][$dia]);
+        if ($tipo !== '') $c[$tipo === 'folga' ? 'folgas' : 'trabalho'][$dia] = ['motivo' => $motivo, 'por' => $login, 'em' => date('Y-m-d H:i:s')];
+        ksort($c['folgas']);
+        ksort($c['trabalho']);
+        naval_json_gravar($f, $c);
+        return $c;
+    });
+    naval_registar('calendario_alterado', ['dia' => $dia, 'tipo' => $tipo === '' ? 'normal' : $tipo, 'motivo' => $motivo]);
+    naval_cal_portal(true);
+    return $c;
+}
+
+/**
+ * Próximos dias fora do normal (sem os domingos): feriados, folgas da empresa e dias de trabalho excepcionais, de
+ * $de a $de + $dias, com o motivo e quem decidiu. Lê sem a cache de naval_cal_dia (pode ter mudado neste pedido).
+ */
+function naval_cal_excepcoes(string $de, int $dias = 120): array
+{
+    $p = naval_cal_portal(true);
+    $envF = [];
+    foreach (preg_split('/[\s,;]+/', naval_config('CALENDARIO_FOLGAS', '')) as $d) if (naval_data_valida($d)) $envF[$d] = true;
+    $envT = [];
+    foreach (preg_split('/[\s,;]+/', naval_config('CALENDARIO_TRABALHO', '')) as $d) if (naval_data_valida($d)) $envT[$d] = true;
+    $out = [];
+    $t0 = strtotime($de . ' 12:00');
+    for ($i = 0; $i < $dias; $i++) {
+        $d = date('Y-m-d', $t0 + $i * 86400);
+        $fer = naval_cal_feriados((int) substr($d, 0, 4))[$d] ?? null;
+        $trab = $p['trabalho'][$d] ?? (isset($envT[$d]) ? ['motivo' => 'definido no servidor (.env)', 'por' => '', 'em' => ''] : null);
+        $folga = $p['folgas'][$d] ?? (isset($envF[$d]) ? ['motivo' => 'definido no servidor (.env)', 'por' => '', 'em' => ''] : null);
+        if ($fer === null && $trab === null && $folga === null) continue;
+        $tipo = $fer !== null ? ($trab !== null ? 'trabalho' : 'feriado') : ($folga !== null ? 'folga' : 'trabalho');
+        $x = $trab ?? $folga ?? ['motivo' => '', 'por' => '', 'em' => ''];
+        $out[] = ['dia' => $d, 'tipo' => $tipo, 'feriado' => $fer, 'motivo' => (string) $x['motivo'], 'por' => (string) $x['por'], 'em' => (string) $x['em'],
+            'portal' => isset($p['trabalho'][$d]) || isset($p['folgas'][$d])];
+    }
+    return $out;
+}
+
+/**
+ * Aviso da véspera (CALENDARIO_HORA_AVISO, 17:30, num dia de trabalho): amanhã é feriado ou folga da empresa (o
+ * domingo toda a gente sabe) → notificação a vendedores, supervisores e Logística. Uma vez por dia. Devolve o dia
+ * avisado ou null. $notificar (testes): função(titulo, corpo, textos, chave).
+ */
+function naval_cal_aviso_vespera(int $agora, ?callable $notificar = null): ?string
+{
+    $hoje = date('Y-m-d', $agora);
+    $amanha = date('Y-m-d', strtotime($hoje . ' 12:00') + 86400);
+    if (date('H:i', $agora) < naval_config('CALENDARIO_HORA_AVISO', '17:30')) return null;
+    if (naval_cal_folga($hoje) || !naval_cal_folga($amanha) || date('N', strtotime($amanha . ' 12:00')) === '7') return null;
+    $marca = naval_pasta('calendario') . '/aviso-' . $hoje . '.json';
+    if (is_file($marca)) return null;
+    naval_json_gravar($marca, ['em' => date('Y-m-d H:i:s', $agora), 'dia' => $amanha], false);
+    $c = naval_cal_dia($amanha);
+    $motivo = $c['feriado'] ?: ((naval_cal_portal()['folgas'][$amanha]['motivo'] ?? '') ?: 'folga da empresa');
+    // o próximo dia de trabalho
+    $prox = $amanha;
+    for ($i = 1; $i <= 10 && naval_cal_folga($prox); $i++) $prox = date('Y-m-d', strtotime($amanha . ' 12:00') + $i * 86400);
+    $dmy = function ($d) { return date('d-m-Y', strtotime($d . ' 12:00')); };
+    $v = ['d' => $dmy($amanha), 'm' => $motivo, 'p' => $dmy($prox)];
+    naval_servico('notificacoes');
+    $tx = naval_notif_txt('vespera', $v);
+    $notificar = $notificar ?? function ($tit, $corpo, $textos, $chave) {
+        naval_notificar('dia_descanso', $tit, $corpo, ['chave' => $chave, 'textos' => $textos, 'url' => '../gestao/']);
+    };
+    $notificar($tx['pt'][0], $tx['pt'][1], $tx, 'vespera-' . $amanha);
+    return $amanha;
 }
 
 /**

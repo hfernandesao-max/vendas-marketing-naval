@@ -10,7 +10,8 @@ import { normTxt } from './filtros.js';
 import { t, tv } from './i18n/i18n.js';
 import { seccaoDe } from './paginas/catalogo.js';
 import { paginaAtual, paginasVisiveis, podeGerir, podeVer, SESSAO } from './perfil.js';
-import { $, el, svg, toast } from './util.js';
+import { $, DB, el, svg, toast } from './util.js';
+import { abrir as abrirFicha, procurarDados } from './componentes/ligacoes.js';
 
 // ───────────── Procurar uma função ─────────────
 let dlg = null,
@@ -29,6 +30,8 @@ function filtrar() {
   const q = normTxt(campo.value.trim());
   const todas = paginasVisiveis();
   resultados = !q ? todas : todas.filter((p) => normTxt(t(p.nome) + ' ' + caminho(p) + ' ' + p.nome + ' ' + (p.grupo || '')).includes(q));
+  // e os dados do período: documentos, clientes, artigos, rotas e PO (abrem a ficha respectiva)
+  if (q.length >= 2) resultados = resultados.concat(procurarDados(campo.value.trim(), DB).map((d) => ({ dado: d })));
   marcado = 0;
   desenharLista();
 }
@@ -40,6 +43,25 @@ function desenharLista() {
     return;
   }
   resultados.forEach((p, i) => {
+    if (p.dado) {
+      const li = el('li', 'proc-dado' + (i === marcado ? ' on' : ''));
+      li.id = 'proc-d' + i;
+      li.setAttribute('role', 'option');
+      const ic = el('span', 'proc-ic');
+      ic.innerHTML = svg(p.dado.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
+      const txt = el('span', 'proc-txt');
+      txt.append(el('b', null, p.dado.texto), el('small', null, t(p.dado.rotulo)));
+      li.append(ic, txt);
+      li.addEventListener('click', () => abrir(p));
+      li.addEventListener('mousemove', () => {
+        if (marcado !== i) {
+          marcado = i;
+          realcar();
+        }
+      });
+      lista.append(li);
+      return;
+    }
     const li = el('li', 'proc-item' + (i === marcado ? ' on' : ''));
     li.id = 'proc-' + p.id;
     li.setAttribute('role', 'option');
@@ -85,6 +107,11 @@ function realcar() {
 function abrir(p) {
   fecharProcura();
   $('#app').classList.remove('open');
+  if (p.dado) {
+    if (p.dado.tipo === 'po') location.hash = '#cargas-po';
+    else abrirFicha(p.dado.tipo, p.dado.alvo);
+    return;
+  }
   location.hash = '#' + p.id;
 }
 function montarProcura() {
@@ -131,7 +158,7 @@ function montarProcura() {
 }
 export function abrirProcura() {
   if (!dlg) montarProcura();
-  campo.placeholder = t('Escreva o nome de uma função…');
+  campo.placeholder = t('Função, documento, cliente, artigo, rota ou PO…');
   campo.setAttribute('aria-label', t('Procurar uma função'));
   dlg.querySelector('.proc-dica').textContent = t('↑ ↓ para escolher · Enter para abrir · Esc para fechar · ☆ fixa nos favoritos');
   campo.value = '';

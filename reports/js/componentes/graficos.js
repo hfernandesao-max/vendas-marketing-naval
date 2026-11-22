@@ -81,9 +81,9 @@ const vizTip = (() => {
   };
 })();
 // Marca interactiva: dica ao passar o rato e com o teclado (Tab), destaque, e ligação opcional
-export function interactivo(g, titulo, linhas, href) {
+export function interactivo(g, titulo, linhas, href, abrir) {
   g.setAttribute('tabindex', '0');
-  g.setAttribute('role', href ? 'link' : 'img');
+  g.setAttribute('role', href || abrir ? 'link' : 'img');
   g.setAttribute('aria-label', titulo + ': ' + linhas.map(([v, l]) => l + ' ' + v).join(', '));
   g.classList.add('vx-m');
   const on = (e) => {
@@ -98,10 +98,12 @@ export function interactivo(g, titulo, linhas, href) {
   g.addEventListener('pointerleave', off);
   g.addEventListener('focus', on);
   g.addEventListener('blur', off);
-  if (href) {
+  if (href || abrir) {
+    // drill-down: abrir (a ficha da rota, do cliente, do artigo…) ou ir para a página (href)
     const ir = () => {
       vizTip.esconder();
-      location.hash = href;
+      if (abrir) abrir();
+      else location.hash = href;
     };
     g.addEventListener('click', ir);
     g.addEventListener('keydown', (e) => {
@@ -188,7 +190,7 @@ export function grafBarras(w, { itens, cor = COR.s1, fmt = kzc, altura }) {
     g.append(svgEl('text', { x: 0, y: y0 + linha / 2 + 4, class: 'vx-rot' }, cortar(x.rot, Lr - 14)));
     g.append(svgEl('path', { d: pathBarra(Lr, y0 + (linha - bh) / 2, bw, bh, false), fill: x.cor || cor, class: 'vx-bar' }));
     g.append(svgEl('text', { x: Lr + bw + 8, y: y0 + linha / 2 + 4, class: 'vx-val' }, fmt(x.valor)));
-    interactivo(g, x.titulo || x.rot, x.linhas, x.href);
+    interactivo(g, x.titulo || x.rot, x.linhas, x.href, x.abrir);
     sv.append(g);
   });
   return sv;
@@ -211,7 +213,7 @@ function grafBarrasEmpilhadas(w, { itens, cor, fmt, altura }) {
     g.append(svgEl('text', { x: 0, y: by - 5, class: 'vx-rot' }, cortar(x.rot, w - 4)));
     g.append(svgEl('path', { d: pathBarra(0, by, bw, bh, false), fill: x.cor || cor, class: 'vx-bar' }));
     g.append(svgEl('text', { x: bw + 8, y: by + bh - 1, class: 'vx-val' }, fmt(x.valor)));
-    interactivo(g, x.titulo || x.rot, x.linhas, x.href);
+    interactivo(g, x.titulo || x.rot, x.linhas, x.href, x.abrir);
     sv.append(g);
   });
   return sv;
@@ -325,7 +327,7 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
 // Colunas agrupadas (período e período anterior) com linha de meta. Desenhado ao tamanho real do quadro
 // (sem ampliar o texto): eixo a começar em zero, colunas de largura limitada e centradas, meta como linha
 // tracejada com o rótulo à direita, valores só na série principal.
-export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0, esquerda = 40 }) {
+export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0, esquerda = 40, abrir = null }) {
   const w = el('div', 'gwrap');
   const desenhar = (largura) => {
     const Lw = Math.max(cats.length * (series.length * 12 + 14) + 50, Math.floor(largura || 640)),
@@ -367,7 +369,9 @@ export function barras({ cats, series, meta, metaTxt, altura = 240, rot = 0, esq
         const v = sr.vals[i] || 0,
           h = Math.max(v ? 2 : 0, H - B - y(v)),
           cls = typeof sr.cls === 'function' ? sr.cls(v, i) : sr.cls;
-        const r = mk('rect', { x: x0 + j * bw + 1, y: H - B - h, width: Math.max(2, bw - 2), height: h, rx: 3, class: cls });
+        const r = mk('rect', { x: x0 + j * bw + 1, y: H - B - h, width: Math.max(2, bw - 2), height: h, rx: 3, class: cls + (abrir ? ' g-lig' : '') });
+        // drill-down: a barra abre o detalhe da categoria (o dia, a rota…)
+        if (abrir) r.addEventListener('click', () => abrir(c, i));
         const tt = document.createElementNS(ns, 'title');
         tt.textContent = `${c.titulo || c.txt} · ${sr.nome}: ${n0(v)}`;
         r.append(tt);

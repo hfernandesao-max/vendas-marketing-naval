@@ -561,7 +561,14 @@ R['conciliacao-carrinha'] = (pg) => {
         s: t('coordenador: {a} · responsável: {b}', { a: n0(n('por_aprovar')), b: n0(n('por_fechar')) }),
       },
       { l: t('Fechadas'), v: n0(n('aprovada')), s: t('aprovadas nos dois níveis ou sem diferenças') },
-      { l: t('Faltas'), v: kz(soma('falta_kz')), tone: soma('falta_kz') ? 'bad' : null, s: t('ao preço médio de venda do dia') },
+      {
+        l: t('Faltas'),
+        v: kz(soma('falta_kz')),
+        tone: soma('falta_kz') ? 'bad' : null,
+        s: t('ao preço médio de venda do dia'),
+        abrir: () => (location.hash = '#perdas'),
+        abrirTitulo: t('Ver as perdas por rota'),
+      },
       { l: t('Alertas automáticos'), v: n0(soma('alertas')), tone: soma('alertas') ? 'warn' : null, s: t('artigos assinalados pelo sistema') },
     ]),
   );

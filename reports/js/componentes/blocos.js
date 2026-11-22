@@ -328,6 +328,20 @@ export function tiles(list) {
       if (x.spark && x.spark.length > 1) sEl.append(sparkline(x.spark, x.sparkTitulo));
       d.append(sEl);
     }
+    // drill-down: o quadro abre o que o compõe (x.abrir), com o rato ou com Enter/Espaço
+    if (x.abrir) {
+      d.classList.add('tile-lig');
+      d.tabIndex = 0;
+      d.setAttribute('role', 'button');
+      d.title = x.abrirTitulo || t('Ver o detalhe');
+      d.addEventListener('click', () => x.abrir());
+      d.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          x.abrir();
+        }
+      });
+    }
     w.append(d);
   });
   // Valores que não cabem no quadro: reduz a letra de toda a fila por igual, até caberem.
