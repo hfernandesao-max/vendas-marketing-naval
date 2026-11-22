@@ -500,6 +500,8 @@ function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $font
         naval_registar('relatorio_vendas_gerado', ['dia' => $dia, 'versao' => $n, 'sha256' => $sha]);
         return $r;
     });
+    naval_servico('eventos');
+    naval_evento_seguro('relatorio.vendas_gerado', ['dia' => $dia, 'versao' => $r['versao'], 'por' => $login]);
     $r['envio'] = naval_rv_enviar($r);
     return $r;
 }
@@ -511,6 +513,23 @@ function naval_rv_gerar(string $dia, string $motivo, string $login, ?array $font
  * continua a ser pedida por uma pessoa, com motivo. RELATORIO_AUTOMATICO=0 no .env desliga.
  * $gerar e $fontes são injectáveis (testes). Devolve os dias gerados.
  */
+/** Ouvinte dos eventos de fecho (carrinha conciliada, caixa aprovada): pede ao ciclo que veja já o relatório. */
+function naval_rv_evento_rever(string $evento, array $dados): void
+{
+    naval_json_gravar(naval_pasta('relatorio-vendas') . '/_rever.json', ['em' => time(), 'evento' => $evento, 'dados' => $dados], false);
+}
+
+/** O ciclo deve ver o relatório agora? De 15 em 15 minutos, ou logo depois de um evento de fecho. */
+function naval_rv_rever_agora(int $agora): bool
+{
+    $f = naval_pasta('relatorio-vendas') . '/_rever.json';
+    if (is_file($f)) {
+        @unlink($f);
+        return true;
+    }
+    return (int) date('i', $agora) % 15 < 5;
+}
+
 function naval_rv_automatico(int $agora, ?callable $fontes = null, ?callable $gerar = null): array
 {
     if (naval_config('RELATORIO_AUTOMATICO', '1') === '0') return [];

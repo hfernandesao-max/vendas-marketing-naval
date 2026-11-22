@@ -373,6 +373,10 @@ function naval_caixa_aprovar(string $dia, ?int $versao, string $login, array $ni
         return $c;
     });
     naval_registar($nivel === 1 ? 'caixa_verificada' : 'caixa_aprovada', ['dia' => $dia]);
+    if ($nivel !== 1) {
+        naval_servico('eventos');
+        naval_evento_seguro('caixa.aprovada', ['dia' => $dia]);
+    }
     // aprovação final: o resumo de fim de dia segue para o Financeiro (Multicaixa por TPA, banco e conta)
     if ($nivel === 2) {
         naval_servico('tpa');

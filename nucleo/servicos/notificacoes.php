@@ -28,6 +28,8 @@ const NAVAL_NOTIF_TIPOS = [
     'problema' => ['Problema em produção', 'A vigilância do portal encontrou um problema novo.', 'actualizacoes', 'V', 'critico'],
     'versao' => ['Actualizações do portal', 'Versão instalada, à espera de aprovação ou reposta.', 'actualizacoes', 'V', 'info'],
     'resumo_dia' => ['Resumo do dia', 'Às 18:30: vendas do dia, documentos e a melhor rota.', 'app-gestao', 'V', 'info'],
+    'pendentes' => ['Pendentes do dia', 'Às 07:30 dos dias de trabalho: o que está à sua espera hoje e o que está atrasado.', 'app-gestao', 'Vr', 'aviso'],
+    'pendentes_escalados' => ['Pendentes atrasados', 'O que está atrasado nas aprovações, conferências e validações, com quem o tem para fazer.', 'pendentes-escalamento', 'V', 'aviso'],
     'equipamento_lido' => ['Equipamento perdido lido', 'O código QR de um equipamento dado como perdido ou roubado foi lido sem sessão iniciada.', 'equipamentos-administrar', 'G', 'critico'],
 ];
 /** Textos das notificações em português, inglês e tigrínia (o telefone recebe-as no idioma em que está). */
@@ -70,6 +72,12 @@ const NAVAL_NOTIF_TEXTOS = [
     'perdido_lido' => ['pt' => ['Equipamento {id} lido', 'O código QR de um equipamento dado como perdido ou roubado foi lido às {h} (local aproximado: {l}).'],
         'en' => ['Device {id} scanned', 'The QR code of a device reported lost or stolen was scanned at {h} (approximate location: {l}).'],
         'ti' => ['መሳርሒ {id} ተነቢቡ', 'ናይ ዝጠፍአ ወይ ዝተሰረቐ መሳርሒ QR ኮድ ኣብ {h} ተነቢቡ (ግምታዊ ቦታ፦ {l})።']],
+    'pendentes' => ['pt' => ['À sua espera: {n}', '{a} atrasado(s). Primeiro: {p}.'],
+        'en' => ['Waiting for you: {n}', '{a} overdue. First: {p}.'],
+        'ti' => ['ዝጽበዩኹም፦ {n}', '{a} ዝደንጐዩ። ቀዳማይ፦ {p}።']],
+    'escalados' => ['pt' => ['{n} pendente(s) atrasado(s)', 'Primeiro: {p}. Veja no correio quem os tem para fazer.'],
+        'en' => ['{n} overdue item(s)', 'First: {p}. See in the email who has to act.'],
+        'ti' => ['{n} ዝደንጐዩ ስራሓት', 'ቀዳማይ፦ {p}። መን ክገብሮ ከም ዘለዎ ኣብ ኢመይል ርኣዩ።']],
     'teste' => ['pt' => ['Notificações ligadas', 'Vai receber aqui os alertas do Portal RTM.'],
         'en' => ['Notifications on', 'You will receive Portal RTM alerts here.'],
         'ti' => ['ምልክታታት ተወሊዖም', 'መጠንቀቕታታት Portal RTM ኣብዚ ክትቕበሉ ኢኹም።']],
@@ -405,8 +413,10 @@ function naval_notificar(string $tipo, string $titulo, string $corpo, array $o =
         $subs = naval_notif_subscricoes();
         $remover = [];
         $excluir = array_map('strtolower', array_filter(array_map('strval', (array) ($o['excluir'] ?? []))));
+        $so = isset($o['so']) && is_array($o['so']) ? array_map('strtolower', array_map('strval', $o['so'])) : null;   // só estas pessoas (mensagem pessoal)
         foreach ($dest as $login => $u) {
             if (in_array(strtolower((string) $login), $excluir, true)) continue;   // separação de funções
+            if ($so !== null && !in_array(strtolower((string) $login), $so, true)) continue;
             $pref = naval_notif_preferencias($login);
             if (empty($pref['tipos'][$tipo])) continue;
             $r['destinatarios']++;

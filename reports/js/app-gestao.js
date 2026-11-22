@@ -747,6 +747,27 @@ function textoPendente(x, nomes) {
         .filter(Boolean)
         .join(' · '),
     ];
+  if (x.tipo === 'po_conferir' || x.tipo === 'po_validar')
+    return [
+      x.tipo === 'po_conferir' ? t('PO {n}: conferir a carga no cais', { n: x.numero }) : t('PO {n}: validar a carga conferida', { n: x.numero }),
+      [
+        t('rota {r}', { r: x.rota }),
+        x.promotor,
+        t('{a} artigos · {q} unidades', { a: n0(x.artigos), q: n0(x.quantidade) }),
+        por ? (x.tipo === 'po_conferir' ? t('aprovada por {n}', { n: por }) : t('conferida por {n}', { n: por })) : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ];
+  if (x.tipo === 'ordem')
+    return [
+      {
+        por_executar: t('Guia da {n}: gerar no Pinguim BO', { n: x.numero }),
+        recusada: t('Guia da {n}: recusada, tratar', { n: x.numero }),
+        divergente: t('Guia da {n}: diferente do pedido, corrigir', { n: x.numero }),
+      }[x.estado] || x.numero,
+      [t('rota {r}', { r: x.rota }), x.promotor].filter(Boolean).join(' · '),
+    ];
   if (x.tipo === 'deposito')
     return [
       t('Depósito no banco de {d}: aprovar', { d }),

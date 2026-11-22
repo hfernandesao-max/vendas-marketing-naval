@@ -107,6 +107,40 @@ try {
                 echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
             }
             $esc = function (string $v): string { return htmlspecialchars($v, ENT_XML1 | ENT_QUOTES, 'UTF-8'); };
+            // tarefa contínua iniciada no arranque do servidor (conta SYSTEM, reinicia sozinha se falhar)
+            $arranque = function (string $nome, string $descricao, string $comando, string $argumentos) use ($esc): bool {
+                $xml = '<?xml version="1.0" encoding="UTF-16"?>' . "\r\n"
+                    . '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
+                    . '<RegistrationInfo><Description>' . $esc($descricao) . '</Description></RegistrationInfo>'
+                    . '<Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>'
+                    . '<Principals><Principal id="Author"><UserId>S-1-5-18</UserId><LogonType>ServiceAccount</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals>'
+                    . '<Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>'
+                    . '<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><AllowHardTerminate>true</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable>'
+                    . '<AllowStartOnDemand>true</AllowStartOnDemand><Enabled>true</Enabled><Hidden>false</Hidden><ExecutionTimeLimit>PT0S</ExecutionTimeLimit>'
+                    . '<Priority>7</Priority><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure></Settings>'
+                    . '<Actions Context="Author"><Exec><Command>' . $esc($comando) . '</Command><Arguments>' . $esc($argumentos) . '</Arguments>'
+                    . '<WorkingDirectory>' . $esc(dirname(__DIR__)) . '</WorkingDirectory></Exec></Actions></Task>';
+                $f = naval_act_pasta() . '/tarefa-' . preg_replace('/[^a-z0-9]+/i', '-', $nome) . '.xml';
+                if (file_put_contents($f, "\xFF\xFE" . mb_convert_encoding($xml, 'UTF-16LE', 'UTF-8'), LOCK_EX) === false) return false;
+                passthru('schtasks /Create /F /TN "' . $nome . '" /XML ' . escapeshellarg($f), $r);
+                @unlink($f);
+                return $r === 0;
+            };
+            // robô do Pinguim BO: só quando está configurado (chave, modo robô e receita dos ecrãs afinada)
+            $receita = naval_config('ROBO_RECEITA', dirname(__DIR__) . '/ferramentas/robo-pinguim.receita.json');
+            $node = trim((string) @shell_exec('where node 2>NUL'));
+            $node = $node !== '' ? strtok($node, "\r\n") : '';
+            if (naval_config('ROBO_PINGUIM_CHAVE') !== '' && naval_config('ORDENS_PINGUIM_MODO', 'manual') === 'robo' && is_file($receita) && $node !== '') {
+                if (!$arranque('Portal RTM - Robo Pinguim', 'Executa as ordens do portal (Guias de Remessa) nos ecrãs do Pinguim BO, de 30 em 30 segundos.',
+                    $node, '"' . dirname(__DIR__) . '/ferramentas/robo-pinguim.mjs"')) $falha('Não foi possível criar a tarefa do robô do Pinguim BO.');
+                echo "  ok     tarefa «Portal RTM - Robo Pinguim» contínua (iniciada no arranque do servidor)\n";
+            } else {
+                echo "  aviso  robô do Pinguim BO por ligar: falta " . implode(', ', array_filter([
+                    naval_config('ROBO_PINGUIM_CHAVE') === '' ? 'ROBO_PINGUIM_CHAVE' : '',
+                    naval_config('ORDENS_PINGUIM_MODO', 'manual') !== 'robo' ? 'ORDENS_PINGUIM_MODO=robo' : '',
+                    !is_file($receita) ? 'a receita dos ecrãs (' . basename($receita) . ')' : '',
+                    $node === '' ? 'o Node.js' : ''])) . " — ver docs/LOGISTICA-PO.md; volte a correr «tarefa» depois\n";
+            }
             $script = dirname(__DIR__) . '/ferramentas/sincronizar-pinguim.php';
             $xml = '<?xml version="1.0" encoding="UTF-16"?>' . "\r\n"
                 . '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'

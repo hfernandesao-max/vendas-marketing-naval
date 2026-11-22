@@ -108,6 +108,8 @@ const NAVAL_MATRIZ_TXT = [
     'relatorios-certificar' => 'G  G  -  -  -  -  -  -  -  -  -',
     'assistente'           => '-  V  -  -  -  -  -  -  -  -  -',
     'resumo-diario'        => '-  V  -  -  -  -  -  -  -  -  -',
+    // pendentes atrasados (aprovações, conferências, validações) sobem a quem tem esta linha, com quem os tem para fazer
+    'pendentes-escalamento' => '-  V  -  -  -  -  -  -  -  -  -',
     'fecho-dia'            => '-  V  V  V  -  V  -  -  -  V  -',
     'app-gestao'           => '-  V  V  Vr -  V  -  -  -  -  -',
     // apresentação do portal (o que já existe e o roteiro), para todos os perfis
@@ -215,6 +217,7 @@ function naval_niveis_recurso(string $rec): array
         case 'nif':
         case 'assistente':
         case 'resumo-diario':
+        case 'pendentes-escalamento':
             return ['', 'V'];
         case 'app-gestao':
             return ['', 'Vr', 'V'];

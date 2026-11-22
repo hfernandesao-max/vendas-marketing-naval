@@ -10,7 +10,7 @@
   "conectores": ["pinguim-sql"],
   "eventos": {
     "publica": ["relatorio.vendas_gerado", "caixa.aprovada"],
-    "escuta": []
+    "escuta": ["carrinha.descarga_conciliada", "caixa.aprovada"]
   },
   "depende": ["nucleo"]
 }

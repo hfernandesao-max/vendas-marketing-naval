@@ -5,7 +5,7 @@
   "descricao": "Entrada, sessão, página principal, alertas, notificações no telemóvel, apresentação, modo apresentação, exportações e preferências. Não se desliga.",
   "nucleo": true,
   "paginas": ["inicio", "alertas", "apresentacao"],
-  "recursos": ["pagina-principal", "inicio", "alertas", "apresentacao", "modo-apresentacao", "nif", "excel-completo", "exportar-dados", "estrutura-dados"],
+  "recursos": ["pagina-principal", "inicio", "alertas", "apresentacao", "modo-apresentacao", "nif", "excel-completo", "exportar-dados", "estrutura-dados", "pendentes-escalamento"],
   "api": [
     "v1/auth/token",
     "v1/csp-relatorio",

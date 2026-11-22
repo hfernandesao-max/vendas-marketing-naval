@@ -1,5 +1,40 @@
 ## 22-11-2026
 
+### Robô do Pinguim BO na criação das tarefas do servidor
+
+<!-- tipo: melhoria -->
+
+- `php ferramentas/actualizar.php tarefa` passa a criar também a tarefa «Portal RTM - Robo Pinguim» (contínua, iniciada no arranque do servidor). Só a cria quando o robô está configurado: chave, modo `robo`, receita dos ecrãs e Node.js. Enquanto falta alguma coisa, diz o que falta.
+
+### PO aprovada sozinha dentro das regras e eventos entre módulos
+
+<!-- tipo: funcionalidade -->
+
+- A PO aprova-se sozinha ao ser emitida quando cumpre três regras:
+  - repõe só o que foi vendido, sem artigos acrescentados nem quantidades acima do vendido;
+  - vem de uma conciliação validada sem diferenças, ou já aprovada;
+  - o stock do armazém está confirmado.
+
+  Fica registada como «aprovada automaticamente». O coordenador só recebe as outras, e a PO mostra o motivo («Para aprovar porque: …»). `REQ_APROVACAO_AUTOMATICA=0` no .env desliga.
+- Os módulos passam a publicar de facto os eventos que declaram, e cada evento fica registado:
+  - «carrinha.diferenca_detectada»
+  - «carrinha.descarga_conciliada»
+  - «caixa.aprovada»
+  - «relatorio.vendas_gerado»
+- Ao fechar a última carrinha ou ao aprovar a caixa, o Relatório de Vendas vê-se logo, sem esperar pelo quarto de hora seguinte.
+
+### Pendentes com dono, prazo e escalamento automático
+
+<!-- tipo: funcionalidade -->
+
+- «À sua espera» passa a mostrar também:
+  - as PO aprovadas por conferir no cais (Fiel de Armazém);
+  - as cargas conferidas por validar (Back-Office);
+  - as guias de remessa por tratar no Pinguim BO (a gerar à mão, recusadas ou diferentes do pedido).
+- **Resumo das 07:30:** nos dias de trabalho, cada pessoa recebe no telemóvel e por correio o que está à sua espera, os atrasados primeiro.
+- **Escalamento:** às 10:00 e às 16:30, o que está atrasado sobe à Direcção (linha «pendentes-escalamento» da matriz), com o nome de quem o tem para fazer.
+- As cargas conferidas e as guias ficam atrasadas ao fim de 2 horas. As horas e o envio por correio configuram-se no .env (`PENDENTES_*`).
+
 ### Relatório de Vendas gerado sozinho
 
 <!-- tipo: funcionalidade -->

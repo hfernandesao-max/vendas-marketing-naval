@@ -230,7 +230,24 @@ function naval_req_gravar(string $id, array $linhas, string $nota, ?int $versao,
 /** Emite (fecha) a requisição: a partir daqui não se altera. Só com pelo menos um artigo. */
 function naval_req_emitir(string $id, ?int $versao, string $login): array
 {
-    $r = naval_req_alterar($id, $versao, function ($r) use ($login) {
+    // regras da aprovação automática, vistas sobre o rascunho que vai ser emitido (ficam gravadas na PO)
+    $rasc = naval_req_ler($id);
+    $regras = null;
+    if ($rasc) {
+        $reg = null;
+        $o = (array) ($rasc['origem'] ?? []);
+        if (($o['tipo'] ?? '') === 'conciliacao' && !empty($o['data'])) {
+            try {
+                naval_servico('carrinha');
+                $reg = naval_carr_ler((string) $o['data'], (string) $rasc['rota']);
+            } catch (Throwable $e) {
+                $reg = null;
+            }
+        }
+        $regras = naval_req_regras_auto($rasc, $reg);
+    }
+    $r = naval_req_alterar($id, $versao, function ($r) use ($login, $regras) {
+        if ($regras !== null) $r['regras_auto'] = $regras;
         if (!$r['linhas']) throw new NavalErro('A requisição não tem artigos.', 400);
         naval_req_validar_stock((array) $r['linhas']);   // o stock pode ter mudado desde a gravação
         // armazém de onde sai cada artigo (o do catálogo do Pinguim BO no momento da emissão): é o armazém de carga
@@ -245,6 +262,11 @@ function naval_req_emitir(string $id, ?int $versao, string $login): array
         return $r;
     });
     naval_registar('requisicao_emitida', ['numero' => $id, 'rota' => $r['rota'], 'linhas' => count($r['linhas'])]);
+    // gestão por excepção: a PO que só repõe o que foi vendido, de uma conciliação sem nada por explicar, aprova-se
+    // sozinha; o coordenador só vê as que fogem às regras (com o motivo)
+    if (naval_req_precisa_aprovacao($r) && $regras !== null && $regras['ok'] && naval_config('REQ_APROVACAO_AUTOMATICA', '1') !== '0') {
+        return naval_req_aprovar_auto($id, $regras);
+    }
     // tempo real: quem aprova (o coordenador) recebe logo a notificação no telemóvel
     if (naval_req_precisa_aprovacao($r)) {
         try {
@@ -321,6 +343,67 @@ function naval_req_aprovar(string $id, string $login): array
         return $r;
     });
     naval_registar('requisicao_aprovada', ['numero' => $id, 'rota' => $r['rota']]);
+    return $r;
+}
+
+/**
+ * Regras da aprovação automática (função pura, testada). Aprova-se sozinha a PO que:
+ *   1. vem de uma conciliação validada (reposição pelo vendido) e não de um pedido manual;
+ *   2. em cada artigo, não pede mais do que o vendido nesse dia (+ REQ_AUTO_FOLGA_PCT %, 0 por omissão) e não junta
+ *      artigos que não foram vendidos;
+ *   3. a conciliação desse dia ficou sem diferenças por explicar nem alertas (fechada sozinha ou aprovada);
+ *   4. no total, não passa de REQ_AUTO_MAX_UNIDADES (sem limite por omissão).
+ * O stock do armazém já foi verificado ao emitir. Devolve {ok, motivos: [texto…]} — os motivos vão ao coordenador.
+ */
+function naval_req_regras_auto(array $r, ?array $conciliacao): array
+{
+    $m = [];
+    $o = (array) ($r['origem'] ?? []);
+    if (($o['tipo'] ?? '') !== 'conciliacao') $m[] = 'pedido manual (não vem da reposição pelo vendido)';
+    $folga = max(0.0, (float) naval_config('REQ_AUTO_FOLGA_PCT', '0')) / 100;
+    $acima = [];
+    $novos = [];
+    $total = 0.0;
+    foreach ((array) $r['linhas'] as $l) {
+        $q = (float) ($l['quantidade'] ?? 0);
+        $total += $q;
+        if ($q <= 0) continue;
+        if (($l['origem'] ?? '') !== 'vendido' || $l['sugerida'] === null) $novos[] = (string) $l['codigo'];
+        elseif ($q > (float) $l['sugerida'] * (1 + $folga) + 1e-9) $acima[] = (string) $l['codigo'];
+    }
+    if ($novos) $m[] = 'artigo(s) acrescentado(s) que não foram vendidos: ' . implode(', ', $novos);
+    if ($acima) $m[] = 'acima do vendido: ' . implode(', ', $acima);
+    if (($o['tipo'] ?? '') === 'conciliacao') {
+        // aprovada (diferenças explicadas e aprovadas, ou fechada sozinha) ou validada sem diferenças
+        $estado = (string) ($conciliacao['estado'] ?? '');
+        $ultimaVal = null;
+        foreach (array_reverse((array) ($conciliacao['historico'] ?? [])) as $h) {
+            if (($h['accao'] ?? '') === 'validada') { $ultimaVal = $h; break; }
+        }
+        $semDif = $ultimaVal !== null && (int) ($ultimaVal['diferencas'] ?? 1) === 0;
+        if (!$conciliacao) $m[] = 'conciliação da carrinha não encontrada';
+        elseif ($estado !== 'aprovada' && !$semDif) $m[] = 'a conciliação desse dia tem diferenças por aprovar';
+    }
+    $max = (float) naval_config('REQ_AUTO_MAX_UNIDADES', '0');
+    if ($max > 0 && $total > $max) $m[] = 'acima do limite de ' . $max . ' unidades';
+    return ['ok' => !$m, 'motivos' => $m];
+}
+
+/** Aprovação automática (pelas regras, registada como «automatico», com as regras cumpridas). */
+function naval_req_aprovar_auto(string $id, array $regras): array
+{
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id) {
+        $r = naval_req_ler($id);
+        if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+        if ($r['estado'] !== 'emitida' || !empty($r['aprovada_em'])) return $r;
+        $r['aprovada_por'] = 'automatico';
+        $r['aprovada_em'] = date('Y-m-d H:i:s');
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'aprovada_automatica', 'automatico', ['regras' => 'reposição pelo vendido, conciliação sem diferenças, stock do armazém confirmado']);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    naval_registar('requisicao_aprovada', ['numero' => $id, 'rota' => $r['rota'], 'automatica' => true]);
     return $r;
 }
 

@@ -12,7 +12,7 @@ import { escolherArtigo } from '../componentes/escolher-artigo.js';
 import { MOTIVOS_CARGA as MOTIVO_TXT } from '../componentes/motivos-carga.js';
 import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
 import { dl, n0 } from '../formatos.js';
-import { t } from '../i18n/i18n.js';
+import { t, tv } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { hoje, st } from '../periodo.js';
 import { postJson } from '../servidor.js';
@@ -405,6 +405,11 @@ function editor() {
       t('Emitida por {p} em {d}', { p: assinante(r.emitida_por), d: dl(String(r.emitida_em).slice(0, 10)) + ' ' + String(r.emitida_em).slice(11, 16) }),
     );
     s.append(quem);
+    // aprovação automática pelas regras, ou porque é que esta PO veio ao coordenador
+    if (r.aprovada_por === 'automatico')
+      s.append(el('p', 'note ok', t('Aprovada automaticamente: reposição pelo vendido, conciliação sem diferenças e stock do armazém confirmado.')));
+    else if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && r.regras_auto && r.regras_auto.motivos && r.regras_auto.motivos.length)
+      s.append(el('p', 'aviso', t('Para aprovar porque: {m}.', { m: r.regras_auto.motivos.map((x) => tv(x)).join('; ') })));
     acc.append(
       botao(t('Reimprimir (2.ª via)'), 'ghost', () =>
         enviar({ accao: 'reimprimir', numero: r.numero }, erro).then((x) => {

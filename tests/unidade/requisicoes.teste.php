@@ -187,3 +187,25 @@ teste('PO: fechar com motivo; as esquecidas fecham-se sozinhas e os rascunhos an
     igual(['fechada', 'anulada', 'emitida'], [naval_req_ler($velha['numero'])['estado'], naval_req_ler($rasc['numero'])['estado'], naval_req_ler($nova['numero'])['estado']]);
     igual('automatico', naval_req_ler($velha['numero'])['fechada_por']);
 });
+
+teste('PO: aprovação automática só dentro das regras; o resto vai ao coordenador com o motivo', function () {
+    naval_servico('requisicoes');
+    $po = function (array $linhas, string $tipo = 'conciliacao') {
+        return ['origem' => ['tipo' => $tipo, 'data' => '2026-11-20', 'rota' => '1004'], 'linhas' => $linhas];
+    };
+    $vend = ['codigo' => 'A1', 'quantidade' => 10, 'sugerida' => 10, 'origem' => 'vendido'];
+    $semDif = ['estado' => 'por_aprovar', 'historico' => [['accao' => 'validada', 'diferencas' => 0]]];
+    $comDif = ['estado' => 'por_aprovar', 'historico' => [['accao' => 'validada', 'diferencas' => 3]]];
+    igual(['ok' => true, 'motivos' => []], naval_req_regras_auto($po([$vend]), $semDif), 'reposição pelo vendido, conciliação sem diferenças');
+    verdade(naval_req_regras_auto($po([$vend]), ['estado' => 'aprovada', 'historico' => [['accao' => 'validada', 'diferencas' => 2]]])['ok'], 'diferenças já aprovadas');
+    $x = naval_req_regras_auto($po([$vend]), $comDif);
+    igual(['a conciliação desse dia tem diferenças por aprovar'], $x['motivos']);
+    $x = naval_req_regras_auto($po([['quantidade' => 12] + $vend]), $semDif);
+    igual(['acima do vendido: A1'], $x['motivos']);
+    $x = naval_req_regras_auto($po([$vend, ['codigo' => 'B2', 'quantidade' => 5, 'sugerida' => null, 'origem' => 'adicionado']]), $semDif);
+    igual(['artigo(s) acrescentado(s) que não foram vendidos: B2'], $x['motivos']);
+    $x = naval_req_regras_auto($po([['codigo' => 'A1', 'quantidade' => 4, 'sugerida' => null, 'origem' => 'adicionado']], 'manual'), null);
+    igual(false, $x['ok'], 'pedido manual vai sempre ao coordenador');
+    verdade(in_array('pedido manual (não vem da reposição pelo vendido)', $x['motivos'], true));
+    verdade(naval_req_regras_auto($po([['quantidade' => 6] + $vend]), $semDif)['ok'], 'pedir menos do que o vendido (falta no armazém) também passa');
+});

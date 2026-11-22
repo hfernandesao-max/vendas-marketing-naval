@@ -338,6 +338,9 @@ Regras da fila (padrão «transactional outbox»):
    pelos ecrãs reais (entrar, nova guia, armazém de destino, referência, linhas, gravar, ler o número, procurar pela
    referência). Afinar com `node ferramentas/robo-pinguim.mjs --uma-vez --ver`.
 4. No servidor (ou num posto com acesso ao portal e ao Pinguim BO): `ROBO_PORTAL_URL`, `ROBO_PINGUIM_URL`,
-   `ROBO_PINGUIM_UTILIZADOR`, `ROBO_PINGUIM_SENHA` e uma tarefa agendada com `node ferramentas/robo-pinguim.mjs`.
+   `ROBO_PINGUIM_UTILIZADOR` e `ROBO_PINGUIM_SENHA`. No servidor, `php ferramentas/actualizar.php tarefa` cria sozinho
+   a tarefa «Portal RTM - Robo Pinguim» (contínua, iniciada no arranque) logo que a chave, o modo `robo`, a receita e o
+   Node.js existem; enquanto falta alguma coisa, diz o que falta. O navegador do Playwright tem de estar instalado
+   para a conta SYSTEM (`npx playwright install chromium` numa linha de comandos de administrador).
 5. Ensaio: uma PO de teste do princípio ao fim; confirmar no Pinguim BO o documento gerado e no portal o estado
    «Confirmada no Pinguim BO». Os erros guardam uma captura do ecrã na pasta privada (`robo-pinguim/`).

@@ -289,10 +289,19 @@ function naval_periodicas(?int $agora = null): array
             error_log('[sala] ' . $e->getMessage());
         }
     }
-    // relatório de vendas do dia: gera-se sozinho quando todas as fontes ficam completas (de 15 em 15 minutos chega)
-    if ((int) date('i', $agora) % 15 < 5) {
+    // pendentes: resumo de cada pessoa às 07:30 e escalamento dos atrasados (10:00 e 16:30)
+    try {
+        naval_servico('pendentes');
+        $pd = naval_pendentes_ciclo($agora);
+        if ($pd) $feito['pendentes'] = $pd;
+    } catch (Throwable $e) {
+        error_log('[pendentes] ' . $e->getMessage());
+    }
+    // relatório de vendas do dia: gera-se sozinho quando todas as fontes ficam completas (de 15 em 15 minutos, ou
+    // logo depois de fechar uma carrinha ou a caixa: eventos «carrinha.descarga_conciliada» e «caixa.aprovada»)
+    naval_servico('relatorio-vendas');
+    if (naval_rv_rever_agora($agora)) {
         try {
-            naval_servico('relatorio-vendas');
             $g = naval_bd_configurada() ? naval_rv_automatico($agora) : [];
             if ($g) $feito['relatorio_vendas'] = $g;
         } catch (Throwable $e) {

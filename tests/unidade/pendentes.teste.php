@@ -149,3 +149,58 @@ teste('conciliação: aviso de telemóvel sem sincronizar e de rota sem facturas
     $b = naval_sync_avisos_rota(['ULTIMA_CARGA' => '2026-11-21 08:00:00', 'ULTIMA_VENDA' => '2026-11-09 13:34:00', 'ULTIMA_SINCRONIZACAO' => '2026-11-21 15:40:00'], '2026-11-21', $ref);
     igual(true, strpos($b[0]['texto'], '09-11-2026') !== false);
 });
+
+teste('à sua espera: PO aprovada por conferir no cais (Fiel de Armazém) e carga conferida por validar (Back-Office)', function () {
+    naval_servico('requisicoes');
+    $r = naval_req_criar('1010', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 6]], 'pro10');
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro10');
+    $de = function (string $login, array $pode, string $tipo) use ($e) {
+        return array_values(array_filter(naval_pendentes($login, null, $pode, time(), [])['itens'], function ($x) use ($e, $tipo) { return ($x['numero'] ?? '') === $e['numero'] && $x['tipo'] === $tipo; }));
+    };
+    igual([], $de('fiel', ['conferir' => true], 'po_conferir'), 'por aprovar: ainda não vai ao cais');
+    naval_req_aprovar($e['numero'], 'nathan');
+    $c = $de('fiel', ['conferir' => true], 'po_conferir');
+    igual(1, count($c));
+    igual(['1010', 'nathan', '../reports/#cargas-po'], [$c[0]['rota'], $c[0]['por'], $c[0]['url']]);
+    igual([], $de('pro10', ['conferir' => true], 'po_conferir'), 'quem emitiu não confere');
+    naval_req_confirmar($e['numero'], ['A1' => 6], 'fiel');
+    igual([], $de('fiel', ['conferir' => true], 'po_conferir'), 'conferida sai do cais');
+    $v = $de('bo', ['validar' => true], 'po_validar');
+    igual(['1010', 'fiel', false], [$v[0]['rota'], $v[0]['por'], $v[0]['atraso']]);
+    igual([], $de('fiel', ['validar' => true], 'po_validar'), 'quem conferiu não valida');
+    // passadas as horas de validação (PENDENTES_VALIDAR_HORAS, 2), fica atrasada
+    $tarde = array_values(array_filter(naval_pendentes('bo', null, ['validar' => true], time() + 3 * 3600, [])['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; }));
+    igual(true, $tarde[0]['atraso']);
+    igual('PO ' . $e['numero'] . ' (rota 1010): validar a carga conferida (Back-Office)', naval_pendente_texto($tarde[0]));
+});
+
+teste('pendentes: resumo de cada pessoa às 07:30 e escalamento dos atrasados, uma só vez', function () {
+    naval_servico('pendentes');
+    @unlink(naval_pasta('pendentes') . '/ciclo.json');
+    $env = [];
+    $notificar = function ($tipo, $login, $tit, $corpo, $textos, $chave) use (&$env) { $env[] = [$tipo, $login, $tit]; };
+    $correio = [];
+    $email = function ($para, $assunto) use (&$correio) { $correio[] = [$para, $assunto]; };
+    $contas = [
+        'coord' => ['activo' => true, 'perfil' => 'LOG', 'nome' => 'Coordenador', 'email' => 'coord@exemplo.ao', 'compatibilidade' => true],
+        'semnada' => ['activo' => true, 'perfil' => 'AUD', 'nome' => 'Sem nada', 'email' => 'x@exemplo.ao', 'compatibilidade' => true],
+    ];
+    $carr = [['rota' => '1001', 'promotor' => 'Ana', 'resumo' => ['estado' => 'por_aprovar', 'diferencas' => 2], 'contado_por' => 'tec', 'validado_por' => 'tec']];
+    $dia = '2030-01-10';   // quinta-feira
+    $o = ['contas' => $contas, 'carrinhas' => $carr, 'notificar' => $notificar, 'email' => $email, 'escalar_para' => [['email' => 'dir@exemplo.ao']]];
+    igual([], naval_pendentes_ciclo(strtotime($dia . ' 07:00:00'), $o), 'antes das 07:30 não envia');
+    $r = naval_pendentes_ciclo(strtotime($dia . ' 07:35:00'), $o);
+    igual(1, $r['resumos'], 'só quem tem pendentes recebe');
+    igual(['pendentes', 'coord'], [$env[0][0], $env[0][1]]);
+    igual([['coord@exemplo.ao'], 'À sua espera hoje: 1'], $correio[0]);
+    igual([], naval_pendentes_ciclo(strtotime($dia . ' 08:00:00'), $o), 'uma só vez por dia');
+    // 16:30: a aprovação passou do prazo do fecho → atrasada → sobe à Direcção, com o nome de quem a tem
+    $env = [];
+    $correio = [];
+    $r = naval_pendentes_ciclo(strtotime($dia . ' 16:35:00'), $o);
+    igual(1, $r['escalados']);
+    igual('pendentes_escalados', $env[0][0]);
+    igual([['dir@exemplo.ao'], 'Pendentes atrasados: 1'], $correio[0]);
+    igual([], naval_pendentes_ciclo(strtotime($dia . ' 16:50:00'), $o), 'o escalamento das 16:30 não se repete');
+    igual([], naval_pendentes_ciclo(strtotime('2030-01-13 08:00:00'), $o), 'domingo (folga): nada');
+});

@@ -852,6 +852,10 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
     }
     naval_json_gravar(naval_carr_pasta($dia) . '/' . $rota . '.json', $reg);
     naval_registar('carrinha_regularizada_pinguim', ['data' => $dia, 'rota' => $rota, 'artigos' => array_keys($novas), 'fechada' => $reg['estado'] === 'aprovada']);
+    if ($reg['estado'] === 'aprovada') {
+        naval_servico('eventos');
+        naval_evento_seguro('carrinha.descarga_conciliada', ['data' => $dia, 'rota' => $rota, 'automatica' => true]);
+    }
     return $novas ? array_keys($novas) : ['fecho_automatico'];
 }
 
@@ -1499,6 +1503,9 @@ function naval_carr_validar(string $data, string $rota, array $eu): array
         }
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
         naval_registar('carrinha_validada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'fecho_automatico' => $reg['estado'] === 'aprovada']);
+        naval_servico('eventos');
+        if ($res['diferencas'] > 0) naval_evento_seguro('carrinha.diferenca_detectada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
+        if ($reg['estado'] === 'aprovada') naval_evento_seguro('carrinha.descarga_conciliada', ['data' => $data, 'rota' => $rota, 'automatica' => true]);
         // Reposição: requisição ao armazém com o que foi vendido, em rascunho para o promotor rever (não trava a validação)
         $req = null;
         try {
@@ -1576,6 +1583,8 @@ function naval_carr_fechar(string $data, string $rota, array $eu): array
             'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
         naval_registar('carrinha_aprovada', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
+        naval_servico('eventos');
+        naval_evento_seguro('carrinha.descarga_conciliada', ['data' => $data, 'rota' => $rota, 'automatica' => false]);
         $limite = (float) naval_config('CARRINHA_LIMITE_KZ', '50000');
         if ($res['falta_kz'] >= $limite && $limite > 0) {
             try {
