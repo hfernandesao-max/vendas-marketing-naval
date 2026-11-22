@@ -2171,7 +2171,8 @@ export const EN = {
     'Counts and load checks stay as a draft in this browser and come back when you open the page again.',
   'Sair na mesma': 'Leave anyway',
   'Ficar e gravar': 'Stay and save',
-  'Conte o que voltou na carrinha. Os números do sistema só aparecem depois de gravar a contagem.': 'Count what came back in the van. The system numbers only appear after you save the count.',
+  'Conte o que voltou na carrinha. Os números do sistema só aparecem depois de gravar a contagem.':
+    'Count what came back in the van. The system numbers only appear after you save the count.',
   'Rota {r}: contar o dinheiro entregue': 'Route {r}: count the cash handed in',
   '{v} declarados': '{v} declared',
   'pelo vendedor {n}': 'by salesperson {n}',
