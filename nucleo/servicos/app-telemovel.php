@@ -16,8 +16,8 @@ defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_APP_CODIGO_MIN = 10;        // validade do código QR
 const NAVAL_APP_DIAS_SEM_USO = 90;      // o equipamento expira após 90 dias sem uso
-const NAVAL_APP_NOMES = ['gestao' => 'Naval Gestão', 'portal' => 'Portal RTM'];
-const NAVAL_APP_DESTINO = ['gestao' => '../gestao/', 'portal' => '../reports/'];
+const NAVAL_APP_NOMES = ['gestao' => 'Naval Gestão', 'operacoes' => 'Naval Operações', 'portal' => 'Portal RTM'];
+const NAVAL_APP_DESTINO = ['gestao' => '../gestao/', 'operacoes' => '../operacoes/', 'portal' => '../reports/'];
 
 function naval_app_pasta(string $sub = ''): string
 {
@@ -30,7 +30,21 @@ require_once __DIR__ . '/../seguranca/jwt.php';   // naval_b64url e naval_b64url
 /** App de cada perfil: a app de gestão para quem a tem na matriz de acessos; as restantes pessoas, o portal. */
 function naval_app_da_conta(): string
 {
-    return naval_pode('app-gestao') ? 'gestao' : 'portal';
+    if (naval_pode('app-gestao')) return 'gestao';
+    return naval_app_operacoes_tarefas() ? 'operacoes' : 'portal';
+}
+
+/**
+ * Tarefas da app «Naval Operações» que a conta pode fazer: entrega (o vendedor regista as notas que entrega à
+ * tesouraria), contagem (a Logística conta a carrinha) e carga (o armazém lê o QR da PO e confere a carga).
+ */
+function naval_app_operacoes_tarefas(): array
+{
+    return array_keys(array_filter([
+        'entrega' => naval_pode('caixa-entrega', 'G'),
+        'contagem' => naval_pode('conciliacao-carrinha', 'G'),
+        'carga' => naval_pode('requisicoes-carrinha', 'G') && naval_pode('cargas-po', 'V'),
+    ]));
 }
 
 // ───────────── páginas da app: rapidez ─────────────

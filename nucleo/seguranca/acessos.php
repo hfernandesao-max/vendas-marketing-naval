@@ -68,6 +68,8 @@ const NAVAL_MATRIZ_TXT = [
     // Relatório de Vendas diário (gerar e exportar: E) e folha de caixa do Marketing (tesouraria e apoio RTM registam: G)
     'relatorio-vendas'     => 'V  E  E  -  -  E  V  -  -  E  -',
     'caixa-marketing'      => 'V  V  V  -  -  G  G  -  -  V  -',
+    // entrega do dinheiro pelo vendedor na app «Naval Operações» (notas e moedas que entrega à tesouraria, nas suas rotas)
+    'caixa-entrega'        => '-  V  -  V  G  V  -  -  -  V  -',
     // aprovação da folha de caixa em dois níveis (segregação de funções: quem lança valida, três pessoas diferentes):
     // 1.º nível o superior de quem lança; 2.º nível (final) o responsável máximo. Atribui-se no portal aos perfis próprios.
     'caixa-aprovacao'      => '-  -  -  -  -  -  -  -  -  -  -',
@@ -244,6 +246,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'V', 'E'];
         case 'caixa-marketing':
         case 'multicaixa-tpa':
+        case 'caixa-entrega':
             return ['', 'V', 'G'];
         case 'excel-completo':
         case 'estrutura-dados':

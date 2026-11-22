@@ -451,7 +451,10 @@ R['caixa-marketing'] = (pg) => {
   const conferir = () => {
     if (!D.esperado) return;
     confCorpo.textContent = '';
-    const rotas = [...new Set([...Object.keys(D.esperado), ...ed.entregas.map((x) => x.rota), ...ed.tpa.map((x) => x.rota)])].filter(Boolean).sort();
+    const dec = D.declaracoes || {};
+    const rotas = [...new Set([...Object.keys(D.esperado), ...Object.keys(dec), ...ed.entregas.map((x) => x.rota), ...ed.tpa.map((x) => x.rota)])]
+      .filter(Boolean)
+      .sort();
     rotas.forEach((r) => {
       const esp = D.esperado[r] || { dinheiro: 0, multicaixa: 0 };
       const ent = somaDe(ed.entregas.filter((x) => x.rota === r)),
@@ -461,8 +464,13 @@ R['caixa-marketing'] = (pg) => {
         const td = el('td', 'n' + (feito && Math.abs(v) >= 0.01 ? ' rv-dif' : ''), feito ? kz(v) : '—');
         return td;
       };
+      // declarado pelo vendedor na app Naval Operações (notas e moedas que diz entregar)
+      const d0 = dec[r];
+      const tdDec = el('td', 'n' + (d0 && ent && Math.abs(ent - d0.total) >= 0.01 ? ' rv-dif' : ''), d0 ? kz(d0.total) : '—');
+      if (d0) tdDec.title = t('Declarado às {h}', { h: String(d0.em).slice(11, 16) });
       tr.append(
         el('td', null, r + (D.promotores && D.promotores[r] ? ' · ' + D.promotores[r] : '')),
+        tdDec,
         el('td', 'n', kz(ent)),
         el('td', 'n', kz(esp.dinheiro)),
         celDif(true, ent - esp.dinheiro),
@@ -660,13 +668,14 @@ R['caixa-marketing'] = (pg) => {
     const hl = el('div');
     hl.append(
       el('h2', null, t('Conferência por promotor')),
-      el('p', null, t('Entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.')),
+      el('p', null, t('Declarado pelo vendedor na app × entregue na caixa × recebido no Pinguim BO, por promotor; as diferenças a vermelho.')),
     );
     h.append(hl);
     const tab = el('table', 'cc-tab cx-tab');
     const cab2 = el('tr');
     [
       t('Promotor'),
+      t('Declarado pelo vendedor'),
       t('Dinheiro entregue'),
       t('Dinheiro no Pinguim BO'),
       t('Diferença'),

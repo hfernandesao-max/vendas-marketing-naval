@@ -34,7 +34,12 @@ if (!naval_e_post()) {
     } catch (Throwable $e) {
         error_log('[caixa esperado] ' . $e->getMessage());
     }
-    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'dois_niveis' => naval_caixa_dois_niveis(), 'caixa' => naval_caixa_ler($dia), 'esperado' => $esperado === null ? null : (object) $esperado,
+    // declarações dos vendedores (app Naval Operações): só para a conferência (a contagem continua às cegas)
+    naval_servico('caixa-entregas');
+    $caixaDia = naval_caixa_ler($dia);
+    $declaracoes = naval_cxe_ler($dia);
+    naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => $niveis, 'dois_niveis' => naval_caixa_dois_niveis(), 'caixa' => $caixaDia, 'esperado' => $esperado === null ? null : (object) $esperado,
+        'declaracoes' => (object) $declaracoes, 'conferencia_entregas' => (object) naval_cxe_conferencia($declaracoes, $caixaDia, $esperado),
         'promotores' => (object) naval_promotores(), 'notas' => naval_caixa_notas(),
         'saidas' => NAVAL_CAIXA_SAIDAS, 'bancos' => NAVAL_CAIXA_BANCOS, 'empresas' => NAVAL_CAIXA_EMPRESAS, 'eu' => (string) (((array) naval_utilizador())['login'] ?? ''),
         // registo dos TPA (Multicaixa por TPA): com terminais, cada talão de fecho escolhe o TPA e escreve o período e o total

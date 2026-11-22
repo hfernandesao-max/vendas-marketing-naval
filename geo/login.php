@@ -3,7 +3,7 @@ require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
 naval_servico('app-telemovel');
 
-$allowedRedirects = ['geo.php', 'prospeccao.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../gestao/', '../'];
+$allowedRedirects = ['geo.php', 'prospeccao.php', 'senha.php', 'reports.php', 'view/index.php', 'view/viewDist/index.php', 'index.php', '../reports/', '../equipamentos/', '../gestao/', '../operacoes/', '../'];
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../reports/';
 if (!in_array($redirect, $allowedRedirects, true)) {
     $redirect = '../reports/';

@@ -759,6 +759,11 @@ function textoPendente(x, nomes) {
         .filter(Boolean)
         .join(' · '),
     ];
+  if (x.tipo === 'entrega')
+    return [
+      t('Rota {r}: contar o dinheiro entregue', { r: x.rota }),
+      [t('{v} declarados', { v: kz(x.valor) }), por ? t('pelo vendedor {n}', { n: por }) : ''].filter(Boolean).join(' · '),
+    ];
   if (x.tipo === 'ordem')
     return [
       {

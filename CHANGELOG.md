@@ -1,5 +1,20 @@
 ## 22-11-2026
 
+### App «Naval Operações»: entrega do dinheiro, contagem da carrinha e carga pelo QR
+
+<!-- tipo: funcionalidade -->
+
+Nova app no telemóvel, instalada pelo código QR pessoal do portal como a «Naval Gestão» (mesma entrada e mesmo registo do equipamento). Cada pessoa vê só as suas tarefas:
+
+- **Entregar dinheiro (vendedor):** o vendedor regista as notas e moedas que entrega, com o vendido em dinheiro no Pinguim BO ao lado. Vê logo se bate («Igual ao vendido em dinheiro») ou quanto falta, e envia à tesouraria.
+  - A tesouraria recebe uma notificação e um pendente «contar o dinheiro entregue».
+  - Na folha de caixa, a conferência passa a ter a coluna «Declarado pelo vendedor», ao lado do que foi contado e do que está no Pinguim BO. A contagem da tesouraria continua às cegas.
+  - O vendedor pode corrigir até a tesouraria contar.
+- **Contar a carrinha (Logística):** inventário às cegas linha a linha, com o lançamento do portal (linha activa, Enter para a seguinte, visto, valores fora do normal). A seguir, a pessoa que contou valida a sua própria contagem.
+- **Carregar PO (armazém de carga):** lê o QR impresso na PO com a câmara, ou escreve-se o número, e mostra os artigos a carregar. A conferência é linha a linha, com a diferença em tempo real e o motivo obrigatório em cada diferença.
+- Recurso novo na matriz: «caixa-entrega» (G: o vendedor, nas suas rotas).
+- Quem tem a app de gestão continua a receber a «Naval Gestão». Os outros perfis com alguma destas tarefas recebem a «Naval Operações».
+
 ### Robô do Pinguim BO na criação das tarefas do servidor
 
 <!-- tipo: melhoria -->

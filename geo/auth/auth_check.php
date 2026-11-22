@@ -17,7 +17,7 @@ if (!naval_autenticado()) {
     $basePath = $configuredBasePath ?: '/';
     if (!$configuredBasePath && preg_match('#^(.*)/geo/$#i', $scriptDir . '/', $matches)) {
         $basePath = $matches[1] . '/geo/';
-    } elseif (!$configuredBasePath && preg_match('#^(.*)/(?:reports|equipamentos|gestao)(?:/.*)?/$#i', $scriptDir . '/', $matches)) {
+    } elseif (!$configuredBasePath && preg_match('#^(.*)/(?:reports|equipamentos|gestao|operacoes)(?:/.*)?/$#i', $scriptDir . '/', $matches)) {
         $basePath = $matches[1] . '/geo/';
     }
 

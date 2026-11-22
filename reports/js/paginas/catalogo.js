@@ -118,6 +118,7 @@ export const NOMES_RECURSO = {
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',
   'resumo-diario': 'Resumo diário por correio electrónico (07:00)',
+  'caixa-entrega': 'Entrega do dinheiro pelo vendedor (app Naval Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)',
   'pendentes-escalamento': 'Pendentes atrasados: recebe o escalamento (10:00 e 16:30), com quem os tem para fazer',
   'app-gestao': 'App de gestão (telemóvel)',
   nif: 'Ver o NIF dos clientes',

@@ -1,0 +1,199 @@
+/* App de operações «Naval Operações»: por cima da base da app de gestão (gestao/app.css), o que é próprio desta app:
+   separadores das tarefas, tabelas de lançamento linha a linha (contagem, notas, carga) e o leitor do QR. */
+.op-tarefas {
+  margin: 8px 16px 0;
+}
+.op-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.op-tab th,
+.op-tab td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--linha);
+  text-align: left;
+  vertical-align: middle;
+}
+.op-tab th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--suave);
+  background: var(--cartao);
+}
+.op-tab .n {
+  text-align: right;
+}
+.op-tab input[type='number'] {
+  width: 6.5em;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 17px;
+  text-align: right;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.op-tab select,
+.op-tab input[type='text'] {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.op-cod {
+  font-size: 12px;
+  color: var(--suave);
+}
+.op-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 12px 0;
+  font-size: 15px;
+}
+.op-total strong {
+  font-size: 24px;
+}
+.op-acc {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.op-ok {
+  color: #157347;
+  font-weight: 600;
+}
+.op-mau {
+  color: var(--mau);
+  font-weight: 600;
+}
+.op-video {
+  width: 100%;
+  border-radius: 14px;
+  background: #000;
+}
+.op-numero {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 18px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.op-erro {
+  color: var(--mau);
+}
+/* lançamento linha a linha (componentes/lancamento.js) */
+.lc-tab tr.lc-activa td {
+  background: var(--ceu);
+}
+.lc-tab tr.lc-activa td:first-child {
+  box-shadow: inset 3px 0 0 var(--azul);
+}
+.lc-tab .lc-visto {
+  width: 28px;
+  text-align: center;
+  font-weight: 700;
+  color: #157347;
+  visibility: hidden;
+}
+.lc-tab tr.lc-feita .lc-visto {
+  visibility: visible;
+}
+.lc-tab tr.lc-atipico td {
+  background: var(--aviso-f);
+}
+.lc-atipico-txt {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--aviso);
+}
+.lc-dif {
+  display: inline-block;
+  min-width: 2.5em;
+  margin-left: 6px;
+  font-weight: 700;
+}
+.lc-dif-ok {
+  color: #157347;
+}
+.lc-dif-mal {
+  color: var(--mau);
+}
+.lc-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+.lc-procura {
+  flex: 1 1 200px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.lc-prog {
+  font-size: 13px;
+  color: var(--suave);
+}
+.lc-prog.lc-prog-ok {
+  color: #157347;
+  font-weight: 600;
+}
+.lc-gravar {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 3;
+}
+@media (prefers-color-scheme: dark) {
+  .op-ok,
+  .lc-dif-ok,
+  .lc-tab .lc-visto,
+  .lc-prog.lc-prog-ok {
+    color: #4ade80;
+  }
+}
+
+/* janelas e botões dos componentes do portal (confirmação de valores fora do normal) */
+.dlg {
+  max-width: min(92vw, 480px);
+  border: 1px solid var(--linha);
+  border-radius: 18px;
+  padding: 0;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.dlg form > div {
+  padding: 14px 16px;
+}
+.dlg .dlg-f {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+}
+.btn.ghost,
+.ag-sec-b {
+  background: var(--grelha);
+  color: var(--texto);
+}

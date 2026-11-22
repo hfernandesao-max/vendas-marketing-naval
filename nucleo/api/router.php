@@ -73,6 +73,7 @@ function naval_api_rotas(): array
         'v1/robo/ordens' => [['GET', 'POST'], 'publico', 'robo-ordens.php', []],
         'v1/relatorio-vendas' => [['GET', 'POST'], 'jwt', 'relatorio-vendas.php', []],
         'v1/caixa' => [['GET', 'POST'], 'jwt', 'caixa.php', []],
+        'v1/caixa-entrega' => [['GET', 'POST'], 'jwt', 'caixa-entrega.php', []],
         'v1/multicaixa-tpa' => [['GET', 'POST'], 'jwt', 'multicaixa-tpa.php', []],
         'v1/conversao' => [['GET'], 'jwt', 'conversao.php', []],
         'v1/carteira' => [['GET'], 'jwt', 'carteira.php', []],
