@@ -5381,4 +5381,9 @@ export const EN = {
   '% acumulada': 'cumulative %',
   'A mostrar os {a} de maior valor de {b}.': 'Showing the {a} highest-value of {b}.',
   'Abrir o detalhe': 'Open the detail',
+  'Estado das fontes de dados': 'Data source status',
+  'Todas as fontes ligadas': 'All sources connected',
+  'Sem ligação ao Pinguim BO': 'No connection to Pinguim BO',
+  'verificado {h}': 'checked {h}',
+  'Verificar agora': 'Check now',
 };

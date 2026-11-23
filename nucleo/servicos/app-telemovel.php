@@ -43,10 +43,12 @@ function naval_app_da_conta(): string
  */
 function naval_app_disponiveis(): array
 {
+    // o super administrador (quem desenvolve e testa a plataforma) instala todas as apps
+    if (naval_perfil() === 'SADM') return ['gestao', 'operacoes', 'portal'];
     $out = [];
     if (naval_pode('app-gestao')) $out[] = 'gestao';
     if (naval_app_operacoes_tarefas()) $out[] = 'operacoes';
-    if (!$out || naval_perfil() === 'SADM') $out[] = 'portal';
+    if (!$out) $out[] = 'portal';
     return $out;
 }
 
@@ -56,6 +58,8 @@ function naval_app_disponiveis(): array
  */
 function naval_app_operacoes_tarefas(): array
 {
+    // o super administrador vê todas as tarefas (para as testar), com o âmbito e os registos de sempre
+    if (naval_perfil() === 'SADM') return ['entrega', 'visitas', 'mercadoria', 'contagem', 'carga'];
     return array_keys(array_filter([
         'entrega' => naval_pode('caixa-entrega', 'G'),
         'visitas' => naval_pode('caixa-entrega', 'G') && naval_pode('visitas-dia'),

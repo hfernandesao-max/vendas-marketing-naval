@@ -1,5 +1,16 @@
 ## 23-11-2026
 
+### Fontes de dados: painel de estado; o super administrador instala todas as apps
+
+<!-- tipo: melhoria -->
+
+- **Painel das fontes** no padrão das páginas de estado dos serviços:
+  - fundo sólido;
+  - estado geral no topo («Todas as fontes ligadas», «Ligação parcial»…), com a hora da última verificação;
+  - uma linha por fonte com ícone, estado em texto (Ligada / Atenção / Sem ligação), detalhe e última leitura;
+  - botão «Verificar agora».
+- **Super administrador:** a janela «App no telemóvel» passa a oferecer as três apps (Naval Gestão, Naval Operações e o portal), e a Naval Operações abre com todas as tarefas para as testar.
+
 ### Gráficos: cada linha abre o detalhe, em todos os gráficos
 
 <!-- tipo: melhoria -->

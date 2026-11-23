@@ -109,24 +109,74 @@ export function mostrarFontes() {
     ? (LIGACOES.pinguim.estado === 'ok' ? t('consulta directa') : t('Pinguim BO sem ligação')) + ' · ' + desde(LIGACOES.pinguim.hora)
     : t('A verificar…');
   $('#fontes-mini-t').textContent = geral === 'erro' ? t('Sem ligação') : geral === 'aviso' ? t('Ligação parcial') : geral === 'ok' ? t('Ligado') : '…';
+  // Painel de estado (padrão das páginas de estado dos serviços: cabeçalho com o estado geral, uma linha por fonte com
+  // ícone e estado em texto — não só a cor, WCAG 1.4.1 —, o detalhe e a última leitura; «Verificar agora» no fim)
   const det = $('#fontes-det');
   det.replaceChildren();
+  det.setAttribute('role', 'dialog');
+  det.setAttribute('aria-label', t('Estado das fontes de dados'));
+  const ESTADO = {
+    ok: [t('Ligada'), '✓'],
+    aviso: [t('Atenção'), '!'],
+    erro: [t('Sem ligação'), '✕'],
+    '?': [t('A verificar…'), '…'],
+  };
+  const cab = el('div', 'fd-cab ' + (geral || 'verif'));
+  const cabTxt = el('div');
+  cabTxt.append(
+    el(
+      'b',
+      null,
+      geral === 'ok'
+        ? t('Todas as fontes ligadas')
+        : geral === 'erro'
+          ? t('Sem ligação ao Pinguim BO')
+          : geral === 'aviso'
+            ? t('Ligação parcial')
+            : t('A verificar…'),
+    ),
+    el(
+      'span',
+      null,
+      t('{a} de {b} fontes ligadas', { a: lig, b: ks.length }) +
+        (LIGACOES.pinguim.hora ? ' · ' + t('verificado {h}', { h: desde(LIGACOES.pinguim.hora) }) : ''),
+    ),
+  );
+  cab.append(el('span', 'fd-ico', (ESTADO[geral] || ESTADO['?'])[1]), cabTxt);
+  det.append(cab);
+  const lista = el('ul', 'fd-lista');
   ks.forEach((k) => {
-    const d = el('div');
-    d.append(
-      el('i', 'dot ' + (LIGACOES[k].estado === '?' ? '' : LIGACOES[k].estado)),
+    const e = LIGACOES[k].estado in ESTADO ? LIGACOES[k].estado : '?';
+    const li = el('li', 'fd-' + (e === '?' ? 'verif' : e));
+    const txt = el('div', 'fd-txt');
+    txt.append(
       el('b', null, t(NOMES_FONTE[k])),
       el('span', null, LIGACOES[k].txt + (k === 'pinguim' && LIGACOES[k].hora ? ' · ' + desde(LIGACOES[k].hora) : '')),
     );
-    det.append(d);
+    li.append(el('span', 'fd-ico', ESTADO[e][1]), txt, el('span', 'fd-estado', ESTADO[e][0]));
+    lista.append(li);
   });
+  det.append(lista);
+  const rod = el('div', 'fd-rod');
+  const verificar = el('button', 'btn sm ghost', t('Verificar agora'));
+  verificar.type = 'button';
+  verificar.addEventListener('click', () => {
+    verificar.disabled = true;
+    verificar.textContent = t('A verificar…');
+    pingPinguim().finally(() => {
+      verificar.disabled = false;
+      verificar.textContent = t('Verificar agora');
+    });
+  });
+  rod.append(verificar);
   // Super administrador: diagnóstico do servidor (PHP, .env, ligações) pela API, com o token
   if (SESSAO && (SESSAO.permissoes || {})['admin-config']) {
     const b = el('button', 'linkbtn', t('Diagnóstico do servidor'));
     b.type = 'button';
     b.addEventListener('click', () => apiDescarregar('vendas/diagnostico', 'diagnostico-servidor.json').catch((e) => toast(e.message, 6000)));
-    det.append(b);
+    rod.append(b);
   }
+  det.append(rod);
   $('#fontes').title = ks.map((k) => t(NOMES_FONTE[k]) + ': ' + LIGACOES[k].txt).join('\n');
 }
 /** Verifica o Pinguim BO, o stock e o OLAP no servidor (ao entrar e depois de 5 em 5 minutos). */

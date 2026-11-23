@@ -5282,4 +5282,9 @@ export const TI = {
   '% acumulada': '% ድምር',
   'A mostrar os {a} de maior valor de {b}.': 'ካብ {b} እቶም {a} ዝለዓለ ዋጋ ዘለዎም ይርኣዩ ኣለዉ።',
   'Abrir o detalhe': 'ዝርዝር ክፈት',
+  'Estado das fontes de dados': 'ኩነታት ምንጭታት ሓበሬታ',
+  'Todas as fontes ligadas': 'ኩሎም ምንጭታት ተራኺቦም',
+  'Sem ligação ao Pinguim BO': 'ምስ Pinguim BO ምትእስሳር የለን',
+  'verificado {h}': 'ዝተረጋገጸ {h}',
+  'Verificar agora': 'ሕጂ ኣረጋግጽ',
 };

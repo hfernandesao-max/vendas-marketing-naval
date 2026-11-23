@@ -40,3 +40,24 @@ test('ligação parcial: a bolinha das fontes alterna entre verde e âmbar', asy
   const anim = await page.locator('#fontes-dot').evaluate((e) => getComputedStyle(e).animationName);
   expect(anim).toBe('fontes-parcial');
 });
+
+test('painel das fontes: estado geral, uma linha por fonte com o estado em texto, sólido e com «Verificar agora»', async ({ page }) => {
+  let pings = 0;
+  await abrir(page, '#inicio');
+  page.on('request', (r) => {
+    if (r.url().includes('vendas/estado')) pings++;
+  });
+  await page.locator('#fontes').click();
+  const det = page.locator('#fontes-det');
+  await expect(det).toBeVisible();
+  await expect(det.getByRole('dialog').or(det)).toHaveAttribute('role', 'dialog');
+  await expect(det.locator('.fd-cab b')).not.toBeEmpty();
+  await expect(det.locator('.fd-lista li').first()).toContainText('Pinguim BO (vendas)');
+  await expect(det.locator('.fd-lista li .fd-estado').first()).not.toBeEmpty();
+  // superfície sólida: o fundo não é transparente
+  const fundo = await det.evaluate((e) => getComputedStyle(e).backgroundImage);
+  expect(fundo).toContain('gradient');
+  const antes = pings;
+  await det.getByRole('button', { name: 'Verificar agora' }).click();
+  await expect.poll(() => pings).toBeGreaterThan(antes);
+});
