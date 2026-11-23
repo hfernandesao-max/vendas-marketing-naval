@@ -257,7 +257,8 @@ teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, c
 
 teste('função «Controlo de stock»: só o stock de todos os armazéns e carrinhas e as vendas por artigo; dois passos; todas as rotas', function () {
     $f = naval_funcoes_iniciais()['P-STOCK'];
-    igual(['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'suporte' => 'V', 'vendas-artigo' => 'E'], $f['permissoes']);
+    igual(['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'suporte' => 'V', 'vendas-artigo' => 'E', 'vendas-promotor' => 'E',
+        'vendas-promotor-artigo' => 'E'], $f['permissoes']);
     igual([true, false, 'base'], [$f['dois_passos'], $f['por_rota'], $f['tipo']]);
     foreach (['caixa-marketing', 'clientes', 'documentos', 'pagamentos', 'acessos', 'conciliacao-carrinha', 'requisicoes-carrinha', 'excel-completo'] as $r)
         igual(false, isset($f['permissoes'][$r]), 'sem ' . $r);

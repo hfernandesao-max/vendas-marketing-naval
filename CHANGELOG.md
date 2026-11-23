@@ -23,7 +23,7 @@
 
 <!-- tipo: funcionalidade -->
 
-- Nova função de acesso com o menor privilégio: o stock de todos os armazéns e de todas as carrinhas, por artigo, e as vendas por artigo, com exportação para Excel (cada exportação fica registada).
+- Nova função de acesso com o menor privilégio: o stock de todos os armazéns e de todas as carrinhas, por artigo, e as vendas por artigo, por promotor e por promotor e artigo, com exportação para Excel (cada exportação fica registada).
 - Fica de fora o resto: clientes, documentos, cobranças, caixa, cargas e aprovações. Vê todas as rotas e entra com os dois passos.
 - Para quem também conta stock, junta-se a função «Contar as carrinhas» (contagem às cegas e validação). A separação de funções impede que quem conta aprove a sua contagem.
 

@@ -104,11 +104,12 @@ function naval_funcoes_iniciais(): array
     $f['P-COORD'] = ['nome' => 'Coordenação comercial e operacional', 'descricao' => 'Coordena todos os promotores e as rotas: vendas, clientes, cargas, stock, requisições e terreno.',
         'tipo' => 'base', 'permissoes' => $coord + ['stock-armazem' => 'V', 'plano-cargas' => 'V'], 'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
     // Controlo de stock (consulta): menor privilégio (ISO/IEC 27001:2022 A.5.15, A.5.18, A.8.2, A.8.3) — o stock de todos
-    // os armazéns e de todas as carrinhas, por artigo, e as vendas por artigo para o comparar com a saída; exporta para
+    // os armazéns e de todas as carrinhas, por artigo, e as vendas por artigo e por promotor para o comparar com a saída; exporta para
     // Excel (cada exportação fica registada). Só consulta: sem preços de compra, clientes, caixa, cargas nem aprovações;
     // todas as rotas (sem limite por rota) e entrada em dois passos.
-    $f['P-STOCK'] = ['nome' => 'Controlo de stock', 'descricao' => 'Consulta do stock de todos os armazéns e carrinhas por artigo e das vendas por artigo.',
-        'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'vendas-artigo' => 'E', 'suporte' => 'V'],
+    $f['P-STOCK'] = ['nome' => 'Controlo de stock', 'descricao' => 'Consulta do stock de todos os armazéns e carrinhas por artigo e das vendas por artigo e por promotor.',
+        'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'vendas-artigo' => 'E',
+            'vendas-promotor' => 'E', 'vendas-promotor-artigo' => 'E', 'suporte' => 'V'],
         'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
     // Responsável da área de negócio: tudo o que a Direcção e a Direcção comercial vêem e fazem (o nível mais alto de
     // cada uma), sem a administração do portal nem configurações (menor privilégio, ISO/IEC 27001:2022 A.5.15 e A.8.2):
