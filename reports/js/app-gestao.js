@@ -32,6 +32,7 @@ import {
   ligarConsulta,
   vendas,
 } from './app-gestao-consulta.js';
+import { tArtigo } from './i18n/artigos.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -642,7 +643,7 @@ function folhaRota(rota) {
         .forEach((x) => {
           const li = el('div', 'ag-feed-l');
           const tx = el('span', 'ag-feed-t');
-          tx.append(el('strong', null, x.produto || x.codigo), el('span', null, x.codigo || ''));
+          tx.append(el('strong', null, tArtigo(x.produto) || x.codigo), el('span', null, x.codigo || ''));
           li.append(tx, el('span', 'ag-valor' + ((+x.quantidade || 0) < 0 ? ' desce' : ''), n0(+x.quantidade || 0)));
           l.append(li);
         });

@@ -11,6 +11,7 @@ import { hoje } from '../periodo.js';
 import { postJson } from '../servidor.js';
 import { b64, chaveTxt, el, somaDias, toast } from '../util.js';
 import { apiDescarregar, apiFetch } from '../api.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 const PC = { data: null, resp: null, rotas: null, sujo: false, mud: 0, gravando: false, erro: null, guardadoEm: null, hist: null };
 // Limite de peso: kg planeados (quantidade × kg por unidade de carga do artigo), capacidade da viatura (pela matrícula)
@@ -1161,7 +1162,7 @@ function cartaoRota(r, d, dls) {
       );
     detalhe.append(ul);
     if (cg.sem_grupo.length)
-      detalhe.append(el('p', 'aviso', t('Sem artigo do plano: {a}', { a: cg.sem_grupo.map((x) => x.codigo + ' ' + x.artigo).join('; ') })));
+      detalhe.append(el('p', 'aviso', t('Sem artigo do plano: {a}', { a: cg.sem_grupo.map((x) => x.codigo + ' ' + tArtigo(x.artigo)).join('; ') })));
   }
   d.listas.artigos.forEach((a) => {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });

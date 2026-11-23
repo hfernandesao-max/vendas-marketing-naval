@@ -20,6 +20,7 @@ import { hoje } from '../periodo.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { R } from './registo.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 let vista = '';
 let PO = null; // PO aberta no cais: {requisicao, motivos} | {falhou}
@@ -210,11 +211,11 @@ function vistaConferir() {
   const linhas = r.linhas.map((l) => {
     const tr = el('tr');
     const q = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
-    q.setAttribute('aria-label', t('Carregado') + ' · ' + l.artigo);
+    q.setAttribute('aria-label', t('Carregado') + ' · ' + tArtigo(l.artigo));
     const ck = el('input');
     ck.type = 'checkbox';
-    ck.setAttribute('aria-label', t('Visto') + ' · ' + l.artigo);
-    const m = campoMotivo(t('Motivo') + ' · ' + l.artigo);
+    ck.setAttribute('aria-label', t('Visto') + ' · ' + tArtigo(l.artigo));
+    const m = campoMotivo(t('Motivo') + ' · ' + tArtigo(l.artigo));
     m.w.hidden = true;
     const actual = () => {
       const dif = q.value !== '' && Number(q.value) !== Number(l.quantidade);
@@ -229,7 +230,7 @@ function vistaConferir() {
     tq.append(q, diferencaViva(q, l.quantidade), m.w);
     const tc = el('td', 'n');
     tc.append(ck);
-    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), tq, tc);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, tArtigo(l.artigo)), el('td', 'n', n0(l.quantidade)), tq, tc);
     tab.append(tr);
     return { l, q, ck, m, tr };
   });
@@ -309,7 +310,7 @@ function vistaConferir() {
       tr: x.tr,
       campos: [x.q, x.ck],
       codigo: x.l.codigo,
-      texto: x.l.artigo,
+      texto: tArtigo(x.l.artigo),
       preenchida: () => x.ck.checked && x.q.value !== '',
       atipico: () => quantidadeAtipica(x.q.value, { unidade: x.l.unidade, esperado: Number(x.l.quantidade) }),
     })),
@@ -369,7 +370,7 @@ function rever(r) {
     r.linhas.forEach((l) => {
       const tr = el('tr', Math.abs((l.entregue || 0) - l.quantidade) > 0.0001 ? 'cp-dif' : null);
       const m = l.motivo ? t(MOTIVOS_CARGA[l.motivo.codigo] || l.motivo.codigo) + (l.motivo.texto ? ' · ' + l.motivo.texto : '') : '';
-      tr.append(el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), el('td', 'n', n0(l.entregue)), el('td', null, m));
+      tr.append(el('td', null, tArtigo(l.artigo)), el('td', 'n', n0(l.quantidade)), el('td', 'n', n0(l.entregue)), el('td', null, m));
       tab.append(tr);
     });
     const erro = msgErro();
@@ -468,7 +469,7 @@ function janelaManual(o) {
     tab.append(h);
     o.linhas.forEach((l) => {
       const tr = el('tr');
-      tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), el('td', null, l.armazem_origem || '—'));
+      tr.append(el('td', 'cc-cod', l.codigo), el('td', null, tArtigo(l.artigo)), el('td', 'n', n0(l.quantidade)), el('td', null, l.armazem_origem || '—'));
       tab.append(tr);
     });
     const copiar = botao(t('Copiar as linhas'), 'ghost sm', () => {

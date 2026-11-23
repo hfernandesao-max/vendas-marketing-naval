@@ -177,7 +177,7 @@ test('carga pela requisição: existências + requisição, documento e armazém
   await expect(c.getByLabel('Armazém de carga')).toHaveJSProperty('readOnly', true);
   await expect(c.locator('.pc-carga')).toContainText('contado no fecho de 24-10-2026');
   await expect(c.locator('.pc-carga')).toContainText('Fraldas: 37 + 150 = 187');
-  await expect(c.locator('.pc-carga')).toContainText('10000293 SOAP BROWN CONFIANC');
+  await expect(c.locator('.pc-carga')).toContainText('10000293 SABÃO CASTANHO CONFIANC');
   // só os motoristas activos e com a carta válida no dia
   const mot = c.getByLabel('Motorista');
   await expect(mot.locator('option')).toHaveText(['—', 'Adão Paulo']); // só o nome

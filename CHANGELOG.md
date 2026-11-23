@@ -1,5 +1,20 @@
 ## 23-11-2026
 
+### Nomes dos artigos na língua escolhida; todas as contas com acessos por funções
+
+<!-- tipo: melhoria -->
+
+- **Artigos traduzidos** em tigrínia, inglês e português, em todas as tabelas, Excel, gráficos, fichas, conciliação, PO, cargas e app Naval Operações:
+  - os termos genéricos traduzem-se: fraldas de bebé, sabão, sabonete, cores, tamanhos, com aroma, em barra, extra longo…;
+  - em português, os termos em inglês que vêm do Pinguim BO passam a português («SOAP BROWN» → «SABÃO CASTANHO», «MEDIUM» → «MÉDIO»);
+  - marcas, linhas de produto, medidas e embalagens ficam como estão (NAVAL, MIMO, CONFIANÇA, MOSSI, 20x850g…), como tudo o que não tem tradução;
+  - a procura encontra pelo nome original e pelo traduzido; as ligações e os dados gravados usam sempre o nome original.
+- **Acessos por funções em todas as contas**, segundo o padrão da indústria (RBAC, NIST/INCITS 359; ISO/IEC 27001 A.5.15 e A.5.18):
+  - as contas que ainda tinham um perfil manual passam sozinhas, uma vez, para funções, **sem tirar nem acrescentar nenhum acesso**;
+  - quando a função-base dá exactamente os mesmos acessos, a conta passa para ela;
+  - quando não dá, fica uma função de transição «T-perfil» com os acessos exactos do perfil, marcada para o dono a trocar pelas funções do trabalho na revisão trimestral;
+  - cada passagem fica registada com o perfil anterior. `FUNCOES_MIGRAR=0` desliga.
+
 ### Promotores sempre actualizados a partir do Pinguim BO
 
 <!-- tipo: melhoria -->

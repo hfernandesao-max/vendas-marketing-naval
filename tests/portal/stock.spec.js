@@ -76,7 +76,7 @@ test('stock por carrinha: filtro geral de rotas e de artigo, sem nova consulta �
   await page.evaluate(() => (location.hash = '#stock-carrinha?artigo=fraldas'));
   // os filtros gerais somam-se: rota 1002 (mantida) e artigo «fraldas»
   await expect(page.locator('section[id^="s-sc-car-"] tbody tr')).toHaveCount(1);
-  await expect(page.locator('#s-sc-car-1002')).toContainText('FRALDAS NAVAL LARGE');
+  await expect(page.locator('#s-sc-car-1002')).toContainText('FRALDAS NAVAL GRANDE'); // nome traduzido (LARGE → GRANDE)
   expect(pedidos).toHaveLength(1);
 });
 

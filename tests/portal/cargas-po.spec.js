@@ -43,13 +43,13 @@ test('cargas (PO): conferir no cais exige o visto em todas as linhas e o motivo 
   await expect(page.locator('.cp-res')).toContainText('0 de 2 conferidas · diferenças: 1 (-2 un.)');
   // diferença viva ao lado do campo: ✓ verde se bate com o pedido, senão a diferença a vermelho
   const linhaSabao = page.locator('.cp-tab tr', { has: page.getByLabel('Carregado · SABÃO VERDE') });
-  const linhaFraldas = page.locator('.cp-tab tr', { has: page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM') });
+  const linhaFraldas = page.locator('.cp-tab tr', { has: page.getByLabel('Carregado · FRALDAS NAVAL MÉDIO') });
   await expect(linhaSabao.locator('.lc-dif')).toHaveText('−2');
   await expect(linhaSabao.locator('.lc-dif')).toHaveClass(/lc-dif-mal/);
   await expect(linhaFraldas.locator('.lc-dif')).toHaveText('✓');
   await page.getByRole('button', { name: 'Concluir conferência' }).click();
   await expect(page.locator('.cp-conf .erro')).toContainText('Ponha o visto em todas as linhas');
-  await page.getByLabel('Visto · FRALDAS NAVAL MEDIUM').check();
+  await page.getByLabel('Visto · FRALDAS NAVAL MÉDIO').check();
   await page.getByLabel('Visto · SABÃO VERDE').check();
   await page.getByRole('button', { name: 'Concluir conferência' }).click();
   await expect(page.locator('.cp-conf .erro')).toContainText('Indique o motivo');
@@ -165,7 +165,7 @@ test('cargas (PO): valores fora do normal pedem confirmação; Enter passa à li
   const erros = await abrir(page, '#cargas-po');
   await page.getByLabel('Número da PO').fill('PO-2026-000412');
   await page.getByRole('button', { name: 'Abrir' }).click();
-  const fraldas = page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM');
+  const fraldas = page.getByLabel('Carregado · FRALDAS NAVAL MÉDIO');
   const linhaFraldas = page.locator('.cp-tab tr', { has: fraldas });
   // a linha activa fica destacada; Enter passa ao visto e depois à linha seguinte
   await fraldas.focus();
@@ -174,25 +174,25 @@ test('cargas (PO): valores fora do normal pedem confirmação; Enter passa à li
   await expect(linhaFraldas).toHaveClass(/lc-atipico/);
   await expect(linhaFraldas.locator('.lc-atipico-txt')).toContainText('mais do dobro do esperado (400)');
   await page.keyboard.press('Enter');
-  await expect(page.getByLabel('Visto · FRALDAS NAVAL MEDIUM')).toBeFocused();
+  await expect(page.getByLabel('Visto · FRALDAS NAVAL MÉDIO')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('Carregado · SABÃO VERDE')).toBeFocused();
   // o rascunho guarda só o que mudou e volta ao reabrir a PO
-  await page.getByLabel('Visto · FRALDAS NAVAL MEDIUM').check();
+  await page.getByLabel('Visto · FRALDAS NAVAL MÉDIO').check();
   await page.getByRole('button', { name: 'Abrir' }).click();
-  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM')).toHaveValue('4000');
-  await expect(page.getByLabel('Visto · FRALDAS NAVAL MEDIUM')).toBeChecked();
+  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MÉDIO')).toHaveValue('4000');
+  await expect(page.getByLabel('Visto · FRALDAS NAVAL MÉDIO')).toBeChecked();
   await expect(page.locator('.lc-reposto')).toContainText('Rascunho reposto');
   await page.getByRole('button', { name: 'Marcar todas iguais ao pedido' }).click();
-  await page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM').fill('4000');
-  await page.getByLabel('Motivo · FRALDAS NAVAL MEDIUM').selectOption('falta_armazem');
+  await page.getByLabel('Carregado · FRALDAS NAVAL MÉDIO').fill('4000');
+  await page.getByLabel('Motivo · FRALDAS NAVAL MÉDIO').selectOption('falta_armazem');
   // ao concluir, o valor fora do normal pede confirmação: «Corrigir» volta ao campo
   await page.getByRole('button', { name: 'Concluir conferência' }).click();
   const dlg = page.locator('dialog[open]');
   await expect(dlg).toContainText('Valores fora do normal');
   await expect(dlg).toContainText('10000332');
   await dlg.getByRole('button', { name: 'Corrigir' }).click();
-  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MEDIUM')).toBeFocused();
+  await expect(page.getByLabel('Carregado · FRALDAS NAVAL MÉDIO')).toBeFocused();
   expect(pedidos).toEqual([]);
   // «Gravar assim mesmo» segue
   await page.getByRole('button', { name: 'Concluir conferência' }).click();

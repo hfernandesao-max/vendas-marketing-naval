@@ -637,6 +637,82 @@ function naval_funcoes_converter(array $logins, string $por): array
 }
 
 /**
+ * Passagem de todas as contas para funções (padrão RBAC: todo o acesso vem de funções, NIST/INCITS 359; ISO/IEC 27001
+ * A.5.15 e A.5.18), sem retirar nem acrescentar nenhum acesso:
+ *   - perfil com função-base equivalente que dá exactamente os mesmos acessos: passa para essa função;
+ *   - senão: função de transição «T-<perfil>» com as permissões exactas do perfil em vigor (âmbito por rota e dois
+ *     passos incluídos), partilhada pelas contas desse perfil e marcada para o dono a rever na revisão trimestral.
+ * Fica tudo registado (conta, perfil anterior, função). Uma só vez (marca em dados-privados); FUNCOES_MIGRAR=0 desliga.
+ * Devolve {convertidas: [login], transicao: {T-xx: [login]}, ficam: [login]}.
+ */
+function naval_funcoes_migrar(string $por = 'sistema'): array
+{
+    $res = ['convertidas' => [], 'transicao' => [], 'ficam' => []];
+    $lista = naval_funcoes_sem_funcoes();
+    if (!$lista) return $res;
+    $f = naval_funcoes();
+    $m = naval_matriz();
+    $perfis = naval_perfis_todos();
+    $sem = [];
+    foreach ($lista as $x) {
+        if ($x['funcao'] && !$x['diferencas']) $res['convertidas'][] = $x['login'];
+        else $sem[$x['perfil']][] = $x['login'];
+    }
+    if ($res['convertidas']) naval_funcoes_converter($res['convertidas'], $por);
+    foreach ($sem as $perfil => $logins) {
+        if (!isset($perfis[$perfil]) || empty($perfis[$perfil]['activo'])) {
+            array_push($res['ficam'], ...$logins);   // perfil inexistente ou desligado: o super administrador decide
+            continue;
+        }
+        $codigo = substr('T-' . preg_replace('/[^A-Z0-9-]/', '', strtoupper($perfil)), 0, 24);
+        if (strlen($codigo) < 3) $codigo = 'T-' . strtoupper(substr(hash('sha256', $perfil), 0, 6));
+        $perm = [];
+        foreach ($m as $rec => $col) {
+            $n = (string) ($col[$perfil] ?? '');
+            if ($n !== '' && $n !== 'A') $perm[$rec] = $n;
+        }
+        if (!isset($f[$codigo])) {
+            $g = naval_json_ler(naval_ficheiro_funcoes());
+            $g = $g ?: naval_funcoes_iniciais();
+            $g[$codigo] = ['nome' => mb_substr('Transição · ' . $perfis[$perfil]['nome'], 0, 80),
+                'descricao' => 'Os acessos que o perfil «' . $perfis[$perfil]['nome'] . '» tinha na passagem para funções, sem tirar nem pôr. Rever na revisão trimestral: trocar pelas funções do trabalho.',
+                'tipo' => 'base', 'permissoes' => $perm, 'por_rota' => !empty($perfis[$perfil]['por_rota']), 'dois_passos' => !empty($perfis[$perfil]['dois_passos']),
+                'conflitos' => [], 'dono' => '', 'activo' => true, 'transicao' => true, 'perfil_origem' => $perfil, 'criada' => date('Y-m-d H:i'), 'criada_por' => $por];
+            naval_json_gravar(naval_ficheiro_funcoes(), $g);
+            $f = naval_funcoes(true);
+            naval_registar('funcao_criada', ['funcao' => $codigo, 'transicao' => true, 'perfil' => $perfil]);
+        }
+        $d = naval_utilizadores();
+        $gerado = naval_funcoes_perfil([$codigo], $por);
+        foreach ($logins as $l) {
+            if (!isset($d[$l])) continue;
+            $antes = (string) ($d[$l]['perfil'] ?? '');
+            $d[$l]['perfil'] = $gerado;
+            $d[$l]['funcoes'] = [$codigo];
+            $d[$l]['alterado'] = date('Y-m-d H:i');
+            $d[$l]['alterado_por'] = $por;
+            $res['transicao'][$codigo][] = $l;
+            naval_registar('conta_alterada', ['conta' => $l, 'funcoes' => $codigo, 'perfil' => $gerado, 'perfil_anterior' => $antes, 'motivo' => 'passagem para funções sem mudança de acessos (transição)']);
+        }
+        naval_gravar_utilizadores($d);
+    }
+    return $res;
+}
+
+/** Migração para funções, uma só vez (rotina periódica). Devolve o resultado, ou null se já foi feita ou está desligada. */
+function naval_funcoes_migrar_uma_vez(int $agora): ?array
+{
+    if (naval_config('FUNCOES_MIGRAR', '1') === '0') return null;
+    $marca = naval_pasta('funcoes') . '/migracao.json';
+    if (is_file($marca)) return null;
+    $r = naval_exclusivo('utilizadores', function () { return naval_funcoes_migrar('sistema'); });
+    naval_json_gravar($marca, ['em' => date('Y-m-d H:i:s', $agora), 'convertidas' => count($r['convertidas']),
+        'transicao' => array_map('count', $r['transicao']), 'ficam' => $r['ficam']]);
+    naval_registar('funcoes_migracao', ['convertidas' => count($r['convertidas']), 'transicao' => array_map('count', $r['transicao']), 'ficam' => count($r['ficam'])], 'sistema');
+    return $r;
+}
+
+/**
  * Funções temporárias (substituições, férias, projectos): cada função pode ter um último dia («funcoes_fim»). No dia
  * seguinte sai da conta sozinha; o perfil é recalculado e, sem nenhuma função, a conta fica desligada. Tudo registado.
  */

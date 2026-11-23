@@ -302,3 +302,50 @@ teste('contas novas: a Teresa Gomes é criada uma vez com «Controlo de stock»,
         fn_limpar();
     }
 });
+
+teste('funções: todas as contas passam a funções sem tirar nem pôr acessos (função-base igual ou função de transição exacta)', function () {
+    fn_limpar();
+    // o perfil LOG da matriz passa a dar mais do que a função-base (alteração feita no portal): fica uma transição
+    naval_gravar_matriz(['vendas-dia' => ['LOG' => 'V']]);
+    naval_matriz(true);
+    $antes = fn_contas([
+        'luis' => ['perfil' => 'LOG'],
+        'bia' => ['perfil' => 'LOG'],
+        'rita' => ['perfil' => 'AUD'],
+        'adm' => ['perfil' => 'SADM'],
+    ]);
+    try {
+        $m0 = naval_matriz(true);
+        $acessos = function (string $perfil) use ($m0) {
+            $o = [];
+            foreach ($m0 as $rec => $col) if (($col[$perfil] ?? '') !== '') $o[$rec] = $col[$perfil];
+            return $o;
+        };
+        $log0 = $acessos('LOG');
+        $aud0 = $acessos('AUD');
+        $r = naval_funcoes_migrar('teste');
+        igual(['rita'], $r['convertidas'], 'AUD: a função-base dá o mesmo');
+        $tl = $r['transicao']['T-LOG'] ?? [];
+        sort($tl);
+        igual([['T-LOG'], ['bia', 'luis']], [array_keys($r['transicao']), $tl]);
+        $u = naval_utilizadores();
+        igual([['T-LOG'], ['T-LOG'], ['P-AUD']], [$u['luis']['funcoes'], $u['bia']['funcoes'], $u['rita']['funcoes']]);
+        verdade(empty($u['adm']['funcoes']) && $u['adm']['perfil'] === 'SADM', 'o SADM fica como está');
+        $m1 = naval_matriz(true);
+        $depois = function (string $perfil) use ($m1) {
+            $o = [];
+            foreach ($m1 as $rec => $col) if (($col[$perfil] ?? '') !== '') $o[$rec] = $col[$perfil];
+            return $o;
+        };
+        igual($log0, $depois($u['luis']['perfil']), 'mesmos acessos, página a página');
+        igual($aud0, $depois($u['rita']['perfil']));
+        $t = naval_funcoes()['T-LOG'];
+        verdade(!empty($t['transicao']) && $t['perfil_origem'] === 'LOG', 'marcada para rever');
+        igual([], naval_funcoes_sem_funcoes(), 'já ninguém sem funções');
+        igual(['convertidas' => [], 'transicao' => [], 'ficam' => []], naval_funcoes_migrar('teste'), 'segunda vez: nada a fazer');
+    } finally {
+        fn_repor($antes);
+        naval_gravar_matriz([]);
+        fn_limpar();
+    }
+});

@@ -17,6 +17,7 @@ import { el, somaDias, toast } from '../util.js';
 import { R } from './registo.js';
 import { folhaContagemCega, resultadoContagem } from '../componentes/contagem-pdf.js';
 import { apagarRascunho, guardarRascunho, lerRascunho } from '../componentes/rascunho.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 let CC = null;
 let dia = null;
@@ -190,15 +191,15 @@ function formContagem(r) {
     const tr = el('tr');
     const inicial = rasc && rasc.v[l.codigo] != null ? rasc.v[l.codigo] : l.contado == null ? '' : l.contado;
     const i = entrada('number', inicial, { min: 0, step: 'any', inputMode: 'decimal' });
-    i.setAttribute('aria-label', l.artigo);
+    i.setAttribute('aria-label', tArtigo(l.artigo));
     i.addEventListener('input', guardar);
     campos[l.codigo] = i;
     const td = el('td');
     td.append(i, el('span', 'cc-un', l.unidade || ''));
-    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), td);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, tArtigo(l.artigo)), td);
     tab.append(tr);
     // contagem às cegas: sem o esperado, só as casas decimais num artigo à unidade e os números muito altos
-    linhasLc.push({ tr, campos: [i], codigo: l.codigo, texto: l.artigo, atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade }) });
+    linhasLc.push({ tr, campos: [i], codigo: l.codigo, texto: tArtigo(l.artigo), atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade }) });
   });
   const erro = msgErro();
   // primeiro o que falta preencher; depois, os valores fora do normal pedem confirmação
@@ -302,7 +303,7 @@ function tabelaRota(r) {
     tb.append(cab);
     r.linhas.forEach((l) => {
       const tr = el('tr');
-      tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, l.artigo), el('td', null, l.unidade || ''));
+      tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, tArtigo(l.artigo)), el('td', null, l.unidade || ''));
       tb.append(tr);
     });
     const w = el('div', 'cc-scroll');
@@ -342,7 +343,7 @@ function tabelaRota(r) {
   (r.avisos_rota || []).forEach((a) => box.append(el('p', 'cc-aviso cc-aviso-rota', t(a.texto))));
   // o Pinguim BO mudou depois de a base ser congelada (guia anulada ou corrigida): actualizada (aberta) ou assinalada (aprovada)
   const actualizada = (r.historico || []).filter((h) => h.accao === 'base_actualizada_pinguim').pop();
-  const artigosMudados = (dif) => (dif || []).map((d) => d.artigo).join(', ');
+  const artigosMudados = (dif) => (dif || []).map((d) => tArtigo(d.artigo)).join(', ');
   if (r.revisao_pinguim)
     box.append(
       el(
@@ -391,7 +392,7 @@ function tabelaRota(r) {
             n: r.prova.length,
             a: r.prova
               .slice(0, 3)
-              .map((f) => f.artigo + ' (' + t('esperado {e}, Pinguim BO {f}', { e: q(f.esperado), f: q(f.final) }) + ')')
+              .map((f) => tArtigo(f.artigo) + ' (' + t('esperado {e}, Pinguim BO {f}', { e: q(f.esperado), f: q(f.final) }) + ')')
               .join('; '),
           },
         ),
@@ -422,7 +423,7 @@ function tabelaRota(r) {
   const escolhas = {};
   r.linhas.forEach((l) => {
     const tr = el('tr', l.diferenca ? (l.diferenca < 0 ? 'cc-falta' : 'cc-sobra') : l.alertas.length ? 'cc-alerta' : null);
-    tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, l.artigo));
+    tr.append(el('td', 'cc-cod', l.codigo || '—'), el('td', null, tArtigo(l.artigo)));
     [l.inicial, l.carregado, l.vendido, l.devolvido].forEach((v) => tr.append(el('td', 'n cc-g-sis', q(v))));
     if (inv) {
       const ci = el('td', 'n cc-g-sis', l.inventario ? (l.inventario > 0 ? '+' : '') + q(l.inventario) : q(0));
@@ -437,7 +438,7 @@ function tabelaRota(r) {
     if (est === 'por_contar') l.alertas.forEach((a) => ult.append(pill(t(ALERTAS[a] || a), 'p-warn')));
     else if (l.diferenca && aprovar) {
       const motivo = entrada('text', '', { maxLength: 255, placeholder: t('Escreva o motivo') });
-      motivo.setAttribute('aria-label', t('Motivo') + ' · ' + l.artigo);
+      motivo.setAttribute('aria-label', t('Motivo') + ' · ' + tArtigo(l.artigo));
       escolhas[l.codigo] = motivo;
       ult.append(motivo);
     } else if (l.diferenca) {

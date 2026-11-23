@@ -291,7 +291,7 @@ test('app de gestão: ao vivo em Hoje; Rotas «Agora» com paradas primeiro, sto
   await expect(f).toBeVisible();
   await expect(f).toContainText('Stock na carrinha agora');
   await expect(f).toContainText('2 artigos · 85 unidades');
-  await expect(f).toContainText('FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48');
+  await expect(f).toContainText('FRALDAS DE BEBÉ NAVAL MÉDIO 4 X 48'); // nome do artigo em português (MEDIUM → MÉDIO)
   await expect(f).toContainText('Fecho do dia');
   await expect(f).toContainText('Por contar');
   await expect(f.locator('.ag-feed-l', { hasText: 'Cantina Kilamba' })).toHaveCount(1);
@@ -479,7 +479,7 @@ test('app de gestão: Controlo — fecho previsto, recebido em dinheiro e Multic
   await expect(rec).toContainText('Dinheiro 90 mil Kz · Multicaixa 70 mil Kz');
   await expect(page.locator('.ag-rec', { hasText: '1002' }).first()).toContainText('por receber 140 mil Kz');
   await expect(page.locator('body')).toContainText('Cantina B');
-  await expect(page.locator('body')).toContainText('FRALDAS DE BEBÉ NAVAL MEDIUM 4 X 48');
+  await expect(page.locator('body')).toContainText(/FRALDAS DE BEBÉ NAVAL (MEDIUM|MÉDIO) 4 X 48/);
   await expect(page.locator('body')).toContainText('5 maiores clientes');
   // tocar no recebido de uma rota abre a ficha, com o recebido hoje
   await rec.click();

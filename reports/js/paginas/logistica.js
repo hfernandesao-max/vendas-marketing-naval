@@ -27,6 +27,7 @@ import { DB, el, sum, toast } from '../util.js';
 import { exportarExcel } from '../excel.js';
 import { R } from './registo.js';
 import { campoMotivo } from '../componentes/motivos-carga.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 // Estado do pedido de stock para a data do período: '' | 'a-carregar' | 'ok' | 'erro'
 let pedido = { data: '', estado: '', erro: '', em: 0 };
@@ -177,23 +178,23 @@ function confirmarCarga(r) {
       r.linhas.forEach((l) => {
         const tr = el('tr');
         const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
-        i.setAttribute('aria-label', t('Entregue') + ' · ' + l.artigo);
+        i.setAttribute('aria-label', t('Entregue') + ' · ' + tArtigo(l.artigo));
         campos[l.codigo] = i;
         const td = el('td', 'n');
         // diferença: o motivo é obrigatório (aparece só quando a quantidade muda)
-        const m = campoMotivo(t('Motivo') + ' · ' + l.artigo);
+        const m = campoMotivo(t('Motivo') + ' · ' + tArtigo(l.artigo));
         m.w.hidden = true;
         motivos[l.codigo] = m;
         i.addEventListener('input', () => (m.w.hidden = i.value === '' || Number(i.value) === Number(l.quantidade)));
         // diferença viva: ✓ verde se bate com o requisitado, senão a diferença a vermelho
         td.append(i, diferencaViva(i, l.quantidade), m.w);
-        tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
+        tr.append(el('td', 'cc-cod', l.codigo), el('td', null, tArtigo(l.artigo)), el('td', 'n', n0(l.quantidade)), td);
         tab.append(tr);
         linhasLc.push({
           tr,
           campos: [i],
           codigo: l.codigo,
-          texto: l.artigo,
+          texto: tArtigo(l.artigo),
           atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade, esperado: Number(l.quantidade) }),
         });
       });

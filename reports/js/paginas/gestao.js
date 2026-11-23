@@ -24,6 +24,7 @@ import { SESSAO, atual, podeVer } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { abrir as abrirLig, abrirPeriodo, celulaLigada } from '../componentes/ligacoes.js';
+import { tArtigo } from '../i18n/artigos.js';
 import { R } from './registo.js';
 import { sinal, textoAlerta, textoRico } from '../gestao-textos.js';
 
@@ -782,14 +783,9 @@ function abrirClasseAbc(titulo, classe, x, tipo) {
       const tw = el('div', 'tw');
       const tab = el('table');
       const h = el('tr');
-      [
-        t('#'),
-        tipo === 'cliente' ? t('Cliente') : t('Artigo'),
-        ...(tipo === 'cliente' ? [t('Rota')] : []),
-        t('Valor'),
-        t('% do total'),
-        t('% acumulada'),
-      ].forEach((c, i) => h.append(el('th', i >= (tipo === 'cliente' ? 3 : 2) || i === 0 ? 'n' : null, c)));
+      ['#', tipo === 'cliente' ? t('Cliente') : t('Artigo'), ...(tipo === 'cliente' ? [t('Rota')] : []), t('Valor'), t('% do total'), t('% acumulada')].forEach(
+        (c, i) => h.append(el('th', i >= (tipo === 'cliente' ? 3 : 2) || i === 0 ? 'n' : null, c)),
+      );
       const th = el('thead');
       th.append(h);
       const tb = el('tbody');
@@ -915,9 +911,9 @@ export function cartoesGestao(d) {
       desenhar: (w, h) =>
         grafBarras(w, {
           itens: d.distribuicao.slice(0, h ? Math.max(1, Math.floor((h - 8) / (w < 480 ? 32 : 22))) : 15).map((a) => ({
-            rot: a.nome,
+            rot: tArtigo(a.nome),
             valor: (a.distribuicao || 0) * 100,
-            titulo: a.nome,
+            titulo: tArtigo(a.nome),
             linhas: [
               [n0((a.distribuicao || 0) * 100) + '%', t('dos clientes activos')],
               [n0(a.clientes), t('clientes')],
@@ -931,7 +927,7 @@ export function cartoesGestao(d) {
         [t('Clientes'), 1],
         [t('Distribuição numérica'), 1],
       ],
-      linhas: d.distribuicao.map((a) => [a.nome, n0(a.clientes), a.distribuicao == null ? '—' : n0(a.distribuicao * 100) + '%']),
+      linhas: d.distribuicao.map((a) => [tArtigo(a.nome), n0(a.clientes), a.distribuicao == null ? '—' : n0(a.distribuicao * 100) + '%']),
       abrirLinha: (i) => abrirLig('artigo', { codigo: String(d.distribuicao[i].codigo), artigo: d.distribuicao[i].nome }),
     }),
     cartaoGrafico({

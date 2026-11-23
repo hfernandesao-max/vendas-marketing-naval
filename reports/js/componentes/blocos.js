@@ -7,6 +7,7 @@ import { st } from '../periodo.js';
 import { el, sum } from '../util.js';
 import { celulaLigada, tipoLigacao } from './ligacoes.js';
 import { gravarLayout, layoutDe } from '../colunas.js';
+import { CAMPOS_ARTIGO, tArtigo } from '../i18n/artigos.js';
 
 // Durante o desenho de uma página, cada tabela e cada grupo de indicadores fica registado aqui para o Excel e o CSV.
 export let REG = { tabelas: [], kpis: [] };
@@ -16,7 +17,9 @@ export let FITS = [];
 const PASSO = 20;
 const ORD = {};
 export const numType = (c) => c.type && c.type !== 'text' && c.type !== 'date';
-export const rawVal = (c, r) => (c.xl ? c.xl(r) : c.get ? c.get(r) : r[c.key]);
+// nomes de artigos na língua do ecrã (também no Excel); o resto como vem
+const deArtigo = (c, v) => (c.key && CAMPOS_ARTIGO.has(c.key) && typeof v === 'string' ? tArtigo(v) : v);
+export const rawVal = (c, r) => (c.xl ? c.xl(r) : deArtigo(c, c.get ? c.get(r) : r[c.key]));
 export function download(name, blob) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -55,7 +58,7 @@ function cellNode(c, r, max) {
     w.append(document.createTextNode(mkz(v)), i);
     return w;
   }
-  return document.createTextNode(v == null || v === '' ? '—' : String(v));
+  return document.createTextNode(v == null || v === '' ? '—' : String(deArtigo(c, v)));
 }
 // Colunas à medida de cada pessoa: ordem (arrastar o nome da coluna), colunas escondidas (botão direito no cabeçalho
 // ou botão «Colunas») e largura (arrastar a borda direita do nome; duplo clique repõe). Guardado na conta.
@@ -153,7 +156,8 @@ export function tabela(o) {
   const bc = el('button', 'btn sm ghost col-btn');
   bc.type = 'button';
   bc.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM9.5 5v14M14.5 5v14"/></svg>'; // nosemgrep: insecure-innerhtml -- SVG estático
-  bc.append(t('Colunas'));
+  bc.append(el('span', 'col-btn-t', t('Colunas')));
+  bc.setAttribute('aria-label', t('Colunas'));
   bc.title = t('Escolher, ordenar e dimensionar as colunas (também com o botão direito no cabeçalho)');
   bc.setAttribute('aria-haspopup', 'dialog');
   bc.addEventListener('click', () => {
@@ -389,9 +393,8 @@ export function tabela(o) {
     q
       ? o.rows.filter((r) =>
           o.cols.some((c) =>
-            String(val(r, c) ?? '')
-              .toLowerCase()
-              .includes(q),
+            // procura no nome original e no nome traduzido do artigo
+            (String(val(r, c) ?? '') + ' ' + String(deArtigo(c, val(r, c)) ?? '')).toLowerCase().includes(q),
           ),
         )
       : o.rows;

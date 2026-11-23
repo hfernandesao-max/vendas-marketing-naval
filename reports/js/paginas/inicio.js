@@ -21,6 +21,7 @@ import {
 import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
 import { abrir as abrirLig, abrirPeriodo } from '../componentes/ligacoes.js';
+import { tArtigo } from '../i18n/artigos.js';
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
@@ -381,7 +382,7 @@ function painelInicio(pg) {
                 fmt: comValor ? kzc : n0,
                 itens: rows.map((x) => ({
                   valor: comValor ? x.v : x.q,
-                  rot: x.nome,
+                  rot: tArtigo(x.nome),
                   abrir: () => abrirLig('artigo', { codigo: String(x.cod), artigo: x.nome }),
                   linhas: [
                     [comValor ? kz(x.v) : n0(x.q), comValor ? t('vendido') : t('quantidade')],
@@ -391,7 +392,7 @@ function painelInicio(pg) {
                 })),
               }),
             colunas: [[t('Artigo')], [t('Código')], [t('Quantidade'), 1], ...(comValor ? [[t('Vendido'), 1]] : [])],
-            linhas: rows.map((x) => [x.nome, x.cod, n0(x.q), ...(comValor ? [kz(x.v)] : [])]),
+            linhas: rows.map((x) => [tArtigo(x.nome), x.cod, n0(x.q), ...(comValor ? [kz(x.v)] : [])]),
             abrirLinha: (i) => abrirLig('artigo', { codigo: String(rows[i].cod), artigo: rows[i].nome }),
           }),
         ),

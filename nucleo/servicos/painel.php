@@ -111,7 +111,7 @@ function naval_painel(array $ag, string $hoje, array $promotores = [], array $no
         $x = $ag[$d] ?? [];
         foreach (($x['clientes'] ?? []) as $c => $cl) {
             $cli90[$c] = ($cli90[$c] ?? 0) + (float) $cl['t'];
-            if (!isset($infoCli[$c]) || $k < ($infoCli[$c]['k'] ?? 99)) $infoCli[$c] = ['nome' => (string) ($cl['n'] ?? $c), 'rota' => (string) ($cl['r'] ?? ''), 'k' => $k];
+            if (!isset($infoCli[$c]) || $k < $infoCli[$c]['k']) $infoCli[$c] = ['nome' => (string) ($cl['n'] ?? $c), 'rota' => (string) ($cl['r'] ?? ''), 'k' => $k];
         }
         foreach (($x['artigos'] ?? []) as $arts) foreach ($arts as $cod => $a) $art90[$cod] = ($art90[$cod] ?? 0) + (float) $a['t'];
         if ($k >= 30) continue;

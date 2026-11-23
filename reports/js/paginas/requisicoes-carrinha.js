@@ -18,6 +18,7 @@ import { hoje, st } from '../periodo.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { R } from './registo.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 let L = null; // lista do período
 let chaveLista = '';
@@ -70,7 +71,7 @@ const numero = (s) => (String(s).trim() === '' ? 0 : Number(String(s).replace(/\
 const acimaDoStock = () => edicao.linhas.map((l) => ({ l, s: stockDe(l.codigo) })).filter((x) => x.s != null && (+x.l.quantidade || 0) > x.s + 0.0005);
 const textoAcima = (A) =>
   t('Quantidade acima do stock do armazém principal: {l}. Ajuste a quantidade pedida.', {
-    l: A.map((x) => t('{a} ({q} pedidos, {s} em stock)', { a: x.l.artigo, q: n0(x.l.quantidade), s: n0(x.s) })).join('; '),
+    l: A.map((x) => t('{a} ({q} pedidos, {s} em stock)', { a: tArtigo(x.l.artigo), q: n0(x.l.quantidade), s: n0(x.s) })).join('; '),
   });
 
 function catalogo() {
@@ -118,10 +119,10 @@ function formValidar(r, erro, depois) {
   r.linhas.forEach((l) => {
     const tr = el('tr');
     const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
-    i.setAttribute('aria-label', t('Validar') + ' · ' + l.artigo);
+    i.setAttribute('aria-label', t('Validar') + ' · ' + tArtigo(l.artigo));
     const td = el('td', 'n');
     td.append(i);
-    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, tArtigo(l.artigo)), el('td', 'n', n0(l.quantidade)), td);
     tab.append(tr);
     qs.push({ l, i });
   });
@@ -204,14 +205,14 @@ function editor() {
   edicao.linhas.forEach((l, i) => {
     const tr = el('tr', l.origem === 'adicionado' ? 'req-adicionado' : null);
     const sk = stockDe(l.codigo);
-    tr.append(el('td', null, l.codigo), el('td', null, l.artigo), el('td', null, l.unidade || ''));
+    tr.append(el('td', null, l.codigo), el('td', null, tArtigo(l.artigo)), el('td', null, l.unidade || ''));
     if (rasc) tr.append(el('td', 'n req-stock', sk == null ? (CAT && CAT.a_ler ? '…' : '—') : n0(sk)));
     const tq = el('td', 'n');
     if (rasc) {
       // sem setas (campo de texto numérico): a quantidade escreve-se; nunca mais do que o stock do armazém principal
       const q = entrada('text', String(l.quantidade).replace('.', ','), { inputMode: 'decimal', autocomplete: 'off' });
       q.classList.add('req-qtd');
-      q.setAttribute('aria-label', t('Quantidade') + ' · ' + l.artigo);
+      q.setAttribute('aria-label', t('Quantidade') + ' · ' + tArtigo(l.artigo));
       const marcar = () => {
         const ac = sk != null && (+l.quantidade || 0) > sk + 0.0005;
         q.classList.toggle('cx-falta', ac || isNaN(l.quantidade));
@@ -252,7 +253,7 @@ function editor() {
         mudou();
         draw();
       });
-      b.setAttribute('aria-label', t('Retirar {a}', { a: l.artigo }));
+      b.setAttribute('aria-label', t('Retirar {a}', { a: tArtigo(l.artigo) }));
       tx.append(b);
     }
     if (rasc) tr.append(tx);
@@ -305,7 +306,8 @@ function editor() {
       if (sk != null && (ja ? +ja.quantidade || 0 : 0) + qn > sk + 0.0005) {
         erro.hidden = false;
         erro.textContent =
-          t('Só há {s} de «{a}» em stock no armazém principal.', { s: n0(sk), a: a.artigo }) + (ja ? ' ' + t('Já pediu {q}.', { q: n0(ja.quantidade) }) : '');
+          t('Só há {s} de «{a}» em stock no armazém principal.', { s: n0(sk), a: tArtigo(a.artigo) }) +
+          (ja ? ' ' + t('Já pediu {q}.', { q: n0(ja.quantidade) }) : '');
         return qt.focus();
       }
       erro.hidden = true;

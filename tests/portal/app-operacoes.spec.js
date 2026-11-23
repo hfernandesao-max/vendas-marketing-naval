@@ -205,7 +205,7 @@ test('operações: o vendedor vê as suas PO com o percurso e pede mercadoria ex
   // pedido extra: procura, quantidade, aviso acima do disponível
   await page.getByRole('button', { name: 'Pedir mais mercadoria' }).click();
   await page.getByLabel('Quantidade · Sabão 6 barras Extra').fill('12');
-  await page.getByLabel('Quantidade · Soap brown Extra').fill('300');
+  await page.getByLabel('Quantidade · Sabão castanho Extra').fill('300');
   await expect(page.locator('.lc-atipico-txt')).toContainText('acima do disponível (120)');
   await page.getByLabel('Procurar artigo (código ou nome)').fill('soap');
   await expect(page.getByLabel('Quantidade · Sabão 6 barras Extra')).toBeHidden();

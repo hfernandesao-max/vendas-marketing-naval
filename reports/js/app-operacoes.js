@@ -13,6 +13,7 @@ import { campoMotivo } from './componentes/motivos-carga.js';
 import { n0 } from './formatos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el } from './util.js';
+import { tArtigo } from './i18n/artigos.js';
 
 const $ = (id) => document.getElementById(id);
 const kz = (v) => (v == null || isNaN(v) ? '—' : n0(Math.round(v)) + ' Kz');
@@ -218,7 +219,7 @@ function cartaoPO(r, nomes) {
       });
     });
     const ul = el('ul', 'op-lista');
-    (r.linhas || []).forEach((l) => ul.append(el('li', null, n0(l.quantidade) + ' × ' + l.artigo)));
+    (r.linhas || []).forEach((l) => ul.append(el('li', null, n0(l.quantidade) + ' × ' + tArtigo(l.artigo))));
     k.append(ul, erro, emitir);
   }
   return k;
@@ -289,13 +290,13 @@ function formPedido(rotas, nomes) {
     const linhas = [];
     (d.artigos || []).forEach((a) => {
       const tr = el('tr');
-      const i = numero('', t('Quantidade') + ' · ' + a.artigo);
+      const i = numero('', t('Quantidade') + ' · ' + tArtigo(a.artigo));
       i.placeholder = '0';
       const ta = el('td');
       ta.append(
         el('span', 'op-cod', a.codigo),
         el('br'),
-        document.createTextNode(a.artigo),
+        document.createTextNode(tArtigo(a.artigo)),
         el('br'),
         el('span', 'op-cod', a.disponivel == null ? t('disponível: por confirmar') : t('disponível: {n}', { n: n0(a.disponivel) })),
       );
@@ -308,7 +309,7 @@ function formPedido(rotas, nomes) {
         tr,
         campos: [i],
         codigo: a.codigo,
-        texto: a.artigo,
+        texto: tArtigo(a.artigo),
         preenchida: () => +i.value > 0,
         // mais do que o armazém tem: o coordenador decide
         atipico: () =>
@@ -556,15 +557,15 @@ function formContagem(r, dia, erro) {
   const linhas = [];
   (r.linhas || []).forEach((l) => {
     const tr = el('tr');
-    const i = numero(l.contado == null ? '' : l.contado, l.artigo);
+    const i = numero(l.contado == null ? '' : l.contado, tArtigo(l.artigo));
     const ta = el('td');
-    ta.append(el('span', 'op-cod', l.codigo), el('br'), document.createTextNode(l.artigo));
+    ta.append(el('span', 'op-cod', l.codigo), el('br'), document.createTextNode(tArtigo(l.artigo)));
     const tq = el('td', 'n');
     tq.append(i);
     if (l.unidade) tq.append(el('span', 'op-cod', ' ' + l.unidade));
     tr.append(ta, tq);
     tab.append(tr);
-    linhas.push({ tr, campos: [i], codigo: l.codigo, texto: l.artigo, atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade }) });
+    linhas.push({ tr, campos: [i], codigo: l.codigo, texto: tArtigo(l.artigo), atipico: () => quantidadeAtipica(i.value, { unidade: l.unidade }) });
   });
   const gravar = botao(t('Gravar contagem'), null, () => (linhas.some((x) => x.campos[0].value === '') ? enviar() : lc.confirmar(enviar)));
   function enviar() {
@@ -714,12 +715,12 @@ function conferirPO(r) {
   tab.append(cab);
   const linhas = r.linhas.map((l) => {
     const tr = el('tr');
-    const q = numero(l.quantidade, t('Carregado') + ' · ' + l.artigo);
-    const m = campoMotivo(t('Motivo') + ' · ' + l.artigo);
+    const q = numero(l.quantidade, t('Carregado') + ' · ' + tArtigo(l.artigo));
+    const m = campoMotivo(t('Motivo') + ' · ' + tArtigo(l.artigo));
     m.w.hidden = true;
     q.addEventListener('input', () => (m.w.hidden = q.value === '' || Number(q.value) === Number(l.quantidade)));
     const ta = el('td');
-    ta.append(el('span', 'op-cod', l.codigo), el('br'), document.createTextNode(l.artigo));
+    ta.append(el('span', 'op-cod', l.codigo), el('br'), document.createTextNode(tArtigo(l.artigo)));
     const tq = el('td', 'n');
     tq.append(q, diferencaViva(q, l.quantidade), m.w);
     tr.append(ta, el('td', 'n', n0(l.quantidade)), tq);
@@ -728,7 +729,7 @@ function conferirPO(r) {
       tr,
       campos: [q],
       codigo: l.codigo,
-      texto: l.artigo,
+      texto: tArtigo(l.artigo),
       l,
       q,
       m,

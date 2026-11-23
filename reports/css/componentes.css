@@ -6224,3 +6224,10 @@ tr.viz-lig:focus-visible {
   padding: 10px 14px;
   border-top: 1px solid var(--line);
 }
+
+/* ecrã estreito: o botão «Colunas» só com o ícone (o nome fica na dica e no leitor de ecrã) */
+@media (max-width: 600px) {
+  .col-btn .col-btn-t {
+    display: none;
+  }
+}

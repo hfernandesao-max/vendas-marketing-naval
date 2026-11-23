@@ -15,6 +15,7 @@ import { t } from '../i18n/i18n.js';
 import { guardar, inR, st } from '../periodo.js';
 import { DB, el, toast } from '../util.js';
 import { botao, janela } from './janelas.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 const TIPOS = { documento: 'documento', cliente: 'cliente', artigo: 'artigo', produto: 'artigo', rota: 'rota', promotor: 'rota' };
 
@@ -127,7 +128,7 @@ export function procurarDados(q, D) {
   (D.artigos || []).forEach((l) => {
     if (!art.has(l.codigo) && (n(l.artigo).includes(x) || n(l.codigo) === x)) art.set(l.codigo, { codigo: String(l.codigo), artigo: l.artigo });
   });
-  [...art.values()].slice(0, 5).forEach((a) => out.push({ tipo: 'artigo', texto: a.artigo, rotulo: 'Artigo · ' + a.codigo, icon: 'box', alvo: a }));
+  [...art.values()].slice(0, 5).forEach((a) => out.push({ tipo: 'artigo', texto: tArtigo(a.artigo), rotulo: 'Artigo · ' + a.codigo, icon: 'box', alvo: a }));
   const rot = new Map();
   vendas.forEach((v) => {
     const r = String(v.rota || '');
@@ -142,7 +143,7 @@ export function procurarDados(q, D) {
 /** Valor de uma célula com a ligação (botão com o texto) ou só o texto, se não houver ligação. */
 export function celulaLigada(tipo, v, r, texto) {
   const a = alvo(tipo, v, r);
-  const txt = texto != null ? texto : v == null || v === '' ? '—' : String(v);
+  const txt = texto != null ? texto : v == null || v === '' ? '—' : tipo === 'artigo' ? String(tArtigo(String(v))) : String(v);
   if (!a || txt === '—') return document.createTextNode(txt);
   const b = el('button', 'lig lig-' + tipo, txt);
   b.type = 'button';
@@ -253,7 +254,7 @@ function fichaComLinhas(titulo, nota, montar, tipo, a) {
 }
 
 export function abrirArtigo(a) {
-  const nome = a.artigo || a.codigo;
+  const nome = tArtigo(a.artigo) || a.codigo;
   fichaComLinhas(
     nome,
     [a.codigo, t('no período escolhido')].filter(Boolean).join(' · '),

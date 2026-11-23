@@ -274,6 +274,13 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conciliação carrinha] corte: ' . $e->getMessage());
     }
+    // acessos: todas as contas passam a funções (uma vez), sem tirar nem pôr acessos
+    try {
+        $mg = naval_funcoes_migrar_uma_vez($agora);
+        if ($mg && ($mg['convertidas'] || $mg['transicao'])) $feito['contas_para_funcoes'] = count($mg['convertidas']) + array_sum(array_map('count', $mg['transicao']));
+    } catch (Throwable $e) {
+        error_log('[funções] migração: ' . $e->getMessage());
+    }
     // rotas e promotores: sempre como estão no Pinguim BO (nome novo ou rota nova entram sozinhos)
     try {
         naval_servico('rotas');

@@ -10,6 +10,7 @@ import { DB, el, sum, toast } from '../util.js';
 import { carregarScript } from '../servidor.js';
 import { botao } from './janelas.js';
 import { celulaLigada } from './ligacoes.js';
+import { tArtigo } from '../i18n/artigos.js';
 
 const estado = (v) => (eNC(v) ? 'Nota de crédito' : v.liquidado && pendenteDe(v) <= 0.005 ? 'Pago' : 'Pendente');
 const qtd = (q) => (Number.isInteger(+q) ? n0(q) : (+q).toLocaleString(undefined, { maximumFractionDigits: 3 }));
@@ -102,7 +103,7 @@ function folha(v, linhas, pags) {
       el('td', null, a.codigo || '—'),
       (() => {
         const td = el('td');
-        td.append(celulaLigada('artigo', a.artigo, a, a.artigo || '—'));
+        td.append(celulaLigada('artigo', a.artigo, a, tArtigo(a.artigo) || '—'));
         return td;
       })(),
       el('td', 'n', qtd(Math.abs(+a.quantidade || 0))),
@@ -274,7 +275,7 @@ async function exportarPdf(v, linhas, pags) {
   y += Math.ceil(campos.length / 3) * 12 + 4;
   const corpo = (linhas || []).map((a) => [
     a.codigo || '—',
-    a.artigo || '—',
+    tArtigo(a.artigo) || '—',
     qtd(Math.abs(+a.quantidade || 0)),
     a.unidade || '',
     kz(Math.abs(+a.preco_unitario || 0)),
