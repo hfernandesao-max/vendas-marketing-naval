@@ -1215,8 +1215,10 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         $explicado = 0.0;
         $docs = [];
         $em = '';
-        // 1. o primeiro acerto da Logística depois da contagem (não a devolução do contado nem o que as vendas já explicaram)
-        foreach ($esvaziou || $explicado0 > NAVAL_CARR_TOLERANCIA ? [] : $acertos as $a) {
+        // 1. o primeiro acerto da Logística depois da contagem, no que as vendas não explicaram (não a devolução do contado);
+        //    ex.: rota 1011, 21-11: 53 fraldas explicadas pelas facturas; as 50 restantes, entregues em venda à consignação, pela
+        //    saída de armazém que a Logística lança na carrinha
+        foreach ($esvaziou ? [] : $acertos as $a) {
             if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
             if (($a['efeito'] < 0) === ($d < 0)) {
                 $explicado = min(abs((float) $a['efeito']), $falta);

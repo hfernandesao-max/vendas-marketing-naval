@@ -8,6 +8,7 @@
 - **A hora congelada prevalece:** uma conciliação já contada usa sempre a hora gravada na base, nunca a do horário actual.
 - **Vendas entre o corte e a contagem física** (ex.: rota 1009, 23-11: corte às 16:00, facturas às 16:18 e 16:42, contagem às 16:47): a mercadoria já não estava na carrinha e a falta fica explicada por essas facturas, se a contagem foi gravada até 2 horas depois do corte.
 - **A contagem seguinte é prova:** o que foi facturado entre duas contagens e não saiu da carrinha nesse intervalo já tinha saído antes da primeira. Ex.: rota 1011, 97 fraldas contadas no sábado e 97 na segunda-feira, com 53 facturadas pelo meio, que explicam 53 da falta de sábado.
+- **Acerto da Logística depois das facturas:** quando as facturas explicam só parte de uma falta, a saída de armazém que a Logística lança depois da contagem explica o resto (ex.: venda à consignação para facturar no SAP).
 - **Recontar:** quem pode contar vê «Recontar» também numa contagem feita por outra pessoa, no próprio dia. A contagem anterior fica no histórico e a nova volta a precisar de validação.
 
 ### Conciliação da carrinha: a diferença regularizada no Pinguim BO fica à vista

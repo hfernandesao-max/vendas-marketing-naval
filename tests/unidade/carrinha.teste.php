@@ -571,6 +571,11 @@ teste('regularização: facturas de segunda-feira para lá do contado e da carga
     $p = naval_carr_regularizacoes($linhas, $ac, '1011', $ref, null, ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0, '015' => 7.0, '293' => 1.0, '386' => 9.0, '292' => 0.0]]);
     igual([-53.0, -3.0, -50.0, -26.0, -50.0], [$p['332']['q'], $p['015']['q'], $p['293']['q'], $p['386']['q'], $p['292']['q']]);
     igual(-50.0, $r['292']['q'], '292: carregou 30 e facturou 80 → os 50 de sábado');
+    // venda à consignação (para facturar no SAP): a Logística tira as 50 fraldas e as 10 Mimo da carrinha com uma saída de armazém
+    $ac2 = array_merge($ac, [$ev('332', 'acerto', '2026-11-24 09:00:00', -50.0, 'SA A1000/150'), $ev('015', 'acerto', '2026-11-24 09:00:00', -10.0, 'SA A1000/150')]);
+    $c = naval_carr_regularizacoes($linhas, $ac2, '1011', $ref, null, ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0, '015' => 7.0, '293' => 1.0, '386' => 9.0, '292' => 0.0]]);
+    igual([-103.0, -13.0], [$c['332']['q'], $c['015']['q']], 'facturas + saída da consignação explicam toda a falta de sábado');
+    igual(true, strpos($c['332']['doc'], 'SA A1000/150') !== false);
     igual(-49.0, $r['293']['q'], '293: até à carga das 16:21, 99 facturados para 50 carregados → 49');
     igual(-17.0, $r['386']['q'], '386: 36 facturados para 19 contados → 17');
     igual(false, isset($r['332']), '332: vendeu 53 dos 97 contados — não prova nada');
