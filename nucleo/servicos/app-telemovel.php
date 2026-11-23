@@ -59,12 +59,13 @@ function naval_app_disponiveis(): array
 function naval_app_operacoes_tarefas(): array
 {
     // o super administrador vê todas as tarefas (para as testar), com o âmbito e os registos de sempre
-    if (naval_perfil() === 'SADM') return ['entrega', 'visitas', 'mercadoria', 'contagem', 'carga'];
+    if (naval_perfil() === 'SADM') return ['entrega', 'visitas', 'mercadoria', 'contagem', 'inventario', 'carga'];
     return array_keys(array_filter([
         'entrega' => naval_pode('caixa-entrega', 'G'),
         'visitas' => naval_pode('caixa-entrega', 'G') && naval_pode('visitas-dia'),
         'mercadoria' => naval_pode('caixa-entrega', 'G') && naval_pode('requisicoes-carrinha', 'G'),
         'contagem' => naval_pode('conciliacao-carrinha', 'G'),
+        'inventario' => naval_pode('conciliacao-carrinha', 'G') || naval_pode('requisicoes-validacao', 'G') || naval_pode('conciliacao-fecho', 'G'),
         'carga' => naval_pode('requisicoes-carrinha', 'G') && naval_pode('cargas-po', 'V'),
     ]));
 }
@@ -149,16 +150,38 @@ function naval_app_codigo_registo(string $codigo): ?array
     return $x ?: null;
 }
 /** Cookie do equipamento (só o identificador, não dá acesso): leva a app à entrada rápida com a biometria. */
-/** Nome do cookie do equipamento (na pré-produção, outro: a app da produção nunca perde o seu). */
-function naval_app_cookie_nome(): string
+/**
+ * Nome do cookie do equipamento: um por app (a Naval Gestão e a Naval Operações no mesmo telemóvel nunca trocam o
+ * equipamento uma da outra); sem app, o nome antigo (só se lê, para as apps activadas antes). Na pré-produção, outro:
+ * a app da produção nunca perde o seu.
+ */
+function naval_app_cookie_nome(string $app = ''): string
 {
-    return naval_ensaio() ? 'naval_eq_ensaio' : 'naval_eq';
+    return 'naval_eq' . ($app !== '' && isset(NAVAL_APP_NOMES[$app]) ? '_' . $app : '') . (naval_ensaio() ? '_ensaio' : '');
 }
 
-function naval_app_cookie(string $id): void
+/** Grava (ou apaga, com $id vazio) o cookie do equipamento da app; ao apagar, apaga também o nome antigo. */
+function naval_app_cookie(string $id, string $app = ''): void
 {
     $vale = $id === '' ? time() - 3600 : time() + NAVAL_APP_DIAS_SEM_USO * 86400;
-    header('Set-Cookie: ' . naval_app_cookie_nome() . '=' . ($id === '' ? 'x' : $id) . '; Expires=' . gmdate('D, d M Y H:i:s', $vale) . ' GMT; Path=/; HttpOnly; SameSite=Lax' . (naval_https() ? '; Secure' : ''), false);
+    $nomes = $id === '' ? array_unique([naval_app_cookie_nome($app), naval_app_cookie_nome()]) : [naval_app_cookie_nome($app)];
+    foreach ($nomes as $n) {
+        header('Set-Cookie: ' . $n . '=' . ($id === '' ? 'x' : $id) . '; Expires=' . gmdate('D, d M Y H:i:s', $vale) . ' GMT; Path=/; HttpOnly; SameSite=Lax' . (naval_https() ? '; Secure' : ''), false);
+    }
+}
+
+/**
+ * Equipamento desta app no telemóvel: o cookie da app, o cookie antigo (se for desta app) ou o identificador guardado
+ * na própria app. Só identifica: entrar exige sempre a biometria. Devolve o equipamento activo ou null.
+ */
+function naval_app_equipamento_pedido(string $app, string $doUrl = ''): ?array
+{
+    foreach ([(string) ($_COOKIE[naval_app_cookie_nome($app)] ?? ''), (string) ($_COOKIE[naval_app_cookie_nome()] ?? ''), $doUrl] as $id) {
+        if (!preg_match('/^[a-f0-9]{24}$/', $id)) continue;
+        $eq = naval_app_activo($id);
+        if ($eq && ($app === '' || (string) ($eq['app'] ?? '') === $app)) return $eq;
+    }
+    return null;
 }
 
 /** Endereço público do portal (PORTAL_URL) ou o do próprio pedido. */
@@ -266,9 +289,9 @@ function naval_app_activar(string $codigo, string $ua, string $ip): array
         $u = naval_utilizadores()[$c['login']] ?? null;
         if (!$u || !naval_conta_valida($u)) return [null, 'Esta conta está desactivada ou expirou. Contacte o administrador da plataforma.'];
         $f = naval_app_codigo_ficheiro($codigo);
-        naval_json_gravar($f, ['usado' => date('Y-m-d H:i:s')] + naval_json_ler($f), false);
         $l = naval_app_lista();
         $id = bin2hex(random_bytes(12));
+        naval_json_gravar($f, ['usado' => date('Y-m-d H:i:s'), 'equipamento' => $id] + naval_json_ler($f), false);
         $anteriores = [];
         foreach ($l as $k => $x) {
             // um equipamento activo por pessoa e por app (as apps antigas sem «app» contam como a mesma)

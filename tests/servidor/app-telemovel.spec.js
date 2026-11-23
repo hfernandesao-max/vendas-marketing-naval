@@ -102,7 +102,7 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   expect(depois && antes && depois.value !== antes.value, 'sessão nova depois do Face ID').toBe(true);
 
   // sessão terminada: ao abrir a app, a entrada rápida pede logo a biometria e entra (sem palavra-passe nem toques)
-  const eqCookie = (await t1.ctx.cookies()).filter((x) => x.name === 'naval_eq');
+  const eqCookie = (await t1.ctx.cookies()).filter((x) => x.name === 'naval_eq_gestao');
   expect(eqCookie.length).toBe(1);
   await t1.ctx.clearCookies();
   await t1.ctx.addCookies(eqCookie);

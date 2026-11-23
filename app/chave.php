@@ -34,7 +34,7 @@ try {
         }
         $u = naval_utilizadores()[$eq['login']];
         naval_abrir_sessao($eq['login'], $u, true, 'codigo_qr', $eq['id']);
-        naval_app_cookie($eq['id']);
+        naval_app_cookie($eq['id'], (string) $eq['app']);
         // as opções do Face ID vão já na resposta: ao tocar no botão, o telemóvel pede logo a biometria
         naval_json(['ok' => true, 'equipamento' => $eq['id'], 'app' => $eq['app'], 'nome' => NAVAL_APP_NOMES[$eq['app']], 'destino' => NAVAL_APP_DESTINO[$eq['app']],
             'pessoa' => (string) ($u['nome'] ?? $eq['login']), 'opcoes' => naval_wa_opcoes_registo($eq, $u)]);

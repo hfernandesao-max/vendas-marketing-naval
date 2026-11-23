@@ -223,3 +223,159 @@ test('operações: o vendedor vê as suas PO com o percurso e pede mercadoria ex
   expect(pedidos[2]).toMatchObject({ accao: 'emitir', numero: 'PO-2026-000432' });
   expect(erros).toEqual([]);
 });
+
+test('operações: notas com imagem e botões − e +; o pedido começa-se durante o dia (rascunho) e continua-se depois', async ({ page }) => {
+  await page.route('**/v1/caixa-entrega**', (r) =>
+    r.fulfill({
+      json: { ok: true, dia: '2026-11-24', notas: [5000, 2000, 1000], folha: 'aberta', rotas: [{ rota: '1007', promotor: 'Awet', vendido_dinheiro: 12000 }] },
+    }),
+  );
+  const pedidos = [];
+  await page.route('**/v1/requisicoes**', (r) => {
+    const u = r.request().url();
+    if (r.request().method() === 'POST') {
+      const p = JSON.parse(r.request().postData());
+      pedidos.push(p);
+      return r.fulfill({
+        json: { ok: true, requisicao: { numero: p.numero || 'PO-2026-000500', versao: (p.versao || 0) + 1, estado: 'rascunho', rota: '1007' } },
+      });
+    }
+    if (u.includes('catalogo=1'))
+      return r.fulfill({
+        json: { ok: true, artigos: [{ codigo: '10000386', artigo: 'Sabão 6 barras Extra', disponivel: 240, imagem: '../assets/naval-emblema-64.png' }] },
+      });
+    return r.fulfill({
+      json: {
+        ok: true,
+        rotas: { 1007: 'Awet' },
+        nomes: {},
+        requisicoes: [
+          {
+            numero: 'PO-2026-000499',
+            rota: '1007',
+            estado: 'rascunho',
+            versao: 3,
+            origem: { tipo: 'manual' },
+            criado_em: '2026-11-24 09:00:00',
+            linhas: [{ codigo: '10000386', artigo: 'Sabão 6 barras Extra', quantidade: 4 }],
+          },
+        ],
+      },
+    });
+  });
+  const erros = await abrir(page, 'entrega,mercadoria', { ...SESSAO, login: 'pro7' });
+  await expect(page.locator('.op-nota-img svg').first()).toBeVisible();
+  await page.getByRole('button', { name: /Mais uma nota de 1.?000 Kz/ }).click();
+  await page.getByRole('button', { name: /Mais uma nota de 1.?000 Kz/ }).click();
+  await expect(page.getByLabel(/Notas de 1.?000 Kz/)).toHaveValue('2');
+  await page.getByRole('button', { name: /Menos uma nota de 1.?000 Kz/ }).click();
+  await expect(page.getByLabel(/Notas de 1.?000 Kz/)).toHaveValue('1');
+  // pedidos: o rascunho de manhã continua-se, com as quantidades já escritas, e grava-se sem emitir
+  await page.getByRole('tab', { name: 'Pedir mercadoria' }).click();
+  await page.locator('.op-po-cartao[data-numero="PO-2026-000499"]').getByRole('button', { name: 'Continuar o pedido' }).click();
+  const q = page.getByLabel('Quantidade · Sabão 6 barras Extra');
+  await expect(q).toHaveValue('4');
+  await expect(page.locator('.op-art-img')).toHaveCount(1);
+  await q.fill('9');
+  await page.getByRole('button', { name: 'Guardar e continuar depois' }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'gravar', numero: 'PO-2026-000499', versao: 3, linhas: [{ codigo: '10000386', quantidade: 9 }] });
+  expect(erros).toEqual([]);
+});
+
+test('operações: inventário do armazém — contagem às cegas, artigo fora da lista, terminar; validar com motivo ou pedir recontagem', async ({ page }) => {
+  const posts = [];
+  const lista = [
+    {
+      numero: 'INV-2026-000007',
+      armazem: '1150',
+      armazem_nome: 'Armazém Central',
+      estado: 'por_validar',
+      criado_por: 'tec',
+      criado_em: '2026-11-24 08:00:00',
+      contado_por: 'tec',
+      resumo: { artigos: 2, contados: 2, diferencas: 1, faltas: 2, sobras: 0 },
+    },
+  ];
+  const pode = { contar: true, validar: true, aprovar: false };
+  await page.route('**/v1/inventario**', (r) => {
+    const u = r.request().url();
+    if (r.request().method() === 'POST') {
+      const p = JSON.parse(r.request().postData());
+      posts.push(p);
+      if (p.accao === 'criar')
+        return r.fulfill({
+          json: {
+            ok: true,
+            pode,
+            inventario: {
+              numero: 'INV-2026-000008',
+              armazem: '1150',
+              armazem_nome: 'Armazém Central',
+              estado: 'em_contagem',
+              cega: true,
+              recontar: [],
+              linhas: [
+                { codigo: 'A1', artigo: 'Fraldas M', contado: null },
+                { codigo: 'B2', artigo: 'Sabão verde', contado: null },
+              ],
+            },
+          },
+        });
+      return r.fulfill({
+        json: { ok: true, pode, inventario: { numero: p.numero, estado: p.accao === 'terminar' ? 'por_validar' : 'em_contagem', linhas: [] } },
+      });
+    }
+    if (u.includes('armazens=1')) return r.fulfill({ json: { ok: true, armazens: [{ codigo: '1150', nome: 'Armazém Central', artigos: 2 }] } });
+    if (u.includes('numero=INV-2026-000007'))
+      return r.fulfill({
+        json: {
+          ok: true,
+          pode,
+          motivos: { avaria: 'Produto danificado', outro: 'Outro (explicar na nota)' },
+          inventario: {
+            numero: 'INV-2026-000007',
+            armazem_nome: 'Armazém Central',
+            estado: 'por_validar',
+            contado_por: 'tec',
+            cega: false,
+            resumo: { artigos: 2, diferencas: 1, faltas: 2, sobras: 0 },
+            linhas: [
+              { codigo: 'A1', artigo: 'Fraldas M', sistema: 100, contado: 98, diferenca: -2 },
+              { codigo: 'B2', artigo: 'Sabão verde', sistema: 40, contado: 40, diferenca: 0 },
+            ],
+          },
+        },
+      });
+    return r.fulfill({ json: { ok: true, pode, eu: 'ctrl', motivos: {}, lista } });
+  });
+  const erros = await abrir(page, 'inventario', { ...SESSAO, login: 'ctrl' });
+  // nova contagem: escolher o armazém e contar às cegas (sem o stock do sistema)
+  await page.getByRole('button', { name: 'Escolher o armazém' }).click();
+  await page.getByRole('button', { name: 'Começar a contagem' }).click();
+  await expect(page.locator('.op-inventario h2')).toContainText('INV-2026-000008');
+  await expect(page.locator('.op-inventario')).not.toContainText('Sistema');
+  await page.getByLabel('Fraldas M', { exact: true }).fill('98');
+  await page.getByRole('button', { name: 'Mais um: Sabão verde' }).click();
+  // artigo encontrado no armazém que não está na lista
+  await page.getByText('Juntar um artigo que não está na lista').click();
+  await page.getByLabel('Código do artigo').fill('Z9');
+  await page.getByLabel('Nome do artigo').fill('Detergente');
+  await page.getByRole('button', { name: 'Juntar', exact: true }).click();
+  await page.getByLabel('Detergente', { exact: true }).fill('5');
+  await page.getByRole('button', { name: 'Terminar a contagem' }).click();
+  await expect.poll(() => posts.filter((p) => p.accao === 'terminar').length).toBe(1);
+  expect(posts.find((p) => p.accao === 'terminar')).toMatchObject({
+    numero: 'INV-2026-000008',
+    contagem: { A1: 98, B2: 1, Z9: 5 },
+    extra: { Z9: 'Detergente' },
+  });
+  // validar (o controlo de stock): o motivo da diferença ou a recontagem do artigo
+  await page.locator('.op-inv[data-numero="INV-2026-000007"]').getByRole('button', { name: 'Validar' }).click();
+  await expect(page.locator('.op-inv-dif')).toContainText('-2');
+  await page.getByLabel('Pedir recontagem deste artigo').check();
+  await page.getByRole('button', { name: 'Pedir a recontagem de 1 artigo(s)' }).click();
+  await expect.poll(() => posts.filter((p) => p.accao === 'validar').length).toBe(1);
+  expect(posts.find((p) => p.accao === 'validar')).toMatchObject({ numero: 'INV-2026-000007', recontar: ['A1'] });
+  expect(erros).toEqual([]);
+});

@@ -13,11 +13,12 @@ header('Referrer-Policy: no-referrer');
 
 $destino = (string) ($_GET['redirect'] ?? '');
 if (!in_array($destino, array_values(NAVAL_APP_DESTINO), true)) $destino = '../reports/';
-// equipamento: cookie da app ou, sem ele (dados do navegador limpos), o identificador guardado na própria app
-$id = (string) ($_COOKIE[naval_app_cookie_nome()] ?? '');
-if (!preg_match('/^[a-f0-9]{24}$/', $id)) $id = (string) ($_GET['eq'] ?? '');
-$eq = preg_match('/^[a-f0-9]{24}$/', $id) ? naval_app_activo($id) : null;
-if ($eq && ($_COOKIE[naval_app_cookie_nome()] ?? '') !== $id) naval_app_cookie($id);
+// equipamento desta app: o seu cookie, o cookie antigo (se for desta app) ou, sem eles (dados do navegador limpos), o
+// identificador guardado na própria app. A Naval Gestão e a Naval Operações no mesmo telemóvel não se confundem.
+$appDest = (string) (array_search($destino, NAVAL_APP_DESTINO, true) ?: '');
+$eq = naval_app_equipamento_pedido($appDest, (string) ($_GET['eq'] ?? ''));
+$id = $eq ? (string) $eq['id'] : (string) ($_COOKIE[naval_app_cookie_nome($appDest)] ?? $_COOKIE[naval_app_cookie_nome()] ?? '');
+if ($eq && ($_COOKIE[naval_app_cookie_nome((string) $eq['app'])] ?? '') !== $id) naval_app_cookie($id, (string) $eq['app']);
 
 // sessão ainda aberta neste equipamento: directo à app
 if ($eq && naval_autenticado() && ($_SESSION['app_equipamento'] ?? '') === $id) {
@@ -26,7 +27,7 @@ if ($eq && naval_autenticado() && ($_SESSION['app_equipamento'] ?? '') === $id) 
 }
 // sem a chave do telemóvel (activação interrompida há muito): a app tem de ser activada de novo pelo código QR
 $semChave = $eq && !$eq['credenciais'];
-if (!$eq && $id !== '') naval_app_cookie('');
+if (!$eq && $id !== '') naval_app_cookie('', $appDest);
 $u = $eq ? (naval_utilizadores()[$eq['login']] ?? []) : [];
 $pre = $eq && !$semChave ? ['equipamento' => $id, 'opcoes' => naval_wa_opcoes_entrada($eq)] : null;
 $ios = naval_app_so((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) === 'ios';

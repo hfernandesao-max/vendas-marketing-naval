@@ -1,3 +1,33 @@
+## 24-11-2026
+
+### Naval Operações: entrada só com Face ID, notas com imagem, pedidos ao longo do dia e inventário dos armazéns
+
+<!-- paginas: app-operacoes -->
+<!-- tipo: funcionalidade -->
+
+> titulo: Naval Operações: novidades
+> titulo [en]: Naval Operações: what's new
+> titulo [ti]: Naval Operações፦ ሓድሽ ነገራት
+>
+> - Depois de activada pelo código QR, a app abre sempre só com o Face ID ou a impressão digital (já não volta a pedir o código QR).
+>   [en] Once activated with the QR code, the app always opens with Face ID or fingerprint only (it no longer asks for the QR code again).
+>   [ti] ብኮድ QR ምስ ተንቀሳቐሰት፡ እታ ኣፕ ኩሉ ግዜ ብFace ID ወይ ኣሻራ ኣጻብዕ ጥራይ ትኽፈት (ደጊማ ኮድ QR ኣይትሓትትን)።
+> - Entregar dinheiro: cada nota com a sua imagem e botões − e + para a quantidade.
+>   [en] Cash handover: each note with its picture and − and + buttons for the quantity.
+>   [ti] ምርካብ ገንዘብ፦ ነፍሲ ወከፍ ባጤራ ምስ ስእሉን ን ብዝሒ ቁልፍታት − ን + ን።
+> - Pedir mercadoria: o pedido começa-se a qualquer hora, guarda-se e continua-se; emitido, fica sempre à espera da aprovação.
+>   [en] Ordering goods: start the order at any time, save it and continue later; once issued it always awaits approval.
+>   [ti] ምሕታት ኣቕሓ፦ ጠለብ ኣብ ዝኾነ ሰዓት ይጅመር፡ ይዕቀብ፡ ይቕጽል፤ ምስ ተዋህበ ኩሉ ግዜ ምጽዳቕ ይጽበ።
+> - Nova tarefa «Inventário do armazém»: contagem às cegas com leitura do código de barras pela câmara, validada pelo controlo de stock e aprovada pelo responsável.
+>   [en] New task «Warehouse stock count»: blind count with barcode scanning by camera, validated by stock control and approved by the manager.
+>   [ti] ሓድሽ ዕማም «ቆጸራ ክምችት መኽዘን»፦ ዕዉር ቆጸራ ብካሜራ ባርኮድ ብምንባብ፡ ብቁጽጽር ክምችት ዝረጋገጽን ብሓላፊ ዝጸድቕን።
+
+- **Entrada da app:** o equipamento fica guardado por app (cookie próprio da Naval Gestão e da Naval Operações) e no próprio código QR já usado; reabrir a app vai sempre à entrada com a biometria, mesmo com as duas apps no mesmo telemóvel. Antes, a Naval Operações podia ficar presa no pedido do código QR.
+- **Entregar dinheiro:** cada nota com uma imagem ilustrativa (cor e valor do Kwanza) e botões − e + grandes; as moedas também.
+- **Pedir mercadoria:** «Guardar e continuar depois» (rascunho ao longo do dia) e «Continuar o pedido» no cartão do rascunho; o pedido extra emitido vai sempre à aprovação do coordenador. A imagem do artigo aparece quando o catálogo a trouxer.
+- **Inventário do armazém** (v1/inventario): o técnico escolhe o armazém e conta às cegas (o stock do Pinguim BO fica congelado ao começar), pela lista ou lendo o código de barras com a câmara (cada leitura soma uma unidade), e junta artigos que não estão na lista. Controlo de stock valida (motivo de cada diferença) ou pede a recontagem dos artigos duvidosos; o responsável aprova; três pessoas diferentes. A Logística lança o acerto no Pinguim BO. Os códigos de barras lêem-se do Pinguim BO (só SELECT).
+- **Leitura de códigos pela câmara também no iPhone:** o QR das PO e os códigos de barras, com a biblioteca ZXing incluída no portal (MIT), quando o telemóvel não tem o leitor próprio.
+
 ## 23-11-2026
 
 ### Facturas fora do horário avisadas na hora; troca de artigo detectada; horário do dia numa linha

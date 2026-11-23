@@ -27,11 +27,17 @@ if ($eq && $eq['credenciais']) {
 // sessão da app aberta mas sem a chave do telemóvel (activação interrompida): termina a activação da biometria
 $pendente = $eq ? ['destino' => NAVAL_APP_DESTINO[$eq['app']], 'pessoa' => (string) ((naval_utilizador() ?: [])['nome'] ?? $eq['login'])] : null;
 $c = naval_app_codigo($codigo);
-// código já usado (a app abre sempre por aqui): directo à entrada rápida com a biometria, sem passar pelo navegador
+// código já usado (a app abre sempre por aqui): directo à entrada rápida com a biometria, sem passar pelo navegador e
+// sem voltar a pedir o código QR. O equipamento vem do próprio código (guardado ao activar) ou do cookie desta app.
 $reg = $c ? null : naval_app_codigo_registo($codigo);
-if (!$pendente && !$c && $reg && preg_match('/^[a-f0-9]{24}$/', (string) ($_COOKIE[naval_app_cookie_nome()] ?? ''))) {
-    header('Location: entrar.php?redirect=' . rawurlencode(NAVAL_APP_DESTINO[$reg['app']] ?? '../reports/'));
-    exit;
+if (!$pendente && !$c && $reg) {
+    $appReg = (string) ($reg['app'] ?? '');
+    $eqReg = preg_match('/^[a-f0-9]{24}$/', (string) ($reg['equipamento'] ?? '')) ? naval_app_activo((string) $reg['equipamento']) : null;
+    $eqReg = $eqReg ?: naval_app_equipamento_pedido($appReg);
+    if ($eqReg) {
+        header('Location: entrar.php?redirect=' . rawurlencode(NAVAL_APP_DESTINO[$appReg] ?? '../reports/') . '&eq=' . $eqReg['id']);
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>

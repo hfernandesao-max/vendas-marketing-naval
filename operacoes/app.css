@@ -295,3 +295,134 @@
 .hor-fase.passou {
   opacity: 0.55;
 }
+
+/* Entrega do dinheiro: cada nota com a sua imagem (cor e valor), quantidade com − e + grandes */
+.op-notas td {
+  vertical-align: middle;
+}
+.op-nota {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.op-nota-img svg {
+  display: block;
+  width: 96px;
+  height: 48px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+.op-nota-t {
+  font-size: 12px;
+  font-weight: 700;
+}
+.op-passos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.op-passos input {
+  width: 56px !important;
+  text-align: center;
+}
+.op-passo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--linha);
+  background: var(--ceu);
+  color: var(--navy);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.op-passo:active {
+  background: var(--fant);
+}
+
+/* Inventário do armazém */
+.op-sub {
+  margin: 18px 4px 6px;
+  font-size: 15px;
+  color: var(--suave);
+}
+.op-tab tr.op-recontar td {
+  background: var(--aviso-f);
+}
+.op-tab tr.op-lido td {
+  background: var(--ceu);
+  transition: background 0.2s;
+}
+.op-tab tr.op-falta td:last-child {
+  color: var(--mau);
+  font-weight: 700;
+}
+.op-tab tr.op-sobra td:last-child {
+  color: var(--azul);
+  font-weight: 700;
+}
+.op-tab tr.op-inv-mot td {
+  border-top: 0;
+  padding-top: 0;
+}
+.op-inv-mot select,
+.op-inv-mot input[type='text'],
+.op-inv-mot .op-numero {
+  margin: 4px 0;
+}
+.op-recontar-l {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin: 4px 0;
+}
+.op-fora {
+  margin: 10px 0;
+}
+.op-fora summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--navy);
+  padding: 6px 0;
+}
+.op-lido-t {
+  min-height: 1.2em;
+  font-weight: 600;
+}
+/* câmara com a mira ao centro (onde se aponta o código) */
+.op-quadro {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.op-mira {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 35%;
+  bottom: 35%;
+  border: 3px solid #3ecf8e;
+  border-radius: 10px;
+  box-shadow: 0 0 0 999px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+/* imagem do artigo no pedido (Pinguim BO, quando existe) */
+.op-com-img {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  column-gap: 8px;
+}
+.op-art-img {
+  grid-row: span 5;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--linha);
+}
