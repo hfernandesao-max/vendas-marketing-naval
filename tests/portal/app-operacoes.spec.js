@@ -144,3 +144,82 @@ test('operações: o armazém abre a PO pelo número e confere a carga, com o mo
   });
   expect(erros).toEqual([]);
 });
+
+test('operações: o vendedor vê as suas PO com o percurso e pede mercadoria extra com o stock do armazém', async ({ page }) => {
+  const pedidos = [];
+  const lista = [
+    {
+      numero: 'PO-2026-000431',
+      rota: '1007',
+      estado: 'emitida',
+      origem: { tipo: 'conciliacao' },
+      precisa_aprovacao: true,
+      pronta_carga: true,
+      emitida_por: 'automatico',
+      emitida_em: '2026-11-23 15:58:00',
+      aprovada_por: 'automatico',
+      aprovada_em: '2026-11-23 15:58:00',
+      criado_em: '2026-11-23 15:58:00',
+      linhas: [{ codigo: '10000332', artigo: 'Fraldas Naval Medium', quantidade: 10 }],
+    },
+    {
+      numero: 'PO-2026-000430',
+      rota: '1007',
+      estado: 'rascunho',
+      versao: 2,
+      origem: { tipo: 'manual' },
+      precisa_aprovacao: true,
+      criado_em: '2026-11-23 15:00:00',
+      linhas: [{ codigo: '10000292', artigo: 'Sabão verde', quantidade: 5 }],
+    },
+  ];
+  await page.route('**/v1/requisicoes**', (r) => {
+    const u = r.request().url();
+    if (r.request().method() === 'POST') {
+      const p = JSON.parse(r.request().postData());
+      pedidos.push(p);
+      return r.fulfill({
+        json: { ok: true, requisicao: { numero: p.numero || 'PO-2026-000432', versao: 1, estado: p.accao === 'emitir' ? 'emitida' : 'rascunho' } },
+      });
+    }
+    if (u.includes('catalogo=1'))
+      return r.fulfill({
+        json: {
+          ok: true,
+          artigos: [
+            { codigo: '10000386', artigo: 'Sabão 6 barras Extra', unidade: 'UN', disponivel: 240 },
+            { codigo: '10000385', artigo: 'Soap brown Extra', unidade: 'UN', disponivel: 120 },
+          ],
+        },
+      });
+    return r.fulfill({ json: { ok: true, requisicoes: lista, rotas: { 1007: 'Awet' }, nomes: {} } });
+  });
+  const erros = await abrir(page, 'mercadoria', { ...SESSAO, login: 'pro7' });
+  const reposicao = page.locator('.op-po-cartao[data-numero="PO-2026-000431"]');
+  await expect(reposicao).toContainText('Aprovada');
+  await expect(reposicao).toContainText('aprovada sozinha pelas regras');
+  // o rascunho emite-se na app
+  await page.locator('.op-po-cartao[data-numero="PO-2026-000430"]').getByRole('button', { name: 'Confirmar e emitir' }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'emitir', numero: 'PO-2026-000430', versao: 2 });
+  // pedido extra: procura, quantidade, aviso acima do disponível
+  await page.getByRole('button', { name: 'Pedir mais mercadoria' }).click();
+  await page.getByLabel('Quantidade · Sabão 6 barras Extra').fill('12');
+  await page.getByLabel('Quantidade · Soap brown Extra').fill('300');
+  await expect(page.locator('.lc-atipico-txt')).toContainText('acima do disponível (120)');
+  await page.getByLabel('Procurar artigo (código ou nome)').fill('soap');
+  await expect(page.getByLabel('Quantidade · Sabão 6 barras Extra')).toBeHidden();
+  await page.getByRole('button', { name: 'Emitir o pedido' }).click();
+  await page.locator('dialog[open]').getByRole('button', { name: 'Gravar assim mesmo' }).click();
+  await expect.poll(() => pedidos.length).toBe(3);
+  expect(pedidos[1]).toMatchObject({
+    accao: 'criar',
+    rota: '1007',
+    linhas: [
+      { codigo: '10000386', quantidade: 12 },
+      { codigo: '10000385', quantidade: 300 },
+    ],
+  });
+  expect(pedidos[2]).toMatchObject({ accao: 'emitir', numero: 'PO-2026-000432' });
+  expect(erros).toEqual([]);
+});

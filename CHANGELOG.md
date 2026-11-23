@@ -1,5 +1,17 @@
 ## 23-11-2026
 
+### «Pedir mercadoria» na app do vendedor (Naval Operações)
+
+<!-- tipo: funcionalidade -->
+
+- **As minhas PO:** a reposição criada sozinha a partir da contagem e os pedidos extra, cada uma com o percurso:
+  - emitida;
+  - aprovação, sozinha pelas regras ou pelo coordenador;
+  - carga no cais;
+  - guia no Pinguim BO.
+  Mostra quem está à espera e, quando a PO não se aprovou sozinha, o motivo. Um rascunho confirma-se e emite-se na própria app.
+- **Pedido extra:** procura do artigo por código ou nome, com o stock disponível no armazém (Pinguim BO), e quantidade linha a linha. Um pedido acima do disponível fica a âmbar e pede confirmação; o motivo é opcional. A aprovação continua no coordenador, que é avisado no telemóvel.
+
 ### Conta da Teresa Gomes criada na instalação
 
 <!-- tipo: melhoria -->

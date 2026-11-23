@@ -23,6 +23,7 @@ const hoje = () => {
 const hora = (s) => (s ? String(s).slice(11, 16) : '');
 const TAREFAS = {
   visitas: 'Clientes do dia',
+  mercadoria: 'Pedir mercadoria',
   entrega: 'Entregar dinheiro',
   contagem: 'Contar a carrinha',
   carga: 'Carregar PO',
@@ -98,7 +99,233 @@ function desenhar() {
     c.append(el('p', 'ag-vazio', t('O seu perfil não tem tarefas nesta app.')));
     return;
   }
-  ({ visitas: vistaVisitas, entrega: vistaEntrega, contagem: vistaContagem, carga: vistaCarga })[E.tarefa](c);
+  ({ visitas: vistaVisitas, mercadoria: vistaMercadoria, entrega: vistaEntrega, contagem: vistaContagem, carga: vistaCarga })[E.tarefa](c);
+}
+
+// ───────────── Pedir mercadoria (vendedor) ─────────────
+// As PO das suas rotas (v1/requisicoes): a reposição criada sozinha da contagem validada e os pedidos extra, cada uma
+// com o percurso (emitida → aprovação → carga no cais → guia no Pinguim BO), quem está à espera e, quando não se
+// aprovou sozinha, porquê. Um rascunho emite-se aqui. Um pedido extra procura o artigo no catálogo com o stock
+// disponível no armazém (Pinguim BO) e pede a quantidade linha a linha; a aprovação continua no coordenador.
+const amanha = () => {
+  const d = new Date(Date.now() + 864e5);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+const ddmm = (s) => (s ? String(s).slice(8, 10) + '-' + String(s).slice(5, 7) + ' ' + String(s).slice(11, 16) : '');
+/** Estado de uma PO para o vendedor: [texto, classe, passos [{feito, texto, nota}]]. */
+function estadoPO(r, nomes) {
+  const nome = (l) => (l === 'automatico' ? t('automático') : (nomes && nomes[l]) || l || '');
+  const emitida = r.estado !== 'rascunho';
+  const aprovada = !r.precisa_aprovacao || !!r.aprovada_em;
+  const carregada = r.estado === 'carregada';
+  const guia = carregada && (r.fase === 'transferida' || r.fase === 'validada');
+  const passos = [
+    { feito: emitida, texto: t('Emitida'), nota: emitida ? nome(r.emitida_por) + ' · ' + ddmm(r.emitida_em) : t('rascunho: confirme e emita') },
+    {
+      feito: emitida && aprovada,
+      texto: t('Aprovação'),
+      nota: r.aprovada_em
+        ? (r.aprovada_por === 'automatico' ? t('aprovada sozinha pelas regras') : nome(r.aprovada_por)) + ' · ' + ddmm(r.aprovada_em)
+        : t('o coordenador foi avisado no telemóvel'),
+    },
+    {
+      feito: carregada,
+      texto: t('Carga no cais'),
+      nota: carregada ? nome(r.confirmado_por) + ' · ' + ddmm(r.confirmado_em) : t('o Fiel de Armazém lê o QR da PO'),
+    },
+    { feito: guia, texto: t('Guia no Pinguim BO'), nota: guia ? t('criada e confirmada') : t('sai sozinha depois da carga') },
+  ];
+  if (r.estado === 'anulada') return [t('Anulada'), 'op-mau', passos];
+  if (r.estado === 'fechada') return [t('Fechada'), '', passos];
+  if (carregada) return [t('Carregada'), 'op-ok', passos];
+  if (!emitida) return [t('Rascunho'), 'op-mau', passos];
+  if (!aprovada) return [t('Por aprovar'), 'op-mau', passos];
+  return [t('Aprovada'), 'op-ok', passos];
+}
+function vistaMercadoria(c) {
+  const de = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  apiJson('requisicoes?de=' + de + '&ate=' + amanha()).then((d) => {
+    c.textContent = '';
+    if (!d || !d.ok) {
+      c.append(el('p', 'ag-vazio', t((d && d.erro) || 'Não foi possível ler os dados.')));
+      return;
+    }
+    const rotas = Object.keys(d.rotas || {});
+    const novo = botao(t('Pedir mais mercadoria'), null, () => {
+      c.textContent = '';
+      c.append(formPedido(rotas, d.rotas || {}));
+    });
+    c.append(novo);
+    const lista = (d.requisicoes || []).slice().sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || '')));
+    if (!lista.length) c.append(el('p', 'ag-vazio', t('Ainda não tem PO nos últimos dias.')));
+    lista.slice(0, 15).forEach((r) => c.append(cartaoPO(r, d.nomes || {})));
+  });
+}
+function cartaoPO(r, nomes) {
+  const k = el('section', 'ag-cartao op-po-cartao');
+  k.dataset.numero = r.numero;
+  const [est, cl, passos] = estadoPO(r, nomes);
+  const cab = el('div', 'op-po-cab');
+  cab.append(
+    el('strong', null, r.numero + ' · ' + ((r.origem && r.origem.tipo) === 'conciliacao' ? t('reposição') : t('pedido extra'))),
+    el('span', 'op-pill ' + cl, est),
+  );
+  k.append(
+    cab,
+    el(
+      'p',
+      'ag-nota',
+      t('Rota {r}', { r: r.rota }) +
+        ' · ' +
+        t('{a} artigos · {q} unidades', { a: n0((r.linhas || []).length), q: n0((r.linhas || []).reduce((s, l) => s + (+l.quantidade || 0), 0)) }),
+    ),
+  );
+  const ol = el('ol', 'op-passos');
+  passos.forEach((p) => {
+    const li = el('li', p.feito ? 'feito' : '');
+    const tx = el('div');
+    tx.append(el('strong', null, p.texto), el('span', null, p.nota));
+    li.append(el('span', 'op-bola', p.feito ? '✓' : ''), tx);
+    ol.append(li);
+  });
+  k.append(ol);
+  const mot = (r.regras_auto && r.regras_auto.motivos) || [];
+  if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && mot.length)
+    k.append(el('p', 'op-mau', t('Para aprovar porque: {m}.', { m: mot.map((x) => t(x)).join('; ') })));
+  // o rascunho emite-se aqui (confirma as quantidades)
+  if (r.estado === 'rascunho') {
+    const erro = erroBox();
+    const emitir = botao(t('Confirmar e emitir'), null, () => {
+      emitir.disabled = true;
+      postJson('requisicoes', { accao: 'emitir', numero: r.numero, versao: r.versao }).then((x) => {
+        emitir.disabled = false;
+        if (!x || !x.ok) return mostrarErro(erro, x);
+        aviso(t('PO emitida'));
+        desenhar();
+      });
+    });
+    const ul = el('ul', 'op-lista');
+    (r.linhas || []).forEach((l) => ul.append(el('li', null, n0(l.quantidade) + ' × ' + l.artigo)));
+    k.append(ul, erro, emitir);
+  }
+  return k;
+}
+function formPedido(rotas, nomes) {
+  const w = el('section', 'ag-cartao op-pedido');
+  w.append(el('h2', null, t('Pedido extra')));
+  let rota = rotas[0] || '';
+  if (rotas.length > 1) {
+    const sel = el('select', 'op-numero');
+    sel.setAttribute('aria-label', t('Rota'));
+    rotas.forEach((r) => sel.append(new Option(r + (nomes[r] ? ' · ' + nomes[r] : ''), r)));
+    sel.addEventListener('change', () => (rota = sel.value));
+    w.append(sel);
+  }
+  const procura = el('input', 'op-numero');
+  procura.type = 'search';
+  procura.placeholder = t('Procurar artigo (código ou nome)');
+  procura.setAttribute('aria-label', t('Procurar artigo (código ou nome)'));
+  const corpo = el('div');
+  corpo.append(el('p', 'ag-vazio', t('A carregar…')));
+  const erro = erroBox();
+  const nota = el('input', 'op-numero');
+  nota.type = 'text';
+  nota.maxLength = 200;
+  nota.placeholder = t('Motivo (ex.: encomenda de cliente)');
+  nota.setAttribute('aria-label', t('Motivo do pedido extra'));
+  const qs = new Map(); // pela ordem do catálogo
+  let lcRef = null;
+  // valores fora do normal (acima do disponível) pedem confirmação antes de emitir
+  const enviar = botao(t('Emitir o pedido'), null, () => (lcRef ? lcRef.confirmar(enviarAgora) : enviarAgora()));
+  function enviarAgora() {
+    const linhas = [...qs.values()]
+      .filter((x) => +x.i.value > 0)
+      .map((x) => ({ codigo: x.a.codigo, artigo: x.a.artigo, unidade: x.a.unidade || '', quantidade: Number(x.i.value) }));
+    if (!linhas.length) {
+      erro.hidden = false;
+      erro.textContent = t('Indique a quantidade de pelo menos um artigo.');
+      return;
+    }
+    enviar.disabled = true;
+    postJson('requisicoes', { accao: 'criar', rota, linhas, nota: nota.value }).then((x) => {
+      if (!x || !x.ok) {
+        enviar.disabled = false;
+        return mostrarErro(erro, x);
+      }
+      postJson('requisicoes', { accao: 'emitir', numero: x.requisicao.numero, versao: x.requisicao.versao }).then((y) => {
+        enviar.disabled = false;
+        if (!y || !y.ok) return mostrarErro(erro, y);
+        aviso(t('Pedido emitido'));
+        desenhar();
+      });
+    });
+  }
+  const voltar = botao(t('Cancelar'), 'ag-sec-b', () => desenhar());
+  w.append(procura, el('p', 'ag-nota', t('Disponível = stock do armazém principal agora (Pinguim BO).')), corpo, nota, erro);
+  const acc = el('div', 'op-acc');
+  acc.append(enviar, voltar);
+  w.append(acc);
+  apiJson('requisicoes?catalogo=1').then((d) => {
+    corpo.textContent = '';
+    if (!d || !d.ok) return corpo.append(el('p', 'op-erro', t((d && d.erro) || 'Não foi possível ler os dados.')));
+    if (d.stock_erro) corpo.append(el('p', 'op-mau', t('Sem o stock do Pinguim BO agora: o pedido segue na mesma e o armazém confirma.')));
+    const tab = el('table', 'op-tab');
+    const cab = el('tr');
+    [t('Artigo'), t('Pedir')].forEach((x, i) => cab.append(el('th', i ? 'n' : null, x)));
+    tab.append(cab);
+    const linhas = [];
+    (d.artigos || []).forEach((a) => {
+      const tr = el('tr');
+      const i = numero('', t('Quantidade') + ' · ' + a.artigo);
+      i.placeholder = '0';
+      const ta = el('td');
+      ta.append(
+        el('span', 'op-cod', a.codigo),
+        el('br'),
+        document.createTextNode(a.artigo),
+        el('br'),
+        el('span', 'op-cod', a.disponivel == null ? t('disponível: por confirmar') : t('disponível: {n}', { n: n0(a.disponivel) })),
+      );
+      const tq = el('td', 'n');
+      tq.append(i);
+      tr.append(ta, tq);
+      tab.append(tr);
+      qs.set(a.codigo, { a, i });
+      linhas.push({
+        tr,
+        campos: [i],
+        codigo: a.codigo,
+        texto: a.artigo,
+        preenchida: () => +i.value > 0,
+        // mais do que o armazém tem: o coordenador decide
+        atipico: () =>
+          a.disponivel != null && +i.value > a.disponivel
+            ? t('acima do disponível ({n})', { n: n0(a.disponivel) })
+            : quantidadeAtipica(i.value, { unidade: a.unidade }),
+      });
+    });
+    lcRef = lancamento({ tabela: tab, linhas, gravar: enviar, progresso: false, procurar: false, chave: 'op-pedido-' + rota });
+    // procura própria: no topo do cartão
+    procura.addEventListener('input', () => {
+      const q = procura.value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+      linhas.forEach(
+        (x) =>
+          (x.tr.hidden =
+            !!q &&
+            !(x.codigo + ' ' + x.texto)
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+              .includes(q)),
+      );
+    });
+    corpo.append(tab);
+  });
+  return w;
 }
 
 // ───────────── Clientes do dia (vendedor) ─────────────
