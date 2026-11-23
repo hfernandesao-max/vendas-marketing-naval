@@ -958,7 +958,7 @@ function linhaNotificacoes() {
   const b = el('button', 'ag-rota ag-notif-linha');
   b.type = 'button';
   const ic = el('span', 'ag-notif-ic');
-  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml, insecure-document-method -- ícone SVG estático do próprio código
   const nome = el('span', 'ag-rota-n');
   nome.append(el('strong', null, t('Notificações')), el('span', 'ag-rota-s', sub ? t('Ligadas neste telefone') : t('Desligadas · toque para ligar')));
   b.append(ic, nome);
@@ -990,7 +990,7 @@ function cartaoNotificacoes() {
   const c = cartao('ag-notif');
   const cab = el('div', 'ag-notif-cab');
   const ic = el('span', 'ag-notif-ic');
-  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+  ic.innerHTML = svg('sino'); // nosemgrep: insecure-innerhtml, insecure-document-method -- ícone SVG estático do próprio código
   const tx = el('div');
   tx.append(el('strong', null, t('Notificações neste telefone')));
   c.append(cab);
@@ -1636,7 +1636,7 @@ function desenhar() {
     const b = el('button');
     b.type = 'button';
     const ic = el('span', 'ag-tab-ic');
-    ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml -- ícone SVG estático do próprio código
+    ic.innerHTML = svg(ICONE[id]); // nosemgrep: insecure-innerhtml, insecure-document-method -- ícone SVG estático do próprio código
     b.append(ic, el('span', null, t(nome)));
     if (id === 'alertas' && nAl) b.append(el('b', 'ag-badge', nAl > 99 ? '99+' : String(nAl)));
     if (id === E.sep) b.setAttribute('aria-current', 'page');

@@ -500,8 +500,8 @@ function naval_notif_pessoal(string $login, string $titulo, string $corpo, array
 /** Junta a mensagem à caixa da pessoa; devolve quantas estão por ler. */
 function naval_notif_caixa_juntar(string $login, array $msg): int
 {
-    return naval_exclusivo('notif-caixa-' . md5($login), function () use ($login, $msg) {
-        $f = naval_notif_pasta('caixa') . '/' . md5($login) . '.json';
+    return naval_exclusivo('notif-caixa-' . md5($login), function () use ($login, $msg) { // nosemgrep: weak-crypto -- md5 só dá um nome de ficheiro/fecho estável por conta, sem uso de segurança
+        $f = naval_notif_pasta('caixa') . '/' . md5($login) . '.json'; // nosemgrep: weak-crypto -- md5 só dá um nome de ficheiro/fecho estável por conta, sem uso de segurança
         $c = naval_json_ler($f);
         array_unshift($c, $msg + ['lida' => false]);
         $c = array_slice($c, 0, NAVAL_NOTIF_CAIXA_MAX);
@@ -512,13 +512,13 @@ function naval_notif_caixa_juntar(string $login, array $msg): int
 
 function naval_notif_caixa(string $login): array
 {
-    return naval_json_ler(naval_notif_pasta('caixa') . '/' . md5($login) . '.json');
+    return naval_json_ler(naval_notif_pasta('caixa') . '/' . md5($login) . '.json'); // nosemgrep: weak-crypto -- md5 só dá um nome de ficheiro/fecho estável por conta, sem uso de segurança
 }
 
 function naval_notif_marcar_lidas(string $login): void
 {
-    naval_exclusivo('notif-caixa-' . md5($login), function () use ($login) {
-        $f = naval_notif_pasta('caixa') . '/' . md5($login) . '.json';
+    naval_exclusivo('notif-caixa-' . md5($login), function () use ($login) { // nosemgrep: weak-crypto -- md5 só dá um nome de ficheiro/fecho estável por conta, sem uso de segurança
+        $f = naval_notif_pasta('caixa') . '/' . md5($login) . '.json'; // nosemgrep: weak-crypto -- md5 só dá um nome de ficheiro/fecho estável por conta, sem uso de segurança
         $c = array_map(function ($x) { return ['lida' => true] + $x; }, naval_json_ler($f));
         foreach ($c as &$x) $x['lida'] = true;
         unset($x);

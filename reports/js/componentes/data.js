@@ -91,7 +91,7 @@ export function melhorarData(nat) {
   const bt = document.createElement('button');
   bt.type = 'button';
   bt.className = 'data-cal';
-  bt.innerHTML = ICONE;
+  bt.innerHTML = ICONE; // nosemgrep: insecure-innerhtml, insecure-document-method -- ícone SVG estático (constante ICONE acima)
   bt.setAttribute('aria-label', t('Abrir o calendário'));
   bt.title = t('Abrir o calendário');
   nat.tabIndex = -1;

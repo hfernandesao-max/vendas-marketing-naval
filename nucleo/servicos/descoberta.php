@@ -213,6 +213,7 @@ function naval_desc_normalizar_externo(array $x, string $fonte): array
     $p['t'] = (string) $c['t'];
     $ref = trim((string) ($x['id_externo'] ?? $x['id'] ?? ''));
     $chave = $ref !== '' ? $fonte . '|' . $ref : $fonte . '|' . naval_desc_simples($nome) . '|' . round((float) $p['lat'], 4) . '|' . round((float) $p['lng'], 4);
+    // nosemgrep: weak-crypto -- resumo não criptográfico (identificador/versão), sem uso de segurança
     $p['id'] = 'x:' . substr(sha1($chave), 0, 16);
     $p['f'] = ['x:' . $fonte];
     return [$p, ''];

@@ -16,11 +16,13 @@ if ($base === '') {
     exit(2);
 }
 $git = 'git -C ' . escapeshellarg($raiz) . ' ';
+// nosemgrep: exec-use -- script do CI (só linha de comandos): argumentos com escapeshellarg
 exec($git . 'show ' . escapeshellarg($base . ':CHANGELOG.md') . ' 2>/dev/null', $antes, $r);
 $conhecidas = $r === 0 ? array_flip(array_column(naval_nov_seccoes(implode("\n", $antes)), 'id')) : [];
 $novas = array_values(array_filter(naval_nov_seccoes((string) file_get_contents($raiz . '/CHANGELOG.md')), function ($s) use ($conhecidas) {
     return !isset($conhecidas[$s['id']]);
 }));
+// nosemgrep: exec-use -- script do CI (só linha de comandos): argumentos com escapeshellarg
 exec($git . 'diff --name-only ' . escapeshellarg($base) . ' HEAD', $ficheiros, $r);
 if ($r !== 0) {
     fwrite(STDERR, "Não foi possível comparar com $base.\n");
