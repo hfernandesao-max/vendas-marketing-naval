@@ -2171,7 +2171,7 @@ export const EN = {
     'Counts and load checks stay as a draft in this browser and come back when you open the page again.',
   'Sair na mesma': 'Leave anyway',
   'Ficar e gravar': 'Stay and save',
-  'Ampliar': 'Enlarge',
+  Ampliar: 'Enlarge',
   'Duplo clique para ampliar': 'Double-click to enlarge',
   'Deixou de comprar: {a}': 'Stopped buying: {a}',
   'Plano de cargas de {d}: confirmar e publicar': 'Load plan for {d}: confirm and publish',
