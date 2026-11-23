@@ -69,6 +69,7 @@ function naval_api_rotas(): array
         'v1/vistas' => [['GET', 'POST'], 'jwt', 'vistas.php', []],
         'v1/prospeccao' => [['GET', 'POST'], 'jwt', 'prospeccao.php', []],
         'v1/conciliacao-carrinha' => [['GET', 'POST'], 'jwt', 'carrinha.php', []],
+        'v1/fora-horario' => [['GET', 'POST'], 'jwt', 'fora-horario.php', []],
         'v1/requisicoes' => [['GET', 'POST'], 'jwt', 'requisicoes.php', []],
         'v1/ordens-pinguim' => [['GET', 'POST'], 'jwt', 'ordens-pinguim.php', []],
         'v1/robo/ordens' => [['GET', 'POST'], 'publico', 'robo-ordens.php', []],

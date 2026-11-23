@@ -6231,3 +6231,43 @@ tr.viz-lig:focus-visible {
     display: none;
   }
 }
+
+/* Horário do dia numa linha (Vendas · Contagem e PO · Carga), com a fase em curso destacada */
+.hor-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.hor-fase {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  font-size: 12.5px;
+}
+.hor-fase b {
+  font-weight: 600;
+}
+.hor-fase span {
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+.hor-fase.agora {
+  border-color: var(--ok);
+  background: rgb(var(--veu-rgb) / 0.08);
+}
+.hor-fase.agora span {
+  color: inherit;
+}
+.hor-fase i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ok);
+}
+.hor-fase.passou {
+  opacity: 0.55;
+}

@@ -1618,3 +1618,12 @@ dialog.dlg.cf-dlg {
 .ag-CZ {
   background: color-mix(in srgb, var(--bad) 12%, transparent);
 }
+
+/* Conciliação: facturas fora do horário de vendas */
+.cc-fora-horario ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.cc-fora-horario .cc-fh-aut {
+  color: var(--dim);
+}

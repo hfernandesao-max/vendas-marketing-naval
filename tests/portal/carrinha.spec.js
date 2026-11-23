@@ -121,7 +121,7 @@ test('conciliação: contagem cega, PDF, validação de quem contou e dois níve
   // uma só cor por estado: o risco do cartão tem a cor da etiqueta (por contar: cinzento)
   await expect(rota).toHaveClass(/cc-e-p-mut/);
   // calendário de trabalho: horário do dia e prazo do fecho (16:00) ultrapassado
-  await expect(page.locator('.cc-horario')).toContainText('fecho de contas com a tesouraria, contagem das carrinhas e requisição ao armazém 15:30–16:00');
+  await expect(page.locator('.hor-linha')).toContainText('Contagem e PO15:30–16:00');
   await expect(rota).toContainText('Fora do prazo do fecho (16:00)');
   await rota.getByRole('button', { name: 'Contar' }).click();
   // cega: só o artigo e a quantidade que voltou
@@ -392,5 +392,80 @@ test('conciliação: a diferença regularizada no Pinguim BO fica à vista na li
   await expect(dif).toContainText('→ 0');
   await expect(dif).toHaveAttribute('title', /regularizada no Pinguim BO -5 \(FR FR0126S77774N\/5, contado devolvido em SA A1000\/130\)/);
   await expect(cartao.locator('.cc-regularizado').last()).toContainText('SA A1000/130');
+  expect(erros).toEqual([]);
+});
+
+test('conciliação: facturas fora do horário de vendas assinaladas na rota (autorizadas à parte) e horário do dia numa linha', async ({ page }) => {
+  await page.route('**/v1/conciliacao-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        pode: { contar: true, coordenar: true, fechar: true },
+        eu: 'tec',
+        data: '2026-11-23',
+        movimentos: 'saldo',
+        motivos: MOTIVOS,
+        nomes: {},
+        horario: {
+          dia: '2026-11-23',
+          tipo: 'completo',
+          vendas: ['07:30', '15:00'],
+          fecho: ['15:00', '15:30'],
+          carga: ['15:30', '16:30'],
+          agora: '2026-11-23 15:10',
+        },
+        rotas: [
+          {
+            rota: '1009',
+            promotor: 'Efrem Bokre',
+            cega: false,
+            linhas: [linhaCompleta('10000292', 'Sabão', 0, 0)],
+            contado_por: 'tec',
+            contado_em: '2026-11-23 16:47:00',
+            motivos: {},
+            resumo: { estado: 'por_validar', artigos: 1, alertas: 0, diferencas: 0, falta_kz: 0, sobra_kz: 0 },
+            historico: [],
+            fora_horario: [
+              {
+                documento: 'FR FR0126S77745N/14',
+                data: '2026-11-23',
+                hora: '16:42',
+                rota: '1009',
+                total: 741379.5,
+                inicio: '07:30',
+                fim: '15:00',
+                motivo: 'depois',
+                autorizada: false,
+              },
+              {
+                documento: 'FR FR0126S77745N/13',
+                data: '2026-11-23',
+                hora: '16:18',
+                rota: '1009',
+                total: 1231557,
+                inicio: '07:30',
+                fim: '15:00',
+                motivo: 'depois',
+                autorizada: true,
+                autorizacao: { por: 'coord', motivo: 'Entrega combinada', ate: '16:30' },
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#conciliacao-carrinha');
+  await expect(page.locator('.hor-fase.agora')).toContainText('Contagem e PO');
+  await expect(page.locator('.hor-fase.passou')).toContainText('Vendas');
+  const cartao = page.locator('.cc-rota', { hasText: '1009' });
+  await expect(cartao.locator('.note').first()).toContainText('1 factura(s) fora do horário');
+  await cartao.getByRole('button', { name: 'Ver' }).click();
+  const fh = cartao.locator('.cc-fora-horario');
+  await expect(fh).toContainText('1 factura(s) fora do horário de vendas, sem autorização');
+  await expect(fh).toContainText('FR FR0126S77745N/14 · 16:42');
+  await expect(fh.locator('.cc-fh-aut')).toContainText('autorizada por coord: Entrega combinada');
+  await expect(page.getByRole('button', { name: 'Autorizar venda fora do horário' })).toBeVisible();
   expect(erros).toEqual([]);
 });

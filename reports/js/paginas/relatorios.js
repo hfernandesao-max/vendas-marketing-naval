@@ -6,6 +6,7 @@ import { apiFetch, apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { cabecalho, entregar, estiloCabeca, estiloTabela, lerEmblema, novoDoc, rodapes, tp } from '../componentes/contagem-pdf.js';
 import { cartaoGrafico, grafBarras, grafColunas } from '../componentes/graficos.js';
+import { abrir as abrirLig, abrirPeriodo } from '../componentes/ligacoes.js';
 import { botao, campo, confirmarAccao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { carregarExcelJS, NAVY2, nomeFolha } from '../excel.js';
 import { dl, kz, n0, n1 } from '../formatos.js';
@@ -584,6 +585,24 @@ function guardar(id) {
   );
 }
 
+/**
+ * Detalhe de uma linha do gráfico (o mesmo dos outros gráficos do portal): rota, cliente, artigo ou documento abrem a
+ * sua ficha; um dia abre a página com esse dia. Só com uma dimensão nas linhas; senão, null (sem detalhe).
+ */
+function abrirDaDimensao(R0, temporal) {
+  if (R0.dims.length !== 1) return null;
+  const { campo: c, grao } = partes(R0.dims[0]);
+  const valor = (i) => String(R0.grupos[i].chaves[0] ?? '');
+  if (c === 'rota') return (i) => abrirLig('rota', { rota: valor(i) });
+  if (c === 'cliente_codigo') return (i) => abrirLig('cliente', { codigo: valor(i) });
+  if (c === 'cliente') return (i) => abrirLig('cliente', { nome: valor(i) });
+  if (c === 'documento') return (i) => abrirLig('documento', { documento: valor(i) });
+  if (c === 'codigo' || c === 'artigo_codigo') return (i) => abrirLig('artigo', { codigo: valor(i) });
+  if (c === 'artigo') return (i) => abrirLig('artigo', { artigo: valor(i) });
+  if (temporal && !grao && /^\d{4}-\d{2}-\d{2}$/.test(valor(0))) return (i) => abrirPeriodo(valor(i), valor(i), atual);
+  return null;
+}
+
 /* ------------------------------------------------------------------ resultado */
 function resultado(dom) {
   const box = el('div', 'rel-resultado');
@@ -616,6 +635,7 @@ function resultado(dom) {
           [medidaNome(m0), 1],
         ],
         linhas: itens.map((x) => [x.rot, fmtMedida(m0, x.valor)]),
+        abrirLinha: abrirDaDimensao(R0, temporal),
       }),
     );
   }

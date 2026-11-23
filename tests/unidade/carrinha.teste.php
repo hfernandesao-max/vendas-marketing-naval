@@ -633,3 +633,17 @@ teste('referência da contagem: a hora congelada na base prevalece sobre o horá
     $reg = ['contagem' => ['A' => 1.0], 'contado_em' => '2026-11-21 14:40:00', 'base' => ['corte' => ['hora' => '2026-11-21 14:00:00', 'origem' => 'contagem']]];
     igual('2026-11-21 14:00:00', naval_carr_referencia_contagem($reg, $dia));
 });
+
+teste('diagnóstico: falta e sobra da mesma quantidade em dois artigos com o mesmo preço é provável troca de artigo (rota 1010, 23-11)', function () {
+    $linhas = [
+        ['codigo' => '10000386', 'artigo' => 'Sabão verde 850 g', 'diferenca' => -5.0, 'preco' => 27500.0],
+        ['codigo' => '10000385', 'artigo' => 'Sabão castanho 850 g', 'diferenca' => 5.0, 'preco' => 27500.0],
+        ['codigo' => '10000332', 'artigo' => 'Fraldas', 'diferenca' => -5.0, 'preco' => 14800.0],   // preço diferente: não
+    ];
+    $d = naval_carr_diagnosticos($linhas, [], '1010');
+    igual(['troca_artigo', 'troca_artigo'], [$d['10000386']['tipo'], $d['10000385']['tipo']]);
+    igual(['10000385', '10000386'], [$d['10000386']['doc'], $d['10000385']['doc']]);
+    igual(false, isset($d['10000332']));
+    igual(true, strpos($d['10000386']['texto'], 'saída de 5 10000386 e entrada de 5 10000385') !== false);
+    igual(true, isset(NAVAL_CARR_MOTIVOS['troca_artigo']) && isset(NAVAL_CARR_MOTIVOS['consignacao']));
+});

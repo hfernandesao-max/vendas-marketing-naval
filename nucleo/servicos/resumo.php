@@ -416,6 +416,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[notificações] ' . $e->getMessage());
     }
+    // facturas fora do horário de vendas: aviso na hora ao coordenador e a quem segue a rota (FORA_HORARIO)
+    try {
+        naval_servico('fora-horario');
+        $fh = naval_fh_ciclo($agora);
+        if ($fh) $feito['facturas_fora_horario'] = $fh;
+    } catch (Throwable $e) {
+        error_log('[fora do horário] ' . $e->getMessage());
+    }
     // vigilância em produção: falhas do código, verificações de negócio, GitHub e reposição automática (VIGIA_ACTIVA)
     try {
         naval_servico('vigia');

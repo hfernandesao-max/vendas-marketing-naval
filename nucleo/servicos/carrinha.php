@@ -35,6 +35,8 @@ const NAVAL_CARR_MOTIVOS = [
     'erro_carga' => 'Erro na carga',
     'venda_nao_registada' => 'Venda não registada',
     'erro_registo' => 'Erro de registo no sistema',
+    'troca_artigo' => 'Troca de artigo na entrega',
+    'consignacao' => 'Venda à consignação (facturar no SAP)',
     'falta' => 'Falta sem justificação',
     'outro' => 'Outro (explicar na nota)',
 ];
@@ -1325,6 +1327,29 @@ function naval_carr_diagnosticos(array $linhas, array $guias, string $rota): arr
                     'texto' => 'Falta igual à guia ' . $g['doc'] . ' (' . substr($g['hora'], 11, 5) . '), lançada como carga: provável devolução ao armazém registada com o sentido trocado; confirme com a Logística.'];
                 break;
             }
+        }
+    }
+    // troca de artigo na entrega: falta num artigo e sobra da mesma quantidade noutro, com o mesmo preço (ex.: rota 1010,
+    // 23-11: −5 sabão verde e +5 sabão castanho, ambos a 27 500 Kz); a Logística acerta o stock da carrinha (saída de um
+    // e entrada do outro) e o valor do par é zero
+    $livres = array_values(array_filter($linhas, function ($l) use ($out) {
+        return abs((float) ($l['diferenca'] ?? 0)) > NAVAL_CARR_TOLERANCIA && !isset($out[(string) $l['codigo']]) && (float) ($l['preco'] ?? 0) > 0;
+    }));
+    foreach ($livres as $a) {
+        if ((float) $a['diferenca'] >= 0 || isset($out[(string) $a['codigo']])) continue;
+        foreach ($livres as $b) {
+            if ((float) $b['diferenca'] <= 0 || isset($out[(string) $b['codigo']])) continue;
+            if (abs((float) $a['diferenca'] + (float) $b['diferenca']) > NAVAL_CARR_TOLERANCIA) continue;
+            $pa = (float) $a['preco'];
+            $pb = (float) $b['preco'];
+            if (abs($pa - $pb) > 0.01 * max($pa, $pb)) continue;
+            $q = abs((float) $a['diferenca']);
+            $na = (string) ($a['artigo'] ?? $a['codigo']);
+            $nb = (string) ($b['artigo'] ?? $b['codigo']);
+            $txt = 'Falta de ' . $q . ' em ' . $na . ' igual à sobra em ' . $nb . ', com o mesmo preço: provável troca de artigo na entrega (valor zero). A Logística acerta o stock da carrinha: saída de ' . $q . ' ' . $a['codigo'] . ' e entrada de ' . $q . ' ' . $b['codigo'] . '.';
+            $out[(string) $a['codigo']] = ['tipo' => 'troca_artigo', 'doc' => (string) $b['codigo'], 'texto' => $txt];
+            $out[(string) $b['codigo']] = ['tipo' => 'troca_artigo', 'doc' => (string) $a['codigo'], 'texto' => $txt];
+            break;
         }
     }
     return $out;

@@ -14,6 +14,7 @@ import { n0 } from './formatos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el } from './util.js';
 import { tArtigo } from './i18n/artigos.js';
+import { linhaHorario } from './componentes/horario.js';
 
 const $ = (id) => document.getElementById(id);
 const kz = (v) => (v == null || isNaN(v) ? '—' : n0(Math.round(v)) + ' Kz');
@@ -508,6 +509,8 @@ function vistaContagem(c) {
       c.append(el('p', 'ag-vazio', t((d && d.erro) || 'Não foi possível ler os dados.')));
       return;
     }
+    // o horário do dia (vendas · contagem e PO · carga), com a fase em curso
+    if (d.horario) c.append(linhaHorario(d.horario));
     const rotas = d.rotas || [];
     if (!rotas.length) c.append(el('p', 'ag-vazio', t('Sem carrinhas para contar hoje.')));
     // primeiro as que pedem acção (por contar e por validar)

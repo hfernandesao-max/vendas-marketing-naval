@@ -263,3 +263,35 @@
 .op-pedido .op-numero {
   margin-bottom: 8px;
 }
+
+/* Horário do dia (Vendas · Contagem e PO · Carga), com a fase em curso destacada */
+.hor-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+.hor-fase {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  font-size: 13px;
+}
+.hor-fase b {
+  font-weight: 600;
+}
+.hor-fase.agora {
+  border-color: #3ecf8e;
+}
+.hor-fase i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3ecf8e;
+}
+.hor-fase.passou {
+  opacity: 0.55;
+}

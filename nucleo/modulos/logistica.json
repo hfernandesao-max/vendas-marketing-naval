@@ -6,7 +6,7 @@
   "nucleo": false,
   "paginas": ["plano-cargas", "conciliacao-carrinha", "requisicoes-carrinha", "cargas-po", "painel-carrinha", "registo-cargas", "stock-carrinha", "stock-armazem"],
   "recursos": ["plano-cargas", "conciliacao-carrinha", "conciliacao-coordenacao", "conciliacao-fecho", "requisicoes-carrinha", "requisicoes-aprovacao", "requisicoes-validacao", "validacao-carga", "cargas-po", "registo-cargas", "stock-carrinha", "stock-armazem"],
-  "api": ["v1/plano", "v1/plano/historico", "v1/plano/excel", "v1/conciliacao-carrinha", "v1/requisicoes", "v1/ordens-pinguim", "v1/robo/ordens", "v1/stock", "v1/stock/estado", "v1/painel-carrinha"],
+  "api": ["v1/plano", "v1/plano/historico", "v1/plano/excel", "v1/conciliacao-carrinha", "v1/fora-horario", "v1/requisicoes", "v1/ordens-pinguim", "v1/robo/ordens", "v1/stock", "v1/stock/estado", "v1/painel-carrinha"],
   "conectores": ["pinguim-sql", "quatenus", "cctv"],
   "eventos": {
     "publica": ["carrinha.descarga_conciliada", "carrinha.diferenca_detectada"],

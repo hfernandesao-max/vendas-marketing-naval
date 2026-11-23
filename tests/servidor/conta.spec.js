@@ -7,6 +7,10 @@ test('conta no topo: nome e perfil, preferências de favoritos guardadas na cont
   await page.fill('#usuario', 'dir');
   await page.fill('#senha', SENHA);
   await Promise.all([page.waitForURL(/\/reports\/$/), page.click('.btn-submit')]);
+  // o aviso das novidades pode abrir a qualquer momento por cima da página (também depois de recarregar)
+  await page.addLocatorHandler(page.locator('dialog.dlg-aviso'), async (d) => {
+    await d.getByRole('button', { name: 'Li e compreendi' }).click();
+  });
   await fecharAviso(page);
   const conta = page.locator('#conta-b');
   await expect(conta).toBeVisible();

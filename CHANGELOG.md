@@ -1,5 +1,32 @@
 ## 23-11-2026
 
+### Facturas fora do horário avisadas na hora; troca de artigo detectada; horário do dia numa linha
+
+<!-- paginas: conciliacao-carrinha, relatorios -->
+<!-- tipo: funcionalidade -->
+
+> titulo: Facturas fora do horário e troca de artigo
+> titulo [en]: Invoices outside hours and wrong items
+> titulo [ti]: ካብ ሰዓት ወጻኢ ደረሰኛትን ዝተቐየሩ ኣቕሓታትን
+>
+> - Cada factura emitida depois do fim das vendas (ou num dia de descanso) é avisada no telemóvel ao coordenador e aparece na conciliação da rota.
+>   [en] Every invoice issued after sales end (or on a rest day) is notified on the phone to the coordinator and shown in the route's reconciliation.
+>   [ti] ድሕሪ መወዳእታ ሽያጥ (ወይ ኣብ መዓልቲ ዕረፍቲ) ዝተዋህበ ነፍሲ ወከፍ ደረሰኝ ብተሌፎን ንኣወሃሃዲ ይሕበር፡ ኣብ ምስምማዕ መስመር ድማ ይርአ።
+> - A conciliação mostra o horário do dia numa linha (Vendas · Contagem e PO · Carga), com a fase em curso.
+>   [en] The reconciliation shows the day's schedule in one line (Sales · Count and PO · Loading), with the current phase.
+>   [ti] ምስምማዕ ሰዓታት ናይ መዓልቲ ብሓደ መስመር የርኢ (ሽያጥ · ቆጸራን ጠለብን · ምጽዓን)፡ ምስቲ ሕጂ ዘሎ ምዕራፍ።
+>
+> 1. Coordenador: para uma venda combinada fora do horário, use «Autorizar venda fora do horário» antes da venda.
+>    [en] Coordinator: for a sale agreed outside hours, use «Authorise a sale outside hours» before the sale.
+>    [ti] ኣወሃሃዲ፦ ካብ ሰዓት ወጻኢ ንዝተሰማማዕኩምሉ ሽያጥ፡ ቅድሚ ሽያጥ «ካብ ሰዓት ወጻኢ ሽያጥ ፍቐድ» ተጠቐሙ።
+
+- **Facturas fora do horário de vendas** (calendário de trabalho, com 10 minutos de tolerância, FORA_HORARIO_TOLERANCIA): o portal lê o Pinguim BO de 5 em 5 minutos depois do fim das vendas e avisa cada factura nova no telemóvel ao coordenador e a quem segue a rota (FORA_HORARIO=0 desliga). Na conciliação da carrinha, a rota mostra as facturas fora do horário; «Facturas fora do horário» dá o indicador por promotor dos últimos 30 dias (facturas, valor, dias, a mais tarde) e a lista; o relatório semanal à Direcção inclui-o.
+- **Autorização prévia:** o coordenador autoriza uma venda fora do horário (rota, dia, até que horas, motivo); essas facturas ficam «autorizadas» e não contam. O bloqueio da facturação em si é configurado no Winrest (fecho de turno ou horário por utilizador).
+- **Troca de artigo na entrega:** falta num artigo e sobra da mesma quantidade noutro, com o mesmo preço, ficam diagnosticadas como provável troca (valor zero), com o acerto que a Logística deve lançar (saída de um e entrada do outro). Novos motivos: «Troca de artigo na entrega» e «Venda à consignação (facturar no SAP)».
+- **Horário do dia numa linha** na conciliação e na app Naval Operações (contagem), com a fase em curso destacada.
+- **Relatórios personalizados:** cada linha do gráfico abre o detalhe (rota, cliente, artigo, documento ou dia), como nos outros gráficos.
+- Teste da conta (servidor) robusto ao aviso das novidades que abre depois de recarregar.
+
 ### Horário novo a partir de 24-11; a contagem seguinte e as vendas antes da contagem explicam faltas; recontar por quem conta
 
 <!-- tipo: melhoria -->

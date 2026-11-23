@@ -251,8 +251,17 @@ function naval_ag_semanal(int $agora): ?array
     } catch (Throwable $e) {
         error_log('[semanal] análises: ' . $e->getMessage());
     }
+    // facturas fora do horário de vendas na semana, por promotor (as autorizadas pelo coordenador não contam)
+    $fh = [];
+    try {
+        naval_servico('fora-horario');
+        $fh = array_values(array_filter(naval_fh_por_promotor((array) (naval_fh_periodo($ini, $fim) ?? [])), function ($x) { return $x['facturas'] > 0; }));
+        if ($fh) $d['facturas_fora_horario'] = $fh;
+    } catch (Throwable $e) {
+        error_log('[semanal] fora do horário: ' . $e->getMessage());
+    }
     naval_servico('ia');
-    $texto = naval_ia_texto('Escreve três parágrafos curtos para a Direcção sobre a semana de vendas RTM: o que mudou face à semana anterior, as rotas que mais subiram e desceram, as perdas e os riscos, os clientes valiosos em risco e o potencial das rotas (em «analises»), e uma recomendação concreta para esta semana.', $d);
+    $texto = naval_ia_texto('Escreve três parágrafos curtos para a Direcção sobre a semana de vendas RTM: o que mudou face à semana anterior, as rotas que mais subiram e desceram, as perdas e os riscos, os clientes valiosos em risco e o potencial das rotas (em «analises»), as facturas emitidas fora do horário de vendas (em «facturas_fora_horario», se houver), e uma recomendação concreta para esta semana.', $d);
     naval_servico('resumo');
     naval_servico('email');
     $dest = array_values(array_filter(array_map(function ($x) { return $x['rotas'] === null ? $x['email'] : ''; }, naval_resumo_destinatarios())));
@@ -270,6 +279,13 @@ function naval_ag_semanal(int $agora): ?array
                 . $e($dq['maior_potencial']['rota'] . ' · ' . $dq['maior_potencial']['promotor']) . ' (' . $kz($dq['maior_potencial']['potencial']) . ')</li>' : '')
             . ($dq['roturas'] ? '<li>Roturas de stock: ' . $e(implode(', ', $dq['roturas'])) . '</li>' : '')
             . '</ul>';
+    }
+    if ($fh) {
+        $an .= '<h3 style="margin:14px 0 6px">Facturas fora do horário de vendas</h3><ul style="margin:0;padding-left:18px">'
+            . implode('', array_map(function ($x) use ($e, $kz) {
+                return '<li>' . $e($x['rota'] . ' · ' . $x['promotor']) . ': <b>' . $x['facturas'] . '</b> factura(s), ' . $kz($x['valor']) . ', em ' . $x['dias'] . ' dia(s)'
+                    . ($x['mais_tarde'] ? ' · a mais tarde às ' . $e($x['mais_tarde']) : '') . '</li>';
+            }, $fh)) . '</ul>';
     }
     $li = '';
     foreach ($d['rotas'] as $r) {

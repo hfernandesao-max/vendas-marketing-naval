@@ -24,8 +24,20 @@ if (!naval_e_post()) {
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
     $corrigir = naval_perfil() === 'SADM';
     naval_servico('calendario');
+    $vista = naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1', $pode['coordenar'] || $pode['fechar']);
+    // facturas desse dia fora do horário de vendas, por rota (o aviso é extra: sem Pinguim BO, fica sem ele)
+    try {
+        naval_servico('fora-horario');
+        $fh = naval_fh_periodo($data, $data) ?? [];
+        foreach ($vista['rotas'] as &$rv) {
+            $rv['fora_horario'] = array_values(array_filter($fh, function ($x) use ($rv) { return (string) $x['rota'] === (string) $rv['rota']; }));
+        }
+        unset($rv);
+    } catch (Throwable $e) {
+        error_log('[fora do horário] ' . $e->getMessage());
+    }
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'pode' => $pode + ['corrigir' => $corrigir], 'eu' => (string) ($eu['login'] ?? '')]
-        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + ['horario' => naval_cal_para_pagina($data)] + naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1', $pode['coordenar'] || $pode['fechar']));
+        + ($corrigir ? ['utilizadores' => naval_carr_contas()] : []) + ['horario' => naval_cal_para_pagina($data)] + $vista);
 }
 
 $p = naval_pedido();

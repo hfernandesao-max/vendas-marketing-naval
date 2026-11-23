@@ -4,9 +4,9 @@
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { quem as assinante } from '../componentes/assinantes.js';
-import { foraDoPrazo, horarioTxt } from '../componentes/horario.js';
+import { foraDoPrazo, linhaHorario } from '../componentes/horario.js';
 import { pill, secBox, tiles } from '../componentes/blocos.js';
-import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { lancamento, quantidadeAtipica } from '../componentes/lancamento.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -75,8 +75,117 @@ function barra() {
   d.append(ant, el('b', 'pc-dia-t', ds(dia)), dc, seg);
   if (dia !== hoje()) d.append(botao(t('Hoje'), 'ghost sm', () => mudarDia(hoje())));
   d.append(botao(t('Actualizar'), 'ghost sm', () => ((CC = null), ler(true), draw())));
+  // facturas fora do horário de vendas (indicador por promotor, 30 dias) e autorização prévia pelo coordenador
+  d.append(botao(t('Facturas fora do horário'), 'ghost sm', () => verForaHorario()));
+  if (CC && CC.pode && CC.pode.coordenar) d.append(botao(t('Autorizar venda fora do horário'), 'ghost sm', () => autorizarForaHorario()));
   b.append(d);
   return b;
+}
+
+const MOTIVO_FH = { depois: 'depois do fim', antes: 'antes do início', descanso: 'dia de descanso' };
+
+/** Facturas fora do horário dos últimos 30 dias: por promotor (pior primeiro) e a lista, com as autorizadas à parte. */
+function verForaHorario() {
+  janela(
+    t('Facturas fora do horário · últimos 30 dias'),
+    t('Facturas emitidas depois do fim das vendas, antes do início ou num dia de descanso.'),
+    (b, ft, fechar) => {
+      b.append(el('p', 'note', t('A carregar…')));
+      ft.append(botao(t('Fechar'), 'ghost', fechar));
+      apiJson('fora-horario').then((d) => {
+        b.textContent = '';
+        if (!d || !d.ok) {
+          b.append(el('p', 'erro', t((d && d.erro) || 'Não foi possível ler os dados.')));
+          return;
+        }
+        if (!d.lista.length) {
+          b.append(el('p', 'note', t('Nenhuma factura fora do horário nos últimos 30 dias.')));
+          return;
+        }
+        b.append(el('p', 'note', t('Tolerância de {m} minutos depois do fim das vendas. As autorizadas pelo coordenador não contam.', { m: d.tolerancia })));
+        const tp = el('table', 'cc-tab');
+        const hp = el('tr');
+        [t('Rota'), t('Promotor'), t('Facturas'), t('Valor'), t('Dias'), t('Mais tarde'), t('Autorizadas')].forEach((x, i) =>
+          hp.append(el('th', i >= 2 ? 'n' : null, x)),
+        );
+        const thp = el('thead');
+        thp.append(hp);
+        const bp = el('tbody');
+        d.por_promotor.forEach((x) => {
+          const tr = el('tr', x.facturas ? 'cc-falta' : null);
+          tr.append(
+            el('td', null, x.rota),
+            el('td', null, x.promotor),
+            el('td', 'n', n0(x.facturas)),
+            el('td', 'n', kz(x.valor)),
+            el('td', 'n', n0(x.dias)),
+            el('td', 'n', x.mais_tarde || '—'),
+            el('td', 'n', n0(x.autorizadas)),
+          );
+          bp.append(tr);
+        });
+        tp.append(thp, bp);
+        b.append(tp);
+        const tl = el('table', 'cc-tab');
+        const hl = el('tr');
+        [t('Dia'), t('Hora'), t('Rota'), t('Documento'), t('Cliente'), t('Valor'), t('Quando')].forEach((x, i) => hl.append(el('th', i === 5 ? 'n' : null, x)));
+        const thl = el('thead');
+        thl.append(hl);
+        const bl = el('tbody');
+        d.lista.forEach((f) => {
+          const tr = el('tr', f.autorizada ? 'cc-fh-aut' : null);
+          tr.append(
+            el('td', null, dl(f.data)),
+            el('td', null, f.hora),
+            el('td', null, f.rota),
+            el('td', null, f.documento),
+            el('td', null, f.cliente || '—'),
+            el('td', 'n', kz(f.total)),
+            el('td', null, t(MOTIVO_FH[f.motivo] || f.motivo) + (f.autorizada ? ' · ' + t('autorizada') : '')),
+          );
+          bl.append(tr);
+        });
+        tl.append(thl, bl);
+        b.append(el('h4', null, t('Facturas')), tl);
+      });
+    },
+  );
+}
+
+/** O coordenador autoriza antes uma venda fora do horário (rota, dia, até que horas, motivo). */
+function autorizarForaHorario() {
+  janela(
+    t('Autorizar venda fora do horário'),
+    t('As facturas dessa rota, nesse dia, até à hora indicada, não contam como fora do horário.'),
+    (b, ft, fechar) => {
+      const rotas = (CC.rotas || []).map((r) => r.rota);
+      const rota = el('select', 'inp');
+      rota.setAttribute('aria-label', t('Rota'));
+      (rotas.length ? rotas : []).forEach((r) => rota.append(new Option(r, r)));
+      const d = entrada('date', hoje(), { min: hoje() });
+      d.setAttribute('aria-label', t('Dia'));
+      const ate = entrada('time', '17:00');
+      ate.setAttribute('aria-label', t('Até às'));
+      const motivo = entrada('text', '', { maxLength: 200, placeholder: t('Motivo (ex.: entrega combinada com o cliente)') });
+      motivo.setAttribute('aria-label', t('Motivo'));
+      const erro = msgErro();
+      b.append(campo(t('Rota'), rota), campo(t('Dia'), d), campo(t('Até às'), ate), campo(t('Motivo'), motivo), erro);
+      const ok = botao(t('Autorizar'), null, () => {
+        ok.disabled = true;
+        postJson('fora-horario', { accao: 'autorizar', rota: rota.value, dia: d.value, ate: ate.value, motivo: motivo.value }).then((x) => {
+          ok.disabled = false;
+          if (!x.ok) {
+            erro.hidden = false;
+            erro.textContent = t(x.erro || 'Não foi possível gravar.');
+            return;
+          }
+          toast(t('Venda fora do horário autorizada.'), 4000);
+          fechar();
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
+    },
+  );
 }
 
 /** Botão que gera um PDF da contagem (fica inactivo enquanto o gera; avisa se falhar). */
@@ -341,6 +450,46 @@ function tabelaRota(r) {
   }
   // porque é que o Pinguim BO pode não ter as vendas do dia: telemóvel sem sincronizar, rota sem facturas
   (r.avisos_rota || []).forEach((a) => box.append(el('p', 'cc-aviso cc-aviso-rota', t(a.texto))));
+  // facturas fora do horário de vendas neste dia (autorizadas pelo coordenador ou não)
+  const fhs = r.fora_horario || [];
+  if (fhs.length) {
+    const fh = el('div', 'cc-aviso cc-fora-horario');
+    const nao = fhs.filter((f) => !f.autorizada);
+    fh.append(
+      el(
+        'b',
+        null,
+        nao.length
+          ? t('{n} factura(s) fora do horário de vendas, sem autorização', { n: n0(nao.length) })
+          : t('Facturas fora do horário, autorizadas pelo coordenador'),
+      ),
+    );
+    const ul = el('ul');
+    fhs.forEach((f) => {
+      const quando =
+        f.motivo === 'descanso'
+          ? t('dia de descanso')
+          : f.motivo === 'antes'
+            ? t('antes do início das vendas ({h})', { h: f.inicio })
+            : t('depois do fim das vendas ({h})', { h: f.fim });
+      ul.append(
+        el(
+          'li',
+          f.autorizada ? 'cc-fh-aut' : null,
+          f.documento +
+            ' · ' +
+            f.hora +
+            ' · ' +
+            kz(f.total) +
+            ' · ' +
+            quando +
+            (f.autorizada ? ' · ' + t('autorizada por {p}: {m}', { p: f.autorizacao.por, m: f.autorizacao.motivo }) : ''),
+        ),
+      );
+    });
+    fh.append(ul);
+    box.append(fh);
+  }
   // o Pinguim BO mudou depois de a base ser congelada (guia anulada ou corrigida): actualizada (aberta) ou assinalada (aprovada)
   const actualizada = (r.historico || []).filter((h) => h.accao === 'base_actualizada_pinguim').pop();
   const artigosMudados = (dif) => (dif || []).map((d) => tArtigo(d.artigo)).join(', ');
@@ -611,7 +760,7 @@ R['conciliacao-carrinha'] = (pg) => {
   }
   const lista = el('div', 'gst-lista');
   // calendário de trabalho: horário do dia e prazo do fecho (contagem e validação até ao fim da janela do fecho)
-  if (CC.horario) pg.append(el('p', 'note cc-horario', horarioTxt(CC.horario)));
+  if (CC.horario) pg.append(linhaHorario(CC.horario));
   const atrasoFecho = foraDoPrazo(CC.horario, 'fecho');
   rs.forEach((r) => {
     const [txt, cls] = ESTADOS[r.resumo.estado] || [r.resumo.estado, 'p-mut'];
@@ -635,6 +784,8 @@ R['conciliacao-carrinha'] = (pg) => {
     if (nReg) parte(t('{n} regularizada(s) no Pinguim BO', { n: n0(nReg) }), 'cc-regularizado');
     if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
     (r.avisos_rota || []).forEach((a) => parte(a.tipo === 'sincronizacao' ? t('telemóvel por sincronizar') : t('sem facturas no Pinguim BO'), 'cc-neg'));
+    const fhn = (r.fora_horario || []).filter((f) => !f.autorizada).length;
+    if (fhn) parte(t('{n} factura(s) fora do horário', { n: n0(fhn) }), 'cc-neg');
     c.append(h, det);
     const abrir = botao(
       aberta === r.rota ? t('Fechar') : r.cega ? t('Contar') : t('Ver'),
