@@ -5258,4 +5258,23 @@ export const TI = {
   '+{q} na PO por emitir': '+{q} ኣብቲ ገና ዘይወጸ ትእዛዝ',
   'A PO {n} ainda está por emitir: o portal tenta emiti-la sozinho a cada 15 minutos; entra na carga quando for emitida.':
     'ትእዛዝ {n} ገና ኣይወጸን: እቲ ፖርታል ነፍሲ ወከፍ 15 ደቓይቕ ባዕሉ ከውጽኦ ይፍትን፤ ምስ ወጸ ናብ ጽዕነት ይኣቱ።',
+  'Escolher, ordenar e dimensionar as colunas (também com o botão direito no cabeçalho)': 'ዓምድታት ምረጹ፣ ስርዑን ዓቐኖም ቀይሩን (ብየማናይ መጠወቒ ኣብ ርእሲ እውን)',
+  'Colunas da tabela {t}': 'ዓምድታት ሰንጠረዥ {t}',
+  'Mover para cima': 'ናብ ላዕሊ ኣግዕዝ',
+  'Mover para baixo': 'ናብ ታሕቲ ኣግዕዝ',
+  'Repor as colunas': 'ዓምድታት ናብ መበገሲ ምለሱ',
+  'Arraste o nome de uma coluna para a mudar de lugar e a borda direita para mudar a largura (duplo clique repõe).':
+    'ስም ዓምዲ ጐቲትኩም ቦታኡ ቀይሩ፣ የማናይ ወሰኑ ጐቲትኩም ስፍሓቱ ቀይሩ (ክልተ ጊዜ ምጥዋቕ ናብ መበገሲ ይመልስ)።',
+  'Arraste para mudar a largura; duplo clique repõe': 'ስፍሓት ንምቕያር ጐትቱ፤ ክልተ ጊዜ ምጥዋቕ ናብ መበገሲ ይመልስ',
+  Central: 'ማእከላይ',
+  'Sem stock para exportar.': 'ዝስደድ ክምችት የለን።',
+  'Posição de stock em {d}, todos os armazéns (centrais e carrinhas), sem filtros.': 'ኩነታት ክምችት ኣብ {d}፣ ኩሎም መኽዘናት (ማእከላውያንን መካይንን)፣ ብዘይ መጻረዪ።',
+  'Resumo por armazém': 'ጽማቝ ብመኽዘን',
+  'Stock por artigo e armazém': 'ክምችት ብኣቕሓን መኽዘንን',
+  'Código do armazém': 'ኮድ መኽዘን',
+  'Matriz artigo × armazém': 'ሰንጠረዥ ኣቕሓ × መኽዘን',
+  'Stock de todos os armazéns': 'ክምችት ኩሎም መኽዘናት',
+  'Exportar o stock de todos os armazéns': 'ክምችት ኩሎም መኽዘናት ኣውጽእ',
+  'Um só Excel com o stock de todos os armazéns centrais e carrinhas: resumo, detalhe e matriz artigo × armazém':
+    'ሓደ Excel ምስ ክምችት ኩሎም ማእከላውያን መኽዘናትን መካይንን: ጽማቝ፣ ዝርዝርን ሰንጠረዥ ኣቕሓ × መኽዘንን',
 };

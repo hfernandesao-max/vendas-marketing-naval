@@ -9,6 +9,7 @@ import { IDIOMAS, LANG, carregarIdioma, mudarIdioma, t } from './i18n/i18n.js';
 import { aplicarPreferencias } from './barra-lateral.js';
 import { montarBarraSup } from './barra-superior.js';
 import { definirFavoritos } from './favoritos.js';
+import { definirColunas } from './colunas.js';
 import { iniciarInactividade } from './inactividade.js';
 import { definirSessao, paginasVisiveis, podeVer, SESSAO } from './perfil.js';
 import { aplicarPreset, carregarFiltro, st } from './periodo.js';
@@ -131,6 +132,7 @@ const lerSessao = () =>
       if (d && d.preferencias) {
         aplicarPreferencias(d.preferencias);
         definirFavoritos(d.preferencias.favoritos);
+        definirColunas(d.preferencias.colunas);
       }
       return d && d.permissoes ? idiomaDaConta(d) : null;
     })

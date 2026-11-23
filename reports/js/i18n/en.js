@@ -5355,4 +5355,25 @@ export const EN = {
   '+{q} na PO por emitir': '+{q} in the PO not yet issued',
   'A PO {n} ainda está por emitir: o portal tenta emiti-la sozinho a cada 15 minutos; entra na carga quando for emitida.':
     'PO {n} is not issued yet: the portal tries to issue it automatically every 15 minutes; it joins the load once issued.',
+  'Escolher, ordenar e dimensionar as colunas (também com o botão direito no cabeçalho)':
+    'Choose, order and resize the columns (also with a right-click on the header)',
+  'Colunas da tabela {t}': 'Columns of table {t}',
+  'Mover para cima': 'Move up',
+  'Mover para baixo': 'Move down',
+  'Repor as colunas': 'Reset columns',
+  'Arraste o nome de uma coluna para a mudar de lugar e a borda direita para mudar a largura (duplo clique repõe).':
+    'Drag a column name to move it and its right edge to change its width (double-click resets).',
+  'Arraste para mudar a largura; duplo clique repõe': 'Drag to change the width; double-click resets',
+  Central: 'Central',
+  'Sem stock para exportar.': 'No stock to export.',
+  'Posição de stock em {d}, todos os armazéns (centrais e carrinhas), sem filtros.':
+    'Stock position on {d}, all warehouses (central and vans), without filters.',
+  'Resumo por armazém': 'Summary by warehouse',
+  'Stock por artigo e armazém': 'Stock by item and warehouse',
+  'Código do armazém': 'Warehouse code',
+  'Matriz artigo × armazém': 'Item × warehouse matrix',
+  'Stock de todos os armazéns': 'Stock of all warehouses',
+  'Exportar o stock de todos os armazéns': 'Export the stock of all warehouses',
+  'Um só Excel com o stock de todos os armazéns centrais e carrinhas: resumo, detalhe e matriz artigo × armazém':
+    'A single Excel with the stock of all central warehouses and vans: summary, detail and item × warehouse matrix',
 };

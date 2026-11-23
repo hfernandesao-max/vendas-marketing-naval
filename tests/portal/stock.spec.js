@@ -1,7 +1,11 @@
 // Páginas de stock: data = fim do período geral; rotas, armazéns e artigo pelos filtros gerais (sem filtros
 // próprios na página); um só pedido por data; erro da base de dados mostrado, nunca dados antigos.
 import { test, expect } from '@playwright/test';
+import { createRequire } from 'node:module';
 import { abrir } from './dados.js';
+
+const require = createRequire(import.meta.url);
+const ExcelJS = require('exceljs');
 
 const linha = (data, rota, codigo, produto, q) => ({ codigo, produto, artigo: produto, armazem: 'Armazém ' + rota + ' - FHR PIV', quantidade: q, data, rota });
 function stockDe(data) {
@@ -228,5 +232,28 @@ test('stock por carrinha: sem o fecho do dia anterior não se confirma a carga; 
     .toMatchObject({ accao: 'autorizar_carga', numero: 'RQ-2026-000008', motivo: 'Clientes à espera; conciliação ao fim da manhã' });
   await expect(sec.locator('.req-linha')).toContainText('Carga autorizada antes do fecho por resp');
   await expect(sec.getByRole('button', { name: 'Confirmar carga' })).toBeEnabled();
+  expect(erros).toEqual([]);
+});
+
+test('exportar o stock de todos os armazéns de uma só vez: centrais e carrinhas, sem filtros, num só Excel', async ({ page }) => {
+  await simularStock(page);
+  // com o filtro de um só armazém no ecrã, o Excel leva todos
+  const erros = await abrir(page, '#stock-armazem?armazem=1151');
+  const b = page.getByRole('button', { name: 'Exportar o stock de todos os armazéns' });
+  await expect(b).toBeVisible();
+  const [d] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), b.click()]);
+  expect(d.suggestedFilename()).toContain('stock-de-todos-os-armazens');
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(await d.path());
+  const nomes = wb.worksheets.map((w) => w.name).join(' | ');
+  for (const n of ['Resumo por armazém', 'Stock por artigo e armazém', 'Matriz artigo']) expect(nomes).toContain(n);
+  const texto = [];
+  wb.worksheets.forEach((w) => w.eachRow((r) => texto.push(r.values.map((v) => (v && v.text) || v).join(' '))));
+  const tudo = texto.join(' ');
+  for (const x of ['RTM REFITEC/FOODTEC', 'HIGITEC PIV - NON FOOD', 'Armazém 1001 - FHR PIV', 'Armazém 1002 - FHR PIV', 'ARROZ 25KG'])
+    expect(tudo).toContain(x);
+  // a página de stock por carrinha tem o mesmo botão
+  await page.evaluate(() => (location.hash = '#stock-carrinha'));
+  await expect(page.getByRole('button', { name: 'Exportar o stock de todos os armazéns' })).toBeVisible();
   expect(erros).toEqual([]);
 });

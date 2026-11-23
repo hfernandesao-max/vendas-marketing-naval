@@ -17,13 +17,14 @@ import { fetchStock } from '../fontes.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { st } from '../periodo.js';
-import { SESSAO, podeVer } from '../perfil.js';
+import { SESSAO, atual, podeExportar, podeVer } from '../perfil.js';
 import { apiJson } from '../api.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { diferencaViva, lancamento, quantidadeAtipica } from '../componentes/lancamento.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
 import { postJson } from '../servidor.js';
 import { DB, el, sum, toast } from '../util.js';
+import { exportarExcel } from '../excel.js';
 import { R } from './registo.js';
 import { campoMotivo } from '../componentes/motivos-carga.js';
 
@@ -376,6 +377,125 @@ function origemCarrinha(car) {
   return box;
 }
 
+/**
+ * Exportar o stock de TODOS os armazéns de uma só vez (centrais e carrinhas), sem os filtros do ecrã, num só Excel:
+ * resumo por armazém, detalhe por artigo e armazém e matriz artigo × armazém (uma coluna por armazém).
+ */
+function exportarStockTodos(dPos) {
+  const S = DB.stock || {};
+  const linhas = [
+    ...(S.linhas_armazens || []).map((l) => ({
+      tipo: t('Central'),
+      cod_armazem: String(l.cod_armazem || ''),
+      armazem: l.armazem || '',
+      rota: '',
+      codigo: l.codigo || l.codigo_produto || '',
+      produto: l.produto || l.artigo || '',
+      quantidade: +l.quantidade || 0,
+      data: l.data,
+    })),
+    ...(S.linhas_carrinhas || []).map((l) => ({
+      tipo: t('Carrinha'),
+      cod_armazem: String(l.cod_armazem || ''),
+      armazem: l.armazem || t('Carrinha {r}', { r: l.rota }),
+      rota: String(l.rota || ''),
+      codigo: l.codigo || l.codigo_produto || '',
+      produto: l.produto || l.artigo || '',
+      quantidade: +l.quantidade || 0,
+      data: l.data,
+    })),
+  ].filter((l) => (!l.data || l.data === dPos) && l.quantidade !== 0);
+  if (!linhas.length) return toast(t('Sem stock para exportar.'), 5000);
+  const nomeArm = (l) => (l.rota ? l.rota + ' · ' : '') + l.armazem;
+  const resumo = new Map();
+  linhas.forEach((l) => {
+    const k = l.tipo + '|' + nomeArm(l);
+    if (!resumo.has(k)) resumo.set(k, { tipo: l.tipo, cod_armazem: l.cod_armazem, rota: l.rota, armazem: l.armazem, artigos: 0, quantidade: 0 });
+    const x = resumo.get(k);
+    x.artigos++;
+    x.quantidade += l.quantidade;
+  });
+  // matriz: uma linha por artigo, uma coluna por armazém, e o total
+  const arms = [...new Set(linhas.map(nomeArm))].sort((a, b) => a.localeCompare(b, 'pt', { numeric: true }));
+  const porArt = new Map();
+  linhas.forEach((l) => {
+    if (!porArt.has(l.codigo)) porArt.set(l.codigo, { codigo: l.codigo, produto: l.produto, total: 0 });
+    const x = porArt.get(l.codigo);
+    x['a' + arms.indexOf(nomeArm(l))] = (x['a' + arms.indexOf(nomeArm(l))] || 0) + l.quantidade;
+    x.total += l.quantidade;
+  });
+  const nota = t('Posição de stock em {d}, todos os armazéns (centrais e carrinhas), sem filtros.', { d: dl(dPos) });
+  exportarExcel(
+    [
+      {
+        pagina: 'Stock de todos os armazéns',
+        grupo: 'Logística',
+        kpis: [],
+        tabelas: [
+          {
+            id: 'stock-todos-resumo',
+            titulo: t('Resumo por armazém'),
+            nota,
+            total: true,
+            rows: [...resumo.values()],
+            cols: [
+              { key: 'tipo', label: t('Tipo') },
+              { key: 'cod_armazem', label: t('Código') },
+              { key: 'rota', label: t('Rota') },
+              { key: 'armazem', label: t('Armazém') },
+              { key: 'artigos', label: t('Artigos'), type: 'n', sum: true },
+              { key: 'quantidade', label: t('Stock final'), type: 'n', sum: true },
+            ],
+          },
+          {
+            id: 'stock-todos-detalhe',
+            titulo: t('Stock por artigo e armazém'),
+            nota,
+            total: true,
+            rows: linhas,
+            cols: [
+              { key: 'tipo', label: t('Tipo') },
+              { key: 'cod_armazem', label: t('Código do armazém') },
+              { key: 'rota', label: t('Rota') },
+              { key: 'armazem', label: t('Armazém') },
+              { key: 'codigo', label: t('Código') },
+              { key: 'produto', label: t('Artigo') },
+              { key: 'quantidade', label: t('Quantidade'), type: 'n', sum: true },
+            ],
+          },
+          {
+            id: 'stock-todos-matriz',
+            titulo: t('Matriz artigo × armazém'),
+            nota,
+            total: true,
+            rows: [...porArt.values()].sort((a, b) => b.total - a.total),
+            cols: [
+              { key: 'codigo', label: t('Código') },
+              { key: 'produto', label: t('Artigo') },
+              ...arms.map((a, i) => ({ key: 'a' + i, label: a, type: 'n', sum: true })),
+              { key: 'total', label: t('Total'), type: 'n', sum: true },
+            ],
+          },
+        ],
+      },
+    ],
+    t('Stock de todos os armazéns') + ' ' + dl(dPos),
+  );
+}
+// botão no topo das páginas de stock (quem pode exportar a página)
+function botaoStockTodos(pg, dPos) {
+  if (!podeExportar(atual)) return;
+  const b = el('button', 'btn');
+  b.type = 'button';
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'; // nosemgrep: insecure-innerhtml -- SVG estático
+  b.append(t('Exportar o stock de todos os armazéns'));
+  b.title = t('Um só Excel com o stock de todos os armazéns centrais e carrinhas: resumo, detalhe e matriz artigo × armazém');
+  b.addEventListener('click', () => exportarStockTodos(dPos));
+  const w = el('div', 'stock-exportar');
+  w.append(b);
+  pg.append(w);
+}
+
 const vazio = (txt) => {
   const v = el('div', 'glass empty');
   v.append(el('p', null, txt));
@@ -439,6 +559,7 @@ R['stock-carrinha'] = (pg) => {
       { l: t('Data do stock'), v: dl(dPos), s: dPos === st.ate ? t('fim do período escolhido') : t('último dia com dados até {d}', { d: dl(st.ate) }) },
     ]),
   );
+  botaoStockTodos(pg, dPos);
   const secs = el('div', 'secs');
   if (!carrinhas.length) secs.append(vazio(t('Sem carrinhas com stock para os filtros escolhidos.')));
   carrinhas.forEach((car) => {
@@ -510,6 +631,7 @@ R['stock-armazem'] = (pg) => {
       { l: t('Stock final nas centrais'), v: n0(sum(itens, 'quantidade')), s: t('em {d}', { d: dl(dPos) }) },
     ]),
   );
+  botaoStockTodos(pg, dPos);
   const secs = el('div', 'secs');
   if (!itens.length) secs.append(vazio(t('Sem armazéns com stock para os filtros escolhidos.')));
   else {

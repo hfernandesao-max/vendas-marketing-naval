@@ -1,5 +1,19 @@
 ## 23-11-2026
 
+### Tabelas à medida de cada pessoa, em todo o portal, e stock de todos os armazéns num só Excel
+
+<!-- tipo: funcionalidade -->
+
+- Em qualquer tabela do portal:
+  - **arraste o nome de uma coluna** para a mudar de lugar;
+  - **arraste a borda direita** para mudar a largura (duplo clique repõe);
+  - **clique com o botão direito no cabeçalho**, ou no botão «Colunas», para mostrar ou esconder colunas, mudá-las de ordem (↑ ↓, também pelo teclado) ou repor as de origem.
+- A escolha é pessoal e segue a conta: fica igual em qualquer computador ou telemóvel. O Excel de cada tabela sai com as colunas que vê.
+- **Stock:** novo botão «Exportar o stock de todos os armazéns», em Stock por armazém e em Stock por carrinha. Gera um só Excel com todos os armazéns centrais e todas as carrinhas, sem os filtros do ecrã, com três folhas:
+  - resumo por armazém;
+  - stock por artigo e armazém;
+  - matriz artigo × armazém.
+
 ### Plano de cargas: tudo dos dados mestre e do stock, sem escrever à mão
 
 <!-- tipo: melhoria -->

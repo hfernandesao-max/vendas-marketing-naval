@@ -6,6 +6,7 @@ import { atual, paginaAtual, podeExportar } from '../perfil.js';
 import { st } from '../periodo.js';
 import { el, sum } from '../util.js';
 import { celulaLigada, tipoLigacao } from './ligacoes.js';
+import { gravarLayout, layoutDe } from '../colunas.js';
 
 // Durante o desenho de uma página, cada tabela e cada grupo de indicadores fica registado aqui para o Excel e o CSV.
 export let REG = { tabelas: [], kpis: [] };
@@ -56,7 +57,71 @@ function cellNode(c, r, max) {
   }
   return document.createTextNode(v == null || v === '' ? '—' : String(v));
 }
+// Colunas à medida de cada pessoa: ordem (arrastar o nome da coluna), colunas escondidas (botão direito no cabeçalho
+// ou botão «Colunas») e largura (arrastar a borda direita do nome; duplo clique repõe). Guardado na conta.
+const LARG_MIN = 48,
+  LARG_MAX = 900;
+let menuAberto = null;
+function fecharMenuColunas() {
+  if (!menuAberto) return;
+  const m = menuAberto;
+  menuAberto = null;
+  m.remove();
+  document.removeEventListener('pointerdown', foraDoMenu, true);
+  document.removeEventListener('keydown', escMenu, true);
+}
+const foraDoMenu = (e) => {
+  if (menuAberto && !menuAberto.contains(e.target)) fecharMenuColunas();
+};
+const escMenu = (e) => {
+  if (e.key === 'Escape' && menuAberto) {
+    e.preventDefault();
+    const volta = menuAberto._volta;
+    fecharMenuColunas();
+    if (volta && volta.isConnected) volta.focus();
+  }
+};
 export function tabela(o) {
+  // arranjo das colunas desta pessoa (a lista de origem fica em «todas»; o.cols passa a ser a lista visível)
+  const todas = o.cols.slice();
+  const vistos = new Set();
+  const ids = new Map();
+  todas.forEach((c, i) => {
+    let id = c.key != null ? String(c.key) : 'c' + i;
+    while (vistos.has(id)) id += '_' + i;
+    vistos.add(id);
+    ids.set(c, id);
+  });
+  const idDe = (c) => ids.get(c);
+  const chaveLayout = atual + ':' + o.id;
+  const lerLayout = () => {
+    const L = layoutDe(chaveLayout) || {};
+    return { o: Array.isArray(L.o) ? L.o.slice() : [], h: Array.isArray(L.h) ? L.h.slice() : [], w: L.w && typeof L.w === 'object' ? { ...L.w } : {} };
+  };
+  // todas as colunas pela ordem escolhida (as que não estão na escolha mantêm o lugar de origem, a seguir)
+  const ordenadas = (L) => {
+    const pos = new Map(L.o.map((id, i) => [id, i]));
+    return todas
+      .map((c, i) => [c, pos.has(idDe(c)) ? pos.get(idDe(c)) : L.o.length + i])
+      .sort((a, b) => a[1] - b[1])
+      .map((x) => x[0]);
+  };
+  o.cols = [];
+  const aplicarLayout = () => {
+    const L = lerLayout();
+    let vis = ordenadas(L).filter((c) => !L.h.includes(idDe(c)));
+    if (!vis.length) vis = [todas[0]];
+    o.cols.splice(0, o.cols.length, ...vis);
+    return L;
+  };
+  let LAY = aplicarLayout();
+  const mudarLayout = (f) => {
+    const L = lerLayout();
+    f(L);
+    gravarLayout(chaveLayout, L);
+    LAY = aplicarLayout();
+    body();
+  };
   const reg = { id: o.id, titulo: o.titulo, nota: o.nota, cols: o.cols, rows: o.rows, total: o.total };
   REG.tabelas.push(reg);
   const sec = el('section', 'glass sec');
@@ -85,6 +150,17 @@ export function tabela(o) {
   bx.addEventListener('click', () =>
     exportarExcel([{ pagina: paginaAtual().nome, grupo: paginaAtual().grupo, kpis: [], tabelas: [{ ...reg, rows: filtradas() }] }], o.titulo),
   );
+  const bc = el('button', 'btn sm ghost col-btn');
+  bc.type = 'button';
+  bc.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM9.5 5v14M14.5 5v14"/></svg>'; // nosemgrep: insecure-innerhtml -- SVG estático
+  bc.append(t('Colunas'));
+  bc.title = t('Escolher, ordenar e dimensionar as colunas (também com o botão direito no cabeçalho)');
+  bc.setAttribute('aria-haspopup', 'dialog');
+  bc.addEventListener('click', () => {
+    const r = bc.getBoundingClientRect();
+    abrirMenu(r.left, r.bottom + 4, bc);
+  });
+  tools.append(bc);
   if (podeExportar(atual)) tools.append(bx);
   h.append(hl, tools);
   sec.append(h);
@@ -107,6 +183,105 @@ export function tabela(o) {
   const more = el('div', 'more');
   more.hidden = true;
   sec.append(more);
+  function abrirMenu(x, y, volta) {
+    fecharMenuColunas();
+    const m = el('div', 'glass col-menu');
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-label', t('Colunas da tabela {t}', { t: o.titulo }));
+    m._volta = volta;
+    const desenhar = (foco) => {
+      const L = lerLayout();
+      const lista = ordenadas(L);
+      m.replaceChildren(el('p', 'col-menu-t', t('Colunas')));
+      const ul = el('ul');
+      lista.forEach((c, i) => {
+        const id = idDe(c);
+        const li = el('li');
+        const lab = el('label');
+        const cb = el('input');
+        cb.type = 'checkbox';
+        cb.checked = !L.h.includes(id);
+        cb.dataset.id = id;
+        // pelo menos uma coluna fica sempre visível
+        cb.disabled = cb.checked && lista.filter((x) => !L.h.includes(idDe(x))).length === 1;
+        cb.addEventListener('change', () => {
+          mudarLayout((N) => {
+            N.h = cb.checked ? N.h.filter((z) => z !== id) : [...N.h.filter((z) => z !== id), id];
+          });
+          desenhar('cb:' + id);
+        });
+        lab.append(cb, document.createTextNode(c.label));
+        const mover = (d, txt, seta) => {
+          const b = el('button', 'linkbtn col-mov', seta);
+          b.type = 'button';
+          b.title = txt;
+          b.setAttribute('aria-label', txt + ': ' + c.label);
+          b.disabled = i + d < 0 || i + d >= lista.length;
+          b.addEventListener('click', () => {
+            mudarLayout((N) => {
+              const ord = ordenadas(N).map(idDe);
+              const [z] = ord.splice(i, 1);
+              ord.splice(i + d, 0, z);
+              N.o = ord;
+            });
+            desenhar((d < 0 ? 'up:' : 'dn:') + id);
+          });
+          b.dataset.f = (d < 0 ? 'up:' : 'dn:') + id;
+          return b;
+        };
+        li.append(lab, mover(-1, t('Mover para cima'), '↑'), mover(1, t('Mover para baixo'), '↓'));
+        ul.append(li);
+      });
+      m.append(ul);
+      const rodapeM = el('div', 'col-menu-acc');
+      const repor = el('button', 'btn sm ghost', t('Repor as colunas'));
+      repor.type = 'button';
+      repor.disabled = !L.o.length && !L.h.length && !Object.keys(L.w).length;
+      repor.addEventListener('click', () => {
+        gravarLayout(chaveLayout, null);
+        LAY = aplicarLayout();
+        body();
+        desenhar();
+      });
+      const fechar = el('button', 'btn sm', t('Fechar'));
+      fechar.type = 'button';
+      fechar.addEventListener('click', () => {
+        fecharMenuColunas();
+        if (volta && volta.isConnected) volta.focus();
+      });
+      rodapeM.append(repor, fechar);
+      m.append(
+        el('p', 'col-menu-nota', t('Arraste o nome de uma coluna para a mudar de lugar e a borda direita para mudar a largura (duplo clique repõe).')),
+        rodapeM,
+      );
+      const alvo = foco && (m.querySelector(`[data-id="${CSS.escape(foco.slice(3))}"]`) || null);
+      const f = foco ? (foco.startsWith('cb:') ? alvo : m.querySelector(`[data-f="${CSS.escape(foco)}"]`)) : m.querySelector('input');
+      if (f && !f.disabled) f.focus();
+      else if (foco) (m.querySelector('input') || fechar).focus();
+    };
+    document.body.append(m);
+    menuAberto = m;
+    desenhar();
+    // dentro do ecrã
+    const r = m.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+    m.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+    document.addEventListener('pointerdown', foraDoMenu, true);
+    document.addEventListener('keydown', escMenu, true);
+  }
+  // largura de uma coluna (cabeçalho e células)
+  const porLargura = (i, w) => {
+    tb.querySelectorAll(`[data-c="${i}"]`).forEach((e) => {
+      if (w) {
+        e.style.width = e.style.minWidth = e.style.maxWidth = w + 'px';
+        e.classList.add('cw');
+      } else {
+        e.style.width = e.style.minWidth = e.style.maxWidth = '';
+        e.classList.remove('cw');
+      }
+    });
+  };
+  let arrastada = null;
   // prioridade de cada coluna quando falta largura: 0 nunca sai; números maiores saem primeiro
   const prio = (c, i) =>
     i === 0
@@ -250,6 +425,95 @@ export function tabela(o) {
         body();
       });
       tt.append(bt);
+      const ci = o.cols.indexOf(c),
+        cid = idDe(c);
+      // mudar de lugar: arrastar o nome da coluna para cima de outra
+      tt.draggable = true;
+      tt.dataset.cid = cid;
+      tt.addEventListener('dragstart', (e) => {
+        arrastada = cid;
+        tt.classList.add('col-arrasta');
+        e.dataTransfer.effectAllowed = 'move';
+        try {
+          e.dataTransfer.setData('text/plain', cid);
+        } catch (er) {
+          /* navegador antigo */
+        }
+      });
+      tt.addEventListener('dragend', () => {
+        arrastada = null;
+        tb.querySelectorAll('.col-arrasta, .col-antes, .col-depois').forEach((x) => x.classList.remove('col-arrasta', 'col-antes', 'col-depois'));
+      });
+      tt.addEventListener('dragover', (e) => {
+        if (!arrastada || arrastada === cid) return;
+        e.preventDefault();
+        const r = tt.getBoundingClientRect();
+        const depois = e.clientX > r.left + r.width / 2;
+        tt.classList.toggle('col-depois', depois);
+        tt.classList.toggle('col-antes', !depois);
+      });
+      tt.addEventListener('dragleave', () => tt.classList.remove('col-antes', 'col-depois'));
+      tt.addEventListener('drop', (e) => {
+        if (!arrastada || arrastada === cid) return;
+        e.preventDefault();
+        const r = tt.getBoundingClientRect();
+        const depois = e.clientX > r.left + r.width / 2;
+        const mover = arrastada;
+        arrastada = null;
+        mudarLayout((N) => {
+          const ord = ordenadas(N)
+            .map(idDe)
+            .filter((z) => z !== mover);
+          const k = ord.indexOf(cid);
+          ord.splice(depois ? k + 1 : k, 0, mover);
+          N.o = ord;
+        });
+      });
+      // botão direito: escolher as colunas
+      tt.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        abrirMenu(e.clientX, e.clientY, bt);
+      });
+      // largura: arrastar a borda direita; duplo clique repõe a largura automática
+      const pega = el('span', 'col-res');
+      pega.setAttribute('aria-hidden', 'true');
+      pega.title = t('Arraste para mudar a largura; duplo clique repõe');
+      pega.draggable = false;
+      pega.addEventListener('dragstart', (e) => e.preventDefault());
+      pega.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        tt.draggable = false;
+        const x0 = e.clientX,
+          w0 = tt.getBoundingClientRect().width;
+        let w = Math.round(w0);
+        pega.setPointerCapture(e.pointerId);
+        const mov = (ev) => {
+          w = Math.max(LARG_MIN, Math.min(LARG_MAX, Math.round(w0 + ev.clientX - x0)));
+          porLargura(ci, w);
+        };
+        const fim = () => {
+          pega.removeEventListener('pointermove', mov);
+          pega.removeEventListener('pointerup', fim);
+          pega.removeEventListener('pointercancel', fim);
+          tt.draggable = true;
+          const L = lerLayout();
+          L.w[cid] = w;
+          gravarLayout(chaveLayout, L);
+          LAY = L;
+        };
+        pega.addEventListener('pointermove', mov);
+        pega.addEventListener('pointerup', fim);
+        pega.addEventListener('pointercancel', fim);
+      });
+      pega.addEventListener('click', (e) => e.stopPropagation());
+      pega.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        mudarLayout((N) => {
+          delete N.w[cid];
+        });
+      });
+      tt.append(pega);
       tr.append(tt);
     });
     th.append(tr);
@@ -295,6 +559,10 @@ export function tabela(o) {
       tf.append(r2);
       tb.append(tf);
     }
+    o.cols.forEach((c, i) => {
+      const w = +(LAY.w || {})[idDe(c)] || 0;
+      if (w) porLargura(i, Math.max(LARG_MIN, Math.min(LARG_MAX, w)));
+    });
     fit();
     rodape();
   }

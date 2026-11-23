@@ -3,7 +3,7 @@
  * Preferências pessoais da conta (menu lateral: modo e posição; funções favoritas).
  *
  * GET  v1/preferencias                                     {preferencias: {barra, lado, favoritos}}
- * POST v1/preferencias {barra?, lado?, favoritos?, csrf}   guarda e devolve as preferências
+ * POST v1/preferencias {barra?, lado?, favoritos?, colunas?: {«página:tabela»: arranjo|null}, csrf}   guarda e devolve
  */
 defined('NAVAL_API') || exit;
 $GLOBALS['naval_api_sensivel'] = true;
