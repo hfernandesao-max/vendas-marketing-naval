@@ -5346,4 +5346,13 @@ export const EN = {
   'Retenção e valor do cliente': 'Retention and customer value',
   'Preço-volume-mix': 'Price-volume-mix',
   'Cesto de compras': 'Market basket',
+  'telefone do motorista em falta na tabela (Listas → Motoristas)': 'driver phone missing in the table (Lists → Drivers)',
+  'marca ou modelo em falta na tabela de viaturas (Listas → Viaturas)': 'make or model missing in the vehicle table (Lists → Vehicles)',
+  'transportadora em falta na tabela de viaturas (Listas → Viaturas)': 'carrier missing in the vehicle table (Lists → Vehicles)',
+  'sem dados do stock da carrinha nem PO emitida: quantidades por confirmar': 'no van stock data and no issued PO: quantities to be confirmed',
+  'Telefone da tabela de motoristas (Listas → Motoristas)': 'Phone from the driver table (Lists → Drivers)',
+  'Transportadora da viatura (Listas → Viaturas)': 'Carrier of the vehicle (Lists → Vehicles)',
+  '+{q} na PO por emitir': '+{q} in the PO not yet issued',
+  'A PO {n} ainda está por emitir: o portal tenta emiti-la sozinho a cada 15 minutos; entra na carga quando for emitida.':
+    'PO {n} is not issued yet: the portal tries to issue it automatically every 15 minutes; it joins the load once issued.',
 };

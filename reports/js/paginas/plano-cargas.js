@@ -123,7 +123,11 @@ function montarRotasPlano(d, base) {
     });
   }
   // carga de cada rota: stock da carrinha no corte do dia anterior (contado) + requisição ao armazém
-  if (!(d.plano && d.plano.publicado)) lista.forEach((r) => aplicarCarga(r, d));
+  if (!(d.plano && d.plano.publicado))
+    lista.forEach((r) => {
+      aplicarCarga(r, d);
+      aplicarMestres(r);
+    });
   return lista;
 }
 const cargaDe = (rota, d = PC.resp) => ((d && d.carga && d.carga.rotas) || {})[rota] || null;
@@ -136,18 +140,31 @@ const comRequisicao = (r, d = PC.resp) => {
   const c = cargaDe(r.rota, d);
   return !!(c && c.requisicoes.length);
 };
+// a carga é conhecida quando há PO emitida ou o stock da carrinha vem do Pinguim BO (contado ou estimado)
+const cargaConhecida = (c) => !!(c && (c.requisicoes.length || c.stock !== 'sem_dados'));
 function aplicarCarga(r, d) {
   const c = cargaDe(r.rota, d);
-  if (!c || !c.requisicoes.length) return false;
+  if (!cargaConhecida(c)) return false;
   r.factura = c.requisicoes.map((x) => x.numero).join(', ');
-  r.sai = true; // com requisição emitida, a rota sai
+  if (c.requisicoes.length) r.sai = true; // com requisição emitida, a rota sai
   d.listas.artigos.forEach((a) => {
     const g = c.grupos[a.id];
-    r.quantidades[a.id] = g ? Math.max(0, Math.round(+g.total || 0)) : 0;
+    r.quantidades[a.id] = g ? Math.max(0, Math.round(+g.na + +g.carregar || 0)) : 0;
   });
   if ((c.armazens || []).length) r.armazem = c.armazens.join(' + ');
   r._carga = true;
+  r._prev = null; // as quantidades já não vêm da previsão
   return true;
+}
+// dados mestre (nunca escritos à mão): marca, modelo e transportadora da viatura; telefone do motorista
+function aplicarMestres(r) {
+  const v = viaturaDe(r.matricula);
+  if (v) {
+    if (nomeViatura(v)) r.viatura = nomeViatura(v);
+    if (v.transportadora) r.transportadora = v.transportadora;
+  }
+  const m = motoristaDe(r.motorista);
+  if (m && m.telefone) r.telefone = m.telefone;
 }
 const rotaVazia = (r) => !r.motorista.trim() && !r.matricula.trim() && !r.zonas.length && somaQ(r) <= 0;
 // Preenche uma rota vazia com a sugestão do servidor (último registo publicado ou histórico de transportes)
@@ -186,7 +203,16 @@ function validarPlano(rotas) {
     if (!r.zonas.length) erros.push({ rota: r.rota, msg: t('indique pelo menos uma zona') });
     if (somaQ(r) <= 0) erros.push({ rota: r.rota, msg: t('a carga está a zero') });
     if (pesoRota(r).excede) erros.push({ rota: r.rota, msg: t('a carga passa o peso máximo da viatura') });
-    if (r.motorista.trim() && !r.telefone.trim()) avisos.push({ rota: r.rota, msg: t('sem telefone do motorista') });
+    if (r.motorista.trim() && !r.telefone.trim())
+      avisos.push({
+        rota: r.rota,
+        msg: motoristaDe(r.motorista) ? t('telefone do motorista em falta na tabela (Listas → Motoristas)') : t('sem telefone do motorista'),
+      });
+    const via = viaturaDe(r.matricula);
+    if (via && (!via.marca || !via.modelo)) avisos.push({ rota: r.rota, msg: t('marca ou modelo em falta na tabela de viaturas (Listas → Viaturas)') });
+    if (via && !via.transportadora) avisos.push({ rota: r.rota, msg: t('transportadora em falta na tabela de viaturas (Listas → Viaturas)') });
+    const cgx = cargaDe(r.rota);
+    if (!cargaConhecida(cgx)) avisos.push({ rota: r.rota, msg: t('sem dados do stock da carrinha nem PO emitida: quantidades por confirmar') });
     if (!r.factura.trim()) avisos.push({ rota: r.rota, msg: t('sem requisição ao armazém emitida') });
     const cg = cargaDe(r.rota);
     if (cg && cg.sem_grupo.length)
@@ -992,6 +1018,12 @@ function cartaoRota(r, d, dls) {
       )
     : inp('motorista', t('Motorista'), { autocomplete: 'off' }, dls.mot);
   const [fTel, iTel] = inp('telefone', t('Telefone'), { type: 'tel', inputMode: 'tel' });
+  // com a tabela de motoristas, o telefone é o da tabela (dados mestre): não se escreve no plano
+  if (tabMot.length) {
+    iTel.readOnly = true;
+    iTel.tabIndex = -1;
+    iTel.title = t('Telefone da tabela de motoristas (Listas → Motoristas)');
+  }
   const [fMat, iMat] = tabVia.length
     ? escolha(
         'matricula',
@@ -1011,6 +1043,13 @@ function cartaoRota(r, d, dls) {
   const [fMarca, iMarca] = soLeitura(t('Marca'));
   const [fModelo, iModelo] = soLeitura(t('Modelo'));
   const [fTra, iTra] = inp('transportadora', t('Transportadora'), { autocomplete: 'off' }, dls.tra);
+  // com a tabela de viaturas, a transportadora é a da viatura (dados mestre)
+  if (tabVia.length) {
+    iTra.readOnly = true;
+    iTra.tabIndex = -1;
+    iTra.removeAttribute('list');
+    iTra.title = t('Transportadora da viatura (Listas → Viaturas)');
+  }
   const mostrarViatura = () => {
     const v = viaturaDe(r.matricula);
     iMarca.value = (v && v.marca) || '';
@@ -1027,10 +1066,13 @@ function cartaoRota(r, d, dls) {
   iMot.addEventListener('change', () => {
     r.motorista = iMot.value;
     const m = motoristaDe(iMot.value);
-    if (!m) return marcarSujo();
+    if (!m) {
+      r.telefone = iTel.value = '';
+      return marcarSujo();
+    }
     r.motorista = iMot.value = m.nome;
+    r.telefone = iTel.value = m.telefone || '';
     [
-      [iTel, 'telefone'],
       [iMat, 'matricula'],
       [iVia, 'viatura'],
       [iTra, 'transportadora'],
@@ -1053,6 +1095,7 @@ function cartaoRota(r, d, dls) {
     iMat.value = r.matricula = iMat.value.toUpperCase().trim();
   });
   const temReq = comRequisicao(r, d);
+  const conhecida = cargaConhecida(cargaDe(r.rota, d));
   const [fArm, iArm] = inp('armazem', t('Armazém de carga'), { autocomplete: 'off' }, dls.arm);
   if (temReq) {
     iArm.readOnly = true;
@@ -1080,7 +1123,7 @@ function cartaoRota(r, d, dls) {
   // de onde vem a quantidade: já na carrinha (contado no corte do dia anterior) + a carregar (requisição) = total
   const cg = cargaDe(r.rota, d);
   const detalhe = el('div', 'pc-carga');
-  if (cg && cg.requisicoes.length) {
+  if (cargaConhecida(cg) || (cg && cg.rascunhos.length)) {
     const origem = {
       contado: t('contado no fecho de {d}', { d: dl(d.carga.dia_anterior) }),
       estimado: t('estimado: contagem de {d} por fazer', { d: dl(d.carga.dia_anterior) }),
@@ -1090,21 +1133,46 @@ function cartaoRota(r, d, dls) {
     const ul = el('ul');
     d.listas.artigos.forEach((a) => {
       const g = cg.grupos[a.id];
-      if (!g || !g.total) return;
-      ul.append(el('li', null, t(a.nome) + ': ' + n0(g.na) + ' + ' + n0(g.carregar) + ' = ' + n0(g.total)));
+      if (!g || !(g.total || g.por_emitir)) return;
+      ul.append(
+        el(
+          'li',
+          null,
+          t(a.nome) +
+            ': ' +
+            n0(g.na) +
+            ' + ' +
+            n0(g.carregar) +
+            ' = ' +
+            n0(g.na + g.carregar) +
+            (g.por_emitir ? ' · ' + t('+{q} na PO por emitir', { q: n0(g.por_emitir) }) : ''),
+        ),
+      );
     });
+    if (cg.rascunhos.length)
+      detalhe.append(
+        el(
+          'p',
+          'nota',
+          t('A PO {n} ainda está por emitir: o portal tenta emiti-la sozinho a cada 15 minutos; entra na carga quando for emitida.', {
+            n: cg.rascunhos.join(', '),
+          }),
+        ),
+      );
     detalhe.append(ul);
     if (cg.sem_grupo.length)
       detalhe.append(el('p', 'aviso', t('Sem artigo do plano: {a}', { a: cg.sem_grupo.map((x) => x.codigo + ' ' + x.artigo).join('; ') })));
   }
   d.listas.artigos.forEach((a) => {
     const i = entrada('number', r.quantidades[a.id] || '', { min: 0, inputMode: 'numeric', placeholder: '0' });
-    if (temReq) {
+    // a quantidade vem do stock da carrinha (Pinguim BO) e das PO: nunca se escreve no plano
+    if (conhecida) {
       i.readOnly = true;
+      i.tabIndex = -1;
       i.title = t('Existências na carrinha + requisição (não se altera no plano)');
     }
     i.addEventListener('input', () => {
-      if (temReq) return;
+      if (conhecida) return;
       r.quantidades[a.id] = Math.max(0, Math.round(+i.value || 0));
       // não deixa passar o peso máximo: só pode carregar a diferença entre a capacidade e o que a carrinha já leva
       const p = pesoRota(r);

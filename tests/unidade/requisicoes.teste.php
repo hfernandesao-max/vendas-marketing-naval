@@ -154,12 +154,16 @@ teste('plano de cargas: a requisição emitida fixa o documento, as quantidades 
     $r = naval_req_criar('1017', $hoje, [['codigo' => 'F1', 'artigo' => 'Fraldas M', 'quantidade' => 12], ['codigo' => 'S1', 'artigo' => 'Sabão azul', 'quantidade' => 30]], 'pro');
     $rasc = naval_plano_carga($hoje, ['artigos' => NAVAL_ARTIGOS_PADRAO], ['1017']);
     igual([[$r['numero']], []], [$rasc['rotas']['1017']['rascunhos'], $rasc['rotas']['1017']['requisicoes']], 'rascunho: avisa, não carrega');
+    igual([0.0, 12.0], [$rasc['rotas']['1017']['grupos']['fraldas']['carregar'], $rasc['rotas']['1017']['grupos']['fraldas']['por_emitir']], 'rascunho: mostrado como por emitir');
     $e = naval_req_emitir($r['numero'], $r['versao'], 'pro');
     igual(['F1' => 'RTM HIGITEC PIV – NON FOOD', 'S1' => 'RTM REFITEC/FOODTEC PIV – FOOD'], array_column($e['linhas'], 'armazem', 'codigo'), 'armazém gravado na emissão');
     $listas = ['artigos' => NAVAL_ARTIGOS_PADRAO];
     $ecra = ['data' => $hoje, 'rotas' => [['rota' => '1017', 'factura' => 'X', 'armazem' => 'HIGITEC', 'quantidades' => ['fraldas' => 999, 'sabao' => 1, 'sabonete' => 5]]]];
     // existências na carrinha (contadas) + requisitado = total à saída, seja o que for que venha do ecrã
-    $cg = ['rotas' => ['1017' => ['stock' => 'contado', 'grupos' => ['fraldas' => ['na' => 7], 'sabao' => ['na' => 0], 'sabonete' => ['na' => 3]]]]];
+    $base = naval_plano_carga($hoje, $listas, ['1017'])['rotas']['1017'];
+    $comNa = $base;
+    foreach (['fraldas' => 7, 'sabao' => 0, 'sabonete' => 3] as $g => $na) $comNa['grupos'][$g]['na'] = $na;
+    $cg = ['rotas' => ['1017' => ['stock' => 'contado'] + $comNa]];
     $p = naval_plano_com_requisicoes($ecra, $listas, $cg);
     $x = $p['rotas'][0];
     igual($e['numero'], $x['factura']);
@@ -167,11 +171,39 @@ teste('plano de cargas: a requisição emitida fixa o documento, as quantidades 
     verdade($x['carga_total'], 'o limite de peso não soma as existências outra vez');
     igual(0.0, naval_carga_estado($p['rotas'], $listas + ['capacidades' => []], ['1017' => 500.0])['1017']['na_carrinha']);
     // sem Pinguim BO (existências desconhecidas): o do ecrã, nunca abaixo do requisitado
-    $sem = naval_plano_com_requisicoes($ecra, $listas, ['rotas' => ['1017' => ['stock' => 'sem_dados', 'grupos' => []]]]);
+    $sem = naval_plano_com_requisicoes($ecra, $listas, ['rotas' => ['1017' => ['stock' => 'sem_dados'] + $base]]);
     igual(['fraldas' => 999, 'sabao' => 30, 'sabonete' => 5], $sem['rotas'][0]['quantidades']);
     igual('RTM HIGITEC PIV – NON FOOD + RTM REFITEC/FOODTEC PIV – FOOD', $x['armazem']);
     $c = naval_plano_carga($hoje, $listas, ['1017']);
     igual(['RTM HIGITEC PIV – NON FOOD', 'RTM REFITEC/FOODTEC PIV – FOOD'], $c['rotas']['1017']['armazens']);
+    // sem PO mas com o stock da carrinha conhecido: a carga é só o que já está na carrinha (o ecrã não a muda)
+    $soNa = naval_plano_com_requisicoes(['data' => $hoje, 'rotas' => [['rota' => '1018', 'factura' => '', 'armazem' => 'HIGITEC', 'quantidades' => ['fraldas' => 50]]]], $listas,
+        ['rotas' => ['1018' => ['stock' => 'contado', 'requisicoes' => [], 'armazens' => [], 'grupos' => ['fraldas' => ['na' => 4, 'carregar' => 0], 'sabao' => ['na' => 2, 'carregar' => 0]]]]]);
+    igual(['fraldas' => 4, 'sabao' => 2, 'sabonete' => 0], $soNa['rotas'][0]['quantidades']);
+    unset($GLOBALS['naval_req_armazens_teste']);
+});
+
+teste('plano de cargas: marca, modelo, transportadora e telefone vêm das tabelas (dados mestre), não do ecrã', function () {
+    naval_servico('cargas');
+    $listas = ['artigos' => NAVAL_ARTIGOS_PADRAO, 'frota' => [['matricula' => 'LD-58-73-GY', 'marca' => 'Mitsubishi', 'modelo' => 'Canter', 'transportadora' => 'Velotrans']],
+        'motoristas' => [['nome' => 'Adão Paulo', 'telefone' => '923000111']]];
+    $p = naval_plano_com_requisicoes(['data' => date('Y-m-d'), 'rotas' => [['rota' => '1001', 'motorista' => 'adão paulo', 'telefone' => '', 'matricula' => 'ld 58 73 gy',
+        'viatura' => 'Outra', 'transportadora' => 'Qualquer', 'quantidades' => []]]], $listas, ['rotas' => []]);
+    $r = $p['rotas'][0];
+    igual(['Mitsubishi Canter', 'Velotrans', '923000111'], [$r['viatura'], $r['transportadora'], $r['telefone']]);
+    // fora das tabelas: fica o que veio
+    $q = naval_plano_dados_mestre(['rota' => '1002', 'motorista' => 'Outro', 'telefone' => '9', 'matricula' => 'XX-1', 'viatura' => 'V', 'transportadora' => 'T'], $listas);
+    igual(['V', 'T', '9'], [$q['viatura'], $q['transportadora'], $q['telefone']]);
+});
+
+teste('PO: a reposição da contagem que ficou em rascunho volta a tentar a emissão automática', function () {
+    $GLOBALS['naval_req_armazens_teste'] = ['F1' => 'RTM HIGITEC PIV – NON FOOD'];
+    $r = naval_req_criar('1019', date('Y-m-d'), [['codigo' => 'F1', 'artigo' => 'Fraldas M', 'quantidade' => 3]], 'automatico', ['tipo' => 'conciliacao', 'data' => date('Y-m-d'), 'rota' => '1019']);
+    $m = naval_req_criar('1019', date('Y-m-d'), [['codigo' => 'F1', 'artigo' => 'Fraldas M', 'quantidade' => 1]], 'pro');
+    $e = naval_req_reemitir_reposicoes();
+    verdade(in_array($r['numero'], $e, true), 'a reposição foi emitida');
+    verdade(!in_array($m['numero'], $e, true), 'o rascunho manual fica para o vendedor');
+    igual('rascunho', naval_req_ler($m['numero'])['estado']);
     unset($GLOBALS['naval_req_armazens_teste']);
 });
 

@@ -284,6 +284,16 @@ function naval_periodicas(?int $agora = null): array
             error_log('[requisições fecho automático] ' . $e->getMessage());
         }
     }
+    // reposições da contagem que ficaram em rascunho: nova tentativa de emissão automática a cada 15 minutos
+    if ((int) date('i', $agora) % 15 < 5) {
+        try {
+            naval_servico('requisicoes');
+            $re = naval_req_reemitir_reposicoes($agora);
+            if ($re) $feito['reposicoes_emitidas'] = count($re);
+        } catch (Throwable $e) {
+            error_log('[reposição automática] ' . $e->getMessage());
+        }
+    }
     // sala de resultados: retirar os quiosques temporários do Winrest que passaram o prazo
     if (naval_config('SALA_MODO', 'app') === 'kiosk') {
         try {

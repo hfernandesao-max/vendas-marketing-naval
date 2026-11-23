@@ -117,7 +117,8 @@ test('dia novo: o cartão de cada rota vem pré-preenchido com o último registo
   await expect(c.getByLabel('Requisição ao armazém')).toHaveValue('');
   await expect(c.locator('.pc-info')).toContainText('22-10');
   await expect(c.locator('.pc-err')).toHaveCount(0);
-  await expect(c.locator('.pc-av')).toContainText('sem requisição ao armazém emitida');
+  await expect(c.locator('.pc-av', { hasText: 'sem requisição ao armazém emitida' })).toBeVisible();
+  await expect(c.locator('.pc-av', { hasText: 'sem dados do stock da carrinha' })).toBeVisible();
   expect(erros).toEqual([]);
 });
 
@@ -191,7 +192,37 @@ test('carga pela requisição: existências + requisição, documento e armazém
   await expect(c.getByLabel('Modelo', { exact: true })).toHaveJSProperty('readOnly', true);
   await expect(c.getByLabel('Marca e modelo')).toHaveCount(0);
   await expect(c.getByLabel('Transportadora')).toHaveValue('Velotrans');
+  // dados mestre: transportadora e telefone vêm das tabelas e não se escrevem no plano
+  await expect(c.getByLabel('Transportadora')).toHaveJSProperty('readOnly', true);
+  await expect(c.getByLabel('Telefone')).toHaveJSProperty('readOnly', true);
   expect(erros).toEqual([]);
+});
+
+test('carga sem PO emitida: quantidades do stock da carrinha, só para leitura, e a PO por emitir à parte', async ({ page }) => {
+  const base = resposta(null);
+  base.listas.frota = [{ matricula: 'LD-58-73-GY', marca: '', modelo: 'Canter', transportadora: '', kg: 3500, activa: true }];
+  const carga = {
+    dia_anterior: '2026-10-24',
+    rotas: {
+      1001: {
+        requisicoes: [],
+        grupos: { fraldas: { na: 12, carregar: 0, por_emitir: 62, total: 12 }, sabao: { na: 0, carregar: 0, por_emitir: 125, total: 0 } },
+        stock: 'contado',
+        armazens: [],
+        rascunhos: ['PO-2026-000029'],
+        sem_grupo: [],
+      },
+    },
+  };
+  await abrirPlano(page, null, [], { listas: base.listas, carga, sugestoes: [{ ...ROTA, origem: '2026-10-22' }] });
+  const c = page.locator('.pc-card').first();
+  await expect(c.getByLabel('Fraldas')).toHaveValue('12');
+  await expect(c.getByLabel('Fraldas')).toHaveJSProperty('readOnly', true);
+  await expect(c.locator('.pc-carga')).toContainText('+62 na PO por emitir');
+  await expect(c.locator('.pc-carga')).toContainText('PO-2026-000029 ainda está por emitir');
+  await expect(c.locator('.pc-prev')).toHaveCount(0);
+  await expect(c.locator('.pc-av', { hasText: 'marca ou modelo em falta na tabela de viaturas' })).toBeVisible();
+  await expect(c.locator('.pc-av', { hasText: 'transportadora em falta na tabela de viaturas' })).toBeVisible();
 });
 
 test('listas: tabela de viaturas (matrícula, marca, modelo, capacidade) e motoristas com validade da carta e activo', async ({ page }) => {

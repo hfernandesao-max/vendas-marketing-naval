@@ -695,7 +695,7 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
     $out = [];
     $vazio = function () use ($listas) {
         $g = [];
-        foreach ($listas['artigos'] as $a) $g[(string) $a['id']] = ['na' => 0.0, 'carregar' => 0.0, 'total' => 0.0];
+        foreach ($listas['artigos'] as $a) $g[(string) $a['id']] = ['na' => 0.0, 'carregar' => 0.0, 'por_emitir' => 0.0, 'total' => 0.0];
         return ['requisicoes' => [], 'rascunhos' => [], 'armazens' => [], 'grupos' => $g, 'stock' => 'sem_dados', 'sem_grupo' => []];
     };
     $junta = function (string $rota, string $codigo, string $nome, string $campo, float $q) use (&$out, $listas, $vazio) {
@@ -715,9 +715,10 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
             if (!$r || $r['data'] < $ant || $r['data'] > $data) continue;
             $rota = (string) $r['rota'];
             if ($rotas !== null && !in_array($rota, $rotas, true)) continue;
-            if ($r['estado'] === 'rascunho') {   // ainda por emitir: o plano avisa, mas não carrega
+            if ($r['estado'] === 'rascunho') {   // ainda por emitir: o plano mostra e avisa, mas não carrega
                 if (!isset($out[$rota])) $out[$rota] = $vazio();
                 $out[$rota]['rascunhos'][] = (string) $r['numero'];
+                foreach ((array) $r['linhas'] as $l) $junta($rota, (string) $l['codigo'], (string) ($l['artigo'] ?? ''), 'por_emitir', (float) $l['quantidade']);
                 continue;
             }
             if (!in_array($r['estado'], ['emitida', 'carregada'], true)) continue;
@@ -780,55 +781,55 @@ function naval_plano_carga(string $data, array $listas, ?array $rotas = null): a
  */
 function naval_plano_com_requisicoes(array $p, array $listas, ?array $carga = null): array
 {
-    naval_servico('requisicoes');
-    $ant = naval_plano_dia_anterior((string) $p['data']);
-    $req = [];
-    $grupo = [];
-    foreach (array_unique([substr($ant, 0, 4), substr((string) $p['data'], 0, 4)]) as $ano) {
-        foreach (naval_req_ficheiros($ano) as $f) {
-            $r = naval_json_ler((string) $f);
-            if (!$r || !in_array($r['estado'], ['emitida', 'carregada'], true) || $r['data'] < $ant || $r['data'] > $p['data']) continue;
-            $rt = (string) $r['rota'];
-            $req[$rt] = $req[$rt] ?? ['num' => [], 'q' => [], 'arm' => []];
-            $req[$rt]['num'][] = (string) $r['numero'];
-            foreach ((array) $r['linhas'] as $l) {
-                $q = (float) ($r['estado'] === 'carregada' ? ($l['entregue'] ?? $l['quantidade']) : $l['quantidade']);
-                $c = (string) $l['codigo'];
-                $g = $grupo[$c] = $grupo[$c] ?? naval_plano_grupo_artigo($c, (string) ($l['artigo'] ?? ''), $listas);
-                if ($g !== '') $req[$rt]['q'][$g] = ($req[$rt]['q'][$g] ?? 0) + $q;
-                if (($l['armazem'] ?? '') !== '' && $q > 0) $req[$rt]['arm'][(string) $l['armazem']] = true;
-            }
-        }
-    }
-    if ($req && $carga === null) {
+    if ($carga === null) {
         try {
-            $carga = naval_plano_carga((string) $p['data'], $listas, array_map('strval', array_keys($req)));
+            $carga = naval_plano_carga((string) $p['data'], $listas, array_map(function ($r) { return (string) $r['rota']; }, (array) $p['rotas']));
         } catch (Throwable $e) {
             error_log('[plano requisições] ' . $e->getMessage());
             $carga = ['rotas' => []];
         }
     }
     foreach ($p['rotas'] as &$r) {
-        $x = $req[$r['rota']] ?? null;
-        if (!$x) continue;
-        sort($x['num']);
-        $r['factura'] = implode(', ', $x['num']);
+        $r = naval_plano_dados_mestre($r, $listas);
         $cg = $carga['rotas'][$r['rota']] ?? null;
-        $conhecido = $cg && ($cg['stock'] ?? 'sem_dados') !== 'sem_dados';
+        if (!$cg) continue;
+        $nums = array_map(function ($x) { return (string) $x['numero']; }, (array) ($cg['requisicoes'] ?? []));
+        sort($nums);
+        $conhecido = ($cg['stock'] ?? 'sem_dados') !== 'sem_dados';
+        if (!$nums && !$conhecido) continue;   // sem PO e sem Pinguim BO: nada de certo para fixar
+        $r['factura'] = implode(', ', $nums);
         foreach ($listas['artigos'] as $a) {
             $id = (string) $a['id'];
-            $pedido = (float) ($x['q'][$id] ?? 0);
+            $pedido = (float) ($cg['grupos'][$id]['carregar'] ?? 0);
             $r['quantidades'][$id] = $conhecido
                 ? (int) round($pedido + (float) ($cg['grupos'][$id]['na'] ?? 0))
                 : (int) max(round($pedido), (int) ($r['quantidades'][$id] ?? 0));
         }
         $r['carga_total'] = true;   // as quantidades já levam as existências: o limite de peso não as soma outra vez
-        if ($x['arm']) {
-            $arm = array_keys($x['arm']);
-            sort($arm);
-            $r['armazem'] = implode(' + ', $arm);
-        }
+        if (!empty($cg['armazens'])) $r['armazem'] = implode(' + ', $cg['armazens']);
     }
     unset($r);
     return $p;
+}
+
+/**
+ * Dados mestre de uma rota do plano (nunca do ecrã): marca, modelo e transportadora da viatura pela matrícula (tabela de
+ * viaturas) e o telefone do motorista (tabela de motoristas). Sem a viatura ou o motorista na tabela, fica o que veio.
+ */
+function naval_plano_dados_mestre(array $r, array $listas): array
+{
+    $mat = naval_frota_matricula((string) ($r['matricula'] ?? ''));
+    foreach ((array) ($listas['frota'] ?? []) as $v) {
+        if ($mat === '' || (string) $v['matricula'] !== $mat) continue;
+        $nome = trim(((string) ($v['marca'] ?? '')) . ' ' . ((string) ($v['modelo'] ?? '')));
+        if ($nome !== '') $r['viatura'] = $nome;
+        if ((string) ($v['transportadora'] ?? '') !== '') $r['transportadora'] = (string) $v['transportadora'];
+        break;
+    }
+    foreach ((array) ($listas['motoristas'] ?? []) as $m) {
+        if ((string) ($r['motorista'] ?? '') === '' || naval_chave_texto((string) $m['nome']) !== naval_chave_texto((string) $r['motorista'])) continue;
+        if ((string) ($m['telefone'] ?? '') !== '') $r['telefone'] = (string) $m['telefone'];
+        break;
+    }
+    return $r;
 }

@@ -1,5 +1,17 @@
 ## 23-11-2026
 
+### Plano de cargas: tudo dos dados mestre e do stock, sem escrever à mão
+
+<!-- tipo: melhoria -->
+
+- **Marca, modelo e transportadora** vêm da viatura escolhida (Listas › Viaturas), e o **telefone** vem do motorista (Listas › Motoristas). No cartão ficam só para leitura, e o servidor volta a pô-los ao gravar, seja o que for que venha do ecrã.
+- **As quantidades** são sempre o stock da carrinha no fecho do dia anterior (Pinguim BO) mais a PO emitida, e não se alteram no plano. Sem PO, a carga é só o que já está na carrinha. A sugestão pela previsão deixa de mexer nas quantidades.
+- **A PO por emitir** aparece à parte («+62 na PO por emitir»), com o aviso. A reposição da contagem que ficou em rascunho volta a tentar a **emissão automática a cada 15 minutos**, sem o vendedor ter de a emitir.
+- **Avisos de dados mestre em falta**, para corrigir uma vez na tabela em vez de escrever em cada plano:
+  - marca, modelo ou transportadora em falta na viatura;
+  - telefone em falta no motorista;
+  - sem dados do stock da carrinha.
+
 ### Análises de gestão (Inteligência de negócio)
 
 <!-- tipo: funcionalidade -->

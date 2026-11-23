@@ -5249,4 +5249,13 @@ export const TI = {
   'Retenção e valor do cliente': 'ምጽናሕን ዋጋ ዓሚልን',
   'Preço-volume-mix': 'ዋጋ-ብዝሒ-ምድብላቕ',
   'Cesto de compras': 'ዘንቢል ዕድጊ',
+  'telefone do motorista em falta na tabela (Listas → Motoristas)': 'ቴሌፎን መራሕ መኪና ኣብ ሰንጠረዥ የለን (ዝርዝራት → መራሕቲ መካይን)',
+  'marca ou modelo em falta na tabela de viaturas (Listas → Viaturas)': 'ዓይነት ወይ ሞዴል ኣብ ሰንጠረዥ መካይን የለን (ዝርዝራት → መካይን)',
+  'transportadora em falta na tabela de viaturas (Listas → Viaturas)': 'ኣጓዓዚ ኣብ ሰንጠረዥ መካይን የለን (ዝርዝራት → መካይን)',
+  'sem dados do stock da carrinha nem PO emitida: quantidades por confirmar': 'ሓበሬታ ክምችት መኪና ወይ ዝወጸ ትእዛዝ የለን: ብዝሒ ገና ኣይተረጋገጸን',
+  'Telefone da tabela de motoristas (Listas → Motoristas)': 'ቴሌፎን ካብ ሰንጠረዥ መራሕቲ መካይን (ዝርዝራት → መራሕቲ መካይን)',
+  'Transportadora da viatura (Listas → Viaturas)': 'ኣጓዓዚ ናይቲ መኪና (ዝርዝራት → መካይን)',
+  '+{q} na PO por emitir': '+{q} ኣብቲ ገና ዘይወጸ ትእዛዝ',
+  'A PO {n} ainda está por emitir: o portal tenta emiti-la sozinho a cada 15 minutos; entra na carga quando for emitida.':
+    'ትእዛዝ {n} ገና ኣይወጸን: እቲ ፖርታል ነፍሲ ወከፍ 15 ደቓይቕ ባዕሉ ከውጽኦ ይፍትን፤ ምስ ወጸ ናብ ጽዕነት ይኣቱ።',
 };

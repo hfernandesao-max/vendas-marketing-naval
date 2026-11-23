@@ -193,6 +193,27 @@ function naval_req_reposicao_auto(array $r): array
     }
 }
 
+/**
+ * Rotina periódica: a reposição da contagem que ficou em rascunho (stock por confirmar ou Pinguim BO em baixo) volta a
+ * tentar a emissão automática nos dois dias seguintes; o vendedor não tem de a emitir à mão. Devolve os números emitidos.
+ */
+function naval_req_reemitir_reposicoes(?int $agora = null): array
+{
+    if (naval_config('REQ_EMISSAO_AUTOMATICA', '1') === '0') return [];
+    $agora = $agora ?? time();
+    $desde = date('Y-m-d', $agora - 2 * 86400);
+    $out = [];
+    foreach (array_unique([date('Y', $agora - 2 * 86400), date('Y', $agora)]) as $a) {
+        foreach (naval_req_ficheiros((string) $a) as $f) {
+            $x = naval_json_ler((string) $f);
+            if (!$x || $x['estado'] !== 'rascunho' || (string) $x['data'] < $desde || ($x['origem']['tipo'] ?? '') !== 'conciliacao') continue;
+            $r = naval_req_reposicao_auto($x);
+            if (($r['estado'] ?? '') !== 'rascunho') $out[] = (string) $r['numero'];
+        }
+    }
+    return $out;
+}
+
 /** Número da requisição criada pela conciliação de uma rota e dia (ou null). */
 function naval_req_da_conciliacao_numero(string $data, string $rota): ?string
 {
