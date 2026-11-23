@@ -1,5 +1,15 @@
 ## 23-11-2026
 
+### Horário novo a partir de 24-11; a contagem seguinte e as vendas antes da contagem explicam faltas; recontar por quem conta
+
+<!-- tipo: melhoria -->
+
+- **Horário com data de entrada em vigor** (Calendário de trabalho): a partir de 24-11-2026, vendas 07:30–15:00 (sábado 07:30–12:00), contagem e PO 15:00–15:30, carga 15:30–16:30 (ao sábado 12:00–12:30 e 12:30–13:30). Os dias anteriores ficam sempre com o horário de então, por isso as conciliações, os prazos e os relatórios passados não mudam. O calendário mostra a próxima mudança e desde quando vale o horário.
+- **A hora congelada prevalece:** uma conciliação já contada usa sempre a hora gravada na base, nunca a do horário actual.
+- **Vendas entre o corte e a contagem física** (ex.: rota 1009, 23-11: corte às 16:00, facturas às 16:18 e 16:42, contagem às 16:47): a mercadoria já não estava na carrinha e a falta fica explicada por essas facturas, se a contagem foi gravada até 2 horas depois do corte.
+- **A contagem seguinte é prova:** o que foi facturado entre duas contagens e não saiu da carrinha nesse intervalo já tinha saído antes da primeira. Ex.: rota 1011, 97 fraldas contadas no sábado e 97 na segunda-feira, com 53 facturadas pelo meio, que explicam 53 da falta de sábado.
+- **Recontar:** quem pode contar vê «Recontar» também numa contagem feita por outra pessoa, no próprio dia. A contagem anterior fica no histórico e a nova volta a precisar de validação.
+
 ### Conciliação da carrinha: a diferença regularizada no Pinguim BO fica à vista
 
 <!-- tipo: melhoria -->

@@ -3,16 +3,18 @@
  * Calendário de trabalho das vendas (rotas): horário dos promotores, folgas, feriados e janelas do fecho do dia.
  * É a fonte única para os objectivos, as previsões, o relatório de vendas, as notificações e os prazos do fecho.
  *
+ * Horário com data de entrada em vigor (NAVAL_CAL_HORARIOS): cada dia usa sempre o horário que estava em vigor nesse
+ * dia, para as conciliações, os prazos e os relatórios de dias passados não mudarem quando o horário muda.
+ * Desde 24-11-2026 (horário da Direcção Comercial):
  *   - segunda a sexta: vendas das 07:30 às 15:00 (dia completo, peso 1);
- *   - sábado: vendas das 07:30 às 13:00 (meio dia; peso = horas do sábado ÷ horas de um dia de semana);
+ *   - sábado: vendas das 07:30 às 12:00 (meio dia; peso = horas do sábado ÷ horas de um dia de semana);
  *     sábado à tarde e domingo são folga;
  *   - feriados nacionais de Angola (Lei n.º 11/18): folga; mais as folgas que a empresa decidir (pontes);
- *   - fecho do dia: contas com a tesouraria, contagem das carrinhas e requisição ao armazém das 15:30 às 16:00;
- *     carregamento da mercadoria das 16:00 às 17:00. Ao sábado, as mesmas janelas a seguir ao fim das vendas, com o
- *     mesmo intervalo e duração (13:30–14:00 e 14:00–15:00).
- *
- * Configuração (.env), com estes valores por omissão:
+ *   - contagem das carrinhas e PO (requisição ao armazém) das 15:00 às 15:30; carga das 15:30 às 16:30. Ao sábado, as
+ *     mesmas janelas a seguir ao fim das vendas, com a mesma duração (12:00–12:30 e 12:30–13:30).
+ * Até 23-11-2026: vendas 07:30–15:00 (sábado 07:30–13:00), fecho 15:30–16:00, carga 16:00–17:00, lidos do .env:
  *   HORARIO_SEMANA=07:30-15:00   HORARIO_SABADO=07:30-13:00   HORARIO_FECHO=15:30-16:00   HORARIO_CARGA=16:00-17:00
+ * Um horário novo entra como uma versão nova em NAVAL_CAL_HORARIOS (fica no histórico do código, com a data).
  *   CALENDARIO_FOLGAS=AAAA-MM-DD,…   (pontes e outras folgas da empresa)
  *   CALENDARIO_TRABALHO=AAAA-MM-DD,… (dias que a empresa decide trabalhar apesar de serem feriado)
  * As folgas da empresa e os dias de trabalho excepcionais também se definem no portal (Administração › Calendário),
@@ -20,6 +22,27 @@
  * dia de descanso (feriado ou folga da empresa), às CALENDARIO_HORA_AVISO (17:30), vendedores e Logística são avisados.
  */
 defined('NAVAL_NUCLEO') || exit;
+
+/** Versões do horário, da mais antiga para a mais recente; antes da primeira vale o .env (horário anterior). */
+const NAVAL_CAL_HORARIOS = [
+    ['desde' => '2026-11-24', 'semana' => '07:30-15:00', 'sabado' => '07:30-12:00', 'fecho' => '15:00-15:30', 'carga' => '15:30-16:30'],
+];
+
+/** O horário em vigor num dia: {desde, semana, sabado, fecho, carga} em «HH:MM-HH:MM». */
+function naval_cal_horario(string $dia): array
+{
+    $h = ['desde' => '', 'semana' => naval_config('HORARIO_SEMANA', '07:30-15:00'), 'sabado' => naval_config('HORARIO_SABADO', '07:30-13:00'),
+        'fecho' => naval_config('HORARIO_FECHO', '15:30-16:00'), 'carga' => naval_config('HORARIO_CARGA', '16:00-17:00')];
+    foreach (NAVAL_CAL_HORARIOS as $v) if ($dia >= $v['desde']) $h = $v;
+    return $h;
+}
+
+/** A próxima mudança de horário depois de $dia (para avisar), ou null. */
+function naval_cal_horario_proximo(string $dia): ?array
+{
+    foreach (NAVAL_CAL_HORARIOS as $v) if ($v['desde'] > $dia) return $v;
+    return null;
+}
 
 /** «HH:MM-HH:MM» → [início, fim] em minutos desde a meia-noite (ou o valor por omissão, se inválido). */
 function naval_cal_intervalo(string $chave, string $omissao): array
@@ -31,6 +54,17 @@ function naval_cal_intervalo(string $chave, string $omissao): array
         return $b > $a ? [$a, $b] : null;
     };
     return $ler(naval_config($chave, $omissao)) ?? $ler($omissao);
+}
+
+/** Janela do horário em vigor no dia ($campo: semana, sabado, fecho ou carga) em minutos. */
+function naval_cal_janela(string $dia, string $campo): array
+{
+    $omissao = ['semana' => '07:30-15:00', 'sabado' => '07:30-13:00', 'fecho' => '15:30-16:00', 'carga' => '16:00-17:00'][$campo];
+    $s = (string) (naval_cal_horario($dia)[$campo] ?? $omissao);
+    if (!preg_match('/^\s*([01]\d|2[0-3]):([0-5]\d)\s*-\s*([01]\d|2[0-3]):([0-5]\d)\s*$/', $s, $m)) return naval_cal_intervalo('_', $omissao);
+    $a = (int) $m[1] * 60 + (int) $m[2];
+    $b = (int) $m[3] * 60 + (int) $m[4];
+    return $b > $a ? [$a, $b] : naval_cal_intervalo('_', $omissao);
 }
 
 function naval_cal_hm(int $min): string
@@ -193,10 +227,11 @@ function naval_cal_dia(string $dia): array
     static $cache = [];
     if (isset($cache[$dia])) return $cache[$dia];
     if (!naval_data_valida($dia)) throw new NavalErro('Data inválida.', 400);
-    $semana = naval_cal_intervalo('HORARIO_SEMANA', '07:30-15:00');
-    $sabado = naval_cal_intervalo('HORARIO_SABADO', '07:30-13:00');
-    $fecho = naval_cal_intervalo('HORARIO_FECHO', '15:30-16:00');
-    $carga = naval_cal_intervalo('HORARIO_CARGA', '16:00-17:00');
+    // o horário em vigor nesse dia (um dia passado fica sempre com o horário de então)
+    $semana = naval_cal_janela($dia, 'semana');
+    $sabado = naval_cal_janela($dia, 'sabado');
+    $fecho = naval_cal_janela($dia, 'fecho');
+    $carga = naval_cal_janela($dia, 'carga');
     $ds = (int) date('N', strtotime($dia . ' 12:00'));
     $feriado = naval_cal_feriados((int) substr($dia, 0, 4))[$dia] ?? null;
     $trabalho = isset(naval_cal_lista('CALENDARIO_TRABALHO')[$dia]);
@@ -244,7 +279,7 @@ function naval_cal_util_anterior(string $dia): string
 function naval_cal_fim_vendas(string $dia): string
 {
     $c = naval_cal_dia($dia);
-    return $c['vendas'][1] ?? naval_cal_hm(naval_cal_intervalo('HORARIO_SEMANA', '07:30-15:00')[1]);
+    return $c['vendas'][1] ?? naval_cal_hm(naval_cal_janela($dia, 'semana')[1]);
 }
 
 /**

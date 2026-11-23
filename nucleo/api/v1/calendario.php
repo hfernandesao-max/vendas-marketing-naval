@@ -13,8 +13,8 @@ $gere = naval_pode('calendario', 'G');
 $vista = function (string $de) use ($gere) {
     $hoje = naval_cal_dia(date('Y-m-d'));
     return ['ok' => true, 'gere' => $gere, 'de' => $de, 'hoje' => $hoje,
-        'horario' => ['semana' => naval_config('HORARIO_SEMANA', '07:30-15:00'), 'sabado' => naval_config('HORARIO_SABADO', '07:30-13:00'),
-            'fecho' => naval_config('HORARIO_FECHO', '15:30-16:00'), 'carga' => naval_config('HORARIO_CARGA', '16:00-17:00')],
+        // o horário em vigor hoje e, se já estiver decidida, a próxima mudança (com a data)
+        'horario' => naval_cal_horario(date('Y-m-d')), 'horario_proximo' => naval_cal_horario_proximo(date('Y-m-d')),
         'excepcoes' => naval_cal_excepcoes($de, 120)];
 };
 if (!naval_e_post()) {

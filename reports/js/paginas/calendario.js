@@ -82,10 +82,26 @@ R.calendario = (pg) => {
       },
       { l: t('Segunda a sexta'), v: h.semana, s: t('vendas') },
       { l: t('Sábado'), v: h.sabado, s: t('vendas (meio dia)') },
-      { l: t('Fecho e carga'), v: h.fecho + ' · ' + h.carga, s: t('contas, contagem e requisição · carga') },
+      { l: t('Contagem e PO · carga'), v: h.fecho + ' · ' + h.carga, s: t('ao sábado, a seguir ao fim das vendas') },
       { l: t('Próximo dia de descanso'), v: prox ? dl(prox.dia) : '—', s: prox ? prox.feriado || prox.motivo : t('domingos') },
     ]),
   );
+  const np = C.horario_proximo;
+  if (np)
+    pg.append(
+      el(
+        'p',
+        'aviso',
+        t('Novo horário a partir de {d}: vendas {s} (sábado {sab}); contagem e PO {f}; carga {c}.', {
+          d: dl(np.desde),
+          s: np.semana,
+          sab: np.sabado,
+          f: np.fecho,
+          c: np.carga,
+        }),
+      ),
+    );
+  else if (h.desde) pg.append(el('p', 'note', t('Horário em vigor desde {d}.', { d: dl(h.desde) })));
   if (C.gere) {
     const acc = el('div', 'cal-acc');
     acc.append(botao(t('Definir folga ou dia de trabalho'), null, () => definir()));

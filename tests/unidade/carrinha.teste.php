@@ -566,6 +566,10 @@ teste('regularização: facturas de segunda-feira para lá do contado e da carga
         ['codigo' => '386', 'diferenca' => -26.0, 'contado' => 19.0],
     ];
     $r = naval_carr_regularizacoes($linhas, $ac, '1011', $ref);
+    // com a contagem de segunda-feira às 16:00 (97 fraldas, 7 Mimo, 1 do 293, 9 do 386): o facturado entre as duas
+    // contagens que não saiu da carrinha já tinha saído antes da de sábado
+    $p = naval_carr_regularizacoes($linhas, $ac, '1011', $ref, null, ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0, '015' => 7.0, '293' => 1.0, '386' => 9.0, '292' => 0.0]]);
+    igual([-53.0, -3.0, -50.0, -26.0, -50.0], [$p['332']['q'], $p['015']['q'], $p['293']['q'], $p['386']['q'], $p['292']['q']]);
     igual(-50.0, $r['292']['q'], '292: carregou 30 e facturou 80 → os 50 de sábado');
     igual(-49.0, $r['293']['q'], '293: até à carga das 16:21, 99 facturados para 50 carregados → 49');
     igual(-17.0, $r['386']['q'], '386: 36 facturados para 19 contados → 17');
@@ -595,4 +599,32 @@ teste('regularização: vendas facturadas depois da contagem com o contado devol
     // venda depois só de parte da falta, com o contado devolvido: o resto fica por explicar (não vai para a SA)
     $r2 = naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -15.0, 'contado' => 90.0]], $ac, '1007', $ref);
     igual(-10.0, $r2['10000332']['q']);
+});
+
+teste('regularização: vendas entre o corte e a contagem física já tinham saído da carrinha (rota 1009, 23-11)', function () {
+    $ref = '2026-11-23 16:00:00';
+    $ev = function ($cod, $tipo, $em, $q, $doc) { return ['rota' => '1009', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => $tipo]; };
+    $ac = [
+        $ev('292', 'venda', '2026-11-23 16:18:02', -150.0, 'FR FR0126S77745N/13'),
+        $ev('332', 'venda', '2026-11-23 16:42:09', -50.0, 'FR FR0126S77745N/14'),
+        $ev('385', 'venda', '2026-11-23 17:30:00', -5.0, 'FR FR0126S77745N/15'),   // depois da contagem: estava na carrinha
+    ];
+    $linhas = [
+        ['codigo' => '292', 'diferenca' => -150.0, 'contado' => 0.0],
+        ['codigo' => '332', 'diferenca' => -50.0, 'contado' => 147.0],
+        ['codigo' => '385', 'diferenca' => -5.0, 'contado' => 20.0],
+    ];
+    $r = naval_carr_regularizacoes($linhas, $ac, '1009', $ref, '2026-11-23 16:47:00');
+    igual(['q' => -150.0, 'doc' => 'FR FR0126S77745N/13', 'em' => '2026-11-23 16:18:02'], $r['292']);
+    igual(['q' => -50.0, 'doc' => 'FR FR0126S77745N/14', 'em' => '2026-11-23 16:42:09'], $r['332'], 'contou 147 = 197 − 50 vendidos antes de contar');
+    igual(false, isset($r['385']), 'venda depois da contagem não explica');
+    // sem a hora da contagem (ou gravada muito depois do corte): só a conservação, que não prova a 332
+    $s = naval_carr_regularizacoes($linhas, $ac, '1009', $ref, '2026-11-24 09:00:00');
+    igual([true, false], [isset($s['292']), isset($s['332'])]);
+});
+
+teste('referência da contagem: a hora congelada na base prevalece sobre o horário actual', function () {
+    $dia = '2026-11-21';
+    $reg = ['contagem' => ['A' => 1.0], 'contado_em' => '2026-11-21 14:40:00', 'base' => ['corte' => ['hora' => '2026-11-21 14:00:00', 'origem' => 'contagem']]];
+    igual('2026-11-21 14:00:00', naval_carr_referencia_contagem($reg, $dia));
 });

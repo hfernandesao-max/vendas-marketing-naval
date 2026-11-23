@@ -5289,4 +5289,9 @@ export const TI = {
   'Verificar agora': 'ሕጂ ኣረጋግጽ',
   'Diferença na contagem {a}; regularizada no Pinguim BO {b} ({doc}); fica {c}': 'ፍልልይ ቆጸራ {a}; ኣብ Pinguim BO ተስተኻኺሉ {b} ({doc}); ዝተረፈ {c}',
   '{n} regularizada(s) no Pinguim BO': '{n} ኣብ Pinguim BO ተስተኻኺሉ',
+  'Contagem e PO · carga': 'ቆጸራን ጠለብን · ምጽዓን',
+  'ao sábado, a seguir ao fim das vendas': 'ቀዳም፡ ድሕሪ መወዳእታ ሽያጥ',
+  'Novo horário a partir de {d}: vendas {s} (sábado {sab}); contagem e PO {f}; carga {c}.': 'ሓድሽ ሰዓታት ካብ {d}: ሽያጥ {s} (ቀዳም {sab}); ቆጸራን ጠለብን {f}; ምጽዓን {c}.',
+  'Horário em vigor desde {d}.': 'ካብ {d} ዝሰርሕ ሰዓታት።',
+  'Se os números não estiverem certos, pode recontar.': 'ቁጽርታት ቅኑዓት እንተዘይኮይኖም፡ ደጊምካ ክትቁጽር ትኽእል።',
 };

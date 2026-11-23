@@ -525,7 +525,15 @@ function tabelaRota(r) {
         }),
       );
       espera(t('Confira os números: se estiverem certos, valide; se não, reconte. Depois de validada segue para o coordenador.'));
-    } else espera(t('Aguarda a validação de {p}, que fez a contagem.', { p: r.contado_por || '—' }));
+    } else {
+      // recontagem independente por outra pessoa da contagem (só no próprio dia: depois a carrinha já não é a mesma);
+      // a nova contagem substitui a anterior, que fica no histórico, e volta a precisar de validação
+      if (pode.contar && dia === hoje()) acc.append(recontar);
+      espera(
+        t('Aguarda a validação de {p}, que fez a contagem.', { p: r.contado_por || '—' }) +
+          (pode.contar && dia === hoje() ? ' ' + t('Se os números não estiverem certos, pode recontar.') : ''),
+      );
+    }
   } else if (est === 'por_aprovar') {
     if (aprovar) {
       if (pode.contar) acc.append(recontar);

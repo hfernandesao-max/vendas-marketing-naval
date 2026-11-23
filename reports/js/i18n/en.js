@@ -5388,4 +5388,10 @@ export const EN = {
   'Verificar agora': 'Check now',
   'Diferença na contagem {a}; regularizada no Pinguim BO {b} ({doc}); fica {c}': 'Count difference {a}; regularised in Pinguim BO {b} ({doc}); remaining {c}',
   '{n} regularizada(s) no Pinguim BO': '{n} regularised in Pinguim BO',
+  'Contagem e PO · carga': 'Count and PO · loading',
+  'ao sábado, a seguir ao fim das vendas': 'on Saturdays, right after sales end',
+  'Novo horário a partir de {d}: vendas {s} (sábado {sab}); contagem e PO {f}; carga {c}.':
+    'New schedule from {d}: sales {s} (Saturday {sab}); count and PO {f}; loading {c}.',
+  'Horário em vigor desde {d}.': 'Schedule in force since {d}.',
+  'Se os números não estiverem certos, pode recontar.': 'If the numbers are not right, you can recount.',
 };

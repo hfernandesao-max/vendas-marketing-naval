@@ -62,3 +62,18 @@ teste('dias de descanso: o último dia de trabalho antes de segunda-feira é o s
     igual(false, naval_carr_teve_movimento([['inicial' => 40, 'carregado' => 0, 'vendido' => 0, 'devolvido' => 0, 'inventario' => 0]]), 'só stock do dia anterior');
     verdade(naval_carr_teve_movimento([['inicial' => 40, 'carregado' => 0, 'vendido' => 2, 'devolvido' => 0, 'inventario' => 0]]), 'vendeu ao domingo: conta-se');
 });
+
+teste('calendário: horário com data de entrada em vigor — desde 24-11-2026 contagem e PO 15:00–15:30, carga 15:30–16:30, sábado até às 12:00', function () {
+    $q = naval_cal_dia('2026-11-25');   // quarta-feira
+    igual([['07:30', '15:00'], ['15:00', '15:30'], ['15:30', '16:30']], [$q['vendas'], $q['fecho'], $q['carga']]);
+    $s = naval_cal_dia('2026-11-28');   // sábado
+    igual([['07:30', '12:00'], ['12:00', '12:30'], ['12:30', '13:30']], [$s['vendas'], $s['fecho'], $s['carga']]);
+    igual(round(4.5 / 7.5, 3), $s['peso']);
+    // os dias anteriores ficam com o horário de então
+    $a = naval_cal_dia('2026-11-21');
+    igual([['07:30', '13:00'], ['13:30', '14:00'], ['14:00', '15:00']], [$a['vendas'], $a['fecho'], $a['carga']]);
+    igual(['15:30', '16:00'], naval_cal_dia('2026-11-23')['fecho']);
+    igual('2026-11-24', naval_cal_horario('2026-11-30')['desde']);
+    igual('2026-11-24', naval_cal_horario_proximo('2026-11-23')['desde']);
+    igual(null, naval_cal_horario_proximo('2026-11-24'));
+});

@@ -700,6 +700,9 @@ function naval_carr_referencia_contagem(array $reg, string $dia): string
     $ok = function ($x) use ($dia) { return is_string($x) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $x) && substr($x, 0, 10) === $dia; };
     $corte = naval_carr_corte($dia);
     $limite = $dia . ' ' . ($corte !== null ? $corte . ':00' : '23:59:59');
+    // base já congelada: vale a hora gravada nela (uma mudança de horário nunca mexe numa conciliação já feita)
+    $congelada = $reg['base']['corte']['hora'] ?? null;
+    if ($ok($congelada) && ($reg['base']['corte']['origem'] ?? '') === 'contagem') $limite = (string) $congelada;
     $contado = (string) ($reg['contado_em'] ?? '');
     if (is_array($reg['contagem'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2} /', $contado)) {
         // gravada noutro dia: a contagem física foi feita no fim do dia da conciliação e escrita depois (confirmado nos
@@ -812,6 +815,19 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
  * Pinguim BO que a corrige e grava-o; sem diferenças por explicar, uma conciliação já validada fecha sozinha (gestão
  * por excepção, como no fecho sem diferenças). As aprovadas não mudam. Devolve os artigos regularizados de novo.
  */
+/** A contagem seguinte da rota (até NAVAL_CARR_CONSERVACAO_DIAS dias depois): {em, q} ou null. */
+function naval_carr_contagem_seguinte(string $dia, string $rota): ?array
+{
+    for ($i = 1; $i <= NAVAL_CARR_CONSERVACAO_DIAS; $i++) {
+        $d = date('Y-m-d', strtotime($dia . ' 12:00') + $i * 86400);
+        if ($d > date('Y-m-d')) break;
+        $r = naval_carr_ler($d, $rota);
+        if (!is_array($r['contagem'] ?? null) || !$r['contagem']) continue;
+        return ['em' => naval_carr_referencia_contagem($r, $d), 'q' => (array) $r['contagem']];
+    }
+    return null;
+}
+
 function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, string $ref, bool $ensaio): array
 {
     if (!is_array($reg['contagem'] ?? null) || ($reg['estado'] ?? '') === 'aprovada') return [];
@@ -822,7 +838,8 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
     $base = (array) $reg['base'];
     $base['post'] = naval_carr_posteriores($reg);
     $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
-    $novas = naval_carr_regularizacoes($linhas, $acertos[$desde], $rota, $ref);
+    $novas = naval_carr_regularizacoes($linhas, $acertos[$desde], $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
+        naval_carr_contagem_seguinte($dia, $rota));
     // diagnóstico do que fica por explicar (guia anulada com a mercadoria na carrinha, guia com o sentido trocado)
     static $guias = [];
     if (!array_key_exists($dia, $guias)) $guias[$dia] = naval_carr_guias_dia($dia) ?? [];
@@ -1084,9 +1101,20 @@ function naval_carr_acertos_sql(string $desde): ?array
  * limite da regra 2. Devolve {codigo: {q (a parte explicada, com sinal), doc, em}}.
  */
 if (!defined('NAVAL_CARR_CONSERVACAO_DIAS')) define('NAVAL_CARR_CONSERVACAO_DIAS', 3);
+if (!defined('NAVAL_CARR_CONTAGEM_JANELA')) define('NAVAL_CARR_CONTAGEM_JANELA', 120);
 
-function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, string $referencia): array
+function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, string $referencia, ?string $contadoEm = null, ?array $proxima = null): array
 {
+    // contagem seguinte da mesma carrinha ({em: referência dela, q: {codigo: contado}}): prova física de que o que foi
+    // facturado entre as duas contagens não saiu da carrinha nesse intervalo (ex.: rota 1011, contou 97 fraldas no
+    // sábado e 97 na segunda-feira, com 53 facturadas pelo meio → essas 53 já tinham saído antes da contagem de sábado)
+    if ($proxima !== null && (!is_string($proxima['em'] ?? null) || $proxima['em'] <= $referencia || !is_array($proxima['q'] ?? null))) $proxima = null;
+    // hora da contagem física, quando foi gravada pouco depois do corte (no próprio dia, até NAVAL_CARR_CONTAGEM_JANELA
+    // minutos): as vendas entre o corte e essa hora já tinham saído da carrinha quando se contou
+    $fisica = null;
+    if (is_string($contadoEm) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $contadoEm) && substr($contadoEm, 0, 10) === substr($referencia, 0, 10)
+        && $contadoEm > $referencia && strtotime($contadoEm) - strtotime($referencia) <= NAVAL_CARR_CONTAGEM_JANELA * 60) $fisica = $contadoEm;
+    $refL = $fisica ?? $referencia;
     $out = [];
     foreach ($linhas as $l) {
         $d = $l['diferenca_bruta'] ?? $l['diferenca'];
@@ -1098,6 +1126,26 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         $docs = [];
         $em = '';
         $esvaziou = false;
+        // -1. venda entre o corte e a contagem física (ex.: rota 1009, 23-11: corte às 16:00, facturas às 16:18 e 16:42,
+        //     contagem às 16:47): a mercadoria vendida já não estava na carrinha; explica a falta até a essas vendas
+        $explicadoC = 0.0;
+        $docsC = [];
+        $emC = '';
+        if ($d < 0 && $fisica !== null) {
+            foreach ($acertos as $a) {
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || ($a['tipo'] ?? '') !== 'venda' || $referencia >= $a['em'] || $a['em'] > $fisica) continue;
+                if ((float) $a['efeito'] >= 0) continue;
+                $explicadoC += -(float) $a['efeito'];
+                $docsC[] = $a['doc'];
+                $emC = $emC ?: $a['em'];
+            }
+            $explicadoC = min($falta, $explicadoC);
+            if ($explicadoC >= $falta - NAVAL_CARR_TOLERANCIA) {
+                $out[$codigo] = ['q' => round(-$explicadoC, 3), 'doc' => implode(', ', array_values(array_unique($docsC))), 'em' => $emC];
+                continue;
+            }
+            $falta -= $explicadoC;
+        }
         // 0. conservação da contagem (falta): a carrinha nunca tem stock negativo. Em cada momento depois da contagem, o
         //    que saiu (vendas e devoluções ao armazém) só podia sair do contado mais o que entretanto se carregou; o que
         //    passa disso já tinha saído antes da contagem e só foi registado depois. Explica até a esse excesso (o maior
@@ -1116,8 +1164,8 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
             $docsMelhor = [];
             $limite = date('Y-m-d H:i:s', strtotime($referencia) + NAVAL_CARR_CONSERVACAO_DIAS * 86400);
             foreach ($acertos as $a) {
-                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia) continue;
-                if ($a['em'] > $limite) break;
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL) continue;
+                if ($a['em'] > $limite || ($proxima !== null && $a['em'] > $proxima['em'])) break;
                 $tipo = $a['tipo'] ?? 'acerto';
                 if ((float) $a['efeito'] > 0) {
                     // carga (ou outra entrada) depois da contagem: passa a poder sair também daí
@@ -1136,6 +1184,14 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
                     $docsMelhor = [array_values(array_unique($docsV)), array_values(array_unique($docsD))];
                 }
             }
+            // na contagem seguinte havia na carrinha q: o que saiu até lá, para lá de contado + cargas − q, já tinha saído
+            if ($proxima !== null && isset($proxima['q'][$codigo]) && is_numeric($proxima['q'][$codigo])) {
+                $agora = min($saiu - (float) $l['contado'] - $carga + (float) $proxima['q'][$codigo], $vend);
+                if ($agora > $melhor + NAVAL_CARR_TOLERANCIA) {
+                    $melhor = $agora;
+                    $docsMelhor = [array_values(array_unique($docsV)), array_values(array_unique($docsD))];
+                }
+            }
             // o contado voltou ao armazém (a carrinha foi esvaziada): as devoluções não explicam faltas
             $esvaziou = $saiu - $vend >= (float) $l['contado'] - NAVAL_CARR_TOLERANCIA && $saiu - $vend > NAVAL_CARR_TOLERANCIA;
             if ($melhor > NAVAL_CARR_TOLERANCIA) {
@@ -1146,7 +1202,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
             }
         }
         if ($explicado >= $falta - NAVAL_CARR_TOLERANCIA) {
-            $out[$codigo] = ['q' => round(-$explicado, 3), 'doc' => implode(', ', $docs), 'em' => $em];
+            $out[$codigo] = ['q' => round(-($explicado + $explicadoC), 3), 'doc' => implode(', ', array_values(array_unique(array_merge($docsC, $docs)))), 'em' => $emC ?: $em];
             continue;
         }
         if ($explicado > NAVAL_CARR_TOLERANCIA) {
@@ -1161,7 +1217,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         $em = '';
         // 1. o primeiro acerto da Logística depois da contagem (não a devolução do contado nem o que as vendas já explicaram)
         foreach ($esvaziou || $explicado0 > NAVAL_CARR_TOLERANCIA ? [] : $acertos as $a) {
-            if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
+            if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
             if (($a['efeito'] < 0) === ($d < 0)) {
                 $explicado = min(abs((float) $a['efeito']), $falta);
                 $docs[] = $a['doc'];
@@ -1174,7 +1230,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
             $vendido = 0.0;
             $docsV = [];
             foreach ($acertos as $a) {
-                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia) continue;
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL) continue;
                 $tipo = $a['tipo'] ?? 'acerto';
                 if ($tipo === 'carga' && $a['efeito'] > 0) break;
                 if ($tipo !== 'venda') continue;
@@ -1193,6 +1249,11 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         if ($explicado0 > NAVAL_CARR_TOLERANCIA) {
             $docs = array_merge($docs0, $docs);
             $em = $em0 ?: $em;
+        }
+        if ($explicadoC > NAVAL_CARR_TOLERANCIA) {
+            $explicado += $explicadoC;
+            $docs = array_merge($docsC, $docs);
+            $em = $emC ?: $em;
         }
         if ($explicado > NAVAL_CARR_TOLERANCIA) {
             $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * $explicado, 3), 'doc' => implode(', ', array_values(array_unique($docs))), 'em' => $em];

@@ -19,7 +19,7 @@ teste('agente do fecho: a cada rota com vendas hoje, o passo exacto que falta; s
         'notificar' => function ($logins, $tx, $chave) use (&$env) { $env[] = [$logins, $tx['pt'][1]]; }]);
     igual(1, $r['avisadas']);
     igual([[['pro4'], 'Falta: sincronize o telemóvel no Winrest; registe na app as notas que entrega; a carrinha ainda não foi contada pela Logística.']], $env);
-    igual(null, naval_ag_fecho(strtotime($dia . ' 15:30:00'), ['dados' => $dados]), 'antes do fim da janela do fecho não avisa');
+    igual(null, naval_ag_fecho(strtotime($dia . ' 15:20:00'), ['dados' => $dados]), 'antes do fim da janela do fecho (15:30) não avisa');
     igual(null, naval_ag_fecho(strtotime('2030-01-13 16:30:00'), ['dados' => $dados]), 'domingo: nada');
 });
 
