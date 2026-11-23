@@ -5277,4 +5277,9 @@ export const TI = {
   'Exportar o stock de todos os armazéns': 'ክምችት ኩሎም መኽዘናት ኣውጽእ',
   'Um só Excel com o stock de todos os armazéns centrais e carrinhas: resumo, detalhe e matriz artigo × armazém':
     'ሓደ Excel ምስ ክምችት ኩሎም ማእከላውያን መኽዘናትን መካይንን: ጽማቝ፣ ዝርዝርን ሰንጠረዥ ኣቕሓ × መኽዘንን',
+  '{n} na classe; os de maior valor primeiro.': '{n} ኣብዚ ደረጃ፤ ዝለዓለ ዋጋ ዘለዎም ቅድም።',
+  'O detalhe desta classe chega com a próxima actualização dos dados.': 'ዝርዝር ናይዚ ደረጃ ምስ ዝቕጽል ምሕዳስ ሓበሬታ ይመጽእ።',
+  '% acumulada': '% ድምር',
+  'A mostrar os {a} de maior valor de {b}.': 'ካብ {b} እቶም {a} ዝለዓለ ዋጋ ዘለዎም ይርኣዩ ኣለዉ።',
+  'Abrir o detalhe': 'ዝርዝር ክፈት',
 };

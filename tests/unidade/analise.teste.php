@@ -236,3 +236,13 @@ teste('Painel RTM: curva ABC, compras, artigos por compra, mapa de calor, cartei
     igual(round($p['mes']['total']['actual'] - $p['mes']['total']['anterior'], 2), round(array_sum(array_column($p['mes']['rotas'], 'contributo')), 2), 'a ponte fecha');
     igual(1.0, $p['distribuicao'][0]['distribuicao'], 'o único artigo chega a todos os clientes');
 });
+
+teste('painel: a curva ABC traz os membros de cada classe (detalhe ao clicar), os de maior valor primeiro', function () {
+    naval_servico('painel');
+    $x = naval_painel_abc(['c1' => 800.0, 'c2' => 100.0, 'c3' => 60.0, 'c4' => 40.0, 'c5' => 0.0], 60, ['c1' => ['nome' => 'Um', 'rota' => '1001'], 'c2' => ['nome' => 'Dois']]);
+    igual(['A' => 1, 'B' => 2, 'C' => 1], $x['classes']);
+    igual(['c1', 'Um', '1001', 0.8], [$x['itens']['A'][0]['codigo'], $x['itens']['A'][0]['nome'], $x['itens']['A'][0]['rota'], $x['itens']['A'][0]['acumulado']]);
+    igual(['c2', 'c3'], array_column($x['itens']['B'], 'codigo'));
+    igual('c4', $x['itens']['C'][0]['nome'], 'sem nome: o código');
+    verdade(!isset(naval_painel_abc(['a' => 1.0])['itens']), 'sem informação: só as contagens');
+});

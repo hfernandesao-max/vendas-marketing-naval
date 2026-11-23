@@ -282,6 +282,11 @@ R[ID] = (pg) => {
       }),
     colunas: [[t('Componente')], [t('Valor'), 1]],
     linhas: passos.map((x) => [x.rot, kz(x.valor)]),
+    // preço: os artigos com maior efeito do preço; o resto: a decomposição por rota
+    abrirLinha: (i) => {
+      const s = document.getElementById(i === 1 ? 's-ag-pvm-artigos' : 's-ag-pvm-rotas');
+      if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
   });
   cg.id = 's-ag-pvm';
   G.append(cg);

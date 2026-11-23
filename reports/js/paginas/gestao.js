@@ -18,11 +18,12 @@ import {
 } from '../componentes/graficos-gestao.js';
 import { arrastavel } from '../componentes/arrastar.js';
 import { botao, campo, copiar, entrada, janela, msgErro } from '../componentes/janelas.js';
-import { dl, ds, kz, n0, n1 } from '../formatos.js';
+import { dl, ds, kz, n0, n1, pct } from '../formatos.js';
 import { LANG, t } from '../i18n/i18n.js';
 import { SESSAO, atual, podeVer } from '../perfil.js';
 import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
+import { abrir as abrirLig, abrirPeriodo, celulaLigada } from '../componentes/ligacoes.js';
 import { R } from './registo.js';
 import { sinal, textoAlerta, textoRico } from '../gestao-textos.js';
 
@@ -430,7 +431,16 @@ R.previsao = (pg) => {
       },
     ]),
   );
-  const itens = [...Object.entries(tot.historico).map(([dia, v]) => ({ rot: ds(dia), valor: v, titulo: ds(dia), linhas: [[kz(v), t('real')]] }))].slice(-14);
+  const itens = [
+    ...Object.entries(tot.historico).map(([dia, v]) => ({
+      dia,
+      rot: ds(dia),
+      valor: v,
+      titulo: ds(dia),
+      linhas: [[kz(v), t('real')]],
+      abrir: () => abrirPeriodo(dia),
+    })),
+  ].slice(-14);
   const prev = tot.dias.map((x) => ({
     rot: ds(x.dia),
     valor: x.previsto,
@@ -451,6 +461,7 @@ R.previsao = (pg) => {
         [t('Vendas'), 1],
       ],
       linhas: itens.map((x) => [x.titulo, kz(x.valor)]),
+      abrirLinha: (i) => abrirPeriodo(itens[i].dia),
     }),
     cartaoGrafico({
       titulo: t('Previsão (próximos 7 dias)'),
@@ -761,6 +772,54 @@ function criarLigacao() {
 
 // ───────────────────────── Painel de gestão RTM ─────────────────────────
 
+/** Detalhe de uma classe da curva ABC: os seus clientes ou artigos (os de maior valor), com a ficha de cada um. */
+function abrirClasseAbc(titulo, classe, x, tipo) {
+  const lista = ((x.itens || {})[classe] || []).slice();
+  const nomeClasse = { A: t('A (80% do valor)'), B: t('B (seguintes 15%)'), C: t('C (últimos 5%)') }[classe];
+  janela(titulo + ' · ' + nomeClasse, t('{n} na classe; os de maior valor primeiro.', { n: n0(x.classes[classe]) }), (b, ft, fechar) => {
+    if (!lista.length) b.append(el('p', 'note', t('O detalhe desta classe chega com a próxima actualização dos dados.')));
+    else {
+      const tw = el('div', 'tw');
+      const tab = el('table');
+      const h = el('tr');
+      [
+        t('#'),
+        tipo === 'cliente' ? t('Cliente') : t('Artigo'),
+        ...(tipo === 'cliente' ? [t('Rota')] : []),
+        t('Valor'),
+        t('% do total'),
+        t('% acumulada'),
+      ].forEach((c, i) => h.append(el('th', i >= (tipo === 'cliente' ? 3 : 2) || i === 0 ? 'n' : null, c)));
+      const th = el('thead');
+      th.append(h);
+      const tb = el('tbody');
+      lista.forEach((it, i) => {
+        const tr = el('tr');
+        const nome = el('td');
+        nome.append(
+          tipo === 'cliente'
+            ? celulaLigada('cliente', it.nome, { cliente_codigo: it.codigo, cliente: it.nome, rota: it.rota })
+            : celulaLigada('artigo', it.nome, { codigo: it.codigo, artigo: it.nome }),
+        );
+        tr.append(el('td', 'n', n0(i + 1)), nome);
+        if (tipo === 'cliente') {
+          const r = el('td');
+          r.append(celulaLigada('rota', it.rota, { rota: it.rota }));
+          tr.append(r);
+        }
+        tr.append(el('td', 'n', kz(it.valor)), el('td', 'n', pct(it.pct)), el('td', 'n', pct(it.acumulado)));
+        tb.append(tr);
+      });
+      tab.append(th, tb);
+      tw.append(tab);
+      b.append(tw);
+      if (x.classes[classe] > lista.length)
+        b.append(el('p', 'note', t('A mostrar os {a} de maior valor de {b}.', { a: n0(lista.length), b: n0(x.classes[classe]) })));
+    }
+    ft.append(botao(t('Fechar'), null, fechar));
+  }).classList.add('dlg-largo');
+}
+
 const DIAS_CURTOS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const nomeRota = (r) => r.rota + (r.promotor ? ' · ' + r.promotor : '');
@@ -788,6 +847,7 @@ export function cartoesGestao(d) {
         [t('Média móvel de 7 dias'), 1],
       ],
       linhas: tend.dias.map((x) => [dl(x.dia), kz(x.vendas), x.mm7 == null ? '—' : kz(x.mm7)]),
+      abrirLinha: (i) => abrirPeriodo(tend.dias[i].dia),
     }),
   );
   const mesRotas = d.mes.rotas;
@@ -807,6 +867,7 @@ export function cartoesGestao(d) {
         [t('Variação'), 1],
       ],
       linhas: mesRotas.map((r) => [nomeRota(r), kz(r.actual), kz(r.anterior), sinal(r.variacao)]),
+      abrirLinha: (i) => abrirLig('rota', { rota: String(mesRotas[i].rota), promotor: mesRotas[i].promotor || '' }),
     }),
     cartaoGrafico({
       titulo: t('De onde vem a variação do mês'),
@@ -825,9 +886,10 @@ export function cartoesGestao(d) {
         [t('Contributo'), 1],
       ],
       linhas: mesRotas.map((r) => [nomeRota(r), kz(r.contributo)]),
+      abrirLinha: (i) => abrirLig('rota', { rota: String(mesRotas[i].rota), promotor: mesRotas[i].promotor || '' }),
     }),
   );
-  const abc = (titulo, sub, x, nome) =>
+  const abc = (titulo, sub, x, nome, tipo) =>
     cartaoGrafico({
       titulo,
       sub,
@@ -841,10 +903,12 @@ export function cartoesGestao(d) {
         [t('B (seguintes 15%)'), n0(x.classes.B)],
         [t('C (últimos 5%)'), n0(x.classes.C)],
       ],
+      // detalhe da classe: os clientes (ou artigos) que a compõem, com a ficha de cada um
+      abrirLinha: (i) => abrirClasseAbc(titulo, ['A', 'B', 'C'][i], x, tipo),
     });
   grid.append(
-    abc(t('Curva ABC de clientes'), t('últimos 90 dias: quantos clientes fazem 80% das vendas'), d.abc_clientes, t('clientes')),
-    abc(t('Curva ABC de artigos'), t('últimos 90 dias: quantos artigos fazem 80% das vendas'), d.abc_artigos, t('artigos')),
+    abc(t('Curva ABC de clientes'), t('últimos 90 dias: quantos clientes fazem 80% das vendas'), d.abc_clientes, t('clientes'), 'cliente'),
+    abc(t('Curva ABC de artigos'), t('últimos 90 dias: quantos artigos fazem 80% das vendas'), d.abc_artigos, t('artigos'), 'artigo'),
     cartaoGrafico({
       titulo: t('Distribuição numérica'),
       sub: t('% dos clientes activos (30 dias) que compraram cada artigo; os 15 artigos de maior venda'),
@@ -868,6 +932,7 @@ export function cartoesGestao(d) {
         [t('Distribuição numérica'), 1],
       ],
       linhas: d.distribuicao.map((a) => [a.nome, n0(a.clientes), a.distribuicao == null ? '—' : n0(a.distribuicao * 100) + '%']),
+      abrirLinha: (i) => abrirLig('artigo', { codigo: String(d.distribuicao[i].codigo), artigo: d.distribuicao[i].nome }),
     }),
     cartaoGrafico({
       titulo: t('Valor médio e artigos por compra'),
@@ -901,6 +966,7 @@ export function cartoesGestao(d) {
         [t('Artigos por compra'), 1],
       ],
       linhas: d.por_rota.map((r) => [nomeRota(r), n0(r.compras), kz(r.valor_medio), r.artigos_por_compra == null ? '—' : n1(r.artigos_por_compra)]),
+      abrirLinha: (i) => abrirLig('rota', { rota: String(d.por_rota[i].rota), promotor: d.por_rota[i].promotor || '' }),
     }),
     cartaoGrafico({
       titulo: t('Vendas por rota e dia da semana'),
@@ -909,6 +975,7 @@ export function cartoesGestao(d) {
         grafCalor(w, { altura: h, linhas: d.calor.map((l) => ({ rot: l.rota, valores: l.dias })), colunas: DIAS_CURTOS.map((x) => t(x)), fmt: kzc }),
       colunas: [[t('Rota'), 0], ...DIAS_CURTOS.map((x) => [t(x), 1])],
       linhas: d.calor.map((l) => [nomeRota(l), ...l.dias.map(kz)]),
+      abrirLinha: (i) => abrirLig('rota', { rota: String(d.calor[i].rota), promotor: d.calor[i].promotor || '' }),
     }),
     cartaoGrafico({
       titulo: t('Carteira de clientes por mês'),
@@ -937,6 +1004,12 @@ export function cartoesGestao(d) {
         [t('Perdidos'), 1],
       ],
       linhas: d.carteira.map((m) => [m.mes, n0(m.activos), n0(m.novos), m.perdidos == null ? '—' : n0(m.perdidos)]),
+      // o mês: a carteira de clientes desse mês
+      abrirLinha: (i) => {
+        const m = d.carteira[i].mes;
+        const fim = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).toISOString().slice(0, 10);
+        abrirPeriodo(m + '-01', fim < d.hoje ? fim : d.hoje, 'clientes');
+      },
     }),
   );
   const chaves = ['tendencia', 'balas', 'ponte', 'abcClientes', 'abcArtigos', 'distribuicao', 'dispersao', 'calor', 'carteira'];

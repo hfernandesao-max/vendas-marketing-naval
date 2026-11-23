@@ -13,30 +13,46 @@ require_once __DIR__ . '/previsao.php';
 
 const NAVAL_PAINEL_DIAS = 210;   // 7 meses: 6 meses de carteira com 1 de referência
 
-/** Curva ABC: valores por ordem decrescente → pontos (% de itens, % acumulada do valor), itens até 80 % e classes. */
-function naval_painel_abc(array $valores, int $pontos = 60): array
+const NAVAL_PAINEL_ABC_ITENS = 500;   // membros de cada classe enviados para o detalhe (os de maior valor)
+
+/**
+ * Curva ABC: valores por ordem decrescente → pontos (% de itens, % acumulada do valor), itens até 80 % e classes.
+ * Com $info ({código: {nome, rota?}}), cada classe traz os seus membros (detalhe ao clicar na classe): código, nome,
+ * valor, % do total e % acumulada, até NAVAL_PAINEL_ABC_ITENS por classe.
+ */
+function naval_painel_abc(array $valores, int $pontos = 60, ?array $info = null): array
 {
-    $v = array_values(array_filter($valores, function ($x) { return $x > 0; }));
-    rsort($v);
+    $v = array_filter($valores, function ($x) { return $x > 0; });
+    arsort($v);
     $n = count($v);
     $total = array_sum($v);
-    if (!$n || $total <= 0) return ['n' => 0, 'ate80' => 0, 'classes' => ['A' => 0, 'B' => 0, 'C' => 0], 'curva' => []];
+    if (!$n || $total <= 0) return ['n' => 0, 'ate80' => 0, 'classes' => ['A' => 0, 'B' => 0, 'C' => 0], 'curva' => []] + ($info !== null ? ['itens' => ['A' => [], 'B' => [], 'C' => []]] : []);
     $acum = 0.0;
     $curva = [[0, 0]];
     $ate80 = 0;
     $cl = ['A' => 0, 'B' => 0, 'C' => 0];
+    $itens = ['A' => [], 'B' => [], 'C' => []];
     $passo = max(1, (int) floor($n / $pontos));
-    foreach ($v as $i => $x) {
+    $i = 0;
+    foreach ($v as $cod => $x) {
         $antes = $acum / $total;
         $acum += $x;
         if ($antes < 0.8) {
-            $cl['A']++;
+            $k = 'A';
             $ate80 = $i + 1;
-        } elseif ($antes < 0.95) $cl['B']++;
-        else $cl['C']++;
+        } elseif ($antes < 0.95) $k = 'B';
+        else $k = 'C';
+        $cl[$k]++;
+        if ($info !== null && count($itens[$k]) < NAVAL_PAINEL_ABC_ITENS) {
+            $itens[$k][] = ['codigo' => (string) $cod, 'nome' => (string) ($info[$cod]['nome'] ?? $cod), 'rota' => (string) ($info[$cod]['rota'] ?? ''),
+                'valor' => round($x, 2), 'pct' => round($x / $total, 4), 'acumulado' => round($acum / $total, 4)];
+        }
         if (($i + 1) % $passo === 0 || $i === $n - 1) $curva[] = [round(($i + 1) / $n, 4), round($acum / $total, 4)];
+        $i++;
     }
-    return ['n' => $n, 'ate80' => $ate80, 'classes' => $cl, 'curva' => $curva];
+    $r = ['n' => $n, 'ate80' => $ate80, 'classes' => $cl, 'curva' => $curva];
+    if ($info !== null) $r['itens'] = $itens;
+    return $r;
 }
 
 /** Indicadores e séries do painel para o dia $hoje, com os agregados já no âmbito de quem pede (até $hoje inclusive). */
@@ -86,13 +102,17 @@ function naval_painel(array $ag, string $hoje, array $promotores = [], array $no
 
     // 4 a 7. Últimos 90 dias (ABC) e últimos 30 dias (distribuição, valor e artigos por compra)
     $cli90 = $art90 = [];
+    $infoCli = [];
     $activos30 = [];
     $porArtigo30 = [];
     $porRota30 = [];
     for ($k = 89; $k >= 0; $k--) {
         $d = $dia($k);
         $x = $ag[$d] ?? [];
-        foreach (($x['clientes'] ?? []) as $c => $cl) $cli90[$c] = ($cli90[$c] ?? 0) + (float) $cl['t'];
+        foreach (($x['clientes'] ?? []) as $c => $cl) {
+            $cli90[$c] = ($cli90[$c] ?? 0) + (float) $cl['t'];
+            if (!isset($infoCli[$c]) || $k < ($infoCli[$c]['k'] ?? 99)) $infoCli[$c] = ['nome' => (string) ($cl['n'] ?? $c), 'rota' => (string) ($cl['r'] ?? ''), 'k' => $k];
+        }
         foreach (($x['artigos'] ?? []) as $arts) foreach ($arts as $cod => $a) $art90[$cod] = ($art90[$cod] ?? 0) + (float) $a['t'];
         if ($k >= 30) continue;
         foreach (($x['clientes'] ?? []) as $c => $cl) {
@@ -159,8 +179,8 @@ function naval_painel(array $ag, string $hoje, array $promotores = [], array $no
             'clientes_80' => naval_painel_abc($cli90)['ate80'], 'clientes_90' => count(array_filter($cli90, function ($v) { return $v > 0; }))],
         'tendencia' => $tendencia,
         'mes' => ['total' => $mesTot, 'rotas' => $mes],
-        'abc_clientes' => naval_painel_abc($cli90),
-        'abc_artigos' => naval_painel_abc($art90),
+        'abc_clientes' => naval_painel_abc($cli90, 60, $infoCli),
+        'abc_artigos' => naval_painel_abc($art90, 60, array_map(function ($n) { return ['nome' => $n]; }, $nomesArtigos)),
         'distribuicao' => $distribuicao,
         'por_rota' => $porRota,
         'calor' => $calor,

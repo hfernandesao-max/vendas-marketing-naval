@@ -364,3 +364,35 @@ test('painel: duplo clique num gráfico amplia-o em ecrã inteiro, com a tabela 
   await expect(page.locator('dialog.viz-exp')).toBeVisible();
   expect(erros).toEqual([]);
 });
+
+test('gráficos: cada linha da tabela abre o detalhe — a classe ABC mostra os seus clientes; a rota abre a ficha da rota', async ({ page }) => {
+  const P = JSON.parse(readFileSync('tests/dados/painel-exemplo.json', 'utf8'));
+  P.abc_clientes.itens = {
+    A: [{ codigo: 'C1', nome: 'Cantina Um', rota: '1001', valor: 900000, pct: 0.4, acumulado: 0.4 }],
+    B: [{ codigo: 'C2', nome: 'Cantina Dois', rota: '1004', valor: 100000, pct: 0.05, acumulado: 0.85 }],
+    C: [],
+  };
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.route('**/v1/painel**', (r) => r.fulfill({ json: P }));
+  const erros = await abrir(page, '#inicio');
+  const abc = page.locator('.viz-card', { hasText: 'Curva ABC de clientes' });
+  await abc.getByRole('button', { name: /Tabela/ }).click();
+  await abc.locator('tr.viz-lig', { hasText: 'A (80% do valor)' }).click();
+  const dlg = page.locator('dialog[open]');
+  await expect(dlg).toContainText('Curva ABC de clientes · A (80% do valor)');
+  await expect(dlg.locator('tbody tr')).toHaveCount(1);
+  await expect(dlg).toContainText('Cantina Um');
+  await expect(dlg.locator('.lig-cliente')).toHaveCount(1);
+  await dlg.getByRole('button', { name: 'Fechar' }).click();
+  // pelo teclado: Enter na linha da classe B
+  await abc.locator('tr.viz-lig', { hasText: 'B (seguintes 15%)' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('dialog[open]')).toContainText('Cantina Dois');
+  await page.keyboard.press('Escape');
+  // rota: abre a ficha da rota
+  const mes = page.locator('.viz-card', { hasText: 'Mês até hoje por rota' });
+  await mes.getByRole('button', { name: /Tabela/ }).click();
+  await mes.locator('tr.viz-lig').first().click();
+  await expect(page.locator('dialog[open]')).toContainText(/Rota/);
+  expect(erros).toEqual([]);
+});

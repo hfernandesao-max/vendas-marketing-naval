@@ -6109,3 +6109,15 @@ table.cartoes .col-res {
   justify-content: flex-end;
   margin: 0 0 12px;
 }
+
+/* Gráficos: cada linha da vista em tabela abre o detalhe (rota, cliente, artigo, dia ou classe) */
+tr.viz-lig {
+  cursor: pointer;
+}
+tr.viz-lig:hover td {
+  background: rgb(var(--az2-rgb) / 0.1);
+}
+tr.viz-lig:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: -2px;
+}

@@ -1,5 +1,17 @@
 ## 23-11-2026
 
+### Gráficos: cada linha abre o detalhe, em todos os gráficos
+
+<!-- tipo: melhoria -->
+
+- O mesmo em todos os gráficos: na vista em tabela, no gráfico ampliado e na tabela do gráfico ampliado, clicar numa linha (ou Enter) abre o detalhe dela:
+  - **classes A, B e C** da curva ABC: os clientes ou artigos da classe, com valor, % do total e % acumulada, e a ficha de cada um;
+  - **rota:** a ficha da rota;
+  - **cliente** ou **artigo:** a ficha respectiva;
+  - **dia** ou **mês:** a página com esse período (vendas, cargas, cadastros, carteira de clientes);
+  - **meio de pagamento** e **antiguidade da dívida:** a página respectiva.
+- As colunas dos gráficos de caixas carregadas e de novos clientes também abrem o dia ao clicar.
+
 ### Tabelas à medida de cada pessoa, em todo o portal, e stock de todos os armazéns num só Excel
 
 <!-- tipo: funcionalidade -->

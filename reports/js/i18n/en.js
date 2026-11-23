@@ -5376,4 +5376,9 @@ export const EN = {
   'Exportar o stock de todos os armazéns': 'Export the stock of all warehouses',
   'Um só Excel com o stock de todos os armazéns centrais e carrinhas: resumo, detalhe e matriz artigo × armazém':
     'A single Excel with the stock of all central warehouses and vans: summary, detail and item × warehouse matrix',
+  '{n} na classe; os de maior valor primeiro.': '{n} in the class; highest value first.',
+  'O detalhe desta classe chega com a próxima actualização dos dados.': 'The detail of this class arrives with the next data update.',
+  '% acumulada': 'cumulative %',
+  'A mostrar os {a} de maior valor de {b}.': 'Showing the {a} highest-value of {b}.',
+  'Abrir o detalhe': 'Open the detail',
 };

@@ -20,7 +20,7 @@ import {
 } from '../calculos.js';
 import { FITS, tiles } from '../componentes/blocos.js';
 import { COR, cartaoGrafico, grafBarras, grafColunas, grafParte, kzc } from '../componentes/graficos.js';
-import { abrir as abrirLig } from '../componentes/ligacoes.js';
+import { abrir as abrirLig, abrirPeriodo } from '../componentes/ligacoes.js';
 import { diaCurto, dl, ds, kz, kz2, n0, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { R } from './registo.js';
@@ -188,6 +188,7 @@ function painelInicio(pg) {
             }),
           colunas: [[t('Dia')], [t('Vendido'), 1], [t('Recebido'), 1], [t('Documentos'), 1]],
           linhas: dias.map((x) => [dl(x.d), kz(x.v), kz(x.r), n0(x.n)]),
+          abrirLinha: (i) => abrirPeriodo(dias[i].d),
         }),
       ),
     );
@@ -240,6 +241,7 @@ function painelInicio(pg) {
             [t('Documentos'), 1],
           ],
           linhas: P.map((x) => [x.promotor, kz(x.total), kz(x.recebido), ...(comMeio ? [kz(x.dinheiro), kz(x.multicaixa)] : []), n0(x.docs)]),
+          abrirLinha: (i) => abrirLig('rota', { rota: String(P[i].rota), promotor: P[i].promotor || '' }),
         }),
       ),
     );
@@ -270,6 +272,7 @@ function painelInicio(pg) {
           desenhar: (w) => grafParte(w, { partes }),
           colunas: [[t('Meio')], [t('Valor'), 1], [t('Parte'), 1]],
           linhas: partes.map((p) => [p.nome, kz(p.valor), pct(base ? p.valor / base : 0)]),
+          abrirLinha: (i) => (location.hash = '#' + (partes[i].href || 'pagamentos')),
         }),
       ),
     );
@@ -304,6 +307,7 @@ function painelInicio(pg) {
               }),
             colunas: [[t('Antiguidade')], [t('Por receber'), 1], [t('Facturas'), 1]],
             linhas: fx.map((x) => [x.rot, kz(x.valor), n0(x.n)]),
+            abrirLinha: () => (location.hash = '#pendentes/pd-d'),
           }),
         ),
       );
@@ -344,6 +348,8 @@ function painelInicio(pg) {
               }),
             colunas: [[t('Cliente')], [t('Comprado'), 1], [t('Documentos'), 1]],
             linhas: C.map((x) => [x.nome, kz(x.v), n0(x.n)]),
+            abrirLinha: (i) =>
+              abrirLig('cliente', { codigo: C[i].venda.cliente_codigo || '', nif: C[i].nif || '', nome: C[i].nome, rota: String(C[i].venda.rota || '') }),
           }),
         ),
       );
@@ -386,6 +392,7 @@ function painelInicio(pg) {
               }),
             colunas: [[t('Artigo')], [t('Código')], [t('Quantidade'), 1], ...(comValor ? [[t('Vendido'), 1]] : [])],
             linhas: rows.map((x) => [x.nome, x.cod, n0(x.q), ...(comValor ? [kz(x.v)] : [])]),
+            abrirLinha: (i) => abrirLig('artigo', { codigo: String(rows[i].cod), artigo: rows[i].nome }),
           }),
         ),
       );
@@ -419,10 +426,12 @@ function painelInicio(pg) {
                   [n0(x.c), t('caixas')],
                   [n0(x.n), t('carrinhas')],
                 ],
+                abrir: () => abrirPeriodo(x.d, x.d, 'registo-cargas'),
               })),
             }),
           colunas: [[t('Dia')], [t('Caixas'), 1], [t('Carrinhas'), 1]],
           linhas: dias.map((x) => [dl(x.d), n0(x.c), n0(x.n)]),
+          abrirLinha: (i) => abrirPeriodo(dias[i].d, dias[i].d, 'registo-cargas'),
         }),
       ),
     );
@@ -460,10 +469,12 @@ function painelInicio(pg) {
                     [n0(x.n), t('novos clientes')],
                     [n0(x.r), t('rotas com cadastros')],
                   ],
+                  abrir: () => abrirPeriodo(x.d, x.d, 'cadastros-analise'),
                 })),
               }),
             colunas: [[t('Dia')], [t('Novos clientes'), 1]],
             linhas: D.map((x) => [dl(x.d), n0(x.n)]),
+            abrirLinha: (i) => abrirPeriodo(D[i].d, D[i].d, 'cadastros-analise'),
           }),
         ),
       );

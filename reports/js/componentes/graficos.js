@@ -143,7 +143,7 @@ export function grafColunas(w, { itens, cor = COR.s1, fmt = kzc, ref, altura }) 
     g.append(svgEl('path', { d: pathBarra(cx - bw / 2, H - B - h, bw, h, true), fill: cor, class: 'vx-bar' }));
     if ((i === iMax || i === itens.length - 1) && x.valor > 0)
       g.append(svgEl('text', { x: cx, y: H - B - h - 6, class: 'vx-val', 'text-anchor': 'middle' }, fmt(x.valor)));
-    interactivo(g, x.titulo, x.linhas, x.href);
+    interactivo(g, x.titulo, x.linhas, x.href, x.abrir);
     sv.append(g);
     const ultimaMostrada = Math.floor((itens.length - 1) / cada) * cada;
     if (i % cada === 0 || (i === itens.length - 1 && (i - ultimaMostrada) * banda >= 44))
@@ -242,7 +242,7 @@ export function grafParte(w, { partes, fmt = kzc }) {
             ? `M${x0},4H${x1 - r}Q${x1},4 ${x1},${4 + r}V${H - 4 - r}Q${x1},${H - 4} ${x1 - r},${H - 4}H${x0}Z`
             : `M${x0},4H${x1}V${H - 4}H${x0}Z`;
     g.append(svgEl('rect', { x: x0, y: 0, width: Math.max(pw, 1), height: H, class: 'vx-hit' }), svgEl('path', { d, fill: p.cor, class: 'vx-bar' }));
-    interactivo(g, p.nome, [[fmt(p.valor), pct(p.valor / tot)]], p.href);
+    interactivo(g, p.nome, [[fmt(p.valor), pct(p.valor / tot)]], p.href, p.abrir);
     sv.append(g);
     x += pw;
   });
@@ -257,8 +257,10 @@ export function grafParte(w, { partes, fmt = kzc }) {
   wrap.append(sv, leg);
   return wrap;
 }
-// Cartão de um gráfico: título, frase-resumo, alternância gráfico/tabela e ligação para o relatório
-export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas }) {
+// Cartão de um gráfico: título, frase-resumo, alternância gráfico/tabela e ligação para o relatório.
+// abrirLinha(i): o detalhe da linha i (a ficha da rota, do cliente, do artigo ou a lista de uma classe) — o mesmo em
+// todos os gráficos: clicar (ou Enter) numa linha da tabela, no gráfico ampliado ou na sua tabela abre o detalhe.
+export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas, abrirLinha }) {
   const c = el('section', 'glass viz-card'),
     h = el('div', 'viz-h'),
     hd = el('div');
@@ -295,19 +297,35 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
   const corpo = el('div', 'viz-corpo'),
     tb = el('div', 'viz-tab tw');
   tb.hidden = true;
-  const tab = el('table'),
-    th = el('tr');
-  colunas.forEach(([n, num]) => th.append(el('th', num ? 'n' : null, n)));
-  const tbody = el('tbody');
-  linhas.forEach((l) => {
-    const tr = el('tr');
-    l.forEach((v, i) => tr.append(el('td', colunas[i][1] ? 'n' : null, v)));
-    tbody.append(tr);
-  });
-  const thead = el('thead');
-  thead.append(th);
-  tab.append(thead, tbody);
-  tb.append(tab);
+  const montarTabela = () => {
+    const tab = el('table'),
+      th = el('tr');
+    colunas.forEach(([n, num]) => th.append(el('th', num ? 'n' : null, n)));
+    const tbody = el('tbody');
+    linhas.forEach((l, k) => {
+      const tr = el('tr');
+      l.forEach((v, i) => tr.append(el('td', colunas[i][1] ? 'n' : null, v)));
+      if (abrirLinha) {
+        tr.classList.add('viz-lig');
+        tr.tabIndex = 0;
+        tr.title = t('Abrir o detalhe');
+        tr.setAttribute('role', 'link');
+        tr.addEventListener('click', () => abrirLinha(k));
+        tr.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            abrirLinha(k);
+          }
+        });
+      }
+      tbody.append(tr);
+    });
+    const thead = el('thead');
+    thead.append(th);
+    tab.append(thead, tbody);
+    return tab;
+  };
+  tb.append(montarTabela());
   bt.addEventListener('click', () => {
     const ver = tb.hidden;
     tb.hidden = !ver;
@@ -329,7 +347,7 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
     cab.append(tx, fechar);
     const area = el('div', 'viz-exp-graf');
     const dados = el('div', 'viz-exp-tab tw');
-    dados.append(tab.cloneNode(true));
+    dados.append(montarTabela());
     d.append(cab, area, dados);
     const redesenhar = () => {
       const w = Math.max(320, Math.floor(area.clientWidth)),

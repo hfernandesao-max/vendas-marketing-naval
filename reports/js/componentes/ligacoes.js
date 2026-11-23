@@ -9,10 +9,10 @@
 // Os dados são os já lidos do Pinguim BO para o período escolhido (as linhas de artigos pedem-se se faltarem); nada
 // muda nos dados nem no Excel (as colunas continuam a exportar o texto).
 import { apiJson } from '../api.js';
-import { artigosProntos, garantirArtigos } from '../fontes.js';
+import { artigosProntos, fetchVendas, garantirArtigos } from '../fontes.js';
 import { kz, n0, dl, pct } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
-import { inR, st } from '../periodo.js';
+import { guardar, inR, st } from '../periodo.js';
 import { DB, el, toast } from '../util.js';
 import { botao, janela } from './janelas.js';
 
@@ -445,4 +445,20 @@ export function abrirRota(a) {
     'rota',
     a,
   );
+}
+
+/**
+ * Detalhe de um dia ou de um mês de um gráfico: põe o período (de … até) e abre a página (por omissão as vendas por
+ * dia). Volta-se ao período anterior pelos botões de período, como sempre.
+ */
+export function abrirPeriodo(de, ate, pagina = 'vendas-dia') {
+  st.preset = null;
+  st.de = de;
+  st.ate = ate || de;
+  guardar();
+  return fetchVendas(st.de, st.ate).then(() => {
+    const alvo = '#' + pagina;
+    if (location.hash.split('?')[0] === alvo) window.dispatchEvent(new HashChangeEvent('hashchange'));
+    else location.hash = alvo;
+  });
 }
