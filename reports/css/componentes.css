@@ -1622,6 +1622,26 @@ table.ac-mig tr.ac-off td:not(:last-child) {
 .ecra-unico .viz-acc .linkbtn:hover {
   background: rgb(var(--az2-rgb) / 0.14);
 }
+/* ecrã estreito (telemóvel): as acções dos gráficos só com o ícone (o nome fica na dica e no leitor de ecrã) */
+@media (max-width: 600px) {
+  .viz-acc {
+    gap: 4px;
+  }
+  .viz-acc .viz-acc-t {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .viz-acc .linkbtn {
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+    border-radius: 8px;
+  }
+}
 /* Relatórios da página aberta (sub-itens): destaque discreto, sem pílula nem barra */
 .nav .nav-sub a.on {
   box-shadow: none;
