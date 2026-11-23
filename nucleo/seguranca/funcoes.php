@@ -63,6 +63,87 @@ const NAVAL_CONTAS_AJUSTES = [
     '2026-11-manuel-queia' => ['nome' => 'Manuel Queia', 'funcoes' => ['P-STOCK', 'C-CONC-CONTAR'], 'dono_de' => [], 'pedido' => 'HF, 23-11-2026'],
 ];
 
+/**
+ * Contas novas pedidas pelo super administrador e criadas uma só vez, na instalação (pela tarefa periódica ou no
+ * primeiro pedido): utilizador, nome, email e funções (o perfil gera-se das funções). A palavra-passe inicial é
+ * aleatória e ninguém a conhece: o SADM entrega-a pela via segura habitual («Repor palavra-passe» em Acessos, que a
+ * mostra só a ele, válida 24 horas; no primeiro acesso a pessoa muda-a e configura os dois passos). Se o utilizador ou
+ * o email já existirem, não cria nada e fica registado.
+ */
+const NAVAL_CONTAS_NOVAS = [
+    // controlo de stock: stock de todos os armazéns e carrinhas por artigo, vendas por artigo e por promotor
+    '2026-11-teresa-gomes' => ['login' => 'teresa.gomes', 'nome' => 'Teresa Gomes', 'email' => 'teresa.gomes@foodtec.co.ao', 'funcoes' => ['P-STOCK'],
+        'idioma' => 'pt', 'pedido' => 'HF, 23-11-2026'],
+];
+
+function naval_contas_novas_ficheiro(): string
+{
+    return naval_pasta_privada() . '/contas-novas.json';
+}
+
+/** Pendentes (CONTAS_NOVAS=0 no .env desliga: ambientes de teste e pré-produção). $lista: testes. */
+function naval_contas_novas_pendentes(?array $lista = null): array
+{
+    if ($lista === null && naval_config('CONTAS_NOVAS', '1') === '0') return [];
+    return array_diff_key($lista ?? NAVAL_CONTAS_NOVAS, naval_json_ler(naval_contas_novas_ficheiro()));
+}
+
+/** Cria as contas novas pendentes (uma vez cada). Devolve {id: {ok, login, motivo?}}. */
+function naval_contas_novas_criar(?array $lista = null): array
+{
+    static $emCurso = false;
+    if ($emCurso || !naval_contas_novas_pendentes($lista)) return [];
+    $emCurso = true;
+    try {
+        return naval_exclusivo('utilizadores', function () use ($lista) {
+            $res = [];
+            foreach (naval_contas_novas_pendentes($lista) as $id => $c) {
+                $res[$id] = naval_contas_nova_uma((array) $c);
+                $feitos = naval_json_ler(naval_contas_novas_ficheiro());
+                $feitos[$id] = ['em' => date('Y-m-d H:i')] + $res[$id];
+                naval_json_gravar(naval_contas_novas_ficheiro(), $feitos);
+            }
+            return $res;
+        });
+    } finally {
+        $emCurso = false;
+    }
+}
+
+function naval_contas_nova_uma(array $c): array
+{
+    $login = strtolower(trim((string) ($c['login'] ?? '')));
+    $email = trim((string) ($c['email'] ?? ''));
+    $falha = function (string $motivo) use ($login) {
+        naval_registar('conta_nova_nao_criada', ['conta' => $login, 'motivo' => $motivo], 'sistema');
+        return ['ok' => false, 'login' => $login, 'motivo' => $motivo];
+    };
+    if (!preg_match('/^[a-z0-9._-]{3,40}$/', $login)) return $falha('utilizador inválido');
+    if (!naval_email_valido($email)) return $falha('email inválido');
+    $d = naval_utilizadores();
+    if (isset($d[$login])) return $falha('o utilizador já existe');
+    foreach ($d as $l => $x) if (strcasecmp(trim((string) ($x['email'] ?? '')), $email) === 0) return $falha('o email já está na conta ' . $l);
+    $funcoes = array_values(array_unique(array_map('strval', (array) ($c['funcoes'] ?? []))));
+    sort($funcoes);
+    $f = naval_funcoes();
+    foreach ($funcoes as $x) if (empty($f[$x]['activo'])) return $falha('a função ' . $x . ' não existe ou está desactivada');
+    if (naval_funcoes_conflitos($funcoes)) return $falha('as funções formam uma combinação proibida');
+    try {
+        $perfil = naval_funcoes_perfil($funcoes, 'sistema');
+    } catch (NavalErro $e) {
+        return $falha($e->getMessage());
+    }
+    $u = ['nome' => (string) $c['nome'], 'email' => $email, 'perfil' => $perfil, 'funcoes' => $funcoes, 'rotas' => [], 'activo' => true,
+        'idioma' => (string) ($c['idioma'] ?? 'pt'), 'alterado' => date('Y-m-d H:i'), 'alterado_por' => 'sistema'];
+    // palavra-passe aleatória que ninguém conhece: a conta só se usa depois de o SADM repor a palavra-passe
+    $u = naval_marcar_temporaria($u, naval_senha_temporaria() . bin2hex(random_bytes(8)));
+    $d[$login] = $u;
+    naval_gravar_utilizadores($d);
+    naval_registar('conta_criada', ['conta' => $login, 'nome' => $u['nome'], 'email' => $email, 'perfil' => $perfil, 'funcoes' => implode(', ', $funcoes),
+        'motivo' => 'conta pedida pelo super administrador (' . (string) ($c['pedido'] ?? '') . '); palavra-passe a entregar pelo SADM'], 'sistema');
+    return ['ok' => true, 'login' => $login, 'perfil' => $perfil];
+}
+
 /** Catálogo inicial: as funções-base copiam os perfis do sistema; as complementares juntam-se a elas. */
 function naval_funcoes_iniciais(): array
 {
@@ -178,6 +259,7 @@ function naval_funcoes(bool $recarregar = false): array
     $f = naval_funcoes_regras($g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais());
     if ($g && naval_funcoes_ajustes_pendentes()) $f = naval_funcoes_regras(naval_funcoes_ajustar((array) $g) + naval_funcoes_iniciais());
     if (naval_contas_ajustes_pendentes()) naval_contas_ajustar();   // pode recarregar o catálogo (donos)
+    if (naval_contas_novas_pendentes()) naval_contas_novas_criar();
     return $f;
 }
 

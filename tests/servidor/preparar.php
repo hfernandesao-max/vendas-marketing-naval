@@ -34,8 +34,9 @@ function preparar_ambiente(string $amb, int $porta, array $extra): string
         'API_RITMO_TOKEN=1000',                        // os testes entram muitas vezes com a mesma conta
         'GEO_ENTRADA_CHAVE=chave-de-teste-da-entrada-geo-0123456789abcdef',   // webhook das fontes externas
         'ROBO_PINGUIM_CHAVE=chave-de-teste-do-robo-pinguim-0123456789abcdef', 'ORDENS_PINGUIM_MODO=robo',   // robô do Pinguim BO
-        'REQ_APROVACAO_DESDE=2000-01-01',
-        'REQ_EMISSAO_AUTOMATICA=0',   // a PO da contagem fica em rascunho (a reposição automática testa-se nos unitários)   // as PO precisam sempre de aprovação antes da carga (a regra não depende da data)
+        'REQ_APROVACAO_DESDE=2000-01-01',   // as PO precisam sempre de aprovação antes da carga (a regra não depende da data)
+        'REQ_EMISSAO_AUTOMATICA=0',   // a PO da contagem fica em rascunho (a reposição automática testa-se nos unitários)
+        'CONTAS_NOVAS=0',   // as contas novas da produção não se criam nos testes
         'SALA_APP_CHAVE=chave-de-teste-da-app-da-sala-0123456789abcdef',   // app «Naval Sala» (presença na sala do LCD)
     ], $extra)) . "\n");
     return $priv;

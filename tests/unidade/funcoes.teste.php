@@ -277,3 +277,28 @@ teste('função «Responsável da área de negócio»: todos os módulos de gest
     igual([], naval_funcoes_conflitos(['P-STOCK', 'C-CONC-CONTAR']), 'Manuel');
     verdade((bool) naval_funcoes_conflitos(['C-CONC-CONTAR', 'C-CONC-COORD']), 'quem conta não aprova a contagem');
 });
+
+teste('contas novas: a Teresa Gomes é criada uma vez com «Controlo de stock», sem palavra-passe conhecida; utilizador ou email repetido não cria', function () {
+    fn_limpar();
+    $antes = fn_contas(['outra' => ['nome' => 'Outra', 'perfil' => 'DIR', 'email' => 'repetido@foodtec.co.ao']]);
+    try {
+        @unlink(naval_contas_novas_ficheiro());
+        $lista = ['t1' => NAVAL_CONTAS_NOVAS['2026-11-teresa-gomes'], 't2' => ['login' => 'nova.dois', 'nome' => 'Nova Dois', 'email' => 'repetido@foodtec.co.ao', 'funcoes' => ['P-STOCK']]];
+        $r = naval_contas_novas_criar($lista);
+        igual([true, false], [$r['t1']['ok'], $r['t2']['ok']]);
+        igual('o email já está na conta outra', $r['t2']['motivo']);
+        $u = naval_utilizadores()['teresa.gomes'];
+        igual(['Teresa Gomes', 'teresa.gomes@foodtec.co.ao', ['P-STOCK'], true, true], [$u['nome'], $u['email'], $u['funcoes'], $u['activo'], $u['trocar_senha']]);
+        igual(naval_funcoes_codigo(['P-STOCK']), $u['perfil']);
+        verdade(naval_conta_valida($u + ['login' => 'teresa.gomes']));
+        $m = naval_matriz(true);
+        igual(['E', 'E', 'E'], [$m['stock-armazem'][$u['perfil']], $m['vendas-artigo'][$u['perfil']], $m['vendas-promotor'][$u['perfil']]]);
+        igual('', $m['clientes'][$u['perfil']] ?? '', 'sem clientes');
+        // uma vez só
+        igual([], naval_contas_novas_criar($lista));
+    } finally {
+        fn_repor($antes);
+        @unlink(naval_contas_novas_ficheiro());
+        fn_limpar();
+    }
+});

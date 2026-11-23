@@ -1,5 +1,14 @@
 ## 23-11-2026
 
+### Conta da Teresa Gomes criada na instalação
+
+<!-- tipo: melhoria -->
+
+- Contas pedidas pelo super administrador criam-se sozinhas na instalação, uma vez cada, com o utilizador, o nome, o email e as funções. O perfil gera-se a partir das funções.
+- A palavra-passe inicial é aleatória e ninguém a conhece. O SADM entrega-a pela via segura habitual: «Repor palavra-passe» em Acessos, que a mostra só a ele e vale 24 horas. No primeiro acesso a pessoa muda-a e configura os dois passos.
+- Se o utilizador ou o email já existirem, não se cria nada e fica registado.
+- **Teresa Gomes** (`teresa.gomes`, teresa.gomes@foodtec.co.ao): função «Controlo de stock».
+
 ### Apps no telemóvel: escolher qual instalar e um telemóvel activo por app
 
 <!-- tipo: melhoria -->
