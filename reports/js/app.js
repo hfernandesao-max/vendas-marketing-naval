@@ -111,6 +111,11 @@ let aEsperar = null;
 export function draw() {
   const p = paginaAtual();
   const falta = emFalta(p.id);
+  // saiu de uma página ainda a carregar para uma já pronta: esta não fica bloqueada à espera da outra
+  if (!falta && aEsperar !== null) {
+    aEsperar = null;
+    document.body.classList.remove('a-carregar');
+  }
   if (falta) {
     // Enquanto chega o que falta, a página mostra que está a carregar; depois desenha-se (se ainda for a actual)
     if (aEsperar !== p.id) {

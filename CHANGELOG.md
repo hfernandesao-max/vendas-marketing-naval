@@ -26,6 +26,7 @@
 - **Horário do dia numa linha** na conciliação e na app Naval Operações (contagem), com a fase em curso destacada.
 - **Relatórios personalizados:** cada linha do gráfico abre o detalhe (rota, cliente, artigo, documento ou dia), como nos outros gráficos.
 - Teste da conta (servidor) robusto ao aviso das novidades que abre depois de recarregar.
+- **Correcções:** sair de uma página ainda a carregar para outra já pronta deixava esta bloqueada aos cliques até a primeira acabar; em ecrã estreito, a barra das tabelas (Procurar, Colunas, Excel) e os títulos das colunas encolhem e passam à linha seguinte em vez de alargarem a página.
 
 ### Horário novo a partir de 24-11; a contagem seguinte e as vendas antes da contagem explicam faltas; recontar por quem conta
 

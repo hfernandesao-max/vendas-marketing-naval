@@ -39,8 +39,9 @@ test('colunas: esconder e mostrar com o botão direito, ordenar, repor; fica gua
   await expect.poll(() => enviados.length).toBeGreaterThan(0);
   const ult = enviados[enviados.length - 1].colunas['vendas-promotor:vp'];
   expect(ult.h).toContain('docs');
-  // repor
-  await page.getByRole('button', { name: 'Colunas', exact: true }).first().click();
+  // repor (o botão da própria tabela, com a página no topo: o cabeçalho fixo não o tapa)
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.locator('#s-vp').getByRole('button', { name: 'Colunas', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Repor as colunas' }).click();
   expect(await nomes(page)).toEqual(antes);
   expect(erros).toEqual([]);

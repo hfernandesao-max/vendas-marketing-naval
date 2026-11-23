@@ -59,10 +59,24 @@ for (const [w, h] of ECRAS) {
               if (Math.max(...a) - Math.min(...a) > 1) desalinhados.push(a.join('/'));
             });
           });
-          return { largura: document.documentElement.scrollWidth - W, fora: [...new Set(fora)].slice(0, 5), desalinhados, cortados };
+          // quando há deslocação, os elementos que passam a largura (também dentro das tabelas), para o diagnóstico
+          const excede = [];
+          if (document.documentElement.scrollWidth > W)
+            document.querySelectorAll('body *').forEach((e) => {
+              const b = e.getBoundingClientRect();
+              if (b.width && b.right > W && getComputedStyle(e).position !== 'fixed')
+                excede.push(e.tagName + '.' + String(e.className).slice(0, 40) + '@' + Math.round(b.right) + (e.closest('.tw') ? ' (tabela)' : ''));
+            });
+          return {
+            largura: document.documentElement.scrollWidth - W,
+            fora: [...new Set(fora)].slice(0, 5),
+            desalinhados,
+            cortados,
+            excede: [...new Set(excede)].slice(0, 12),
+          };
         });
         expect(erros, 'erros de JavaScript').toEqual([]);
-        expect(r.largura, 'deslocação horizontal').toBeLessThanOrEqual(0);
+        expect(r.largura, 'deslocação horizontal: ' + r.excede.join(', ')).toBeLessThanOrEqual(0);
         expect(r.fora, 'elementos fora do ecrã').toEqual([]);
         expect(r.desalinhados, 'números dos quadros desalinhados').toEqual([]);
         expect(r.cortados, 'valores cortados nos quadros').toEqual([]);
