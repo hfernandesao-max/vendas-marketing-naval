@@ -1,5 +1,13 @@
 ## 23-11-2026
 
+### Conciliação da carrinha: a diferença regularizada no Pinguim BO fica à vista
+
+<!-- tipo: melhoria -->
+
+- Quando uma diferença da contagem é explicada por documentos do Pinguim BO registados depois (vendas facturadas mais tarde, devolução do contado ao armazém), a coluna Diferença mostra a diferença da contagem riscada e o que fica («~~−5~~ → 0»), com o detalhe ao passar o rato; as contas da linha batem.
+- O resumo do cartão diz quantos artigos foram regularizados no Pinguim BO.
+- O motivo e os documentos da regularização lêem-se inteiros (a coluna já não corta o número do documento).
+
 ### Nomes dos artigos na língua escolhida; todas as contas com acessos por funções
 
 <!-- tipo: melhoria -->
@@ -109,7 +117,7 @@
   - aprovação, sozinha pelas regras ou pelo coordenador;
   - carga no cais;
   - guia no Pinguim BO.
-  Mostra quem está à espera e, quando a PO não se aprovou sozinha, o motivo. Um rascunho confirma-se e emite-se na própria app.
+    Mostra quem está à espera e, quando a PO não se aprovou sozinha, o motivo. Um rascunho confirma-se e emite-se na própria app.
 - **Pedido extra:** procura do artigo por código ou nome, com o stock disponível no armazém (Pinguim BO), e quantidade linha a linha. Um pedido acima do disponível fica a âmbar e pede confirmação; o motivo é opcional. A aprovação continua no coordenador, que é avisado no telemóvel.
 
 ### Conta da Teresa Gomes criada na instalação
@@ -242,6 +250,7 @@ Nova app no telemóvel, instalada pelo código QR pessoal do portal como a «Nav
   - o stock do armazém está confirmado.
 
   Fica registada como «aprovada automaticamente». O coordenador só recebe as outras, e a PO mostra o motivo («Para aprovar porque: …»). `REQ_APROVACAO_AUTOMATICA=0` no .env desliga.
+
 - Os módulos passam a publicar de facto os eventos que declaram, e cada evento fica registado:
   - «carrinha.diferenca_detectada»
   - «carrinha.descarga_conciliada»
@@ -582,15 +591,16 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 > titulo: Valores do Pinguim BO sem alterações
 > titulo [en]: Pinguim BO figures, unchanged
 > titulo [ti]: ቁጽርታት Pinguim BO ብዘይ ለውጢ
+>
 > - O Início, as Cobranças e os documentos voltam a mostrar exactamente o que está no Pinguim BO, sem nenhuma alteração.
-> [en] The Home page, Collections and documents again show exactly what is in Pinguim BO, with no changes.
-> [ti] መእተዊ ገጽ፡ ኣከፋፍላን ሰነዳትን ከም ብሓድሽ ኣብ Pinguim BO ዘሎ ብዘይ ዋላ ሓደ ለውጢ የርእዩ።
+>   [en] The Home page, Collections and documents again show exactly what is in Pinguim BO, with no changes.
+>   [ti] መእተዊ ገጽ፡ ኣከፋፍላን ሰነዳትን ከም ብሓድሽ ኣብ Pinguim BO ዘሎ ብዘይ ዋላ ሓደ ለውጢ የርእዩ።
 > - O ficheiro para o SAP leva as formas de pagamento exactamente como foram registadas na venda.
-> [en] The SAP file carries the payment methods exactly as they were recorded at the sale.
-> [ti] ፋይል SAP ነቶም ኣገባባት ክፍሊት ልክዕ ከምቲ ኣብ መሸጣ ዝተመዝገቡ ይሕዞም።
+>   [en] The SAP file carries the payment methods exactly as they were recorded at the sale.
+>   [ti] ፋይል SAP ነቶም ኣገባባት ክፍሊት ልክዕ ከምቲ ኣብ መሸጣ ዝተመዝገቡ ይሕዞም።
 > - O que se recebeu de facto, segundo as correcções aprovadas, aparece só no quadro «Formas de pagamento conciliadas» do Início e na reconciliação.
-> [en] What was actually received, according to the approved corrections, appears only in the «Reconciled payment methods» table on the Home page and in the reconciliation.
-> [ti] ብሓቂ ዝተቐበልናዮ፡ ከም ዝጸደቑ ምእራማት፡ ኣብ ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ናይ መእተዊ ገጽን ኣብ ምስምማዕን ጥራይ ይርአ።
+>   [en] What was actually received, according to the approved corrections, appears only in the «Reconciled payment methods» table on the Home page and in the reconciliation.
+>   [ti] ብሓቂ ዝተቐበልናዮ፡ ከም ዝጸደቑ ምእራማት፡ ኣብ ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ናይ መእተዊ ገጽን ኣብ ምስምማዕን ጥራይ ይርአ።
 
 - **Vendas (v1/vendas):** os documentos voltam a chegar ao portal exactamente como estão no Pinguim BO (formas de
   pagamento, valores e nomes dos meios). A correcção aprovada da forma de pagamento segue à parte, no campo
@@ -608,27 +618,29 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 > titulo: Correcções da forma de pagamento e ficheiro para o SAP
 > titulo [en]: Payment-method corrections and the SAP file
 > titulo [ti]: ምእራም ኣገባብ ክፍሊትን ፋይል SAPን
+>
 > - Na correcção, os documentos já corrigidos (aprovados ou por aprovar) aparecem só para consulta. Só se pedem os que mudam de facto.
-> [en] In the correction screen, documents already corrected (approved or pending) are shown for reference only. Only those that actually change are requested.
-> [ti] ኣብ ምእራም፡ ቀደም ዝተኣረሙ ሰነዳት (ዝጸደቑ ወይ ዝጽበዩ) ንምርኣይ ጥራይ ይቐርቡ። ብሓቂ ዝቕየሩ ጥራይ ይሕተቱ።
+>   [en] In the correction screen, documents already corrected (approved or pending) are shown for reference only. Only those that actually change are requested.
+>   [ti] ኣብ ምእራም፡ ቀደም ዝተኣረሙ ሰነዳት (ዝጸደቑ ወይ ዝጽበዩ) ንምርኣይ ጥራይ ይቐርቡ። ብሓቂ ዝቕየሩ ጥራይ ይሕተቱ።
 > - Quando todos os documentos de um dia e promotor estão corrigidos, a reconciliação mostra «Corrigido» em vez do botão «Corrigir».
-> [en] When every document of a day and sales rep is corrected, the reconciliation shows «Corrected» instead of the «Correct» button.
-> [ti] ኩሎም ሰነዳት ናይ ሓንቲ መዓልትን ሸያጥን ምስ ዝኣረሙ፡ እቲ ምስምማዕ ኣብ ክንዲ «ኣርም» «ተኣሪሙ» የርኢ።
+>   [en] When every document of a day and sales rep is corrected, the reconciliation shows «Corrected» instead of the «Correct» button.
+>   [ti] ኩሎም ሰነዳት ናይ ሓንቲ መዓልትን ሸያጥን ምስ ዝኣረሙ፡ እቲ ምስምማዕ ኣብ ክንዲ «ኣርም» «ተኣሪሙ» የርኢ።
 > - O ficheiro para o SAP leva o numerário e o Multicaixa aprovados na reconciliação. A estrutura do ficheiro não muda.
-> [en] The SAP file carries the cash and Multicaixa amounts approved in the reconciliation. The file structure does not change.
-> [ti] ፋይል SAP ነቲ ኣብ ምስምማዕ ዝጸደቐ ጥረ ገንዘብን Multicaixa ን ይሕዝ። ቅርጺ እቲ ፋይል ኣይቕየርን።
+>   [en] The SAP file carries the cash and Multicaixa amounts approved in the reconciliation. The file structure does not change.
+>   [ti] ፋይል SAP ነቲ ኣብ ምስምማዕ ዝጸደቐ ጥረ ገንዘብን Multicaixa ን ይሕዝ። ቅርጺ እቲ ፋይል ኣይቕየርን።
 > - A hora dos documentos passa a ser a do registo no Pinguim BO (ex.: 18:25, e não 00:18).
-> [en] Document times are now the registration time in Pinguim BO (e.g. 18:25, not 00:18).
-> [ti] ሰዓት ሰነዳት ሕጂ ናይቲ ኣብ Pinguim BO ዝተመዝገበሉ እዩ (ንኣብነት 18:25፡ ኣይኮነን 00:18)።
+>   [en] Document times are now the registration time in Pinguim BO (e.g. 18:25, not 00:18).
+>   [ti] ሰዓት ሰነዳት ሕጂ ናይቲ ኣብ Pinguim BO ዝተመዝገበሉ እዩ (ንኣብነት 18:25፡ ኣይኮነን 00:18)።
 > - No Início, «Recebido», «Em dinheiro» e «Em Multicaixa» passam a mostrar o que se recebeu de facto, com as correcções aprovadas. O quadro «Formas de pagamento conciliadas» mostra o que estava no Pinguim BO, o conciliado e a diferença.
-> [en] On the Home page, «Received», «Cash» and «Multicaixa» now show what was actually received, with the approved corrections. The «Reconciled payment methods» table shows what was in Pinguim BO, the reconciled amount and the difference.
-> [ti] ኣብ መእተዊ ገጽ፡ «ዝተቐበልናዮ»፡ «ብጥረ ገንዘብ»ን «ብ Multicaixa»ን ሕጂ ምስቶም ዝጸደቑ ምእራማት ብሓቂ ዝተቐበልናዮ የርእዩ። ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ኣብ Pinguim BO ዝነበረ፡ ዝተሰማምዐን ፍልልይን የርኢ።
+>   [en] On the Home page, «Received», «Cash» and «Multicaixa» now show what was actually received, with the approved corrections. The «Reconciled payment methods» table shows what was in Pinguim BO, the reconciled amount and the difference.
+>   [ti] ኣብ መእተዊ ገጽ፡ «ዝተቐበልናዮ»፡ «ብጥረ ገንዘብ»ን «ብ Multicaixa»ን ሕጂ ምስቶም ዝጸደቑ ምእራማት ብሓቂ ዝተቐበልናዮ የርእዩ። ሰንጠረዥ «ዝተሰማምዑ ኣገባባት ክፍሊት» ኣብ Pinguim BO ዝነበረ፡ ዝተሰማምዐን ፍልልይን የርኢ።
+>
 > 1. Para mudar uma correcção já aprovada, peça a quem aprova a caixa que a anule e volte a pedir a correcção.
-> [en] To change an already approved correction, ask the cash-sheet approver to cancel it, then request the correction again.
-> [ti] ዝጸደቐ ምእራም ንምቕያር፡ ነቲ ሳጹን ዘጽድቕ ክስርዞ ሕተትዎ፡ ድሕሪኡ ምእራም ደጊምኩም ሕተቱ።
+>    [en] To change an already approved correction, ask the cash-sheet approver to cancel it, then request the correction again.
+>    [ti] ዝጸደቐ ምእራም ንምቕያር፡ ነቲ ሳጹን ዘጽድቕ ክስርዞ ሕተትዎ፡ ድሕሪኡ ምእራም ደጊምኩም ሕተቱ።
 > 2. Se um lote para o SAP já tinha estes documentos com a forma antiga, anule esse lote e gere-o de novo.
-> [en] If an SAP batch already had these documents with the old payment method, cancel that batch and generate it again.
-> [ti] ሓደ ጉጅለ ናይ SAP ነዞም ሰነዳት ብናይ ቀደም ኣገባብ ክፍሊት ሒዝዎም እንተ ነይሩ፡ ነቲ ጉጅለ ሰሪዝኩም ደጊምኩም ኣዳልውዎ።
+>    [en] If an SAP batch already had these documents with the old payment method, cancel that batch and generate it again.
+>    [ti] ሓደ ጉጅለ ናይ SAP ነዞም ሰነዳት ብናይ ቀደም ኣገባብ ክፍሊት ሒዝዎም እንተ ነይሩ፡ ነቲ ጉጅለ ሰሪዝኩም ደጊምኩም ኣዳልውዎ።
 
 - **Correcção:** os documentos com correcção aprovada ou por aprovar aparecem na janela sem campos (valores, banco e
   estado), não entram no pedido e os atalhos «Tudo em…» não lhes tocam. Sem nenhum documento por corrigir, a janela diz
@@ -658,18 +670,20 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 > titulo: Correcções da forma de pagamento
 > titulo [en]: Payment-method corrections
 > titulo [ti]: ምእራም ኣገባብ ክፍሊት
+>
 > - Quem aprova a caixa no fim (aprovação final) passa também a aprovar ou recusar as correcções da forma de pagamento, como o 1.º nível.
-> [en] Whoever gives the final cash-sheet approval can now also approve or refuse payment-method corrections, as the 1st level does.
-> [ti] ሳጹን ኣብ መወዳእታ ዘጽድቕ (ናይ መወዳእታ ምጽዳቕ) ከም 1ይ ደረጃ ምእራም ኣገባብ ክፍሊት ከጽድቕ ወይ ክነጽግ ይኽእል።
+>   [en] Whoever gives the final cash-sheet approval can now also approve or refuse payment-method corrections, as the 1st level does.
+>   [ti] ሳጹን ኣብ መወዳእታ ዘጽድቕ (ናይ መወዳእታ ምጽዳቕ) ከም 1ይ ደረጃ ምእራም ኣገባብ ክፍሊት ከጽድቕ ወይ ክነጽግ ይኽእል።
 > - Quando há várias por decidir, pode revê-las numa lista e aprová-las de uma vez. Quem pediu uma correcção nunca a aprova.
-> [en] When several are waiting, you can review them in a list and approve them at once. Whoever requested a correction never approves it.
-> [ti] ብዙሓት ውሳነ ክጽበያ ከለዋ፡ ኣብ ዝርዝር ርእዩኹም ብሓንሳብ ከተጽድቕዎን ትኽእሉ። ምእራም ዝሓተተ ሰብ ፈጺሙ ኣየጽድቖን።
+>   [en] When several are waiting, you can review them in a list and approve them at once. Whoever requested a correction never approves it.
+>   [ti] ብዙሓት ውሳነ ክጽበያ ከለዋ፡ ኣብ ዝርዝር ርእዩኹም ብሓንሳብ ከተጽድቕዎን ትኽእሉ። ምእራም ዝሓተተ ሰብ ፈጺሙ ኣየጽድቖን።
+>
 > 1. Abra Multicaixa por TPA › Formas de pagamento e desça até «Correcções da forma de pagamento».
-> [en] Open Multicaixa by POS terminal › Payment methods and scroll down to «Payment-method corrections».
-> [ti] Multicaixa ብ TPA › ኣገባባት ክፍሊት ክፈቱ፡ ናብ «ምእራም ኣገባብ ክፍሊት» ውረዱ።
+>    [en] Open Multicaixa by POS terminal › Payment methods and scroll down to «Payment-method corrections».
+>    [ti] Multicaixa ብ TPA › ኣገባባት ክፍሊት ክፈቱ፡ ናብ «ምእራም ኣገባብ ክፍሊት» ውረዱ።
 > 2. Carregue em «Rever e aprovar todas», confirme a lista e carregue em «Aprovar», ou decida uma a uma na tabela.
-> [en] Press «Review and approve all», check the list and press «Approve», or decide one by one in the table.
-> [ti] «ኩሉ ርኣዩን ኣጽድቑን» ጠውቑ፡ ነቲ ዝርዝር ኣረጋጊጽኩም «ኣጽድቑ» ጠውቑ፡ ወይ ኣብቲ ሰንጠረዥ ሓደ ብሓደ ውሰኑ።
+>    [en] Press «Review and approve all», check the list and press «Approve», or decide one by one in the table.
+>    [ti] «ኩሉ ርኣዩን ኣጽድቑን» ጠውቑ፡ ነቲ ዝርዝር ኣረጋጊጽኩም «ኣጽድቑ» ጠውቑ፡ ወይ ኣብቲ ሰንጠረዥ ሓደ ብሓደ ውሰኑ።
 
 - **Quem decide:** as correcções pedidas pela Tesouraria passam a poder ser aprovadas, recusadas ou anuladas por quem
   aprova a caixa no 1.º nível **ou** na aprovação final (ex.: o responsável da área RTM). Até aqui só o 1.º nível as
@@ -686,27 +700,29 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 > titulo: Pedidos de acesso, acessos temporários e contagem às cegas
 > titulo [en]: Access requests, temporary access and blind counting
 > titulo [ti]: ሕቶታት ፍቓድ፡ ግዝያዊ ፍቓድን ዕዉር ቆጸራን
+>
 > - A partir de agora, depois de cada actualização, o portal mostra este aviso com o que muda para si e como proceder.
-> [en] From now on, after each update, the portal shows this notice with what changes for you and what to do.
-> [ti] ካብ ሕጂ ንደሓር፡ ድሕሪ ነፍሲ ወከፍ ምሕዳስ፡ ፖርታል እንታይ ከም ዝቕየረልኩምን ከመይ ከም እትቕጽሉን ዝገልጽ መልእኽቲ የርኢ።
+>   [en] From now on, after each update, the portal shows this notice with what changes for you and what to do.
+>   [ti] ካብ ሕጂ ንደሓር፡ ድሕሪ ነፍሲ ወከፍ ምሕዳስ፡ ፖርታል እንታይ ከም ዝቕየረልኩምን ከመይ ከም እትቕጽሉን ዝገልጽ መልእኽቲ የርኢ።
 > - Para ter acesso a uma página ou função nova, faça o pedido em Suporte › Pedidos de acesso. Quem autoriza é o responsável dessa função.
-> [en] To get access to a new page or role, make the request in Support › Access requests. The owner of that role authorises it.
-> [ti] ናብ ሓድሽ ገጽ ወይ ሓላፍነት ፍቓድ ንምርካብ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተቱ። ዋና እቲ ሓላፍነት የጽድቖ።
+>   [en] To get access to a new page or role, make the request in Support › Access requests. The owner of that role authorises it.
+>   [ti] ናብ ሓድሽ ገጽ ወይ ሓላፍነት ፍቓድ ንምርካብ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተቱ። ዋና እቲ ሓላፍነት የጽድቖ።
 > - Os acessos temporários (férias, substituições) terminam sozinhos no dia seguinte ao último dia pedido.
-> [en] Temporary access (holidays, cover) ends automatically the day after the last day requested.
-> [ti] ግዝያዊ ፍቓድ (ዕረፍቲ፡ ምትካእ) ድሕሪ እቲ ዝተሓተ ናይ መወዳእታ መዓልቲ ንጽባሒቱ ባዕሉ ይውዳእ።
+>   [en] Temporary access (holidays, cover) ends automatically the day after the last day requested.
+>   [ti] ግዝያዊ ፍቓድ (ዕረፍቲ፡ ምትካእ) ድሕሪ እቲ ዝተሓተ ናይ መወዳእታ መዓልቲ ንጽባሒቱ ባዕሉ ይውዳእ።
 > - Na conciliação da carrinha, até a rota ser contada, ninguém vê as quantidades do sistema (contagem às cegas). Quem acompanha a contagem pode imprimir a folha de contagem no cartão da rota.
-> [en] In the van reconciliation, until the route has been counted, nobody sees the system quantities (blind count). Whoever follows the count can print the count sheet from the route card.
-> [ti] ኣብ ምስምማዕ መኪና፡ እቲ መስመር ክሳብ ዝቑጸር፡ ዋላ ሓደ ብዝሒ ስርዓት ኣይርእን (ዕዉር ቆጸራ)። ነቲ ቆጸራ ዝከታተል ካብ ካርድ እቲ መስመር ወረቐት ቆጸራ ክሕትም ይኽእል።
+>   [en] In the van reconciliation, until the route has been counted, nobody sees the system quantities (blind count). Whoever follows the count can print the count sheet from the route card.
+>   [ti] ኣብ ምስምማዕ መኪና፡ እቲ መስመር ክሳብ ዝቑጸር፡ ዋላ ሓደ ብዝሒ ስርዓት ኣይርእን (ዕዉር ቆጸራ)። ነቲ ቆጸራ ዝከታተል ካብ ካርድ እቲ መስመር ወረቐት ቆጸራ ክሕትም ይኽእል።
+>
 > 1. Leia este aviso e carregue em «Li e compreendi». Se carregar em «Mais tarde», volta a aparecer na próxima entrada.
-> [en] Read this notice and press «I have read and understood». If you press «Later», it appears again at your next sign-in.
-> [ti] ነዚ መልእኽቲ ኣንቢብኩም «ኣንቢበ ተረዲኡኒ» ጠውቑ። «ጸኒሑ» እንተ ጠዊቕኩም፡ ኣብ ዝቕጽል ምእታው ተመሊሱ ይርአ።
+>    [en] Read this notice and press «I have read and understood». If you press «Later», it appears again at your next sign-in.
+>    [ti] ነዚ መልእኽቲ ኣንቢብኩም «ኣንቢበ ተረዲኡኒ» ጠውቑ። «ጸኒሑ» እንተ ጠዊቕኩም፡ ኣብ ዝቕጽል ምእታው ተመሊሱ ይርአ።
 > 2. Se não encontrar uma página de que precisa, peça o acesso em Suporte › Pedidos de acesso, com o motivo.
-> [en] If you cannot find a page you need, request access in Support › Access requests, giving the reason.
-> [ti] ዘድልየኩም ገጽ እንተ ዘይረኺብኩም፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ምስ ምኽንያቱ ፍቓድ ሕተቱ።
+>    [en] If you cannot find a page you need, request access in Support › Access requests, giving the reason.
+>    [ti] ዘድልየኩም ገጽ እንተ ዘይረኺብኩም፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ምስ ምኽንያቱ ፍቓድ ሕተቱ።
 > 3. Se algo não funcionar como descrito, abra um pedido em Suporte.
-> [en] If something does not work as described, open a request in Support.
-> [ti] ገለ ነገር ከም ዝተገለጸ እንተ ዘይሰሪሑ፡ ኣብ ደገፍ ሕቶ ክፈቱ።
+>    [en] If something does not work as described, open a request in Support.
+>    [ti] ገለ ነገር ከም ዝተገለጸ እንተ ዘይሰሪሑ፡ ኣብ ደገፍ ሕቶ ክፈቱ።
 
 - Depois de cada actualização, todos os utilizadores vêem um **aviso** com o que muda nas páginas a que têm acesso e
   como proceder, na sua língua (português, inglês ou tigrínia), seguindo a comunicação das alterações da ISO/IEC
@@ -726,18 +742,20 @@ Aplica-se à contagem da carrinha, à conferência da carga da PO, à confirmaç
 > titulo: Novas funções de acesso: responsável da área RTM e coordenação dos promotores
 > titulo [en]: New access roles: RTM area manager and sales-rep coordination
 > titulo [ti]: ሓደስቲ ሓላፍነታት ፍቓድ፡ ሓላፊ ክፍሊ RTM ን ምውህሃድ ሸየጥትን
+>
 > - Se é responsável da área RTM ou coordena os promotores, as suas funções no portal foram ajustadas ao seu trabalho.
-> [en] If you manage the RTM area or coordinate the sales reps, your portal roles have been adjusted to your job.
-> [ti] ሓላፊ ክፍሊ RTM እንተ ኾንኩም ወይ ንሸየጥቲ እንተ ኣወሃሂድኩም፡ ሓላፍነታትኩም ኣብ ፖርታል ምስ ስራሕኩም ተሰማሚዖም።
+>   [en] If you manage the RTM area or coordinate the sales reps, your portal roles have been adjusted to your job.
+>   [ti] ሓላፊ ክፍሊ RTM እንተ ኾንኩም ወይ ንሸየጥቲ እንተ ኣወሃሂድኩም፡ ሓላፍነታትኩም ኣብ ፖርታል ምስ ስራሕኩም ተሰማሚዖም።
 > - Quem aprova a caixa passa a ver o Multicaixa por TPA, onde se decidem as correcções da forma de pagamento.
-> [en] Whoever approves the cash sheet can now see Multicaixa by POS terminal, where payment-method corrections are decided.
-> [ti] ሳጹን ዘጽድቕ ሕጂ Multicaixa ብ TPA ይርኢ፡ ኣብኡ ድማ ምእራም ኣገባብ ክፍሊት ይውሰን።
+>   [en] Whoever approves the cash sheet can now see Multicaixa by POS terminal, where payment-method corrections are decided.
+>   [ti] ሳጹን ዘጽድቕ ሕጂ Multicaixa ብ TPA ይርኢ፡ ኣብኡ ድማ ምእራም ኣገባብ ክፍሊት ይውሰን።
+>
 > 1. Na próxima entrada, se o portal pedir, configure a verificação em dois passos com a aplicação de autenticação.
-> [en] At your next sign-in, if the portal asks, set up two-step verification with the authenticator app.
-> [ti] ኣብ ዝቕጽል ምእታው፡ ፖርታል እንተ ሓቲቱ፡ ብመተግበሪ Authenticator ናይ ክልተ ስጉምቲ መረጋገጺ ኣዳልዉ።
+>    [en] At your next sign-in, if the portal asks, set up two-step verification with the authenticator app.
+>    [ti] ኣብ ዝቕጽል ምእታው፡ ፖርታል እንተ ሓቲቱ፡ ብመተግበሪ Authenticator ናይ ክልተ ስጉምቲ መረጋገጺ ኣዳልዉ።
 > 2. Confirme que vê as páginas de que precisa. Se faltar alguma, peça-a em Suporte › Pedidos de acesso.
-> [en] Check that you can see the pages you need. If one is missing, request it in Support › Access requests.
-> [ti] ዘድልዩኹም ገጻት ከም እትርእዩ ኣረጋግጹ። እንተ ጎዲሉ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተትዎ።
+>    [en] Check that you can see the pages you need. If one is missing, request it in Support › Access requests.
+>    [ti] ዘድልዩኹም ገጻት ከም እትርእዩ ኣረጋግጹ። እንተ ጎዲሉ፡ ኣብ ደገፍ › ሕቶታት ፍቓድ ሕተትዎ።
 
 - Nova função-base **«Coordenação comercial e operacional»** (P-COORD): coordena todos os promotores e as rotas, sem
   limite por rota — vendas, clientes, cargas, stock da carrinha e do armazém, requisições e terreno. Exige os dois

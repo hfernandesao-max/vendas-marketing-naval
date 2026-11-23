@@ -343,3 +343,54 @@ test('conciliação: a folha de contagem imprime-se para toda a logística, mesm
   await expect(page.locator('.cc-corte')).toContainText('Vendido depois do corte (já não está na carrinha): 3');
   expect(erros).toEqual([]);
 });
+
+test('conciliação: a diferença regularizada no Pinguim BO fica à vista na linha (−5 → 0) e no resumo', async ({ page }) => {
+  await page.route('**/v1/conciliacao-carrinha**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        pode: { contar: true, coordenar: true, fechar: true },
+        eu: 'tec',
+        data: '2026-11-21',
+        movimentos: 'saldo',
+        motivos: MOTIVOS,
+        nomes: {},
+        rotas: [
+          {
+            rota: '1007',
+            promotor: 'Awet Weldemenkorios',
+            cega: false,
+            linhas: [
+              {
+                ...linhaCompleta('10000015', 'Fraldas M', 15, 10),
+                inicial: 0,
+                carregado: 15,
+                vendido: 0,
+                diferenca: 0,
+                valor: 0,
+                diferenca_bruta: -5,
+                regularizado: { q: -5, doc: 'FR FR0126S77774N/5, contado devolvido em SA A1000/130', em: '2026-11-23 08:40:00' },
+              },
+            ],
+            contado_por: 'tec',
+            contado_em: '2026-11-21 14:13:00',
+            motivos: {},
+            resumo: { estado: 'por_validar', artigos: 1, alertas: 0, diferencas: 0, falta_kz: 0, sobra_kz: 0 },
+            historico: [],
+          },
+        ],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#conciliacao-carrinha');
+  const cartao = page.locator('.cc-rota', { hasText: '1007' });
+  await cartao.getByRole('button', { name: 'Ver' }).click();
+  await expect(cartao.locator('.note').first()).toContainText('1 regularizada(s) no Pinguim BO');
+  const dif = cartao.locator('td.cc-g-dif').first();
+  await expect(dif.locator('s.cc-bruta')).toHaveText('-5');
+  await expect(dif).toContainText('→ 0');
+  await expect(dif).toHaveAttribute('title', /regularizada no Pinguim BO -5 \(FR FR0126S77774N\/5, contado devolvido em SA A1000\/130\)/);
+  await expect(cartao.locator('.cc-regularizado').last()).toContainText('SA A1000/130');
+  expect(erros).toEqual([]);
+});

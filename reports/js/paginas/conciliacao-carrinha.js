@@ -433,7 +433,18 @@ function tabelaRota(r) {
     tr.append(el('td', 'n cc-g-sis', q(l.esperado)));
     tr.append(el('td', 'n cc-g-cont', q(l.contado)));
     const sinal = l.diferenca ? (l.diferenca < 0 ? ' cc-neg' : ' cc-pos') : '';
-    tr.append(el('td', 'n cc-g-dif' + sinal, difTxt(l.diferenca)), el('td', 'n cc-g-dif' + sinal, l.valor == null ? '—' : kz(l.valor)));
+    // a diferença da contagem e a parte regularizada no Pinguim BO ficam à vista («−5 → 0»): as contas da linha batem
+    const cDif = el('td', 'n cc-g-dif' + sinal);
+    if (l.regularizado && l.diferenca_bruta != null) {
+      cDif.append(el('s', 'cc-bruta', difTxt(l.diferenca_bruta)), document.createTextNode(' → ' + difTxt(l.diferenca)));
+      cDif.title = t('Diferença na contagem {a}; regularizada no Pinguim BO {b} ({doc}); fica {c}', {
+        a: difTxt(l.diferenca_bruta),
+        b: (l.regularizado.q > 0 ? '+' : '') + q(l.regularizado.q),
+        doc: l.regularizado.doc,
+        c: difTxt(l.diferenca),
+      });
+    } else cDif.textContent = difTxt(l.diferenca);
+    tr.append(cDif, el('td', 'n cc-g-dif' + sinal, l.valor == null ? '—' : kz(l.valor)));
     const ult = el('td', 'cc-g-mot');
     if (est === 'por_contar') l.alertas.forEach((a) => ult.append(pill(t(ALERTAS[a] || a), 'p-warn')));
     else if (l.diferenca && aprovar) {
@@ -612,6 +623,8 @@ R['conciliacao-carrinha'] = (pg) => {
     parte(t('{n} artigos', { n: n0(r.resumo.artigos) }));
     if (r.resumo.alertas) parte(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }), 'cc-neg');
     if (r.resumo.estado !== 'por_contar') parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
+    const nReg = (r.linhas || []).filter((l) => l.regularizado).length;
+    if (nReg) parte(t('{n} regularizada(s) no Pinguim BO', { n: n0(nReg) }), 'cc-regularizado');
     if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
     (r.avisos_rota || []).forEach((a) => parte(a.tipo === 'sincronizacao' ? t('telemóvel por sincronizar') : t('sem facturas no Pinguim BO'), 'cc-neg'));
     c.append(h, det);

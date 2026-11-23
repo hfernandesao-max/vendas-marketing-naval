@@ -5287,4 +5287,6 @@ export const TI = {
   'Sem ligação ao Pinguim BO': 'ምስ Pinguim BO ምትእስሳር የለን',
   'verificado {h}': 'ዝተረጋገጸ {h}',
   'Verificar agora': 'ሕጂ ኣረጋግጽ',
+  'Diferença na contagem {a}; regularizada no Pinguim BO {b} ({doc}); fica {c}': 'ፍልልይ ቆጸራ {a}; ኣብ Pinguim BO ተስተኻኺሉ {b} ({doc}); ዝተረፈ {c}',
+  '{n} regularizada(s) no Pinguim BO': '{n} ኣብ Pinguim BO ተስተኻኺሉ',
 };

@@ -5386,4 +5386,6 @@ export const EN = {
   'Sem ligação ao Pinguim BO': 'No connection to Pinguim BO',
   'verificado {h}': 'checked {h}',
   'Verificar agora': 'Check now',
+  'Diferença na contagem {a}; regularizada no Pinguim BO {b} ({doc}); fica {c}': 'Count difference {a}; regularised in Pinguim BO {b} ({doc}); remaining {c}',
+  '{n} regularizada(s) no Pinguim BO': '{n} regularised in Pinguim BO',
 };

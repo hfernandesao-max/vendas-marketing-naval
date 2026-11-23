@@ -1212,6 +1212,16 @@ p.aviso {
   color: var(--ok);
   font-size: 12px;
 }
+.cc-bruta {
+  color: var(--dim);
+  font-weight: 400;
+}
+/* o motivo e a regularização lêem-se inteiros (sem cortar o número do documento) */
+.cc-tab td.cc-g-mot {
+  min-width: 260px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .cc-aviso {
   margin: 8px 0 10px;
   padding: 8px 12px;
