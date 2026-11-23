@@ -7,6 +7,7 @@
 - Quando uma diferença da contagem é explicada por documentos do Pinguim BO registados depois (vendas facturadas mais tarde, devolução do contado ao armazém), a coluna Diferença mostra a diferença da contagem riscada e o que fica («~~−5~~ → 0»), com o detalhe ao passar o rato; as contas da linha batem.
 - O resumo do cartão diz quantos artigos foram regularizados no Pinguim BO.
 - O motivo e os documentos da regularização lêem-se inteiros (a coluna já não corta o número do documento).
+- **Vendas facturadas depois da contagem, com carga entretanto:** a regra de conservação (a carrinha nunca fica com stock negativo) passa a somar as cargas seguintes em vez de parar na primeira. Se a carrinha facturou mais do que o contado mais o que carregou, o excesso saiu antes da contagem e explica a falta, até 3 dias depois (cobre o fim-de-semana). Ex.: rota 1011, 21-11: contou 0 sabões, na segunda-feira carregou 30 e facturou 80; os 50 a mais são os que faltavam no sábado.
 
 ### Nomes dos artigos na língua escolhida; todas as contas com acessos por funções
 

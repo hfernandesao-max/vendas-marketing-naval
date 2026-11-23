@@ -539,6 +539,41 @@ teste('devolução lançada no fecho (a partir das 15:30) é depois da contagem;
     igual(1, count($d), 'sem guia igual à diferença, sem diagnóstico');
 });
 
+teste('regularização: facturas de segunda-feira para lá do contado e da carga dessa manhã explicam a falta de sábado (rota 1011, 21-11)', function () {
+    $ref = '2026-11-21 14:00:00';
+    $ev = function ($cod, $tipo, $em, $q, $doc) { return ['rota' => '1011', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => $tipo]; };
+    $ac = [
+        $ev('292', 'carga', '2026-11-23 08:26:52', 30.0, 'GTC A1000/131'), $ev('293', 'carga', '2026-11-23 08:26:52', 50.0, 'GTC A1000/131'),
+        $ev('015', 'venda', '2026-11-23 11:04:01', -3.0, 'FR FR0126S77687N/4'), $ev('292', 'venda', '2026-11-23 11:04:01', -2.0, 'FR FR0126S77687N/4'),
+        $ev('293', 'venda', '2026-11-23 11:04:01', -2.0, 'FR FR0126S77687N/4'), $ev('332', 'venda', '2026-11-23 11:04:01', -3.0, 'FR FR0126S77687N/4'),
+        $ev('386', 'venda', '2026-11-23 11:04:01', -1.0, 'FR FR0126S77687N/4'),
+        $ev('292', 'venda', '2026-11-23 11:15:37', -13.0, 'FR FR0126S77687N/5'), $ev('293', 'venda', '2026-11-23 11:15:37', -13.0, 'FR FR0126S77687N/5'),
+        $ev('292', 'venda', '2026-11-23 11:20:52', -10.0, 'FR FR0126S77687N/6'), $ev('293', 'venda', '2026-11-23 11:20:52', -10.0, 'FR FR0126S77687N/6'),
+        $ev('386', 'venda', '2026-11-23 11:20:52', -5.0, 'FR FR0126S77687N/6'),
+        $ev('292', 'venda', '2026-11-23 12:35:06', -30.0, 'FR FR0126S77687N/7'), $ev('293', 'venda', '2026-11-23 12:35:06', -20.0, 'FR FR0126S77687N/7'),
+        $ev('386', 'venda', '2026-11-23 12:35:06', -10.0, 'FR FR0126S77687N/7'),
+        $ev('292', 'venda', '2026-11-23 12:44:04', -25.0, 'FR FR0126S77687N/8'), $ev('293', 'venda', '2026-11-23 12:44:04', -25.0, 'FR FR0126S77687N/8'),
+        $ev('386', 'venda', '2026-11-23 12:47:16', -20.0, 'FR FR0126S77687N/9'), $ev('293', 'venda', '2026-11-23 15:45:57', -29.0, 'FR FR0126S77687N/10'),
+        $ev('332', 'venda', '2026-11-23 15:47:34', -50.0, 'FR FR0126S77687N/11'),
+        $ev('293', 'carga', '2026-11-23 16:21:35', 24.0, 'GTC A1000/144'), $ev('386', 'carga', '2026-11-23 16:21:35', 15.0, 'GTC A1000/144'),
+        $ev('292', 'venda', '2026-11-27 10:00:00', -40.0, 'FR FR0126S77687N/30'),   // fora da janela: não conta
+    ];
+    $linhas = [
+        ['codigo' => '332', 'diferenca' => -103.0, 'contado' => 97.0],
+        ['codigo' => '292', 'diferenca' => -50.0, 'contado' => 0.0],
+        ['codigo' => '293', 'diferenca' => -50.0, 'contado' => 0.0],
+        ['codigo' => '015', 'diferenca' => -13.0, 'contado' => 7.0],
+        ['codigo' => '386', 'diferenca' => -26.0, 'contado' => 19.0],
+    ];
+    $r = naval_carr_regularizacoes($linhas, $ac, '1011', $ref);
+    igual(-50.0, $r['292']['q'], '292: carregou 30 e facturou 80 → os 50 de sábado');
+    igual(-49.0, $r['293']['q'], '293: até à carga das 16:21, 99 facturados para 50 carregados → 49');
+    igual(-17.0, $r['386']['q'], '386: 36 facturados para 19 contados → 17');
+    igual(false, isset($r['332']), '332: vendeu 53 dos 97 contados — não prova nada');
+    igual(false, isset($r['015']), '015: vendeu 3 dos 7 contados — não prova nada');
+    igual(true, strpos($r['292']['doc'], 'FR FR0126S77687N/8') !== false);
+});
+
 teste('regularização: vendas facturadas depois da contagem com o contado devolvido ao armazém (rota 1007, 21-11): explicam pelas facturas', function () {
     $ref = '2026-11-21 14:00:00';
     $ac = [
