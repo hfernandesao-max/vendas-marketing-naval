@@ -1,5 +1,14 @@
 ## 23-11-2026
 
+### Promotores sempre actualizados a partir do Pinguim BO
+
+<!-- tipo: melhoria -->
+
+- As rotas e os promotores são lidos do Pinguim BO **a cada 5 minutos, de forma automática** (só leitura). Antes era só quando se corria a ferramenta de sincronização.
+- Uma rota nova (10NN) entra sozinha. Um nome que muda passa a aparecer em todas as tabelas e gráficos, e a mudança fica registada.
+- O painel e as análises de gestão recalculam assim que um nome muda, sem esperar pelo fim da cache.
+- **Vendas por rota e dia da semana:** cada rota passa a ter o nome do promotor ao lado. Em ecrã estreito fica só o número, com o nome na dica. Clicar numa rota abre a ficha da rota.
+
 ### Fontes de dados: painel de estado; o super administrador instala todas as apps
 
 <!-- tipo: melhoria -->

@@ -311,7 +311,11 @@ export function corRota(rota, todas) {
 
 /** Mapa de calor: linhas × colunas, uma só cor (azul) do claro ao escuro; valor no quadrado quando cabe. */
 export function grafCalor(w, { linhas, colunas, fmt, altura }) {
-  const Lr = Math.min(150, Math.max(46, w * 0.12)),
+  // largura dos rótulos pelo texto mais comprido (rota · promotor), até 24% do quadro; o resto cortado com «…»
+  const maiorRot = Math.max(4, ...linhas.map((l) => String(l.rot).length));
+  const Lr = Math.min(Math.max(150, w * 0.24), Math.max(46, w * 0.12, maiorRot * 6.6 + 12)),
+    cabe = Math.max(4, Math.floor((Lr - 12) / 6.6)),
+    curto = (s) => (String(s).length > cabe ? String(s).slice(0, cabe - 1) + '…' : String(s)),
     T = 18,
     alt = altura ? Math.max(5, Math.min(26, Math.floor((altura - T - 4) / Math.max(1, linhas.length)))) : 26;
   const H = T + linhas.length * alt + 4;
@@ -323,7 +327,7 @@ export function grafCalor(w, { linhas, colunas, fmt, altura }) {
     const y0 = T + i * alt;
     // linhas baixas: o nome de uma linha em cada tantas (todas na dica e na tabela)
     if (i % Math.max(1, Math.ceil(12 / alt)) === 0)
-      sv.append(svgEl('text', { x: Lr - 8, y: y0 + Math.max(alt, 12) / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, l.rot));
+      sv.append(svgEl('text', { x: Lr - 8, y: y0 + Math.max(alt, 12) / 2 + 4, class: 'vx-rot', 'text-anchor': 'end' }, curto(l.rot)));
     l.valores.forEach((v, j) => {
       const g = svgEl('g');
       const f = v / max;
@@ -343,7 +347,7 @@ export function grafCalor(w, { linhas, colunas, fmt, altura }) {
         g.append(
           svgEl('text', { x: Lr + cw * j + cw / 2, y: y0 + alt / 2 + 4, class: f > 0.55 ? 'vx-val vx-claro' : 'vx-ax', 'text-anchor': 'middle' }, fmt(v)),
         );
-      interactivo(g, l.rot + ' · ' + colunas[j], [[fmt(v), t('média por dia')]]);
+      interactivo(g, (l.titulo || l.rot) + ' · ' + colunas[j], [[fmt(v), t('média por dia')]], null, l.abrir);
       sv.append(g);
     });
   });

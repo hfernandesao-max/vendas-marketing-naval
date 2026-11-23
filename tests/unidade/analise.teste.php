@@ -246,3 +246,23 @@ teste('painel: a curva ABC traz os membros de cada classe (detalhe ao clicar), o
     igual('c4', $x['itens']['C'][0]['nome'], 'sem nome: o código');
     verdade(!isset(naval_painel_abc(['a' => 1.0])['itens']), 'sem informação: só as contagens');
 });
+
+teste('rotas: promotores sempre como no Pinguim BO — nome novo e rota nova entram sozinhos, ficam registados e mudam a versão', function () {
+    naval_servico('rotas');
+    igual([['chave' => '1001', 'rota' => '1001', 'promotor' => 'Andrea Santos'], ['chave' => '1012', 'rota' => '1012', 'promotor' => '1012']],
+        naval_rotas_de_pinguim([['ROTA' => '1012', 'DESCRICAO' => 'Rota nova'], ['ROTA' => '1001', 'DESCRICAO' => '1001 - FHR PIV - Andrea Santos'], ['ROTA' => '2001', 'DESCRICAO' => 'x - y - z']]));
+    $f = naval_dados_reports() . '/rotas.json';
+    $tinha = is_file($f) ? file_get_contents($f) : null;
+    try {
+        naval_json_gravar($f, [['chave' => '1001', 'rota' => '1001', 'promotor' => 'Andrea Santos'], ['chave' => '1002', 'rota' => '1002', 'promotor' => 'Vendedor 2']]);
+        $linhas = [['ROTA' => '1001', 'DESCRICAO' => '1001 - FHR PIV - Andrea Santos'], ['ROTA' => '1002', 'DESCRICAO' => '1002 - FHR PIV - João Novo']];
+        $m = naval_rotas_sincronizar($linhas);
+        igual([['rota' => '1002', 'antes' => 'Vendedor 2', 'depois' => 'João Novo']], $m);
+        igual('João Novo', naval_promotores()['1002']);
+        igual([], naval_rotas_sincronizar($linhas), 'sem mudanças não grava');
+        igual([], naval_rotas_sincronizar([]), 'sem resposta do Pinguim BO fica a lista anterior');
+        igual('Andrea Santos', naval_promotores()['1001']);
+    } finally {
+        if ($tinha === null) @unlink($f); else file_put_contents($f, $tinha);
+    }
+});

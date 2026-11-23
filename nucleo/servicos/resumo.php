@@ -274,6 +274,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[conciliação carrinha] corte: ' . $e->getMessage());
     }
+    // rotas e promotores: sempre como estão no Pinguim BO (nome novo ou rota nova entram sozinhos)
+    try {
+        naval_servico('rotas');
+        $mr = naval_rotas_sincronizar();
+        if ($mr) $feito['promotores_actualizados'] = count($mr);
+    } catch (Throwable $e) {
+        error_log('[rotas] ' . $e->getMessage());
+    }
     // PO esquecidas: emitidas e não carregadas, ou rascunhos, há mais de REQ_FECHO_DIAS dias (uma vez por hora chega)
     if ((int) date('i', $agora) < 5) {
         try {

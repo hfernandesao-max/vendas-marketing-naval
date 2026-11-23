@@ -972,7 +972,18 @@ export function cartoesGestao(d) {
       titulo: t('Vendas por rota e dia da semana'),
       sub: t('média por dia nas últimas 8 semanas'),
       desenhar: (w, h) =>
-        grafCalor(w, { altura: h, linhas: d.calor.map((l) => ({ rot: l.rota, valores: l.dias })), colunas: DIAS_CURTOS.map((x) => t(x)), fmt: kzc }),
+        grafCalor(w, {
+          altura: h,
+          // a rota com o nome do promotor (do Pinguim BO, sempre actualizado); em ecrã estreito, só o número
+          linhas: d.calor.map((l) => ({
+            rot: w < 520 ? l.rota : nomeRota(l),
+            titulo: nomeRota(l),
+            valores: l.dias,
+            abrir: () => abrirLig('rota', { rota: String(l.rota), promotor: l.promotor || '' }),
+          })),
+          colunas: DIAS_CURTOS.map((x) => t(x)),
+          fmt: kzc,
+        }),
       colunas: [[t('Rota'), 0], ...DIAS_CURTOS.map((x) => [t(x), 1])],
       linhas: d.calor.map((l) => [nomeRota(l), ...l.dias.map(kz)]),
       abrirLinha: (i) => abrirLig('rota', { rota: String(d.calor[i].rota), promotor: d.calor[i].promotor || '' }),

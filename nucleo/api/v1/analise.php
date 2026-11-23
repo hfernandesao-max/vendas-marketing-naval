@@ -124,7 +124,7 @@ if ($f === 'painel') {
     naval_servico('painel');
     if (!$veValores) throw new NavalErro('O painel de gestão precisa de acesso às páginas de vendas.', 403);
     $hoje = date('Y-m-d');
-    $r = naval_cache('painel|' . $hoje . '|' . floor(time() / 900) . '|' . json_encode($rotas), 900, function () use ($hoje, $rotas) {
+    $r = naval_cache('painel|' . $hoje . '|' . floor(time() / 900) . '|' . json_encode($rotas) . '|' . naval_rotas_versao(), 900, function () use ($hoje, $rotas) {
         $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - NAVAL_PAINEL_DIAS * 86400), $hoje), $rotas, true);
         return naval_painel($ag, $hoje, naval_promotores());
     }, ($_GET['fresco'] ?? '') === '1');
@@ -138,7 +138,7 @@ if ($f === 'analises') {
     $fim = date('Y-m-d', time() - 86400);
     // stock só para quem vê o stock por armazém; sem ligação, as outras análises seguem sem a cobertura
     $comStock = naval_pode('stock-armazem');
-    $r = naval_cache('analises|' . $fim . '|' . floor(time() / 3600) . '|' . json_encode($rotas) . '|' . (int) $comStock, 3600, function () use ($fim, $rotas, $comStock) {
+    $r = naval_cache('analises|' . $fim . '|' . floor(time() / 3600) . '|' . json_encode($rotas) . '|' . (int) $comStock . '|' . naval_rotas_versao(), 3600, function () use ($fim, $rotas, $comStock) {
         $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - NAVAL_AG_DIAS * 86400), $fim), $rotas, true);
         $stock = null;
         $erroStock = null;
