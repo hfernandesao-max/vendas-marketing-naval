@@ -96,6 +96,13 @@ function naval_funcoes_iniciais(): array
     foreach ($dePerfil('SUP') as $rec => $n) $coord[$rec] = ['Vr' => 'V', 'Er' => 'E'][$n] ?? $n;
     $f['P-COORD'] = ['nome' => 'Coordenação comercial e operacional', 'descricao' => 'Coordena todos os promotores e as rotas: vendas, clientes, cargas, stock, requisições e terreno.',
         'tipo' => 'base', 'permissoes' => $coord + ['stock-armazem' => 'V', 'plano-cargas' => 'V'], 'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
+    // Controlo de stock (consulta): menor privilégio (ISO/IEC 27001:2022 A.5.15, A.5.18, A.8.2, A.8.3) — o stock de todos
+    // os armazéns e de todas as carrinhas, por artigo, e as vendas por artigo para o comparar com a saída; exporta para
+    // Excel (cada exportação fica registada). Só consulta: sem preços de compra, clientes, caixa, cargas nem aprovações;
+    // todas as rotas (sem limite por rota) e entrada em dois passos.
+    $f['P-STOCK'] = ['nome' => 'Controlo de stock', 'descricao' => 'Consulta do stock de todos os armazéns e carrinhas por artigo e das vendas por artigo.',
+        'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'vendas-artigo' => 'E', 'suporte' => 'V'],
+        'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
     $comp = function (string $nome, string $desc, array $perm, array $conflitos = [], bool $mfa = false) {
         return ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'complementar', 'permissoes' => $perm, 'por_rota' => false,
             'dois_passos' => $mfa, 'conflitos' => $conflitos, 'activo' => true];
