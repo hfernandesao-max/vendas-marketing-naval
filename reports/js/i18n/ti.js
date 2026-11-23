@@ -2142,6 +2142,8 @@ export const TI = {
     'ቆጸራታትን ምርግጋጽ ጽዕነትን ኣብዚ መርበብ ከም ንድፊ ይዕቀቡ፡ ገጹ ደጊምኩም ክትከፍቱ ከለኹም ይምለሱ።',
   'Sair na mesma': 'ብኡ ውጻእ',
   'Ficar e gravar': 'ጽናሕ እሞ ዓቅብ',
+  'Ampliar': 'ኣዕቢ',
+  'Duplo clique para ampliar': 'ንምዕባይ ክልተ ግዜ ጠውቑ',
   'Deixou de comprar: {a}': 'ምግዛእ ዘቋረጾ፦ {a}',
   'Plano de cargas de {d}: confirmar e publicar': 'መደብ ጽዕነት ናይ {d}፦ ኣረጋግጽ እሞ ዘርግሕ',
   'Propor também: {a}': 'ከምኡ እውን ኣቕርብ፦ {a}',

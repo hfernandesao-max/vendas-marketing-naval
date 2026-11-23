@@ -1,5 +1,24 @@
 ## 23-11-2026
 
+### Funções do Michael Samson e do Nathan Alemayehu
+
+<!-- tipo: melhoria -->
+
+- Nova função «Responsável da área de negócio»: tudo o que a Direcção e a Direcção comercial vêem e fazem, sem a administração do portal e sem configurações.
+  - Ficam de fora: acessos, actualizações, módulos, conformidade, registos, utilizadores, configuração, gestão das zonas e administração dos equipamentos.
+  - Os parâmetros do valor do portal e o calendário ficam só para consulta.
+- **Michael Samson** (na instalação): Responsável da área de negócio, com a aprovação final da caixa, o fecho das conciliações e o ficheiro SAP.
+- **Nathan Alemayehu** (na instalação): coordenação de todos os vendedores, aprovação das contagens (1.º nível) e das PO, e Controlo de stock.
+  - Passa a autorizar os pedidos de acesso de vendedor, de «Contar as carrinhas» e de «Controlo de stock».
+
+### Gráficos do painel ampliados com duplo clique
+
+<!-- tipo: melhoria -->
+
+- Duplo clique num gráfico do painel, ou no título do quadro, abre-o em ecrã inteiro. Fica desenhado à largura da janela, com a tabela dos dados por baixo.
+- Também há o botão «Ampliar», para o teclado e o telemóvel. Esc, «Fechar» ou um clique fora fecham.
+- O Manuel Queia recebe na instalação as funções «Controlo de stock» e «Contar as carrinhas».
+
 ### Função «Controlo de stock»
 
 <!-- tipo: funcionalidade -->

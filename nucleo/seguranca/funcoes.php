@@ -54,6 +54,13 @@ const NAVAL_CONTAS_AJUSTES = [
     '2026-11-nathan-alemayehu' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD'], 'dono_de' => [], 'pedido' => 'HF, 18-11-2026'],
     // o coordenador aprova as PO para a carga no cais
     '2026-11-nathan-po' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD', 'C-PO-APROVAR'], 'dono_de' => [], 'pedido' => 'HF, 20-11-2026'],
+    // controlo de stock (todos os armazéns e carrinhas por artigo, vendas por artigo) e contagem das carrinhas
+    // responsável máximo da área de negócio RTM: todos os módulos de gestão, sem administração nem configurações
+    '2026-11-michael-responsavel' => ['nome' => 'Michael Samson', 'funcoes' => ['P-RESP', 'C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR'], 'dono_de' => [], 'pedido' => 'HF, 23-11-2026'],
+    // responsável de todos os vendedores: coordena, aprova as contagens (1.º nível) e as PO e vê todo o stock; autoriza
+    // os pedidos de acesso de vendedor, de contagem e de controlo de stock
+    '2026-11-nathan-stock' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD', 'C-PO-APROVAR', 'P-STOCK'], 'dono_de' => ['P-PRO', 'C-CONC-CONTAR', 'P-STOCK'], 'pedido' => 'HF, 23-11-2026'],
+    '2026-11-manuel-queia' => ['nome' => 'Manuel Queia', 'funcoes' => ['P-STOCK', 'C-CONC-CONTAR'], 'dono_de' => [], 'pedido' => 'HF, 23-11-2026'],
 ];
 
 /** Catálogo inicial: as funções-base copiam os perfis do sistema; as complementares juntam-se a elas. */
@@ -103,6 +110,18 @@ function naval_funcoes_iniciais(): array
     $f['P-STOCK'] = ['nome' => 'Controlo de stock', 'descricao' => 'Consulta do stock de todos os armazéns e carrinhas por artigo e das vendas por artigo.',
         'tipo' => 'base', 'permissoes' => ['pagina-principal' => 'V', 'stock-armazem' => 'E', 'stock-carrinha' => 'E', 'vendas-artigo' => 'E', 'suporte' => 'V'],
         'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
+    // Responsável da área de negócio: tudo o que a Direcção e a Direcção comercial vêem e fazem (o nível mais alto de
+    // cada uma), sem a administração do portal nem configurações (menor privilégio, ISO/IEC 27001:2022 A.5.15 e A.8.2):
+    // fora acessos, actualizações, módulos, conformidade, registos, utilizadores, configuração, gestão das zonas e
+    // administração dos equipamentos; os parâmetros do valor do portal e o calendário ficam só para consulta. As
+    // aprovações (caixa final, fecho das conciliações, ficheiro SAP) juntam-se pelas funções complementares.
+    $ordem = NAVAL_ORDEM_NIVEIS;
+    $resp = $dePerfil('COM');
+    foreach ($dePerfil('DIR') as $rec => $n) if (!isset($resp[$rec]) || $ordem[$n] > $ordem[$resp[$rec]]) $resp[$rec] = $n;
+    foreach (['acessos', 'actualizacoes', 'modulos', 'conformidade', 'registos', 'admin-utilizadores', 'admin-config', 'geo-zonas-gerir', 'equipamentos-administrar'] as $rec) unset($resp[$rec]);
+    foreach (['valor-portal', 'calendario'] as $rec) if (isset($resp[$rec])) $resp[$rec] = 'V';
+    $f['P-RESP'] = ['nome' => 'Responsável da área de negócio', 'descricao' => 'Todos os módulos de gestão (vendas, clientes, terreno, logística, cobranças, inteligência), sem administração nem configurações.',
+        'tipo' => 'base', 'permissoes' => $resp, 'por_rota' => false, 'dois_passos' => true, 'conflitos' => [], 'activo' => true];
     $comp = function (string $nome, string $desc, array $perm, array $conflitos = [], bool $mfa = false) {
         return ['nome' => $nome, 'descricao' => $desc, 'tipo' => 'complementar', 'permissoes' => $perm, 'por_rota' => false,
             'dois_passos' => $mfa, 'conflitos' => $conflitos, 'activo' => true];

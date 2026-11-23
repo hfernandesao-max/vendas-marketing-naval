@@ -267,7 +267,8 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
   // Acções com ícone e texto; no painel num só ecrã fica só o ícone (o nome vai na dica e no leitor de ecrã)
   const ICO_TAB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 14.5h16M10 10v9"/></svg>',
     ICO_GRAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11M10 19V6M15 19v-5M20 19V9M3 19h18"/></svg>',
-    ICO_IR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    ICO_IR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    ICO_AMP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
   const acc = el('div', 'viz-acc');
   const bt = el('button', 'linkbtn');
   bt.type = 'button';
@@ -279,7 +280,11 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
     b.setAttribute('aria-label', txt + ' · ' + titulo);
   };
   rotulo(bt, ICO_TAB, t('Tabela'));
-  acc.append(bt);
+  // ampliar: o gráfico em ecrã inteiro, desenhado ao tamanho da janela, com a tabela dos dados por baixo
+  const amp = el('button', 'linkbtn');
+  amp.type = 'button';
+  rotulo(amp, ICO_AMP, t('Ampliar'));
+  acc.append(bt, amp);
   if (destino) {
     const a = el('a', 'linkbtn');
     a.href = '#' + destino;
@@ -311,6 +316,49 @@ export function cartaoGrafico({ titulo, sub, destino, desenhar, colunas, linhas 
     rotulo(bt, ver ? ICO_GRAF : ICO_TAB, ver ? t('Gráfico') : t('Tabela'));
   });
   c.append(h, corpo, tb);
+  const ampliar = () => {
+    const d = el('dialog', 'viz-exp');
+    d.setAttribute('aria-label', titulo);
+    const cab = el('div', 'viz-exp-cab');
+    const tx = el('div');
+    tx.append(el('h2', null, titulo));
+    if (sub) tx.append(el('p', null, sub));
+    const fechar = el('button', 'btn sm', t('Fechar'));
+    fechar.type = 'button';
+    fechar.addEventListener('click', () => d.close());
+    cab.append(tx, fechar);
+    const area = el('div', 'viz-exp-graf');
+    const dados = el('div', 'viz-exp-tab tw');
+    dados.append(tab.cloneNode(true));
+    d.append(cab, area, dados);
+    const redesenhar = () => {
+      const w = Math.max(320, Math.floor(area.clientWidth)),
+        hh = Math.max(260, Math.floor(window.innerHeight * 0.55));
+      area.replaceChildren(desenhar(w, hh));
+    };
+    let rz;
+    const aoMudar = () => {
+      clearTimeout(rz);
+      rz = setTimeout(redesenhar, 120);
+    };
+    window.addEventListener('resize', aoMudar);
+    d.addEventListener('close', () => {
+      window.removeEventListener('resize', aoMudar);
+      setTimeout(() => d.remove(), 0);
+      amp.focus();
+    });
+    d.addEventListener('click', (e) => {
+      if (e.target === d) d.close(); // clique fora fecha
+    });
+    document.body.append(d);
+    d.showModal();
+    redesenhar();
+  };
+  amp.addEventListener('click', ampliar);
+  // duplo clique no gráfico (ou no título do quadro) amplia
+  corpo.addEventListener('dblclick', ampliar);
+  hd.addEventListener('dblclick', ampliar);
+  corpo.title = t('Duplo clique para ampliar');
   // Desenhado ao tamanho real do quadro; no painel num só ecrã também à altura disponível
   let ultima = '';
   FITS.push(() => {

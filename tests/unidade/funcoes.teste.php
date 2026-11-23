@@ -210,9 +210,10 @@ teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, c
         @unlink(naval_funcoes_ficheiro_ajustes());
         naval_funcoes(true);
         $u = naval_utilizadores();
-        igual(['C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR', 'P-COM'], $u['michael.samson']['funcoes']);
+        // as reconfigurações aplicam-se por ordem: a última de cada pessoa é a que fica
+        igual(['C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR', 'P-RESP'], $u['michael.samson']['funcoes']);
         igual(naval_funcoes_codigo($u['michael.samson']['funcoes']), $u['michael.samson']['perfil']);
-        igual(['C-CONC-COORD', 'C-PO-APROVAR', 'P-COORD'], $u['nathan']['funcoes']);
+        igual(['C-CONC-COORD', 'C-PO-APROVAR', 'P-COORD', 'P-STOCK'], $u['nathan']['funcoes']);
         igual([], $u['nathan']['rotas'], 'todas as rotas');
         $m = naval_matriz(true);
         igual('G', $m['caixa-aprovacao-final'][$u['michael.samson']['perfil']]);
@@ -225,6 +226,10 @@ teste('contas: reconfiguração pedida pelo SADM aplica-se uma vez, pelo nome, c
         $f = naval_funcoes();
         igual('michael.samson', $f['C-CONC-COORD']['dono']);
         igual('michael.samson', $f['P-COORD']['dono']);
+        igual('nathan', $f['P-PRO']['dono'], 'o Nathan, responsável dos vendedores, autoriza os pedidos de vendedor');
+        igual('nathan', $f['C-CONC-CONTAR']['dono']);
+        igual('', $m['acessos'][$u['michael.samson']['perfil']] ?? '', 'o Michael não administra o portal');
+        igual('E', $m['stock-carrinha'][$u['nathan']['perfil']], 'o Nathan vê todo o stock');
         igual('', (string) ($f['C-SAP-EXPORTAR']['dono'] ?? ''));
         $r = naval_json_ler(naval_funcoes_ficheiro_ajustes());
         igual(['perfil' => 'DIR', 'funcoes' => []], $r['2026-11-michael-samson']['antes']);
@@ -256,4 +261,18 @@ teste('função «Controlo de stock»: só o stock de todos os armazéns e carri
     igual([true, false, 'base'], [$f['dois_passos'], $f['por_rota'], $f['tipo']]);
     foreach (['caixa-marketing', 'clientes', 'documentos', 'pagamentos', 'acessos', 'conciliacao-carrinha', 'requisicoes-carrinha', 'excel-completo'] as $r)
         igual(false, isset($f['permissoes'][$r]), 'sem ' . $r);
+});
+
+teste('função «Responsável da área de negócio»: todos os módulos de gestão, sem administração nem configurações; combinações do Michael e do Nathan permitidas', function () {
+    $f = naval_funcoes_iniciais();
+    $p = $f['P-RESP']['permissoes'];
+    foreach (['acessos', 'actualizacoes', 'modulos', 'conformidade', 'registos', 'admin-utilizadores', 'admin-config', 'geo-zonas-gerir', 'equipamentos-administrar'] as $r)
+        igual(false, isset($p[$r]), 'sem ' . $r);
+    igual(['V', 'V'], [$p['valor-portal'] ?? 'V', $p['calendario'] ?? 'V'], 'parâmetros e calendário só para consulta');
+    foreach (['vendas-artigo', 'perdas', 'relatorio-vendas', 'stock-armazem', 'conciliacao-carrinha', 'pendentes'] as $r) verdade(isset($p[$r]), 'com ' . $r);
+    igual(true, $f['P-RESP']['dois_passos']);
+    igual([], naval_funcoes_conflitos(['P-RESP', 'C-CAIXA-APROVAR', 'C-CONC-FECHO', 'C-SAP-EXPORTAR']), 'Michael');
+    igual([], naval_funcoes_conflitos(['P-COORD', 'C-CONC-COORD', 'C-PO-APROVAR', 'P-STOCK']), 'Nathan');
+    igual([], naval_funcoes_conflitos(['P-STOCK', 'C-CONC-CONTAR']), 'Manuel');
+    verdade((bool) naval_funcoes_conflitos(['C-CONC-CONTAR', 'C-CONC-COORD']), 'quem conta não aprova a contagem');
 });

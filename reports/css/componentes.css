@@ -5923,3 +5923,43 @@ body.apres-lado {
   font-size: 12px;
   color: var(--muted);
 }
+/* gráfico ampliado (duplo clique ou «Ampliar»): ecrã inteiro com a tabela dos dados por baixo */
+dialog.viz-exp {
+  width: min(96vw, 1600px);
+  max-width: none;
+  height: min(94vh, 1100px);
+  max-height: none;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--bg2);
+  color: var(--fg);
+  overflow: auto;
+}
+dialog.viz-exp::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+.viz-exp-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.viz-exp-cab h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.viz-exp-cab p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.viz-exp-graf {
+  width: 100%;
+}
+.viz-exp-tab {
+  margin-top: 16px;
+}
+.viz-corpo {
+  cursor: zoom-in;
+}

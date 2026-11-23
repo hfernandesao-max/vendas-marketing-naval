@@ -340,3 +340,27 @@ test('alertas: assumir, resolver com a nota do que foi feito, filtro Activos/Tra
   await expect(tratado.locator('.gst-trat-h li')).toHaveCount(2);
   expect(erros).toEqual([]);
 });
+
+test('painel: duplo clique num gráfico amplia-o em ecrã inteiro, com a tabela dos dados; Esc fecha', async ({ page }) => {
+  const erros = await abrir(page, '#inicio');
+  const corpo = page.locator('.viz-card .viz-corpo').first();
+  await expect(corpo.locator('svg')).toBeVisible();
+  await corpo.dblclick();
+  const d = page.locator('dialog.viz-exp');
+  await expect(d).toBeVisible();
+  await expect(d.locator('.viz-exp-graf svg')).toBeVisible();
+  await expect(d.locator('.viz-exp-tab table')).toHaveCount(1);
+  // ampliado: o gráfico usa a largura da janela
+  const [larg, janela] = await d.evaluate((x) => [x.querySelector('.viz-exp-graf svg').getBoundingClientRect().width, window.innerWidth]);
+  expect(larg).toBeGreaterThan(janela * 0.6);
+  await page.keyboard.press('Escape');
+  await expect(d).toHaveCount(0);
+  // também pelo botão «Ampliar»
+  await page
+    .locator('.viz-card')
+    .first()
+    .getByRole('button', { name: /Ampliar/ })
+    .click();
+  await expect(page.locator('dialog.viz-exp')).toBeVisible();
+  expect(erros).toEqual([]);
+});
