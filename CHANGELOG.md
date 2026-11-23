@@ -1,5 +1,13 @@
 ## 23-11-2026
 
+### Segurança: revisão semanal (anotações do Semgrep e teste no PHP 7.1)
+
+<!-- tipo: impacto -->
+
+- **Actualizador do servidor** (`ferramentas/actualizar.php`, `nucleo/servicos/actualizacao.php`): só comentários `nosemgrep` com justificação nas chamadas a comandos já escapadas ou validadas; sem alteração de comportamento.
+- **Restantes anotações** (ferramentas, scripts do CI, testes, `mudancas.php`, `descoberta.php`, `notificacoes.php`, ícones SVG estáticos): falsos positivos revistos caso a caso.
+- **Teste do risco por vendedor** compatível com o PHP 7.1 (sem `array_key_first`), com a mesma verificação.
+
 ### Agentes autónomos: fecho do dia, reposição, risco por vendedor e relatório semanal
 
 <!-- tipo: funcionalidade -->
