@@ -37,3 +37,20 @@ test('entrega de dinheiro: o vendedor declara só nas suas rotas; a tesouraria v
   const c = await (await fin.get(API + 'caixa?dia=' + hoje)).json();
   expect(c.declaracoes['1002'].total).toBe(11050);
 });
+
+test('apps: o super administrador pode instalar todas (escolhe qual); os outros só as do seu perfil', async () => {
+  const sadm = (await entrar('sadm')).ctx;
+  const v = await (await sadm.get(API + 'app-telemovel')).json();
+  expect(v.apps.map((a) => a.app)).toEqual(['gestao', 'operacoes', 'portal']);
+  const pedir = async (ctx, app) => {
+    const r = await ctx.post(API + 'app-telemovel', { data: { accao: 'codigo', app, csrf: await csrf(ctx) } });
+    return { status: r.status(), json: await r.json() };
+  };
+  const g = await pedir(sadm, 'operacoes');
+  expect(g.status).toBe(200);
+  expect(g.json.app).toBe('operacoes');
+  // o vendedor só tem a app de operações: não pode pedir a de gestão
+  const pro = (await entrar('pro')).ctx;
+  expect((await (await pro.get(API + 'app-telemovel')).json()).apps.map((a) => a.app)).toEqual(['operacoes']);
+  expect((await pedir(pro, 'gestao')).status).toBe(403);
+});

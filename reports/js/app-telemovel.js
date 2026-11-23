@@ -47,11 +47,34 @@ export function abrirAppTelemovel() {
           'Toque na ligação que aparece e siga os passos (iPhone: Partilhar › Adicionar ao ecrã principal; Android: Instalar).',
           'Abra a app pelo ícone: fica activada e pede o Face ID ou a impressão digital.',
         ].forEach((x) => passos.append(el('li', null, t(x))));
-        const aviso = el('p', 'app-nota', t('Cada pessoa tem um equipamento activo: activar a app noutro telemóvel desactiva o anterior.'));
-        b.append(estado, zona, passos, aviso, erro);
+        const aviso = el('p', 'app-nota', t('Cada pessoa tem um equipamento activo por app: activar a mesma app noutro telemóvel desactiva o anterior.'));
+        // mais de uma app (ex.: o super administrador): escolhe qual instalar
+        let escolhida = d.app;
+        const apps = d.apps || [];
+        const seg = el('div', 'app-escolha');
+        if (apps.length > 1) {
+          seg.setAttribute('role', 'radiogroup');
+          seg.setAttribute('aria-label', t('App a instalar'));
+          apps.forEach((a) => {
+            const bt = botao(a.nome, 'ghost sm' + (a.app === escolhida ? ' on' : ''), () => {
+              escolhida = a.app;
+              seg.querySelectorAll('button').forEach((x) => {
+                x.classList.toggle('on', x === bt);
+                x.setAttribute('aria-checked', x === bt ? 'true' : 'false');
+              });
+              zona.replaceChildren();
+            });
+            bt.setAttribute('role', 'radio');
+            bt.setAttribute('aria-checked', a.app === escolhida ? 'true' : 'false');
+            seg.append(bt);
+          });
+          const activas = Object.keys(d.meus || {}).map((k) => (apps.find((a) => a.app === k) || { nome: k }).nome);
+          if (activas.length) estado.append(el('span', null, t('Apps activas: {a}', { a: activas.join(', ') })));
+        }
+        b.append(...(apps.length > 1 ? [el('b', null, t('App a instalar')), seg] : []), estado, zona, passos, aviso, erro);
         const gerar = botao(t(d.meu ? 'Gerar código para outro telemóvel' : 'Gerar código QR'), '', () => {
           gerar.disabled = true;
-          Promise.all([postJson('app-telemovel', { accao: 'codigo' }), carregarScript('qrcode.js', 'qrcode')]).then(([r]) => {
+          Promise.all([postJson('app-telemovel', { accao: 'codigo', app: escolhida }), carregarScript('qrcode.js', 'qrcode')]).then(([r]) => {
             gerar.disabled = false;
             if (!r || !r.ok) {
               erro.textContent = t((r && r.erro) || 'Sem resposta do servidor.');

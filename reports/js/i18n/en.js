@@ -2171,6 +2171,10 @@ export const EN = {
     'Counts and load checks stay as a draft in this browser and come back when you open the page again.',
   'Sair na mesma': 'Leave anyway',
   'Ficar e gravar': 'Stay and save',
+  'Cada pessoa tem um equipamento activo por app: activar a mesma app noutro telemóvel desactiva o anterior.':
+    'Each person has one active device per app: activating the same app on another phone deactivates the previous one.',
+  'App a instalar': 'App to install',
+  'Apps activas: {a}': 'Active apps: {a}',
   Ampliar: 'Enlarge',
   'Duplo clique para ampliar': 'Double-click to enlarge',
   'Deixou de comprar: {a}': 'Stopped buying: {a}',

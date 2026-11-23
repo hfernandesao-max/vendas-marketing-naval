@@ -17,10 +17,16 @@ $admin = naval_pode('admin-utilizadores');
 
 if (!naval_e_post()) {
     $lista = naval_app_lista();
-    $meu = null;
-    foreach ($lista as $x) if ($x['login'] === $login && $x['estado'] === 'activo' && naval_app_activo($x['id'])) $meu = naval_app_resumo($x);
-    $app = naval_app_da_conta();
-    $r = ['ok' => true, 'meu' => $meu, 'app' => $app, 'nome' => NAVAL_APP_NOMES[$app], 'nesta_app' => !empty($_SESSION['app_equipamento'])];
+    $disp = naval_app_disponiveis();
+    $app = $disp[0];
+    // um equipamento activo por app: o de cada app que a pessoa pode instalar
+    $meus = [];
+    foreach ($lista as $x) {
+        if ($x['login'] === $login && $x['estado'] === 'activo' && naval_app_activo($x['id'])) $meus[(string) ($x['app'] ?? $app)] = naval_app_resumo($x);
+    }
+    $meu = $meus[$app] ?? (reset($meus) ?: null);
+    $r = ['ok' => true, 'meu' => $meu, 'meus' => (object) $meus, 'app' => $app, 'nome' => NAVAL_APP_NOMES[$app],
+        'apps' => array_map(function ($a) { return ['app' => $a, 'nome' => NAVAL_APP_NOMES[$a]]; }, $disp), 'nesta_app' => !empty($_SESSION['app_equipamento'])];
     if ($admin) {
         $nomes = [];
         foreach (naval_utilizadores() as $l => $u) $nomes[$l] = (string) ($u['nome'] ?? $l);
@@ -36,7 +42,11 @@ $p = naval_pedido();
 naval_exigir_csrf($p);
 $accao = (string) ($p['accao'] ?? '');
 if ($accao === 'codigo') {
-    naval_json(['ok' => true] + naval_app_codigo_novo($login, naval_app_da_conta()));
+    // a app escolhida (só entre as que a pessoa pode instalar); sem escolha, a de omissão
+    $disp = naval_app_disponiveis();
+    $app = (string) ($p['app'] ?? $disp[0]);
+    if (!in_array($app, $disp, true)) throw new NavalErro('O seu perfil não permite instalar esta app.', 403);
+    naval_json(['ok' => true] + naval_app_codigo_novo($login, $app));
 }
 if ($accao === 'desactivar') {
     $id = (string) ($p['id'] ?? '');

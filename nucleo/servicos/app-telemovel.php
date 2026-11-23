@@ -8,7 +8,9 @@
  * Regras:
  *  - o código QR é pessoal, de uso único, válido 10 minutos e só se gera numa sessão autenticada do portal;
  *  - a app só funciona depois de activada com esse código (servidor: a sessão da app fica ligada ao equipamento);
- *  - um equipamento activo por pessoa: activar noutro desactiva o anterior (registado e avisado por correio);
+ *  - um equipamento activo por pessoa e por app: activar a mesma app noutro telemóvel desactiva o anterior (registado
+ *    e avisado por correio); quem pode usar mais de uma app (ex.: o super administrador, que desenvolve e testa a
+ *    plataforma) escolhe qual instala e pode ter as duas no mesmo telemóvel;
  *  - o equipamento activo renova-se sozinho com o uso e expira após 90 dias sem uso;
  *  - a biometria nunca sai do telemóvel: o servidor guarda só a chave pública e confirma a assinatura.
  */
@@ -30,8 +32,22 @@ require_once __DIR__ . '/../seguranca/jwt.php';   // naval_b64url e naval_b64url
 /** App de cada perfil: a app de gestão para quem a tem na matriz de acessos; as restantes pessoas, o portal. */
 function naval_app_da_conta(): string
 {
-    if (naval_pode('app-gestao')) return 'gestao';
-    return naval_app_operacoes_tarefas() ? 'operacoes' : 'portal';
+    return naval_app_disponiveis()[0];
+}
+
+/**
+ * Apps que a conta pode instalar, pela matriz de acessos (a primeira é a de omissão): a de gestão com «App de
+ * gestão»; a de operações com alguma tarefa (entrega, contagem, carga, clientes do dia); senão o portal. O super
+ * administrador tem tudo e pode instalar todas (desenvolvimento e testes da plataforma); dentro de cada app o servidor
+ * continua a validar cada acção.
+ */
+function naval_app_disponiveis(): array
+{
+    $out = [];
+    if (naval_pode('app-gestao')) $out[] = 'gestao';
+    if (naval_app_operacoes_tarefas()) $out[] = 'operacoes';
+    if (!$out || naval_perfil() === 'SADM') $out[] = 'portal';
+    return $out;
 }
 
 /**
@@ -250,7 +266,8 @@ function naval_app_activar(string $codigo, string $ua, string $ip): array
         $id = bin2hex(random_bytes(12));
         $anteriores = [];
         foreach ($l as $k => $x) {
-            if (($x['login'] ?? '') === $c['login'] && ($x['estado'] ?? '') === 'activo') {
+            // um equipamento activo por pessoa e por app (as apps antigas sem «app» contam como a mesma)
+            if (($x['login'] ?? '') === $c['login'] && ($x['estado'] ?? '') === 'activo' && (string) ($x['app'] ?? $c['app']) === (string) $c['app']) {
                 $l[$k]['estado'] = 'substituido';
                 $l[$k]['fim'] = date('Y-m-d H:i:s');
                 $l[$k]['motivo'] = 'novo_equipamento';

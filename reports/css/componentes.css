@@ -5983,3 +5983,14 @@ dialog.viz-exp::backdrop {
 .viz-corpo {
   cursor: zoom-in;
 }
+/* escolha da app a instalar (quem pode usar mais de uma) */
+.app-escolha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 12px;
+}
+.app-escolha .btn.on {
+  background: var(--accent);
+  color: #fff;
+}

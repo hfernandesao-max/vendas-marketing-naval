@@ -1,5 +1,13 @@
 ## 23-11-2026
 
+### Apps no telemóvel: escolher qual instalar e um telemóvel activo por app
+
+<!-- tipo: melhoria -->
+
+- Quem pode usar mais de uma app escolhe qual instala em «App no telemóvel»: Naval Gestão, Naval Operações ou o portal. É o caso do super administrador, que desenvolve e testa a plataforma.
+- Passa a haver um telemóvel activo por pessoa **e por app**: as duas apps podem estar no mesmo telemóvel. Activar a mesma app noutro telemóvel continua a desactivar o anterior.
+- Ninguém pode pedir o código de uma app que o seu perfil não permite. Dentro de cada app, o servidor continua a validar cada acção.
+
 ### Conciliação: vendas facturadas depois da contagem, com o contado devolvido ao armazém
 
 <!-- tipo: correcao -->

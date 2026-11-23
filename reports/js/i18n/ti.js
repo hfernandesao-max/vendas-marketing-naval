@@ -2142,6 +2142,10 @@ export const TI = {
     'ቆጸራታትን ምርግጋጽ ጽዕነትን ኣብዚ መርበብ ከም ንድፊ ይዕቀቡ፡ ገጹ ደጊምኩም ክትከፍቱ ከለኹም ይምለሱ።',
   'Sair na mesma': 'ብኡ ውጻእ',
   'Ficar e gravar': 'ጽናሕ እሞ ዓቅብ',
+  'Cada pessoa tem um equipamento activo por app: activar a mesma app noutro telemóvel desactiva o anterior.':
+    'ነፍሲ ወከፍ ሰብ ንሓደ ኣፕ ሓደ ንጡፍ መሳርሒ ኣለዎ፡ ተመሳሳሊ ኣፕ ኣብ ካልእ ሞባይል ምንቃሕ ነቲ ዝነበረ የጥፍኦ።',
+  'App a instalar': 'ዝተኸል ኣፕ',
+  'Apps activas: {a}': 'ንጡፋት ኣፕታት፦ {a}',
   Ampliar: 'ኣዕቢ',
   'Duplo clique para ampliar': 'ንምዕባይ ክልተ ግዜ ጠውቑ',
   'Deixou de comprar: {a}': 'ምግዛእ ዘቋረጾ፦ {a}',
