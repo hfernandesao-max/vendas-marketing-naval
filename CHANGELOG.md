@@ -1,5 +1,16 @@
 ## 23-11-2026
 
+### Agentes autónomos: fecho do dia, reposição, risco por vendedor e relatório semanal
+
+<!-- tipo: funcionalidade -->
+
+- **Agente do fecho do dia:** ao fim da janela do fecho (16:00 pelo calendário), cada vendedor com vendas hoje recebe no telemóvel o passo exacto que lhe falta: sincronizar o telemóvel, registar na app as notas que entrega, ou que a carrinha ainda não foi contada.
+- **Reposição automática:** a PO criada pela contagem validada sai emitida sozinha e, dentro das regras, aprovada sozinha. Sem stock confirmado ou sem ligação ao Pinguim BO, fica em rascunho para o vendedor.
+- **Risco por vendedor (0 a 100):** junta anulados, faltas na carrinha, falta de dinheiro na entrega, descontos e notas de crédito, cada um face à mediana das rotas. Aparece na página das perdas, com os factores na dica. Todas as manhãs, as rotas acima de 60 vão à Direcção, com a sugestão de recontagem surpresa.
+- **Clientes do dia na app do vendedor (Naval Operações):** os clientes do dia habitual e os de compra em atraso, os parados primeiro, com a encomenda sugerida, os artigos que deixaram de comprar e o que propor também.
+- **Plano de cargas nos pendentes:** o plano de amanhã proposto às 18:00 e ainda por publicar aparece à Logística, e fica atrasado a partir das 19:30.
+- **Relatório semanal à Direcção**, à segunda-feira às 07:30: vendas da semana face à anterior por rota, perdas, tempo parado e risco, com três parágrafos escritos pela IA (se configurada).
+
 ### Perdas e tempo parado, calendário editável e navegação por ligações
 
 <!-- tipo: funcionalidade -->

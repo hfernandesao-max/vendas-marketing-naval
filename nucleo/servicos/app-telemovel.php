@@ -42,6 +42,7 @@ function naval_app_operacoes_tarefas(): array
 {
     return array_keys(array_filter([
         'entrega' => naval_pode('caixa-entrega', 'G'),
+        'visitas' => naval_pode('caixa-entrega', 'G') && naval_pode('visitas-dia'),
         'contagem' => naval_pode('conciliacao-carrinha', 'G'),
         'carga' => naval_pode('requisicoes-carrinha', 'G') && naval_pode('cargas-po', 'V'),
     ]));

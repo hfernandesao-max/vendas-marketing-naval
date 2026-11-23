@@ -1526,6 +1526,8 @@ function naval_carr_validar(string $data, string $rota, array $eu): array
         $req = null;
         try {
             $q = naval_req_da_conciliacao($data, $rota, $linhas, (string) $eu['login']);
+            // reposição automática: emitida e, dentro das regras, aprovada sozinha
+            if ($q) $q = naval_req_reposicao_auto($q);
             $req = $q ? $q['numero'] : null;
         } catch (Throwable $e) {
             error_log('[requisicao conciliacao] ' . $e->getMessage());

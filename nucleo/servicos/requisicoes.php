@@ -177,6 +177,22 @@ function naval_req_da_conciliacao(string $data, string $rota, array $linhasConci
     });
 }
 
+/**
+ * Reposição automática (REQ_EMISSAO_AUTOMATICA=0 desliga): a PO criada pela contagem validada sai emitida sozinha
+ * («automatico»); dentro das regras aprova-se também sozinha (naval_req_emitir). Sem stock confirmado ou com o
+ * Pinguim BO em baixo, fica em rascunho para o vendedor (nada se perde). Devolve a PO.
+ */
+function naval_req_reposicao_auto(array $r): array
+{
+    if (naval_config('REQ_EMISSAO_AUTOMATICA', '1') === '0' || ($r['estado'] ?? '') !== 'rascunho') return $r;
+    try {
+        return naval_req_emitir((string) $r['numero'], (int) $r['versao'], 'automatico');
+    } catch (Throwable $e) {
+        error_log('[reposição automática] ' . $r['numero'] . ': ' . $e->getMessage());
+        return $r;
+    }
+}
+
 /** Número da requisição criada pela conciliação de uma rota e dia (ou null). */
 function naval_req_da_conciliacao_numero(string $data, string $rota): ?string
 {

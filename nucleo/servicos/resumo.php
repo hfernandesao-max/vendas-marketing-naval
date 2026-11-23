@@ -294,6 +294,20 @@ function naval_periodicas(?int $agora = null): array
             error_log('[sala] ' . $e->getMessage());
         }
     }
+    // agentes autónomos: fecho do dia (16:00), risco por vendedor (07:45) e relatório semanal (segunda, 07:30)
+    try {
+        naval_servico('agentes');
+        foreach (['fecho' => 'naval_ag_fecho', 'risco' => 'naval_ag_risco_ciclo', 'semanal' => 'naval_ag_semanal'] as $k => $fn) {
+            try {
+                $x = $fn($agora);
+                if ($x) $feito['agente_' . $k] = $x;
+            } catch (Throwable $e) {
+                error_log('[agente ' . $k . '] ' . $e->getMessage());
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[agentes] ' . $e->getMessage());
+    }
     // véspera de um feriado ou folga da empresa: aviso a vendedores e Logística (17:30)
     try {
         $vs = naval_cal_aviso_vespera($agora);

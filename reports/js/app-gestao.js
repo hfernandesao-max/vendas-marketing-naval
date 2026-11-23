@@ -759,6 +759,7 @@ function textoPendente(x, nomes) {
         .filter(Boolean)
         .join(' · '),
     ];
+  if (x.tipo === 'plano') return [t('Plano de cargas de {d}: confirmar e publicar', { d }), t('{n} rotas', { n: n0(x.rotas) })];
   if (x.tipo === 'entrega')
     return [
       t('Rota {r}: contar o dinheiro entregue', { r: x.rota }),

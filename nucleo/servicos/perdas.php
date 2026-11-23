@@ -219,5 +219,7 @@ function naval_perdas_vista(string $de, string $ate, ?array $rotas): array
     usort($anul, function ($a, $b) { return strcmp($b['data'], $a['data']); });
     $carrDif = array_values(array_filter($carr, function ($c) { return $c['falta_kz'] > 0 || $c['sobra_kz'] > 0; }));
     usort($carrDif, function ($a, $b) { return $b['falta_kz'] <=> $a['falta_kz']; });
+    naval_servico('agentes');
+    $j['risco'] = (object) naval_ag_risco($j['rotas']);
     return ['de' => $de, 'ate' => $ate, 'fontes' => $fontes] + $j + ['anulados' => array_slice($anul, 0, 200), 'faltas' => array_slice($carrDif, 0, 200), 'entregas' => $ent];
 }

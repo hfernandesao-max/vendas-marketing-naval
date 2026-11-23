@@ -62,6 +62,18 @@ function naval_pendentes(string $login, ?array $rotas, array $pode, int $agora, 
                 'diferenca' => isset($c['diferenca']) ? round((float) $c['diferenca'], 2) : null, 'atraso' => $dia < $hoje, 'url' => '../reports/#caixa-marketing'];
         }
     }
+    // ── plano de cargas de amanhã proposto às 18:00 e ainda por publicar (Logística) ──
+    if (!empty($pode['plano']) && $hm >= naval_config('PLANO_HORA_PROPOSTA', '18:00')) {
+        $amanha = date('Y-m-d', strtotime($hoje . ' 12:00') + 86400);
+        if (!naval_cal_folga($amanha)) {
+            naval_servico('cargas');
+            $pl = naval_plano_ler($amanha);
+            if ($pl && empty($pl['publicado'])) {
+                $itens[] = ['tipo' => 'plano', 'dia' => $amanha, 'rotas' => count((array) ($pl['rotas'] ?? [])), 'atraso' => $hm >= naval_config('PLANO_HORA_LIMITE', '19:30'),
+                    'url' => '../reports/#plano-cargas'];
+            }
+        }
+    }
     // ── dinheiro entregue pelos vendedores (app Naval Operações) à espera da contagem da tesouraria ──
     if (!empty($pode['tesouraria'])) {
         naval_servico('caixa-entregas');
@@ -169,6 +181,7 @@ function naval_pendentes_conta(string $login): array
         'conferir' => naval_pode('requisicoes-carrinha', 'G') && naval_pode('cargas-po', 'V'),
         'validar' => naval_pode('validacao-carga', 'G'),
         'tesouraria' => naval_pode('caixa-marketing', 'G'),
+        'plano' => naval_pode('plano-cargas', 'G'),
     ], time());
 }
 
@@ -179,7 +192,7 @@ function naval_pendentes_permissoes(array $u): array
     $g = function (string $rec, string $min = 'G') use ($u) { return NAVAL_ORDEM_NIVEIS[naval_notif_nivel($u, $rec)] >= NAVAL_ORDEM_NIVEIS[$min]; };
     return ['caixa1' => $g('caixa-aprovacao'), 'caixa2' => $g('caixa-aprovacao-final'), 'contar' => $g('conciliacao-carrinha'),
         'coordenar' => $g('conciliacao-coordenacao'), 'fechar' => $g('conciliacao-fecho'), 'po' => $g('requisicoes-aprovacao'),
-        'conferir' => $g('requisicoes-carrinha') && $g('cargas-po', 'V'), 'validar' => $g('validacao-carga'), 'tesouraria' => $g('caixa-marketing')];
+        'conferir' => $g('requisicoes-carrinha') && $g('cargas-po', 'V'), 'validar' => $g('validacao-carga'), 'tesouraria' => $g('caixa-marketing'), 'plano' => $g('plano-cargas')];
 }
 
 /** Chave estável de um pendente (o mesmo trabalho visto por várias pessoas conta uma só vez no escalamento). */
@@ -196,6 +209,7 @@ function naval_pendente_texto(array $x): string
         case 'caixa': return 'Fecho de caixa de ' . $d . ': ' . ((int) ($x['nivel'] ?? 2) === 1 ? 'aprovar (1.º nível)' : 'aprovação final');
         case 'deposito': return 'Depósito no banco de ' . $d . ': aprovar (' . ($x['banco'] ?? '') . ', lacre ' . ($x['lacre'] ?? '') . ')';
         case 'po': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): aprovar para a carga';
+        case 'plano': return 'Plano de cargas de ' . $d . ': confirmar e publicar (' . (int) ($x['rotas'] ?? 0) . ' rotas)';
         case 'entrega': return 'Rota ' . $x['rota'] . ': contar o dinheiro entregue (' . number_format((float) $x['valor'], 0, ',', ' ') . ' Kz declarados)';
         case 'po_conferir': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): conferir a carga no cais';
         case 'po_validar': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): validar a carga conferida (Back-Office)';

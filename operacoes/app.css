@@ -197,3 +197,16 @@
   background: var(--grelha);
   color: var(--texto);
 }
+.op-sub {
+  margin: 8px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.op-lista {
+  margin: 0;
+  padding-left: 18px;
+}
+.op-cliente h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}

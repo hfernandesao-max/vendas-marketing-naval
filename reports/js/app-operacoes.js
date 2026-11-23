@@ -22,6 +22,7 @@ const hoje = () => {
 };
 const hora = (s) => (s ? String(s).slice(11, 16) : '');
 const TAREFAS = {
+  visitas: 'Clientes do dia',
   entrega: 'Entregar dinheiro',
   contagem: 'Contar a carrinha',
   carga: 'Carregar PO',
@@ -97,7 +98,48 @@ function desenhar() {
     c.append(el('p', 'ag-vazio', t('O seu perfil não tem tarefas nesta app.')));
     return;
   }
-  ({ entrega: vistaEntrega, contagem: vistaContagem, carga: vistaCarga })[E.tarefa](c);
+  ({ visitas: vistaVisitas, entrega: vistaEntrega, contagem: vistaContagem, carga: vistaCarga })[E.tarefa](c);
+}
+
+// ───────────── Clientes do dia (vendedor) ─────────────
+// A carteira calculada todas as noites (Pinguim BO): os clientes do dia habitual de compra e os de compra em atraso,
+// os parados primeiro, com a encomenda sugerida (o que costumam comprar), os artigos que deixaram de comprar e a
+// sugestão de venda cruzada. O vendedor chega ao cliente já a saber o que propor.
+const ESTADO_CLI = { parado: ['Parado', 'op-mau'], a_abrandar: ['A abrandar', 'op-mau'], em_dia: ['Em dia', 'op-ok'] };
+function vistaVisitas(c) {
+  apiJson('carteira?vista=visitas&dia=' + hoje()).then((d) => {
+    c.textContent = '';
+    if (!d || !d.ok) {
+      c.append(el('p', 'ag-vazio', t((d && d.erro) || 'Não foi possível ler os dados.')));
+      return;
+    }
+    const rotas = Object.entries(d.visitas || {});
+    if (!rotas.length) c.append(el('p', 'ag-vazio', t('Sem clientes previstos para hoje.')));
+    rotas.forEach(([rota, clientes]) => {
+      c.append(el('h2', 'ag-sec', t('Rota {r}', { r: rota }) + ' · ' + t('{n} clientes', { n: n0(clientes.length) })));
+      clientes.forEach((x) => {
+        const k = el('section', 'ag-cartao op-cliente');
+        const [est, cl] = ESTADO_CLI[x.estado] || [x.estado, ''];
+        const cab = el('h3', null, x.n || x.c);
+        const info = el('p', 'ag-nota');
+        info.append(
+          document.createTextNode(t(x.motivo) + ' · '),
+          el('span', cl, t(est)),
+          document.createTextNode(' · ' + t('compra média {v}', { v: kz(x.media) })),
+        );
+        k.append(cab, info);
+        if ((x.encomenda || []).length) {
+          k.append(el('p', 'op-sub', t('Encomenda sugerida')));
+          const ul = el('ul', 'op-lista');
+          x.encomenda.forEach((a) => ul.append(el('li', null, n0(a.q) + ' × ' + a.n)));
+          k.append(ul);
+        }
+        if ((x.deixou || []).length) k.append(el('p', 'op-mau', t('Deixou de comprar: {a}', { a: x.deixou.map((a) => a.n).join(', ') })));
+        if ((x.propor || []).length) k.append(el('p', 'ag-nota', t('Propor também: {a}', { a: x.propor.map((a) => a.n).join(', ') })));
+        c.append(k);
+      });
+    });
+  });
 }
 
 // ───────────── Entregar dinheiro (vendedor) ─────────────

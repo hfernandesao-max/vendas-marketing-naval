@@ -20,6 +20,8 @@ let chave = '';
 let aLer = false;
 const MAX = 31;
 const dias = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5) + 1;
+// indicadores da pontuação de risco (0 a 100; 60 ou mais avisa a Direcção todas as manhãs)
+const FATOR = { anulados: 'anulados', faltas: 'faltas na carrinha', entrega: 'falta de dinheiro na entrega', descontos: 'descontos', nc: 'notas de crédito' };
 const irPara = (id) => {
   const s = document.getElementById(id);
   if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -97,6 +99,19 @@ R.perdas = (pg) => {
           p: 0,
           render: (v, r) => celulaLigada('rota', v, r, v + (r.promotor ? ' · ' + r.promotor : '')),
           xl: (r) => r.rota + ' · ' + r.promotor,
+        },
+        {
+          key: 'risco',
+          label: t('Risco'),
+          get: (r) => ((P.risco || {})[r.rota] || { pontos: 0 }).pontos,
+          render: (v, r) => {
+            const x = (P.risco || {})[r.rota] || { pontos: 0, fatores: [] };
+            const s = el('span', 'pill ' + (x.pontos >= 60 ? 'p-bad' : x.pontos >= 30 ? 'p-warn' : 'p-ok'), String(x.pontos));
+            s.title = x.fatores
+              .map((f) => t(FATOR[f.indicador] || f.indicador) + ': ' + pct(f.rota) + ' (' + t('mediana') + ' ' + pct(f.mediana) + ')')
+              .join('\n');
+            return s;
+          },
         },
         { key: 'vendas', label: t('Vendas'), type: 'kz', sum: true },
         { key: 'perdas_kz', label: t('Perdas efectivas'), type: 'kz', sum: true },
