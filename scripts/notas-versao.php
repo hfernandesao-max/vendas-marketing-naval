@@ -16,11 +16,13 @@ $commit = (string) ($argv[2] ?? '');
 $revisao = $commit !== '' ? ' · Revisão do código: ' . substr($commit, 0, 12) : '';
 $antes = [];
 if ($ant !== '') {
+    // nosemgrep: exec-use -- linha de comandos (CI): argumentos com escapeshellarg
     exec('git -C ' . escapeshellarg($raiz) . ' show ' . escapeshellarg($ant . ':CHANGELOG.md') . ' 2>/dev/null', $l, $r);
     if ($r === 0) $antes = array_flip(array_column(naval_nov_seccoes(implode("\n", $l)), 'id'));
 }
 $novas = array_filter(naval_nov_seccoes((string) file_get_contents($raiz . '/CHANGELOG.md')), function ($s) use ($antes) { return !isset($antes[$s['id']]); });
 if ($ant !== '' && !$novas) {
+    // nosemgrep: exec-use -- linha de comandos (CI): argumentos com escapeshellarg
     exec('git -C ' . escapeshellarg($raiz) . ' log --no-merges --format=%s ' . escapeshellarg($ant . '..HEAD'), $c);
     echo 'Classificação: ', NAVAL_VERSAO_TIPOS['correcao'], $revisao, "\n\n";
     echo "Alterações:\n";

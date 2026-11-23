@@ -39,6 +39,7 @@ function confirma(bool $v, string $m): void
 }
 
 // ── Pacote de partida (o do repositório) e «servidor» instalado à mão a partir dele ──
+// nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
 exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($repo . '/scripts/construir-pacote.php') . ' ' . escapeshellarg($pac) . ' v1 aaaaaaa 2>&1', $o, $r);
 if ($r !== 0) {
     echo implode("\n", $o), "\n";
@@ -84,6 +85,7 @@ function arrancar(string $cmd)
 {
     global $win;
     $nulo = $win ? 'NUL' : '/dev/null';
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     $p = proc_open(($win ? '' : 'exec ') . $cmd, [1 => ['file', $nulo, 'w'], 2 => ['file', $nulo, 'w']], $t, null, null, ['bypass_shell' => true]);
     return $p;
 }
@@ -96,6 +98,7 @@ function act(string $args): array
 {
     global $srv;
     $o = [];
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($srv . '/ferramentas/actualizar.php') . ' ' . $args . ' 2>&1', $o, $r);
     return [$r, implode("\n", $o)];
 }
@@ -313,6 +316,7 @@ function svc(string $codigo): array
     // ficheiro temporário (no Windows, as aspas de um «php -r» não sobrevivem à linha de comandos)
     $f = $tmp . '/svc-' . mt_rand() . '.php';
     file_put_contents($f, '<?php require ' . var_export($srv . '/nucleo/arranque.php', true) . '; naval_servico("actualizacao"); try { $r = ' . $codigo . '; echo json_encode(["ok" => true, "r" => $r]); } catch (Throwable $e) { echo json_encode(["ok" => false, "erro" => $e->getMessage()]); }');
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
     @unlink($f);
     return json_decode(implode("\n", $o), true) ?: ['ok' => false, 'erro' => implode("\n", $o)];
@@ -537,6 +541,7 @@ caso('ensaio: versão nova lado a lado em /ensaio (dados próprios, faixa, teste
     $f = $srv . '/ensaio-teste.php';
     file_put_contents($f, '<?php require ' . var_export($srv . '/ensaio/nucleo/arranque.php', true) . '; naval_servico("app-telemovel"); echo json_encode([naval_ensaio(), naval_ensaio_permitido(["perfil" => "DIR"]), naval_ensaio_permitido(["perfil" => "TI"]), naval_ensaio_permitido(["perfil" => "SADM"]), naval_pasta_privada(), naval_dados_reports(), naval_app_cookie_nome(), naval_config("ACTUALIZACAO_AUTOMATICA"), naval_ensaio_versao()]);');
     $o = [];
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($f) . ' 2>&1', $o);
     @unlink($f);
     $x = json_decode(implode('', $o), true);

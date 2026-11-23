@@ -25,8 +25,10 @@ $mdmPorta = 18000 + getmypid() % 1000;
 $windows = DIRECTORY_SEPARATOR === '\\';
 $abrirProcesso = function ($comando, $descritores, &$tubos, $ambiente = null) use ($windows) {
     if ($windows && PHP_VERSION_ID >= 70400) {
+        // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
         return proc_open($comando, $descritores, $tubos, null, $ambiente, ['bypass_shell' => true]);
     }
+    // nosemgrep: exec-use -- testes automáticos: argumentos fixos ou com escapeshellarg
     return proc_open($comando, $descritores, $tubos, null, $ambiente);
 };
 $nulo = $windows ? 'NUL' : '/dev/null';

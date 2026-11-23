@@ -33,6 +33,7 @@ function naval_portal_versionar(string $html, string $raiz, array $extra = [], s
 {
     $versao = function (string $rel) use ($raiz) {
         $f = $raiz . '/' . $rel;
+        // nosemgrep: weak-crypto -- resumo não criptográfico (identificador/versão), sem uso de segurança
         return is_file($f) ? substr(md5(filemtime($f) . '|' . filesize($f)), 0, 10) : '';
     };
     $modulos = [];

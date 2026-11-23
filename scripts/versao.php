@@ -9,6 +9,7 @@ if (PHP_SAPI !== 'cli') exit;
 $raiz = dirname(__DIR__);
 define('NAVAL_NUCLEO', true);
 require $raiz . '/nucleo/servicos/versoes.php';
+// nosemgrep: exec-use -- script do CI (só linha de comandos): argumentos com escapeshellarg
 exec('git -C ' . escapeshellarg($raiz) . " tag -l 'v*'", $etiquetas, $r);
 if ($r !== 0) {
     fwrite(STDERR, "Não foi possível ler as etiquetas do repositório.\n");

@@ -29,6 +29,7 @@ function naval_mudancas_pinguim(?int $agora = null): string
         $x = naval_bd_consultar("SELECT COUNT(*) AS N, MAX(DH.ID) AS ULTIMO, CONVERT(VARCHAR(19), MAX(DH.CLOCK_DATE), 120) AS HORA,
                 SUM(CAST(COALESCE(DH.CALC_ISCANCELED, 0) AS INT)) AS ANULADOS, SUM(COALESCE(DH.DOCSTATUS_ID, 0)) AS ESTADOS
             FROM DOCHEADER DH WHERE DH.DELETED = 0 AND DH.DOC_DATE >= :de AND DH.DOC_DATE < DATEADD(day, 1, :ate)", [':de' => $hoje, ':ate' => $hoje]);
+        // nosemgrep: weak-crypto -- resumo não criptográfico (identificador/versão), sem uso de segurança
         $h = sha1(json_encode($x[0] ?? []));
     } catch (Throwable $e) {
         error_log('[mudanças] ' . $e->getMessage());
@@ -81,6 +82,7 @@ function naval_mudancas(?int $agora = null): array
     $p = naval_mudancas_portal($agora);
     $acc = naval_mudancas_accoes();
     $pinguim = naval_mudancas_pinguim($agora);
+    // nosemgrep: weak-crypto -- resumo não criptográfico (identificador/versão), sem uso de segurança
     return ['ok' => true, 'marca' => substr(sha1($pinguim . '|' . json_encode($p) . '|' . json_encode($acc)), 0, 16), 'pinguim' => $pinguim !== '',
         'accoes' => (object) $acc, 'hora' => date('Y-m-d H:i:s'), 'intervalo' => 20];
 }

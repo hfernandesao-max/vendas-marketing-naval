@@ -77,6 +77,7 @@ try {
                 $destino = naval_act_pasta() . '/github-app.pem';
                 if (file_put_contents($destino, $conteudo, LOCK_EX) === false) $falha('Não foi possível guardar a chave na pasta privada.');
                 // só a conta SYSTEM e os administradores lêem a chave (Windows)
+                // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
                 if (DIRECTORY_SEPARATOR === '\\') exec('icacls ' . escapeshellarg($destino) . ' /inheritance:r /grant:r *S-1-5-18:R *S-1-5-32-544:F 2>&1');
                 else @chmod($destino, 0600);
                 echo "  ok     chave privada guardada na pasta privada (pode apagar o ficheiro original)\n";
@@ -91,6 +92,7 @@ try {
             $copia = naval_env_gravar($chaves, 'actualizacao');
             echo "  ok     chaves gravadas no .env (cópia do anterior: $copia)\n";
             // nova leitura do .env num processo próprio: confirma o acesso ao GitHub
+            // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
             passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' estado', $r);
             exit((int) $r);
 
@@ -102,6 +104,7 @@ try {
             foreach ([['Portal RTM - Actualizacao', '/SC DAILY /ST ' . $hora, 'automatico', 'todos os dias às ' . $hora, __FILE__],
                       ['Portal RTM - Actualizacao urgente', '/SC MINUTE /MO 5', 'urgente', 'de 5 em 5 minutos (pedidos do portal)', __FILE__]] as [$nome, $quando, $cmdAct, $texto, $ficheiro]) {
                 $trTarefa = '/TR "\\"' . PHP_BINARY . '\\" \\"' . $ficheiro . '\\" ' . $cmdAct . '"';
+                // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
                 passthru('schtasks /Create /F /TN "' . $nome . '" ' . $quando . ' /RU SYSTEM /RL HIGHEST ' . $trTarefa, $r);
                 if ($r !== 0) $falha('Não foi possível criar a tarefa (abrir a linha de comandos como administrador).');
                 echo "  ok     tarefa «{$nome}» {$texto} (conta SYSTEM)\n";
@@ -122,6 +125,7 @@ try {
                     . '<WorkingDirectory>' . $esc(dirname(__DIR__)) . '</WorkingDirectory></Exec></Actions></Task>';
                 $f = naval_act_pasta() . '/tarefa-' . preg_replace('/[^a-z0-9]+/i', '-', $nome) . '.xml';
                 if (file_put_contents($f, "\xFF\xFE" . mb_convert_encoding($xml, 'UTF-16LE', 'UTF-8'), LOCK_EX) === false) return false;
+                // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
                 passthru('schtasks /Create /F /TN "' . $nome . '" /XML ' . escapeshellarg($f), $r);
                 @unlink($f);
                 return $r === 0;
@@ -156,6 +160,7 @@ try {
             $xml = mb_convert_encoding($xml, 'UTF-16LE', 'UTF-8');
             $ficheiroXml = naval_act_pasta() . '/tarefa-sincronizar-pinguim.xml';
             if (file_put_contents($ficheiroXml, "\xFF\xFE" . $xml, LOCK_EX) === false) $falha('Não foi possível preparar a tarefa de sincronização.');
+            // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
             passthru('schtasks /Create /F /TN "Portal RTM - Sincronizar Pinguim" /XML ' . escapeshellarg($ficheiroXml), $r);
             @unlink($ficheiroXml);
             if ($r !== 0) $falha('Não foi possível criar a tarefa de sincronização contínua (abrir a linha de comandos como administrador).');

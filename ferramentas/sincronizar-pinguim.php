@@ -134,6 +134,7 @@ function naval_pinguim_sincronizacao_continua(): void
         $inicio = microtime(true);
         $saida = [];
         $comando = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' --uma-vez 2>&1';
+        // nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
         exec($comando, $saida, $codigo);
         if ($codigo !== 0) {
             naval_json_gravar($dir . '/erro.json', [

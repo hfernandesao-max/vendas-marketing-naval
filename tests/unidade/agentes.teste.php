@@ -39,7 +39,7 @@ teste('reposição automática: a PO da contagem validada sai emitida sozinha; d
 teste('risco por vendedor: cada indicador face à mediana das rotas; o dobro dá 10 pontos, o triplo 20', function () {
     $r = function ($rota, $anul, $falta) { return ['rota' => $rota, 'vendas' => 100000.0, 'anulados_kz' => $anul, 'falta_kz' => $falta, 'entrega_dif_kz' => 0.0, 'desconto_kz' => 0.0, 'nc_kz' => 0.0]; };
     $x = naval_ag_risco([$r('1001', 1000.0, 500.0), $r('1002', 1000.0, 500.0), $r('1003', 3000.0, 1000.0), $r('1004', 1000.0, 500.0)]);
-    igual('1003', (string) array_key_first($x), 'a de maior risco primeiro');
+    igual('1003', (string) array_keys($x)[0], 'a de maior risco primeiro');
     igual(30, $x['1003']['pontos'], 'anulados no triplo da mediana (20) + faltas no dobro (10)');
     igual(['anulados', 'faltas'], array_column($x['1003']['fatores'], 'indicador'));
     igual(0, $x['1001']['pontos']);

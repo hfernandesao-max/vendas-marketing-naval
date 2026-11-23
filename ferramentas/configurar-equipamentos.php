@@ -103,7 +103,9 @@ try {
 }
 
 $php = escapeshellarg(PHP_BINARY);
+// nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
 passthru($php . ' ' . escapeshellarg(__DIR__ . '/verificar-equipamentos.php'), $r1);
 echo "\n";
+// nosemgrep: exec-use -- linha de comandos do administrador: argumentos com escapeshellarg ou validados
 passthru($php . ' ' . escapeshellarg(__DIR__ . '/verificar-mdm.php'), $r2);
 exit($r1 || $r2 ? 1 : 0);

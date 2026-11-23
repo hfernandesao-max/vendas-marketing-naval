@@ -28,6 +28,7 @@
       svg.setAttribute('aria-hidden', 'true');
       svg.setAttribute('class', 'lucide lucide-' + n + (el.className ? ' ' + el.className : ''));
       if (el.getAttribute('style')) svg.setAttribute('style', el.getAttribute('style'));
+      // nosemgrep: insecure-document-method, insecure-innerhtml -- formas SVG estáticas do dicionário I acima, sem dados de utilizadores
       svg.innerHTML = I[n];
       el.parentNode.replaceChild(svg, el);
     });
