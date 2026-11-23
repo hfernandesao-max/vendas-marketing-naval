@@ -1,5 +1,13 @@
 ## 23-11-2026
 
+### Conciliação: vendas facturadas depois da contagem, com o contado devolvido ao armazém
+
+<!-- tipo: correcao -->
+
+- Nova regra de conservação da contagem: tudo o que sai da carrinha depois da contagem (vendas e devoluções ao armazém), até nova carga desse artigo, só pode sair do que foi contado. O que passa do contado já tinha saído antes e só foi registado depois.
+- A falta fica explicada pelas facturas, com a devolução identificada. Exemplo da rota 1007, de 21-11: «FR 4, contado devolvido em SA A1000/130». Antes, a devolução do contado (a carrinha esvaziada) aparecia por engano como a explicação.
+- Uma devolução do contado nunca explica faltas. Se as vendas só explicam parte da falta, o resto continua por explicar.
+
 ### Funções do Michael Samson e do Nathan Alemayehu
 
 <!-- tipo: melhoria -->

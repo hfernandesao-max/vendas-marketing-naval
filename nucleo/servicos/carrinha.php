@@ -1071,6 +1071,8 @@ function naval_carr_acertos_sql(string $desde): ?array
 /**
  * Regularização documentada (função pura, testada): o que o Pinguim BO registou depois da contagem e explica a
  * diferença, na mesma carrinha e artigo, sem decisão humana:
+ *   0. conservação da contagem: vendas + devoluções depois da contagem, até nova carga do artigo, para lá do contado
+ *      (as vendas registadas depois explicam a falta; a devolução do contado não é explicação, só se identifica);
  *   1. acerto da Logística (saída de armazém, devolução ou inventário) — o primeiro depois da contagem, no mesmo
  *      sentido da diferença, explica-a até à quantidade desse acerto;
  *   2. venda registada depois da contagem (ex.: impressora avariada, factura emitida no dia seguinte) — numa falta, se a
@@ -1092,8 +1094,56 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         $explicado = 0.0;
         $docs = [];
         $em = '';
-        // 1. o primeiro acerto da Logística depois da contagem
-        foreach ($acertos as $a) {
+        $esvaziou = false;
+        // 0. conservação da contagem (falta): tudo o que saiu da carrinha depois da contagem — vendas e devoluções ao
+        //    armazém —, até nova carga desse artigo, só podia sair do que foi contado; o que passa do contado já tinha
+        //    saído antes da contagem e só foi registado depois (ex.: rota 1007, 21-11: vendas de sábado facturadas na
+        //    segunda-feira, FR 4 e FR 5, e o contado devolvido ao armazém na SA 130). Explica até a esse excesso, pelas
+        //    vendas; a devolução do contado fica identificada.
+        if ($d < 0 && isset($l['contado'])) {
+            $vend = 0.0;
+            $saiu = 0.0;
+            $docsV = [];
+            $docsD = [];
+            $emV = '';
+            foreach ($acertos as $a) {
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia) continue;
+                $tipo = $a['tipo'] ?? 'acerto';
+                if ($tipo === 'carga' && $a['efeito'] > 0) break;
+                if ((float) $a['efeito'] >= 0) continue;
+                $saiu += -(float) $a['efeito'];
+                if ($tipo === 'venda') {
+                    $vend += -(float) $a['efeito'];
+                    $docsV[] = $a['doc'];
+                    $emV = $emV ?: $a['em'];
+                } else $docsD[] = $a['doc'];
+            }
+            $excesso = $saiu - (float) $l['contado'];
+            // o contado voltou ao armazém (a carrinha foi esvaziada): as devoluções não explicam faltas
+            $esvaziou = $saiu - $vend >= (float) $l['contado'] - NAVAL_CARR_TOLERANCIA && $saiu - $vend > NAVAL_CARR_TOLERANCIA;
+            if ($vend > NAVAL_CARR_TOLERANCIA && $excesso > NAVAL_CARR_TOLERANCIA) {
+                $explicado = min($falta, $excesso, $vend);
+                $docs = array_values(array_unique($docsV));
+                if ($docsD) $docs[] = 'contado devolvido em ' . implode(', ', array_values(array_unique($docsD)));
+                $em = $emV;
+            }
+        }
+        if ($explicado >= $falta - NAVAL_CARR_TOLERANCIA) {
+            $out[$codigo] = ['q' => round(-$explicado, 3), 'doc' => implode(', ', $docs), 'em' => $em];
+            continue;
+        }
+        if ($explicado > NAVAL_CARR_TOLERANCIA) {
+            // parte explicada pelas vendas; o resto segue as regras seguintes
+            $falta -= $explicado;
+        }
+        $explicado0 = $explicado;
+        $docs0 = $docs;
+        $em0 = $em;
+        $explicado = 0.0;
+        $docs = [];
+        $em = '';
+        // 1. o primeiro acerto da Logística depois da contagem (não a devolução do contado nem o que as vendas já explicaram)
+        foreach ($esvaziou || $explicado0 > NAVAL_CARR_TOLERANCIA ? [] : $acertos as $a) {
             if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $referencia || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
             if (($a['efeito'] < 0) === ($d < 0)) {
                 $explicado = min(abs((float) $a['efeito']), $falta);
@@ -1103,7 +1153,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
             break;
         }
         // 2. falta: vendas registadas depois da contagem, até à carga seguinte do artigo, para lá do que foi contado
-        if ($d < 0 && $explicado < $falta - NAVAL_CARR_TOLERANCIA && isset($l['contado'])) {
+        if ($d < 0 && !$esvaziou && $explicado0 <= NAVAL_CARR_TOLERANCIA && $explicado < $falta - NAVAL_CARR_TOLERANCIA && isset($l['contado'])) {
             $vendido = 0.0;
             $docsV = [];
             foreach ($acertos as $a) {
@@ -1122,8 +1172,13 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
                 $em = $em ?: ($emV ?? '');
             }
         }
+        $explicado += $explicado0;
+        if ($explicado0 > NAVAL_CARR_TOLERANCIA) {
+            $docs = array_merge($docs0, $docs);
+            $em = $em0 ?: $em;
+        }
         if ($explicado > NAVAL_CARR_TOLERANCIA) {
-            $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * $explicado, 3), 'doc' => implode(', ', $docs), 'em' => $em];
+            $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * $explicado, 3), 'doc' => implode(', ', array_values(array_unique($docs))), 'em' => $em];
         }
     }
     return $out;

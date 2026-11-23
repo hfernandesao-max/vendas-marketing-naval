@@ -538,3 +538,26 @@ teste('devolução lançada no fecho (a partir das 15:30) é depois da contagem;
     igual(['sentido_trocado', 'GTC A1000/121'], [$d['332']['tipo'], $d['332']['doc']]);
     igual(1, count($d), 'sem guia igual à diferença, sem diagnóstico');
 });
+
+teste('regularização: vendas facturadas depois da contagem com o contado devolvido ao armazém (rota 1007, 21-11): explicam pelas facturas', function () {
+    $ref = '2026-11-21 14:00:00';
+    $ac = [
+        ['rota' => '1007', 'codigo' => '10000332', 'doc' => 'FR FR0126S77774N/4', 'em' => '2026-11-23 08:26:42', 'efeito' => -10.0, 'tipo' => 'venda'],
+        ['rota' => '1007', 'codigo' => '10000015', 'doc' => 'FR FR0126S77774N/5', 'em' => '2026-11-23 08:35:06', 'efeito' => -5.0, 'tipo' => 'venda'],
+        ['rota' => '1007', 'codigo' => '10000332', 'doc' => 'SA A1000/130', 'em' => '2026-11-23 08:51:56', 'efeito' => -90.0, 'tipo' => 'acerto'],
+        ['rota' => '1007', 'codigo' => '10000015', 'doc' => 'SA A1000/130', 'em' => '2026-11-23 08:51:56', 'efeito' => -10.0, 'tipo' => 'acerto'],
+        ['rota' => '1007', 'codigo' => '10000292', 'doc' => 'SA A1000/130', 'em' => '2026-11-23 08:51:56', 'efeito' => -14.0, 'tipo' => 'acerto'],
+    ];
+    $linhas = [
+        ['codigo' => '10000332', 'diferenca' => -10.0, 'contado' => 90.0],
+        ['codigo' => '10000015', 'diferenca' => -5.0, 'contado' => 10.0],
+        ['codigo' => '10000292', 'diferenca' => -5.0, 'contado' => 14.0],   // sem venda depois: a devolução do contado não explica
+    ];
+    $r = naval_carr_regularizacoes($linhas, $ac, '1007', $ref);
+    igual(['q' => -10.0, 'doc' => 'FR FR0126S77774N/4, contado devolvido em SA A1000/130', 'em' => '2026-11-23 08:26:42'], $r['10000332']);
+    igual(-5.0, $r['10000015']['q']);
+    igual(false, isset($r['10000292']), 'a falta sem venda registada continua por explicar');
+    // venda depois só de parte da falta, com o contado devolvido: o resto fica por explicar (não vai para a SA)
+    $r2 = naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -15.0, 'contado' => 90.0]], $ac, '1007', $ref);
+    igual(-10.0, $r2['10000332']['q']);
+});
