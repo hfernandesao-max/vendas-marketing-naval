@@ -36,7 +36,14 @@ test('PO: emitida pelo promotor, conferida no cais com motivo, validada pelo Bac
   // a PO só fica disponível para a carga depois de aprovada (o coordenador ou a Direcção; quem a emitiu não)
   expect((await post(sup, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(403);
   expect((await post((await entrar('com')).ctx, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(403); // o Comercial já não aprova
-  expect((await post((await entrar('dir')).ctx, 'requisicoes', { accao: 'aprovar', numero })).json.requisicao.aprovada_por).toBe('dir');
+  // primeiro o controlo de stock valida (quem emitiu não; o vendedor não tem a função); só depois a Direcção aprova
+  const dirC = (await entrar('dir')).ctx;
+  expect((await post(dirC, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(409);
+  expect((await post(sup, 'requisicoes', { accao: 'validar_stock', numero, quantidades: {} })).status).toBe(403);
+  const sadmC = (await entrar('sadm')).ctx;
+  expect((await post(sadmC, 'requisicoes', { accao: 'validar_stock', numero, quantidades: {} })).json.requisicao.validada_por).toBe('sadm');
+  expect((await post(sadmC, 'requisicoes', { accao: 'aprovar', numero })).status).toBe(403); // quem validou não aprova
+  expect((await post(dirC, 'requisicoes', { accao: 'aprovar', numero })).json.requisicao.aprovada_por).toBe('dir');
   // o Fiel de Armazém (LOG) confere: diferença sem motivo é recusada; com motivo passa
   const log = (await entrar('log')).ctx;
   const sem = await post(log, 'requisicoes', { accao: 'confirmar_carga', numero, entregue: { C1: 10, C2: 3 } });

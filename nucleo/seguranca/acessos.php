@@ -61,6 +61,9 @@ const NAVAL_MATRIZ_TXT = [
     // aprovação das PO para a carga: o coordenador (função «Aprovar as PO para a carga») e a Direcção como alternativa;
     // nunca quem a criou ou emitiu
     'requisicoes-aprovacao' => '-  G  -  -  -  -  -  -  -  V  -',
+    // validação das PO pelo controlo de stock (ajustar as quantidades e validar, antes da aprovação): pela função
+    // «Validar as PO (controlo de stock)»; a Direcção como alternativa; nunca quem a criou ou emitiu
+    'requisicoes-validacao' => '-  G  -  -  -  -  -  -  -  V  -',
     // validação da carga conferida no cais pelo Back-Office e ordens da Guia de Remessa ao Pinguim BO
     'validacao-carga'      => 'V  G  -  -  -  V  G  V  -  V  -',
     // página «Cargas (PO)»: o Fiel de Armazém confere no cais (requisicoes-carrinha G) e o Back-Office valida (validacao-carga G)
@@ -244,6 +247,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'Vr', 'V', 'G'];
         case 'validacao-carga':
         case 'requisicoes-aprovacao':
+        case 'requisicoes-validacao':
             return ['', 'V', 'G'];
         case 'cargas-po':
             return ['', 'V'];

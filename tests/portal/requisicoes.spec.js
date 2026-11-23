@@ -248,3 +248,59 @@ test('PO: por aprovar até o supervisor aprovar; requisitado × carregado com vi
   expect(pedidos.map((p) => p.accao)).toEqual(['aprovar', 'fechar']);
   expect(erros).toEqual([]);
 });
+
+test('PO: o controlo de stock ajusta as quantidades e valida; só depois aparece «Aprovar»', async ({ page }) => {
+  const po = {
+    ano: '2026',
+    rota: '1001',
+    promotor: 'Andrea Santos',
+    data: '2026-11-23',
+    origem: { tipo: 'manual' },
+    versao: 2,
+    nota: '',
+    criado_por: 'pro',
+    numero: 'PO-2026-000060',
+    estado: 'emitida',
+    emitida_por: 'pro',
+    emitida_em: '2026-11-23 16:40:00',
+    precisa_aprovacao: true,
+    precisa_validacao: true,
+    pronta_carga: false,
+    impressoes: [{ via: 1 }],
+    linhas: [
+      { codigo: 'A1', artigo: 'Fraldas M', unidade: 'CX', quantidade: 40 },
+      { codigo: 'B2', artigo: 'Sabão verde', unidade: 'CX', quantidade: 10 },
+    ],
+  };
+  const pedidos = [];
+  await page.route('**/v1/requisicoes**', (rt) => {
+    const req = rt.request();
+    if (req.method() === 'POST') {
+      const b = JSON.parse(req.postData());
+      pedidos.push(b);
+      if (b.accao === 'validar_stock')
+        Object.assign(po, {
+          validada_por: 'teresa.gomes',
+          validada_em: '2026-11-23 17:00:00',
+          ajuste_validacao: { motivo: b.motivo, alteracoes: [{ codigo: 'A1', de: 40, para: 30 }] },
+        });
+      return rt.fulfill({ json: { ok: true, requisicao: { ...po } } });
+    }
+    if (new URL(req.url()).searchParams.get('numero'))
+      return rt.fulfill({ json: { ok: true, gere: false, aprova: true, valida: true, requisicao: { ...po } } });
+    return rt.fulfill({
+      json: { ok: true, gere: false, aprova: true, valida: true, rotas: { 1001: 'Andrea Santos' }, requisicoes: [{ ...po, n_linhas: 2, quantidade: 50 }] },
+    });
+  });
+  const erros = await abrir(page, '#requisicoes-carrinha');
+  await expect(page.locator('#s-req tbody tr', { hasText: 'PO-2026-000060' })).toContainText('Por validar (controlo de stock)');
+  await page.getByRole('button', { name: 'PO-2026-000060' }).click();
+  const ed = page.locator('#req-editor');
+  await expect(ed.getByRole('button', { name: 'Aprovar para a carga' })).toHaveCount(0);
+  await ed.getByLabel('Validar · Fraldas M').fill('30');
+  await ed.getByLabel('Motivo do ajuste').fill('Só há 30 no armazém');
+  await ed.getByRole('button', { name: 'Validar e enviar para aprovação' }).click();
+  await expect.poll(() => pedidos.length).toBe(1);
+  expect(pedidos[0]).toMatchObject({ accao: 'validar_stock', numero: 'PO-2026-000060', quantidades: { A1: 30 }, motivo: 'Só há 30 no armazém' });
+  expect(erros).toEqual([]);
+});

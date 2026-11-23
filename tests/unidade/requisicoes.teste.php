@@ -33,7 +33,12 @@ teste('rascunho editável (com controlo de versão); emitida fica fechada; 2.ª 
     // por aprovar: não se carrega; quem criou/emitiu não aprova; aprovada uma só vez
     verdade(naval_req_precisa_aprovacao($e) && !naval_req_pronta_carga($e));
     lanca(409, function () use ($e) { naval_req_confirmar($e['numero'], [], 'log'); });
+    // circuito: emitida → validada pelo controlo de stock → aprovada pelo superior (três pessoas diferentes)
+    lanca(409, function () use ($e) { naval_req_aprovar($e['numero'], 'sup'); });   // falta a validação
+    lanca(403, function () use ($e) { naval_req_validar_quantidades($e['numero'], [], '', 'pro'); });   // quem emitiu não valida
+    naval_req_validar_quantidades($e['numero'], [], '', 'teresa.gomes');
     lanca(403, function () use ($e) { naval_req_aprovar($e['numero'], 'pro'); });
+    lanca(403, function () use ($e) { naval_req_aprovar($e['numero'], 'teresa.gomes'); });   // quem validou não aprova
     $ap = naval_req_aprovar($e['numero'], 'sup');
     verdade(naval_req_pronta_carga($ap) && $ap['aprovada_por'] === 'sup');
     lanca(409, function () use ($e) { naval_req_aprovar($e['numero'], 'sup'); });
@@ -114,6 +119,7 @@ teste('fecho antes da carga: só se carrega com as conciliações anteriores fec
     igual([['data' => $ontem, 'estado' => 'por_contar']], $f['pendentes']);
     $r = naval_req_criar($rota, date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 5]], 'pro');
     $r = naval_req_emitir($r['numero'], $r['versao'], 'pro');
+    naval_req_validar_quantidades($r['numero'], [], '', 'teresa.gomes');
     naval_req_aprovar($r['numero'], 'sup');
     $e = lanca(409, function () use ($r) { naval_req_confirmar($r['numero'], [], 'arm'); });
     verdade(strpos($e->getMessage(), 'ainda não tem o fecho de ' . naval_data_pt($ontem) . ' (por contar)') !== false, $e->getMessage());
@@ -208,4 +214,18 @@ teste('PO: aprovação automática só dentro das regras; o resto vai ao coorden
     igual(false, $x['ok'], 'pedido manual vai sempre ao coordenador');
     verdade(in_array('pedido manual (não vem da reposição pelo vendido)', $x['motivos'], true));
     verdade(naval_req_regras_auto($po([['quantidade' => 6] + $vend]), $semDif)['ok'], 'pedir menos do que o vendido (falta no armazém) também passa');
+});
+
+teste('PO: o controlo de stock ajusta as quantidades (com motivo) e valida; quem valida não aprova; a função não se junta à de aprovar', function () {
+    naval_servico('requisicoes');
+    $r = naval_req_criar('1013', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 40], ['codigo' => 'B2', 'artigo' => 'Sabão', 'quantidade' => 10]], 'pro13');
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro13');
+    verdade(naval_req_precisa_validacao($e));
+    lanca(400, function () use ($e) { naval_req_validar_quantidades($e['numero'], ['A1' => 30], '', 'teresa.gomes'); });   // ajuste sem motivo
+    $v = naval_req_validar_quantidades($e['numero'], ['A1' => 30, 'B2' => 10], 'Só há 30 no armazém', 'teresa.gomes');
+    igual([30.0, 40.0], [$v['linhas'][0]['quantidade'], $v['linhas'][0]['pedida']]);
+    igual([['codigo' => 'A1', 'de' => 40.0, 'para' => 30.0]], $v['ajuste_validacao']['alteracoes'], 'só o que mudou');
+    igual('teresa.gomes', $v['validada_por']);
+    lanca(409, function () use ($e) { naval_req_validar_quantidades($e['numero'], [], '', 'teresa.gomes'); });   // uma só vez
+    verdade((bool) naval_funcoes_conflitos(['C-PO-VALIDAR', 'C-PO-APROVAR']), 'validar e aprovar são funções separadas');
 });

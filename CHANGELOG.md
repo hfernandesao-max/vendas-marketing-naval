@@ -1,5 +1,16 @@
 ## 23-11-2026
 
+### PO: validação do controlo de stock antes da aprovação
+
+<!-- tipo: funcionalidade -->
+
+- Novo circuito da PO: o **vendedor emite**, o **controlo de stock** ajusta as quantidades ao armazém e **valida**, o **superior aprova** e a PO segue para o cais.
+- Ao validar, cada alteração de quantidade leva o motivo e fica registada: o pedido original e o ajuste («ajustado: A1 40 → 30 (só há 30 no armazém)»).
+- São sempre três pessoas diferentes: quem emite não valida, e quem valida não aprova. As funções «Validar as PO» e «Aprovar as PO» não se podem juntar na mesma pessoa.
+- Cada passo aparece a quem o faz, no telemóvel e em «À sua espera». O vendedor vê o passo «Validação do stock» no percurso da PO, na app.
+- **Fácil de ajustar:** quem valida e quem aprova escolhe-se em Administração › Acessos pelas funções «Validar as PO (controlo de stock)» e «Aprovar as PO para a carga». O passo liga-se ou desliga-se no .env (`REQ_VALIDACAO_STOCK`). A reposição que se aprova sozinha pelas regras passa também sozinha a validação.
+- Teresa Gomes: Controlo de stock + Validar as PO. Nathan Alemayehu continua a aprovar.
+
 ### «Pedir mercadoria» na app do vendedor (Naval Operações)
 
 <!-- tipo: funcionalidade -->

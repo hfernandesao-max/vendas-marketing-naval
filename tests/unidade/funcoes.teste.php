@@ -288,8 +288,8 @@ teste('contas novas: a Teresa Gomes é criada uma vez com «Controlo de stock»,
         igual([true, false], [$r['t1']['ok'], $r['t2']['ok']]);
         igual('o email já está na conta outra', $r['t2']['motivo']);
         $u = naval_utilizadores()['teresa.gomes'];
-        igual(['Teresa Gomes', 'teresa.gomes@foodtec.co.ao', ['P-STOCK'], true, true], [$u['nome'], $u['email'], $u['funcoes'], $u['activo'], $u['trocar_senha']]);
-        igual(naval_funcoes_codigo(['P-STOCK']), $u['perfil']);
+        igual(['Teresa Gomes', 'teresa.gomes@foodtec.co.ao', ['C-PO-VALIDAR', 'P-STOCK'], true, true], [$u['nome'], $u['email'], $u['funcoes'], $u['activo'], $u['trocar_senha']]);
+        igual(naval_funcoes_codigo(['C-PO-VALIDAR', 'P-STOCK']), $u['perfil']);
         verdade(naval_conta_valida($u + ['login' => 'teresa.gomes']));
         $m = naval_matriz(true);
         igual(['E', 'E', 'E'], [$m['stock-armazem'][$u['perfil']], $m['vendas-artigo'][$u['perfil']], $m['vendas-promotor'][$u['perfil']]]);

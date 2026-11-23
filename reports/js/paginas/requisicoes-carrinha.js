@@ -27,6 +27,7 @@ let edicao = null; // cópia em edição: {linhas, nota}
 let CAT = null; // catálogo de artigos
 export const ESTADOS_REQ = {
   rascunho: ['Rascunho', 'p-warn'],
+  por_validar: ['Por validar (controlo de stock)', 'p-warn'],
   emitida: ['Emitida · a carregar', 'p-serio'],
   por_aprovar: ['Por aprovar', 'p-warn'],
   aprovada: ['Aprovada · a carregar', 'p-serio'],
@@ -36,7 +37,15 @@ export const ESTADOS_REQ = {
 };
 /** Estado a mostrar: uma PO emitida está «por aprovar» até ser aprovada para a carga (se precisar de aprovação). */
 export const estadoReq = (r) =>
-  r.estado !== 'emitida' ? r.estado : r.precisa_aprovacao && !r.aprovada_em ? 'por_aprovar' : r.precisa_aprovacao ? 'aprovada' : 'emitida';
+  r.estado !== 'emitida'
+    ? r.estado
+    : r.precisa_validacao && !r.validada_em && !r.aprovada_em
+      ? 'por_validar'
+      : r.precisa_aprovacao && !r.aprovada_em
+        ? 'por_aprovar'
+        : r.precisa_aprovacao
+          ? 'aprovada'
+          : 'emitida';
 const PEDIDO_ABRIR = 'vm-requisicao-abrir';
 
 function ler() {
@@ -97,6 +106,42 @@ const actualizarLista = () => {
 };
 
 /** Envia uma acção; devolve a requisição actualizada (ou null, com a mensagem no erro). */
+/** Validação do controlo de stock: as quantidades pedidas, editáveis (o disponível no armazém ao lado), e o motivo. */
+function formValidar(r, erro, depois) {
+  const w = el('div', 'req-validar');
+  w.append(el('h3', null, t('Validar a PO (controlo de stock)')));
+  const tab = el('table', 'cc-tab');
+  const cab = el('tr');
+  [t('Código'), t('Artigo'), t('Pedido'), t('Validar')].forEach((x, i) => cab.append(el('th', i > 1 ? 'n' : null, x)));
+  tab.append(cab);
+  const qs = [];
+  r.linhas.forEach((l) => {
+    const tr = el('tr');
+    const i = entrada('number', l.quantidade, { min: 0, step: 'any', inputMode: 'decimal' });
+    i.setAttribute('aria-label', t('Validar') + ' · ' + l.artigo);
+    const td = el('td', 'n');
+    td.append(i);
+    tr.append(el('td', 'cc-cod', l.codigo), el('td', null, l.artigo), el('td', 'n', n0(l.quantidade)), td);
+    tab.append(tr);
+    qs.push({ l, i });
+  });
+  const motivo = entrada('text', '', { maxLength: 300, placeholder: t('Motivo do ajuste (obrigatório se mudar alguma quantidade)') });
+  motivo.setAttribute('aria-label', t('Motivo do ajuste'));
+  const ok = botao(t('Validar e enviar para aprovação'), null, () => {
+    const quantidades = {};
+    qs.forEach(({ l, i }) => {
+      if (i.value !== '' && Number(i.value) !== Number(l.quantidade)) quantidades[l.codigo] = Number(i.value);
+    });
+    ok.disabled = true;
+    enviar({ accao: 'validar_stock', numero: r.numero, quantidades, motivo: motivo.value }, erro).then((x) => {
+      ok.disabled = false;
+      depois(x, 'PO validada: segue para a aprovação do superior.');
+    });
+  });
+  w.append(tab, motivo, ok);
+  return w;
+}
+
 function enviar(corpo, erro) {
   return postJson('requisicoes', corpo).then((x) => {
     if (!x.ok) {
@@ -410,6 +455,31 @@ function editor() {
       s.append(el('p', 'note ok', t('Aprovada automaticamente: reposição pelo vendido, conciliação sem diferenças e stock do armazém confirmado.')));
     else if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && r.regras_auto && r.regras_auto.motivos && r.regras_auto.motivos.length)
       s.append(el('p', 'aviso', t('Para aprovar porque: {m}.', { m: r.regras_auto.motivos.map((x) => tv(x)).join('; ') })));
+    // validação do controlo de stock: ajusta as quantidades ao armazém (com motivo) e valida; segue para a aprovação
+    const porValidar = r.estado === 'emitida' && r.precisa_validacao && !r.validada_em && !r.aprovada_em;
+    if (r.validada_em && r.validada_por !== 'automatico') {
+      const aj = (r.ajuste_validacao && r.ajuste_validacao.alteracoes) || [];
+      s.append(
+        el(
+          'p',
+          'note',
+          t('Validada pelo controlo de stock: {p} em {d}', {
+            p: assinante(r.validada_por),
+            d: dl(String(r.validada_em).slice(0, 10)) + ' ' + String(r.validada_em).slice(11, 16),
+          }) +
+            (aj.length
+              ? ' · ' +
+                t('ajustado: {l} ({m})', {
+                  l: aj.map((a) => a.codigo + ' ' + n0(a.de) + ' → ' + n0(a.para)).join(', '),
+                  m: r.ajuste_validacao.motivo,
+                })
+              : ''),
+        ),
+      );
+    }
+    if (porValidar && L && L.valida) s.append(formValidar(r, erro, depois));
+    else if (porValidar)
+      s.append(el('p', 'aviso', t('Por validar: o controlo de stock ajusta as quantidades ao armazém e valida; só depois segue para a aprovação.')));
     acc.append(
       botao(t('Reimprimir (2.ª via)'), 'ghost', () =>
         enviar({ accao: 'reimprimir', numero: r.numero }, erro).then((x) => {
@@ -419,7 +489,7 @@ function editor() {
         }),
       ),
     );
-    if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && L && L.aprova)
+    if (r.estado === 'emitida' && r.precisa_aprovacao && !r.aprovada_em && !porValidar && L && L.aprova)
       acc.append(
         botao(t('Aprovar para a carga'), null, (e) => {
           e.target.disabled = true;

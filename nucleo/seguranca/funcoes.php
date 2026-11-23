@@ -60,6 +60,8 @@ const NAVAL_CONTAS_AJUSTES = [
     // responsável de todos os vendedores: coordena, aprova as contagens (1.º nível) e as PO e vê todo o stock; autoriza
     // os pedidos de acesso de vendedor, de contagem e de controlo de stock
     '2026-11-nathan-stock' => ['nome' => 'Nathan Alemayehu', 'funcoes' => ['P-COORD', 'C-CONC-COORD', 'C-PO-APROVAR', 'P-STOCK'], 'dono_de' => ['P-PRO', 'C-CONC-CONTAR', 'P-STOCK'], 'pedido' => 'HF, 23-11-2026'],
+    // controlo de stock que valida as PO dos vendedores (ajusta as quantidades) antes da aprovação do Nathan
+    '2026-11-teresa-validar' => ['nome' => 'Teresa Gomes', 'funcoes' => ['P-STOCK', 'C-PO-VALIDAR'], 'dono_de' => [], 'pedido' => 'HF, 23-11-2026'],
     '2026-11-manuel-queia' => ['nome' => 'Manuel Queia', 'funcoes' => ['P-STOCK', 'C-CONC-CONTAR'], 'dono_de' => [], 'pedido' => 'HF, 23-11-2026'],
 ];
 
@@ -72,7 +74,7 @@ const NAVAL_CONTAS_AJUSTES = [
  */
 const NAVAL_CONTAS_NOVAS = [
     // controlo de stock: stock de todos os armazéns e carrinhas por artigo, vendas por artigo e por promotor
-    '2026-11-teresa-gomes' => ['login' => 'teresa.gomes', 'nome' => 'Teresa Gomes', 'email' => 'teresa.gomes@foodtec.co.ao', 'funcoes' => ['P-STOCK'],
+    '2026-11-teresa-gomes' => ['login' => 'teresa.gomes', 'nome' => 'Teresa Gomes', 'email' => 'teresa.gomes@foodtec.co.ao', 'funcoes' => ['C-PO-VALIDAR', 'P-STOCK'],
         'idioma' => 'pt', 'pedido' => 'HF, 23-11-2026'],
 ];
 
@@ -222,7 +224,10 @@ function naval_funcoes_iniciais(): array
         ['conciliacao-carrinha' => 'V', 'conciliacao-fecho' => 'G'], ['C-CONC-CONTAR', 'C-CONC-COORD'], true);
     // PO: o coordenador aprova a PO para a carga no cais (quem a criou ou emitiu não a aprova: regra do servidor)
     $f['C-PO-APROVAR'] = $comp('Aprovar as PO para a carga', 'Coordenador: aprova as PO emitidas pelos promotores antes da carga no cais.',
-        ['requisicoes-carrinha' => 'V', 'requisicoes-aprovacao' => 'G', 'cargas-po' => 'V', 'stock-armazem' => 'V'], [], true);
+        ['requisicoes-carrinha' => 'V', 'requisicoes-aprovacao' => 'G', 'cargas-po' => 'V', 'stock-armazem' => 'V'], ['C-PO-VALIDAR'], true);
+    // PO: o controlo de stock ajusta as quantidades e valida antes da aprovação; quem valida não aprova (separação)
+    $f['C-PO-VALIDAR'] = $comp('Validar as PO (controlo de stock)', 'Ajusta as quantidades pedidas ao stock do armazém e valida a PO antes da aprovação do superior.',
+        ['requisicoes-carrinha' => 'V', 'requisicoes-validacao' => 'G', 'cargas-po' => 'V', 'stock-armazem' => 'V'], ['C-PO-APROVAR'], true);
     // ficheiro para o SAP: gerar e enviar, sem alterar a estrutura do ficheiro; cada geração fica registada
     $f['C-SAP-EXPORTAR'] = $comp('Gerar e enviar o ficheiro SAP', 'Gera a exportação das vendas para o SAP (estrutura fixa) e envia-a.', ['sap-exportar' => 'E'], [], true);
     // só permissões que existem na matriz e níveis que cada página admite
@@ -258,8 +263,8 @@ function naval_funcoes(bool $recarregar = false): array
     // as funções gravadas mantêm-se como estão; as do sistema acrescentadas depois (ex.: P-TES) juntam-se ao catálogo
     $f = naval_funcoes_regras($g ? (array) $g + naval_funcoes_iniciais() : naval_funcoes_iniciais());
     if ($g && naval_funcoes_ajustes_pendentes()) $f = naval_funcoes_regras(naval_funcoes_ajustar((array) $g) + naval_funcoes_iniciais());
+    if (naval_contas_novas_pendentes()) naval_contas_novas_criar();   // primeiro as contas novas: as reconfigurações seguintes já as encontram
     if (naval_contas_ajustes_pendentes()) naval_contas_ajustar();   // pode recarregar o catálogo (donos)
-    if (naval_contas_novas_pendentes()) naval_contas_novas_criar();
     return $f;
 }
 

@@ -103,6 +103,13 @@ teste('à sua espera: PO por aprovar para quem aprova (o coordenador), nunca par
     naval_servico('requisicoes');
     $r = naval_req_criar('1009', date('Y-m-d'), [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 4]], 'pro9');
     $e = naval_req_emitir($r['numero'], $r['versao'], 'pro9');
+    // primeiro o controlo de stock valida: até lá não aparece a quem aprova
+    $antes = naval_pendentes('nathan', null, ['po' => true], time(), []);
+    igual([], array_values(array_filter($antes['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; })), 'por validar: ainda não vai ao coordenador');
+    $teresa = naval_pendentes('teresa.gomes', null, ['validar_po' => true], time(), []);
+    $v = array_values(array_filter($teresa['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; }));
+    igual('po_validar_stock', $v[0]['tipo']);
+    naval_req_validar_quantidades($e['numero'], [], '', 'teresa.gomes');
     $nathan = naval_pendentes('nathan', null, ['po' => true], time(), []);
     $meu = array_values(array_filter($nathan['itens'], function ($x) use ($e) { return ($x['numero'] ?? '') === $e['numero']; }));
     igual(1, count($meu));
@@ -158,6 +165,7 @@ teste('à sua espera: PO aprovada por conferir no cais (Fiel de Armazém) e carg
         return array_values(array_filter(naval_pendentes($login, null, $pode, time(), [])['itens'], function ($x) use ($e, $tipo) { return ($x['numero'] ?? '') === $e['numero'] && $x['tipo'] === $tipo; }));
     };
     igual([], $de('fiel', ['conferir' => true], 'po_conferir'), 'por aprovar: ainda não vai ao cais');
+    naval_req_validar_quantidades($e['numero'], [], '', 'teresa.gomes');
     naval_req_aprovar($e['numero'], 'nathan');
     $c = $de('fiel', ['conferir' => true], 'po_conferir');
     igual(1, count($c));

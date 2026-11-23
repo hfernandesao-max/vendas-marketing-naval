@@ -283,15 +283,17 @@ function naval_req_emitir(string $id, ?int $versao, string $login): array
     if (naval_req_precisa_aprovacao($r) && $regras !== null && $regras['ok'] && naval_config('REQ_APROVACAO_AUTOMATICA', '1') !== '0') {
         return naval_req_aprovar_auto($id, $regras);
     }
-    // tempo real: quem aprova (o coordenador) recebe logo a notificação no telemóvel
-    if (naval_req_precisa_aprovacao($r)) {
+    // tempo real: com a validação do controlo de stock, avisa quem valida; sem ela, quem aprova (o coordenador)
+    if (naval_req_precisa_validacao($r)) {
         try {
             naval_servico('notificacoes');
-            $tx = naval_notif_txt('po', ['n' => $id, 'r' => $r['rota'], 'a' => count($r['linhas']), 'q' => (string) round(array_sum(array_column($r['linhas'], 'quantidade')))]);
-            naval_notificar('po_aprovar', $tx['pt'][0], $tx['pt'][1], ['chave' => 'po|' . $id, 'rota' => (string) $r['rota'], 'url' => '../reports/#requisicoes-carrinha', 'textos' => $tx]);
+            $tx = naval_notif_txt('po_validar', ['n' => $id, 'r' => $r['rota'], 'a' => count($r['linhas']), 'q' => (string) round(array_sum(array_column($r['linhas'], 'quantidade')))]);
+            naval_notificar('po_validar', $tx['pt'][0], $tx['pt'][1], ['chave' => 'pov|' . $id, 'url' => '../reports/#requisicoes-carrinha', 'textos' => $tx, 'excluir' => [$login]]);
         } catch (Throwable $e) {
             error_log('[PO notificação] ' . $e->getMessage());
         }
+    } elseif (naval_req_precisa_aprovacao($r)) {
+        naval_req_avisar_aprovacao($r);
     }
     return $r;
 }
@@ -318,6 +320,11 @@ function naval_req_reimprimir(string $id, string $login): array
 // promotor é aprovado pelo coordenador (função C-PO-APROVAR) ou pela Direcção (recurso
 // «requisicoes-aprovacao» G), nunca por quem a criou ou emitiu (segregação de funções, como nas compras dos ERP:
 // requisitante → aprovador → armazém). As PO emitidas antes da regra (REQ_APROVACAO_DESDE) não precisam.
+// Validação do controlo de stock (REQ_VALIDACAO_STOCK=1, ligada por omissão): entre a emissão e a aprovação, quem
+// tem a função «Validar as PO (controlo de stock)» (recurso «requisicoes-validacao» G) ajusta as quantidades ao stock
+// do armazém (cada alteração com o motivo) e valida; só depois o superior (função C-PO-APROVAR) aprova. Três pessoas
+// diferentes: quem emite, quem valida e quem aprova. Quem faz cada passo muda-se em Administração › Acessos, pelas
+// funções, sem tocar no código. A reposição que se aprova sozinha pelas regras passa também sozinha a validação.
 // As PO que não vão ser carregadas fecham-se com motivo («fechada»); as esquecidas fecham-se sozinhas ao fim de
 // REQ_FECHO_DIAS dias (3), e os rascunhos esquecidos anulam-se, para nada ficar aberto para sempre.
 
@@ -328,6 +335,72 @@ function naval_req_precisa_aprovacao(array $r): bool
 {
     if (naval_config('REQ_APROVACAO', '1') === '0') return false;
     return substr((string) ($r['emitida_em'] ?? ''), 0, 10) >= naval_config('REQ_APROVACAO_DESDE', NAVAL_REQ_APROVACAO_DESDE);
+}
+
+/** Esta PO precisa da validação do controlo de stock antes da aprovação? */
+function naval_req_precisa_validacao(array $r): bool
+{
+    return naval_req_precisa_aprovacao($r) && naval_config('REQ_VALIDACAO_STOCK', '1') !== '0';
+}
+
+/**
+ * Validação do controlo de stock: ajusta as quantidades ao que o armazém pode dar (cada alteração com motivo) e valida.
+ * $quantidades: {codigo: quantidade} (só as que mudam; 0 tira o artigo da carga). Quem criou ou emitiu não valida.
+ */
+function naval_req_validar_quantidades(string $id, array $quantidades, string $motivo, string $login): array
+{
+    $motivo = naval_texto($motivo, 300);
+    $r = naval_exclusivo('requisicao-' . $id, function () use ($id, $quantidades, $motivo, $login) {
+        $r = naval_req_ler($id);
+        if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
+        if ($r['estado'] !== 'emitida' || !empty($r['aprovada_em'])) throw new NavalErro('Só se valida uma PO emitida e ainda por aprovar.', 409);
+        if (!naval_req_precisa_validacao($r)) throw new NavalErro('Esta PO não precisa de validação.', 409);
+        if (!empty($r['validada_em'])) throw new NavalErro('Esta PO já foi validada.', 409);
+        if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0') {
+            foreach (['criado_por', 'emitida_por'] as $k) {
+                if ($login !== '' && strcasecmp((string) ($r[$k] ?? ''), $login) === 0) throw new NavalErro('Segregação de funções: quem criou ou emitiu a PO não a valida.', 403);
+            }
+        }
+        $alt = [];
+        foreach ($r['linhas'] as &$l) {
+            $c = (string) $l['codigo'];
+            if (!array_key_exists($c, $quantidades)) continue;
+            $q = $quantidades[$c];
+            if (!is_numeric($q) || (float) $q < 0 || (float) $q > 1000000) throw new NavalErro('Quantidade inválida no artigo ' . $c . '.', 400);
+            $q = round((float) $q, 3);
+            if (abs($q - (float) $l['quantidade']) < 0.0005) continue;
+            if (!isset($l['pedida'])) $l['pedida'] = (float) $l['quantidade'];
+            $alt[] = ['codigo' => $c, 'de' => (float) $l['quantidade'], 'para' => $q];
+            $l['quantidade'] = $q;
+        }
+        unset($l);
+        if ($alt && mb_strlen($motivo) < 3) throw new NavalErro('Indique o motivo do ajuste das quantidades.', 400);
+        if (!array_filter($r['linhas'], function ($l) { return (float) $l['quantidade'] > 0; })) throw new NavalErro('A PO ficaria sem artigos: feche-a em vez de a validar.', 400);
+        if ($alt) naval_req_validar_stock((array) $r['linhas']);
+        $r['validada_por'] = $login;
+        $r['validada_em'] = date('Y-m-d H:i:s');
+        if ($alt) $r['ajuste_validacao'] = ['motivo' => $motivo, 'alteracoes' => $alt];
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'validada_stock', $login, ['alteracoes' => count($alt), 'motivo' => $motivo]);
+        naval_req_gravar_ficheiro($r);
+        return $r;
+    });
+    naval_registar('requisicao_validada', ['numero' => $id, 'rota' => $r['rota'], 'alteracoes' => count((array) ($r['ajuste_validacao']['alteracoes'] ?? []))]);
+    naval_req_avisar_aprovacao($r, [$login]);
+    return $r;
+}
+
+/** Quem aprova recebe a PO no telemóvel (depois da validação, ou logo na emissão quando não há validação). */
+function naval_req_avisar_aprovacao(array $r, array $excluir = []): void
+{
+    try {
+        naval_servico('notificacoes');
+        $tx = naval_notif_txt('po', ['n' => $r['numero'], 'r' => $r['rota'], 'a' => count($r['linhas']), 'q' => (string) round(array_sum(array_column($r['linhas'], 'quantidade')))]);
+        naval_notificar('po_aprovar', $tx['pt'][0], $tx['pt'][1], ['chave' => 'po|' . $r['numero'], 'rota' => (string) $r['rota'], 'url' => '../reports/#requisicoes-carrinha',
+            'textos' => $tx, 'excluir' => $excluir]);
+    } catch (Throwable $e) {
+        error_log('[PO notificação] ' . $e->getMessage());
+    }
 }
 
 /** Pronta para a carga no cais: emitida e (se precisar) aprovada. */
@@ -344,10 +417,13 @@ function naval_req_aprovar(string $id, string $login): array
         if (!$r) throw new NavalErro('Requisição não encontrada.', 404);
         if ($r['estado'] !== 'emitida') throw new NavalErro('Só se aprova uma PO emitida e ainda por carregar.', 409);
         if (!empty($r['aprovada_em'])) throw new NavalErro('Esta PO já foi aprovada.', 409);
+        if (naval_req_precisa_validacao($r) && empty($r['validada_em'])) {
+            throw new NavalErro('Falta a validação do controlo de stock: só depois a PO se aprova.', 409, ['codigo' => 'po_por_validar']);
+        }
         if (naval_config('CARRINHA_SEGREGACAO', '1') !== '0') {
-            foreach (['criado_por', 'emitida_por'] as $k) {
+            foreach (['criado_por', 'emitida_por', 'validada_por'] as $k) {
                 if ($login !== '' && strcasecmp((string) ($r[$k] ?? ''), $login) === 0) {
-                    throw new NavalErro('Segregação de funções: quem criou ou emitiu a PO não a aprova.', 403);
+                    throw new NavalErro('Segregação de funções: quem criou, emitiu ou validou a PO não a aprova.', 403);
                 }
             }
         }
@@ -414,6 +490,10 @@ function naval_req_aprovar_auto(string $id, array $regras): array
         if ($r['estado'] !== 'emitida' || !empty($r['aprovada_em'])) return $r;
         $r['aprovada_por'] = 'automatico';
         $r['aprovada_em'] = date('Y-m-d H:i:s');
+        if (naval_req_precisa_validacao($r) && empty($r['validada_em'])) {
+            $r['validada_por'] = 'automatico';
+            $r['validada_em'] = $r['aprovada_em'];
+        }
         $r['versao'] = (int) $r['versao'] + 1;
         naval_req_hist($r, 'aprovada_automatica', 'automatico', ['regras' => 'reposição pelo vendido, conciliação sem diferenças, stock do armazém confirmado']);
         naval_req_gravar_ficheiro($r);

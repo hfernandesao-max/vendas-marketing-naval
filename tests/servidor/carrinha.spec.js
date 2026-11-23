@@ -119,6 +119,8 @@ test('requisição de reposição: criada pela conciliação, editada e emitida 
   expect((await post(sup, { accao: 'aprovar', numero: r.numero })).status).toBe(403);
   expect((await post(log, { accao: 'aprovar', numero: r.numero })).status).toBe(403);
   const dirCtx = (await entrar('dir')).ctx;
+  // o controlo de stock valida antes da aprovação
+  expect((await post((await entrar('sadm')).ctx, { accao: 'validar_stock', numero: r.numero, quantidades: {} })).status).toBe(200);
   const ap = (await post(dirCtx, { accao: 'aprovar', numero: r.numero })).json.requisicao;
   expect(ap).toMatchObject({ estado: 'emitida', aprovada_por: 'dir' });
   expect((await post(dirCtx, { accao: 'aprovar', numero: r.numero })).status).toBe(409);

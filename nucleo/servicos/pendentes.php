@@ -118,9 +118,26 @@ function naval_pendentes(string $login, ?array $rotas, array $pode, int $agora, 
             foreach (naval_req_ficheiros((string) $ano) as $f) {
                 $r = naval_json_ler((string) $f);
                 if (!$r || $r['estado'] !== 'emitida' || !empty($r['aprovada_em']) || !naval_req_precisa_aprovacao($r)) continue;
+                if (naval_req_precisa_validacao($r) && empty($r['validada_em'])) continue;   // primeiro o controlo de stock valida
                 if ($rotas !== null && !in_array((string) $r['rota'], $rotas, true)) continue;
                 if ($eu($r['criado_por'] ?? '') || $eu($r['emitida_por'] ?? '')) continue;   // quem criou ou emitiu não aprova
                 $itens[] = ['tipo' => 'po', 'dia' => (string) $r['data'], 'numero' => (string) $r['numero'], 'rota' => (string) $r['rota'],
+                    'promotor' => (string) ($r['promotor'] ?? ''), 'artigos' => count((array) $r['linhas']),
+                    'quantidade' => round(array_sum(array_column((array) $r['linhas'], 'quantidade')), 3), 'por' => (string) ($r['emitida_por'] ?? ''),
+                    'em' => (string) ($r['emitida_em'] ?? ''), 'atraso' => (string) $r['data'] < $hoje, 'url' => '../reports/#requisicoes-carrinha'];
+            }
+        }
+    }
+    // ── PO por validar pelo controlo de stock (ajustar as quantidades e validar, antes da aprovação) ──
+    if (!empty($pode['validar_po'])) {
+        naval_servico('requisicoes');
+        foreach ([(int) date('Y', $agora) - 1, (int) date('Y', $agora)] as $ano) {
+            foreach (naval_req_ficheiros((string) $ano) as $f) {
+                $r = naval_json_ler((string) $f);
+                if (!$r || $r['estado'] !== 'emitida' || !empty($r['aprovada_em']) || !empty($r['validada_em']) || !naval_req_precisa_validacao($r)) continue;
+                if ($rotas !== null && !in_array((string) $r['rota'], $rotas, true)) continue;
+                if ($eu($r['criado_por'] ?? '') || $eu($r['emitida_por'] ?? '')) continue;
+                $itens[] = ['tipo' => 'po_validar_stock', 'dia' => (string) $r['data'], 'numero' => (string) $r['numero'], 'rota' => (string) $r['rota'],
                     'promotor' => (string) ($r['promotor'] ?? ''), 'artigos' => count((array) $r['linhas']),
                     'quantidade' => round(array_sum(array_column((array) $r['linhas'], 'quantidade')), 3), 'por' => (string) ($r['emitida_por'] ?? ''),
                     'em' => (string) ($r['emitida_em'] ?? ''), 'atraso' => (string) $r['data'] < $hoje, 'url' => '../reports/#requisicoes-carrinha'];
@@ -178,6 +195,7 @@ function naval_pendentes_conta(string $login): array
         'coordenar' => naval_pode('conciliacao-coordenacao', 'G'),
         'fechar' => naval_pode('conciliacao-fecho', 'G'),
         'po' => naval_pode('requisicoes-aprovacao', 'G'),
+        'validar_po' => naval_pode('requisicoes-validacao', 'G'),
         'conferir' => naval_pode('requisicoes-carrinha', 'G') && naval_pode('cargas-po', 'V'),
         'validar' => naval_pode('validacao-carga', 'G'),
         'tesouraria' => naval_pode('caixa-marketing', 'G'),
@@ -191,7 +209,7 @@ function naval_pendentes_permissoes(array $u): array
     naval_servico('notificacoes');
     $g = function (string $rec, string $min = 'G') use ($u) { return NAVAL_ORDEM_NIVEIS[naval_notif_nivel($u, $rec)] >= NAVAL_ORDEM_NIVEIS[$min]; };
     return ['caixa1' => $g('caixa-aprovacao'), 'caixa2' => $g('caixa-aprovacao-final'), 'contar' => $g('conciliacao-carrinha'),
-        'coordenar' => $g('conciliacao-coordenacao'), 'fechar' => $g('conciliacao-fecho'), 'po' => $g('requisicoes-aprovacao'),
+        'coordenar' => $g('conciliacao-coordenacao'), 'fechar' => $g('conciliacao-fecho'), 'po' => $g('requisicoes-aprovacao'), 'validar_po' => $g('requisicoes-validacao'),
         'conferir' => $g('requisicoes-carrinha') && $g('cargas-po', 'V'), 'validar' => $g('validacao-carga'), 'tesouraria' => $g('caixa-marketing'), 'plano' => $g('plano-cargas')];
 }
 
@@ -211,6 +229,7 @@ function naval_pendente_texto(array $x): string
         case 'po': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): aprovar para a carga';
         case 'plano': return 'Plano de cargas de ' . $d . ': confirmar e publicar (' . (int) ($x['rotas'] ?? 0) . ' rotas)';
         case 'entrega': return 'Rota ' . $x['rota'] . ': contar o dinheiro entregue (' . number_format((float) $x['valor'], 0, ',', ' ') . ' Kz declarados)';
+        case 'po_validar_stock': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): ajustar as quantidades e validar (controlo de stock)';
         case 'po_conferir': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): conferir a carga no cais';
         case 'po_validar': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): validar a carga conferida (Back-Office)';
         case 'ordem':

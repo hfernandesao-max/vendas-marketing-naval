@@ -117,10 +117,22 @@ function estadoPO(r, nomes) {
   const nome = (l) => (l === 'automatico' ? t('automático') : (nomes && nomes[l]) || l || '');
   const emitida = r.estado !== 'rascunho';
   const aprovada = !r.precisa_aprovacao || !!r.aprovada_em;
+  const validada = !r.precisa_validacao || !!r.validada_em || !!r.aprovada_em;
   const carregada = r.estado === 'carregada';
   const guia = carregada && (r.fase === 'transferida' || r.fase === 'validada');
   const passos = [
     { feito: emitida, texto: t('Emitida'), nota: emitida ? nome(r.emitida_por) + ' · ' + ddmm(r.emitida_em) : t('rascunho: confirme e emita') },
+    ...(r.precisa_validacao
+      ? [
+          {
+            feito: emitida && validada,
+            texto: t('Validação do stock'),
+            nota: r.validada_em
+              ? (r.validada_por === 'automatico' ? t('validada sozinha pelas regras') : nome(r.validada_por)) + ' · ' + ddmm(r.validada_em)
+              : t('o controlo de stock ajusta as quantidades e valida'),
+          },
+        ]
+      : []),
     {
       feito: emitida && aprovada,
       texto: t('Aprovação'),
@@ -139,6 +151,7 @@ function estadoPO(r, nomes) {
   if (r.estado === 'fechada') return [t('Fechada'), '', passos];
   if (carregada) return [t('Carregada'), 'op-ok', passos];
   if (!emitida) return [t('Rascunho'), 'op-mau', passos];
+  if (!validada) return [t('Por validar'), 'op-mau', passos];
   if (!aprovada) return [t('Por aprovar'), 'op-mau', passos];
   return [t('Aprovada'), 'op-ok', passos];
 }
