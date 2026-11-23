@@ -45,7 +45,7 @@ test('menu da conta: gerar o código QR pessoal para instalar a app e ver o equi
   await dlg.getByRole('button', { name: 'Gerar código para outro telemóvel' }).click();
   await expect(dlg.locator('.app-qr-img svg')).toBeVisible();
   await expect(dlg.locator('.app-prazo')).toContainText('Válido durante 10:00 · uso único');
-  expect(pedidos).toEqual([{ accao: 'codigo', csrf: 'x' }]);
+  expect(pedidos).toEqual([{ accao: 'codigo', app: 'gestao', csrf: 'x' }]);
   await expect(dlg.getByRole('button', { name: 'Desactivar este equipamento' })).toBeVisible();
   expect(erros).toEqual([]);
 });
