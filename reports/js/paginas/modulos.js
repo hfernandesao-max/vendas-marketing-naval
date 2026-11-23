@@ -39,6 +39,7 @@ const MODULOS = {
   'painel-carrinha': () => import('./painel-carrinha.js'),
   'valor-portal': () => import('./valor-portal.js'),
   perdas: () => import('./perdas.js'),
+  'analises-gestao': () => import('./analises-gestao.js'),
   calendario: () => import('./calendario.js'),
   relatorios: () => import('./relatorios.js'),
 };
@@ -83,6 +84,7 @@ export const MODULO_DA_PAGINA = {
   suporte: 'suporte',
   'valor-portal': 'valor-portal',
   perdas: 'perdas',
+  'analises-gestao': 'analises-gestao',
   calendario: 'calendario',
   relatorios: 'relatorios',
   'painel-carrinha': 'painel-carrinha',

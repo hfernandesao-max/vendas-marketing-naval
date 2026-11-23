@@ -71,6 +71,7 @@ export const PAGES = [
   { id: 'painel-sala', grupo: 'Inteligência de negócio', icon: 'tv', nome: 'Painel da sala comercial' },
   { id: 'qualidade-dados', grupo: 'Inteligência de negócio', icon: 'alvo', nome: 'Qualidade dos dados e anomalias' },
   { id: 'perdas', grupo: 'Inteligência de negócio', icon: 'perdas', nome: 'Perdas e tempo parado' },
+  { id: 'analises-gestao', grupo: 'Inteligência de negócio', icon: 'analises', nome: 'Análises de gestão' },
   // antes «Histórico de auditoria» em Administração: são controlos às vendas (duplicados, pendentes, cobranças sem
   // meio, visitas não feitas); o histórico de quem fez o quê está em Acessos › Registos de actividade
   { id: 'auditoria', grupo: 'Inteligência de negócio', icon: 'historico', nome: 'Controlo interno das vendas' },
@@ -124,6 +125,8 @@ export const NOMES_RECURSO = {
   'resumo-diario': 'Resumo diário por correio electrónico (07:00)',
   'caixa-entrega': 'Entrega do dinheiro pelo vendedor (app Naval Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)',
   perdas: 'Perdas e tempo parado por rota (Vr: só as suas rotas)',
+  'analises-gestao':
+    'Análises de gestão: RFM, coortes, valor do cliente, preço-volume-mix, ABC-XYZ, cesto, concentração, produtividade e cobertura de stock (Vr: só as suas rotas)',
   calendario: 'Calendário de trabalho (V: ver; G: definir folgas da empresa e dias de trabalho excepcionais)',
   'pendentes-escalamento': 'Pendentes atrasados: recebe o escalamento (10:00 e 16:30), com quem os tem para fazer',
   'app-gestao': 'App de gestão (telemóvel)',

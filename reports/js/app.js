@@ -92,6 +92,7 @@ const SEM_PERIODO = [
   'ocorrencias',
   'cargas-po',
   'calendario',
+  'analises-gestao',
 ];
 // Páginas que desenham as linhas de artigos (as outras abrem só com os documentos)
 const COM_ARTIGOS = new Set(['vendas-artigo', 'vendas-promotor-artigo', 'sap-exportar']);

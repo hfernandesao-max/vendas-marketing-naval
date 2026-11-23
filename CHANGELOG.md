@@ -1,5 +1,21 @@
 ## 23-11-2026
 
+### Análises de gestão (Inteligência de negócio)
+
+<!-- tipo: funcionalidade -->
+
+- Nova página com as análises das melhores empresas de bens de consumo, calculadas com as vendas do Pinguim BO até ontem e o stock do Pinguim BO. Cada análise tem o seu separador e os mosaicos do topo levam a cada uma:
+  - **Clientes (RFM):** recência, frequência e valor em 8 segmentos (Campeões, Leais, Não pode perder, Em risco…), com a acção recomendada e o **valor anual em risco**;
+  - **Coortes de retenção:** de cada 100 clientes novos, quantos voltam nos meses seguintes;
+  - **Valor do cliente (CLV) por rota:** valor mensal por cliente ÷ perda mensal de clientes;
+  - **Ponte preço-volume-mix:** a variação do mês separada em preço, volume, mix, artigos novos e artigos perdidos, por rota e por artigo;
+  - **Matriz ABC-XYZ:** valor × regularidade da procura, com a política de stock de cada célula;
+  - **Cesto de compras:** artigos que se vendem juntos (confiança, lift) e quantos clientes ainda não compram o segundo (venda cruzada);
+  - **Concentração (HHI):** dependência de poucos clientes, artigos ou rotas;
+  - **Produtividade das rotas** face ao quartil superior, com o potencial em Kz e a alavanca de cada rota (mais compras por dia ou maior cesto);
+  - **Cobertura de stock:** dias de venda cobertos, roturas, excesso, stock parado e capital empatado (só para quem vê o stock por armazém).
+- Clientes, artigos e rotas abrem a ficha. Direcção, Comercial, Financeiro e Auditoria vêem tudo; os supervisores só as suas rotas.
+
 ### PO: validação do controlo de stock antes da aprovação
 
 <!-- tipo: funcionalidade -->

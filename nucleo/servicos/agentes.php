@@ -234,8 +234,25 @@ function naval_ag_semanal(int $agora): ?array
     $perdas = naval_perdas_vista($ini, $fim, null);
     $d = naval_ag_semana_dados(naval_vendas_efectivas((array) $v['vendas']), naval_vendas_efectivas((array) $w['vendas']), $perdas,
         (array) (naval_ag_risco_ultimo()['rotas'] ?? []), $p) + ['de' => $ini, 'ate' => $fim];
+    // destaques das análises de gestão (RFM, preço-volume-mix, produtividade, roturas): no texto da IA e no e-mail
+    $dq = null;
+    try {
+        naval_servico('analises-gestao');
+        naval_servico('stock');
+        $st = null;
+        try {
+            $sd = naval_stock(date('Y-m-d', $agora));
+            $st = $sd ? naval_ag_linhas_stock($sd) : null;
+        } catch (Throwable $e) {
+            $st = null;
+        }
+        $dq = naval_ag_destaques(naval_ag_analises(naval_analise_agregados(date('Y-m-d', strtotime($fim . ' 12:00') - NAVAL_AG_DIAS * 86400), $fim), $fim, $p, $st));
+        $d['analises'] = $dq;
+    } catch (Throwable $e) {
+        error_log('[semanal] análises: ' . $e->getMessage());
+    }
     naval_servico('ia');
-    $texto = naval_ia_texto('Escreve três parágrafos curtos para a Direcção sobre a semana de vendas RTM: o que mudou face à semana anterior, as rotas que mais subiram e desceram, as perdas e os riscos, e uma recomendação concreta para esta semana.', $d);
+    $texto = naval_ia_texto('Escreve três parágrafos curtos para a Direcção sobre a semana de vendas RTM: o que mudou face à semana anterior, as rotas que mais subiram e desceram, as perdas e os riscos, os clientes valiosos em risco e o potencial das rotas (em «analises»), e uma recomendação concreta para esta semana.', $d);
     naval_servico('resumo');
     naval_servico('email');
     $dest = array_values(array_filter(array_map(function ($x) { return $x['rotas'] === null ? $x['email'] : ''; }, naval_resumo_destinatarios())));
@@ -243,6 +260,17 @@ function naval_ag_semanal(int $agora): ?array
     $e = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); };
     $kz = function ($v) { return number_format((float) $v, 0, ',', ' ') . ' Kz'; };
     $pc = function ($v) { return $v === null ? '—' : ($v > 0 ? '+' : '') . number_format($v * 100, 1, ',', '') . ' %'; };
+    $an = '';
+    if ($dq) {
+        $np = implode(', ', array_map(function ($x) use ($e, $kz) { return $e($x['cliente'] . ' (' . $x['rota'] . ', ' . $kz($x['valor']) . ')'); }, $dq['nao_perder']));
+        $an = '<h3 style="margin:14px 0 6px">Análises de gestão</h3><ul style="margin:0;padding-left:18px">'
+            . '<li>Valor anual em risco (clientes valiosos a afastar-se): <b>' . $kz($dq['valor_anual_em_risco']) . '</b>' . ($np ? ' · visitar: ' . $np : '') . '</li>'
+            . '<li>Mês até ontem face ao mês anterior: preço ' . $kz($dq['pvm']['preco']) . ' · volume ' . $kz($dq['pvm']['volume']) . ' · mix ' . $kz($dq['pvm']['mix']) . '</li>'
+            . ($dq['maior_potencial'] ? '<li>Potencial das rotas ao nível do quartil superior: <b>' . $kz($dq['potencial_total']) . '</b> em 4 semanas; maior na rota '
+                . $e($dq['maior_potencial']['rota'] . ' · ' . $dq['maior_potencial']['promotor']) . ' (' . $kz($dq['maior_potencial']['potencial']) . ')</li>' : '')
+            . ($dq['roturas'] ? '<li>Roturas de stock: ' . $e(implode(', ', $dq['roturas'])) . '</li>' : '')
+            . '</ul>';
+    }
     $li = '';
     foreach ($d['rotas'] as $r) {
         $li .= '<tr><td style="padding:4px">' . $e($r['rota'] . ' · ' . $r['promotor']) . '</td><td style="padding:4px;text-align:right">' . $kz($r['semana'])
@@ -253,7 +281,7 @@ function naval_ag_semanal(int $agora): ?array
         . intdiv($d['parado_min'], 60) . ' h</p>'
         . ($texto ? '<div style="margin:10px 0;padding:10px;background:#f2f4f9;border-radius:8px">' . nl2br($e($texto)) . '</div>' : '')
         . '<table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:left;padding:4px">Rota</th><th style="text-align:right;padding:4px">Vendas</th>'
-        . '<th style="text-align:right;padding:4px">Variação</th><th style="text-align:right;padding:4px">Risco</th></tr></thead><tbody>' . $li . '</tbody></table>'
+        . '<th style="text-align:right;padding:4px">Variação</th><th style="text-align:right;padding:4px">Risco</th></tr></thead><tbody>' . $li . '</tbody></table>' . $an
         . '<p style="color:#666;font-size:12px">Dados do Pinguim BO, das conciliações e do OLAP. Mensagem automática do Portal RTM.</p></div>';
     naval_enviar_email($dest, 'Semana de vendas RTM · ' . date('d-m', strtotime($ini)) . ' a ' . date('d-m-Y', strtotime($fim)) . ' · ' . $kz($d['semana']), $html);
     naval_registar('relatorio_semanal', ['de' => $ini, 'ate' => $fim, 'destinatarios' => count($dest)]);

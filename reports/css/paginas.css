@@ -1551,3 +1551,60 @@ dialog.dlg.cf-dlg {
 .cp-dados dt {
   color: var(--muted);
 }
+
+/* Análises de gestão: coortes (mapa de calor) e matriz ABC-XYZ */
+.ag-coortes td.ag-calor {
+  background: color-mix(in srgb, var(--accent, #3987e5) calc(var(--a, 0) * 70%), transparent);
+}
+.ag-matriz {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 6px;
+  width: 100%;
+  min-width: 560px;
+}
+.ag-matriz th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+}
+.ag-matriz th,
+.ag-matriz td {
+  white-space: normal;
+}
+.ag-matriz th:first-child {
+  width: 140px;
+}
+.ag-cel {
+  vertical-align: top;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #d5dcea);
+}
+.ag-cel strong,
+.ag-cel span,
+.ag-cel small {
+  display: block;
+}
+.ag-cel strong {
+  font-size: 16px;
+}
+.ag-cel small {
+  color: var(--muted, #5b6478);
+  margin-top: 4px;
+}
+.ag-AX,
+.ag-AY,
+.ag-BX {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.ag-AZ,
+.ag-BY,
+.ag-CX {
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.ag-BZ,
+.ag-CY,
+.ag-CZ {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+}

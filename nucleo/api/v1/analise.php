@@ -7,6 +7,8 @@
  *                                   do mês com o acompanhamento (nucleo/servicos/objectivos.php) — recurso «previsao»
  * GET v1/painel                     painel de gestão RTM (tendência, ABC, distribuição numérica, valor e artigos por compra,
  *                                   mapa de calor, carteira) — recurso «painel-gestao»
+ * GET v1/analises                   análises de gestão (RFM, coortes, CLV, preço-volume-mix, ABC-XYZ, cesto, concentração,
+ *                                   produtividade face ao quartil superior, cobertura de stock) — recurso «analises-gestao»
  * GET v1/indicadores                indicadores do dia para a app de gestão: hoje (ao vivo) face à previsão, ontem, semana,
  *                                   mês, classificação das rotas e número de alertas — recurso «app-gestao»
  */
@@ -125,6 +127,31 @@ if ($f === 'painel') {
     $r = naval_cache('painel|' . $hoje . '|' . floor(time() / 900) . '|' . json_encode($rotas), 900, function () use ($hoje, $rotas) {
         $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - NAVAL_PAINEL_DIAS * 86400), $hoje), $rotas, true);
         return naval_painel($ag, $hoje, naval_promotores());
+    }, ($_GET['fresco'] ?? '') === '1');
+    naval_json(['ok' => true] + $r);
+}
+
+if ($f === 'analises') {
+    naval_exigir(['analises-gestao']);
+    naval_servico('analises-gestao');
+    if (!$veValores) throw new NavalErro('As análises de gestão precisam de acesso às páginas de vendas.', 403);
+    $fim = date('Y-m-d', time() - 86400);
+    // stock só para quem vê o stock por armazém; sem ligação, as outras análises seguem sem a cobertura
+    $comStock = naval_pode('stock-armazem');
+    $r = naval_cache('analises|' . $fim . '|' . floor(time() / 3600) . '|' . json_encode($rotas) . '|' . (int) $comStock, 3600, function () use ($fim, $rotas, $comStock) {
+        $ag = naval_analise_ambito(naval_analise_agregados(date('Y-m-d', time() - NAVAL_AG_DIAS * 86400), $fim), $rotas, true);
+        $stock = null;
+        $erroStock = null;
+        if ($comStock) {
+            try {
+                naval_servico('stock');
+                $d = naval_stock(date('Y-m-d'));
+                $stock = $d ? naval_ag_linhas_stock(naval_stock_ambito($d, $rotas, true)) : null;
+            } catch (Throwable $e) {
+                $erroStock = $e->getMessage();
+            }
+        }
+        return naval_ag_analises($ag, $fim, naval_promotores(), $stock) + ['stock_erro' => $erroStock, 'com_stock' => $comStock];
     }, ($_GET['fresco'] ?? '') === '1');
     naval_json(['ok' => true] + $r);
 }

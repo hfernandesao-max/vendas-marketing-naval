@@ -60,6 +60,7 @@ function naval_api_rotas(): array
         'v1/previsao' => [['GET'], 'jwt', 'analise.php', ['f' => 'previsao']],
         'v1/indicadores' => [['GET'], 'jwt', 'analise.php', ['f' => 'indicadores']],
         'v1/painel' => [['GET'], 'jwt', 'analise.php', ['f' => 'painel']],
+        'v1/analises' => [['GET'], 'jwt', 'analise.php', ['f' => 'analises']],
         'v1/assistente' => [['GET', 'POST'], 'jwt', 'assistente.php', []],
         'v1/resumo' => [['GET', 'POST'], 'jwt', 'assistente.php', ['resumo' => '1']],
         'v1/sala' => [['GET'], 'publico', 'sala.php', []],

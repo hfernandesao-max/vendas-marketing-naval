@@ -77,6 +77,7 @@ const ICON = {
   historico: 'M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5M12 8v4l3 2',
   alvo: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01',
   perdas: 'M3 5h18M3 5l7 8v6l4 2v-8l7-8M16 15l4 4M20 15l-4 4',
+  analises: 'M4 20V10M9 20V4M14 20v-7M19 20V8M3 20h18M4 10l5-6 5 9 5-5',
   calendario: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2',
   slides: 'M3 4h18v12H3zM12 16v4M8 20h8M7 8h6M7 12h10',
   lupa: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5',

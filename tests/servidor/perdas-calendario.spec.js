@@ -31,3 +31,16 @@ test('calendário: todos vêem; só a Direcção define, com motivo', async () =
   expect(x.excepcoes.find((e) => e.dia === dia)).toMatchObject({ tipo: 'folga', motivo: 'Ponte da empresa', por: 'dir' });
   expect(await post(dir, { accao: 'definir', dia, tipo: '', motivo: '' })).toBe(200);
 });
+
+test('análises de gestão: Direcção vê todas as análises; o vendedor não; o supervisor só as suas rotas', async () => {
+  const dir = (await entrar('dir')).ctx;
+  const r = await dir.get(API + 'analises');
+  expect(r.status()).toBe(200);
+  const d = await r.json();
+  for (const k of ['rfm', 'coortes', 'clv', 'pvm', 'abc_xyz', 'cesto', 'concentracao', 'produtividade']) expect(d).toHaveProperty(k);
+  expect(d.rfm.segmentos).toHaveLength(8);
+  expect(d.abc_xyz.matriz).toHaveLength(9);
+  expect((await (await entrar('pro')).ctx.get(API + 'analises')).status()).toBe(403);
+  const sup = await (await (await entrar('sup')).ctx.get(API + 'analises')).json();
+  expect(sup.ok).toBe(true);
+});

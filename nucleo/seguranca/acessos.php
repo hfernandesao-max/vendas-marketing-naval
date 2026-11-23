@@ -109,6 +109,8 @@ const NAVAL_MATRIZ_TXT = [
     'valor-portal'         => 'V  G  -  -  -  V  -  -  -  V  -',
     // perdas e tempo parado por rota (faltas na carrinha, entrega do dinheiro, tempo parado, notas de crédito, descontos, anulados)
     'perdas'               => 'V  V  V  Vr -  V  -  V  -  V  -',
+    // análises de gestão (RFM, coortes, CLV, preço-volume-mix, ABC-XYZ, cesto, concentração, produtividade, cobertura)
+    'analises-gestao'      => 'V  V  V  Vr -  V  -  -  -  V  -',
     // calendário de trabalho (horário, feriados, folgas da empresa): todos vêem; a Direcção e a Informática definem
     'calendario'           => 'G  G  V  V  V  V  V  V  -  V  -',
     // explorador de relatórios: todos criam e guardam os seus (V); partilhar com todos (G); os dados de cada área seguem
@@ -230,6 +232,7 @@ function naval_niveis_recurso(string $rec): array
             return ['', 'V'];
         case 'app-gestao':
         case 'perdas':
+        case 'analises-gestao':
             return ['', 'Vr', 'V'];
         case 'painel-sala':
         case 'clientes-qr':

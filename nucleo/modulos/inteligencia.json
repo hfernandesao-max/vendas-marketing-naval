@@ -4,9 +4,10 @@
   "versao": "1.3.0",
   "descricao": "Previsão de vendas, assistente de IA, painel da sala comercial, gráficos de gestão, resumo diário, fecho do dia, app de gestão, valor do portal para a Naval e explorador de relatórios (criar, guardar, partilhar e certificar relatórios).",
   "nucleo": false,
-  "paginas": ["previsao", "assistente", "painel-sala", "qualidade-dados", "valor-portal", "relatorios", "perdas"],
+  "paginas": ["previsao", "assistente", "painel-sala", "qualidade-dados", "valor-portal", "relatorios", "perdas", "analises-gestao"],
   "recursos": [
     "perdas",
+    "analises-gestao",
     "previsao",
     "assistente",
     "painel-sala",
@@ -19,7 +20,7 @@
     "relatorios",
     "relatorios-certificar"
   ],
-  "api": ["v1/perdas", "v1/valor", "v1/previsao", "v1/indicadores", "v1/painel", "v1/assistente", "v1/resumo", "v1/sala", "v1/sala/ligacoes", "v1/sala/presenca", "v1/relatorios"],
+  "api": ["v1/perdas", "v1/analises", "v1/valor", "v1/previsao", "v1/indicadores", "v1/painel", "v1/assistente", "v1/resumo", "v1/sala", "v1/sala/ligacoes", "v1/sala/presenca", "v1/relatorios"],
   "conectores": ["ia"],
   "eventos": {
     "publica": [],
