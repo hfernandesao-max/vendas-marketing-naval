@@ -674,6 +674,10 @@ function naval_req_catalogo(): array
             }
         }
     }
+    // imagem do artigo no Pinguim BO (a app vai buscá-la a v1/artigo-imagem só quando existe)
+    naval_servico('artigo-imagem');
+    $comImg = naval_artigos_com_imagem();
+    foreach ($art as $c => $a) $art[$c]['tem_imagem'] = isset($comImg[(string) $c]);
     uasort($art, function ($a, $b) { return strcmp($a['artigo'], $b['artigo']); });
     return array_values($art);
 }

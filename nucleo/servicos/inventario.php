@@ -326,7 +326,8 @@ function naval_inv_codigos_barras(): array
             if ($col === null) continue;
             if ($tab === 'PRODUCT') $consultas[] = "SELECT LTRIM(RTRIM(CAST($col AS VARCHAR(60)))) AS B, LTRIM(RTRIM(CODE)) AS P FROM PRODUCT WHERE DELETED = 0 AND $col IS NOT NULL";
             elseif (strpos($tab, 'BARCODE') !== false && in_array('PRODUCT_ID', $cs, true) && $col !== 'CODE') {
-                $consultas[] = "SELECT LTRIM(RTRIM(CAST(B.$col AS VARCHAR(60)))) AS B, LTRIM(RTRIM(P.CODE)) AS P FROM $tab B INNER JOIN PRODUCT P ON P.ID = B.PRODUCT_ID WHERE B.$col IS NOT NULL";
+                $consultas[] = "SELECT LTRIM(RTRIM(CAST(B.$col AS VARCHAR(60)))) AS B, LTRIM(RTRIM(P.CODE)) AS P FROM $tab B INNER JOIN PRODUCT P ON P.ID = B.PRODUCT_ID WHERE B.$col IS NOT NULL"
+                    . (in_array('DELETED', $cs, true) ? ' AND B.DELETED = 0' : '') . ' AND P.DELETED = 0';
             }
         }
         $out = [];

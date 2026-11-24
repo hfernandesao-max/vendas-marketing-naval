@@ -319,15 +319,8 @@ function formPedido(rotas, nomes, existente) {
       const tr = el('tr');
       const i = numero(antes[a.codigo] != null ? antes[a.codigo] : '', t('Quantidade') + ' · ' + tArtigo(a.artigo));
       i.placeholder = '0';
-      const ta = el('td', a.imagem ? 'op-com-img' : null);
-      if (a.imagem) {
-        const im = el('img', 'op-art-img');
-        im.loading = 'lazy';
-        im.alt = '';
-        im.src = a.imagem;
-        im.addEventListener('error', () => im.remove());
-        ta.append(im);
-      }
+      const ta = el('td', a.tem_imagem ? 'op-com-img' : null);
+      if (a.tem_imagem) ta.append(imagemArtigo(a.codigo));
       ta.append(
         el('span', 'op-cod', a.codigo),
         el('br'),
@@ -479,6 +472,40 @@ function comPassos(i, nome, tipo = 'nota') {
   mais.addEventListener('click', () => mudar(passo));
   w.append(menos, i, mais);
   return w;
+}
+
+// Imagem do artigo (Pinguim BO, v1/artigo-imagem): pedida com o token da sessão só quando aparece no ecrã
+const IMGS = new Map();
+const vigia =
+  'IntersectionObserver' in window
+    ? new IntersectionObserver(
+        (es) =>
+          es.forEach((e) => {
+            if (!e.isIntersecting) return;
+            vigia.unobserve(e.target);
+            carregarImagem(e.target);
+          }),
+        { rootMargin: '200px' },
+      )
+    : null;
+function carregarImagem(im) {
+  const c = im.dataset.codigo;
+  const p =
+    IMGS.get(c) ||
+    apiFetch('artigo-imagem?codigo=' + encodeURIComponent(c)).then(
+      (r) => (r.ok ? r.blob().then((b) => URL.createObjectURL(b)) : null),
+      () => null,
+    );
+  IMGS.set(c, p);
+  p.then((u) => (u ? (im.src = u) : im.remove()));
+}
+function imagemArtigo(codigo) {
+  const im = el('img', 'op-art-img');
+  im.alt = '';
+  im.dataset.codigo = codigo;
+  if (vigia) vigia.observe(im);
+  else carregarImagem(im);
+  return im;
 }
 
 function cartaoEntrega(r, d, dia) {

@@ -242,7 +242,7 @@ test('operações: notas com imagem e botões − e +; o pedido começa-se duran
     }
     if (u.includes('catalogo=1'))
       return r.fulfill({
-        json: { ok: true, artigos: [{ codigo: '10000386', artigo: 'Sabão 6 barras Extra', disponivel: 240, imagem: '../assets/naval-emblema-64.png' }] },
+        json: { ok: true, artigos: [{ codigo: '10000386', artigo: 'Sabão 6 barras Extra', disponivel: 240, tem_imagem: true }] },
       });
     return r.fulfill({
       json: {
@@ -263,6 +263,7 @@ test('operações: notas com imagem e botões − e +; o pedido começa-se duran
       },
     });
   });
+  await page.route('**/v1/artigo-imagem**', (r) => r.fulfill({ path: 'assets/naval-emblema-64.png', contentType: 'image/png' }));
   const erros = await abrir(page, 'entrega,mercadoria', { ...SESSAO, login: 'pro7' });
   await expect(page.locator('.op-nota-img svg').first()).toBeVisible();
   await page.getByRole('button', { name: /Mais uma nota de 1.?000 Kz/ }).click();

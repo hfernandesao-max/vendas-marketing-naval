@@ -42,3 +42,11 @@ teste('inventário: contagem às cegas, terminar só com tudo contado, validar c
     igual(true, $novo['numero'] !== $n);
     igual(true, in_array($n, array_column(naval_inv_lista(), 'numero'), true));
 });
+
+teste('imagem do artigo: o tipo vem dos primeiros bytes (só imagens)', function () {
+    naval_servico('artigo-imagem');
+    igual('image/jpeg', naval_artigo_imagem_tipo("\xFF\xD8\xFF\xE0\x00\x10JFIF"));
+    igual('image/png', naval_artigo_imagem_tipo("\x89PNG\r\n\x1A\nxxxx"));
+    igual(null, naval_artigo_imagem_tipo('<svg onload=alert(1)>'));
+    igual(null, naval_artigo_imagem_tipo(''));
+});

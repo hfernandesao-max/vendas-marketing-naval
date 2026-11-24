@@ -35,6 +35,7 @@
     "v1/conciliacao-carrinha",
     "v1/fora-horario",
     "v1/inventario",
+    "v1/artigo-imagem",
     "v1/requisicoes",
     "v1/ordens-pinguim",
     "v1/robo/ordens",
