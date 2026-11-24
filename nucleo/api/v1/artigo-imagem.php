@@ -16,6 +16,7 @@ if ($img === null) throw new NavalErro('Este artigo não tem imagem no Pinguim B
 header('Content-Type: ' . $img['tipo']);
 header('Cache-Control: private, max-age=86400');
 header('X-Content-Type-Options: nosniff');
+header("Content-Security-Policy: default-src 'none'; sandbox");
 header('Content-Length: ' . strlen($img['dados']));
-echo $img['dados'];
+echo $img['dados']; // nosemgrep: echoed-request -- bytes de imagem do Pinguim BO (tipo verificado pelos primeiros bytes, nosniff, CSP sandbox), não HTML
 exit;
