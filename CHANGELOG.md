@@ -1,5 +1,13 @@
 ## 24-11-2026
 
+### Conciliação da carrinha: acerto da Logística com a quantidade exacta da falta
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: correcao -->
+
+- Um acerto da Logística (saída de armazém, devolução ou inventário) lançado depois da contagem, no sentido da diferença e com a quantidade exacta da falta, passa a regularizá-la, mesmo quando é mais do que o contado. Antes era tomado por devolução do contado ao armazém e não explicava. Ex.: rota 1011, 23-11: contou 7 fraldas MIMO e faltavam 10; a SA A1000/144 tirou as 10 da venda por depósito GRN 9916 — a falta fica «Regularizada» e a conciliação pode ser validada.
+- **Regras aplicadas ao passado logo na instalação:** quando uma versão muda as regras da conciliação, a revisão dos últimos 45 dias corre no ciclo seguinte (antes, só na madrugada). As conciliações ainda não aprovadas ficam revistas com as regras novas e as futuras seguem-nas; as aprovadas não mudam (ficam assinaladas se o Pinguim BO mudar).
+
 ### Ficheiro para o SAP: envio automático por email às 16:00
 
 <!-- paginas: sap-exportar -->

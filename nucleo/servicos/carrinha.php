@@ -979,6 +979,8 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
 /**
  * Rotina periódica: de hora a hora revê os últimos 3 dias e, de madrugada (a partir das 03:30), os últimos 45 contra
  * o Pinguim BO, para que uma guia anulada ou corrigida depois da contagem nunca fique esquecida numa base congelada.
+ * Quando as regras mudam (nova versão deste ficheiro), a revisão dos 45 dias corre logo no ciclo seguinte: as regras
+ * novas aplicam-se de imediato às conciliações passadas ainda não aprovadas, e daí em diante a todas.
  * CARRINHA_REVER_PINGUIM=0 desliga.
  */
 function naval_carr_rever_tick(int $agora): ?array
@@ -987,10 +989,14 @@ function naval_carr_rever_tick(int $agora): ?array
     $f = naval_pasta('carrinha') . '/_revisao.json';
     $e = naval_json_ler($f) ?: [];
     $hoje = date('Y-m-d', $agora);
-    $longa = date('H:i', $agora) >= '03:30' && ($e['longa'] ?? '') !== $hoje;
+    $regras = (string) hash_file('sha256', __FILE__);
+    $longa = (date('H:i', $agora) >= '03:30' && ($e['longa'] ?? '') !== $hoje) || ($e['regras'] ?? '') !== $regras;
     if (!$longa && $agora - (int) ($e['curta'] ?? 0) < 3600) return null;
     $dias = $longa ? 45 : 3;
-    if ($longa) $e['longa'] = $hoje;
+    if ($longa) {
+        $e['longa'] = $hoje;
+        $e['regras'] = $regras;
+    }
     $e['curta'] = $agora;
     naval_json_gravar($f, $e, false);
     $r = naval_carr_rever_pinguim(date('Y-m-d', $agora - ($dias - 1) * 86400), $hoje, ['login' => 'sistema']);
@@ -1245,6 +1251,19 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
                 continue;
             }
             $falta -= $explicadoC;
+        }
+        // regularização exacta: o primeiro acerto da Logística depois da contagem, no sentido da diferença e com a
+        // quantidade exacta do que falta explicar, é a regularização documentada — não a devolução do contado, mesmo que
+        // seja mais do que se contou (ex.: rota 1011, 23-11: contou 7 fraldas MIMO, faltavam 10; a SA A1000/144 tirou as
+        // 10 da venda por depósito GRN 9916)
+        foreach ($acertos as $a) {
+            if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
+            if (((float) $a['efeito'] < 0) === ($d < 0) && abs(abs((float) $a['efeito']) - $falta) <= NAVAL_CARR_TOLERANCIA) {
+                $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * ($falta + $explicadoC), 3), 'doc' => implode(', ', array_values(array_unique(array_merge($docsC, [$a['doc']])))),
+                    'em' => $emC ?: $a['em']];
+                continue 2;
+            }
+            break;
         }
         // 0. conservação da contagem (falta): a carrinha nunca tem stock negativo. Em cada momento depois da contagem, o
         //    que saiu (vendas e devoluções ao armazém) só podia sair do contado mais o que entretanto se carregou; o que

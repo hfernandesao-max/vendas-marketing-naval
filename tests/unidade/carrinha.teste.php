@@ -673,3 +673,21 @@ teste('venda por depósito (facturada no SAP): registo validado e a falta explic
     $f = naval_carr_deposito_factura($d['id'], 'FT 2026/123', $eu);
     igual('FT 2026/123', $f['factura_sap']);
 });
+
+teste('regularização exacta: acerto da Logística com a quantidade da falta explica-a, mesmo maior do que o contado (rota 1011, 23-11)', function () {
+    // contou 7 MIMO (faltavam 10) e 97 NAVAL (faltavam 50); a SA A1000/144 de 24-11 tirou 10 MIMO e 50 NAVAL (venda por
+    // depósito GRN 9916); depois, facturas normais do dia 24
+    $linhas = [['codigo' => '10000015', 'diferenca' => -10.0, 'contado' => 7.0], ['codigo' => '10000332', 'diferenca' => -50.0, 'contado' => 97.0]];
+    $ac = [
+        ['rota' => '1011', 'codigo' => '10000015', 'doc' => 'SA A1000/144', 'em' => '2026-11-24 10:02:25', 'efeito' => -10.0, 'tipo' => 'acerto'],
+        ['rota' => '1011', 'codigo' => '10000332', 'doc' => 'SA A1000/144', 'em' => '2026-11-24 10:02:25', 'efeito' => -50.0, 'tipo' => 'acerto'],
+        ['rota' => '1011', 'codigo' => '10000332', 'doc' => 'FR FR0126S77687N/13', 'em' => '2026-11-24 10:29:27', 'efeito' => -50.0, 'tipo' => 'venda'],
+        ['rota' => '1011', 'codigo' => '10000015', 'doc' => 'FR FR0126S77687N/16', 'em' => '2026-11-24 14:38:22', 'efeito' => -7.0, 'tipo' => 'venda'],
+    ];
+    $r = naval_carr_regularizacoes($linhas, $ac, '1011', '2026-11-23 16:00:00', '2026-11-23 16:14:00');
+    igual(['q' => -10.0, 'doc' => 'SA A1000/144', 'em' => '2026-11-24 10:02:25'], $r['10000015']);
+    igual(['q' => -50.0, 'doc' => 'SA A1000/144', 'em' => '2026-11-24 10:02:25'], $r['10000332']);
+    // a mesma saída com outra quantidade, maior do que o contado, continua a ser a devolução do contado (não explica)
+    $ac2 = [['rota' => '1011', 'codigo' => '10000015', 'doc' => 'SA A1000/150', 'em' => '2026-11-24 10:02:25', 'efeito' => -7.0, 'tipo' => 'acerto']];
+    igual([], naval_carr_regularizacoes([['codigo' => '10000015', 'diferenca' => -10.0, 'contado' => 7.0]], $ac2, '1011', '2026-11-23 16:00:00', '2026-11-23 16:14:00'));
+});
