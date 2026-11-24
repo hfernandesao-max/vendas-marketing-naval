@@ -5429,4 +5429,7 @@ export const TI = {
     'ብተቐማጢ ምስ ቅብሊት ዝተሸጠ ኣቕሓ፡ ኣብ SAP ደረሰኝ ዝወሃቦ። ነቲ ደረሰኝ SAP ንምክትታል ይምዝገብ፤ ነታ ቫን ኣይንክዮን፦ እቲ ጐደሎ ብዘይካ ብምውጻእ መኽዘን (SA) ናይ ሎጂስቲክስ ኣብ Pinguim BO ኣይስተኻኸልን።',
   'Venda por depósito registada. A falta na carrinha regulariza-se com a saída de armazém (SA) no Pinguim BO.':
     'ሽያጥ ብተቐማጢ ተመዝጊቡ። ጐደሎ ቫን ብምውጻእ መኽዘን (SA) ኣብ Pinguim BO ይስተኻኸል።',
+  'Lote complementar do lote {l}: leva só os {n} documentos deste período que ainda não foram enviados (por exemplo, facturas emitidas depois com a data de um dia anterior).':
+    'ተወሳኺ ጥማር ናይ ጥማር {l}፦ ካብዚ ግዜ ገና ዘይተላእኩ {n} ሰነዳት ጥራይ ይሕዝ (ንኣብነት፡ ደሓር ብዝሓለፈ ዕለት ዝተዋህቡ ደረሰኛታት)።',
+  'complementar do lote {l}': 'ተወሳኺ ናይ ጥማር {l}',
 };

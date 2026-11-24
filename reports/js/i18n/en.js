@@ -5533,4 +5533,7 @@ export const EN = {
     'Goods sold on deposit with a receipt, invoiced in SAP. It is recorded to track the SAP invoice; it does not reduce the van: the shortage is only regularised by the warehouse exit (SA) that Logistics posts in Pinguim BO.',
   'Venda por depósito registada. A falta na carrinha regulariza-se com a saída de armazém (SA) no Pinguim BO.':
     'Deposit sale recorded. The van shortage is regularised by the warehouse exit (SA) in Pinguim BO.',
+  'Lote complementar do lote {l}: leva só os {n} documentos deste período que ainda não foram enviados (por exemplo, facturas emitidas depois com a data de um dia anterior).':
+    'Supplementary batch to batch {l}: it carries only the {n} documents of this period not yet sent (for example, invoices issued later with an earlier date).',
+  'complementar do lote {l}': 'supplementary to batch {l}',
 };

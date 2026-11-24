@@ -709,3 +709,15 @@ teste('saída de armazém entre o corte e a contagem física explica a falta (ro
     $ac2 = [['rota' => '1009', 'codigo' => '10000332', 'doc' => 'GTC A1000/200', 'em' => '2026-11-24 16:00:00', 'efeito' => 50.0, 'tipo' => 'carga']];
     igual([], naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -147.0, 'contado' => 0.0]], $ac2, '1009', '2026-11-24 15:30:00', '2026-11-24 16:40:00'));
 });
+
+teste('acerto lançado depois de outra contagem só explica a anterior se a diferença se manteve (rota 1011: SA 144 sim, SA 156 não)', function () {
+    $sa = function ($cod, $em, $q, $doc) { return ['rota' => '1011', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => 'acerto']; };
+    // 20-11: faltavam 15 sabões castanhos; a 23-11 a contagem batia; a SA 156 de 24-11 é da contagem de 24-11
+    $seg = [['em' => '2026-11-21 14:00:00', 'dif' => ['293' => -15.0]], ['em' => '2026-11-23 16:00:00', 'dif' => ['293' => 0.0]], ['em' => '2026-11-24 15:30:00', 'dif' => ['293' => -15.0]]];
+    $r = naval_carr_regularizacoes([['codigo' => '293', 'diferenca' => -15.0, 'contado' => 0.0]], [$sa('293', '2026-11-24 16:53:56', -15.0, 'SA A1000/156')], '1011', '2026-11-20 16:00:00', null, null, $seg);
+    igual([], $r);
+    // 21-11: faltavam 50 fraldas e a 23-11 ainda faltavam: a SA 144 de 24-11 explica as duas contagens
+    $seg = [['em' => '2026-11-23 16:00:00', 'dif' => ['332' => -50.0]]];
+    $r = naval_carr_regularizacoes([['codigo' => '332', 'diferenca' => -50.0, 'contado' => 97.0]], [$sa('332', '2026-11-24 10:02:25', -50.0, 'SA A1000/144')], '1011', '2026-11-21 14:00:00', null, null, $seg);
+    igual(-50.0, $r['332']['q']);
+});

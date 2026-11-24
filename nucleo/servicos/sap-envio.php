@@ -153,7 +153,8 @@ function naval_sap_envio_ciclo(int $agora, array $o = []): ?array
     naval_servico('calendario');
     $cal = naval_cal_dia($dia);
     [$de, $ate] = naval_sap_envio_periodo(naval_sap_lotes(), $dia);
-    $dados = $o['vendas'] ?? naval_sap_envio_vendas($de, $ate);
+    // lê também os 7 dias antes, para apanhar as facturas emitidas hoje com a data de um dia anterior (turno aberto)
+    $dados = $o['vendas'] ?? naval_sap_envio_vendas(date('Y-m-d', strtotime($de . ' 12:00') - 7 * 86400), $ate);
     if ($dados === null) {
         // sem ligação ao Pinguim BO: tenta de novo no ciclo seguinte; às 19:00 avisa e desiste por hoje
         if (date('H:i', $agora) < '19:00') return ['erro' => 'sem_ligacao'];

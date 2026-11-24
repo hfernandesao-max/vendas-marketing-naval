@@ -349,6 +349,22 @@ function gerarFicheiroSap() {
       if (L.avisos.length) {
         b.append(el('p', 'aviso', t('{n} avisos (ver a lista na página). Pode gerar na mesma.', { n: L.avisos.length })));
       }
+      // lote complementar: o período já tem documentos enviados noutro lote (nunca se anula um lote carregado no SAP)
+      const anteriores = (SAPD.lotes || []).filter((x) => x.estado !== 'anulado' && x.de <= st.ate && x.ate >= st.de).map((x) => x.numero);
+      if (anteriores.length)
+        b.append(
+          el(
+            'p',
+            'aviso',
+            t(
+              'Lote complementar do lote {l}: leva só os {n} documentos deste período que ainda não foram enviados (por exemplo, facturas emitidas depois com a data de um dia anterior).',
+              {
+                l: anteriores.join(', '),
+                n: n0(L.docs.length),
+              },
+            ),
+          ),
+        );
       const erro = msgErro();
       b.append(erro);
       const go = botao(t('Gerar e descarregar'), '', () => {
@@ -825,6 +841,7 @@ function registoLotes(gera) {
           ? (x.estado === 'emitido' ? '' : ' · ') +
             t('{n} linhas com o depósito por omissão {l} (rotas {r})', { n: x.omissao.linhas, l: x.omissao.local, r: x.omissao.rotas.join(', ') })
           : '') +
+        (x.complementa && x.complementa.length ? ' · ' + t('complementar do lote {l}', { l: x.complementa.join(', ') }) : '') +
         (x.envio
           ? (x.estado === 'emitido' && !x.omissao ? '' : ' · ') +
             (x.envio.ok ? t('enviado por email a {p}', { p: x.envio.para.join(', ') }) : t('o email não seguiu: {e}', { e: x.envio.erro || '' }))

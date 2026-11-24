@@ -166,3 +166,24 @@ teste('envio automático para o SAP: o email de teste segue para os dois endere�
     igual([true, null, true], [$r['para']['ok'], $r['avisar'], $r['sem_ligacao']]);
     lanca(400, function () { naval_sap_envio_teste(['para' => ''], ['login' => 'fin']); });
 }); });
+
+teste('lote complementar: factura emitida hoje com a data de um dia anterior vai no envio de hoje; o lote fica ligado ao do período', function () { sap_isolado(function () {
+    $cfg = naval_sap_config();
+    $cfg['rotas'] = ['1002' => ['local' => 'RTM1']];
+    naval_json_gravar(naval_sap_pasta() . '/config.json', $cfg);
+    $v = function ($doc, $data, $emitida = null) { return ['documento' => $doc, 'data' => $data, 'hora' => '10:31', 'rota' => '1002', 'tipo' => 'Factura-recibo', 'total' => 114] + ($emitida ? ['emitida' => $emitida] : []); };
+    $a = function ($doc) { return ['documento' => $doc, 'codigo' => '10000332', 'artigo' => 'Fraldas', 'quantidade' => 1, 'valor_sem_iva' => 100, 'iva' => 14, 'unidade' => 'CAR']; };
+    $vendas = [$v('FR 13', '2026-11-19'), $v('FR 14', '2026-11-19', '2026-11-23'), $v('FR 20', '2026-11-23')];
+    $artigos = [$a('FR 13'), $a('FR 14'), $a('FR 20')];
+    $L = naval_sap_linhas($vendas, $artigos, $cfg, ['rotas' => [], 'artigos' => []], [], [], '2026-11-23', '2026-11-23');
+    igual(['FR 14', 'FR 20'], array_column($L['docs'], 'documento'), 'a FR 14 (de 19-11, emitida a 23-11) entra no envio de 23-11');
+    // lote do dia 19 já carregado; o complementar desse dia leva só o que falta e fica ligado a ele
+    $x = naval_sap_xlsx([]);
+    $l13 = naval_sap_novo_lote(['de' => '2026-11-19', 'ate' => '2026-11-19', 'documentos' => ['FR 13'], 'linhas' => 1, 'total' => 114], "PK\x03\x04" . $x, ['login' => 'fin', 'nome' => 'Fin']);
+    naval_sap_confirmar((int) $l13['numero'], '19112026', ['login' => 'fin', 'nome' => 'Fin']);
+    $L = naval_sap_linhas($vendas, $artigos, $cfg, ['rotas' => [], 'artigos' => []], naval_sap_exportados(naval_sap_lotes()), [], '2026-11-19', '2026-11-19');
+    igual(['FR 14'], array_column($L['docs'], 'documento'));
+    $c = naval_sap_novo_lote(['de' => '2026-11-19', 'ate' => '2026-11-19', 'documentos' => ['FR 14'], 'linhas' => 1, 'total' => 114], $x, ['login' => 'fin', 'nome' => 'Fin']);
+    igual([(int) $l13['numero']], $c['complementa']);
+    lanca(409, function () use ($l13) { naval_sap_anular((int) $l13['numero'], 'anular o lote carregado', ['login' => 'outro', 'perfil' => 'FIN']); });
+}); });

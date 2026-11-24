@@ -1,5 +1,20 @@
 ## 24-11-2026
 
+### Ficheiro para o SAP: lotes complementares
+
+<!-- paginas: sap-exportar -->
+<!-- tipo: funcionalidade -->
+
+- **Lote complementar:** um lote carregado no SAP nunca se anula. Os documentos de um período já enviado que aparecem depois (por exemplo, facturas emitidas mais tarde com a data de um dia anterior por o turno do Winrest ter ficado aberto) seguem num lote novo, só com o que falta, registado como «complementar do lote N». A página avisa antes de gerar. Ex.: rota 1002, FR0126S77755N/14 a 16 de 19-11 (emitidas a 23-11), fora do lote 13 de 19-11: gerando o ficheiro para 19-11 saem só essas três.
+- **Envio automático:** o lote das 16:00 leva também as facturas emitidas nesse dia com a data de um dia anterior, assinaladas nos avisos; no SAP seguem com a data do documento.
+
+### Conciliação da carrinha: acerto posterior a outra contagem
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: correcao -->
+
+- Um acerto da Logística lançado depois de outra contagem da mesma carrinha só explica a contagem anterior se a diferença se manteve, no mesmo sentido, em todas as contagens até ele. Ex.: a SA A1000/156 (24-11, 15 sabões castanhos da rota 1011) explica a contagem de 24-11 e já não a de 20-11, porque a de 23-11 batia; a SA A1000/144 continua a explicar 21-11 e 23-11, porque a falta das 50 fraldas se manteve.
+
 ### Conciliação da carrinha: acerto da Logística com a quantidade exacta da falta
 
 <!-- paginas: conciliacao-carrinha -->

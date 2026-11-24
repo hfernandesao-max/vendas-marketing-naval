@@ -882,6 +882,24 @@ function naval_carr_rever_pinguim(string $desde, string $ate, array $eu, bool $e
  * Pinguim BO que a corrige e grava-o; sem diferenças por explicar, uma conciliação já validada fecha sozinha (gestão
  * por excepção, como no fecho sem diferenças). As aprovadas não mudam. Devolve os artigos regularizados de novo.
  */
+/** As contagens seguintes da rota (até 10 dias depois): [{em, dif: {codigo: diferença antes das regularizações}}]. */
+function naval_carr_contagens_seguintes(string $dia, string $rota): array
+{
+    $out = [];
+    for ($i = 1; $i <= 10; $i++) {
+        $d = date('Y-m-d', strtotime($dia . ' 12:00') + $i * 86400);
+        if ($d > date('Y-m-d')) break;
+        $r = naval_carr_ler($d, $rota);
+        if (!is_array($r['contagem'] ?? null) || !$r['contagem'] || !is_array($r['base'] ?? null)) continue;
+        $base = (array) $r['base'];
+        $base['post'] = naval_carr_posteriores($r);
+        $dif = [];
+        foreach (naval_carr_linhas($base, $r['contagem'], (array) ($r['precos'] ?? [])) as $l) $dif[(string) $l['codigo']] = (float) ($l['diferenca_bruta'] ?? $l['diferenca'] ?? 0);
+        $out[] = ['em' => naval_carr_referencia_contagem($r, $d), 'dif' => $dif];
+    }
+    return $out;
+}
+
 /** A contagem seguinte da rota (até NAVAL_CARR_CONSERVACAO_DIAS dias depois): {em, q} ou null. */
 function naval_carr_contagem_seguinte(string $dia, string $rota): ?array
 {
@@ -993,7 +1011,7 @@ function naval_carr_regularizar_calcular(array $reg, string $dia, string $rota, 
     // nunca desconta a carrinha; a falta fica regularizada pela saída de armazém (SA) que a Logística lança no Pinguim BO
     $todos = $acertos[$desde];
     $novas = naval_carr_regularizacoes($linhas, $todos, $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
-        naval_carr_contagem_seguinte($dia, $rota));
+        naval_carr_contagem_seguinte($dia, $rota), naval_carr_contagens_seguintes($dia, $rota));
     // diagnóstico do que fica por explicar (guia anulada com a mercadoria na carrinha, guia com o sentido trocado)
     static $guias = [];
     if (!array_key_exists($dia, $guias)) $guias[$dia] = naval_carr_guias_dia($dia) ?? [];
@@ -1348,8 +1366,20 @@ function naval_carr_acertos_sql(string $desde): ?array
 if (!defined('NAVAL_CARR_CONSERVACAO_DIAS')) define('NAVAL_CARR_CONSERVACAO_DIAS', 3);
 if (!defined('NAVAL_CARR_CONTAGEM_JANELA')) define('NAVAL_CARR_CONTAGEM_JANELA', 120);
 
-function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, string $referencia, ?string $contadoEm = null, ?array $proxima = null): array
+function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, string $referencia, ?string $contadoEm = null, ?array $proxima = null, ?array $seguintes = null): array
 {
+    // contagens seguintes da carrinha ([{em, dif: {codigo: diferença}}]): um acerto da Logística lançado depois de outra
+    // contagem só explica esta se a diferença se manteve, no mesmo sentido, em todas as contagens até ele (ex.: rota 1011:
+    // a falta das 50 fraldas de 21-11 continuava a 23-11, a SA A1000/144 de 24-11 explica as duas; os 15 sabões
+    // castanhos da SA A1000/156 de 24-11 não explicam a contagem de 20-11, porque a de 23-11 já batia)
+    $manteve = function (string $codigo, string $em, float $d) use ($seguintes): bool {
+        foreach ((array) $seguintes as $s) {
+            if ((string) ($s['em'] ?? '') >= $em) break;
+            $x = $s['dif'][$codigo] ?? 0.0;
+            if (abs((float) $x) <= NAVAL_CARR_TOLERANCIA || (((float) $x) < 0) !== ($d < 0)) return false;
+        }
+        return true;
+    };
     // contagem seguinte da mesma carrinha ({em: referência dela, q: {codigo: contado}}): prova física de que o que foi
     // facturado entre as duas contagens não saiu da carrinha nesse intervalo (ex.: rota 1011, contou 97 fraldas no
     // sábado e 97 na segunda-feira, com 53 facturadas pelo meio → essas 53 já tinham saído antes da contagem de sábado)
@@ -1399,6 +1429,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         // 10 da venda por depósito GRN 9916)
         foreach ($acertos as $a) {
             if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
+            if (!$manteve($codigo, (string) $a['em'], $d)) break;
             if (((float) $a['efeito'] < 0) === ($d < 0) && abs(abs((float) $a['efeito']) - $falta) <= NAVAL_CARR_TOLERANCIA) {
                 $out[$codigo] = ['q' => round(($d < 0 ? -1 : 1) * ($falta + $explicadoC), 3), 'doc' => implode(', ', array_values(array_unique(array_merge($docsC, [$a['doc']])))),
                     'em' => $emC ?: $a['em']];
@@ -1480,6 +1511,7 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         //    saída de armazém que a Logística lança na carrinha
         foreach ($esvaziou ? [] : $acertos as $a) {
             if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || $a['em'] <= $refL || ($a['tipo'] ?? 'acerto') !== 'acerto') continue;
+            if (!$manteve($codigo, (string) $a['em'], $d)) break;
             if (($a['efeito'] < 0) === ($d < 0)) {
                 $explicado = min(abs((float) $a['efeito']), $falta);
                 $docs[] = $a['doc'];

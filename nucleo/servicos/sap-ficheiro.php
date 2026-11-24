@@ -90,7 +90,13 @@ function naval_sap_linhas(array $vendas, array $artigos, array $cfg, array $orig
 {
     $porDoc = [];
     foreach ($artigos as $a) $porDoc[(string) $a['documento']][] = $a;
-    $V = array_values(array_filter($vendas, function ($v) use ($de, $ate) { $d = (string) ($v['data'] ?? ''); return $d >= $de && $d <= $ate; }));
+    // do período: pela data do documento ou, se foi emitido depois com uma data anterior (turno do Winrest aberto), pelo
+    // dia em que foi emitido — assim o envio desse dia leva-o (ex.: rota 1002, FR0126S77755N/14 a 16 de 19-11 emitidas a 23-11)
+    $V = array_values(array_filter($vendas, function ($v) use ($de, $ate) {
+        $d = (string) ($v['data'] ?? '');
+        $e = (string) ($v['emitida'] ?? '');
+        return ($d >= $de && $d <= $ate) || ($e !== '' && $e >= $de && $e <= $ate);
+    }));
     usort($V, function ($a, $b) {
         $x = ($a['data'] ?? '') . ($a['hora'] ?? '') . ($a['documento'] ?? '');
         $y = ($b['data'] ?? '') . ($b['hora'] ?? '') . ($b['documento'] ?? '');
@@ -111,6 +117,9 @@ function naval_sap_linhas(array $vendas, array $artigos, array $cfg, array $orig
         $rota = (string) ($v['rota'] ?? '');
         $m = naval_sap_mapa($rota, $cfg, $promotores);
         $docTxt = naval_sap_tipo_doc($v) . ' ' . $doc;
+        if (!empty($v['emitida']) && (string) $v['emitida'] > (string) $v['data']) {
+            $avisos[] = $docTxt . ': com a data de ' . naval_data_pt((string) $v['data']) . ', emitido a ' . naval_data_pt((string) $v['emitida']) . ' (turno do Winrest desse dia aberto); segue no SAP com a data do documento.';
+        }
         $cash = naval_sap_r2(naval_sap_meio_doc($v, 'dinheiro'));
         $card = naval_sap_r2(naval_sap_meio_doc($v, 'multicaixa'));
         $outros = array_values(array_filter(naval_sap_pagos($v), function ($p) { return !in_array(naval_sap_cat_meio((array) $p), ['dinheiro', 'multicaixa', 'compensacao'], true); }));

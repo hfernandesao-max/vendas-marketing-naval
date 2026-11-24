@@ -238,6 +238,15 @@ function naval_sap_novo_lote(array $q, string $xlsx, array $eu, array $extra = [
             'n_documentos' => count($docs), 'linhas' => (int) ($q['linhas'] ?? 0), 'total' => round((float) ($q['total'] ?? 0), 2),
             'ficheiro' => $nome, 'bytes' => strlen($xlsx), 'sha256' => hash('sha256', $xlsx), 'documentos' => $docs,
         ];
+        // lote complementar: o período já tinha sido enviado noutro lote válido (documentos emitidos ou sincronizados
+        // depois, ex.: facturas com a data de um dia anterior por o turno do Winrest ter ficado aberto). Nunca se anula um
+        // lote carregado no SAP: os documentos em falta seguem num lote novo, ligado ao anterior no registo
+        $comp = [];
+        foreach ($lotes as $l) {
+            if (($l['estado'] ?? '') === 'anulado' || (string) ($l['de'] ?? '') > $ate || (string) ($l['ate'] ?? '') < $de) continue;
+            $comp[] = (int) $l['numero'];
+        }
+        if ($comp) $lote['complementa'] = $comp;
         // Excepção registada: linhas que seguiram com a SAP location por omissão (viatura sem abastecimento)
         $om = (array) ($q['omissao'] ?? []);
         if ((int) ($om['linhas'] ?? 0) > 0) {
