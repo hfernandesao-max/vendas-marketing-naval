@@ -1,5 +1,17 @@
 ## 24-11-2026
 
+### Portal: dimensões de referência
+
+<!-- tipo: melhoria -->
+
+- Dimensões alinhadas com as aplicações de gestão de topo (Stripe, Linear, GitHub, Atlassian, SAP Fiori, IBM Carbon): menu lateral de 240 px com entradas de 32 px e ícones de 16 px, título da página de 20 a 24 px, botões de 32 px (40 px de área de toque no telemóvel), cantos de 12 px e linhas de tabela de 36 px. Mais dados no primeiro ecrã, com a mesma hierarquia.
+
+### Pinguim BO: abertura e fecho do dia
+
+<!-- tipo: funcionalidade -->
+
+- Ferramenta só de leitura `php ferramentas\pinguim-turnos.php [--de=AAAA-MM-DD] [--ate=AAAA-MM-DD] [--rota=1002]`: tipos de documento de abertura e fecho, quantos foram emitidos num dia diferente da data que levam, as tabelas de turno do Pinguim BO e os documentos de cada rota e dia. Prepara a ligação do portal à abertura e ao fecho automáticos do dia.
+
 ### Ficheiro para o SAP: lotes complementares
 
 <!-- paginas: sap-exportar -->
