@@ -35,7 +35,7 @@ if (!naval_e_post()) {
     // facturas desse dia fora do horário de vendas, por rota (o aviso é extra: sem Pinguim BO, fica sem ele)
     try {
         naval_servico('fora-horario');
-        $fh = naval_fh_periodo($data, $data) ?? [];
+        $fh = naval_fh_do_dia($data) ?? [];
         foreach ($vista['rotas'] as &$rv) {
             $rv['fora_horario'] = array_values(array_filter($fh, function ($x) use ($rv) { return (string) $x['rota'] === (string) $rv['rota']; }));
         }

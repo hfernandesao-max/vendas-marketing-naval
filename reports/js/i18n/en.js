@@ -5527,4 +5527,10 @@ export const EN = {
     'The server is in email trial mode ({c}): the message was saved on the server and was not sent.',
   'O teste usa os endereços escritos acima (mesmo antes de guardar): não emite lote, não gasta número e o ficheiro vai marcado {f}.':
     'The test uses the addresses typed above (even before saving): it does not issue a batch or use a number, and the file is marked {f}.',
+  'com a data de outro dia': 'dated another day',
+  'emitida em {e} com a data de {d}: o turno do Winrest desse dia não foi fechado': 'issued on {e} with the date {d}: that day’s Winrest shift was not closed',
+  'Mercadoria vendida por depósito com recibo, facturada no SAP. Fica registada para seguir a factura SAP; não desconta a carrinha: a falta só fica regularizada com a saída de armazém (SA) lançada pela Logística no Pinguim BO.':
+    'Goods sold on deposit with a receipt, invoiced in SAP. It is recorded to track the SAP invoice; it does not reduce the van: the shortage is only regularised by the warehouse exit (SA) that Logistics posts in Pinguim BO.',
+  'Venda por depósito registada. A falta na carrinha regulariza-se com a saída de armazém (SA) no Pinguim BO.':
+    'Deposit sale recorded. The van shortage is regularised by the warehouse exit (SA) in Pinguim BO.',
 };

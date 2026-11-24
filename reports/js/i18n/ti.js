@@ -5423,4 +5423,10 @@ export const TI = {
     'እቲ ሰርቨር ኣብ ናይ ፈተነ ኢመይል ኩነታት ኣሎ ({c})፦ እቲ መልእኽቲ ኣብ ሰርቨር ተዓቂቡ ኣይወጸን።',
   'O teste usa os endereços escritos acima (mesmo antes de guardar): não emite lote, não gasta número e o ficheiro vai marcado {f}.':
     'እቲ ፈተነ ነቶም ኣብ ላዕሊ ዝተጻሕፉ ኣድራሻታት ይጥቀም (ቅድሚ ምዕቃብ እውን)፦ ጥማር ኣየውጽእን፡ ቁጽሪ ኣይጥቀምን፡ እቲ ፋይል ድማ {f} ተባሂሉ ይምልከት።',
+  'com a data de outro dia': 'ብዕለት ካልእ መዓልቲ',
+  'emitida em {e} com a data de {d}: o turno do Winrest desse dia não foi fechado': 'ኣብ {e} ብዕለት {d} ተዋሂቡ፦ ናይታ መዓልቲ ፈረቓ Winrest ኣይተዓጽወን',
+  'Mercadoria vendida por depósito com recibo, facturada no SAP. Fica registada para seguir a factura SAP; não desconta a carrinha: a falta só fica regularizada com a saída de armazém (SA) lançada pela Logística no Pinguim BO.':
+    'ብተቐማጢ ምስ ቅብሊት ዝተሸጠ ኣቕሓ፡ ኣብ SAP ደረሰኝ ዝወሃቦ። ነቲ ደረሰኝ SAP ንምክትታል ይምዝገብ፤ ነታ ቫን ኣይንክዮን፦ እቲ ጐደሎ ብዘይካ ብምውጻእ መኽዘን (SA) ናይ ሎጂስቲክስ ኣብ Pinguim BO ኣይስተኻኸልን።',
+  'Venda por depósito registada. A falta na carrinha regulariza-se com a saída de armazém (SA) no Pinguim BO.':
+    'ሽያጥ ብተቐማጢ ተመዝጊቡ። ጐደሎ ቫን ብምውጻእ መኽዘን (SA) ኣብ Pinguim BO ይስተኻኸል።',
 };

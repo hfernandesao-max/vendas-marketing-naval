@@ -89,7 +89,9 @@ function barra() {
 function registarDeposito(r) {
   janela(
     t('Venda por depósito · rota {r}', { r: r.rota }),
-    t('Mercadoria vendida por depósito com recibo, facturada no SAP. Explica a falta destes artigos nas contagens da carrinha.'),
+    t(
+      'Mercadoria vendida por depósito com recibo, facturada no SAP. Fica registada para seguir a factura SAP; não desconta a carrinha: a falta só fica regularizada com a saída de armazém (SA) lançada pela Logística no Pinguim BO.',
+    ),
     (b, ft, fechar) => {
       const doc = entrada('text', '', { maxLength: 40, placeholder: t('Ex.: GRN 9916') });
       const dia = entrada('date', hoje(), { max: hoje() });
@@ -153,7 +155,7 @@ function registarDeposito(r) {
             erro.textContent = t(x.erro || 'Não foi possível gravar.');
             return;
           }
-          toast(t('Venda por depósito registada: a conciliação foi revista.'), 5000);
+          toast(t('Venda por depósito registada. A falta na carrinha regulariza-se com a saída de armazém (SA) no Pinguim BO.'), 6000);
           fechar();
           CC = null;
           ler(true);
@@ -187,7 +189,7 @@ function facturaDeposito(x) {
   });
 }
 
-const MOTIVO_FH = { depois: 'depois do fim', antes: 'antes do início', descanso: 'dia de descanso' };
+const MOTIVO_FH = { depois: 'depois do fim', antes: 'antes do início', descanso: 'dia de descanso', turno_aberto: 'com a data de outro dia' };
 
 /** Facturas fora do horário dos últimos 30 dias: por promotor (pior primeiro) e a lista, com as autorizadas à parte. */
 function verForaHorario() {
@@ -603,11 +605,13 @@ function tabelaRota(r) {
     const ul = el('ul');
     fhs.forEach((f) => {
       const quando =
-        f.motivo === 'descanso'
-          ? t('dia de descanso')
-          : f.motivo === 'antes'
-            ? t('antes do início das vendas ({h})', { h: f.inicio })
-            : t('depois do fim das vendas ({h})', { h: f.fim });
+        f.motivo === 'turno_aberto'
+          ? t('emitida em {e} com a data de {d}: o turno do Winrest desse dia não foi fechado', { e: dl(f.emitida), d: dl(f.data) })
+          : f.motivo === 'descanso'
+            ? t('dia de descanso')
+            : f.motivo === 'antes'
+              ? t('antes do início das vendas ({h})', { h: f.inicio })
+              : t('depois do fim das vendas ({h})', { h: f.fim });
       ul.append(
         el(
           'li',

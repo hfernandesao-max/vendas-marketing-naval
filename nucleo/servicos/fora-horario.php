@@ -4,6 +4,10 @@
  * do início, ou num dia de descanso) é assinalada e avisada na hora, ao coordenador e a quem segue a rota. O bloqueio
  * da facturação é do Winrest; o portal detecta, avisa e mede (indicador por promotor e relatório semanal).
  *
+ * Também se assinala a factura emitida num dia posterior à data que leva («turno aberto»): o turno do Winrest de um dia
+ * anterior não foi fechado, a factura sai com a data errada e o stock do Pinguim BO muda para trás (ex.: rota 1002,
+ * facturas FR0126S77755N/14 a 16 emitidas a 23-11 com a data de 19-11; o fecho FCL A1002/18 só foi lançado a 23-11).
+ *
  * Excepção autorizada: o coordenador autoriza antes uma venda fora do horário (rota, dia, até que horas, motivo);
  * as facturas dessa rota e dia até essa hora ficam «autorizadas» e não contam como infracção.
  * Configuração: FORA_HORARIO_TOLERANCIA (minutos depois do fim das vendas, 10), FORA_HORARIO=0 desliga os avisos.
@@ -67,7 +71,12 @@ function naval_fh_classificar(array $vendas, callable $janela, array $autorizaco
         $j = $janela($dia);
         $motivo = null;
         $min = 0;
-        if ($j === null) $motivo = 'descanso';
+        $emitida = (string) ($v['emitida'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $emitida) && $emitida > $dia) {
+            // turno de um dia anterior aberto: em minutos, o atraso entre a data e o dia de emissão
+            $motivo = 'turno_aberto';
+            $min = (int) round((strtotime($emitida . ' 12:00') - strtotime($dia . ' 12:00')) / 60);
+        } elseif ($j === null) $motivo = 'descanso';
         elseif ($minutos($hora) > $minutos((string) $j[1]) + $tolerancia) {
             $motivo = 'depois';
             $min = $minutos($hora) - $minutos((string) $j[1]);
@@ -78,7 +87,7 @@ function naval_fh_classificar(array $vendas, callable $janela, array $autorizaco
         if ($motivo === null) continue;
         $rota = (string) ($v['rota'] ?? '');
         $aut = null;
-        foreach ($autorizacoes as $a) {
+        foreach ($motivo === 'turno_aberto' ? [] : $autorizacoes as $a) {
             if ((string) ($a['rota'] ?? '') === $rota && (string) ($a['dia'] ?? '') === $dia && $hora <= (string) ($a['ate'] ?? '')) {
                 $aut = ['motivo' => (string) ($a['motivo'] ?? ''), 'por' => (string) ($a['por'] ?? ''), 'ate' => (string) $a['ate']];
                 break;
@@ -86,7 +95,8 @@ function naval_fh_classificar(array $vendas, callable $janela, array $autorizaco
         }
         $out[] = ['documento' => (string) ($v['documento'] ?? $v['chave'] ?? ''), 'data' => $dia, 'hora' => $hora, 'rota' => $rota,
             'promotor' => (string) ($v['promotor'] ?? $rota), 'cliente' => (string) ($v['cliente'] ?? ''), 'total' => round((float) ($v['total'] ?? 0), 2),
-            'inicio' => $j[0] ?? null, 'fim' => $j[1] ?? null, 'minutos' => $min, 'motivo' => $motivo, 'autorizada' => $aut !== null, 'autorizacao' => $aut];
+            'inicio' => $j[0] ?? null, 'fim' => $j[1] ?? null, 'minutos' => $min, 'motivo' => $motivo, 'autorizada' => $aut !== null, 'autorizacao' => $aut]
+            + ($motivo === 'turno_aberto' ? ['emitida' => $emitida] : []);
     }
     usort($out, function ($a, $b) { return strcmp($b['data'] . $b['hora'], $a['data'] . $a['hora']); });
     return $out;
@@ -137,8 +147,22 @@ function naval_fh_periodo(string $de, string $ate): ?array
 }
 
 /**
- * Rotina periódica (de 5 em 5 minutos, a partir do fim das vendas até às 23:30): avisa cada factura nova fora do
- * horário e não autorizada (uma vez por factura), ao coordenador e a quem segue a rota. Devolve quantas avisou.
+ * Facturas fora do horário que pertencem a um dia: as desse dia e as emitidas nesse dia com a data de um dia anterior
+ * (turno aberto, até 7 dias). null sem ligação.
+ */
+function naval_fh_do_dia(string $dia): ?array
+{
+    $l = naval_fh_periodo(date('Y-m-d', strtotime($dia . ' 12:00') - 7 * 86400), $dia);
+    if ($l === null) return null;
+    return array_values(array_filter($l, function ($x) use ($dia) {
+        return $x['motivo'] === 'turno_aberto' ? ($x['emitida'] ?? '') === $dia : $x['data'] === $dia;
+    }));
+}
+
+/**
+ * Rotina periódica (de 5 em 5 minutos, das 06:00 às 23:30): avisa cada factura nova fora do horário e não autorizada
+ * (uma vez por factura), ao coordenador e a quem segue a rota, e cada factura emitida hoje com a data de um dia anterior
+ * (turno do Winrest por fechar). Devolve quantas avisou.
  */
 function naval_fh_ciclo(int $agora): ?int
 {
@@ -146,21 +170,22 @@ function naval_fh_ciclo(int $agora): ?int
     naval_servico('bd');
     if (!naval_bd_configurada()) return null;
     $dia = date('Y-m-d', $agora);
-    $j = naval_fh_janela($dia);
     $hm = date('H:i', $agora);
-    if ($j !== null && ($hm <= $j[1] || $hm > '23:30')) return null;
+    if ($hm < '06:00' || $hm > '23:30') return null;
     $f = naval_pasta('fora-horario') . '/ciclo.json';
     $e = naval_json_ler($f, ['t' => 0]);
     if ($agora - (int) $e['t'] < 300) return null;
     naval_json_gravar($f, ['t' => $agora], false);
-    $lista = naval_fh_periodo($dia, $dia);
+    $lista = naval_fh_do_dia($dia);
     if ($lista === null) return null;
     naval_servico('notificacoes');
     $n = 0;
     foreach ($lista as $x) {
         if ($x['autorizada']) continue;
-        $tx = naval_notif_txt($x['motivo'] === 'descanso' ? 'fora_horario_descanso' : 'fora_horario', ['r' => $x['rota'] . ($x['promotor'] !== $x['rota'] ? ' · ' . $x['promotor'] : ''),
-            'doc' => $x['documento'], 'h' => $x['hora'], 'v' => number_format((float) $x['total'], 0, ',', ' '), 'f' => (string) ($x['fim'] ?? '')]);
+        $tipo = $x['motivo'] === 'turno_aberto' ? 'fora_horario_turno' : ($x['motivo'] === 'descanso' ? 'fora_horario_descanso' : 'fora_horario');
+        $tx = naval_notif_txt($tipo, ['r' => $x['rota'] . ($x['promotor'] !== $x['rota'] ? ' · ' . $x['promotor'] : ''),
+            'doc' => $x['documento'], 'h' => $x['hora'], 'v' => number_format((float) $x['total'], 0, ',', ' '), 'f' => (string) ($x['fim'] ?? ''),
+            'd' => naval_data_pt($x['data'])]);
         $r = naval_notificar('factura_fora_horario', $tx['pt'][0], $tx['pt'][1],
             ['chave' => 'fora-horario|' . $x['documento'], 'rota' => $x['rota'], 'url' => '../reports/#conciliacao-carrinha', 'textos' => $tx], $agora);
         if (empty($r['repetida'])) $n++;

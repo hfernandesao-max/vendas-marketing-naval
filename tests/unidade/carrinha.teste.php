@@ -648,7 +648,7 @@ teste('diagnóstico: falta e sobra da mesma quantidade em dois artigos com o mes
     igual(true, isset(NAVAL_CARR_MOTIVOS['troca_artigo']) && isset(NAVAL_CARR_MOTIVOS['consignacao']));
 });
 
-teste('venda por depósito (facturada no SAP): registo validado e a falta explicada como acerto (rota 1011, GRN 9916)', function () {
+teste('venda por depósito (facturada no SAP): registo validado para seguir a factura SAP; não regulariza a carrinha (rota 1011, GRN 9916)', function () {
     $eu = ['login' => 'coord'];
     lanca(400, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), '', [['codigo' => '10000332', 'quantidade' => 50, 'preco' => 14800]], 'transferencia', '', '', $eu); });
     lanca(400, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), 'GRN 9916', [], 'transferencia', '', '', $eu); });
@@ -659,17 +659,17 @@ teste('venda por depósito (facturada no SAP): registo validado e a falta explic
     ], 'transferencia', '', 'Venda por depósito, recibo assinado pelo Robel', $eu);
     igual([865000.0, null, 'Transferência'], [$d['total'], $d['factura_sap'], $d['pagamento_nome']]);
     lanca(409, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), 'grn 9916', [['codigo' => '10000332', 'quantidade' => 1, 'preco' => 1]], 'transferencia', '', '', $eu); });
-    $ac = naval_carr_depositos_acertos([$d + ['registado_em' => '2026-11-24 09:00:00']]);
-    igual([-50.0, 'acerto'], [$ac[0]['efeito'], $ac[0]['tipo']]);
-    // sábado: 53 fraldas pelas facturas de segunda e as 50 que restam pela venda por depósito
+    // sábado: as 53 fraldas pelas facturas de segunda (Pinguim BO); as 50 da venda por depósito só pela SA da Logística
     $ev = function ($cod, $tipo, $em, $q, $doc) { return ['rota' => '1011', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => $tipo]; };
-    $acertos = array_merge([$ev('332', 'venda', '2026-11-23 11:04:01', -3.0, 'FR 4'), $ev('332', 'venda', '2026-11-23 15:47:34', -50.0, 'FR 11')],
-        naval_carr_depositos_acertos([['rota' => '1011', 'documento' => 'GRN 9916', 'factura_sap' => null, 'registado_em' => '2026-11-24 09:00:00',
-            'linhas' => [['codigo' => '332', 'quantidade' => 50]]]]));
+    $acertos = [$ev('332', 'venda', '2026-11-23 11:04:01', -3.0, 'FR 4'), $ev('332', 'venda', '2026-11-23 15:47:34', -50.0, 'FR 11')];
+    $r = naval_carr_regularizacoes([['codigo' => '332', 'diferenca' => -103.0, 'contado' => 97.0]], $acertos, '1011', '2026-11-21 14:00:00', null,
+        ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0]]);
+    igual(-53.0, $r['332']['q'], 'sem a SA, as 50 da venda por depósito ficam por explicar');
+    $acertos[] = $ev('332', 'acerto', '2026-11-24 10:02:25', -50.0, 'SA A1000/144');
     $r = naval_carr_regularizacoes([['codigo' => '332', 'diferenca' => -103.0, 'contado' => 97.0]], $acertos, '1011', '2026-11-21 14:00:00', null,
         ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0]]);
     igual(-103.0, $r['332']['q']);
-    igual(true, strpos($r['332']['doc'], 'venda por depósito GRN 9916 (factura SAP por emitir)') !== false);
+    igual(true, strpos($r['332']['doc'], 'SA A1000/144') !== false);
     $f = naval_carr_deposito_factura($d['id'], 'FT 2026/123', $eu);
     igual('FT 2026/123', $f['factura_sap']);
 });
@@ -690,4 +690,9 @@ teste('regularização exacta: acerto da Logística com a quantidade da falta ex
     // a mesma saída com outra quantidade, maior do que o contado, continua a ser a devolução do contado (não explica)
     $ac2 = [['rota' => '1011', 'codigo' => '10000015', 'doc' => 'SA A1000/150', 'em' => '2026-11-24 10:02:25', 'efeito' => -7.0, 'tipo' => 'acerto']];
     igual([], naval_carr_regularizacoes([['codigo' => '10000015', 'diferenca' => -10.0, 'contado' => 7.0]], $ac2, '1011', '2026-11-23 16:00:00', '2026-11-23 16:14:00'));
+});
+
+teste('revisão: mudança da base sem efeito no stock esperado não altera a conciliação (rota 1005, 17-11)', function () {
+    igual(false, naval_carr_diferencas_com_efeito([['codigo' => '10000292', 'mudou' => ['carregado' => [15, 20], 'devolvido' => [0, 5]]], ['codigo' => '10000382', 'mudou' => ['inicial' => [0, 12], 'devolvido' => [0, 12]]]]));
+    igual(true, naval_carr_diferencas_com_efeito([['codigo' => '10000015', 'mudou' => ['inicial' => [15, 14], 'esperado' => [15, 14]]]]));
 });

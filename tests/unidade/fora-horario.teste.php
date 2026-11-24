@@ -45,3 +45,16 @@ teste('fora do horário: autorização só com rota, dia de hoje em diante, hora
     igual(['1009', $dia, '17:00', 'coord'], [$a['rota'], $a['dia'], $a['ate'], $a['por']]);
     igual(1, count(array_filter(naval_fh_autorizacoes($dia, $dia), function ($x) use ($a) { return $x['id'] === $a['id']; })));
 });
+
+teste('fora do horário: factura emitida num dia posterior à sua data (turno do Winrest aberto) — rota 1002, 19-11 emitida a 23-11', function () {
+    $janela = function (string $d) { return ['07:30', '15:00']; };
+    $vendas = [
+        ['documento' => 'FR 14', 'data' => '2026-11-19', 'emitida' => '2026-11-23', 'hora' => '10:31', 'rota' => '1002', 'promotor' => 'P', 'cliente' => 'C', 'total' => 90300.0],
+        ['documento' => 'FR 20', 'data' => '2026-11-23', 'hora' => '10:40', 'rota' => '1002', 'promotor' => 'P', 'cliente' => 'C', 'total' => 1000.0],
+    ];
+    // a autorização de venda fora de horas não cobre a data errada
+    $l = naval_fh_classificar($vendas, $janela, [['rota' => '1002', 'dia' => '2026-11-19', 'ate' => '23:59', 'motivo' => 'x', 'por' => 'c']], 10);
+    igual(1, count($l));
+    igual(['FR 14', 'turno_aberto', '2026-11-23', false], [$l[0]['documento'], $l[0]['motivo'], $l[0]['emitida'], $l[0]['autorizada']]);
+    igual(4 * 1440, $l[0]['minutos']);
+});

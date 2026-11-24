@@ -570,6 +570,9 @@ function naval_vendas_pinguim(string $inicio, string $fim, array $promotores, bo
             SELECT
                 DH.ID AS DOC_ID,
                 CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DATA,
+                -- dia em que o documento foi de facto emitido (relógio do telemóvel): outro que não o da data do
+                -- documento quando o turno do Winrest de um dia anterior ficou aberto
+                CONVERT(VARCHAR(10), DH.CLOCK_DATE, 120) AS EMITIDA,
                 -- hora do registo do documento (HH:MM); CLOCK_HOUR só guarda a hora (0 a 23), sem os minutos
                 CASE WHEN DH.CLOCK_DATE IS NOT NULL THEN CONVERT(VARCHAR(5), DH.CLOCK_DATE, 108)
                      ELSE RIGHT('0' + CAST(COALESCE(DH.CLOCK_HOUR, 0) AS VARCHAR(2)), 2) + ':00' END AS HORA,
@@ -677,7 +680,7 @@ function naval_vendas_montar(array $docs, array $semIvaPorDoc, array $pagamentos
             'valor_pago' => $nc ? 0.0 : (float) $d['TOTAL_PAID'],
             'pagamentos' => $pags,
             'meio_pagamento' => $pags ? implode(', ', array_column($pags, 'meio')) : null,
-        ];
+        ] + (!empty($d['EMITIDA']) && (string) $d['EMITIDA'] > (string) $d['DATA'] ? ['emitida' => (string) $d['EMITIDA']] : []);
     }
     return $vendas;
 }

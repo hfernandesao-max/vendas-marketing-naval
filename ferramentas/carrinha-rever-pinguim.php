@@ -71,7 +71,20 @@ $mostrar = function (array $x) {
 echo ($aplicar ? 'Actualizadas' : 'A actualizar') . ' (abertas): ' . count($r['actualizadas']) . "\n";
 array_map($mostrar, $r['actualizadas']);
 echo "\nAprovadas com diferenças (não se alteram; ficam assinaladas" . ($aplicar ? '' : ' ao aplicar') . '): ' . count($r['aprovadas_com_diferencas']) . "\n";
-array_map($mostrar, $r['aprovadas_com_diferencas']);
+foreach ($r['aprovadas_com_diferencas'] as $x) {
+    $mostrar($x);
+    // o que mudou a base depois de aprovada: documentos com a data do dia emitidos depois (turno aberto) ou anulados
+    $causas = naval_carr_causas_alteracao($x['rota'], $x['data'], array_column($x['diferencas'], 'codigo'));
+    if ($causas) {
+        echo "      causa no Pinguim BO:\n";
+        foreach ($causas as $c) {
+            echo '        ' . $c['tipo'] . ' ' . $c['doc'] . ' com a data de ' . $c['data'] . ($c['anulado'] ? ', ANULADO' : ', emitido em ' . $c['emitido'])
+                . ' · ' . $c['codigo'] . ' ' . sprintf('%+g', $c['q']) . ($c['anulado'] ? '' : ($c['tipo'] === 'FR' || $c['tipo'] === 'FT' ? ' (turno do Winrest desse dia aberto)' : '')) . "\n";
+        }
+    }
+}
+echo "\nAlteradas no Pinguim BO sem efeito no stock esperado (a conciliação não muda): " . count($r['sem_efeito']) . "\n";
+foreach ($r['sem_efeito'] as $x) echo '  ' . $x['data'] . ' rota ' . $x['rota'] . ': ' . implode(', ', array_column($x['diferencas'], 'codigo')) . "\n";
 echo "\nRegularizadas no Pinguim BO depois da contagem (acertos SA, DA, INV e vendas facturadas depois): " . count($r['regularizadas']) . "\n";
 foreach ($r['regularizadas'] as $x) echo '  ' . $x['data'] . ' rota ' . $x['rota'] . ': ' . implode(', ', $x['artigos']) . "\n";
 echo "\nIguais ao Pinguim BO: " . $r['iguais'] . ' · dias lidos: ' . $r['dias'] . "\n";

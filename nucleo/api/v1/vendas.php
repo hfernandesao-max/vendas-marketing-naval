@@ -90,7 +90,7 @@ $fiscal = ($_GET['fiscal'] ?? '') === '1';
 if ($fiscal) $GLOBALS['naval_fontes_fiscal'] = true;
 $base = $de . '|' . $ate . '|' . hash('sha256', (string) json_encode($prom)) . ($fiscal ? '|fiscal' : '');
 $chaves = [];
-if (!$soArtigos) $chaves['vendas'] = 'vendas5|' . $base;
+if (!$soArtigos) $chaves['vendas'] = 'vendas6|' . $base;
 if ($itens || $soArtigos) $chaves['artigos'] = 'artigos2|' . $base;
 $tempo = naval_cache_periodo($ate);
 $fresco = ($_GET['fresco'] ?? '') === '1';
@@ -129,7 +129,7 @@ if (isset($chaves['vendas'])) {
             // (reports/js/periodo.js), aplica-se a substituição e só depois se devolvem os documentos do período.
             $contextoDe = min($de, '20261020');
             $contextoAte = max($ate, date('Ymd'));
-            $chaveContexto = 'vendas-contexto5|' . $contextoDe . '|' . $contextoAte . '|' . hash('sha256', (string) json_encode($prom));
+            $chaveContexto = 'vendas-contexto6|' . $contextoDe . '|' . $contextoAte . '|' . hash('sha256', (string) json_encode($prom));
             $historico = naval_cache($chaveContexto, naval_cache_periodo($contextoAte), function () use ($contextoDe, $contextoAte, $prom) {
                 $h = naval_vendas_sql($contextoDe, $contextoAte, $prom, false);
                 if ($h !== null) return $h['vendas'];
