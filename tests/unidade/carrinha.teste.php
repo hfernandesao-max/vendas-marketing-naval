@@ -696,3 +696,16 @@ teste('revisão: mudança da base sem efeito no stock esperado não altera a con
     igual(false, naval_carr_diferencas_com_efeito([['codigo' => '10000292', 'mudou' => ['carregado' => [15, 20], 'devolvido' => [0, 5]]], ['codigo' => '10000382', 'mudou' => ['inicial' => [0, 12], 'devolvido' => [0, 12]]]]));
     igual(true, naval_carr_diferencas_com_efeito([['codigo' => '10000015', 'mudou' => ['inicial' => [15, 14], 'esperado' => [15, 14]]]]));
 });
+
+teste('saída de armazém entre o corte e a contagem física explica a falta (rota 1009, 24-11: SA A1000/154, vendas SAP)', function () {
+    // corte às 15:30, a Logística lança às 16:31 a saída das 147 fraldas vendidas no SAP, contagem às 16:40 (0 na carrinha)
+    $ac = [['rota' => '1009', 'codigo' => '10000332', 'doc' => 'SA A1000/154', 'em' => '2026-11-24 16:31:25', 'efeito' => -147.0, 'tipo' => 'acerto']];
+    $r = naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -147.0, 'contado' => 0.0]], $ac, '1009', '2026-11-24 15:30:00', '2026-11-24 16:40:00');
+    igual(['q' => -147.0, 'doc' => 'SA A1000/154', 'em' => '2026-11-24 16:31:25'], $r['10000332']);
+    // a mesma saída depois da contagem continua a explicar (regra do acerto exacto)
+    $r = naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -147.0, 'contado' => 0.0]], $ac, '1009', '2026-11-24 15:30:00', '2026-11-24 16:20:00');
+    igual(-147.0, $r['10000332']['q']);
+    // uma carga (entrada) nesse intervalo não explica faltas
+    $ac2 = [['rota' => '1009', 'codigo' => '10000332', 'doc' => 'GTC A1000/200', 'em' => '2026-11-24 16:00:00', 'efeito' => 50.0, 'tipo' => 'carga']];
+    igual([], naval_carr_regularizacoes([['codigo' => '10000332', 'diferenca' => -147.0, 'contado' => 0.0]], $ac2, '1009', '2026-11-24 15:30:00', '2026-11-24 16:40:00'));
+});

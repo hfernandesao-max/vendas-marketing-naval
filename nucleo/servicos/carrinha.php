@@ -1371,14 +1371,16 @@ function naval_carr_regularizacoes(array $linhas, array $acertos, string $rota, 
         $docs = [];
         $em = '';
         $esvaziou = false;
-        // -1. venda entre o corte e a contagem física (ex.: rota 1009, 23-11: corte às 16:00, facturas às 16:18 e 16:42,
-        //     contagem às 16:47): a mercadoria vendida já não estava na carrinha; explica a falta até a essas vendas
+        // -1. saída entre o corte e a contagem física — venda ou saída de armazém da Logística (ex.: rota 1009, 23-11: corte
+        //     às 16:00, facturas às 16:18 e 16:42, contagem às 16:47; rota 1009, 24-11: corte às 15:30, SA A1000/154 às 16:31
+        //     com as 147 fraldas vendidas no SAP, contagem às 16:40): a mercadoria já não estava na carrinha quando se
+        //     contou; explica a falta até a essas saídas
         $explicadoC = 0.0;
         $docsC = [];
         $emC = '';
         if ($d < 0 && $fisica !== null) {
             foreach ($acertos as $a) {
-                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || ($a['tipo'] ?? '') !== 'venda' || $referencia >= $a['em'] || $a['em'] > $fisica) continue;
+                if ($a['rota'] !== $rota || (string) $a['codigo'] !== $codigo || !in_array($a['tipo'] ?? 'acerto', ['venda', 'acerto'], true) || $referencia >= $a['em'] || $a['em'] > $fisica) continue;
                 if ((float) $a['efeito'] >= 0) continue;
                 $explicadoC += -(float) $a['efeito'];
                 $docsC[] = $a['doc'];
