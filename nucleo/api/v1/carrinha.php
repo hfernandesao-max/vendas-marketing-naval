@@ -11,6 +11,9 @@
  * POST v1/conciliacao-carrinha {accao: aprovar, data, rota, motivos: {codigo: {motivo, nota}}, csrf}  «conciliacao-coordenacao» G
  * POST v1/conciliacao-carrinha {accao: fechar, data, rota, csrf}                                    «conciliacao-fecho» G
  * POST v1/conciliacao-carrinha {accao: corrigir_registo, data, rotas: [..], contado_por, validado_por, motivo, csrf}  só SADM
+ * POST v1/conciliacao-carrinha {accao: deposito, rota, data, documento, linhas: [{codigo, artigo, quantidade, preco}], pagamento,
+ *      cliente, nota, csrf}        venda por depósito (facturada no SAP); quem aprova (coordenação ou fecho)
+ * POST v1/conciliacao-carrinha {accao: deposito_factura, id, factura, csrf}   o número da factura SAP
  */
 defined('NAVAL_API') || exit;
 naval_servico('carrinha');
@@ -25,6 +28,10 @@ if (!naval_e_post()) {
     $corrigir = naval_perfil() === 'SADM';
     naval_servico('calendario');
     $vista = naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1', $pode['coordenar'] || $pode['fechar']);
+    // vendas por depósito (SAP) de cada rota, de 30 dias antes a 7 dias depois do dia escolhido
+    $deps = array_values(array_filter(naval_carr_depositos(), function ($x) use ($data) { return (string) $x['data'] >= date('Y-m-d', strtotime($data . ' 12:00') - 30 * 86400) && (string) $x['data'] <= date('Y-m-d', strtotime($data . ' 12:00') + 7 * 86400); }));
+    foreach ($vista['rotas'] as &$rd) $rd['depositos'] = array_values(array_filter($deps, function ($x) use ($rd) { return (string) $x['rota'] === (string) $rd['rota']; }));
+    unset($rd);
     // facturas desse dia fora do horário de vendas, por rota (o aviso é extra: sem Pinguim BO, fica sem ele)
     try {
         naval_servico('fora-horario');
@@ -61,6 +68,21 @@ if ($accao === 'corrigir_registo') {
     $feitas = naval_carr_corrigir_registo($data, array_slice((array) ($p['rotas'] ?? []), 0, 500), (string) ($p['contado_por'] ?? ''),
         (string) ($p['validado_por'] ?? ''), (string) ($p['motivo'] ?? ''), $eu);
     naval_json_assinado(['ok' => true, 'rotas' => $feitas]);
+}
+if ($accao === 'deposito' || $accao === 'deposito_factura') {
+    if (!$pode['coordenar'] && !$pode['fechar']) {
+        naval_registar('alteracao_recusada', ['accao' => 'carrinha_' . $accao, 'motivo' => 'perfil']);
+        throw new NavalErro('Só a coordenação ou o responsável registam vendas por depósito.', 403);
+    }
+    if ($accao === 'deposito_factura') {
+        $dx = array_values(array_filter(naval_carr_depositos(), function ($x) use ($p) { return (string) $x['id'] === (string) ($p['id'] ?? ''); }))[0] ?? null;
+        if ($dx && !naval_rota_permitida((string) $dx['rota'])) throw new NavalErro('Sem acesso a esta rota.', 403);
+    }
+    if ($accao === 'deposito_factura') naval_json_assinado(['ok' => true, 'deposito' => naval_carr_deposito_factura((string) ($p['id'] ?? ''), (string) ($p['factura'] ?? ''), $eu)]);
+    $rota = (string) ($p['rota'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota) || !naval_rota_permitida($rota)) throw new NavalErro('Rota inválida.', 400);
+    naval_json_assinado(['ok' => true, 'deposito' => naval_carr_deposito_registar($rota, (string) ($p['data'] ?? ''), (string) ($p['documento'] ?? ''),
+        array_slice((array) ($p['linhas'] ?? []), 0, 200), (string) ($p['pagamento'] ?? ''), (string) ($p['cliente'] ?? ''), (string) ($p['nota'] ?? ''), $eu)]);
 }
 $precisa = ['contar' => 'contar', 'validar' => 'contar', 'aprovar' => 'coordenar', 'fechar' => 'fechar'][$accao] ?? 'contar';
 if ($accao !== 'preparar_folha' && !$pode[$precisa]) {

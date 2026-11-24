@@ -1,5 +1,13 @@
 ## 24-11-2026
 
+### Conciliação da carrinha: venda por depósito facturada no SAP
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: funcionalidade -->
+
+- **Venda por depósito (SAP):** a coordenação (ou o responsável) regista na conciliação da rota a mercadoria vendida por depósito com recibo «Cash sales receipt confirmation» (GRN), facturada no SAP: documento, data, artigos com a quantidade e o preço (já preenchidos com as faltas da rota), forma de pagamento e cliente. A falta desses artigos fica «Regularizada» nas contagens já feitas da carrinha (como um acerto da Logística) e a conciliação é revista logo; sem diferenças, fecha sozinha depois de validada. Fica «factura SAP por emitir» até se indicar o número da factura. Ex.: rota 1011, GRN 9916 de 23-11 (50 fraldas NAVAL e 10 MIMO, 865 000 Kz por transferência).
+- O stock da carrinha no Pinguim BO continua a precisar da saída de armazém (a Logística lança-a; o portal só lê).
+
 ### Naval Operações: entrada só com Face ID, notas com imagem, pedidos ao longo do dia e inventário dos armazéns
 
 <!-- paginas: app-operacoes -->

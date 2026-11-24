@@ -647,3 +647,29 @@ teste('diagnóstico: falta e sobra da mesma quantidade em dois artigos com o mes
     igual(true, strpos($d['10000386']['texto'], 'saída de 5 10000386 e entrada de 5 10000385') !== false);
     igual(true, isset(NAVAL_CARR_MOTIVOS['troca_artigo']) && isset(NAVAL_CARR_MOTIVOS['consignacao']));
 });
+
+teste('venda por depósito (facturada no SAP): registo validado e a falta explicada como acerto (rota 1011, GRN 9916)', function () {
+    $eu = ['login' => 'coord'];
+    lanca(400, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), '', [['codigo' => '10000332', 'quantidade' => 50, 'preco' => 14800]], 'transferencia', '', '', $eu); });
+    lanca(400, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), 'GRN 9916', [], 'transferencia', '', '', $eu); });
+    lanca(400, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), 'GRN 9916', [['codigo' => '10000332', 'quantidade' => 50, 'preco' => 14800]], 'cheque', '', '', $eu); });
+    $d = naval_carr_deposito_registar('1011', date('Y-m-d'), 'GRN 9916', [
+        ['codigo' => '10000332', 'artigo' => 'Fraldas Naval', 'quantidade' => 50, 'preco' => 14800],
+        ['codigo' => '10000015', 'artigo' => 'Fraldas Mimo', 'quantidade' => 10, 'preco' => 12500],
+    ], 'transferencia', '', 'Venda por depósito, recibo assinado pelo Robel', $eu);
+    igual([865000.0, null, 'Transferência'], [$d['total'], $d['factura_sap'], $d['pagamento_nome']]);
+    lanca(409, function () use ($eu) { naval_carr_deposito_registar('1011', date('Y-m-d'), 'grn 9916', [['codigo' => '10000332', 'quantidade' => 1, 'preco' => 1]], 'transferencia', '', '', $eu); });
+    $ac = naval_carr_depositos_acertos([$d + ['registado_em' => '2026-11-24 09:00:00']]);
+    igual([-50.0, 'acerto'], [$ac[0]['efeito'], $ac[0]['tipo']]);
+    // sábado: 53 fraldas pelas facturas de segunda e as 50 que restam pela venda por depósito
+    $ev = function ($cod, $tipo, $em, $q, $doc) { return ['rota' => '1011', 'codigo' => $cod, 'doc' => $doc, 'em' => $em, 'efeito' => $q, 'tipo' => $tipo]; };
+    $acertos = array_merge([$ev('332', 'venda', '2026-11-23 11:04:01', -3.0, 'FR 4'), $ev('332', 'venda', '2026-11-23 15:47:34', -50.0, 'FR 11')],
+        naval_carr_depositos_acertos([['rota' => '1011', 'documento' => 'GRN 9916', 'factura_sap' => null, 'registado_em' => '2026-11-24 09:00:00',
+            'linhas' => [['codigo' => '332', 'quantidade' => 50]]]]));
+    $r = naval_carr_regularizacoes([['codigo' => '332', 'diferenca' => -103.0, 'contado' => 97.0]], $acertos, '1011', '2026-11-21 14:00:00', null,
+        ['em' => '2026-11-23 16:00:00', 'q' => ['332' => 97.0]]);
+    igual(-103.0, $r['332']['q']);
+    igual(true, strpos($r['332']['doc'], 'venda por depósito GRN 9916 (factura SAP por emitir)') !== false);
+    $f = naval_carr_deposito_factura($d['id'], 'FT 2026/123', $eu);
+    igual('FT 2026/123', $f['factura_sap']);
+});

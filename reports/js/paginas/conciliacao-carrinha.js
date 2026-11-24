@@ -82,6 +82,111 @@ function barra() {
   return b;
 }
 
+/**
+ * Venda por depósito (recibo «Cash sales receipt confirmation», facturada no SAP): o coordenador regista o documento,
+ * a data, os artigos com a quantidade e o preço e a forma de pagamento. Abre já com as faltas da rota.
+ */
+function registarDeposito(r) {
+  janela(
+    t('Venda por depósito · rota {r}', { r: r.rota }),
+    t('Mercadoria vendida por depósito com recibo, facturada no SAP. Explica a falta destes artigos nas contagens da carrinha.'),
+    (b, ft, fechar) => {
+      const doc = entrada('text', '', { maxLength: 40, placeholder: t('Ex.: GRN 9916') });
+      const dia = entrada('date', hoje(), { max: hoje() });
+      const pag = el('select', 'inp');
+      [
+        ['transferencia', 'Transferência'],
+        ['numerario', 'Numerário'],
+        ['multicaixa', 'Multicaixa'],
+        ['credito', 'A crédito (por receber)'],
+      ].forEach(([k, v]) => pag.append(new Option(t(v), k)));
+      const cli = entrada('text', '', { maxLength: 120, placeholder: t('Nome ou NIF do cliente') });
+      const nota = entrada('text', '', { maxLength: 300, placeholder: t('Nota (opcional)') });
+      const tab = el('table', 'cc-tab');
+      const h = el('tr');
+      [t('Artigo'), t('Quantidade'), t('Preço')].forEach((x, i) => h.append(el('th', i ? 'n' : null, x)));
+      tab.append(h);
+      const ls = r.linhas
+        .filter((l) => (l.diferenca || 0) < 0)
+        .map((l) => {
+          const tr = el('tr');
+          const q = entrada('number', String(Math.abs(l.diferenca)), { min: 0, step: 'any' });
+          q.setAttribute('aria-label', t('Quantidade') + ' · ' + tArtigo(l.artigo));
+          const pr = entrada('number', String(l.preco || 0), { min: 0, step: 'any' });
+          pr.setAttribute('aria-label', t('Preço') + ' · ' + tArtigo(l.artigo));
+          const tq = el('td', 'n');
+          tq.append(q);
+          const tp = el('td', 'n');
+          tp.append(pr);
+          tr.append(el('td', null, l.codigo + ' · ' + tArtigo(l.artigo)), tq, tp);
+          tab.append(tr);
+          return { l, q, pr };
+        });
+      const erro = msgErro();
+      b.append(
+        campo(t('Documento'), doc),
+        campo(t('Data da venda'), dia),
+        campo(t('Forma de pagamento'), pag),
+        campo(t('Cliente'), cli),
+        tab,
+        campo(t('Nota'), nota),
+        erro,
+      );
+      const ok = botao(t('Registar'), null, () => {
+        const linhas = ls
+          .filter((x) => +x.q.value > 0)
+          .map((x) => ({ codigo: x.l.codigo, artigo: x.l.artigo, quantidade: +x.q.value, preco: +x.pr.value || 0 }));
+        ok.disabled = true;
+        postJson('conciliacao-carrinha', {
+          accao: 'deposito',
+          rota: r.rota,
+          data: dia.value,
+          documento: doc.value,
+          linhas,
+          pagamento: pag.value,
+          cliente: cli.value,
+          nota: nota.value,
+        }).then((x) => {
+          ok.disabled = false;
+          if (!x.ok) {
+            erro.hidden = false;
+            erro.textContent = t(x.erro || 'Não foi possível gravar.');
+            return;
+          }
+          toast(t('Venda por depósito registada: a conciliação foi revista.'), 5000);
+          fechar();
+          CC = null;
+          ler(true);
+          draw();
+        });
+      });
+      ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
+    },
+  );
+}
+
+function facturaDeposito(x) {
+  janela(t('Factura SAP · {doc}', { doc: x.documento }), t('O número da factura emitida no SAP para esta venda por depósito.'), (b, ft, fechar) => {
+    const f = entrada('text', '', { maxLength: 40 });
+    const erro = msgErro();
+    b.append(campo(t('Factura SAP'), f), erro);
+    const ok = botao(t('Gravar'), null, () =>
+      postJson('conciliacao-carrinha', { accao: 'deposito_factura', id: x.id, factura: f.value }).then((y) => {
+        if (!y.ok) {
+          erro.hidden = false;
+          erro.textContent = t(y.erro || 'Não foi possível gravar.');
+          return;
+        }
+        fechar();
+        CC = null;
+        ler(true);
+        draw();
+      }),
+    );
+    ft.append(botao(t('Cancelar'), 'ghost', fechar), ok);
+  });
+}
+
 const MOTIVO_FH = { depois: 'depois do fim', antes: 'antes do início', descanso: 'dia de descanso' };
 
 /** Facturas fora do horário dos últimos 30 dias: por promotor (pior primeiro) e a lista, com as autorizadas à parte. */
@@ -450,6 +555,37 @@ function tabelaRota(r) {
   }
   // porque é que o Pinguim BO pode não ter as vendas do dia: telemóvel sem sincronizar, rota sem facturas
   (r.avisos_rota || []).forEach((a) => box.append(el('p', 'cc-aviso cc-aviso-rota', t(a.texto))));
+  // vendas por depósito (facturadas no SAP): o que já está registado e, a quem aprova, o registo de uma nova
+  const deps = r.depositos || [];
+  const podeDep = CC.pode && (CC.pode.coordenar || CC.pode.fechar);
+  if (deps.length || (podeDep && r.linhas.some((l) => (l.diferenca || 0) < 0))) {
+    const dv = el('div', 'cc-depositos');
+    deps.forEach((x) => {
+      const p = el('p', x.factura_sap ? 'cc-regularizado' : 'cc-aviso');
+      p.append(
+        document.createTextNode(
+          t('Venda por depósito {doc} de {d}: {a} · {v} ({p})', {
+            doc: x.documento,
+            d: dl(x.data),
+            a: x.linhas.map((l) => n0(l.quantidade) + ' × ' + tArtigo(l.artigo || l.codigo)).join(', '),
+            v: kz(x.total),
+            p: t(x.pagamento_nome || x.pagamento),
+          }) +
+            ' · ' +
+            (x.factura_sap ? t('factura SAP {f}', { f: x.factura_sap }) : t('factura SAP por emitir')),
+        ),
+      );
+      if (!x.factura_sap && podeDep)
+        p.append(
+          ' ',
+          botao(t('Indicar a factura SAP'), 'ghost sm', () => facturaDeposito(x)),
+        );
+      dv.append(p);
+    });
+    if (podeDep && r.linhas.some((l) => (l.diferenca || 0) < 0))
+      dv.append(botao(t('Registar venda por depósito (SAP)'), 'ghost sm', () => registarDeposito(r)));
+    box.append(dv);
+  }
   // facturas fora do horário de vendas neste dia (autorizadas pelo coordenador ou não)
   const fhs = r.fora_horario || [];
   if (fhs.length) {

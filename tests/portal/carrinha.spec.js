@@ -469,3 +469,77 @@ test('conciliação: facturas fora do horário de vendas assinaladas na rota (au
   await expect(page.getByRole('button', { name: 'Autorizar venda fora do horário' })).toBeVisible();
   expect(erros).toEqual([]);
 });
+
+test('conciliação: a coordenação regista a venda por depósito (SAP) com as faltas da rota; a factura SAP fica por emitir', async ({ page }) => {
+  const posts = [];
+  await page.route('**/v1/conciliacao-carrinha**', (r) => {
+    if (r.request().method() === 'POST') {
+      posts.push(JSON.parse(r.request().postData()));
+      return r.fulfill({ json: { ok: true, deposito: { id: 'abc' } } });
+    }
+    return r.fulfill({
+      json: {
+        ok: true,
+        gere: true,
+        pode: { contar: true, coordenar: true, fechar: true },
+        eu: 'coord',
+        data: '2026-11-21',
+        movimentos: 'saldo',
+        motivos: MOTIVOS,
+        nomes: {},
+        rotas: [
+          {
+            rota: '1011',
+            promotor: 'Robel Tesfamichael',
+            cega: false,
+            linhas: [
+              { ...linhaCompleta('10000332', 'Fraldas Naval', 147, 97), preco: 14800 },
+              { ...linhaCompleta('10000015', 'Fraldas Mimo', 17, 7), preco: 12500 },
+              linhaCompleta('10000386', 'Sabão', 9, 9),
+            ],
+            contado_por: 'manuel',
+            contado_em: '2026-11-21 14:40:00',
+            motivos: {},
+            resumo: { estado: 'por_validar', artigos: 3, alertas: 0, diferencas: 2, falta_kz: 865000, sobra_kz: 0 },
+            historico: [],
+            depositos: [
+              {
+                id: 'x1',
+                rota: '1011',
+                data: '2026-11-20',
+                documento: 'GRN 9900',
+                linhas: [{ codigo: '10000386', artigo: 'Sabão', quantidade: 2, preco: 27500 }],
+                total: 55000,
+                pagamento_nome: 'Numerário',
+                factura_sap: null,
+              },
+            ],
+          },
+        ],
+      },
+    });
+  });
+  const erros = await abrir(page, '#conciliacao-carrinha');
+  const cartao = page.locator('.cc-rota', { hasText: '1011' });
+  await cartao.getByRole('button', { name: 'Ver' }).click();
+  await expect(cartao.locator('.cc-depositos')).toContainText('Venda por depósito GRN 9900');
+  await expect(cartao.locator('.cc-depositos')).toContainText('factura SAP por emitir');
+  await cartao.getByRole('button', { name: 'Registar venda por depósito (SAP)' }).click();
+  const d = page.locator('dialog[open]');
+  await d.getByLabel('Documento').fill('GRN 9916');
+  await expect(d.getByLabel('Quantidade · Fraldas Naval')).toHaveValue('50');
+  await expect(d.getByLabel('Quantidade · Fraldas Mimo')).toHaveValue('10');
+  await d.getByRole('button', { name: 'Registar' }).click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]).toMatchObject({
+    accao: 'deposito',
+    rota: '1011',
+    documento: 'GRN 9916',
+    pagamento: 'transferencia',
+    linhas: [
+      { codigo: '10000332', quantidade: 50, preco: 14800 },
+      { codigo: '10000015', quantidade: 10, preco: 12500 },
+    ],
+  });
+  expect(erros).toEqual([]);
+});

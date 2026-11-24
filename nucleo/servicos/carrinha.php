@@ -830,6 +830,101 @@ function naval_carr_contagem_seguinte(string $dia, string $rota): ?array
     return null;
 }
 
+// ── Vendas por depósito (facturadas no SAP) ──────────────────────────────────────────────────────────────────
+/**
+ * Venda por depósito: mercadoria que saiu da carrinha para um cliente com o recibo «Cash sales receipt
+ * confirmation» (GRN) e que é facturada no SAP, não no Winrest. O coordenador regista-a na conciliação (documento,
+ * data, artigos, quantidades, preço, forma de pagamento); a partir daí explica a falta desses artigos nessa carrinha
+ * nas contagens já feitas (como um acerto da Logística) e fica «factura SAP por emitir» até se indicar o número.
+ * O stock no Pinguim BO continua a precisar da saída de armazém (a Logística lança-a; o portal só lê).
+ */
+function naval_carr_depositos_ficheiro(): string
+{
+    return naval_pasta('carrinha') . '/_depositos.json';
+}
+
+function naval_carr_depositos(?string $rota = null): array
+{
+    $l = array_values(array_filter((array) naval_json_ler(naval_carr_depositos_ficheiro()), 'is_array'));
+    return $rota === null ? $l : array_values(array_filter($l, function ($x) use ($rota) { return (string) $x['rota'] === $rota; }));
+}
+
+/** Regista a venda por depósito e revê logo as conciliações abertas dessa carrinha (desde 3 dias antes da venda). */
+function naval_carr_deposito_registar(string $rota, string $data, string $documento, array $linhas, string $pagamento, string $cliente, string $nota, array $eu): array
+{
+    $documento = trim($documento);
+    if (!preg_match('/^[A-Za-z0-9 .\/-]{2,40}$/', $documento)) throw new NavalErro('Indique o número do documento (ex.: GRN 9916).', 400);
+    if (!naval_data_valida($data) || $data > date('Y-m-d') || $data < date('Y-m-d', time() - 30 * 86400)) throw new NavalErro('Data da venda inválida.', 400);
+    $pags = ['transferencia' => 'Transferência', 'numerario' => 'Numerário', 'multicaixa' => 'Multicaixa', 'credito' => 'A crédito (por receber)'];
+    if (!isset($pags[$pagamento])) throw new NavalErro('Escolha a forma de pagamento.', 400);
+    $ls = [];
+    $total = 0.0;
+    foreach (array_slice($linhas, 0, 200) as $l) {
+        $l = (array) $l;
+        $c = trim((string) ($l['codigo'] ?? ''));
+        $q = $l['quantidade'] ?? null;
+        $pr = $l['preco'] ?? 0;
+        if (!preg_match('/^[A-Za-z0-9._\/-]{1,40}$/', $c) || !is_numeric($q) || (float) $q <= 0 || !is_numeric($pr) || (float) $pr < 0) continue;
+        $ls[] = ['codigo' => $c, 'artigo' => mb_substr(trim((string) ($l['artigo'] ?? $c)), 0, 120), 'quantidade' => round((float) $q, 3), 'preco' => round((float) $pr, 2)];
+        $total += (float) $q * (float) $pr;
+    }
+    if (!$ls) throw new NavalErro('Indique pelo menos um artigo com a quantidade.', 400);
+    $login = (string) ($eu['login'] ?? '');
+    $dep = ['id' => substr(bin2hex(random_bytes(6)), 0, 12), 'rota' => $rota, 'data' => $data, 'documento' => $documento, 'linhas' => $ls,
+        'total' => round($total, 2), 'pagamento' => $pagamento, 'pagamento_nome' => $pags[$pagamento], 'cliente' => mb_substr(trim($cliente), 0, 120),
+        'nota' => mb_substr(trim($nota), 0, 300), 'factura_sap' => null, 'registado_por' => $login, 'registado_em' => date('Y-m-d H:i:s')];
+    naval_exclusivo('carrinha-depositos', function () use ($dep) {
+        $l = naval_carr_depositos();
+        foreach ($l as $x) {
+            if ((string) $x['rota'] === $dep['rota'] && strcasecmp((string) $x['documento'], $dep['documento']) === 0) throw new NavalErro('Este documento já está registado nesta rota.', 409);
+        }
+        $l[] = $dep;
+        naval_json_gravar(naval_carr_depositos_ficheiro(), $l);
+    });
+    naval_registar('carrinha_venda_deposito', ['rota' => $rota, 'documento' => $documento, 'total' => $dep['total'], 'artigos' => count($ls)]);
+    // as conciliações abertas da carrinha passam já a ter a falta explicada
+    try {
+        naval_carr_rever_pinguim(date('Y-m-d', strtotime($data . ' 12:00') - 3 * 86400), date('Y-m-d'), $eu);
+    } catch (Throwable $e) {
+        error_log('[venda por depósito] revisão: ' . $e->getMessage());
+    }
+    return $dep;
+}
+
+/** Número da factura SAP da venda por depósito (fecha o acompanhamento). */
+function naval_carr_deposito_factura(string $id, string $factura, array $eu): array
+{
+    $factura = trim($factura);
+    if (!preg_match('/^[A-Za-z0-9 .\/-]{2,40}$/', $factura)) throw new NavalErro('Indique o número da factura SAP.', 400);
+    return naval_exclusivo('carrinha-depositos', function () use ($id, $factura, $eu) {
+        $l = naval_carr_depositos();
+        foreach ($l as $k => $x) {
+            if ((string) $x['id'] !== $id) continue;
+            $l[$k]['factura_sap'] = $factura;
+            $l[$k]['factura_por'] = (string) ($eu['login'] ?? '');
+            $l[$k]['factura_em'] = date('Y-m-d H:i:s');
+            naval_json_gravar(naval_carr_depositos_ficheiro(), $l);
+            naval_registar('carrinha_deposito_factura', ['rota' => $x['rota'], 'documento' => $x['documento'], 'factura' => $factura]);
+            return $l[$k];
+        }
+        throw new NavalErro('Venda por depósito não encontrada.', 404);
+    });
+}
+
+/** As vendas por depósito como acertos (saídas da carrinha registadas pelo coordenador, na hora do registo). */
+function naval_carr_depositos_acertos(?array $lista = null): array
+{
+    $out = [];
+    foreach ($lista ?? naval_carr_depositos() as $d) {
+        $doc = 'venda por depósito ' . $d['documento'] . ' (factura SAP ' . ($d['factura_sap'] ?: 'por emitir') . ')';
+        foreach ((array) $d['linhas'] as $l) {
+            $out[] = ['rota' => (string) $d['rota'], 'codigo' => (string) $l['codigo'], 'doc' => $doc, 'em' => (string) $d['registado_em'],
+                'efeito' => -(float) $l['quantidade'], 'tipo' => 'acerto'];
+        }
+    }
+    return $out;
+}
+
 function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, string $ref, bool $ensaio): array
 {
     if (!is_array($reg['contagem'] ?? null) || ($reg['estado'] ?? '') === 'aprovada') return [];
@@ -840,7 +935,10 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
     $base = (array) $reg['base'];
     $base['post'] = naval_carr_posteriores($reg);
     $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
-    $novas = naval_carr_regularizacoes($linhas, $acertos[$desde], $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
+    // os acertos do Pinguim BO e as vendas por depósito registadas no portal, pela ordem da hora
+    $todos = array_merge($acertos[$desde], naval_carr_depositos_acertos());
+    usort($todos, function ($a, $b) { return strcmp($a['em'], $b['em']); });
+    $novas = naval_carr_regularizacoes($linhas, $todos, $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
         naval_carr_contagem_seguinte($dia, $rota));
     // diagnóstico do que fica por explicar (guia anulada com a mercadoria na carrinha, guia com o sentido trocado)
     static $guias = [];
