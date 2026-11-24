@@ -911,6 +911,109 @@ function naval_carr_deposito_factura(string $id, string $factura, array $eu): ar
     });
 }
 
+/**
+ * Regularizações e diagnóstico de uma conciliação com as regras de agora (sem gravar): [regularizações, linhas depois
+ * das regularizações, diagnósticos]. null sem ligação ao Pinguim BO.
+ */
+function naval_carr_regularizar_calcular(array $reg, string $dia, string $rota, string $ref): ?array
+{
+    static $acertos = [];
+    $desde = substr($ref, 0, 10) . ' 00:00:00';
+    if (!array_key_exists($desde, $acertos)) $acertos[$desde] = naval_carr_acertos_sql($desde);
+    if ($acertos[$desde] === null) return null;
+    $base = (array) $reg['base'];
+    $base['post'] = naval_carr_posteriores($reg);
+    $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
+    // os acertos do Pinguim BO e as vendas por depósito registadas no portal, pela ordem da hora
+    $todos = array_merge($acertos[$desde], naval_carr_depositos_acertos());
+    usort($todos, function ($a, $b) { return strcmp($a['em'], $b['em']); });
+    $novas = naval_carr_regularizacoes($linhas, $todos, $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
+        naval_carr_contagem_seguinte($dia, $rota));
+    // diagnóstico do que fica por explicar (guia anulada com a mercadoria na carrinha, guia com o sentido trocado)
+    static $guias = [];
+    if (!array_key_exists($dia, $guias)) $guias[$dia] = naval_carr_guias_dia($dia) ?? [];
+    $base['regs'] = $novas;
+    $linhasDepois = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
+    return [$novas, $linhasDepois, naval_carr_diagnosticos($linhasDepois, $guias[$dia], $rota)];
+}
+
+/**
+ * Todos os documentos do Pinguim BO (só SELECT) que mexeram nos artigos $codigos da carrinha $rota desde $desde,
+ * incluindo os anulados e os inventários: {codigo: [{doc, tipo, em, q (efeito no stock da carrinha), anulado}]}.
+ * Para o detalhe das diferenças por explicar (ferramentas/carrinha-rever-pinguim.php). null sem ligação.
+ */
+function naval_carr_detalhe_pinguim(string $rota, array $codigos, string $desde): ?array
+{
+    if (!naval_bd_configurada() || !$codigos || !preg_match('/^\d{1,8}$/', $rota)) return null;
+    $cods = array_values(array_unique(array_map('strval', $codigos)));
+    $ph = [];
+    $p = [':desde' => $desde, ':arm1' => '1000' . $rota, ':arm2' => $rota];
+    foreach ($cods as $i => $c) {
+        $ph[] = ':c' . $i;
+        $p[':c' . $i] = $c;
+    }
+    $in = implode(', ', $ph);
+    try {
+        $docs = naval_bd_consultar("
+            SELECT LTRIM(RTRIM(DMD.PRODUCT_CODE)) AS CODIGO, DC.CODE AS TIPO,
+                   LTRIM(RTRIM(COALESCE(DH.DOC_PREFIX, DC.CODE))) + '/' + CAST(DH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
+                   CONVERT(VARCHAR(19), COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), 120) AS HORA, MAX(CAST(COALESCE(DH.CALC_ISCANCELED, 0) AS INT)) AS ANULADO,
+                   CAST(SUM(DMD.QNT * COALESCE(DMD.STK_SIGNAL, DC.STOCK_SIGNAL)) AS FLOAT) AS EFEITO
+            FROM DOCMOVDETAIL DMD
+            INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
+            LEFT JOIN ENTITY WE ON WE.ID = DMD.WAREHOUSE_ID
+            WHERE DMD.DELETED = 0 AND DH.DELETED = 0 AND COALESCE(DH.CLOCK_DATE, DH.DOC_DATE) >= :desde
+              AND LTRIM(RTRIM(WE.CODE)) IN (:arm1, :arm2)
+              AND LTRIM(RTRIM(DMD.PRODUCT_CODE)) IN ($in)
+            GROUP BY DMD.PRODUCT_CODE, DC.CODE, DH.DOC_PREFIX, DH.DOC_NUMBER, COALESCE(DH.CLOCK_DATE, DH.DOC_DATE)", $p);
+        $inv = naval_bd_consultar("
+            SELECT LTRIM(RTRIM(P.CODE)) AS CODIGO, 'INV' AS TIPO, LTRIM(RTRIM(COALESCE(IH.DOC_PREFIX, 'INV'))) + '/' + CAST(IH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
+                   CONVERT(VARCHAR(19), IH.INVENTORY_DATE, 120) AS HORA, 0 AS ANULADO, CAST(SUM(ID.PHYSICAL_QNT - ID.THEORETICAL_QNT) AS FLOAT) AS EFEITO
+            FROM INVENTORYHEADER IH
+            INNER JOIN INVENTORYDETAIL ID ON ID.INVENTORYHEADER_ID = IH.ID AND ID.DELETED = 0
+            INNER JOIN ENTITY E ON E.ID = IH.WAREHOUSE_ID
+            INNER JOIN PRODUCT P ON P.ID = ID.PRODUCT_ID
+            WHERE IH.DELETED = 0 AND IH.SET_QNT = 1 AND IH.INVENTORY_DATE >= :desde AND LTRIM(RTRIM(E.CODE)) IN (:arm1, :arm2)
+              AND LTRIM(RTRIM(P.CODE)) IN ($in)
+            GROUP BY P.CODE, IH.DOC_PREFIX, IH.DOC_NUMBER, IH.INVENTORY_DATE", $p);
+    } catch (Throwable $e) {
+        error_log('[carrinha detalhe Pinguim] ' . $e->getMessage());
+        return null;
+    }
+    $out = [];
+    foreach (array_merge($docs, $inv) as $r) {
+        $out[(string) $r['CODIGO']][] = ['doc' => (string) $r['DOC'], 'tipo' => (string) $r['TIPO'], 'em' => (string) $r['HORA'], 'q' => round((float) $r['EFEITO'], 3),
+            'anulado' => (int) $r['ANULADO'] === 1];
+    }
+    foreach ($out as $c => $l) {
+        usort($l, function ($a, $b) { return strcmp($a['em'], $b['em']); });
+        $out[$c] = $l;
+    }
+    return $out;
+}
+
+/**
+ * Diferenças por explicar de uma conciliação aberta com as regras de agora (o que a revisão deixa para pessoas):
+ * [{codigo, artigo, contado, esperado, diferenca, preco, regularizado, diagnostico, motivo}]. null sem ligação.
+ */
+function naval_carr_por_explicar(array $reg, string $dia, string $rota): ?array
+{
+    if (!is_array($reg['contagem'] ?? null) || !is_array($reg['base'] ?? null)) return [];
+    $calc = naval_carr_regularizar_calcular($reg, $dia, $rota, naval_carr_referencia_contagem($reg, $dia));
+    if ($calc === null) return null;
+    [, $linhas, $diags] = $calc;
+    $out = [];
+    foreach ($linhas as $l) {
+        if (abs((float) ($l['diferenca'] ?? 0)) <= NAVAL_CARR_TOLERANCIA) continue;
+        $c = (string) $l['codigo'];
+        $out[] = ['codigo' => $c, 'artigo' => (string) ($l['artigo'] ?? ''), 'contado' => $l['contado'] ?? null, 'esperado' => $l['esperado'] ?? null,
+            'diferenca' => (float) $l['diferenca'], 'preco' => (float) ($l['preco'] ?? 0), 'regularizado' => $l['regularizado'] ?? null,
+            'diagnostico' => $diags[$c] ?? null, 'motivo' => $reg['motivos'][$c] ?? null];
+    }
+    return $out;
+}
+
 /** As vendas por depósito como acertos (saídas da carrinha registadas pelo coordenador, na hora do registo). */
 function naval_carr_depositos_acertos(?array $lista = null): array
 {
@@ -928,24 +1031,9 @@ function naval_carr_depositos_acertos(?array $lista = null): array
 function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, string $ref, bool $ensaio): array
 {
     if (!is_array($reg['contagem'] ?? null) || ($reg['estado'] ?? '') === 'aprovada') return [];
-    static $acertos = [];
-    $desde = substr($ref, 0, 10) . ' 00:00:00';
-    if (!array_key_exists($desde, $acertos)) $acertos[$desde] = naval_carr_acertos_sql($desde);
-    if ($acertos[$desde] === null) return [];
-    $base = (array) $reg['base'];
-    $base['post'] = naval_carr_posteriores($reg);
-    $linhas = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
-    // os acertos do Pinguim BO e as vendas por depósito registadas no portal, pela ordem da hora
-    $todos = array_merge($acertos[$desde], naval_carr_depositos_acertos());
-    usort($todos, function ($a, $b) { return strcmp($a['em'], $b['em']); });
-    $novas = naval_carr_regularizacoes($linhas, $todos, $rota, $ref, isset($reg['contado_em']) ? (string) $reg['contado_em'] : null,
-        naval_carr_contagem_seguinte($dia, $rota));
-    // diagnóstico do que fica por explicar (guia anulada com a mercadoria na carrinha, guia com o sentido trocado)
-    static $guias = [];
-    if (!array_key_exists($dia, $guias)) $guias[$dia] = naval_carr_guias_dia($dia) ?? [];
-    $base['regs'] = $novas;
-    $linhasDepois = naval_carr_linhas($base, $reg['contagem'], (array) ($reg['precos'] ?? []));
-    $diags = naval_carr_diagnosticos($linhasDepois, $guias[$dia], $rota);
+    $calc = naval_carr_regularizar_calcular($reg, $dia, $rota, $ref);
+    if ($calc === null) return [];
+    [$novas, $linhasDepois, $diags] = $calc;
     $antes = (array) ($reg['regularizacoes'] ?? []);
     // validada e sem nada por explicar: fecha sozinha mesmo sem regularizações novas (gestão por excepção)
     // (também sem artigos: contada e sem nada que o Pinguim BO diga que devia lá estar, não há nada para aprovar)
