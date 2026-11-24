@@ -17,7 +17,7 @@ test('ficheiro para o SAP: a folha do navegador é igual à referência partilha
     return r.fulfill({ json: { config: CASO.config, origens: CASO.origens, lotes: [], exportados: CASO.exportados, pode_gerar: true } });
   });
   const erros = await abrir(page, '#sap-exportar', { api: (r) => r.fulfill({ json: { vendas: CASO.vendas, artigos: CASO.artigos } }) });
-  await page.click('.sap-barra button:has-text("Gerar ficheiro")');
+  await page.click('#titulo-acc button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
   const zip = await JSZip.loadAsync(readFileSync(await dl.path()));
   const xml = await zip.file('xl/worksheets/sheet1.xml').async('string');

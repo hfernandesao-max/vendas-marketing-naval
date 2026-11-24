@@ -320,19 +320,36 @@ export function tabela(o) {
     }
     const sobra = () => tw.scrollWidth > tw.clientWidth + 1;
     if (sobra()) tb.classList.add('compact');
+    // na tabela apertada os textos partem; um nome em mais de duas linhas (ex.: «1004 · Nelson Bumba» em três) conta
+    // como não caber: esconde-se a coluna seguinte menos importante, como quando a tabela é mais larga do que o ecrã
+    const partido = () => {
+      if (!tb.classList.contains('compact')) return false;
+      const cs = [...tb.querySelectorAll('tbody tr:not([hidden]) td.t:not(.w):not([hidden])')].slice(0, 120);
+      return cs.some((c) => {
+        const st = getComputedStyle(c),
+          lh = parseFloat(st.lineHeight) || parseFloat(st.fontSize) * 1.45 || 17;
+        return c.clientHeight - parseFloat(st.paddingTop) - parseFloat(st.paddingBottom) > lh * 2 + 2;
+      });
+    };
     if (!TODAS[o.id]) {
       const ordem = o.cols
         .map((c, i) => [prio(c, i), i])
         .filter((x) => x[0] >= 0)
         .sort((a, b2) => b2[0] - a[0] || b2[1] - a[1]);
       for (const [, i] of ordem) {
-        if (!sobra()) break;
+        const largura = sobra();
+        if (!largura && !partido()) break;
+        // só por um nome partido nunca se escondem colunas com botões (abrir o documento, gerir, acções)
+        if (!largura && tb.querySelector(`td[data-c="${i}"] button, td[data-c="${i}"] a`)) continue;
         tb.querySelectorAll(`[data-c="${i}"]`).forEach((e) => {
           e.hidden = true;
         });
         ocultas.push(o.cols[i].label);
       }
     }
+    // com todas as colunas à vista e a tabela mais larga do que o ecrã, a primeira coluna fica presa à esquerda ao
+    // deslocar para o lado (como no Excel e no Google Sheets)
+    tb.classList.toggle('rolar', sobra());
     rodape();
   }
   function rodape() {

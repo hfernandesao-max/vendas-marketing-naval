@@ -2,7 +2,7 @@
 import { filtrosURL, normTxt } from './filtros.js';
 import { t } from './i18n/i18n.js';
 import { favoritos } from './favoritos.js';
-import { PAGES, SECCAO_GRUPO } from './paginas/catalogo.js';
+import { FAMILIAS, PAGES, SECCAO_GRUPO, familiaDe } from './paginas/catalogo.js';
 import { carregarPagina } from './paginas/modulos.js';
 import { atual, contarAlertas, paginasVisiveis } from './perfil.js';
 import { $, el, svg } from './util.js';
@@ -209,15 +209,25 @@ export function nav() {
   const visiveis = paginasVisiveis().filter((p) => p.menu !== false);
   let caixa = n,
     seccao = null;
+  // família de páginas: uma só entrada (nome da família), com os alertas e as novidades de todas; fica activa em
+  // qualquer página da família
+  const membrosVisiveis = (id) => {
+    const f = familiaDe(id);
+    return f ? FAMILIAS[f].filter((x) => visiveis.some((v) => v.id === x)) : [id];
+  };
   const ligacao = (p, comSub) => {
+    const membros = comSub ? membrosVisiveis(p.id) : [p.id];
+    const fam = membros.length > 1 ? familiaDe(p.id) : null;
     const a = el('a');
     a.href = '#' + p.id;
     a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
-    a.append(el('span', null, t(p.nome)));
-    if (al[p.id] && p.id !== 'pagamentos') a.append(contador('n', al[p.id], rotuloAlerta(p.id, al[p.id])));
-    const sn = seloNovo(p.id);
+    a.append(el('span', null, t(fam || p.nome)));
+    const comAl = membros.filter((id) => al[id] && id !== 'pagamentos');
+    const nAl = comAl.reduce((x, id) => x + al[id], 0);
+    if (nAl) a.append(contador('n', nAl, comAl.map((id) => rotuloAlerta(id, al[id])).join(' · ')));
+    const sn = membros.map((id) => seloNovo(id)).find(Boolean);
     if (sn) a.append(sn);
-    if (p.id === atual && comSub) {
+    if (membros.includes(atual) && comSub) {
       a.className = 'on';
       a.setAttribute('aria-current', 'page');
     }
@@ -285,9 +295,13 @@ export function nav() {
       n.append(b, lista);
       caixa = dentro;
     } else if (!p.grupo) caixa = n;
+    // página de uma família que não é a primeira visível: está nos separadores da página, não no menu
+    if (membrosVisiveis(p.id)[0] !== p.id) return;
     // Subgrupo dentro da área (ex.: Terreno › Operação do dia): rótulo só de leitura, sem abrir nem fechar, e
-    // só quando a área tem mais de um subgrupo visível para a pessoa
-    if (p.sub && p.grupo && (i === 0 || arr[i - 1].grupo !== p.grupo || arr[i - 1].sub !== p.sub)) {
+    // só quando a área tem mais de um subgrupo visível para a pessoa (com as famílias, o Terreno já tem poucas
+    // entradas: os rótulos só aparecem se a área tiver mais de 6)
+    const entradasGrupo = visiveis.filter((x) => x.grupo === p.grupo && membrosVisiveis(x.id)[0] === x.id).length;
+    if (entradasGrupo > 6 && p.sub && p.grupo && (i === 0 || arr[i - 1].grupo !== p.grupo || arr[i - 1].sub !== p.sub)) {
       const subs = new Set(visiveis.filter((x) => x.grupo === p.grupo && x.sub).map((x) => x.sub));
       if (subs.size > 1) {
         const r = el('div', 'navl-subg' + (visiveis.some((x) => x.id === atual && x.grupo === p.grupo && x.sub === p.sub) ? ' atual' : ''), t(p.sub));
@@ -315,12 +329,12 @@ export function nav() {
       n.append(h, caixaFav);
     }
     // relatórios da página aberta
-    if (p.id === atual && RELS.length) {
+    if (membrosVisiveis(p.id).includes(atual) && RELS.length) {
       const sub = el('div', 'nav-sub');
       RELS.forEach((r) => {
         const aqui = r.key === REL_ATUAL || (r.subs || []).includes(REL_ATUAL);
         const x = el('a', aqui ? 'on' : null, r.titulo);
-        x.href = '#' + p.id + '/' + r.key + (q ? '?' + q : '');
+        x.href = '#' + atual + '/' + r.key + (q ? '?' + q : '');
         if (aqui) x.setAttribute('aria-current', 'true');
         x.addEventListener('click', () => $('#app').classList.remove('open'));
         sub.append(x);
@@ -328,9 +342,72 @@ export function nav() {
       caixa.append(sub);
     }
   });
+  barraInferior(visiveis);
 }
 
 // Alteração do estado partilhado: só este módulo altera estas variáveis; os outros lêem-nas.
 export function definirRelPedido(valor) {
   REL_PEDIDO = valor;
+}
+
+/**
+ * Separadores da família da página (ex.: Vendas › por promotor · por dia · por cliente · por artigo): no topo da página,
+ * só as que a pessoa pode ver; cada separador é a página respectiva (endereço, filtros e Excel próprios).
+ */
+export function separadoresFamilia(id, visiveis) {
+  const f = familiaDe(id);
+  if (!f) return null;
+  const membros = FAMILIAS[f].map((x) => visiveis.find((v) => v.id === x)).filter(Boolean);
+  if (membros.length < 2) return null;
+  const barra = el('nav', 'fam-tabs');
+  barra.setAttribute('aria-label', t(f));
+  membros.forEach((m) => {
+    const a = el('a', 'fam-tab' + (m.id === id ? ' on' : ''), t(m.nome));
+    const qp = filtrosURL(m.id);
+    a.href = '#' + m.id + (qp ? '?' + qp : '');
+    if (m.id === id) a.setAttribute('aria-current', 'page');
+    a.addEventListener('click', () => esquecerRelatorio(m.id));
+    barra.append(a);
+  });
+  return barra;
+}
+
+/**
+ * Barra de navegação em baixo no telemóvel (Material «navigation bar», iOS «tab bar»): o Início, as três páginas mais
+ * usadas que a pessoa pode ver e o Menu, ao alcance do polegar. No computador não aparece (CSS).
+ */
+const BARRA_INF = ['vendas-promotor', 'conciliacao-carrinha', 'requisicoes-carrinha', 'caixa-marketing', 'documentos', 'visitas-dia', 'clientes'];
+export function barraInferior(visiveis) {
+  let b = document.getElementById('barra-inf');
+  if (!b) {
+    b = el('nav', 'barra-inf');
+    b.id = 'barra-inf';
+    b.setAttribute('aria-label', t('Navegação rápida'));
+    document.body.append(b);
+  }
+  b.replaceChildren();
+  const pags = [visiveis.find((p) => p.id === 'inicio') || PAGES[0]].concat(
+    BARRA_INF.map((id) => visiveis.find((p) => p.id === id))
+      .filter(Boolean)
+      .slice(0, 3),
+  );
+  pags.forEach((p) => {
+    const f = familiaDe(p.id);
+    const membros = f ? FAMILIAS[f] : [p.id];
+    const a = el('a', 'bi-l' + (membros.includes(atual) ? ' on' : ''));
+    a.href = '#' + p.id;
+    a.innerHTML = svg(p.icon); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
+    a.append(el('span', null, t(f && membros.length > 1 ? f : p.nome)));
+    if (membros.includes(atual)) a.setAttribute('aria-current', 'page');
+    b.append(a);
+  });
+  const m = el('button', 'bi-l');
+  m.type = 'button';
+  m.innerHTML = svg('menu'); // nosemgrep: insecure-innerhtml, insecure-document-method -- SVG estático do próprio código (sem dados)
+  m.append(el('span', null, t('Menu')));
+  m.addEventListener('click', (ev) => {
+    ev.stopPropagation(); // o clique fora do menu fecha-o
+    $('#app').classList.toggle('open');
+  });
+  b.append(m);
 }

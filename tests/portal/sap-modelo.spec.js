@@ -34,7 +34,7 @@ test('gera o Excel no formato de carregamento do SAP: uma folha, um cabeçalho, 
     return r.fulfill({ json: { config: { prefixo: 'FHR PIV', moeda: 'AOA', unidade: 'CAR', rotas }, lotes: [], exportados: {}, pode_gerar: true } });
   });
   await abrir(page, '#sap-exportar');
-  await page.click('.sap-barra button:has-text("Gerar ficheiro")');
+  await page.click('#titulo-acc button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
   if (process.env.SAP_SAIDA) await dl.saveAs(process.env.SAP_SAIDA); // cópia para inspecção manual
   const zip = await JSZip.loadAsync(readFileSync(await dl.path()));

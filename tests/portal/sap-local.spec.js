@@ -54,7 +54,7 @@ test('viatura sem abastecimento (avariada, em manutenção): segue com a locatio
   await expect(page.getByLabel('Depósito SAP da rota 1001')).toHaveClass(/omissao/);
   await expect(page.getByLabel('Depósito SAP da rota 1001')).not.toHaveClass(/falta/);
   await expect(page.locator('#s-sap-l tbody tr').first()).toContainText('Por omissão (sem abastecimento)');
-  await expect(page.locator('.sap-barra button:has-text("Gerar ficheiro")')).toBeEnabled();
+  await expect(page.locator('#titulo-acc button:has-text("Gerar ficheiro")')).toBeEnabled();
 });
 
 test('sem location por omissão configurada: a rota fica a vermelho e o erro explica o que indicar', async ({ page }) => {

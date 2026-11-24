@@ -106,7 +106,8 @@ test('Equipamentos: menu próprio, quadros, lista com estados e ligação à fic
   await simular(page);
   const erros = await abrir(page, '#equipamentos');
   await expect(page.locator('h1')).toHaveText('Equipamentos');
-  await expect(page.locator('#nav')).toContainText('Documentos dos equipamentos');
+  // os documentos dos equipamentos são um separador da mesma família (uma só entrada no menu)
+  await expect(page.locator('.fam-tabs')).toContainText('Documentos dos equipamentos');
   await expect(
     page
       .locator('.tile')

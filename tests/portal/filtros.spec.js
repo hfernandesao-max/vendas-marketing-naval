@@ -24,7 +24,8 @@ test('rotas e estado filtram os documentos e mantêm-se ao mudar de página', as
   await page.locator('.fb-pop .fb-item', { hasText: 'Pendentes' }).click();
   expect(await linhas(page, 'dc')).toBe(4);
 
-  await page.click('#nav a[href="#vendas-dia"]');
+  await page.click('#nav a[href="#vendas-promotor"]');
+  await page.click('.fam-tabs a[href^="#vendas-dia"]');
   await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Rotas' })).toContainText('2 seleccionados');
   await expect(page.locator('#filtros2 .fb-ms-btn', { hasText: 'Estado' })).toContainText('Pendentes');
   await expect(page).toHaveURL(/rota=1001,1003&estado=pendente/);

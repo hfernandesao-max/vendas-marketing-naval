@@ -151,7 +151,10 @@ test('nova requisição: «Criar» só abre o formulário (nada se regista); esc
     return rt.fulfill({ json: { ok: true, gere: true, rotas: { 1001: 'Andrea Santos', 1005: 'Olindo Baião' }, requisicoes: [] } });
   });
   await abrir(page, '#requisicoes-carrinha');
-  const nova = page.locator('.req-nova');
+  // «Nova requisição» é a acção principal da página, no cabeçalho; abre uma janela com a escolha do promotor
+  const abrirNova = () => page.locator('#titulo-acc').getByRole('button', { name: 'Nova requisição' }).click();
+  const nova = page.locator('dialog[open]');
+  await abrirNova();
   await nova.getByRole('button', { name: 'Criar' }).click();
   await expect(nova).toContainText('Escolha o promotor.');
   await nova.getByLabel('Rota').selectOption('1005');
@@ -164,6 +167,7 @@ test('nova requisição: «Criar» só abre o formulário (nada se regista); esc
   await expect(page.locator('#req-editor')).toHaveCount(0);
   expect(pedidos.length).toBe(0);
   // de novo: com um artigo regista e ganha número
+  await abrirNova();
   await nova.getByLabel('Rota').selectOption('1005');
   await nova.getByRole('button', { name: 'Criar' }).click();
   await expect(ed.getByRole('button', { name: 'Anular' })).toHaveCount(0);

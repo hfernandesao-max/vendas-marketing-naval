@@ -7,7 +7,7 @@ teste('Preferências: favoritos só com identificadores válidos, sem repetidos 
     igual(['vendas-dia', 'agt'], naval_pref_favoritos(['vendas-dia', 'agt', 'vendas-dia', '../x', 'A B', 7, str_repeat('a', 41)]));
     igual(6, count(naval_pref_favoritos(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])));
     $n = naval_pref_normalizar(['barra' => 'oculta', 'lado' => 'x', 'favoritos' => ['agt']]);
-    igual(['barra' => 'oculta', 'lado' => 'esquerda', 'favoritos' => ['agt'], 'colunas' => []], $n);
+    igual(['barra' => 'oculta', 'lado' => 'esquerda', 'densidade' => 'confortavel', 'favoritos' => ['agt'], 'colunas' => []], $n);
     igual([], naval_pref_normalizar([])['favoritos']);
 });
 
@@ -33,4 +33,16 @@ teste('preferências: colunas de cada tabela (ordem, escondidas, largura) seguem
     igual(['vendas-promotor:vp'], array_keys($p['colunas']));
     igual(['rota' => 900], json_decode(json_encode(naval_pref_ler($login)['colunas']['vendas-promotor:vp']['w']), true), 'a largura gravada volta a ler-se');
     @unlink(naval_pref_ficheiro($login));
+});
+
+teste('preferências: densidade das tabelas (confortável por omissão; só valores conhecidos)', function () {
+    $login = 'teste-densidade';
+    @unlink(naval_pref_ficheiro($login));
+    try {
+        igual('confortavel', naval_pref_ler($login)['densidade']);
+        igual('compacta', naval_pref_gravar($login, ['densidade' => 'compacta'])['densidade']);
+        igual('compacta', naval_pref_gravar($login, ['densidade' => 'minuscula'])['densidade']);
+    } finally {
+        @unlink(naval_pref_ficheiro($login));
+    }
 });

@@ -76,7 +76,7 @@ test('SAP: nota de crédito no ficheiro (a negativo, devolução em numerário):
   expect(await sap.locator('.v').innerText()).toBe(subIni.match(/([\d\s]+) documentos/)[1].trim());
   expect(await sap.locator('.s').innerText()).toContain(subIni.match(/notas de crédito: −[^·]+/)[0].trim());
 
-  await page.click('.sap-barra button:has-text("Gerar ficheiro")');
+  await page.click('#titulo-acc button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
   const zip = await JSZip.loadAsync(readFileSync(await dl.path()));
   const xml = await zip.file('xl/worksheets/sheet1.xml').async('string');
@@ -122,7 +122,7 @@ test('SAP: as formas de pagamento seguem como foram registadas na venda, mesmo c
   });
   await abrir(page, '#sap-exportar', { api: (r) => r.fulfill({ json: { vendas: lista, artigos } }) });
   await expect(page.locator('#s-sap-l')).toBeVisible();
-  await page.click('.sap-barra button:has-text("Gerar ficheiro")');
+  await page.click('#titulo-acc button:has-text("Gerar ficheiro")');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog.dlg button:has-text("Gerar e descarregar")')]);
   const zip = await JSZip.loadAsync(readFileSync(await dl.path()));
   const xml = await zip.file('xl/worksheets/sheet1.xml').async('string');

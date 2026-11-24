@@ -183,3 +183,34 @@ td {
     min-height: 36px;
   }
 }
+
+/*
+ * Mensagens num só estilo (Atlassian «section message», IBM Carbon «inline notification», Material «banner»): faixa
+ * com a cor do estado à esquerda e fundo suave; aviso (laranja), erro (vermelho) e confirmação (verde). As notas
+ * (cinzento, sem faixa) ficam para o texto de apoio.
+ */
+#page p.aviso,
+#page p.erro:not([hidden]),
+#page p.note.ok {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid currentColor;
+  font-size: 13px;
+  line-height: 1.45;
+}
+#page p.aviso {
+  color: var(--fg);
+  border-left-color: var(--warn);
+  background: rgb(var(--av1-rgb) / 0.1);
+}
+#page p.erro:not([hidden]) {
+  color: var(--fg);
+  border-left-color: var(--bad);
+  background: rgb(var(--er1-rgb) / 0.1);
+}
+#page p.note.ok {
+  color: var(--fg);
+  border-left-color: var(--ok);
+  background: rgb(var(--ok1-rgb) / 0.1);
+}

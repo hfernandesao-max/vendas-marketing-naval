@@ -2,6 +2,7 @@
 import { draw } from '../app.js';
 import { catMeio, eNC, nomeRota, pagosDe, tipoDoc } from '../calculos.js';
 import { pill, secBox, tabela, tiles } from '../componentes/blocos.js';
+import { accoesPagina } from '../componentes/cabecalho.js';
 import { botao, campo, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { dl, kz, kz2, n0 } from '../formatos.js';
@@ -447,15 +448,8 @@ R['sap-exportar'] = (pg) => {
   const gera = SAPD.pode_gerar,
     L = linhasSap(),
     rotas = rotasPortal();
-  // filtros próprios: rotas, tipos de documento e documentos já enviados
-  const barra = el('section', 'glass sec sap-barra fixo');
-  const acc = el('div', 'pc-acc');
-  if (gera) acc.append(botao(t('Gerar ficheiro para o SAP'), 'sm', gerarFicheiroSap));
-  barra.append(
-    el('p', 'sap-per', t('Período, rotas e tipo de documento escolhem-se na barra de filtros, em cima: {a} a {b}.', { a: dl(st.de), b: dl(st.ate) })),
-    acc,
-  );
-  pg.append(barra);
+  // acção principal no cabeçalho da página (o período, as rotas e o tipo de documento são os da barra de filtros)
+  if (gera) accoesPagina(botao(t('Gerar ficheiro para o SAP'), null, gerarFicheiroSap));
   // os mesmos documentos e valores do Início, que são os que seguem no ficheiro
   const cash = sum(L.docs, cashSap),
     card = sum(L.docs, cardSap);

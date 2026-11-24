@@ -3,6 +3,7 @@
  * Preferências de cada pessoa (seguem a conta em qualquer computador ou telemóvel): como quer o menu lateral.
  *   barra: fixa (sempre visível) | compacta (só ícones; abre ao passar) | oculta (abre com o botão Menu)
  *   lado:  esquerda | direita
+ *   densidade: confortavel | compacta (altura das linhas das tabelas)
  *   favoritos: até 6 funções fixadas no topo do menu (identificadores das páginas, por ordem de escolha)
  *   colunas: arranjo das colunas de cada tabela, «página:tabela» => {o: ordem, h: escondidas, w: {coluna: largura px}}
  * Boas práticas de navegação (WAI-ARIA, Fluent «navigation pane», Material «navigation rail»): o utilizador escolhe
@@ -12,6 +13,7 @@
 const NAVAL_PREFERENCIAS = [
     'barra' => ['fixa', 'compacta', 'oculta'],
     'lado' => ['esquerda', 'direita'],
+    'densidade' => ['confortavel', 'compacta'],
 ];
 
 function naval_pref_ficheiro(string $login): string

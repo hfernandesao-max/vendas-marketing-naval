@@ -61,3 +61,25 @@ export function melhorarEstados(raiz) {
     else if (x.endsWith('…') && x.length <= 60) esqueleto(c);
   });
 }
+
+/**
+ * Explicações longas no cabeçalho das secções: uma linha à vista e «Saber mais» para o resto (como o Stripe e o
+ * Atlassian: o essencial primeiro, a explicação a pedido). O texto fica todo na página (leitores de ecrã, pesquisa).
+ */
+const NOTA_LONGA = 140;
+export function recolherNotas(raiz) {
+  if (!raiz) return;
+  raiz.querySelectorAll('.sec-h > div:first-child > p').forEach((p) => {
+    if (p.classList.contains('nota-curta') || p.textContent.trim().length <= NOTA_LONGA || p.querySelector('button, a, input, select')) return;
+    p.classList.add('nota-curta');
+    const b = el('button', 'linkbtn nota-mais', t('Saber mais'));
+    b.type = 'button';
+    b.setAttribute('aria-expanded', 'false');
+    b.addEventListener('click', () => {
+      const aberta = p.classList.toggle('aberta');
+      b.textContent = aberta ? t('Mostrar menos') : t('Saber mais');
+      b.setAttribute('aria-expanded', aberta ? 'true' : 'false');
+    });
+    p.after(b);
+  });
+}

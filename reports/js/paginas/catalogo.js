@@ -91,6 +91,35 @@ export const PAGES = [
   { id: 'valor-portal', grupo: 'Administração', icon: 'valor', nome: 'Valor do portal' },
   { id: 'apresentacao', grupo: 'Administração', icon: 'slides', nome: 'Apresentação do portal' },
 ];
+/**
+ * Famílias de páginas: o mesmo assunto visto de ângulos diferentes fica numa só entrada do menu, com separadores no
+ * topo da página (como o Stripe, o Salesforce e o SAP Fiori: menos entradas, o detalhe por separadores). Cada página
+ * continua a ter o seu endereço (#vendas-dia…), as suas permissões e o seu Excel; a entrada do menu abre a primeira
+ * que a pessoa pode ver. As páginas de cada família são seguidas na lista PAGES.
+ */
+export const FAMILIAS = {
+  Vendas: ['vendas-promotor', 'vendas-dia', 'vendas-cliente', 'vendas-artigo', 'vendas-promotor-artigo'],
+  Cadastros: ['cadastros', 'cadastros-analise', 'cadastros-clientes'],
+  'Pedidos e cartazes QR': ['pedidos-clientes', 'clientes-qr'],
+  'Cobranças e contas a receber': ['pagamentos', 'pendentes'],
+  'Visitas e percurso do dia': ['visitas-dia', 'geo-terreno'],
+  Planeamento: ['plano-visitas', 'geo-rotas', 'rotas-propostas'],
+  'Território e clientes': ['geo-prospeccao', 'geo-zonas', 'geo-distribuidores'],
+  Cargas: ['plano-cargas', 'requisicoes-carrinha', 'cargas-po', 'registo-cargas'],
+  Stock: ['stock-carrinha', 'stock-armazem'],
+  'Conciliação da carrinha': ['conciliacao-carrinha', 'painel-carrinha'],
+  'Previsão e assistente': ['previsao', 'assistente'],
+  'Análises e controlo': ['qualidade-dados', 'perdas', 'analises-gestao', 'auditoria'],
+  Equipamentos: ['equipamentos', 'equipamentos-documentos'],
+  'AGT e sincronização': ['agt', 'sincronizacao'],
+  'Actualizações e módulos': ['actualizacoes', 'modulos'],
+  'Conformidade e suporte': ['conformidade', 'suporte'],
+  'Sobre o portal': ['valor-portal', 'apresentacao'],
+};
+const FAMILIA_DE = Object.fromEntries(Object.entries(FAMILIAS).flatMap(([nome, ids]) => ids.map((id) => [id, nome])));
+/** Nome da família de uma página (ou null quando está sozinha). */
+export const familiaDe = (id) => FAMILIA_DE[id] || null;
+
 /** Secção de uma página (Comercial, Operações, Análise, Sistema) ou null (Início, Alertas). */
 export const seccaoDe = (p) => (p && p.grupo ? SECCAO_GRUPO[p.grupo] || null : null);
 

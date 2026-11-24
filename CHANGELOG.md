@@ -1,3 +1,18 @@
+## 25-11-2026
+
+### Portal: estrutura de página única, menos entradas no menu, tabelas e navegação
+
+<!-- paginas: vendas-promotor, requisicoes-carrinha, sap-exportar -->
+<!-- tipo: melhoria -->
+
+- **Menos entradas no menu (famílias de páginas):** o mesmo assunto visto de vários ângulos fica numa só entrada, com separadores no topo da página. Ex.: «Vendas» (por promotor, dia, cliente, artigo, promotor e artigo), «Cargas» (planeadas, requisições, PO, realizadas), «Stock», «Cadastros», «Planeamento», «Território e clientes», «Análises e controlo». Cada página mantém o seu endereço, filtros, permissões e Excel.
+- **Modelo único de página:** título e acções principais › filtros › indicadores › separadores › lista › detalhe. As acções principais passam para o cabeçalho, à direita do título: «Gerar ficheiro para o SAP», «Nova requisição» (numa janela com a escolha do promotor) e «Anular rascunhos sem artigos».
+- **Explicações recolhidas:** as explicações longas das secções mostram uma linha e «Saber mais».
+- **Tabelas:** um nome nunca parte em mais de duas linhas (esconde-se primeiro a coluna menos importante; as colunas com botões nunca); com todas as colunas à vista, a primeira fica presa ao deslocar para o lado; densidade à escolha de cada pessoa (Menu lateral › Tabelas: Confortável ou Compacta), guardada na conta.
+- **Atalhos de teclado:** «g» e uma letra (g i Início, g v Vendas, g d Documentos, g c Conciliação, g r Requisições, g f Fecho de caixa, g s SAP, g a Alertas); «?» mostra a lista.
+- **Telemóvel:** barra de navegação em baixo, com o Início, as três páginas mais usadas do perfil e o Menu.
+- **Mensagens num só estilo:** avisos, erros e confirmações com a faixa da cor do estado e fundo suave, em todas as páginas.
+
 ## 24-11-2026
 
 ### Requisições (PO): a PO aberta por baixo da lista

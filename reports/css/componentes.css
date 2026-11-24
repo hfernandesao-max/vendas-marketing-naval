@@ -6368,3 +6368,193 @@ tr.viz-lig:focus-visible {
     animation: none;
   }
 }
+
+/* ───────── Separadores da família de páginas (topo da página) ───────── */
+.fam-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 18px;
+  margin: -4px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.fam-tab {
+  position: relative;
+  padding: 8px 0 9px;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.fam-tab:hover {
+  color: var(--fg);
+}
+.fam-tab.on {
+  color: var(--fg);
+  font-weight: 650;
+}
+.fam-tab.on::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+@media (max-width: 960px) {
+  .fam-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+/* ───────── Explicações das secções: uma linha e «Saber mais» ───────── */
+.sec-h p.nota-curta:not(.aberta) {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nota-mais {
+  margin-top: 2px;
+  font-size: 12px;
+}
+@media print {
+  .sec-h p.nota-curta {
+    display: block;
+  }
+  .nota-mais {
+    display: none;
+  }
+}
+
+/* ───────── Acções principais da página, à direita do título ───────── */
+.titulo-l {
+  flex-wrap: wrap;
+}
+.titulo-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: 8px;
+}
+.titulo-acc:empty {
+  display: none;
+}
+@media (max-width: 600px) {
+  .titulo-acc {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* ───────── Tabelas largas: primeira coluna presa ao deslocar para o lado ───────── */
+table.rolar > thead > tr > th:first-child:not([hidden]),
+table.rolar > tbody > tr > td:first-child:not([hidden]),
+table.rolar > tfoot > tr > td:first-child:not([hidden]) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--c-th-fixo);
+  box-shadow: 1px 0 0 var(--line2);
+}
+table.rolar > thead > tr > th:first-child {
+  z-index: 3;
+}
+
+/* ───────── Densidade das tabelas escolhida pela pessoa (Confortável / Compacta) ───────── */
+html[data-densidade='compacta'] th,
+html[data-densidade='compacta'] td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 12.5px;
+}
+
+/* ───────── Telemóvel: barra de navegação em baixo (Início, 3 páginas, Menu) ───────── */
+.barra-inf {
+  display: none;
+}
+@media (max-width: 960px) {
+  .barra-inf {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    padding: 4px 4px max(4px, env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line2);
+    background: var(--c-th-fixo);
+  }
+  .bi-l {
+    all: unset;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    min-height: 48px;
+    padding: 6px 2px 4px;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 10.5px;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+  .bi-l span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bi-l svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .bi-l.on {
+    color: var(--accent);
+    font-weight: 650;
+  }
+  .bi-l:focus-visible {
+    outline: 2px solid var(--accent);
+  }
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media print {
+  .barra-inf {
+    display: none !important;
+  }
+}
+
+/* ───────── Atalhos de teclado (janela «?») ───────── */
+.atalhos-l {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  align-items: center;
+}
+.atalhos-l dd {
+  margin: 0;
+  color: var(--muted);
+}
+.atalhos-l kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  border: 1px solid var(--line2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font: 600 12px/1.4 var(--font);
+  text-align: center;
+}

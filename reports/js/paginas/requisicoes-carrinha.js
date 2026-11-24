@@ -6,7 +6,8 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { quem as assinante } from '../componentes/assinantes.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
-import { botao, confirmarAccao, entrada, msgErro } from '../componentes/janelas.js';
+import { accoesPagina } from '../componentes/cabecalho.js';
+import { botao, campo, confirmarAccao, entrada, janela, msgErro } from '../componentes/janelas.js';
 import { marcarPorGravar } from '../componentes/rascunho.js';
 import { escolherArtigo } from '../componentes/escolher-artigo.js';
 import { MOTIVOS_CARGA as MOTIVO_TXT } from '../componentes/motivos-carga.js';
@@ -619,51 +620,56 @@ R['requisicoes-carrinha'] = (pg) => {
       },
     ]),
   );
-  // Nova requisição (fora da conciliação: para mais mercadoria depois de emitida a anterior)
+  // Acções da página no cabeçalho: nova requisição (fora da conciliação: para mais mercadoria depois de emitida a
+  // anterior), numa janela com a escolha do promotor; e anular os rascunhos de hoje sem artigos (criados por engano)
   if (L.gere) {
     const rotas = Object.entries(L.rotas || {});
-    const b = el('section', 'glass sec req-nova');
-    const erro = msgErro();
-    const sel = el('select');
-    sel.setAttribute('aria-label', t('Rota'));
-    // sem promotor escolhido por omissão: evita requisições para a primeira rota da lista por engano
-    sel.append(new Option(t('Escolha o promotor'), ''));
-    rotas.forEach(([r, p]) => {
-      const o = el('option', null, r + ' · ' + p);
-      o.value = r;
-      sel.append(o);
-    });
-    b.append(
-      el('b', null, t('Nova requisição')),
-      sel,
-      botao(t('Criar'), 'sm', () => {
-        if (!sel.value) {
-          erro.hidden = false;
-          erro.textContent = t('Escolha o promotor.');
-          return sel.focus();
-        }
-        nova(sel.value);
-      }),
-      el('span', 'note', t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido. Um só rascunho por promotor e dia.')),
-      erro,
-    );
-    // rascunhos de hoje sem artigos (criados por engano): anulam-se de uma vez, ficam registados como anulados
+    if (rotas.length)
+      accoesPagina(
+        botao(t('Nova requisição'), null, () =>
+          janela(
+            t('Nova requisição'),
+            t('A conciliação da carrinha cria sozinha a requisição com o que foi vendido. Um só rascunho por promotor e dia.'),
+            (b, ft, fechar) => {
+              const erro = msgErro();
+              const sel = el('select');
+              sel.setAttribute('aria-label', t('Rota'));
+              // sem promotor escolhido por omissão: evita requisições para a primeira rota da lista por engano
+              sel.append(new Option(t('Escolha o promotor'), ''));
+              rotas.forEach(([r, p]) => {
+                const o = el('option', null, r + ' · ' + p);
+                o.value = r;
+                sel.append(o);
+              });
+              b.append(campo(t('Promotor'), sel), erro);
+              ft.append(
+                botao(t('Cancelar'), 'ghost', fechar),
+                botao(t('Criar'), null, () => {
+                  if (!sel.value) {
+                    erro.hidden = false;
+                    erro.textContent = t('Escolha o promotor.');
+                    return sel.focus();
+                  }
+                  fechar();
+                  nova(sel.value);
+                }),
+              );
+              setTimeout(() => sel.focus(), 0);
+            },
+          ),
+        ),
+      );
     const vazios = rs.filter((r) => r.estado === 'rascunho' && !r.n_linhas && r.data === hoje());
     if (vazios.length)
-      b.append(
-        botao(t('Anular rascunhos sem artigos ({n})', { n: n0(vazios.length) }), 'ghost sm', () =>
+      accoesPagina(
+        botao(t('Anular rascunhos sem artigos ({n})', { n: n0(vazios.length) }), 'ghost', () =>
           postJson('requisicoes', { accao: 'anular_vazios', data: hoje() }).then((x) => {
-            if (!x.ok) {
-              erro.hidden = false;
-              erro.textContent = t(x.erro || 'Não foi possível gravar.');
-              return;
-            }
+            if (!x.ok) return toast(t(x.erro || 'Não foi possível gravar.'), 6000);
             toast(t('{n} rascunho(s) sem artigos anulado(s).', { n: n0((x.anuladas || []).length) }), 5000);
             actualizarLista();
           }),
         ),
       );
-    if (rotas.length) pg.append(b);
   }
   const linhaBtn = (v, r) => {
     const b = el('button', 'linkbtn', v);

@@ -11,6 +11,9 @@ import { el, svg } from './util.js';
 
 const MODOS = ['fixa', 'compacta', 'oculta'];
 const LADOS = ['esquerda', 'direita'];
+const DENSIDADES = ['confortavel', 'compacta'];
+const NOMES_DENSIDADE = { confortavel: 'Confortável', compacta: 'Compacta' };
+const DICA_DENSIDADE = { confortavel: 'Linhas das tabelas com mais espaço', compacta: 'Mais linhas no ecrã' };
 const K = 'vm-menu';
 const NOMES_MODO = { fixa: 'Fixo', compacta: 'Compacto', oculta: 'Oculto' };
 const DICA_MODO = { fixa: 'Sempre visível', compacta: 'Só os ícones; abre ao passar o rato', oculta: 'Abre com o botão Menu' };
@@ -18,7 +21,11 @@ const NOMES_LADO = { esquerda: 'Esquerda', direita: 'Direita' };
 
 function normalizar(p) {
   p = p || {};
-  return { barra: MODOS.includes(p.barra) ? p.barra : 'fixa', lado: LADOS.includes(p.lado) ? p.lado : 'esquerda' };
+  return {
+    barra: MODOS.includes(p.barra) ? p.barra : 'fixa',
+    lado: LADOS.includes(p.lado) ? p.lado : 'esquerda',
+    densidade: DENSIDADES.includes(p.densidade) ? p.densidade : 'confortavel',
+  };
 }
 function lerLocal() {
   try {
@@ -33,6 +40,7 @@ function aplicar() {
   const h = document.documentElement;
   h.setAttribute('data-barra', actual.barra);
   h.setAttribute('data-lado', actual.lado);
+  h.setAttribute('data-densidade', actual.densidade);
   try {
     localStorage.setItem(K, JSON.stringify(actual));
   } catch (e) {
@@ -67,6 +75,11 @@ function actualizarPainel() {
   });
   painel.querySelectorAll('button[data-lado]').forEach((b) => {
     const on = b.dataset.lado === actual.lado;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  painel.querySelectorAll('button[data-densidade]').forEach((b) => {
+    const on = b.dataset.densidade === actual.densidade;
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
@@ -120,7 +133,11 @@ export function montarAjusteMenu() {
     g.append(seg);
     return g;
   };
-  painel.append(grupo('Modo', 'barra', MODOS, NOMES_MODO, DICA_MODO), grupo('Posição', 'lado', LADOS, NOMES_LADO));
+  painel.append(
+    grupo('Modo', 'barra', MODOS, NOMES_MODO, DICA_MODO),
+    grupo('Posição', 'lado', LADOS, NOMES_LADO),
+    grupo('Tabelas', 'densidade', DENSIDADES, NOMES_DENSIDADE, DICA_DENSIDADE),
+  );
   botao.addEventListener('click', (ev) => {
     ev.stopPropagation();
     const abre = painel.hidden;

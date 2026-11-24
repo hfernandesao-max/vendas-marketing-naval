@@ -9,7 +9,7 @@ import { mostrarActualizacao } from './actualizacao.js';
 import { artigosProntos, fetchVendas, garantirArtigos, mostrarFontes } from './fontes.js';
 import { dl, ds, setFmt } from './formatos.js';
 import { IDIOMAS, LANG, mudarIdioma, t, tv } from './i18n/i18n.js';
-import { REL_ATUAL, definirRelPedido, nav, organizarRelatorios } from './navegacao.js';
+import { REL_ATUAL, definirRelPedido, nav, organizarRelatorios, separadoresFamilia } from './navegacao.js';
 import { PAGES, seccaoDe } from './paginas/catalogo.js';
 import { actualizarBarraSup } from './barra-superior.js';
 import { R } from './paginas/registo.js';
@@ -20,7 +20,9 @@ import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeV
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
 import { faixaNovo } from './componentes/novo.js';
-import { melhorarEstados } from './componentes/estados.js';
+import { melhorarEstados, recolherNotas } from './componentes/estados.js';
+import { limparAccoesPagina } from './componentes/cabecalho.js';
+import { montarAtalhos } from './componentes/atalhos.js';
 
 function textos() {
   document.documentElement.lang = IDIOMAS[LANG];
@@ -59,6 +61,7 @@ function textos() {
   );
   document.querySelectorAll('#lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === LANG));
   montarAjusteMenu();
+  montarAtalhos();
   if (diasSap.length) $('#foot').textContent = t('Vendas Pinguim BO até {a}', { a: dl(diasSap[diasSap.length - 1]) });
 }
 // Páginas que não dependem do período (sem a barra De / Até)
@@ -197,6 +200,7 @@ export function draw() {
   desenharFiltros(p.id);
   const pg = $('#page');
   pg.replaceChildren();
+  limparAccoesPagina();
   try {
     R[p.id](pg);
   } catch (e) {
@@ -205,9 +209,13 @@ export function draw() {
   }
   organizarRelatorios(pg, p.id);
   melhorarEstados(pg);
+  recolherNotas(pg);
   // novidade desta página nas últimas 24 h (selo «Novo»): faixa no topo; a página fica vista
   const fn = faixaNovo(p.id);
   if (fn) pg.prepend(fn);
+  // separadores da família da página (o mesmo assunto de vários ângulos), antes de tudo
+  const sf = separadoresFamilia(p.id, paginasVisiveis());
+  if (sf) pg.prepend(sf);
   {
     // estado próprio da página no endereço (ex.: a ficha aberta, #equipamentos?id=NAV-SMT-0001)
     const q = [filtrosURL(p.id), R[p.id] && R[p.id].estadoURL ? R[p.id].estadoURL() : ''].filter(Boolean).join('&');

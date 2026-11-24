@@ -25,6 +25,7 @@
     var m = JSON.parse(localStorage.getItem('vm-menu') || '{}');
     document.documentElement.setAttribute('data-barra', ['fixa', 'compacta', 'oculta'].indexOf(m.barra) >= 0 ? m.barra : 'fixa');
     document.documentElement.setAttribute('data-lado', m.lado === 'direita' ? 'direita' : 'esquerda');
+    document.documentElement.setAttribute('data-densidade', m.densidade === 'compacta' ? 'compacta' : 'confortavel');
   } catch (e) {
     document.documentElement.setAttribute('data-barra', 'fixa');
   }

@@ -60,24 +60,17 @@ test('terreno: menu por subgrupos pela tarefa, pela ordem do dia ao planeamento,
   await page.route('**/v1/ocorrencias**', (r) => r.fulfill({ json: ocorrencias() }));
   const erros = await abrir(page, '#ocorrencias');
   const area = page.locator('#navl-terreno');
-  await expect(area.locator('.navl-subg')).toHaveText(['Operação do dia', 'Planeamento', 'Território e clientes', 'Análise']);
+  // com as famílias de páginas o Terreno tem 5 entradas, pela ordem do dia ao planeamento, território e análise; os
+  // rótulos dos subgrupos só aparecem com mais de 6 entradas
+  await expect(area.locator('.navl-subg')).toHaveCount(0);
   // o nome de cada ligação (sem o contador, que a página acerta ao ler as ocorrências)
   await expect(area.locator('a > span:first-of-type')).toHaveText([
-    'Visitas do dia',
-    'Percurso do dia',
+    'Visitas e percurso do dia',
     'Ocorrências',
-    'Plano de visitas',
-    'Optimização de rotas',
-    'Rotas propostas',
-    'Prospecção de clientes',
-    'Zonas de entrega',
-    'Distribuidores',
+    'Planeamento',
+    'Território e clientes',
     'Conversão das visitas',
   ]);
-  // rótulos: cabeçalhos de nível 3, fora da tabulação; o subgrupo da página aberta fica realçado
-  await expect(area.locator('.navl-subg').first()).toHaveAttribute('role', 'heading');
-  await expect(area.locator('.navl-subg').first()).not.toHaveAttribute('tabindex');
-  await expect(area.locator('.navl-subg.atual')).toHaveText('Operação do dia');
   await expect(area.locator('a[aria-current="page"] > span:first-of-type')).toHaveText('Ocorrências');
   expect(erros).toEqual([]);
 });
@@ -156,8 +149,10 @@ test('terreno: contadores do que pede acção no menu e na área; quem só vê n
   await expect(area.locator('a[href="#ocorrencias"] .n')).toHaveAttribute('aria-label', '2 ocorrências por tratar');
   await expect(area.locator('a[href="#rotas-propostas"] .n')).toHaveText('1');
   await expect(page.locator('.navg', { hasText: 'Terreno' }).locator('.navg-n')).toHaveText('3');
-  // com só três páginas do Terreno visíveis, os subgrupos continuam a separar o dia do planeamento
-  await expect(area.locator('.navl-subg')).toHaveText(['Operação do dia', 'Planeamento']);
+  // com só três entradas do Terreno visíveis, sem rótulos de subgrupo; uma família com uma só página visível mostra o
+  // nome da página
+  await expect(area.locator('.navl-subg')).toHaveCount(0);
+  await expect(area.locator('a[href="#rotas-propostas"] > span:first-of-type')).toHaveText('Rotas propostas');
   // quem só vê: sem botões de tratamento
   await expect(page.locator('.oc-item').first()).toBeVisible();
   await expect(page.locator('.oc-item button')).toHaveCount(0);
