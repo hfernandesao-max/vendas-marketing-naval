@@ -54,8 +54,31 @@ export function ligacaoFicha(tipo, a) {
   return location.origin + location.pathname + '#' + pag + '?ficha=' + encodeURIComponent(tipo + ':' + v);
 }
 
-/** Abre a ficha do tipo pedido (fica no rasto até fechar). */
-export function abrir(tipo, a) {
+/**
+ * Setas ↑ ↓ dentro da ficha aberta a partir de uma tabela: passa à linha anterior ou seguinte da mesma tabela, com o
+ * mesmo tipo de ficha (como o painel de detalhe do Linear, do Gmail ou do Jira). Nos campos de escrita, as setas
+ * continuam a ser do campo.
+ */
+function navegarLinhas(dlg, tipo, origem) {
+  const tr = origem && origem.closest && origem.closest('tr');
+  if (!tr) return;
+  dlg.addEventListener('keydown', (e) => {
+    if ((e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
+    let x = tr;
+    let alvoBtn = null;
+    while (!alvoBtn && (x = e.key === 'ArrowDown' ? x.nextElementSibling : x.previousElementSibling)) {
+      if (!x.hidden) alvoBtn = x.querySelector('button.lig-' + tipo);
+    }
+    if (!alvoBtn) return;
+    e.preventDefault();
+    dlg.close();
+    setTimeout(() => alvoBtn.click(), 0);
+  });
+}
+
+/** Abre a ficha do tipo pedido (fica no rasto até fechar); origem: o botão da tabela que a abriu (setas ↑ ↓). */
+export function abrir(tipo, a, origem) {
   RASTO.push({ tipo, nome: nomeDe(tipo, a) });
   const antes = new Set(document.querySelectorAll('dialog[open]'));
   const p =
@@ -71,6 +94,7 @@ export function abrir(tipo, a) {
       return;
     }
     nova.addEventListener('close', () => RASTO.pop(), { once: true });
+    navegarLinhas(nova, tipo, origem);
   });
 }
 
@@ -155,7 +179,7 @@ export function celulaLigada(tipo, v, r, texto) {
   }[tipo];
   b.addEventListener('click', (e) => {
     e.stopPropagation();
-    abrir(tipo, a);
+    abrir(tipo, a, b);
   });
   return b;
 }

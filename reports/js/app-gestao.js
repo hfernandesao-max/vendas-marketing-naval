@@ -15,7 +15,7 @@
 import { apiFetch, apiJson } from './api.js';
 import { foraDoPrazo, horarioTxt } from './componentes/horario.js';
 import { dl, n0, n1, setFmt } from './formatos.js';
-import { sinal, textoAlerta, textoRico } from './gestao-textos.js';
+import { sinal, textoAlerta, textoPendente, textoRico } from './gestao-textos.js';
 import { LANG, mudarIdioma, t } from './i18n/i18n.js';
 import { el, svg } from './util.js';
 import { eNC, pendenteDe, recebidoDe, recebidoPorCategoria } from './meios.js';
@@ -719,80 +719,6 @@ function assinaturasFecho(fe) {
 }
 
 // ───────────── À sua espera (aprovações e tarefas) ─────────────
-// Como as caixas de tarefas das apps de referência (SAP Fiori «My Inbox», Microsoft Approvals): só o que esta pessoa
-// pode fazer agora (nível e separação de funções decididos no servidor), os atrasados primeiro. Aprovar faz-se no
-// portal, com a verificação em dois passos e a assinatura registada (ISO/IEC 27001 A.5.3 e A.8.5).
-function textoPendente(x, nomes) {
-  const d = dl(x.dia);
-  const por = x.por ? quem(x.por, nomes) : '';
-  if (x.tipo === 'caixa')
-    return [
-      x.nivel === 1 ? t('Fecho de caixa de {d}: aprovar (1.º nível)', { d }) : t('Fecho de caixa de {d}: aprovação final', { d }),
-      [
-        por ? (x.apos === 'verificada' ? t('aprovado no 1.º nível por {n}', { n: por }) : t('validado por {n}', { n: por })) : '',
-        x.diferenca ? t('diferença {v}', { v: kz(x.diferenca) }) : '',
-        x.depositos ? t('primeiro os depósitos ({n})', { n: x.depositos }) : '',
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    ];
-  if (x.tipo === 'po')
-    return [
-      t('PO {n}: aprovar para a carga', { n: x.numero }),
-      [
-        t('rota {r}', { r: x.rota }),
-        x.promotor,
-        t('{a} artigos · {q} unidades', { a: n0(x.artigos), q: n0(x.quantidade) }),
-        por ? t('emitida por {n}', { n: por }) : '',
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    ];
-  if (x.tipo === 'po_conferir' || x.tipo === 'po_validar')
-    return [
-      x.tipo === 'po_conferir' ? t('PO {n}: conferir a carga no cais', { n: x.numero }) : t('PO {n}: validar a carga conferida', { n: x.numero }),
-      [
-        t('rota {r}', { r: x.rota }),
-        x.promotor,
-        t('{a} artigos · {q} unidades', { a: n0(x.artigos), q: n0(x.quantidade) }),
-        por ? (x.tipo === 'po_conferir' ? t('aprovada por {n}', { n: por }) : t('conferida por {n}', { n: por })) : '',
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    ];
-  if (x.tipo === 'plano') return [t('Plano de cargas de {d}: confirmar e publicar', { d }), t('{n} rotas', { n: n0(x.rotas) })];
-  if (x.tipo === 'entrega')
-    return [
-      t('Rota {r}: contar o dinheiro entregue', { r: x.rota }),
-      [t('{v} declarados', { v: kz(x.valor) }), por ? t('pelo vendedor {n}', { n: por }) : ''].filter(Boolean).join(' · '),
-    ];
-  if (x.tipo === 'ordem')
-    return [
-      {
-        por_executar: t('Guia da {n}: gerar no Pinguim BO', { n: x.numero }),
-        recusada: t('Guia da {n}: recusada, tratar', { n: x.numero }),
-        divergente: t('Guia da {n}: diferente do pedido, corrigir', { n: x.numero }),
-      }[x.estado] || x.numero,
-      [t('rota {r}', { r: x.rota }), x.promotor].filter(Boolean).join(' · '),
-    ];
-  if (x.tipo === 'deposito')
-    return [
-      t('Depósito no banco de {d}: aprovar', { d }),
-      [x.banco, t('lacre {l}', { l: x.lacre }), kz(x.valor), por ? t('requisitado por {n}', { n: por }) : ''].filter(Boolean).join(' · '),
-    ];
-  const tit = {
-    contar: t('Rota {r}: contar a carrinha', { r: x.rota }),
-    validar: t('Rota {r}: validar a sua contagem', { r: x.rota }),
-    coordenar: t('Rota {r}: aprovar as diferenças (coordenador)', { r: x.rota }),
-    fechar: t('Rota {r}: aprovação final da conciliação', { r: x.rota }),
-  }[x.accao];
-  return [
-    tit,
-    [x.promotor, x.diferencas ? t('{n} diferença(s)', { n: x.diferencas }) : '', por && x.accao !== 'validar' ? t('último passo: {n}', { n: por }) : '']
-      .filter(Boolean)
-      .join(' · '),
-  ];
-}
 function cartaoPendentes(max) {
   const P = E.ind.pendentes;
   if (!P || !P.itens || !P.itens.length) return [];

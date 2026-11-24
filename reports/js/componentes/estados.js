@@ -1,0 +1,63 @@
+// Estados de carregamento e de erro das páginas, como nas aplicações de referência (Material Design, Atlassian,
+// Stripe): enquanto os dados chegam, o esqueleto da página (barras cinzentas no lugar do conteúdo, a frase continua
+// para os leitores de ecrã); quando a leitura falha, diz porquê (sem ligação, sessão terminada, sem acesso, erro do
+// servidor, com a hora) e dá «Tentar de novo». Aplica-se a todas as páginas depois de desenhadas, sem mudar cada uma.
+import { ULTIMA_FALHA } from '../api.js';
+import { t } from '../i18n/i18n.js';
+import { el } from '../util.js';
+
+const FALHAS = () => [t('Não foi possível ler os dados.'), t('Não foi possível desenhar esta página.')];
+const RECENTE = 2 * 60000;
+
+/** Motivo da última falha de leitura, se for recente; '' quando não se sabe. */
+export function motivoFalha(agora = Date.now()) {
+  const f = ULTIMA_FALHA;
+  if (!f.em || agora - f.em > RECENTE) return '';
+  const hora = new Date(f.em).toTimeString().slice(0, 5);
+  let m;
+  if (f.estado === 0) m = t('Sem ligação ao servidor do portal: verifique a rede.');
+  else if (f.estado === 401) m = t('A sessão terminou: entre de novo.');
+  else if (f.estado === 403) m = f.erro || t('O seu perfil não tem acesso a esta informação.');
+  else if (f.estado >= 500) m = f.erro || t('O servidor teve um erro ao ler os dados.');
+  else m = f.erro || t('O servidor devolveu uma resposta inesperada.');
+  return t('{m} ({h})', { m, h: hora });
+}
+
+function esqueleto(caixa) {
+  if (caixa.classList.contains('esqueleto')) return;
+  const frase = caixa.textContent.trim();
+  caixa.classList.add('esqueleto');
+  caixa.setAttribute('aria-busy', 'true');
+  caixa.setAttribute('role', 'status');
+  const barras = el('div', 'esq-barras');
+  barras.setAttribute('aria-hidden', 'true');
+  ['l', 'm', 'c', 'l', 'm'].forEach((x) => barras.append(el('i', 'esq-' + x)));
+  caixa.replaceChildren(el('span', 'esq-frase', frase), barras);
+}
+
+function erro(caixa) {
+  if (caixa.classList.contains('com-erro')) return;
+  caixa.classList.add('com-erro');
+  caixa.setAttribute('role', 'alert');
+  const frase = caixa.textContent.trim();
+  const m = motivoFalha();
+  const b = el('button', 'btn sm', t('Tentar de novo'));
+  b.type = 'button';
+  // volta a abrir a página no mesmo sítio (endereço, relatório e filtros ficam; a sessão mantém-se)
+  b.addEventListener('click', () => location.reload());
+  caixa.replaceChildren(el('strong', 'erro-frase', frase));
+  if (m) caixa.append(el('span', 'erro-motivo', m));
+  caixa.append(b);
+}
+
+/** Melhora os estados vazios da página: «A carregar…» → esqueleto; falha de leitura → motivo e «Tentar de novo». */
+export function melhorarEstados(raiz) {
+  if (!raiz) return;
+  const falhas = FALHAS();
+  raiz.querySelectorAll('.glass.empty').forEach((c) => {
+    if (c.children.length) return; // só caixas de texto simples (as outras já têm conteúdo próprio)
+    const x = c.textContent.trim();
+    if (falhas.includes(x)) erro(c);
+    else if (x.endsWith('…') && x.length <= 60) esqueleto(c);
+  });
+}

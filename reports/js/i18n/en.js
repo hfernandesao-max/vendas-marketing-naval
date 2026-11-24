@@ -5536,4 +5536,16 @@ export const EN = {
   'Lote complementar do lote {l}: leva só os {n} documentos deste período que ainda não foram enviados (por exemplo, facturas emitidas depois com a data de um dia anterior).':
     'Supplementary batch to batch {l}: it carries only the {n} documents of this period not yet sent (for example, invoices issued later with an earlier date).',
   'complementar do lote {l}': 'supplementary to batch {l}',
+  'Tudo em dia: nada à sua espera.': 'All clear: nothing waiting for you.',
+  '{n} atrasados': '{n} overdue',
+  '1 atrasado': '1 overdue',
+  'Ver todos ({n})': 'See all ({n})',
+  'Ficheiro para o SAP, lote {n}: confirmar o carregamento': 'SAP file, batch {n}: confirm the upload',
+  'emitido por {n}': 'issued by {n}',
+  'Sem ligação ao servidor do portal: verifique a rede.': 'No connection to the portal server: check the network.',
+  'A sessão terminou: entre de novo.': 'Your session has ended: sign in again.',
+  'O seu perfil não tem acesso a esta informação.': 'Your profile has no access to this information.',
+  'O servidor teve um erro ao ler os dados.': 'The server had an error reading the data.',
+  'O servidor devolveu uma resposta inesperada.': 'The server returned an unexpected response.',
+  '{m} ({h})': '{m} ({h})',
 };

@@ -93,6 +93,7 @@ function naval_api_rotas(): array
         'v1/rotas-propostas' => [['GET', 'POST'], 'jwt', 'rotas-propostas.php', []],
         'v1/ocorrencias' => [['GET', 'POST'], 'jwt', 'ocorrencias.php', []],
         'v1/terreno/contagens' => [['GET'], 'jwt', 'terreno-contagens.php', []],
+        'v1/pendentes' => [['GET'], 'jwt', 'pendentes.php', []],
         'v1/geo/radar' => [['GET'], 'jwt', 'geo-radar.php', []],
         'v1/geo/entrada' => [['POST'], 'publico', 'geo-entrada.php', []],
         'v1/sala/presenca' => [['POST'], 'publico', 'sala-presenca.php', []],

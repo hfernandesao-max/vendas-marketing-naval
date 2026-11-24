@@ -6271,3 +6271,100 @@ tr.viz-lig:focus-visible {
 .hor-fase.passou {
   opacity: 0.55;
 }
+
+/* ───────── Estados da página: esqueleto enquanto carrega; erro com o motivo e «Tentar de novo» ───────── */
+.glass.empty.esqueleto {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+.esq-frase {
+  font-size: 12px;
+  color: var(--dim);
+}
+.esq-barras {
+  display: grid;
+  gap: 10px;
+}
+.esq-barras i {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgb(var(--veu-rgb) / 0.06) 0%, rgb(var(--veu-rgb) / 0.14) 50%, rgb(var(--veu-rgb) / 0.06) 100%);
+  background-size: 200% 100%;
+  animation: esq-brilho 1.4s ease-in-out infinite;
+}
+.esq-barras .esq-l {
+  width: 92%;
+}
+.esq-barras .esq-m {
+  width: 68%;
+}
+.esq-barras .esq-c {
+  width: 40%;
+}
+@keyframes esq-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esq-barras i {
+    animation: none;
+  }
+}
+.glass.empty.com-erro {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.com-erro .erro-motivo {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ───────── Fichas do cliente, do artigo e da rota: painel lateral à direita, como o do documento (Linear, Stripe,
+   Jira): a tabela continua à vista à esquerda; setas ↑ ↓ passam à linha seguinte; Esc fecha ───────── */
+@media (min-width: 721px) {
+  dialog.dlg.lig-dlg,
+  dialog.dlg.cf-dlg {
+    position: fixed;
+    inset: 0 0 0 auto;
+    margin: 0;
+    width: min(760px, 100vw);
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-left: 1px solid var(--line2);
+    border-radius: 0;
+    animation: docEntra 0.25s ease-out;
+  }
+  dialog.dlg.lig-dlg[open] > form,
+  dialog.dlg.cf-dlg[open] > form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  dialog.dlg.lig-dlg::backdrop,
+  dialog.dlg.cf-dlg::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(0 0 0 / 0.22);
+  }
+  dialog.dlg.lig-dlg .dlg-b,
+  dialog.dlg.cf-dlg .dlg-b {
+    flex: 1;
+    min-height: 0;
+    align-content: start;
+  }
+}
+@media (min-width: 721px) and (prefers-reduced-motion: reduce) {
+  dialog.dlg.lig-dlg,
+  dialog.dlg.cf-dlg {
+    animation: none;
+  }
+}

@@ -5432,4 +5432,16 @@ export const TI = {
   'Lote complementar do lote {l}: leva só os {n} documentos deste período que ainda não foram enviados (por exemplo, facturas emitidas depois com a data de um dia anterior).':
     'ተወሳኺ ጥማር ናይ ጥማር {l}፦ ካብዚ ግዜ ገና ዘይተላእኩ {n} ሰነዳት ጥራይ ይሕዝ (ንኣብነት፡ ደሓር ብዝሓለፈ ዕለት ዝተዋህቡ ደረሰኛታት)።',
   'complementar do lote {l}': 'ተወሳኺ ናይ ጥማር {l}',
+  'Tudo em dia: nada à sua espera.': 'ኩሉ ብግዜኡ፦ ዝጽበየካ የለን።',
+  '{n} atrasados': '{n} ዝደንጐዩ',
+  '1 atrasado': '1 ዝደንጐየ',
+  'Ver todos ({n})': 'ኩሉ ርአ ({n})',
+  'Ficheiro para o SAP, lote {n}: confirmar o carregamento': 'ፋይል ን SAP፡ ጥማር {n}፦ ምጽዓኑ ኣረጋግጽ',
+  'emitido por {n}': 'ብ {n} ዝተዋህበ',
+  'Sem ligação ao servidor do portal: verifique a rede.': 'ምስ ሰርቨር ፖርታል ርክብ የለን፦ መርበብ ኣረጋግጽ።',
+  'A sessão terminou: entre de novo.': 'ክፍለ-ግዜ ተወዲኡ፦ እንደገና እቶ።',
+  'O seu perfil não tem acesso a esta informação.': 'መገለጺኻ ናብዚ ሓበሬታ መእተዊ የብሉን።',
+  'O servidor teve um erro ao ler os dados.': 'ሰርቨር ዳታ ኣብ ምንባብ ጌጋ ኣጋጢምዎ።',
+  'O servidor devolveu uma resposta inesperada.': 'ሰርቨር ዘይተጸበናዮ መልሲ ሂቡ።',
+  '{m} ({h})': '{m} ({h})',
 };

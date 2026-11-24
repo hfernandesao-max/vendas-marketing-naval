@@ -179,6 +179,18 @@ function naval_pendentes(string $login, ?array $rotas, array $pode, int $agora, 
                 'atraso' => $o['estado'] !== 'por_executar' || ($em !== '' && strtotime($em) < $agora - $horas * 3600), 'url' => '../reports/#cargas-po'];
         }
     }
+    // ── ficheiros para o SAP emitidos e ainda não confirmados como carregados (lote parado: as vendas não chegam ao SAP) ──
+    if (!empty($pode['sap'])) {
+        naval_servico('sap');
+        $horas = max(1, (int) naval_config('PENDENTES_SAP_HORAS', '24'));
+        foreach (naval_sap_lotes() as $l) {
+            if (($l['estado'] ?? '') !== 'emitido') continue;
+            $em = (string) ($l['em'] ?? '');
+            $itens[] = ['tipo' => 'sap', 'numero' => (string) ($l['numero'] ?? ''), 'dia' => (string) ($l['ate'] ?? substr($em, 0, 10)), 'de' => (string) ($l['de'] ?? ''),
+                'documentos' => (int) ($l['n_documentos'] ?? count((array) ($l['documentos'] ?? []))), 'por' => (string) ($l['por'] ?? ''), 'em' => $em,
+                'atraso' => $em !== '' && strtotime($em) < $agora - $horas * 3600, 'url' => '../reports/#sap-exportar'];
+        }
+    }
     // os atrasados primeiro, depois os mais antigos
     $ordem = function ($x) { return [(int) !$x['atraso'], $x['dia'], $x['tipo'], $x['rota'] ?? '', $x['lacre'] ?? '']; };
     usort($itens, function ($a, $b) use ($ordem) { return $ordem($a) <=> $ordem($b); });
@@ -200,6 +212,7 @@ function naval_pendentes_conta(string $login): array
         'validar' => naval_pode('validacao-carga', 'G'),
         'tesouraria' => naval_pode('caixa-marketing', 'G'),
         'plano' => naval_pode('plano-cargas', 'G'),
+        'sap' => naval_pode('sap-exportar', 'G'),
     ], time());
 }
 
@@ -210,7 +223,7 @@ function naval_pendentes_permissoes(array $u): array
     $g = function (string $rec, string $min = 'G') use ($u) { return NAVAL_ORDEM_NIVEIS[naval_notif_nivel($u, $rec)] >= NAVAL_ORDEM_NIVEIS[$min]; };
     return ['caixa1' => $g('caixa-aprovacao'), 'caixa2' => $g('caixa-aprovacao-final'), 'contar' => $g('conciliacao-carrinha'),
         'coordenar' => $g('conciliacao-coordenacao'), 'fechar' => $g('conciliacao-fecho'), 'po' => $g('requisicoes-aprovacao'), 'validar_po' => $g('requisicoes-validacao'),
-        'conferir' => $g('requisicoes-carrinha') && $g('cargas-po', 'V'), 'validar' => $g('validacao-carga'), 'tesouraria' => $g('caixa-marketing'), 'plano' => $g('plano-cargas')];
+        'conferir' => $g('requisicoes-carrinha') && $g('cargas-po', 'V'), 'validar' => $g('validacao-carga'), 'tesouraria' => $g('caixa-marketing'), 'plano' => $g('plano-cargas'), 'sap' => $g('sap-exportar')];
 }
 
 /** Chave estável de um pendente (o mesmo trabalho visto por várias pessoas conta uma só vez no escalamento). */
@@ -227,6 +240,7 @@ function naval_pendente_texto(array $x): string
         case 'caixa': return 'Fecho de caixa de ' . $d . ': ' . ((int) ($x['nivel'] ?? 2) === 1 ? 'aprovar (1.º nível)' : 'aprovação final');
         case 'deposito': return 'Depósito no banco de ' . $d . ': aprovar (' . ($x['banco'] ?? '') . ', lacre ' . ($x['lacre'] ?? '') . ')';
         case 'po': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): aprovar para a carga';
+        case 'sap': return 'Ficheiro para o SAP, lote ' . $x['numero'] . ' (' . $d . ', ' . (int) ($x['documentos'] ?? 0) . ' documentos): confirmar o carregamento no SAP';
         case 'plano': return 'Plano de cargas de ' . $d . ': confirmar e publicar (' . (int) ($x['rotas'] ?? 0) . ' rotas)';
         case 'entrega': return 'Rota ' . $x['rota'] . ': contar o dinheiro entregue (' . number_format((float) $x['valor'], 0, ',', ' ') . ' Kz declarados)';
         case 'po_validar_stock': return 'PO ' . $x['numero'] . ' (rota ' . $x['rota'] . '): ajustar as quantidades e validar (controlo de stock)';

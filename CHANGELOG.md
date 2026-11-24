@@ -1,5 +1,15 @@
 ## 24-11-2026
 
+### Portal: «À sua espera», painel lateral e estados das páginas
+
+<!-- paginas: inicio -->
+<!-- tipo: melhoria -->
+
+- **«À sua espera» no Início:** no topo, o que aguarda a sua acção agora (aprovações da caixa, conciliações por contar, validar ou aprovar, PO, guias, plano de cargas e, novo, ficheiros para o SAP por confirmar), os atrasados primeiro e cada um com a ligação para onde se trata; sem nada, «Tudo em dia». Actualiza-se sozinho de 2 em 2 minutos. Só aparece o que a pessoa pode fazer (nível de acesso, rotas e separação de funções).
+- **Ficheiro para o SAP por confirmar:** o lote emitido e ainda não confirmado como carregado passa a estar nos pendentes (e no resumo das 07:30); atrasado ao fim de 24 h (`PENDENTES_SAP_HORAS`).
+- **Painel lateral:** as fichas do cliente, do artigo e da rota abrem à direita, como a do documento, com a tabela à vista; as setas ↑ ↓ passam à linha anterior ou seguinte da mesma tabela e Esc fecha.
+- **Carregamento e erros:** enquanto os dados chegam, a página mostra o esqueleto do conteúdo; quando a leitura falha, diz porquê (sem ligação, sessão terminada, sem acesso ou o erro do servidor, com a hora) e dá «Tentar de novo».
+
 ### Portal: dimensões de referência
 
 <!-- tipo: melhoria -->

@@ -34,6 +34,7 @@ import { addD, hoje, inR, st } from '../periodo.js';
 import { DB, el, group, sum, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
 import { recebidoPorCategoria } from '../meios.js';
+import { textoPendente } from '../gestao-textos.js';
 
 // Gráficos de gestão (v1/painel, perfis com «painel-gestao» na matriz): lidos e desenhados a pedido; enquanto não chegam,
 // ou sem acesso, o Início mostra a grelha de sempre.
@@ -639,7 +640,65 @@ function serie(V, f) {
   return dias.map((d) => f(por[d] || []));
 }
 
+// «À sua espera» (como as caixas de tarefas das apps de referência: SAP Fiori «My Inbox», Linear, Microsoft Approvals):
+// no topo do Início, o que aguarda a acção desta pessoa agora, os atrasados primeiro, cada um com a ligação para onde se
+// trata. Lido do servidor (v1/pendentes: nível de acesso, rotas e separação de funções) e de novo a cada 2 minutos.
+const PEND = { d: null, em: 0, aLer: false, aberto: false };
+const PEND_INTERVALO = 2 * 60000;
+function lerPendentes() {
+  if (PEND.aLer || Date.now() - PEND.em < PEND_INTERVALO) return;
+  PEND.aLer = true;
+  apiJson('pendentes')
+    .then((d) => {
+      PEND.em = Date.now();
+      const antes = JSON.stringify(PEND.d);
+      PEND.d = d && d.ok ? d : null;
+      if (JSON.stringify(PEND.d) !== antes && atual === 'inicio') draw();
+    })
+    .catch(() => (PEND.em = Date.now()))
+    .finally(() => (PEND.aLer = false));
+}
+const PEND_VISIVEIS = 3;
+function faixaPendentes() {
+  lerPendentes();
+  const P = PEND.d;
+  if (!P) return null;
+  const box = el('section', 'pend-faixa' + (P.total ? '' : ' em-dia'));
+  box.setAttribute('aria-label', t('À sua espera'));
+  if (!P.total) {
+    box.append(el('span', 'pend-ok', t('Tudo em dia: nada à sua espera.')));
+    return box;
+  }
+  const atrasados = P.itens.filter((x) => x.atraso).length;
+  const cab = el('div', 'pend-cab');
+  cab.append(el('strong', null, t('À sua espera')), el('span', 'pend-n', n0(P.total)));
+  if (atrasados) cab.append(el('span', 'pend-atraso', atrasados === 1 ? t('1 atrasado') : t('{n} atrasados', { n: n0(atrasados) })));
+  const lista = el('div', 'pend-lista');
+  (PEND.aberto ? P.itens : P.itens.slice(0, PEND_VISIVEIS)).forEach((x) => {
+    const [tit, det] = textoPendente(x, P.nomes || {});
+    const a = el('a', 'pend-item' + (x.atraso ? ' atraso' : ''));
+    a.href = String(x.url || '').replace(/^\.\.\/reports\//, '') || '#inicio';
+    a.append(el('strong', null, tit));
+    if (det) a.append(el('span', null, det));
+    if (x.atraso) a.append(el('em', 'pend-tag', t('Atrasado')));
+    lista.append(a);
+  });
+  box.append(cab, lista);
+  if (P.itens.length > PEND_VISIVEIS) {
+    const b = el('button', 'linkbtn pend-mais', PEND.aberto ? t('Mostrar menos') : t('Ver todos ({n})', { n: n0(P.itens.length) }));
+    b.type = 'button';
+    b.addEventListener('click', () => {
+      PEND.aberto = !PEND.aberto;
+      draw();
+    });
+    cab.append(b);
+  }
+  return box;
+}
+
 R.inicio = (pg) => {
+  const fp = faixaPendentes();
+  if (fp) pg.append(fp);
   const V = vendasR(),
     tot = sum(V, liquidoDe),
     totIva = sum(V, totalVendaDe),

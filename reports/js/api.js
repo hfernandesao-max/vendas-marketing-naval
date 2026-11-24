@@ -153,11 +153,27 @@ export function guardarNomes(d) {
   return d;
 }
 
+/** A última leitura que falhou ({rota, estado HTTP (0 = sem ligação), erro do servidor, em}): a página explica porquê. */
+export const ULTIMA_FALHA = { rota: '', estado: 0, erro: '', em: 0 };
+function registarFalha(rota, estado, erro) {
+  Object.assign(ULTIMA_FALHA, { rota, estado, erro: erro || '', em: Date.now() });
+}
+
 export const apiJson = (rota) =>
   apiFetch(rota)
-    .then((r) => (r.ok && (r.headers.get('content-type') || '').includes('application/json') ? r.json() : null))
+    .then(async (r) => {
+      const json = (r.headers.get('content-type') || '').includes('application/json');
+      if (r.ok && json) return r.json();
+      let erro = '';
+      if (json) erro = ((await r.json().catch(() => null)) || {}).erro || '';
+      registarFalha(rota, r.status, erro);
+      return null;
+    })
     .then(guardarNomes)
-    .catch(() => null);
+    .catch(() => {
+      registarFalha(rota, 0, '');
+      return null;
+    });
 
 /** Transfere um ficheiro da API (Excel do plano de cargas, segunda via do SAP) com o token. */
 export async function apiDescarregar(rota, nomeOmissao) {

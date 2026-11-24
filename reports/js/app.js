@@ -20,6 +20,7 @@ import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeV
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
 import { faixaNovo } from './componentes/novo.js';
+import { melhorarEstados } from './componentes/estados.js';
 
 function textos() {
   document.documentElement.lang = IDIOMAS[LANG];
@@ -122,6 +123,7 @@ export function draw() {
       aEsperar = p.id;
       document.body.classList.add('a-carregar');
       $('#page').replaceChildren(el('div', 'glass empty', t('A carregar…')));
+      melhorarEstados($('#page'));
       nav();
     }
     falta
@@ -202,6 +204,7 @@ export function draw() {
     pg.append(el('div', 'glass empty', t('Não foi possível desenhar esta página.')));
   }
   organizarRelatorios(pg, p.id);
+  melhorarEstados(pg);
   // novidade desta página nas últimas 24 h (selo «Novo»): faixa no topo; a página fica vista
   const fn = faixaNovo(p.id);
   if (fn) pg.prepend(fn);

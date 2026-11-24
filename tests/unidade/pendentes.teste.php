@@ -212,3 +212,28 @@ teste('pendentes: resumo de cada pessoa às 07:30 e escalamento dos atrasados, u
     igual([], naval_pendentes_ciclo(strtotime($dia . ' 16:50:00'), $o), 'o escalamento das 16:30 não se repete');
     igual([], naval_pendentes_ciclo(strtotime('2030-01-13 08:00:00'), $o), 'domingo (folga): nada');
 });
+
+teste('pendentes: ficheiro para o SAP emitido e por confirmar (atrasado ao fim de 24 h); carregados e anulados não contam', function () {
+    naval_servico('sap');
+    $f = naval_sap_pasta() . '/lotes.json';
+    $antes = is_file($f) ? file_get_contents($f) : null;
+    naval_json_gravar($f, [
+        ['numero' => 16, 'estado' => 'carregado', 'de' => '2026-11-23', 'ate' => '2026-11-23', 'em' => '2026-11-23 16:10:00', 'por' => 'hf', 'n_documentos' => 40],
+        ['numero' => 17, 'estado' => 'emitido', 'de' => '2026-11-24', 'ate' => '2026-11-24', 'em' => '2026-11-24 16:15:00', 'por' => 'hf', 'n_documentos' => 38],
+        ['numero' => 18, 'estado' => 'anulado', 'de' => '2026-11-19', 'ate' => '2026-11-19', 'em' => '2026-11-24 17:00:00', 'por' => 'hf', 'n_documentos' => 3],
+    ]);
+    try {
+        $p = naval_pendentes('muzamil', null, ['sap' => true], strtotime('2026-11-24 18:00'), []);
+        igual(1, $p['total']);
+        $x = $p['itens'][0];
+        igual(['sap', '17', '2026-11-24', 38, false, '../reports/#sap-exportar'], [$x['tipo'], $x['numero'], $x['dia'], $x['documentos'], $x['atraso'], $x['url']]);
+        igual('Ficheiro para o SAP, lote 17 (24-11-2026, 38 documentos): confirmar o carregamento no SAP', naval_pendente_texto($x));
+        // no dia seguinte, depois das 16:15, está atrasado
+        igual(true, naval_pendentes('muzamil', null, ['sap' => true], strtotime('2026-11-25 16:30'), [])['itens'][0]['atraso']);
+        // sem a permissão, nada
+        igual(0, naval_pendentes('muzamil', null, [], strtotime('2026-11-24 18:00'), [])['total']);
+    } finally {
+        if ($antes === null) @unlink($f);
+        else file_put_contents($f, $antes);
+    }
+});
