@@ -665,7 +665,6 @@ R['requisicoes-carrinha'] = (pg) => {
       );
     if (rotas.length) pg.append(b);
   }
-  if (aberta) pg.append(editor());
   const linhaBtn = (v, r) => {
     const b = el('button', 'linkbtn', v);
     b.type = 'button';
@@ -701,6 +700,9 @@ R['requisicoes-carrinha'] = (pg) => {
       ],
     }),
   );
+  // a PO aberta (cabeçalho, linhas e acções) por baixo da lista, como o detalhe de um registo nas aplicações de gestão
+  // (lista → detalhe): a lista mantém-se no lugar e a página desce até à PO
+  if (aberta) pg.append(editor());
 };
 
 /** Pede à página das requisições que abra uma (ligação a partir da conciliação). */

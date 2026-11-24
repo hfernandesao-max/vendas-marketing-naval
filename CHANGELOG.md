@@ -1,5 +1,12 @@
 ## 24-11-2026
 
+### Requisições (PO): a PO aberta por baixo da lista
+
+<!-- paginas: requisicoes-carrinha -->
+<!-- tipo: melhoria -->
+
+- Ao abrir uma requisição, o cabeçalho, as linhas e as acções aparecem por baixo da lista (lista → detalhe), e a página desce até ela; antes apareciam por cima da lista.
+
 ### Portal: «À sua espera», painel lateral e estados das páginas
 
 <!-- paginas: inicio -->
