@@ -450,6 +450,24 @@ dialog.dlg.largo {
   color: var(--warn);
   opacity: 1;
 }
+.sap-envio {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+}
+.sap-envio-activo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  font-weight: 600;
+}
+.sap-envio-res:empty {
+  display: none;
+}
+.sap-envio-res {
+  margin-top: 10px;
+}
 .sap-omissao {
   max-width: 260px;
   margin-top: 12px;

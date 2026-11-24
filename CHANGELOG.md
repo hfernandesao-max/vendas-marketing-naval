@@ -1,5 +1,16 @@
 ## 24-11-2026
 
+### Ficheiro para o SAP: envio automático por email às 16:00
+
+<!-- paginas: sap-exportar -->
+<!-- tipo: funcionalidade -->
+
+- **Envio automático:** todos os dias à hora indicada (por omissão 16:00), o servidor emite o lote com as vendas ainda não enviadas, o mesmo ficheiro e os mesmos controlos da página (numeração, um documento num só lote, impressão digital), em nome do «Envio automático», e envia o Excel por email aos endereços de «Enviar para». Configura-se na página do SAP, em «Correspondência com o SAP › Envio automático por email».
+- **Confirmação e aviso:** o email traz o botão «Já carreguei no SAP» (código de uso único, 14 dias): quem carrega indica o nome e a referência do SAP, o lote fica «Carregado no SAP» e quem está em «Avisar quando carregado» recebe a resposta no mesmo assunto, para continuar o trabalho. Confirmar na página do SAP também avisa.
+- Documentos com erro (sem artigos, sem depósito SAP, linha sem código) ficam de fora e seguem listados no email; as rotas que ainda não sincronizaram aparecem no email e as vendas delas entram no envio seguinte. Sem vendas num dia de trabalho segue a nota «sem ficheiro»; se o email falhar, tenta de novo sem emitir outro lote.
+- **Email de teste:** o botão «Enviar email de teste» faz o percurso de verdade (vendas de hoje, Excel, Microsoft 365) para os endereços escritos, sem emitir lote nem gastar número; o ficheiro vai marcado TESTE_NAO_CARREGAR e mostra o resultado de cada endereço.
+- O ficheiro do servidor é igual ao da página, célula a célula: os testes do portal e do servidor comparam-no com a mesma referência (tests/dados/sap-ficheiro). SAP_ENVIO=0 no .env desliga o envio.
+
 ### Conciliação da carrinha: venda por depósito facturada no SAP
 
 <!-- paginas: conciliacao-carrinha -->

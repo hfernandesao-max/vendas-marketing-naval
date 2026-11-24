@@ -1,0 +1,231 @@
+{
+  "nota": "Caso partilhado pelo teste do portal (tests/portal/sap-servidor.spec.js) e pelo do servidor (tests/unidade/sap-ficheiro.teste.php): a folha gerada no navegador e no servidor tem de ser igual a folha.xml.",
+  "de": "2026-10-01",
+  "ate": "2026-10-31",
+  "config": {
+    "prefixo": "FHR PIV",
+    "moeda": "AOA",
+    "unidade": "CAR",
+    "local_omissao": "RTM9",
+    "armazens": { "AP01": { "nome": "Armazém principal", "local": "RTM2" } },
+    "rotas": {
+      "1001": { "local": "RTM1", "empregado": "FHR PIV - ROTA 1001 - VENDEDOR UM" },
+      "1002": { "empregado": "FHR PIV - ROTA 1002 - VENDEDOR DOIS", "loja": "LOJA 1002" },
+      "1003": { "empregado": "FHR PIV - ROTA 1003 - VENDEDOR TRES" }
+    }
+  },
+  "origens": { "rotas": { "1002": { "local": "RTM2", "artigos": { "10000020": "RTM5" }, "armazens": { "AP01": 10 } } }, "artigos": {} },
+  "exportados": { "FR 1001/2026/6": { "lote": 1, "em": "2026-10-09 16:00:00" } },
+  "vendas": [
+    {
+      "documento": "FR 1001/2026/1",
+      "data": "2026-10-05",
+      "hora": "09:00",
+      "rota": "1001",
+      "tipo": "Factura-recibo",
+      "cliente": "CLIENTE UM",
+      "total": 1140,
+      "liquidado": true,
+      "valor_pago": 1140,
+      "pagamentos": [{ "codigo": "NU", "meio": "Numerário", "valor": 1140 }],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "FT 1002/2026/2",
+      "data": "2026-10-05",
+      "hora": "10:30",
+      "rota": "1002",
+      "tipo": "Factura",
+      "tipo_codigo": "FT",
+      "cliente": "A & B <Lda>",
+      "total": 2280.5,
+      "liquidado": false,
+      "valor_pago": 0,
+      "pagamentos": [],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "NC 1001/2026/3",
+      "data": "2026-10-06",
+      "hora": "11:00",
+      "rota": "1001",
+      "tipo": "Nota de crédito",
+      "tipo_codigo": "NC",
+      "nc": true,
+      "cliente": "CLIENTE UM",
+      "total": -570,
+      "liquidado": true,
+      "pagamentos": [{ "codigo": "NU", "meio": "Numerário", "valor": -570 }],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "FR 1003/2026/4",
+      "data": "2026-10-07",
+      "hora": "12:15",
+      "rota": "1003",
+      "tipo": "Factura-recibo",
+      "cliente": " CLIENTE COM ESPAÇO ",
+      "total": 1140,
+      "liquidado": true,
+      "pagamentos": [
+        { "codigo": "MC", "meio": "Multicaixa", "valor": 500 },
+        { "codigo": "TB", "meio": "Transferência", "valor": 640 }
+      ],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "FR 1001/2026/5",
+      "data": "2026-10-08",
+      "hora": "08:05",
+      "rota": "1001",
+      "tipo": "Factura-recibo",
+      "cliente": "CLIENTE CINCO",
+      "total": 1140,
+      "liquidado": true,
+      "pagamentos": [{ "codigo": "NU", "meio": "Numerário", "valor": 1140 }],
+      "pagamentos_origem": [
+        { "codigo": "MC", "meio": "Multicaixa", "valor": 2000 },
+        { "codigo": "NU", "meio": "Numerário", "valor": -860 }
+      ],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "FR 1001/2026/6",
+      "data": "2026-10-09",
+      "hora": "09:00",
+      "rota": "1001",
+      "tipo": "Factura-recibo",
+      "cliente": "JA ENVIADO",
+      "total": 1140,
+      "liquidado": true,
+      "pagamentos": [{ "codigo": "NU", "meio": "Numerário", "valor": 1140 }],
+      "meio_pagamento": null
+    },
+    {
+      "documento": "FR 1002/2026/7",
+      "data": "2026-10-09",
+      "hora": "14:59",
+      "rota": "1002",
+      "tipo": "Factura-recibo",
+      "cliente": "SEM RODAPE",
+      "total": 333.33,
+      "liquidado": true,
+      "meio_pagamento": null
+    }
+  ],
+  "artigos": [
+    {
+      "chave": "FR 1001/2026/1|1",
+      "data": "2026-10-05",
+      "rota": "1001",
+      "documento": "FR 1001/2026/1",
+      "codigo": "10000010",
+      "artigo": "Sabão",
+      "unidade": "CAR",
+      "quantidade": 2,
+      "valor_sem_iva": 1000,
+      "iva": 140,
+      "total": 1140,
+      "gross_total": null
+    },
+    {
+      "chave": "FT 1002/2026/2|1",
+      "data": "2026-10-05",
+      "rota": "1002",
+      "documento": "FT 1002/2026/2",
+      "codigo": "10000020",
+      "artigo": "Fraldas",
+      "unidade": "CAR",
+      "quantidade": 1.5,
+      "valor_sem_iva": 1000.44,
+      "iva": 140.06,
+      "total": 1140.5,
+      "gross_total": 1140.5
+    },
+    {
+      "chave": "FT 1002/2026/2|2",
+      "data": "2026-10-05",
+      "rota": "1002",
+      "documento": "FT 1002/2026/2",
+      "codigo": "10000021",
+      "artigo": "Toalhitas",
+      "unidade": "",
+      "quantidade": 1,
+      "valor_sem_iva": 1000,
+      "iva": 140,
+      "total": 1140,
+      "gross_total": 1140
+    },
+    {
+      "chave": "NC 1001/2026/3|1",
+      "data": "2026-10-06",
+      "rota": "1001",
+      "documento": "NC 1001/2026/3",
+      "codigo": "10000010",
+      "artigo": "Sabão",
+      "unidade": "CAR",
+      "quantidade": -1,
+      "valor_sem_iva": -500,
+      "iva": -70,
+      "total": -570,
+      "gross_total": -570,
+      "nc": true
+    },
+    {
+      "chave": "FR 1003/2026/4|1",
+      "data": "2026-10-07",
+      "rota": "1003",
+      "documento": "FR 1003/2026/4",
+      "codigo": "ABC-1",
+      "artigo": "Promoção",
+      "unidade": "UN",
+      "quantidade": 3,
+      "valor_sem_iva": 1000,
+      "iva": 140,
+      "total": 1140,
+      "gross_total": null
+    },
+    {
+      "chave": "FR 1001/2026/5|1",
+      "data": "2026-10-08",
+      "rota": "1001",
+      "documento": "FR 1001/2026/5",
+      "codigo": "10000010",
+      "artigo": "Sabão",
+      "unidade": "CAR",
+      "quantidade": 2,
+      "valor_sem_iva": 1000,
+      "iva": 140,
+      "total": 1140,
+      "gross_total": 1140
+    },
+    {
+      "chave": "FR 1001/2026/6|1",
+      "data": "2026-10-09",
+      "rota": "1001",
+      "documento": "FR 1001/2026/6",
+      "codigo": "10000010",
+      "artigo": "Sabão",
+      "unidade": "CAR",
+      "quantidade": 2,
+      "valor_sem_iva": 1000,
+      "iva": 140,
+      "total": 1140,
+      "gross_total": 1140
+    },
+    {
+      "chave": "FR 1002/2026/7|1",
+      "data": "2026-10-09",
+      "rota": "1002",
+      "documento": "FR 1002/2026/7",
+      "codigo": "10000099",
+      "artigo": "Outro",
+      "unidade": "CAR",
+      "quantidade": 1,
+      "valor_sem_iva": 292.394,
+      "iva": 40.935,
+      "total": 333.33,
+      "gross_total": null
+    }
+  ]
+}

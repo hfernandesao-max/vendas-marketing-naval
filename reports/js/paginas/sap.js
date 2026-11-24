@@ -676,6 +676,103 @@ R['sap-exportar'] = (pg) => {
     tb.append(l);
   });
   sec.append(tb);
+  // Envio automático: o servidor emite o lote e envia-o por email todos os dias à hora indicada
+  const ev = (cfg.envio = { activo: false, hora: '16:00', para: [], avisar: [], ...(cfg.envio || {}) });
+  const ea = el('div', 'sap-envio');
+  ea.append(
+    el('h3', null, t('Envio automático por email')),
+    el(
+      'p',
+      'note',
+      t(
+        'Todos os dias à hora indicada, o servidor emite o lote com as vendas ainda não enviadas e envia o Excel por email. Quem o carrega no SAP confirma pela ligação do email (com a referência do SAP) e quem tem de continuar o trabalho é avisado no mesmo assunto.',
+      ),
+    ),
+  );
+  const ck = entrada('checkbox');
+  ck.checked = !!ev.activo;
+  ck.disabled = !gera;
+  ck.addEventListener('change', () => (ev.activo = ck.checked));
+  const lb = el('label', 'sap-envio-activo');
+  lb.append(ck, document.createTextNode(' ' + t('Ligar o envio automático')));
+  const hr = entrada('time', ev.hora || '16:00');
+  hr.disabled = !gera;
+  hr.addEventListener('input', () => (ev.hora = hr.value));
+  const lista = (k) => {
+    const i = entrada('text', (ev[k] || []).join(', '), { placeholder: 'nome@empresa.com' });
+    i.disabled = !gera;
+    i.addEventListener('input', () => (ev[k] = i.value));
+    return i;
+  };
+  const ce = el('div', 'campos3');
+  ce.append(campo(t('Hora do envio'), hr), campo(t('Enviar para'), lista('para')), campo(t('Avisar quando carregado'), lista('avisar')));
+  ea.append(lb, ce);
+  // teste da configuração do email antes de ligar o envio: o percurso de verdade, sem emitir lote
+  if (gera) {
+    const res = el('div', 'sap-envio-res');
+    res.setAttribute('role', 'status');
+    const bt = botao(t('Enviar email de teste'), 'sm ghost', () => {
+      bt.disabled = true;
+      bt.textContent = t('A enviar…');
+      res.textContent = '';
+      postSap({ accao: 'envio_teste', envio: ev }).then((r) => {
+        bt.disabled = false;
+        bt.textContent = t('Enviar email de teste');
+        if (!r.ok) {
+          res.append(el('p', 'pc-err-t', t(r.erro || 'Não foi possível enviar.')));
+          return;
+        }
+        const x = r.teste,
+          ul = el('ul', 'pc-lista');
+        const linha = (rot, y) =>
+          ul.append(
+            el(
+              'li',
+              y.ok ? null : 'pc-err-t',
+              rot + ' (' + y.enderecos.join(', ') + '): ' + (y.ok ? t('enviado') : t('não seguiu: {e}', { e: t(y.erro || '') })),
+            ),
+          );
+        linha(t('Enviar para'), x.para);
+        if (x.avisar) linha(t('Avisar quando carregado'), x.avisar);
+        ul.append(
+          el(
+            'li',
+            null,
+            x.ficheiro
+              ? t('Ficheiro de teste com as vendas de hoje: {n} documentos, {l} linhas, {v}.', {
+                  n: n0(x.ficheiro.documentos),
+                  l: n0(x.ficheiro.linhas),
+                  v: kz2(x.ficheiro.total),
+                })
+              : x.sem_ligacao
+                ? t('Sem ligação ao Pinguim BO: o email seguiu sem ficheiro.')
+                : t('Ainda não há vendas de hoje por enviar: o email seguiu sem ficheiro.'),
+          ),
+        );
+        if (x.modo_ficheiro)
+          ul.append(
+            el(
+              'li',
+              'pc-av-t',
+              t('O servidor está em modo de ensaio do correio ({c}): a mensagem ficou gravada no servidor e não saiu.', { c: 'EMAIL_MODO=ficheiro' }),
+            ),
+          );
+        res.append(ul);
+      });
+    });
+    ea.append(
+      el(
+        'p',
+        'note',
+        t('O teste usa os endereços escritos acima (mesmo antes de guardar): não emite lote, não gasta número e o ficheiro vai marcado {f}.', {
+          f: 'TESTE_NAO_CARREGAR',
+        }),
+      ),
+      bt,
+      res,
+    );
+  }
+  sec.append(ea);
   if (gera) {
     const ft = el('div', 'pc-acc'),
       erro = msgErro();
@@ -727,6 +824,10 @@ function registoLotes(gera) {
         (x.omissao
           ? (x.estado === 'emitido' ? '' : ' · ') +
             t('{n} linhas com o depósito por omissão {l} (rotas {r})', { n: x.omissao.linhas, l: x.omissao.local, r: x.omissao.rotas.join(', ') })
+          : '') +
+        (x.envio
+          ? (x.estado === 'emitido' && !x.omissao ? '' : ' · ') +
+            (x.envio.ok ? t('enviado por email a {p}', { p: x.envio.para.join(', ') }) : t('o email não seguiu: {e}', { e: x.envio.erro || '' }))
           : ''),
       hash: x.sha256 ? x.sha256.slice(0, 12) + '…' : '—',
     })),

@@ -90,7 +90,7 @@ function naval_sap_resumo(): array
 {
     $lotes = naval_sap_lotes();
     $exportados = naval_sap_exportados($lotes);
-    $resumo = array_map(function ($l) { unset($l['documentos']); return $l; }, array_reverse($lotes));
+    $resumo = array_map(function ($l) { unset($l['documentos'], $l['confirmacao']); return $l; }, array_reverse($lotes));
     $config = naval_sap_config();
     return ['config' => $config, 'origens' => naval_origem_stock($config['armazens']), 'lotes' => array_slice($resumo, 0, 200), 'exportados' => $exportados,
         'segunda_via' => naval_sap_pode_segunda_via()];
@@ -132,10 +132,15 @@ function naval_sap_confirmar(int $n, string $referencia, array $eu): array
         if ($lotes[$i]['estado'] !== 'emitido') throw new NavalErro('O lote ' . $n . ' já está ' . $lotes[$i]['estado'] . '.', 409);
         $lotes[$i]['estado'] = 'carregado';
         $lotes[$i]['carregado'] = ['em' => date('Y-m-d H:i:s'), 'por' => $eu['login'], 'por_nome' => $eu['nome'] ?? $eu['login'], 'referencia' => naval_texto($referencia, 60)];
+        // a ligação «Já carreguei no SAP» do email deixa de servir
+        if (isset($lotes[$i]['confirmacao']['hash'])) {
+            unset($lotes[$i]['confirmacao']['hash']);
+            $lotes[$i]['confirmacao']['usada'] = date('Y-m-d H:i:s');
+        }
         naval_sap_gravar_lotes($lotes);
         naval_registar('sap_lote_carregado', ['lote' => $n, 'referencia' => $lotes[$i]['carregado']['referencia']]);
         $l = $lotes[$i];
-        unset($l['documentos']);
+        unset($l['documentos'], $l['confirmacao']);
         return $l;
     });
 }
@@ -191,8 +196,11 @@ function naval_sap_gravar_config(array $c): array
         $x = array_filter($x, function ($v) { return $v !== ''; });
         if ($x) $nova['rotas'][$rota] = $x;
     }
+    // envio automático (destinatários e hora): só muda quando vem da página
+    naval_servico('sap-envio');
+    $nova['envio'] = array_key_exists('envio', $c) ? naval_sap_envio_limpar($c['envio']) : naval_sap_envio_config();
     naval_json_gravar(naval_sap_pasta() . '/config.json', $nova);
-    naval_registar('sap_config', ['rotas' => count($nova['rotas'])]);
+    naval_registar('sap_config', ['rotas' => count($nova['rotas']), 'envio' => $nova['envio']]);
     return $nova;
 }
 
@@ -200,12 +208,12 @@ function naval_sap_gravar_config(array $c): array
  * Emite um lote novo com o Excel gerado no portal. Recusa (409) se algum documento já estiver num
  * lote válido. Devolve o lote (sem a lista de documentos).
  */
-function naval_sap_novo_lote(array $q, string $xlsx, array $eu): array
+function naval_sap_novo_lote(array $q, string $xlsx, array $eu, array $extra = []): array
 {
     $docs = array_values(array_unique(array_filter(array_map(function ($d) { return naval_texto($d, 60); }, (array) ($q['documentos'] ?? [])))));
     if (!$docs) throw new NavalErro('O ficheiro não tem documentos.');
     if ($xlsx === '' || substr($xlsx, 0, 2) !== 'PK' || strlen($xlsx) > 10 * 1024 * 1024) throw new NavalErro('O Excel não chegou ao servidor. Tente de novo.');
-    return naval_sap_exclusivo(function () use ($q, $docs, $xlsx, $eu) {
+    return naval_sap_exclusivo(function () use ($q, $docs, $xlsx, $eu, $extra) {
         $lotes = naval_sap_lotes();
         $emitidos = naval_sap_exportados($lotes);
         $dup = array_values(array_filter($docs, function ($d) use ($emitidos) { return isset($emitidos[$d]); }));
@@ -236,11 +244,12 @@ function naval_sap_novo_lote(array $q, string $xlsx, array $eu): array
             $lote['omissao'] = ['linhas' => (int) $om['linhas'], 'rotas' => array_values(array_map('strval', (array) ($om['rotas'] ?? []))),
                 'local' => naval_texto($om['local'] ?? '', 20)];
         }
+        $lote += $extra;
         $lotes[] = $lote;
         naval_sap_gravar_lotes($lotes);
         naval_registar('sap_lote', ['lote' => $n, 'documentos' => count($docs), 'total' => $lote['total'], 'periodo' => $de . ' a ' . $ate, 'sha256' => $lote['sha256']]
             + (isset($lote['omissao']) ? ['location_por_omissao' => $lote['omissao']['linhas'] . ' linhas (rotas ' . implode(', ', $lote['omissao']['rotas']) . ')'] : []));
-        unset($lote['documentos']);
+        unset($lote['documentos'], $lote['confirmacao']);
         return $lote;
     });
 }

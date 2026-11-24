@@ -1,6 +1,14 @@
 // Ficheiro para o SAP: quem gera, correspondência das rotas, lotes e modelo original.
 import { test, expect } from '@playwright/test';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { entrar, csrf } from './ajuda.js';
+
+const PRIVADO = 'tests/servidor/ambiente/dados-privados';
+const emails = () =>
+  readdirSync(PRIVADO + '/email-saida')
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => JSON.parse(readFileSync(PRIVADO + '/email-saida/' + f, 'utf8')));
 
 test('Financeiro gera; TI só vê; Direcção não tem acesso', async () => {
   const fin = (await entrar('fin')).ctx;
@@ -120,4 +128,64 @@ test('lote com linhas na location por omissão: a excepção fica registada no l
   ).json();
   expect(r.ok).toBe(true);
   expect(r.lote.omissao).toEqual({ linhas: 3, rotas: ['1009'], local: 'RTM2' });
+});
+
+test('envio automático: configuração guardada, email de teste sem lote e confirmação pela ligação do email', async ({ page }) => {
+  const fin = (await entrar('fin')).ctx,
+    c = await csrf(fin);
+  const base = (await (await fin.get('/api/index.php/v1/sap')).json()).config;
+  const g = await (
+    await fin.post('/api/index.php/v1/sap', {
+      data: { accao: 'config', csrf: c, config: { ...base, envio: { activo: false, hora: '16:00', para: 'sap@naval.co.ao', avisar: 'equipa@naval.co.ao' } } },
+    })
+  ).json();
+  expect(g.config.envio).toEqual({ activo: false, hora: '16:00', para: ['sap@naval.co.ao'], avisar: ['equipa@naval.co.ao'] });
+  const lotesAntes = (await (await fin.get('/api/index.php/v1/sap')).json()).lotes.length;
+  const t = await (await fin.post('/api/index.php/v1/sap', { data: { accao: 'envio_teste', csrf: c, envio: g.config.envio } })).json();
+  expect(t.ok).toBe(true);
+  expect([t.teste.para.ok, t.teste.avisar.ok]).toEqual([true, true]);
+  expect((await (await fin.get('/api/index.php/v1/sap')).json()).lotes.length).toBe(lotesAntes);
+  expect(emails().some((m) => m.assunto.startsWith('[TEST / TESTE]') && m.para[0].emailAddress.address === 'sap@naval.co.ao')).toBe(true);
+
+  // lote automático com a ligação «Já carreguei no SAP» (código de uso único; só a impressão digital fica guardada)
+  const codigo = 'a'.repeat(40);
+  const f = PRIVADO + '/sap/lotes.json';
+  const lotes = JSON.parse(readFileSync(f, 'utf8'));
+  const n = Math.max(0, ...lotes.map((l) => l.numero)) + 1;
+  lotes.push({
+    numero: n,
+    estado: 'emitido',
+    em: '2026-11-25 16:00:00',
+    por: 'sistema',
+    por_nome: 'Envio automático',
+    de: '2026-11-25',
+    ate: '2026-11-25',
+    rotas: [],
+    n_documentos: 1,
+    linhas: 1,
+    total: 1140,
+    ficheiro: 'RTM_Sales_SAP_Upload_2026-11-25_lote' + n + '.xlsx',
+    bytes: 4,
+    sha256: '0'.repeat(64),
+    documentos: ['FR LIGACAO/' + n],
+    automatico: true,
+    confirmacao: { hash: createHash('sha256').update(codigo).digest('hex'), expira: '2099-01-01 00:00:00' },
+    envio: { assunto: 'RTM sales for SAP / Vendas RTM para o SAP · 25/11/2026 · batch / lote ' + n, para: ['sap@naval.co.ao'], ok: true },
+  });
+  writeFileSync(f, JSON.stringify(lotes));
+  expect((await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + 'b'.repeat(40))).status()).toBe(200);
+  await expect(page.locator('#sap-invalida')).toBeVisible();
+  await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + codigo);
+  await page.getByLabel('Your name · O seu nome').fill('Muzamil');
+  await page.getByLabel('SAP reference · Referência do SAP').fill('SAP-5100023');
+  await page.getByRole('button', { name: /Confirm loaded into SAP/ }).click();
+  await expect(page.locator('#sap-ok')).toContainText('SAP-5100023');
+  const l = (await (await fin.get('/api/index.php/v1/sap')).json()).lotes.find((x) => x.numero === n);
+  expect(l).toMatchObject({ estado: 'carregado', carregado: { referencia: 'SAP-5100023', por_nome: 'Muzamil (email)' } });
+  expect(l.confirmacao).toBeUndefined();
+  const aviso = emails().find((m) => m.assunto === 'RE: RTM sales for SAP / Vendas RTM para o SAP · 25/11/2026 · batch / lote ' + n);
+  expect(aviso.para.map((p) => p.emailAddress.address)).toEqual(['equipa@naval.co.ao', 'sap@naval.co.ao']);
+  // a ligação é de uso único
+  await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + codigo);
+  await expect(page.locator('#sap-invalida')).toBeVisible();
 });

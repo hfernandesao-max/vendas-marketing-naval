@@ -5404,4 +5404,23 @@ export const TI = {
   'Indicar a factura SAP': 'ደረሰኝ SAP ኣእትው',
   'Registar venda por depósito (SAP)': 'ሽያጥ ብተቐማጢ መዝግብ (SAP)',
   'A crédito (por receber)': 'ብልቓሕ (ዝቕበል)',
+  'Envio automático por email': 'ብኢመይል ብዓርሱ ምልኣኽ',
+  'Todos os dias à hora indicada, o servidor emite o lote com as vendas ainda não enviadas e envia o Excel por email. Quem o carrega no SAP confirma pela ligação do email (com a referência do SAP) e quem tem de continuar o trabalho é avisado no mesmo assunto.':
+    'መዓልታዊ ኣብቲ ዝተወሰነ ሰዓት፡ እቲ ሰርቨር ገና ዘይተላእኩ ሽያጣት ዝሓዘ ጥማር የውጽእን ነቲ Excel ብኢመይል ይልእኾን። ኣብ SAP ዘእትዎ ብመላግቦ ናይቲ ኢመይል (ምስ መወከሲ SAP) የረጋግጽ፡ ነቲ ስራሕ ዝቕጽል ድማ ኣብ ሓደ ኣርእስቲ ይሕበሮ።',
+  'Ligar o envio automático': 'ብዓርሱ ምልኣኽ ኣበግስ',
+  'Hora do envio': 'ሰዓት ምልኣኽ',
+  'Enviar para': 'ስደድ ናብ',
+  'Avisar quando carregado': 'ምስ ኣተወ ሓብር',
+  'enviado por email a {p}': 'ብኢመይል ናብ {p} ተላኢኹ',
+  'o email não seguiu: {e}': 'እቲ ኢመይል ኣይተላእከን፦ {e}',
+  'Enviar email de teste': 'ናይ ፈተነ ኢመይል ስደድ',
+  'A enviar…': 'ይለኣኽ ኣሎ…',
+  'não seguiu: {e}': 'ኣይተላእከን፦ {e}',
+  'Ficheiro de teste com as vendas de hoje: {n} documentos, {l} linhas, {v}.': 'ናይ ፈተነ ፋይል ምስ ሽያጣት ሎሚ፦ {n} ሰነዳት፡ {l} መስመራት፡ {v}።',
+  'Sem ligação ao Pinguim BO: o email seguiu sem ficheiro.': 'ምስ Pinguim BO ርክብ የለን፦ እቲ ኢመይል ብዘይ ፋይል ተላኢኹ።',
+  'Ainda não há vendas de hoje por enviar: o email seguiu sem ficheiro.': 'ገና ዝለኣኽ ሽያጥ ሎሚ የለን፦ እቲ ኢመይል ብዘይ ፋይል ተላኢኹ።',
+  'O servidor está em modo de ensaio do correio ({c}): a mensagem ficou gravada no servidor e não saiu.':
+    'እቲ ሰርቨር ኣብ ናይ ፈተነ ኢመይል ኩነታት ኣሎ ({c})፦ እቲ መልእኽቲ ኣብ ሰርቨር ተዓቂቡ ኣይወጸን።',
+  'O teste usa os endereços escritos acima (mesmo antes de guardar): não emite lote, não gasta número e o ficheiro vai marcado {f}.':
+    'እቲ ፈተነ ነቶም ኣብ ላዕሊ ዝተጻሕፉ ኣድራሻታት ይጥቀም (ቅድሚ ምዕቃብ እውን)፦ ጥማር ኣየውጽእን፡ ቁጽሪ ኣይጥቀምን፡ እቲ ፋይል ድማ {f} ተባሂሉ ይምልከት።',
 };

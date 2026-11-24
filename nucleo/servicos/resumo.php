@@ -333,6 +333,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[agentes] ' . $e->getMessage());
     }
+    // ficheiro de vendas para o SAP: emitido e enviado por email à hora configurada (16:00)
+    try {
+        naval_servico('sap-envio');
+        $se = naval_sap_envio_ciclo($agora);
+        if ($se) $feito['sap_envio'] = $se;
+    } catch (Throwable $e) {
+        error_log('[envio SAP] ' . $e->getMessage());
+    }
     // véspera de um feriado ou folga da empresa: aviso a vendedores e Logística (17:30)
     try {
         $vs = naval_cal_aviso_vespera($agora);

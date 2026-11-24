@@ -5508,4 +5508,23 @@ export const EN = {
   'Indicar a factura SAP': 'Enter the SAP invoice',
   'Registar venda por depósito (SAP)': 'Record a deposit sale (SAP)',
   'A crédito (por receber)': 'On credit (to be received)',
+  'Envio automático por email': 'Automatic email sending',
+  'Todos os dias à hora indicada, o servidor emite o lote com as vendas ainda não enviadas e envia o Excel por email. Quem o carrega no SAP confirma pela ligação do email (com a referência do SAP) e quem tem de continuar o trabalho é avisado no mesmo assunto.':
+    'Every day at the set time, the server issues the batch with the sales not yet sent and emails the Excel file. Whoever loads it into SAP confirms through the link in the email (with the SAP reference), and whoever continues the work is told in the same email thread.',
+  'Ligar o envio automático': 'Turn on automatic sending',
+  'Hora do envio': 'Sending time',
+  'Enviar para': 'Send to',
+  'Avisar quando carregado': 'Notify when loaded',
+  'enviado por email a {p}': 'emailed to {p}',
+  'o email não seguiu: {e}': 'the email was not sent: {e}',
+  'Enviar email de teste': 'Send test email',
+  'A enviar…': 'Sending…',
+  'não seguiu: {e}': 'not sent: {e}',
+  'Ficheiro de teste com as vendas de hoje: {n} documentos, {l} linhas, {v}.': 'Test file with today’s sales: {n} documents, {l} lines, {v}.',
+  'Sem ligação ao Pinguim BO: o email seguiu sem ficheiro.': 'No connection to Pinguim BO: the email was sent without a file.',
+  'Ainda não há vendas de hoje por enviar: o email seguiu sem ficheiro.': 'There are no sales from today to send yet: the email was sent without a file.',
+  'O servidor está em modo de ensaio do correio ({c}): a mensagem ficou gravada no servidor e não saiu.':
+    'The server is in email trial mode ({c}): the message was saved on the server and was not sent.',
+  'O teste usa os endereços escritos acima (mesmo antes de guardar): não emite lote, não gasta número e o ficheiro vai marcado {f}.':
+    'The test uses the addresses typed above (even before saving): it does not issue a batch or use a number, and the file is marked {f}.',
 };
