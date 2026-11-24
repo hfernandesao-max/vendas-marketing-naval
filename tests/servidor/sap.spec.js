@@ -1,8 +1,8 @@
 // Ficheiro para o SAP: quem gera, correspondência das rotas, lotes e modelo original.
-import { test, expect } from '@playwright/test';
+import { test, expect, request } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { entrar, csrf } from './ajuda.js';
+import { BASE, entrar, csrf } from './ajuda.js';
 
 const PRIVADO = 'tests/servidor/ambiente/dados-privados';
 const emails = () =>
@@ -130,7 +130,7 @@ test('lote com linhas na location por omissão: a excepção fica registada no l
   expect(r.lote.omissao).toEqual({ linhas: 3, rotas: ['1009'], local: 'RTM2' });
 });
 
-test('envio automático: configuração guardada, email de teste sem lote e confirmação pela ligação do email', async ({ page }) => {
+test('envio automático: configuração guardada, email de teste sem lote e confirmação pela ligação do email', async () => {
   const fin = (await entrar('fin')).ctx,
     c = await csrf(fin);
   const base = (await (await fin.get('/api/index.php/v1/sap')).json()).config;
@@ -173,19 +173,28 @@ test('envio automático: configuração guardada, email de teste sem lote e conf
     envio: { assunto: 'RTM sales for SAP / Vendas RTM para o SAP · 25/11/2026 · batch / lote ' + n, para: ['sap@naval.co.ao'], ok: true },
   });
   writeFileSync(f, JSON.stringify(lotes));
-  expect((await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + 'b'.repeat(40))).status()).toBe(200);
-  await expect(page.locator('#sap-invalida')).toBeVisible();
-  await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + codigo);
-  await page.getByLabel('Your name · O seu nome').fill('Muzamil');
-  await page.getByLabel('SAP reference · Referência do SAP').fill('SAP-5100023');
-  await page.getByRole('button', { name: /Confirm loaded into SAP/ }).click();
-  await expect(page.locator('#sap-ok')).toContainText('SAP-5100023');
+  // sem navegador (os trabalhos do PHP não o têm): os mesmos pedidos que o formulário faz
+  const web = await request.newContext({ baseURL: BASE });
+  const pagina = async (c) => {
+    const r = await web.get('/app/sap-carregado.php?l=' + n + '&c=' + c);
+    expect(r.status()).toBe(200);
+    return r.text();
+  };
+  expect(await pagina('b'.repeat(40))).toContain('id="sap-invalida"');
+  const form = await pagina(codigo);
+  expect(form).toContain('id="sap-confirmar"');
+  const csrfForm = form.match(/name="csrf" value="([^"]+)"/)[1];
+  const ok = await (
+    await web.post('/app/sap-carregado.php', { form: { csrf: csrfForm, l: String(n), c: codigo, nome: 'Muzamil', referencia: 'SAP-5100023' } })
+  ).text();
+  expect(ok).toContain('id="sap-ok"');
+  expect(ok).toContain('SAP-5100023');
   const l = (await (await fin.get('/api/index.php/v1/sap')).json()).lotes.find((x) => x.numero === n);
   expect(l).toMatchObject({ estado: 'carregado', carregado: { referencia: 'SAP-5100023', por_nome: 'Muzamil (email)' } });
   expect(l.confirmacao).toBeUndefined();
   const aviso = emails().find((m) => m.assunto === 'RE: RTM sales for SAP / Vendas RTM para o SAP · 25/11/2026 · batch / lote ' + n);
   expect(aviso.para.map((p) => p.emailAddress.address)).toEqual(['equipa@naval.co.ao', 'sap@naval.co.ao']);
   // a ligação é de uso único
-  await page.goto('/app/sap-carregado.php?l=' + n + '&c=' + codigo);
-  await expect(page.locator('#sap-invalida')).toBeVisible();
+  expect(await pagina(codigo)).toContain('id="sap-invalida"');
+  await web.dispose();
 });
