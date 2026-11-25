@@ -5592,4 +5592,8 @@ export const TI = {
   'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.':
     'መጀመርታ ኣብ ተሌፎን መዓልቲ ዕጸው (ፋይናንሳዊ መዛዘሚ ኣብ ፒንጉዊን)፦ ቆጸራ ዝዕቀብ መዓልቲ መስመር ምስ ተዓጽወ ጥራይ እዩ፣ ኣብ እዋን ቆጸራ ካልእ ሰነድ ከይወጽእ።',
   'Dia da rota fechado no Pinguim BO às {h}: o telemóvel já não emite documentos.': 'መዓልቲ መስመር ኣብ ፒንጉዊን BO ብ {h} ተዓጽዩ፦ ተሌፎን ድሕሪ ሕጂ ሰነድ ኣየውጽእን።',
+  '{n} venda(s) depois do fecho do dia no Pinguim BO (às {f}): o vendedor reabriu o dia no telemóvel':
+    '{n} መሸጣ ድሕሪ መዛዘሚ መዓልቲ ኣብ ፒንጉዊን BO (ብ {f})፦ ሸያጢ ኣብ ተሌፎን መዓልቲ ደጊሙ ከፊቱ',
+  'Motivo da excepção (ex.: Pinguim BO parado)': 'ምኽንያት ፍሉይ ፍቓድ (ንኣብነት ፒንጉዊን BO ደው ኢሉ)',
+  'Gravar com excepção (super administrador)': 'ብፍሉይ ፍቓድ ዕቅብ (ልዑል ኣመሓዳሪ)',
 };

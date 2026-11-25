@@ -51,3 +51,19 @@ teste('fecho do dia: o dia fechado no Pinguim BO (FCL) prova as vendas completas
     $x = naval_rv_controlos($dia, ['fechos' => ['1001' => $dia . ' 23:00:00', '1002' => $dia . ' 23:10:00']] + $sem);
     igual(['ok', '2 rotas com vendas: todas com o dia fechado no Pinguim BO.'], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['detalhe']], 'as duas fecharam');
 });
+
+teste('vendas depois do fecho do dia: só depois do FCL feito no próprio dia; um FCL de madrugada não marca as vendas da manhã seguinte', function () {
+    $linhas = [
+        ['rota' => '1010', 'dia' => '2026-11-26', 'fechado_em' => '2026-11-26 15:30:00'],
+        ['rota' => '1001', 'dia' => '2026-11-25', 'fechado_em' => '2026-11-26 01:00:00'],   // FCL de madrugada
+        ['rota' => '1002', 'dia' => '2026-11-26', 'fechado_em' => null],
+    ];
+    $vendas = [
+        ['ROTA' => '1010', 'DOC' => 'FR0126S77782N/30', 'HORA' => '2026-11-26 16:12:00', 'TOTAL' => 15000],
+        ['ROTA' => '1010', 'DOC' => 'FR0126S77782N/29', 'HORA' => '2026-11-26 15:20:00', 'TOTAL' => 9000],
+        ['ROTA' => '1001', 'DOC' => 'FR0126S78519N/40', 'HORA' => '2026-11-26 08:30:00', 'TOTAL' => 5000],
+        ['ROTA' => '1002', 'DOC' => 'FR0126S77755N/30', 'HORA' => '2026-11-26 17:00:00', 'TOTAL' => 7000],
+    ];
+    $r = naval_pdia_vendas_depois($linhas, $vendas);
+    igual([['1010', 'FR0126S77782N/30', '2026-11-26 15:30:00']], array_map(function ($x) { return [$x['rota'], $x['doc'], $x['fechado_em']]; }, $r));
+});

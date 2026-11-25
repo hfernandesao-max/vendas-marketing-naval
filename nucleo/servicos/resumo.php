@@ -349,6 +349,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[pinguim dia] ' . $e->getMessage());
     }
+    // vendas depois do fecho do dia (o vendedor reabriu o dia no telemóvel): aviso ao coordenador (a cada 10 minutos)
+    try {
+        naval_servico('pinguim-dia');
+        $df = naval_pdia_depois_ciclo($agora);
+        if ($df) $feito['depois_fecho'] = $df;
+    } catch (Throwable $e) {
+        error_log('[pinguim depois do fecho] ' . $e->getMessage());
+    }
     // véspera de um feriado ou folga da empresa: aviso a vendedores e Logística (17:30)
     try {
         $vs = naval_cal_aviso_vespera($agora);

@@ -19,6 +19,7 @@ defined('NAVAL_NUCLEO') || exit;
 const NAVAL_NOTIF_TIPOS = [
     'rota_parada' => ['Rota parada', 'Uma rota com vendas hoje está há mais de uma hora sem vender, ou ainda não vendeu às 10:30.', 'alertas', 'Vr', 'aviso'],
     'vendas_sincronizar' => ['Vendas por sincronizar', 'Uma rota carregada não tem vendas no Pinguim BO e o telemóvel não sincroniza há horas.', 'alertas', 'Vr', 'aviso'],
+    'venda_depois_fecho' => ['Venda depois do fecho do dia', 'Uma rota emitiu uma venda depois de fechar o dia no Pinguim BO (reabriu o dia no telemóvel): pode ter sido depois da contagem da carrinha.', 'conciliacao-coordenacao', 'G', 'aviso'],
     'dia_por_fechar' => ['Dia por fechar no Pinguim BO', 'Uma rota não fechou o dia no Pinguim BO até à hora limite, ou abriu o dia de hoje na véspera.', 'alertas', 'Vr', 'aviso'],
     'venda_anulada' => ['Venda anulada', 'Um documento de venda de hoje foi anulado no Pinguim BO.', 'alertas', 'Vr', 'aviso'],
     'factura_fora_horario' => ['Factura fora do horário', 'Uma rota emitiu uma factura depois do fim das vendas, num dia de descanso ou com a data de um dia anterior (turno do Winrest por fechar), sem autorização do coordenador.', 'alertas', 'Vr', 'aviso'],
@@ -77,6 +78,9 @@ const NAVAL_NOTIF_TEXTOS = [
     'sincronizar' => ['pt' => ['Rota {r}: vendas por sincronizar', 'Carregada e sem vendas no Pinguim BO; o telemóvel não sincroniza desde {h}. Sincronize no Winrest.'],
         'en' => ['Route {r}: sales not synced', 'Loaded and no sales in Pinguim BO; the phone has not synced since {h}. Sync in Winrest.'],
         'ti' => ['መስመር {r}: ዘይተሰማምዑ መሸጣታት', 'ተጻዒኑ ግን ኣብ Pinguim BO መሸጣ የለን፤ እቲ ሞባይል ካብ {h} ኣይተሰማምዐን። ኣብ Winrest ኣሰማምዑ።']],
+    'depois_fecho' => ['pt' => ['Rota {r}: venda depois do fecho do dia', '{doc} às {h} ({v} Kz), depois de o dia ter sido fechado às {f}. Confirme com o vendedor e veja a conciliação da carrinha.'],
+        'en' => ['Route {r}: sale after the day was closed', '{doc} at {h} ({v} Kz), after the day was closed at {f}. Check with the salesperson and review the van reconciliation.'],
+        'ti' => ['መስመር {r}፦ ድሕሪ መዛዘሚ መዓልቲ መሸጣ', '{doc} ብ {h} ({v} Kz)፣ መዓልቲ ብ {f} ድሕሪ ምዕጻዋ። ምስ ሸያጢ ኣረጋግጹ እሞ ምትዕራቕ መኪና ርኣዩ።']],
     'dia_fechar' => ['pt' => ['Rota {r}: dia {d} por fechar', 'O dia {d} ainda não foi fechado no Pinguim BO: as vendas feitas agora ficam com a data desse dia. Feche o dia no telemóvel e sincronize.'],
         'en' => ['Route {r}: day {d} not closed', 'Day {d} has not been closed in Pinguim BO yet: sales made now keep the date of that day. Close the day on the phone and sync.'],
         'ti' => ['መስመር {r}፦ መዓልቲ {d} ኣይተዓጽወን', 'መዓልቲ {d} ገና ኣብ Pinguim BO ኣይተዓጽወን፦ ሕጂ ዝግበር መሸጣ ዕለት ናይታ መዓልቲ ይሕዝ። ኣብ ተሌፎን ነታ መዓልቲ ዕጸውዋ እሞ ኣሰማምዑ።']],

@@ -1,5 +1,17 @@
 ## 25-11-2026
 
+### Aviso de venda depois do fecho do dia
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: funcionalidade -->
+
+- Com o dia fechado no Pinguim BO (FCL), o telemóvel já não emite documentos. Uma venda da mesma rota, no mesmo dia e depois da hora do fecho, só aparece se o vendedor reabriu o dia.
+- Quando isso acontece, o coordenador recebe logo o aviso no telemóvel «Rota 1010: venda depois do fecho do dia», com o documento, a hora e o valor. O portal verifica a cada 10 minutos, das 12:00 à meia-noite.
+- A conciliação da carrinha mostra essas vendas por cima das facturas fora do horário.
+- Um fecho feito de madrugada fecha o dia anterior e não marca as vendas da manhã seguinte.
+- Desliga-se no .env (`PINGUIM_DEPOIS_FECHO`).
+- Nova ferramenta só de leitura `php ferramentas\pinguim-relogio.php --doc=FR0126S77782N/26`: mostra todas as horas que o Pinguim BO guarda de um documento e as sincronizações desse telemóvel no dia. Serve para preparar o aviso de relógio do telemóvel errado.
+
 ### Conciliação: só se conta com o dia da rota fechado no Pinguim BO
 
 <!-- paginas: conciliacao-carrinha -->
@@ -7,7 +19,8 @@
 
 - A partir de 26-11-2026, a contagem da carrinha só se grava depois de o vendedor fechar o dia no telemóvel («Fecho financeiro», FCL, no Pinguim BO). Com o dia fechado, o telemóvel já não emite documentos durante a contagem.
 - Antes de contar, o portal e a app Naval Operações avisam «Feche primeiro o dia no telemóvel». Depois do fecho, mostram a hora a que o dia fechou.
-- Excepção só para o super administrador, com motivo registado (ex.: Pinguim BO parado). Sem ligação ao Pinguim BO, a contagem grava-se e fica assinalada no histórico.
+- Sem ligação ao Pinguim BO para confirmar o fecho, a contagem também é recusada («tente de novo dentro de alguns minutos»).
+- Excepção só para o super administrador, com motivo registado (ex.: Pinguim BO parado). Quando a contagem é recusada, o super administrador vê na própria página o campo do motivo e o botão «Gravar com excepção».
 - Liga-se e desliga-se no .env (`CARRINHA_EXIGIR_FECHO`).
 
 ### Painel da sala: «Recarregar ecrã» e versão de cada ecrã

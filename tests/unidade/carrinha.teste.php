@@ -738,7 +738,7 @@ teste('conciliação: venda entre o corte e a contagem física, sincronizada dep
     igual([], naval_carr_regularizacoes($linhas, $acertos, '1001', '2026-11-25 15:30:00', '2026-11-25 19:00:00'));
 });
 
-teste('contagem só com o dia da rota fechado no Pinguim BO (FCL): sem fecho recusa; excepção só do SADM com motivo; sem ligação grava assinalado', function () {
+teste('contagem só com o dia da rota fechado no Pinguim BO (FCL): sem fecho ou sem ligação recusa; excepção só do SADM com motivo', function () {
     $l = [['rota' => '1010', 'dia' => '2026-11-26', 'fechado_em' => '2026-11-26 15:31:00'], ['rota' => '1001', 'dia' => '2026-11-26', 'fechado_em' => null]];
     igual(['fecho_pinguim' => '2026-11-26 15:31:00'], naval_carr_decisao_fecho($l, '1010', '2026-11-26', false, ''));
     $erro = null;
@@ -749,6 +749,13 @@ teste('contagem só com o dia da rota fechado no Pinguim BO (FCL): sem fecho rec
     }
     verdade($erro !== null && strpos($erro->getMessage(), 'ainda está aberto no Pinguim BO') !== false, 'dia aberto: recusa');
     igual(['fecho_pinguim' => null, 'excepcao' => 'Pinguim BO parado'], naval_carr_decisao_fecho($l, '1001', '2026-11-26', true, 'Pinguim BO parado'), 'excepção do SADM');
-    igual(['fecho_pinguim' => null, 'sem_ligacao' => true], naval_carr_decisao_fecho(null, '1001', '2026-11-26', false, ''));
+    $erro = null;
+    try {
+        naval_carr_decisao_fecho(null, '1001', '2026-11-26', false, '');
+    } catch (NavalErro $e) {
+        $erro = $e;
+    }
+    verdade($erro !== null && strpos($erro->getMessage(), 'Não foi possível confirmar') !== false, 'sem ligação: também recusa');
+    igual(['fecho_pinguim' => null, 'sem_ligacao' => true, 'excepcao' => 'Pinguim BO parado'], naval_carr_decisao_fecho(null, '1001', '2026-11-26', true, 'Pinguim BO parado'), 'sem ligação: só o SADM, com motivo');
     verdade(!naval_carr_exige_fecho('2026-11-25') && naval_carr_exige_fecho('2026-11-26'), 'vale a partir de 26-11-2026');
 });

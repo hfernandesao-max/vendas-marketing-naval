@@ -5700,4 +5700,8 @@ export const EN = {
     'Close the day on the phone first (Financial close in Pinguim): the count is only saved with the route day closed, so that no more documents are issued during the count.',
   'Dia da rota fechado no Pinguim BO às {h}: o telemóvel já não emite documentos.':
     'Route day closed in Pinguim BO at {h}: the phone no longer issues documents.',
+  '{n} venda(s) depois do fecho do dia no Pinguim BO (às {f}): o vendedor reabriu o dia no telemóvel':
+    '{n} sale(s) after the day was closed in Pinguim BO (at {f}): the salesperson reopened the day on the phone',
+  'Motivo da excepção (ex.: Pinguim BO parado)': 'Reason for the exception (e.g. Pinguim BO down)',
+  'Gravar com excepção (super administrador)': 'Save with exception (super administrator)',
 };

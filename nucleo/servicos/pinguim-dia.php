@@ -198,6 +198,86 @@ function naval_pdia_avisos(array $linhas, int $agora): array
     return $out;
 }
 
+// ── Vendas depois do fecho do dia ───────────────────────────────────────────────────────────────────────────────
+// Com o dia fechado (FCL), o telemóvel não emite mais documentos com essa data. Uma venda da mesma rota, no mesmo dia,
+// depois da hora do FCL, só existe se o vendedor reabriu o dia (nova sessão) — exactamente o que a regra «contagem só
+// com o dia fechado» quer evitar. O coordenador é avisado logo e a conciliação mostra-a.
+
+/**
+ * Função pura (testada). $linhas: naval_pdia_montar; $vendas: [{ROTA, DESCR, DOC, HORA (CLOCK_DATE), TOTAL}].
+ * Devolve [{rota, dia, doc, hora, total, fechado_em}] — só os fechos feitos no próprio dia (um FCL de madrugada fecha o
+ * dia anterior; as vendas da manhã seguinte são do dia novo).
+ */
+function naval_pdia_vendas_depois(array $linhas, array $vendas): array
+{
+    $fecho = [];
+    foreach ($linhas as $x) {
+        if ($x['fechado_em'] !== null && substr($x['fechado_em'], 0, 10) === $x['dia']) $fecho[$x['rota']][$x['dia']] = $x['fechado_em'];
+    }
+    $out = [];
+    foreach ($vendas as $v) {
+        $rota = naval_pdia_rota((string) ($v['ROTA'] ?? ''), (string) ($v['DESCR'] ?? ''));
+        $hora = substr((string) ($v['HORA'] ?? ''), 0, 19);
+        $dia = substr($hora, 0, 10);
+        $f = $fecho[$rota][$dia] ?? null;
+        if ($f === null || $hora <= $f) continue;
+        $out[] = ['rota' => $rota, 'dia' => $dia, 'doc' => trim((string) ($v['DOC'] ?? '')), 'hora' => $hora, 'total' => round((float) ($v['TOTAL'] ?? 0), 2), 'fechado_em' => $f];
+    }
+    usort($out, function ($a, $b) { return [$a['rota'], $a['hora']] <=> [$b['rota'], $b['hora']]; });
+    return $out;
+}
+
+/** Vendas feitas num dia depois do fecho (FCL) desse dia, lidas do Pinguim BO (só SELECT; 5 minutos em cache). */
+function naval_pdia_depois_fecho(string $dia, bool $fresco = false): array
+{
+    return naval_cache('pinguim-depois-fecho-' . $dia, 300, function () use ($dia) {
+        naval_servico('bd');
+        naval_servico('vendas');
+        $l = naval_pdia_ler($dia, $dia);
+        $v = naval_bd_consultar("
+            SELECT S.CODE AS ROTA, S.DESCRIPTION AS DESCR,
+                   LTRIM(RTRIM(COALESCE(DH.DOC_PREFIX, DC.CODE))) + '/' + CAST(DH.DOC_NUMBER AS VARCHAR(20)) AS DOC,
+                   CONVERT(VARCHAR(19), DH.CLOCK_DATE, 120) AS HORA, DH.CALC_TOTAL_W_TAX AS TOTAL
+            FROM DOCHEADER DH
+            INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
+            LEFT JOIN STORE S ON S.ID = DH.STORE_ID
+            WHERE " . naval_vendas_condicao_validos() . " AND DC.CODE IN " . naval_vendas_tipos_sql() . "
+              AND DH.CLOCK_DATE >= :de AND DH.CLOCK_DATE < DATEADD(day, 1, CAST(:de AS DATE))", [':de' => $dia]);
+        return naval_pdia_vendas_depois((array) $l['linhas'], $v);
+    }, $fresco);
+}
+
+/**
+ * Ciclo (tarefas periódicas): das 12:00 às 23:59, no máximo a cada 10 minutos, avisa o coordenador de cada venda depois
+ * do fecho do dia (notificação «venda_depois_fecho», uma vez por documento). PINGUIM_DEPOIS_FECHO=0 desliga.
+ */
+function naval_pdia_depois_ciclo(int $agora): ?array
+{
+    if (naval_config('PINGUIM_DEPOIS_FECHO', '1') === '0' || date('H', $agora) < '12') return null;
+    naval_servico('bd');
+    if (!naval_bd_configurada()) return null;
+    $marca = naval_pasta('limites') . '/pinguim-depois-fecho';
+    if (is_file($marca) && filemtime($marca) > $agora - 600) return null;
+    @touch($marca);
+    try {
+        $l = naval_pdia_depois_fecho(date('Y-m-d', $agora), true);
+    } catch (Throwable $e) {
+        error_log('[pinguim depois do fecho] ' . $e->getMessage());
+        return null;
+    }
+    naval_servico('notificacoes');
+    $feitos = [];
+    foreach ($l as $x) {
+        $tx = naval_notif_txt('depois_fecho', ['r' => $x['rota'], 'doc' => $x['doc'], 'h' => substr($x['hora'], 11, 5), 'f' => substr($x['fechado_em'], 11, 5),
+            'v' => number_format($x['total'], 0, ',', ' ')]);
+        $n = naval_notificar('venda_depois_fecho', $tx['pt'][0], $tx['pt'][1], ['chave' => 'depois_fecho|' . $x['rota'] . '|' . $x['doc'], 'rota' => $x['rota'],
+            'url' => '../reports/#conciliacao-carrinha', 'textos' => $tx], $agora);
+        if (empty($n['repetida'])) $feitos[] = $x['doc'];
+    }
+    if ($feitos) naval_registar('pinguim_venda_depois_fecho', ['documentos' => $feitos], 'sistema');
+    return $feitos ?: null;
+}
+
 /**
  * Ciclo (tarefas periódicas): de hora a hora, a partir da hora limite, avisa quem acompanha as rotas (notificação
  * «dia_por_fechar», uma vez por rota e dia). Devolve os avisos enviados, ou null fora de horas ou sem Pinguim BO.

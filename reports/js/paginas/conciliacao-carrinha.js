@@ -455,10 +455,23 @@ function formContagem(r) {
       }
       contagem[c] = Number(i.value);
     }
-    postJson('conciliacao-carrinha', { accao: 'contar', data: dia, rota: r.rota, contagem }).then((x) => {
+    enviarContagem(contagem, '');
+  }
+  function enviarContagem(contagem, excepcao) {
+    postJson('conciliacao-carrinha', { accao: 'contar', data: dia, rota: r.rota, contagem, excepcao_fecho: excepcao }).then((x) => {
       if (!x.ok) {
         erro.hidden = false;
         erro.textContent = t(x.erro || 'Não foi possível gravar.');
+        // dia por fechar no Pinguim BO: só o super administrador pode gravar, com o motivo registado
+        if ((x.codigo === 'dia_aberto_pinguim' || x.codigo === 'fecho_por_confirmar') && CC && CC.pode && CC.pode.corrigir) {
+          const mot = el('input');
+          mot.placeholder = t('Motivo da excepção (ex.: Pinguim BO parado)');
+          const b = botao(t('Gravar com excepção (super administrador)'), 'sec', () => {
+            if (mot.value.trim().length < 5) return mot.focus();
+            enviarContagem(contagem, mot.value.trim());
+          });
+          erro.append(el('br'), mot, b);
+        }
         return;
       }
       toast(
@@ -601,6 +614,24 @@ function tabelaRota(r) {
     if (podeDep && r.linhas.some((l) => (l.diferenca || 0) < 0))
       dv.append(botao(t('Registar venda por depósito (SAP)'), 'ghost sm', () => registarDeposito(r)));
     box.append(dv);
+  }
+  // vendas depois do fecho do dia no Pinguim BO (o vendedor reabriu o dia no telemóvel)
+  if ((r.depois_fecho || []).length) {
+    const df = el('div', 'cc-aviso cc-depois-fecho');
+    df.append(
+      el(
+        'b',
+        null,
+        t('{n} venda(s) depois do fecho do dia no Pinguim BO (às {f}): o vendedor reabriu o dia no telemóvel', {
+          n: n0(r.depois_fecho.length),
+          f: String(r.depois_fecho[0].fechado_em).slice(11, 16),
+        }),
+      ),
+    );
+    const ul = el('ul');
+    r.depois_fecho.forEach((x) => ul.append(el('li', null, x.doc + ' · ' + String(x.hora).slice(11, 16) + ' · ' + kz(x.total))));
+    df.append(ul);
+    box.append(df);
   }
   // facturas fora do horário de vendas neste dia (autorizadas pelo coordenador ou não)
   const fhs = r.fora_horario || [];
