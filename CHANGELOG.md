@@ -1,5 +1,15 @@
 ## 25-11-2026
 
+### Ajuda viva: base de conhecimento do portal, «Porquê?» e assistente que explica com os seus dados
+
+<!-- paginas: relatorio-vendas, sincronizacao, assistente -->
+<!-- tipo: funcionalidade -->
+
+- **Base de conhecimento que se gera sozinha a cada versão**, a partir do próprio portal: o que faz cada página e onde fica, as novidades de cada versão (este histórico), mais de 600 regras de negócio (os testes que provam o portal a cada versão) e como funciona cada processo. Nunca fica desactualizada e ninguém tem de a escrever.
+- **Ajuda (botão «?» na barra de cima, ou F1):** painel à direita com «Esta página» (o que faz, as regras e as novidades), a procura em toda a base e a pergunta ao assistente. Cada pessoa só vê o que diz respeito às páginas a que tem acesso.
+- **«Porquê?» nos estados:** no Fecho do dia (cada controlo em falta) e na Abertura e fecho do dia (cada excepção), abre o motivo com os dados que o produziram, as regras desse tema primeiro e a pergunta ao assistente já escrita.
+- **Assistente:** passa a responder também «como faço», «o que significa», «porque está pendente» e «o que mudou», com a base de conhecimento e os dados reais de quem pergunta (estado do Fecho do dia, abertura e fecho do dia no Pinguim BO e sincronização dos telemóveis), com o passo seguinte e a página onde se faz.
+
 ### Abertura e fecho do dia no Pinguim BO ligados ao portal
 
 <!-- paginas: sincronizacao, relatorio-vendas -->

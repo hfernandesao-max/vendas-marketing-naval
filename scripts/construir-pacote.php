@@ -28,6 +28,11 @@ foreach (explode("\0", implode("\n", $saidaGit)) as $c) {
     $c = trim($c);
     if ($c !== '' && naval_act_incluir($c) && is_file($raiz . '/' . $c)) $lista[$c] = (string) hash_file('sha256', $raiz . '/' . $c);
 }
+// base de conhecimento do portal, gerada a partir do repositório (páginas, CHANGELOG, testes e serviços): os testes não
+// vão para o servidor, por isso a base vai já construída (nucleo/servicos/conhecimento.php)
+require $raiz . '/nucleo/servicos/conhecimento.php';
+$gerados = ['nucleo/conhecimento/base.json' => (string) json_encode(naval_conh_construir($raiz), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+foreach ($gerados as $c => $conteudo) $lista[$c] = hash('sha256', $conteudo);
 ksort($lista, SORT_STRING);
 $manifesto = ['formato' => 1, 'versao' => $versao, 'commit' => $commit, 'data' => gmdate('Y-m-d\TH:i:s\Z'), 'ficheiros' => $lista];
 
@@ -40,7 +45,10 @@ if ($z->open($zip, ZipArchive::CREATE) !== true) {
     exit(1);
 }
 $z->addFromString('manifesto.json', (string) json_encode($manifesto, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-foreach (array_keys($lista) as $c) $z->addFile($raiz . '/' . $c, 'ficheiros/' . $c);
+foreach (array_keys($lista) as $c) {
+    if (isset($gerados[$c])) $z->addFromString('ficheiros/' . $c, $gerados[$c]);
+    else $z->addFile($raiz . '/' . $c, 'ficheiros/' . $c);
+}
 $z->close();
 file_put_contents($zip . '.sha256', hash_file('sha256', $zip) . '  ' . basename($zip) . "\n");
 echo basename($zip) . ': ' . count($lista) . " ficheiros\n";

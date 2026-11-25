@@ -528,6 +528,8 @@ const SUGESTOES = [
   'Quais são os 10 clientes que mais compraram este mês?',
   'Há algum alerta crítico hoje? O que devo fazer primeiro?',
   'Qual é a previsão de vendas para esta semana?',
+  'Porque é que o Fecho do dia de ontem ainda não está completo?',
+  'Como funcionam os lotes complementares do ficheiro para o SAP?',
 ];
 const NOMES_FONTE = {
   vendas_resumo: 'Vendas',
@@ -536,6 +538,9 @@ const NOMES_FONTE = {
   previsao: 'Previsão',
   plano_cargas: 'Plano de cargas',
   agt_estado: 'Comunicação AGT',
+  conhecimento: 'Base de conhecimento do portal',
+  fecho_do_dia: 'Fecho do dia',
+  dia_pinguim: 'Abertura e fecho do dia no Pinguim BO',
   rotas: 'Rotas',
 };
 
@@ -576,7 +581,7 @@ R.assistente = (pg) => {
   if (!CONVERSA.length) {
     const ola = el('div', 'gst-ola');
     ola.append(
-      el('h2', null, t('Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão')),
+      el('h2', null, t('Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão — e sobre como o portal funciona')),
       el('p', null, t('As respostas usam só os dados do portal a que tem acesso. Confirme sempre os números importantes nas páginas indicadas como fonte.')),
     );
     const sug = el('div', 'gst-sug');

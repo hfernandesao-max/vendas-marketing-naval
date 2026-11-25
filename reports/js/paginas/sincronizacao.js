@@ -5,6 +5,7 @@
 // rota × dia e, primeiro, o que precisa de acção (dia por fechar, fechado tarde, aberto na véspera, vendas com a data
 // de outro dia).
 import { apiJson } from '../api.js';
+import { botaoPorque } from '../componentes/ajuda.js';
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
 import { aguardar, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
@@ -94,7 +95,27 @@ function seccaoDia(rotasVisiveis) {
         cols: [
           { key: 'rota', label: t('Rota'), p: 0 },
           { key: 'dia', label: t('Dia'), type: 'date', p: 0, render: (v) => document.createTextNode(dl(v)) },
-          { key: 'oque', label: t('O que se passou'), p: 0 },
+          {
+            key: 'oque',
+            label: t('O que se passou'),
+            p: 0,
+            render: (v, r) => {
+              const c = el('span', 'aj-celula');
+              c.append(
+                document.createTextNode(v + ' '),
+                botaoPorque({
+                  pagina: 'sincronizacao',
+                  titulo: t('Rota {r}, dia {d}', { r: r.rota, d: dl(r.dia) }),
+                  estado: v,
+                  detalhe: [t('Aberto em') + ': ' + dh(r.aberto_em), t('Fechado em') + ': ' + dh(r.fechado_em), r.documento || ''].filter(Boolean).join(' · '),
+                  tema: 'Pinguim BO',
+                  pergunta: t('Rota {r}, dia {d}: {o}. Porquê, que impacto tem nas vendas e no SAP, e o que se deve fazer?', { r: r.rota, d: dl(r.dia), o: v }),
+                }),
+              );
+              return c;
+            },
+            xl: (r) => r.oque,
+          },
           { key: 'aberto_em', label: t('Aberto em'), p: 1, render: (v) => document.createTextNode(dh(v)), xl: (r) => r.aberto_em || '' },
           { key: 'fechado_em', label: t('Fechado em'), p: 1, render: (v) => document.createTextNode(dh(v)), xl: (r) => r.fechado_em || '' },
           { key: 'documento', label: t('Documento'), p: 2, render: (v) => document.createTextNode(v || '—') },

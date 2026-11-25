@@ -12,6 +12,7 @@ import { seccaoDe } from './paginas/catalogo.js';
 import { paginaAtual, paginasVisiveis, podeGerir, podeVer, SESSAO } from './perfil.js';
 import { $, DB, el, svg, toast } from './util.js';
 import { abrir as abrirFicha, procurarDados } from './componentes/ligacoes.js';
+import { abrirAjuda } from './componentes/ajuda.js';
 
 // ───────────── Procurar uma função ─────────────
 let dlg = null,
@@ -285,6 +286,8 @@ export function actualizarBarraSup() {
   const pr = $('#procurar');
   if (!pr) return;
   $('#procurar-t').textContent = t('Procurar');
+  $('#ajuda-b').setAttribute('aria-label', t('Ajuda'));
+  $('#ajuda-b').title = t('Ajuda: o que faz esta página, regras, novidades e o assistente (F1)');
   pr.setAttribute('aria-label', t('Procurar uma função') + ' (Ctrl+K)');
   pr.title = t('Procurar uma função') + ' (Ctrl+K)';
   $('#estado-sis').setAttribute('aria-label', t('Estado do sistema'));
@@ -299,6 +302,7 @@ export function montarBarraSup() {
   if (montada) return;
   montada = true;
   $('#procurar').addEventListener('click', abrirProcura);
+  $('#ajuda-b').addEventListener('click', () => abrirAjuda({ pagina: (paginaAtual() || {}).id }));
   document.addEventListener('keydown', (ev) => {
     const escrita = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable="true"]');
     if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'k' || ev.key === 'K')) {

@@ -8,6 +8,7 @@ import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { pill, tabela, tiles } from '../componentes/blocos.js';
 import { botao, entrada, janela, msgErro } from '../componentes/janelas.js';
+import { botaoPorque } from '../componentes/ajuda.js';
 import { relatorioVendasPdf } from '../componentes/relatorio-vendas-pdf.js';
 import { dl, ds, kz, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -97,6 +98,21 @@ function controlos() {
     const [txt, cls] = ESTADO_CTL[x.estado] || [x.estado, 'p-mut'];
     const li = el('li', 'rv-' + x.estado);
     li.append(pill(t(txt), cls), el('b', null, t(nome)), el('span', 'note', x.detalhe));
+    if (x.estado !== 'ok')
+      li.append(
+        botaoPorque({
+          pagina: 'relatorio-vendas',
+          titulo: t(nome),
+          estado: t(txt),
+          detalhe: x.detalhe,
+          tema: { pinguim: 'Pinguim BO', conciliacao: 'conciliação', sap_ficheiro: 'SAP', caixa: 'caixa' }[k],
+          pergunta: t('Porque é que o controlo «{c}» do Fecho do dia de {d} está «{e}»? O que falta e quem tem de fazer o quê?', {
+            c: t(nome),
+            d: dl(dia),
+            e: t(txt),
+          }),
+        }),
+      );
     ul.append(li);
   });
   s.append(ul);

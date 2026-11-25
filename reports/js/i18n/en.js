@@ -1919,7 +1919,6 @@ export const EN = {
   'Passe o rato por cima de um valor para ver o intervalo de 80%.': 'Hover over a value to see the 80% interval.',
   'O assistente ainda não está configurado no servidor: correr «php ferramentas/configurar-ia.php» com a chave da API da conta comercial da empresa.':
     "The assistant is not yet configured on the server: run «php ferramentas/configurar-ia.php» with the API key of the company's business account.",
-  'Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão': 'Ask about sales, routes, customers, alerts and the forecast',
   'Fontes: {f}': 'Sources: {f}',
   'Escreva a pergunta e carregue em Enter': 'Type your question and press Enter',
   'Respostas geradas por IA ({m}) a partir dos dados do portal. Hoje fez {n} de {l} perguntas.':
@@ -5581,4 +5580,32 @@ export const EN = {
   'Fecho do dia por rota (últimos 7 dias)': 'Day closing by route (last 7 days)',
   'Hora do fecho em cada dia; «!» quando o dia foi aberto na véspera ou tem vendas emitidas noutro dia. Passe o rato para ver a abertura.':
     'Closing time for each day; «!» when the day was opened the day before or has sales issued on another day. Hover to see the opening.',
+  Novidade: 'New',
+  Regra: 'Rule',
+  'Como funciona': 'How it works',
+  'Ver todas ({n})': 'See all ({n})',
+  'Perguntar ao assistente': 'Ask the assistant',
+  'Ex.: porque é que o fecho de ontem está pendente?': "E.g.: why is yesterday's closing pending?",
+  Ajuda: 'Help',
+  'Procurar na ajuda: páginas, regras, novidades…': 'Search help: pages, rules, news…',
+  'Procurar na ajuda': 'Search help',
+  Resultados: 'Results',
+  'Nada encontrado. Tente outras palavras ou pergunte ao assistente.': 'Nothing found. Try other words or ask the assistant.',
+  'Porquê?': 'Why?',
+  'Esta página': 'This page',
+  'Regras desta página (provadas a cada versão)': 'Rules of this page (proven in every version)',
+  Novidades: 'News',
+  'Ainda não há ajuda para esta página.': 'There is no help for this page yet.',
+  'Ajuda: o que faz esta página, regras, novidades e o assistente (F1)': 'Help: what this page does, rules, news and the assistant (F1)',
+  'Porque é que o controlo «{c}» do Fecho do dia de {d} está «{e}»? O que falta e quem tem de fazer o quê?':
+    'Why is the «{c}» check of the day closing of {d} «{e}»? What is missing and who has to do what?',
+  'Rota {r}, dia {d}': 'Route {r}, day {d}',
+  'Rota {r}, dia {d}: {o}. Porquê, que impacto tem nas vendas e no SAP, e o que se deve fazer?':
+    'Route {r}, day {d}: {o}. Why, what impact does it have on sales and SAP, and what should be done?',
+  'Base de conhecimento do portal': 'Portal knowledge base',
+  'Abertura e fecho do dia no Pinguim BO': 'Day opening and closing in Pinguim BO',
+  'Porque é que o Fecho do dia de ontem ainda não está completo?': 'Why is the day closing of yesterday not complete yet?',
+  'Como funcionam os lotes complementares do ficheiro para o SAP?': 'How do the complementary batches of the SAP file work?',
+  'Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão — e sobre como o portal funciona':
+    'Ask about sales, routes, customers, alerts and the forecast — and about how the portal works',
 };

@@ -6573,3 +6573,127 @@ html[data-densidade='compacta'] td {
 .pd-vazio {
   color: var(--muted);
 }
+
+/* ───────── Ajuda viva: painel lateral (base de conhecimento, «Porquê?» e assistente) ───────── */
+button.ajuda-b {
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+.aj-dlg .dlg-b {
+  display: grid;
+  gap: 14px;
+}
+.aj-dlg input[type='search'] {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.aj-sec h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.aj-sec > p,
+.aj-pag .gst-txt {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.aj-art {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+}
+.aj-art summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.aj-art summary b {
+  flex: 1 1 60%;
+  font-weight: 600;
+}
+.aj-art summary small {
+  color: var(--muted);
+}
+.aj-art .gst-txt {
+  margin: 6px 0 4px 2px;
+  font-size: 13px;
+}
+.aj-tipo {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line2);
+}
+.aj-regra .aj-tipo {
+  color: var(--ok);
+  border-color: currentColor;
+}
+.aj-novidade .aj-tipo {
+  color: var(--sky);
+  border-color: currentColor;
+}
+.aj-pags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.aj-porque-c {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--warn);
+  border-radius: 8px;
+  background: rgb(var(--av1-rgb) / 0.1);
+  font-size: 13px;
+}
+.aj-porque-c p {
+  margin: 0;
+}
+.aj-estado {
+  color: var(--muted);
+}
+.aj-ia-f {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.aj-ia-f textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  padding: 6px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.aj-resp {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.aj-porque-b {
+  margin-left: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.aj-celula {
+  display: inline;
+}

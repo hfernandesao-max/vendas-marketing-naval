@@ -5,6 +5,8 @@ import { podeVer } from '../perfil.js';
 import { t } from '../i18n/i18n.js';
 import { el } from '../util.js';
 import { botao, janela } from './janelas.js';
+import { abrirAjuda } from './ajuda.js';
+import { paginaAtual } from '../perfil.js';
 
 export const ATALHOS = [
   ['i', 'inicio', 'Início'],
@@ -33,6 +35,7 @@ function ajuda() {
       l.append(dt, el('dd', null, txt));
     };
     disponiveis().forEach(([k, , nome]) => linha(['g', k], t(nome)));
+    linha(['F1'], t('Ajuda'));
     linha(['/'], t('Procurar'));
     linha(['Ctrl', 'K'], t('Procurar'));
     linha(['↑', '↓'], t('Linha anterior ou seguinte (na ficha aberta)'));
@@ -49,6 +52,11 @@ export function montarAtalhos() {
   montado = true;
   let g = 0;
   document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'F1' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      ev.preventDefault();
+      if (!document.querySelector('dialog.aj-dlg[open]')) abrirAjuda({ pagina: (paginaAtual() || {}).id });
+      return;
+    }
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const alvo = ev.target;
     if (alvo && alvo.closest && alvo.closest('input, textarea, select, [contenteditable="true"]')) return;

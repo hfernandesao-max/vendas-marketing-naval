@@ -13,6 +13,7 @@
     "v1/sessao",
     "v1/mudancas",
     "v1/pendentes",
+    "v1/conhecimento",
     "v1/vendas",
     "v1/vendas/estado",
     "v1/vendas/diagnostico",

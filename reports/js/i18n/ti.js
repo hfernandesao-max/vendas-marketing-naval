@@ -1890,7 +1890,6 @@ export const TI = {
   'Passe o rato por cima de um valor para ver o intervalo de 80%.': '80% ክሊ ንምርኣይ ኣብ ልዕሊ ዋጋ ኣመልክት።',
   'O assistente ainda não está configurado no servidor: correr «php ferramentas/configurar-ia.php» com a chave da API da conta comercial da empresa.':
     'ሓጋዚ ገና ኣብ ሰርቨር ኣይተዳለወን፦ «php ferramentas/configurar-ia.php» ብመፍትሕ ናይ ንግዳዊ ሕሳብ ትካል ኣካይድ።',
-  'Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão': 'ብዛዕባ መሸጣታት፡ መስመራት፡ ዓማዊል፡ መጠንቀቕታታትን ትንበያን ሕተት',
   'Fontes: {f}': 'ምንጪታት፦ {f}',
   'Escreva a pergunta e carregue em Enter': 'ሕቶኻ ጽሒፍካ መእተዊ ቁልፊ ጠውቕ',
   'Respostas geradas por IA ({m}) a partir dos dados do portal. Hoje fez {n} de {l} perguntas.':
@@ -5472,9 +5471,37 @@ export const TI = {
   '{n} venda(s) emitida(s) noutro dia com esta data': '{n} መሸጣ(ታት) ኣብ ካልእ መዓልቲ ብዚ ዕለት ዝተዋህቡ',
   'Abertura e fecho do dia: o que precisa de acção': 'ምኽፋትን ምዕጻውን መዓልቲ፦ ስጉምቲ ዘድልዮ',
   'Do Pinguim BO (abertura na tabela SESSION, fecho no documento FCL). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
-    'ካብ Pinguim BO (ምኽፋት ኣብ ሰንጠረዥ SESSION፣ ምዕጻው ኣብ ሰነድ FCL)። መዓልቲ ኣብታ መዓልቲ ክኽፈት ከምኡውን ኣብ ዝቕጽል መዓልቲ ክሳብ {h} ክዕጾ ኣለዎ፤ ምዕጻው መሸጣ ናይታ መዓልቲ ምሉእ ምዃኑ የረጋግጽ።',
+    'ካብ Pinguim BO (ምኽፋት ኣብ ሰንጠረዥ ክፍለ-ግዜ፣ ምዕጻው ኣብ ሰነድ ፋይናንሳዊ ምዕጻው)። መዓልቲ ኣብታ መዓልቲ ክኽፈት ከምኡውን ኣብ ዝቕጽል መዓልቲ ክሳብ {h} ክዕጾ ኣለዎ፤ ምዕጻው መሸጣ ናይታ መዓልቲ ምሉእ ምዃኑ የረጋግጽ።',
   'Tudo em dia: todos os dias abertos no próprio dia e fechados a tempo.': 'ኩሉ ብግቡእ፦ ኩሉ መዓልትታት ኣብታ መዓልቲ ተኸፊቶም ብግዜኦም ተዓጽዮም።',
   'Fecho do dia por rota (últimos 7 dias)': 'ምዕጻው መዓልቲ ብመስመር (ናይ መወዳእታ 7 መዓልትታት)',
   'Hora do fecho em cada dia; «!» quando o dia foi aberto na véspera ou tem vendas emitidas noutro dia. Passe o rato para ver a abertura.':
     'ሰዓት ምዕጻው ኣብ ነፍሲ ወከፍ መዓልቲ፤ «!» መዓልቲ ኣብ ዝሓለፈ መዓልቲ ምስ ተኸፍተ ወይ ኣብ ካልእ መዓልቲ ዝተዋህበ መሸጣ ምስ ዝህልዋ። ምኽፋት ንምርኣይ ማውስ ኣቐምጡ።',
+  Novidade: 'ሓድሽ',
+  Regra: 'ሕጊ',
+  'Como funciona': 'ከመይ ይሰርሕ',
+  'Ver todas ({n})': 'ኩሉ ርአ ({n})',
+  'Perguntar ao assistente': 'ንሓጋዚ ሕተቱ',
+  'Ex.: porque é que o fecho de ontem está pendente?': 'ኣብነት፦ ስለምንታይ ናይ ትማሊ ምዕጻው ተተሪፉ?',
+  Ajuda: 'ሓገዝ',
+  'Procurar na ajuda: páginas, regras, novidades…': 'ኣብ ሓገዝ ድለ፦ ገጻት፣ ሕግታት፣ ሓደሽቲ…',
+  'Procurar na ajuda': 'ኣብ ሓገዝ ድለ',
+  Resultados: 'ውጽኢታት',
+  'Nada encontrado. Tente outras palavras ou pergunte ao assistente.': 'ዝተረኽበ የለን። ካልእ ቃላት ፈትኑ ወይ ንሓጋዚ ሕተቱ።',
+  'Porquê?': 'ስለምንታይ?',
+  'Esta página': 'እዚ ገጽ',
+  'Regras desta página (provadas a cada versão)': 'ሕግታት ናይዚ ገጽ (ኣብ ነፍሲ ወከፍ ስሪት ዝተረጋገጹ)',
+  Novidades: 'ሓደሽቲ',
+  'Ainda não há ajuda para esta página.': 'ንዚ ገጽ ገና ሓገዝ የለን።',
+  'Ajuda: o que faz esta página, regras, novidades e o assistente (F1)': 'ሓገዝ፦ እዚ ገጽ እንታይ ይገብር፣ ሕግታት፣ ሓደሽቲን ሓጋዚን (F1)',
+  'Porque é que o controlo «{c}» do Fecho do dia de {d} está «{e}»? O que falta e quem tem de fazer o quê?':
+    'ስለምንታይ እቲ ምርመራ «{c}» ናይ ምዕጻው መዓልቲ {d} «{e}» ኮይኑ? እንታይ ጎዲሉ፣ መን እንታይ ክገብር ኣለዎ?',
+  'Rota {r}, dia {d}': 'መስመር {r}፣ መዓልቲ {d}',
+  'Rota {r}, dia {d}: {o}. Porquê, que impacto tem nas vendas e no SAP, e o que se deve fazer?':
+    'መስመር {r}፣ መዓልቲ {d}፦ {o}። ስለምንታይ፣ ኣብ መሸጣን SAPን እንታይ ጽልዋ ኣለዎ፣ እንታይከ ክግበር ኣለዎ?',
+  'Base de conhecimento do portal': 'መዝገብ ፍልጠት ናይ ፖርታል',
+  'Abertura e fecho do dia no Pinguim BO': 'ምኽፋትን ምዕጻውን መዓልቲ ኣብ Pinguim BO',
+  'Porque é que o Fecho do dia de ontem ainda não está completo?': 'ስለምንታይ ምዕጻው መዓልቲ ናይ ትማሊ ገና ኣይተማልአን?',
+  'Como funcionam os lotes complementares do ficheiro para o SAP?': 'ተወሰኽቲ ጉጅለታት ናይ ፋይል ንSAP ከመይ ይሰርሑ?',
+  'Pergunte sobre as vendas, as rotas, os clientes, os alertas e a previsão — e sobre como o portal funciona':
+    'ብዛዕባ መሸጣ፣ መስመራት፣ ዓማዊል፣ መጠንቀቕታታትን ትንበያን — ከምኡውን ፖርታል ከመይ ከም ዝሰርሕ ሕተቱ',
 };

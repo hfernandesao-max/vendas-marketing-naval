@@ -85,6 +85,36 @@ test('assistente: resposta com os números da ferramenta, fontes, consumo, CSRF 
   expect((await ctx.post(API + 'assistente', { data: { pergunta: 'x'.repeat(1600), csrf: c } })).status()).toBe(400);
 });
 
+test('base de conhecimento: o assistente responde «como funciona» com a base do portal; cada perfil só vê as suas páginas', async () => {
+  rmSync(PRIV + '/ia', { recursive: true, force: true });
+  const { ctx } = await entrar('dir');
+  const c = await csrf(ctx);
+  const r = await (
+    await ctx.post(API + 'assistente', { data: { pergunta: 'Como funcionam os lotes complementares do SAP?', historico: [], idioma: 'pt', csrf: c } })
+  ).json();
+  expect(r.ok).toBe(true);
+  expect(r.fontes).toEqual(['conhecimento']);
+  expect(r.resposta).toMatch(/Segundo a base de conhecimento: \*\*.*(complementar|SAP).*\*\*/i);
+  // procura directa: o que a pessoa pode ver, com a página actual primeiro
+  const q = await (await ctx.get(API + 'conhecimento?q=' + encodeURIComponent('abertura e fecho do dia Pinguim'))).json();
+  expect(q.ok).toBe(true);
+  expect(q.artigos.length).toBeGreaterThan(0);
+  expect(q.artigos.some((a) => a.paginas.includes('sincronizacao'))).toBe(true);
+  const p = await (await ctx.get(API + 'conhecimento?pagina=sincronizacao')).json();
+  expect(p.pagina.titulo).toBe('Sincronização dos telemóveis');
+  expect(p.regras.length).toBeGreaterThan(0);
+  expect((await ctx.get(API + 'conhecimento')).status()).toBe(400);
+  // o promotor não vê o SAP: nenhum artigo só do SAP nem funcionamento interno
+  const pro = await entrar('pro');
+  const s = await (await pro.ctx.get(API + 'conhecimento?q=' + encodeURIComponent('lote complementar SAP'))).json();
+  for (const a of s.artigos) {
+    expect(a.paginas.length === 0 || !a.paginas.every((x) => x === 'sap-exportar')).toBe(true);
+    expect(a.tipo === 'funcionamento' && a.paginas.length === 0).toBe(false);
+  }
+  const sp = await (await pro.ctx.get(API + 'conhecimento?pagina=sap-exportar')).json();
+  expect(sp.ok === false || sp.pagina === null || sp.pagina === undefined).toBe(true);
+});
+
 test('resumo diário: pré-visualização em HTML e envio de teste só para quem pede', async () => {
   const { ctx } = await entrar('dir');
   const d = await (await ctx.get(API + 'resumo')).json();

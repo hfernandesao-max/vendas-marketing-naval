@@ -1,7 +1,8 @@
 <?php
 // API de mensagens da Anthropic simulada, para os testes do assistente (php -S 127.0.0.1:8802 anthropic-simulado.php).
 // Com ferramentas: 1.º pedido → pede «vendas_resumo» de 24-10-2026 por rota; 2.º pedido (com o resultado) → responde com o
-// total que a ferramenta devolveu. Sem ferramentas (resumo diário) → um parágrafo fixo. Verifica a chave e a versão.
+// total que a ferramenta devolveu. Pergunta começada por «Como» → pede a base de conhecimento e responde com o primeiro
+// artigo. Sem ferramentas (resumo diário) → um parágrafo fixo. Verifica a chave e a versão.
 header('Content-Type: application/json');
 if (($_SERVER['HTTP_X_API_KEY'] ?? '') !== 'chave-ia-de-teste' || ($_SERVER['HTTP_ANTHROPIC_VERSION'] ?? '') !== '2023-06-01') {
     http_response_code(401);
@@ -18,10 +19,22 @@ if (empty($q['tools'])) {
 $ultima = end($q['messages']);
 if (is_array($ultima['content'])) {
     $res = json_decode((string) ($ultima['content'][0]['content'] ?? ''), true) ?: [];
+    if (isset($res['artigos'])) {
+        $texto('Segundo a base de conhecimento: **' . ($res['artigos'][0]['titulo'] ?? 'nada') . '** (' . count($res['artigos']) . ' artigos).');
+        return;
+    }
     $texto('O total de 24-10-2026 foi de **' . number_format((float) ($res['total'] ?? -1), 0, ',', ' ') . ' Kz**.' . "\n- Rotas: " . count($res['linhas'] ?? []));
     return;
 }
 $nomes = array_column($q['tools'], 'name');
+// pergunta sobre o funcionamento do portal («Como…»): pede a base de conhecimento
+$primeira = (string) ($q['messages'][0]['content'] ?? '');
+if (stripos($primeira, 'Como') === 0 && in_array('conhecimento', $nomes, true)) {
+    echo json_encode(['id' => 'msg_t', 'type' => 'message', 'role' => 'assistant', 'stop_reason' => 'tool_use', 'usage' => $uso, 'content' => [
+        ['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'conhecimento', 'input' => ['pergunta' => 'lote complementar SAP']],
+    ]]);
+    return;
+}
 echo json_encode(['id' => 'msg_t', 'type' => 'message', 'role' => 'assistant', 'stop_reason' => 'tool_use', 'usage' => $uso, 'content' => [
     ['type' => 'text', 'text' => 'Vou consultar as vendas.'],
     ['type' => 'tool_use', 'id' => 'toolu_1', 'name' => in_array('vendas_resumo', $nomes, true) ? 'vendas_resumo' : 'rotas',

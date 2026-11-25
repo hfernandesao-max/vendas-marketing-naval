@@ -23,3 +23,6 @@ composer.lock
 
 # exportações com dados pessoais deixadas na raiz do site (nunca no repositório)
 /*.csv
+
+# Base de conhecimento: gerada no pacote de cada versão (scripts/construir-pacote.php)
+nucleo/conhecimento/base.json
