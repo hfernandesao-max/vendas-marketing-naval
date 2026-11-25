@@ -8,7 +8,9 @@
 //    aviso quando os dados têm mais de 10 minutos; sem piscar (WCAG 2.3.1) e sem animação com «reduzir movimento»;
 //  - protecção do ecrã: deslocação mínima periódica (marcação em ecrãs OLED/plasma) e brilho reduzido fora de horas;
 //  - reconhecimento positivo: mostra os melhores e quem mais subiu face a si próprio; nunca o último lugar;
-//  - sem clientes, documentos nem NIF (a API só devolve totais por rota).
+//  - sem clientes, documentos nem NIF (a API só devolve totais por rota);
+//  - ecrã num espaço aberto (open space, recepção: visitantes podem ver): a API só envia percentagens, tendências e
+//    contagens, sem valores em Kz, sem nomes e sem classificações; o painel mostra-os assim (ecraHojeAberta…).
 // Acesso só com a ligação criada no portal (Gestão › Painel da sala comercial).
 (function () {
   'use strict';
@@ -76,7 +78,7 @@
   function numero(rotulo, valor, extra, cls) {
     var c = el('div', 's-num' + (cls ? ' ' + cls : ''));
     c.appendChild(el('div', 's-rot', rotulo));
-    c.appendChild(el('div', 's-val', valor));
+    if (valor !== '') c.appendChild(el('div', 's-val', valor));
     if (extra) c.appendChild(extra);
     return c;
   }
@@ -109,6 +111,92 @@
     grelha.appendChild(esq);
     grelha.appendChild(dir);
     return [grelha];
+  }
+
+  // 1b. Hoje num espaço aberto: progresso da equipa em percentagem e tendências (sem valores em Kz)
+  function ecraHojeAberta() {
+    var h = D.hoje || {};
+    var esq = el('section', 's-hoje');
+    esq.appendChild(el('div', 's-rot', 'Equipa RTM · objectivo de hoje'));
+    if (h.progresso != null) {
+      esq.appendChild(el('div', 's-gigante', Math.round(h.progresso * 100) + ' %'));
+      esq.appendChild(barra(Math.min(1, h.progresso), Math.round(h.progresso * 100) + ' % do objectivo do dia'));
+      esq.appendChild(el('p', 's-meta', h.progresso >= 1 ? 'Objectivo do dia atingido ✔' : 'do objectivo do dia'));
+    } else esq.appendChild(el('div', 's-gigante', '—'));
+    var g = el('div', 's-tres');
+    g.appendChild(numero('Vendas', nf.format(h.documentos || 0)));
+    g.appendChild(numero('Clientes com compras', nf.format((D.compras && D.compras.hoje && D.compras.hoje.compras) || 0)));
+    esq.appendChild(g);
+    var dir = el('section', 's-coluna');
+    dir.appendChild(numero('Ontem', '', variacao(D.ontem.variacao, 'face ao habitual')));
+    dir.appendChild(numero('Esta semana', '', variacao(D.semana.variacao, 'face à semana passada')));
+    dir.appendChild(numero('Este mês', '', variacao(D.mes.variacao, 'face ao mês passado')));
+    var grelha = el('div', 's-grelha-hoje');
+    grelha.appendChild(esq);
+    grelha.appendChild(dir);
+    return [grelha];
+  }
+
+  // 4b. Destaques num espaço aberto: por rota, sem nomes nem valores
+  function ecraDestaquesAberta() {
+    var out = [el('p', 's-legenda', 'Cada rota comparada consigo própria: todas podem ganhar.')];
+    var d = el('div', 's-destaques');
+    function destaque(icone, t, n, txt) {
+      var c = el('div', 's-destaque');
+      c.appendChild(el('div', 's-ico', icone));
+      var b = el('div');
+      b.appendChild(el('div', 's-rot', t));
+      b.appendChild(el('div', 's-dn', n));
+      b.appendChild(el('div', 's-dd', txt));
+      c.appendChild(b);
+      d.appendChild(c);
+    }
+    var R = D.rotas || [];
+    var sobe = R.filter(function (r) {
+      return r.variacao_mes > 0;
+    }).sort(function (a, b) {
+      return b.variacao_mes - a.variacao_mes;
+    })[0];
+    if (sobe) destaque('▲', 'Maior subida do mês', 'Rota ' + sobe.rota, '+' + Math.round(sobe.variacao_mes * 100) + ' % face ao mês passado');
+    var obj = R.filter(function (r) {
+      return r.progresso_hoje >= 1;
+    });
+    if (obj.length)
+      destaque(
+        '★',
+        'Objectivo de hoje atingido',
+        obj.length + (obj.length === 1 ? ' rota' : ' rotas'),
+        obj
+          .slice(0, 6)
+          .map(function (r) {
+            return r.rota;
+          })
+          .join(' · '),
+      );
+    var seq = R.filter(function (r) {
+      return r.sequencia >= 3;
+    }).sort(function (a, b) {
+      return b.sequencia - a.sequencia;
+    })[0];
+    if (seq) destaque('●', 'Em sequência', 'Rota ' + seq.rota, seq.sequencia + ' dias seguidos acima do habitual');
+    var acima = R.filter(function (r) {
+      return r.ontem_acima;
+    });
+    if (acima.length)
+      destaque(
+        '✔',
+        'Ontem acima do habitual',
+        acima.length + (acima.length === 1 ? ' rota' : ' rotas'),
+        acima
+          .slice(0, 6)
+          .map(function (r) {
+            return r.rota;
+          })
+          .join(' · '),
+      );
+    if (!d.children.length) out.push(el('p', 's-msg', 'Os destaques aparecem com o andar do dia.'));
+    else out.push(d);
+    return out;
   }
 
   // 2 e 3. Classificações: as 8 primeiras (cabem a 5 m), barra proporcional, valor e indicador da rota
@@ -200,7 +288,12 @@
   }
 
   var ECRAS = {
-    hoje: { titulo: 'Vendas de hoje', f: ecraHoje },
+    hoje: {
+      titulo: 'Vendas de hoje',
+      f: function () {
+        return D.local === 'aberta' ? ecraHojeAberta() : ecraHoje();
+      },
+    },
     'rank-hoje': {
       titulo: 'Classificação de hoje',
       f: function () {
@@ -222,11 +315,16 @@
         });
       },
     },
-    destaques: { titulo: 'Destaques', f: ecraDestaques },
+    destaques: {
+      titulo: 'Destaques',
+      f: function () {
+        return D.local === 'aberta' ? ecraDestaquesAberta() : ecraDestaques();
+      },
+    },
   };
   // ecrãs e ordem escolhidos no portal (Gestão › Painel da sala comercial); omissão: os quatro
   function lista() {
-    var c = (D && D.config && D.config.ecras) || ['hoje', 'rank-hoje', 'rank-mes', 'destaques'];
+    var c = (D && D.config && D.config.ecras) || (D && D.local === 'aberta' ? ['hoje', 'destaques'] : ['hoje', 'rank-hoje', 'rank-mes', 'destaques']);
     return c.filter(function (k) {
       return ECRAS[k];
     });
@@ -267,7 +365,9 @@
     if (!D) return;
     var velho = Date.now() - recebido > VELHOS;
     a.className = velho ? 'velho' : '';
-    a.textContent = (velho ? '⚠ Sem dados novos desde as ' : 'Vendas do Pinguim BO · actualizado às ') + String(D.hora).slice(11, 16);
+    a.textContent =
+      (velho ? '⚠ Sem dados novos desde as ' : (D.local === 'aberta' ? 'Equipa RTM' : 'Vendas do Pinguim BO') + ' · actualizado às ') +
+      String(D.hora).slice(11, 16);
   }
   function carregar() {
     fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'X-Painel-Codigo': codigo } })

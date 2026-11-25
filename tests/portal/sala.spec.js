@@ -79,3 +79,36 @@ test('ecrã de TV: quatro ecrãs legíveis a 5 m, sem cortes, com frescura e ecr
   await expect(page.locator('#s-act')).toHaveClass('velho');
   await expect(page.locator('#s-act')).toContainText('Sem dados novos desde as 15:42');
 });
+
+test('ecrã em open space: só percentagens, tendências e contagens — sem Kz, sem nomes e sem classificações', async ({ page }) => {
+  const ABERTA = {
+    ok: true,
+    local: 'aberta',
+    config: { ecras: ['hoje', 'destaques'], segundos: 10 },
+    hora: '2026-11-03 15:42:10',
+    hoje: { progresso: 0.87, documentos: 214 },
+    ontem: { variacao: 0.12 },
+    semana: { variacao: -0.04 },
+    mes: { variacao: 0.21 },
+    compras: { hoje: { compras: 180 } },
+    rotas: [
+      { rota: '1004', progresso_hoje: 1.05, variacao_mes: 0.23, sequencia: 4, ontem_acima: true },
+      { rota: '1007', progresso_hoje: 0.4, variacao_mes: -0.1, sequencia: 0, ontem_acima: false },
+    ],
+  };
+  await page.route('**/v1/sala', (r) => r.fulfill({ json: ABERTA }));
+  await page.clock.install({ time: new Date('2026-11-03T15:43:00+01:00') });
+  await page.goto('/sala/index.html#t=' + 'a'.repeat(64));
+  await expect(page.locator('#s-titulo')).toHaveText('Vendas de hoje');
+  await expect(page.locator('.s-gigante')).toHaveText('87 %');
+  await expect(page.locator('#s-ecra')).toContainText('214');
+  await expect(page.locator('#s-ecra')).toContainText('▲ +21 %');
+  await expect(page.locator('body')).not.toContainText('Kz');
+  await expect(page.locator('#s-seguinte')).toHaveText('A seguir: Destaques');
+  await page.clock.runFor(11000);
+  await expect(page.locator('#s-titulo')).toHaveText('Destaques');
+  await expect(page.locator('#s-ecra')).toContainText('Rota 1004');
+  // reconhecimento positivo: a rota abaixo do objectivo nunca aparece
+  await expect(page.locator('#s-ecra')).not.toContainText('1007');
+  await expect(page.locator('body')).not.toContainText('Kz');
+});

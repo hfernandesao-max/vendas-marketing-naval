@@ -126,12 +126,27 @@ test('resumo diário: pré-visualização em HTML e envio de teste só para quem
   expect(r.para).toBe('dir@naval.co.ao');
 });
 
+test('páginas públicas da sala e do cartaz QR servidas pelo seu index.php (o Apache recusa os index.html)', async () => {
+  const ctx = await request.newContext({ baseURL: BASE });
+  for (const [u, js] of [
+    ['/sala/', 'sala.js?v='],
+    ['/c/', 'c.js?v='],
+  ]) {
+    const r = await ctx.get(u);
+    expect(r.status(), u).toBe(200);
+    expect(r.headers()['x-robots-tag']).toBe('noindex, nofollow');
+    expect(await r.text()).toContain(js);
+  }
+});
+
 test('painel da sala: ligação criada pelo SADM, dados só agregados, revogação imediata', async () => {
   rmSync(PRIV + '/sala', { recursive: true, force: true });
   const { ctx } = await entrar('sadm');
   const c = await csrf(ctx);
-  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: '', csrf: c } })).status()).toBe(400);
-  const r = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Sala de teste', csrf: c } })).json();
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: '', local: 'interna', csrf: c } })).status()).toBe(400);
+  // o local (quem pode ver o ecrã) é obrigatório
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Sala de teste', csrf: c } })).status()).toBe(400);
+  const r = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Sala de teste', local: 'interna', csrf: c } })).json();
   expect(r.codigo).toMatch(/^[a-f0-9]{64}$/);
   expect(JSON.stringify(r.ligacoes)).not.toContain(r.codigo);
   const tv = await request.newContext({ baseURL: BASE });
@@ -148,8 +163,20 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
     ecras: ['destaques', 'hoje'],
     segundos: 30,
   });
+  expect(j.local).toBe('interna');
   await ctx.post(API + 'sala/ligacoes', { data: { accao: 'revogar', id: r.id, csrf: c } });
   expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(403);
+  // open space (visitantes podem ver): só percentagens, tendências e contagens — sem Kz, sem nomes, sem classificações
+  const a = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Recepção', local: 'aberta', csrf: c } })).json();
+  const ja = await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': a.codigo } })).json();
+  expect(ja.local).toBe('aberta');
+  expect(ja.config.ecras).toEqual(['hoje', 'destaques']);
+  expect(Object.keys(ja.hoje).sort()).toEqual(['documentos', 'progresso']);
+  for (const x of ja.rotas) expect(Object.keys(x).sort()).toEqual(['ontem_acima', 'progresso_hoje', 'rota', 'sequencia', 'variacao_mes']);
+  expect(JSON.stringify(ja)).not.toMatch(/promotor|"total"|valor_medio|previsto|"anterior"/);
+  const proibido = await ctx.post(API + 'sala/ligacoes', { data: { accao: 'configurar', id: a.id, ecras: ['hoje', 'rank-mes'], csrf: c } });
+  expect(proibido.status()).toBe(400);
+  expect((await proibido.json()).erro).toContain('sala interna');
   // quem não gere o painel: 403
   const dir = await entrar('dir');
   expect((await dir.ctx.get(API + 'sala/ligacoes')).status()).toBe(403);

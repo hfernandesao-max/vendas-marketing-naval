@@ -83,3 +83,23 @@ export function recolherNotas(raiz) {
     p.after(b);
   });
 }
+
+/**
+ * Tabelas feitas à parte (fora do componente das tabelas, que já se ajusta sozinho): num ecrã estreito, se a tabela
+ * não cabe, cada linha passa a cartão «coluna: valor», como nas tabelas principais — nunca uma barra horizontal.
+ */
+export function ajustarTabelas(raiz) {
+  if (!raiz) return;
+  raiz.querySelectorAll('.tw > table, .cc-scroll > table').forEach((tb) => {
+    if (tb.querySelector('[data-c]') || tb.classList.contains('cartoes')) return; // tabela do componente
+    const w = tb.parentElement;
+    if (w.clientWidth === 0 || w.clientWidth >= 560 || w.scrollWidth <= w.clientWidth + 1) return;
+    const rot = [...tb.querySelectorAll('thead tr:last-child th, tr:first-child > th')].map((th) => th.textContent.trim());
+    tb.querySelectorAll('tbody tr, tfoot tr').forEach((tr) =>
+      [...tr.children].forEach((td, i) => {
+        if (rot[i] && !td.dataset.l) td.dataset.l = rot[i];
+      }),
+    );
+    tb.classList.add('cartoes');
+  });
+}

@@ -1,5 +1,34 @@
 ## 25-11-2026
 
+### Painel da sala: sala interna ou open space, com o que pode estar à vista em cada um
+
+<!-- paginas: painel-sala -->
+<!-- tipo: funcionalidade -->
+
+- **Cada ecrã tem um local** (obrigatório ao criar a ligação): *Sala interna* — sala comercial fechada, vista só pela equipa — ou *Open space* — área comum, recepção ou corredor, onde visitantes, fornecedores e outras equipas podem ver.
+- **Open space:** só o progresso da equipa em percentagem do objectivo do dia, tendências (▲ ▼) face a ontem, à semana e ao mês, contagens (vendas e clientes com compras) e destaques por rota — sem valores em Kz, sem nomes de pessoas e sem classificações. O servidor nem chega a enviar o resto, mesmo que a ligação seja aberta noutro sítio.
+- **Sala interna:** como até agora (valores em Kz, classificações com o nome do promotor e destaques), com reconhecimento positivo: nunca o último lugar.
+- **Em nenhum ecrã:** clientes, NIF, documentos, preços, caixa, faltas na carrinha, perdas, anulados ou risco por pessoa.
+- Na página do painel, um guia com exemplos do que pode estar à vista em cada local (classificação da informação ISO/IEC 27001, protecção de dados pessoais da Lei 22/11 e gestão visual). As ligações já existentes ficam como sala interna.
+
+### Corrigido: o Painel da sala comercial e a página dos cartazes QR não abriam
+
+<!-- paginas: painel-sala, clientes-qr -->
+<!-- tipo: correcao -->
+
+- As ligações do Painel da sala (ecrã de TV) e os cartazes QR dos clientes abriam uma página «recusada» (403): a regra de segurança do servidor que recusa os ficheiros index.html também apanhava estas duas páginas públicas. Passam a ser servidas pelo seu próprio index.php, como as outras páginas do portal, com a versão de cada ficheiro no endereço (as actualizações chegam logo aos ecrãs ligados).
+- Verificação automática num Apache real a cada versão: as duas páginas abrem e os index.html continuam recusados.
+
+### Tudo dentro dos limites: sem barras de deslocação nos painéis e nas páginas
+
+<!-- paginas: vendas-promotor, clientes-qr -->
+<!-- tipo: melhoria -->
+
+- **Fichas da rota, do cliente, do artigo e do documento (painel lateral):** os quadros ajustam-se à largura do painel (passam à linha seguinte), os nomes longos de clientes e artigos partem em várias linhas e só os valores ficam numa linha. Nunca há barra horizontal, em qualquer tamanho de ecrã.
+- **Separadores** das famílias de páginas e dos relatórios: no telemóvel passam à linha seguinte em vez de deslizarem para o lado.
+- **Tabelas feitas à parte** (ex.: Cartazes QR dos clientes): no telemóvel, quando não cabem, cada linha passa a cartão «coluna: valor», como as tabelas principais.
+- Verificação automática a cada versão: todas as páginas, no computador e no telemóvel, sem caixas com barra de deslocação própria e sem nada mais largo do que o ecrã; as fichas também com nomes longos reais.
+
 ### Ajuda viva: base de conhecimento do portal, «Porquê?» e assistente que explica com os seus dados
 
 <!-- paginas: relatorio-vendas, sincronizacao, assistente -->

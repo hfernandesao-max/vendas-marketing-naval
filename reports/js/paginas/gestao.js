@@ -668,6 +668,7 @@ R['painel-sala'] = (pg) => {
     const linha = el('div', 'gst-lig' + (l.revogado ? ' revogada' : ''));
     linha.append(
       el('strong', null, l.nome),
+      pill(t(LOCAIS_SALA[l.local || 'interna'][0]), l.local === 'aberta' ? 'p-ok' : 'p-mut'),
       el(
         'span',
         'note',
@@ -691,7 +692,72 @@ R['painel-sala'] = (pg) => {
   });
   c.append(lista, botao(t('Criar ligação para um ecrã'), null, criarLigacao));
   pg.append(secBox(t('Painel da sala comercial'), t('Ecrã de TV com as vendas do dia, actualizado a cada 2 minutos.'), c));
+  pg.append(guiaExposicao());
 };
+/** Local do ecrã: o servidor só envia o que esse local pode mostrar (nucleo/api/v1/sala.php). */
+const LOCAIS_SALA = {
+  interna: ['Sala interna', 'Sala comercial fechada, vista só pela equipa: valores em Kz, classificações com o nome do promotor e destaques.'],
+  aberta: [
+    'Open space',
+    'Área comum, recepção ou corredor, onde visitantes, fornecedores e outras equipas podem ver: só percentagens, tendências e contagens, sem valores em Kz, sem nomes e sem classificações.',
+  ],
+};
+/** Ecrãs que podem estar num espaço aberto (na versão sem valores nem nomes). */
+const ECRAS_ABERTA = ['hoje', 'destaques'];
+/**
+ * Guia (com exemplos) do que pode estar à vista em cada local, segundo a classificação da informação (ISO/IEC 27001
+ * A.5.12 e A.7.7 «ecrã limpo»), a protecção de dados pessoais (Lei 22/11) e as boas práticas de gestão visual
+ * (reconhecimento positivo, nunca o último lugar).
+ */
+function guiaExposicao() {
+  const linhas = [
+    ['Progresso da equipa face ao objectivo do dia (%)', 'sim', 'sim', '«Equipa RTM: 87 % do objectivo de hoje»'],
+    ['Tendências (▲ ▼) face a ontem, à semana e ao mês', 'sim', 'sim', '«Este mês ▲ +12 % face ao mês passado»'],
+    ['Contagens: vendas e clientes com compras', 'sim', 'sim', '«214 vendas · 180 clientes com compras»'],
+    ['Destaques por rota, sem nomes nem valores', 'sim', 'sim', '«Maior subida do mês: Rota 1004 · +23 %»'],
+    ['Valores de vendas em Kz', 'sim', 'nao', '«Vendas de hoje: 30 539 500 Kz»'],
+    ['Classificação por rota com o nome do promotor', 'sim', 'nao', '«1.º Rota 1003 · Nome do promotor · 4,2 M Kz»'],
+    ['Último lugar ou rotas abaixo do esperado', 'nao', 'nao', '«Rota 1007 a 40 % do objectivo» — corrige-se em privado'],
+    ['Clientes, NIF, documentos e preços', 'nao', 'nao', 'nunca num ecrã de parede: dados pessoais e comerciais'],
+    ['Caixa, faltas na carrinha, perdas, anulados e risco por pessoa', 'nao', 'nao', 'só no portal, com sessão e permissões'],
+  ];
+  const marca = (v) => pill(v === 'sim' ? '✔ ' + t('Pode') : '✕ ' + t('Não'), v === 'sim' ? 'p-ok' : 'p-bad');
+  const tw = el('div', 'tw');
+  const tab = el('table');
+  const h = el('tr');
+  [t('Informação'), t('Sala interna'), t('Open space'), t('Exemplo')].forEach((x) => h.append(el('th', null, x)));
+  const th = el('thead');
+  th.append(h);
+  const tb = el('tbody');
+  linhas.forEach(([info, interna, aberta, ex]) => {
+    const tr = el('tr');
+    const c1 = el('td', null, t(info));
+    const c2 = el('td');
+    c2.append(marca(interna));
+    const c3 = el('td');
+    c3.append(marca(aberta));
+    tr.append(c1, c2, c3, el('td', 'note', t(ex)));
+    tb.append(tr);
+  });
+  tab.append(th, tb);
+  tw.append(tab);
+  const c = el('div');
+  c.append(
+    tw,
+    el(
+      'p',
+      'note',
+      t(
+        'O servidor aplica estas regras: um ecrã marcado como open space nunca recebe valores em Kz, nomes nem classificações, mesmo que alguém abra a ligação noutro sítio.',
+      ),
+    ),
+  );
+  return secBox(
+    t('O que pode estar à vista em cada local'),
+    t('Classificação da informação (ISO/IEC 27001), protecção de dados pessoais (Lei 22/11) e gestão visual com reconhecimento positivo.'),
+    c,
+  );
+}
 const ECRAS_SALA = [
   ['hoje', 'Vendas de hoje'],
   ['rank-hoje', 'Classificação de hoje'],
@@ -702,6 +768,15 @@ const ECRAS_SALA = [
 function configurarEcras(l) {
   janela(t('Ecrãs do painel'), t('Escolha os ecrãs e arraste-os para mudar a ordem.'), (b, ft, fechar) => {
     const cfg = l.config || { ecras: ECRAS_SALA.map((e) => e[0]), segundos: 20 };
+    const local = el('select');
+    local.setAttribute('aria-label', t('Onde fica o ecrã'));
+    Object.entries(LOCAIS_SALA).forEach(([k, [nome]]) => {
+      const o = el('option', null, t(nome));
+      o.value = k;
+      if (k === (l.local || 'interna')) o.selected = true;
+      local.append(o);
+    });
+    const explica = el('p', 'note');
     const ul = el('ul', 'sala-ecras');
     const ordem = [...cfg.ecras, ...ECRAS_SALA.map((e) => e[0]).filter((k) => !cfg.ecras.includes(k))];
     ordem.forEach((k) => {
@@ -711,10 +786,27 @@ function configurarEcras(l) {
       cb.checked = cfg.ecras.includes(k);
       const lb = el('label');
       lb.append(cb, document.createTextNode(' ' + t((ECRAS_SALA.find((e) => e[0] === k) || [k, k])[1])));
-      li.append(el('span', 'sala-pega', '⋮⋮'), lb);
+      li.append(
+        el('span', 'sala-pega', '⋮⋮'),
+        lb,
+        el('small', 'note sala-onde', ECRAS_ABERTA.includes(k) ? t('Sala interna e open space') : t('Só sala interna')),
+      );
       ul.append(li);
     });
     arrastavel(ul, () => {});
+    // num espaço aberto as classificações ficam desligadas (o servidor também as recusa)
+    const aplicarLocal = () => {
+      explica.textContent = t(LOCAIS_SALA[local.value][1]);
+      [...ul.children].forEach((li) => {
+        const cb = li.querySelector('input');
+        const proibido = local.value === 'aberta' && !ECRAS_ABERTA.includes(li.dataset.grafico);
+        cb.disabled = proibido;
+        if (proibido) cb.checked = false;
+        li.classList.toggle('sala-off', proibido);
+      });
+    };
+    local.addEventListener('change', aplicarLocal);
+    aplicarLocal();
     const seg = el('select');
     [10, 20, 30, 60].forEach((s) => {
       const o = el('option', null, String(s));
@@ -723,12 +815,12 @@ function configurarEcras(l) {
       seg.append(o);
     });
     const erro = msgErro();
-    b.append(ul, campo(t('Segundos por ecrã'), seg), erro);
+    b.append(campo(t('Onde fica o ecrã'), local), explica, ul, campo(t('Segundos por ecrã'), seg), erro);
     ft.append(
       botao(t('Cancelar'), 'sec', fechar),
       botao(t('Guardar'), null, () => {
         const ecras = [...ul.children].filter((li) => li.querySelector('input').checked).map((li) => li.dataset.grafico);
-        postJson('sala/ligacoes', { accao: 'configurar', id: l.id, ecras, segundos: +seg.value }).then((r) => {
+        postJson('sala/ligacoes', { accao: 'configurar', id: l.id, ecras, segundos: +seg.value, local: local.value }).then((r) => {
           if (!r.ok) {
             erro.hidden = false;
             erro.textContent = t(r.erro || 'Não foi possível gravar.');
@@ -747,11 +839,29 @@ function criarLigacao() {
   janela(t('Criar ligação para um ecrã'), t('Indique onde fica o ecrã.'), (b, ft, fechar) => {
     const nome = entrada('text', '', { maxLength: 60, placeholder: t('Sala comercial · Viana') });
     const erro = msgErro();
-    b.append(campo(t('Local do ecrã'), nome), erro);
+    const escolha = el('fieldset', 'sala-local');
+    escolha.append(el('legend', null, t('Quem pode ver o ecrã?')));
+    Object.entries(LOCAIS_SALA).forEach(([k, [n, txt]]) => {
+      const r = entrada('radio');
+      r.name = 'sala-local';
+      r.value = k;
+      const lb = el('label', 'sala-local-op');
+      const tx = el('span');
+      tx.append(el('b', null, t(n)), el('small', 'note', t(txt)));
+      lb.append(r, tx);
+      escolha.append(lb);
+    });
+    b.append(campo(t('Local do ecrã'), nome), escolha, erro);
     ft.append(
       botao(t('Cancelar'), 'sec', fechar),
       botao(t('Criar'), null, () => {
-        postJson('sala/ligacoes', { accao: 'criar', nome: nome.value }).then((r) => {
+        const sel = escolha.querySelector('input:checked');
+        if (!sel) {
+          erro.hidden = false;
+          erro.textContent = t('Escolha quem pode ver o ecrã: sala interna ou open space.');
+          return;
+        }
+        postJson('sala/ligacoes', { accao: 'criar', nome: nome.value, local: sel.value }).then((r) => {
           if (!r.ok) {
             erro.hidden = false;
             erro.textContent = t(r.erro || 'Não foi possível criar.');

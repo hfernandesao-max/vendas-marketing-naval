@@ -101,6 +101,11 @@ done < <(find "$RAIZ" -maxdepth 1 -type f \( -iname '*.csv' -o -iname '*.xlsx' -
 echo "Servidos:"
 espera 200 /geo/login.php /geo/recuperar.php /geo/vendor/lucide-1.62.0.min.js /geo/vendor/papaparse-5.3.0.min.js /reports/js/app.js /geo/style.css
 espera 302 /index.php /reports/
+# páginas públicas (sem sessão): painel da sala comercial (ecrã de TV) e cartaz QR do cliente; os index.html
+# continuam recusados, as páginas são servidas pelos seus index.php (em 25-11-2026 a sala dava 403)
+espera 200 /sala/ /c/ /sala/sala.js /c/c.js
+espera 403 /sala/index.html /c/index.html
+if curl -s "$URL/sala/" | grep -q 'sala.js?v='; then echo "  ok    painel da sala com a versão dos ficheiros"; else echo "  FALHA painel da sala sem a página"; FALHAS=$((FALHAS+1)); fi
 echo "API central:"
 espera 401 /api/index.php/v1/sessao /api/v1/sessao
 espera 403 /nucleo/api/router.php /nucleo/api/v1/sessao.php /api/.htaccess

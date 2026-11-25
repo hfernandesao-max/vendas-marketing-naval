@@ -20,7 +20,7 @@ import { SESSAO, definirAtual, paginaAtual, paginasVisiveis, podeExportar, podeV
 import { diasSap, guardar, presets, setPreset, st } from './periodo.js';
 import { $, el, toast } from './util.js';
 import { faixaNovo } from './componentes/novo.js';
-import { melhorarEstados, recolherNotas } from './componentes/estados.js';
+import { melhorarEstados, recolherNotas, ajustarTabelas } from './componentes/estados.js';
 import { limparAccoesPagina } from './componentes/cabecalho.js';
 import { montarAtalhos } from './componentes/atalhos.js';
 
@@ -210,6 +210,7 @@ export function draw() {
   organizarRelatorios(pg, p.id);
   melhorarEstados(pg);
   recolherNotas(pg);
+  ajustarTabelas(pg);
   // novidade desta página nas últimas 24 h (selo «Novo»): faixa no topo; a página fica vista
   const fn = faixaNovo(p.id);
   if (fn) pg.prepend(fn);

@@ -214,3 +214,83 @@ td {
   border-left-color: var(--ok);
   background: rgb(var(--ok1-rgb) / 0.1);
 }
+
+/*
+ * Tudo dentro dos limites, sem barras de deslocação horizontais (como o Stripe e o Linear): nos painéis e janelas o
+ * conteúdo encolhe à largura disponível — os quadros passam à linha seguinte, os nomes longos partem em várias linhas
+ * e só os números ficam numa linha. As colunas de uma grelha nunca alargam o painel (min-width: 0).
+ */
+.dlg-b > *,
+.lig-sec,
+.lig-sec > *,
+.secs > *,
+#page > * {
+  min-width: 0;
+}
+.lig-dlg .dlg-b {
+  overflow-x: hidden;
+}
+.lig-tiles {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 8px;
+}
+.lig-tiles .tile {
+  min-width: 0;
+  padding: 10px 12px;
+}
+.lig-tiles .tile .l {
+  overflow-wrap: anywhere;
+}
+.lig-tiles .tile .v {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.lig-dlg .cc-scroll {
+  overflow-x: visible;
+}
+.lig-tab {
+  width: 100%;
+}
+.lig-tab th,
+.lig-tab td {
+  padding: 6px 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.lig-tab th.n,
+.lig-tab td.n {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.lig-tab .lig {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* separadores (família de páginas e relatórios): passam à linha seguinte em vez de deslizarem para o lado */
+.fam-tabs,
+.rel-tabs {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+@media (max-width: 960px) {
+  .fam-tabs {
+    gap: 0 14px;
+  }
+  .fam-tab {
+    font-size: 13px;
+    padding: 7px 0 8px;
+  }
+  .rel-tabs {
+    gap: 6px;
+  }
+  .rel-tab {
+    padding: 6px 11px;
+    font-size: 12.5px;
+  }
+}
+/* tabela em cartões dentro de uma caixa de deslocação: a caixa deixa de deslizar */
+.tw:has(> table.cartoes),
+.cc-scroll:has(> table.cartoes) {
+  overflow-x: visible;
+}
