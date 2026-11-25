@@ -1,0 +1,53 @@
+<?php
+// Abertura e fecho do dia no Pinguim BO (SESSION e FCL), com os casos reais de 17 a 25-11-2026.
+naval_servico('pinguim-dia');
+naval_servico('relatorio-vendas');
+
+teste('dia no Pinguim BO: abertura certa ou na véspera; fecho a tempo, atrasado, por fechar ou ainda aberto', function () {
+    $agora = strtotime('2026-11-25 10:00:00');
+    $sessoes = [
+        ['ROTA' => '1011', 'DIA' => '2026-11-25', 'ABERTO_EM' => '2026-11-25 07:32:37'],
+        ['ROTA' => '1010', 'DIA' => '2026-11-25', 'ABERTO_EM' => '2026-11-24 16:01:26'],   // aberto na véspera
+        ['ROTA' => '', 'DESCR' => '1002 - FHR PIV', 'DIA' => '2026-11-19', 'ABERTO_EM' => '2026-11-19 06:50:00'],
+        ['ROTA' => '9999', 'DIA' => '2026-11-25', 'ABERTO_EM' => '2026-11-25 07:00:00'],    // formação: fica de fora
+    ];
+    $fechos = [
+        ['ROTA' => '1011', 'DIA' => '2026-11-24', 'FECHADO_EM' => '2026-11-25 07:32:37', 'DOCUMENTO' => 'FCL A1011/22'],
+        ['ROTA' => '1006', 'DIA' => '2026-11-21', 'FECHADO_EM' => '2026-11-22 01:00:00', 'DOCUMENTO' => 'FCL A1006/16'],
+        ['ROTA' => '1002', 'DIA' => '2026-11-19', 'FECHADO_EM' => '2026-11-23 15:46:15', 'DOCUMENTO' => 'FCL A1002/18'],
+    ];
+    $docs = [
+        ['ROTA' => '1002', 'DIA' => '2026-11-19', 'N' => 12, 'VENDAS' => 10, 'NOUTRO_DIA' => 4, 'ULTIMO' => '2026-11-23 15:46:15'],
+        ['ROTA' => '1004', 'DIA' => '2026-11-24', 'N' => 20, 'VENDAS' => 18, 'NOUTRO_DIA' => 0, 'ULTIMO' => '2026-11-24 13:05:32'],
+        ['ROTA' => '1005', 'DIA' => '2026-11-25', 'N' => 3, 'VENDAS' => 3, 'NOUTRO_DIA' => 0, 'ULTIMO' => '2026-11-25 09:40:00'],
+    ];
+    $l = naval_pdia_montar($sessoes, $fechos, $docs, $agora, '06:00');
+    $por = [];
+    foreach ($l as $x) $por[$x['rota'] . '|' . $x['dia']] = $x;
+    igual(false, isset($por['9999|2026-11-25']), 'loja de formação fora');
+    igual(['certa', 'aberto'], [$por['1011|2026-11-25']['abertura'], $por['1011|2026-11-25']['fecho']], 'hoje: aberto de manhã e ainda aberto');
+    igual('antecipada', $por['1010|2026-11-25']['abertura'], 'dia 25 aberto a 24 às 16:01');
+    igual(['atrasado', 1, 'FCL A1011/22'], [$por['1011|2026-11-24']['fecho'], $por['1011|2026-11-24']['atraso_horas'], $por['1011|2026-11-24']['documento']], 'fechado às 07:32 do dia seguinte');
+    igual('a_tempo', $por['1006|2026-11-21']['fecho'], 'fecho automático à 01:00');
+    igual(['atrasado', 81, 4], [$por['1002|2026-11-19']['fecho'], $por['1002|2026-11-19']['atraso_horas'], $por['1002|2026-11-19']['noutro_dia']], 'dia 19 fechado só a 23, com vendas de outros dias');
+    igual('certa', $por['1002|2026-11-19']['abertura'], 'rota pela descrição da loja');
+    igual(['por_fechar', 4], [$por['1004|2026-11-24']['fecho'], $por['1004|2026-11-24']['atraso_horas']], 'vendeu a 24 e não fechou');
+    $r = naval_pdia_resumo($l);
+    $c = $r['contagens'];
+    igual([1, 2, 1, 3, 1, 4], [$c['a_tempo'], $c['atrasado'], $c['por_fechar'], $c['aberto'], $c['antecipada'], $c['noutro_dia']], 'contagens');
+    igual(4, count($r['excepcoes']), 'excepções: 1011/24, 1002/19, 1004/24 e 1010/25');
+    $a = naval_pdia_avisos($l, $agora);
+    igual(['dia_fechar|1004|2026-11-24', 'dia_abrir|1010|2026-11-25'], array_column($a, 'chave'), 'avisos: por fechar e aberto na véspera (o 1002 de 19-11 já é antigo)');
+});
+
+teste('fecho do dia: o dia fechado no Pinguim BO (FCL) prova as vendas completas, mesmo sem sincronizar depois das 15:00', function () {
+    $dia = date('Y-m-d', time() - 4 * 86400);
+    $f = $GLOBALS['rv_fontes'];
+    $sem = $f($dia, ['sync' => [['rota' => '1001', 'ultima' => $dia . ' 12:00:00'], ['rota' => '1002', 'ultima' => $dia . ' 11:00:00']]]);
+    $x = naval_rv_controlos($dia, $sem);
+    igual(['pendente', ['1001', '1002']], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['rotas']], 'sem fecho nem sincronização');
+    $x = naval_rv_controlos($dia, ['fechos' => ['1001' => date('Y-m-d', strtotime($dia) + 86400) . ' 01:00:00']] + $sem);
+    igual(['pendente', ['1002']], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['rotas']], 'a 1001 fechou o dia');
+    $x = naval_rv_controlos($dia, ['fechos' => ['1001' => $dia . ' 23:00:00', '1002' => $dia . ' 23:10:00']] + $sem);
+    igual(['ok', '2 rotas com vendas: todas com o dia fechado no Pinguim BO.'], [$x['controlos']['pinguim']['estado'], $x['controlos']['pinguim']['detalhe']], 'as duas fecharam');
+});

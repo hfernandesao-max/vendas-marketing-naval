@@ -1,9 +1,13 @@
 // Terreno: sincronização dos smartphones RTM com o Pinguim BO. Uma só consulta (última sincronização de cada
 // rota); a página mostra, por esta ordem: rota, data da última sincronização e distribuição das horas desde
 // essa sincronização (barra com a cor do estado). Actualiza sozinha a cada minuto.
+// Por baixo, a abertura e o fecho do dia de cada rota no Pinguim BO nos últimos 7 dias (v1/pinguim-dia): quadro
+// rota × dia e, primeiro, o que precisa de acção (dia por fechar, fechado tarde, aberto na véspera, vendas com a data
+// de outro dia).
+import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { promotorRota } from '../calculos.js';
-import { aguardar, tabela, tiles } from '../componentes/blocos.js';
+import { aguardar, pill, secBox, tabela, tiles } from '../componentes/blocos.js';
 import { FV, filtroAtivo } from '../filtros.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
@@ -27,6 +31,115 @@ const redesenhar = () => {
   window.scrollTo(0, y);
 };
 aoActualizar(redesenhar);
+
+// Abertura e fecho do dia no Pinguim BO (lido a cada 5 minutos)
+const PD = { dados: null, lidoEm: 0, aLer: false };
+function lerDia() {
+  if (PD.aLer) return;
+  PD.aLer = true;
+  apiJson('pinguim-dia').then((d) => {
+    PD.aLer = false;
+    PD.dados = d || { disponivel: false, erro: 'Não foi possível ler os dados.' };
+    PD.lidoEm = Date.now();
+    redesenhar();
+  });
+}
+const FECHO = {
+  a_tempo: ['Fechado', 'p-ok'],
+  atrasado: ['Fechado tarde', 'p-warn'],
+  por_fechar: ['Por fechar', 'p-bad'],
+  aberto: ['Aberto', 'p-mut'],
+};
+const hm = (v) => (v ? String(v).slice(11, 16) : '');
+const dh = (v) => (v ? dl(v) + ' ' + hm(v) : '—');
+function oQue(x) {
+  const m = [];
+  if (x.fecho === 'por_fechar') m.push(t('Dia por fechar há {h} h', { h: x.atraso_horas }));
+  if (x.fecho === 'atrasado') m.push(t('Fechado {h} h depois do limite', { h: x.atraso_horas }));
+  if (x.abertura === 'antecipada') m.push(t('Aberto na véspera'));
+  if (x.noutro_dia) m.push(t('{n} venda(s) emitida(s) noutro dia com esta data', { n: x.noutro_dia }));
+  return m.join(' · ');
+}
+function seccaoDia(rotasVisiveis) {
+  const w = el('div', 'secs pd-secs');
+  const D = PD.dados;
+  if (!D || Date.now() - PD.lidoEm > 300000) lerDia();
+  if (!D) {
+    w.append(el('div', 'glass empty', t('A carregar…')));
+    return w;
+  }
+  if (!D.disponivel) {
+    w.append(el('div', 'glass empty', t(D.erro || 'Não foi possível ler os dados.')));
+    return w;
+  }
+  let linhas = D.linhas || [];
+  if (rotasVisiveis) linhas = linhas.filter((x) => rotasVisiveis.has(String(x.rota)));
+  const exc = linhas.filter((x) => oQue(x) !== '');
+  const tituloExc = t('Abertura e fecho do dia: o que precisa de acção');
+  const notaExc = t(
+    'Do Pinguim BO (abertura na tabela SESSION, fecho no documento FCL). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.',
+    { h: D.limite },
+  );
+  if (!exc.length) w.append(secBox(tituloExc, notaExc, el('p', 'note ok', t('Tudo em dia: todos os dias abertos no próprio dia e fechados a tempo.'))));
+  else
+    w.append(
+      tabela({
+        id: 'pd-excepcoes',
+        titulo: tituloExc,
+        nota: notaExc,
+        sort: 'dia',
+        dir: -1,
+        total: false,
+        rows: exc.map((x) => ({ ...x, chave: x.rota + '|' + x.dia, oque: oQue(x) })),
+        cols: [
+          { key: 'rota', label: t('Rota'), p: 0 },
+          { key: 'dia', label: t('Dia'), type: 'date', p: 0, render: (v) => document.createTextNode(dl(v)) },
+          { key: 'oque', label: t('O que se passou'), p: 0 },
+          { key: 'aberto_em', label: t('Aberto em'), p: 1, render: (v) => document.createTextNode(dh(v)), xl: (r) => r.aberto_em || '' },
+          { key: 'fechado_em', label: t('Fechado em'), p: 1, render: (v) => document.createTextNode(dh(v)), xl: (r) => r.fechado_em || '' },
+          { key: 'documento', label: t('Documento'), p: 2, render: (v) => document.createTextNode(v || '—') },
+        ],
+      }),
+    );
+  // quadro rota × dia
+  const dias = [];
+  for (let d = new Date(D.ate + 'T12:00:00'); dias.length < 7; d.setDate(d.getDate() - 1)) dias.unshift(d.toISOString().slice(0, 10));
+  const porRota = {};
+  linhas.forEach((x) => {
+    (porRota[x.rota] = porRota[x.rota] || { rota: x.rota, chave: x.rota })['d' + x.dia] = x;
+  });
+  const celula = (x) => {
+    if (!x) return el('span', 'pd-vazio', '·');
+    const [txt, cls] = FECHO[x.fecho] || ['—', 'p-mut'];
+    const c = el('span', 'pd-cel');
+    c.append(pill(t(txt) + (x.fechado_em ? ' ' + hm(x.fechado_em) : ''), cls));
+    if (x.abertura === 'antecipada' || x.noutro_dia) c.append(el('b', 'pd-marca', '!'));
+    c.title = [t('Aberto em') + ': ' + dh(x.aberto_em), t('Fechado em') + ': ' + dh(x.fechado_em), oQue(x)].filter(Boolean).join(' · ');
+    return c;
+  };
+  w.append(
+    tabela({
+      id: 'pd-quadro',
+      titulo: t('Fecho do dia por rota (últimos 7 dias)'),
+      nota: t('Hora do fecho em cada dia; «!» quando o dia foi aberto na véspera ou tem vendas emitidas noutro dia. Passe o rato para ver a abertura.'),
+      sort: 'rota',
+      dir: 1,
+      total: false,
+      rows: Object.values(porRota),
+      cols: [
+        { key: 'rota', label: t('Rota'), p: 0 },
+        ...dias.map((d, i) => ({
+          key: 'd' + d,
+          label: dl(d).slice(0, 5),
+          p: i < 4 ? 1 : 0,
+          render: (x) => celula(x),
+          xl: (r) => (r['d' + d] ? t((FECHO[r['d' + d].fecho] || ['—'])[0]) + (r['d' + d].fechado_em ? ' ' + r['d' + d].fechado_em : '') : ''),
+        })),
+      ],
+    }),
+  );
+  return w;
+}
 export { haQuanto };
 
 R.sincronizacao = (pg) => {
@@ -150,4 +263,5 @@ R.sincronizacao = (pg) => {
     }),
   );
   pg.append(secs);
+  pg.append(seccaoDia(filtroAtivo('sincronizacao', 'rota') ? new Set(FV.rota.map(String)) : null));
 };

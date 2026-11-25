@@ -6558,3 +6558,18 @@ html[data-densidade='compacta'] td {
   font: 600 12px/1.4 var(--font);
   text-align: center;
 }
+
+/* Sincronização › abertura e fecho do dia no Pinguim BO: quadro rota × dia */
+.pd-cel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.pd-marca {
+  color: var(--warn);
+  font-weight: 800;
+}
+.pd-vazio {
+  color: var(--muted);
+}

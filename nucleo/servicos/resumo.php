@@ -341,6 +341,14 @@ function naval_periodicas(?int $agora = null): array
     } catch (Throwable $e) {
         error_log('[envio SAP] ' . $e->getMessage());
     }
+    // abertura e fecho do dia no Pinguim BO: dia por fechar depois da hora limite, ou aberto na véspera (de hora a hora)
+    try {
+        naval_servico('pinguim-dia');
+        $pd = naval_pdia_ciclo($agora);
+        if ($pd) $feito['pinguim_dia'] = $pd;
+    } catch (Throwable $e) {
+        error_log('[pinguim dia] ' . $e->getMessage());
+    }
     // véspera de um feriado ou folga da empresa: aviso a vendedores e Logística (17:30)
     try {
         $vs = naval_cal_aviso_vespera($agora);

@@ -6,7 +6,7 @@
   "nucleo": false,
   "paginas": ["equipamentos", "sincronizacao", "equipamentos-documentos"],
   "recursos": ["equipamentos", "sincronizacao", "equipamentos-movimentar", "equipamentos-administrar"],
-  "api": ["v1/equipamentos", "v1/equipamentos/ficha", "v1/equipamentos/documentos", "v1/equipamentos/pdf", "v1/sincronizacao"],
+  "api": ["v1/equipamentos", "v1/equipamentos/ficha", "v1/equipamentos/documentos", "v1/equipamentos/pdf", "v1/sincronizacao", "v1/pinguim-dia"],
   "conectores": ["mdm"],
   "eventos": {
     "publica": [],

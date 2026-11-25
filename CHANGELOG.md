@@ -1,5 +1,15 @@
 ## 25-11-2026
 
+### Abertura e fecho do dia no Pinguim BO ligados ao portal
+
+<!-- paginas: sincronizacao, relatorio-vendas -->
+<!-- tipo: funcionalidade -->
+
+- **Sincronização › Abertura e fecho do dia:** para cada rota e dia (últimos 7 dias), quando o dia foi aberto (tabela SESSION do Pinguim BO) e fechado (documento FCL «Fecho financeiro»). Primeiro o que precisa de acção: dia por fechar, fechado depois do limite, dia aberto na véspera e vendas emitidas noutro dia com a data desse dia (ex.: rota 1002, dia 19-11 fechado só a 23-11). Depois o quadro rota × dia com a hora de cada fecho.
+- **Regra:** o dia abre no próprio dia e fecha até às 06:00 do dia seguinte (`PINGUIM_FECHO_LIMITE`); serve para o fecho automático que vai ser configurado no Pinguim BO.
+- **Fecho do dia (relatório de vendas):** uma rota com o dia fechado no Pinguim BO conta como completa, mesmo sem sincronizar depois das 15:00; enquanto não fecha, continua a valer a sincronização depois do fim das vendas.
+- **Aviso no telemóvel «Dia por fechar no Pinguim BO»:** depois da hora limite, a quem acompanha a rota, uma vez por rota e dia; também quando o dia de hoje foi aberto na véspera.
+
 ### Portal: estrutura de página única, menos entradas no menu, tabelas e navegação
 
 <!-- paginas: vendas-promotor, requisicoes-carrinha, sap-exportar -->

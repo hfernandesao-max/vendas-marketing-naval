@@ -14,8 +14,9 @@
  *
  * Fecho do dia antes do relatório (prática de «close readiness» / controlo de completude dos dados): o relatório só
  * se gera quando todas as fontes do dia estão completas e fechadas:
- *   1. Pinguim BO: todos os telemóveis das rotas com vendas sincronizaram depois do fim das vendas do dia (calendário de
- *      trabalho: 15:00 de segunda a sexta, 13:00 ao sábado; RELATORIO_HORA_FECHO no .env substitui-o);
+ *   1. Pinguim BO: cada rota com vendas fechou o dia no Pinguim BO (documento FCL, ver pinguim-dia.php) ou, enquanto
+ *      não fecha, o telemóvel sincronizou depois do fim das vendas do dia (calendário de trabalho: 15:00 de segunda a
+ *      sexta, 13:00 ao sábado; RELATORIO_HORA_FECHO no .env substitui-o);
  *   2. conciliação de todas as carrinhas com movimento fechada (contagem, validação e aprovações);
  *   3. vendas do dia no SAP: todos os documentos estão num ficheiro de carregamento marcado «carregado no SAP»;
  *   4. folha de caixa do dia validada e aprovada nos dois níveis — SUSPENSO por decisão da gestão (20-11-2026), para o
@@ -44,7 +45,11 @@ function naval_rv_controlos(string $dia, array $f, ?bool $exigeCaixa = null): ar
         $limite = $dia . ' ' . $hora . ':00';
         $ultima = [];
         foreach ((array) ($f['sync'] ?? []) as $s) $ultima[(string) $s['rota']] = (string) ($s['ultima'] ?? '');
-        $faltam = array_values(array_filter($rotasVendas, function ($r) use ($ultima, $limite) { return ($ultima[$r] ?? '') < $limite; }));
+        // prova de que as vendas da rota estão completas: o dia fechado no Pinguim BO (FCL: depois dele o telemóvel já
+        // não emite documentos com esta data) ou, enquanto não fecha, o telemóvel sincronizado depois do fim das vendas
+        $fechados = (array) ($f['fechos'] ?? []);
+        $faltam = array_values(array_filter($rotasVendas, function ($r) use ($ultima, $limite, $fechados) { return !isset($fechados[$r]) && ($ultima[$r] ?? '') < $limite; }));
+        $nFech = count(array_filter($rotasVendas, function ($r) use ($fechados) { return isset($fechados[$r]); }));
         // dia sem vendas: só é «completo» se as carrinhas também não venderam nada (feriado ou dia sem actividade);
         // carrinhas com vendas e o Pinguim BO sem documentos é uma falha de dados, não um dia vazio
         $vendeuCarrinha = [];
@@ -52,14 +57,16 @@ function naval_rv_controlos(string $dia, array $f, ?bool $exigeCaixa = null): ar
             foreach ((array) ($r['linhas'] ?? []) as $l) if ((float) ($l['vendido'] ?? 0) > 0) $vendeuCarrinha[(string) $r['rota']] = true;
         }
         if ($faltam) {
-            $c['pinguim'] = ['estado' => 'pendente', 'detalhe' => 'Rotas sem sincronizar depois das ' . $hora . ': ' . implode(', ', $faltam) . '.', 'rotas' => $faltam];
+            $c['pinguim'] = ['estado' => 'pendente', 'detalhe' => 'Rotas sem o dia fechado no Pinguim BO e sem sincronizar depois das ' . $hora . ': ' . implode(', ', $faltam) . '.', 'rotas' => $faltam];
         } elseif (!$rotasVendas && $vendeuCarrinha) {
             $c['pinguim'] = ['estado' => 'erro', 'detalhe' => 'Sem documentos de venda no Pinguim BO, mas as carrinhas ' . implode(', ', array_keys($vendeuCarrinha))
                 . ' venderam artigos: confirme a sincronização e a ligação.', 'rotas' => array_keys($vendeuCarrinha)];
         } elseif (!$rotasVendas) {
             $c['pinguim'] = ['estado' => 'ok', 'detalhe' => 'Sem vendas neste dia (feriado ou dia sem actividade).', 'sem_vendas' => true];
         } else {
-            $c['pinguim'] = ['estado' => 'ok', 'detalhe' => count($rotasVendas) . ' rotas com vendas, todas sincronizadas depois das ' . $hora . '.'];
+            $c['pinguim'] = ['estado' => 'ok', 'detalhe' => count($rotasVendas) . ' rotas com vendas: ' . ($nFech === count($rotasVendas)
+                ? 'todas com o dia fechado no Pinguim BO.'
+                : ($nFech ? $nFech . ' com o dia fechado no Pinguim BO e ' . (count($rotasVendas) - $nFech) . ' sincronizadas depois das ' . $hora . '.' : 'todas sincronizadas depois das ' . $hora . '.'))];
         }
     }
     // 2. conciliação das carrinhas
@@ -430,6 +437,8 @@ function naval_rv_fontes(string $dia): array
     } catch (Throwable $e) {
         $f['sync'] = [];
     }
+    naval_servico('pinguim-dia');
+    $f['fechos'] = naval_pdia_fechados($dia) ?? [];
     try {
         $f['carrinhas'] = naval_carr_vista($dia, null, false)['rotas'];
     } catch (Throwable $e) {

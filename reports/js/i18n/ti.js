@@ -5463,4 +5463,18 @@ export const TI = {
   'Atalhos de teclado': 'ኣቋራጭ መፍትሕታት',
   'Carregue em «{g}» e depois na letra.': '«{g}» ጠውቕ ድሕሪኡ ነቲ ፊደል።',
   'Linha anterior ou seguinte (na ficha aberta)': 'ዝቐደመ ወይ ዝቕጽል መስመር (ኣብቲ ክፉት መዝገብ)',
+  'Fechado em': 'ዝተዓጽወሉ',
+  'O que se passou': 'እንታይ ኣጋጢሙ',
+  'Fechado tarde': 'ደንጕዩ ተዓጽዩ',
+  'Aberto na véspera': 'ኣብ ዝሓለፈ መዓልቲ ተኸፊቱ',
+  'Dia por fechar há {h} h': 'መዓልቲ ን{h} ሰዓት ኣይተዓጽወን',
+  'Fechado {h} h depois do limite': 'ድሕሪ ገደብ {h} ሰዓት ተዓጽዩ',
+  '{n} venda(s) emitida(s) noutro dia com esta data': '{n} መሸጣ(ታት) ኣብ ካልእ መዓልቲ ብዚ ዕለት ዝተዋህቡ',
+  'Abertura e fecho do dia: o que precisa de acção': 'ምኽፋትን ምዕጻውን መዓልቲ፦ ስጉምቲ ዘድልዮ',
+  'Do Pinguim BO (abertura na tabela SESSION, fecho no documento FCL). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
+    'ካብ Pinguim BO (ምኽፋት ኣብ ሰንጠረዥ SESSION፣ ምዕጻው ኣብ ሰነድ FCL)። መዓልቲ ኣብታ መዓልቲ ክኽፈት ከምኡውን ኣብ ዝቕጽል መዓልቲ ክሳብ {h} ክዕጾ ኣለዎ፤ ምዕጻው መሸጣ ናይታ መዓልቲ ምሉእ ምዃኑ የረጋግጽ።',
+  'Tudo em dia: todos os dias abertos no próprio dia e fechados a tempo.': 'ኩሉ ብግቡእ፦ ኩሉ መዓልትታት ኣብታ መዓልቲ ተኸፊቶም ብግዜኦም ተዓጽዮም።',
+  'Fecho do dia por rota (últimos 7 dias)': 'ምዕጻው መዓልቲ ብመስመር (ናይ መወዳእታ 7 መዓልትታት)',
+  'Hora do fecho em cada dia; «!» quando o dia foi aberto na véspera ou tem vendas emitidas noutro dia. Passe o rato para ver a abertura.':
+    'ሰዓት ምዕጻው ኣብ ነፍሲ ወከፍ መዓልቲ፤ «!» መዓልቲ ኣብ ዝሓለፈ መዓልቲ ምስ ተኸፍተ ወይ ኣብ ካልእ መዓልቲ ዝተዋህበ መሸጣ ምስ ዝህልዋ። ምኽፋት ንምርኣይ ማውስ ኣቐምጡ።',
 };

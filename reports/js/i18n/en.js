@@ -5567,4 +5567,18 @@ export const EN = {
   'Atalhos de teclado': 'Keyboard shortcuts',
   'Carregue em «{g}» e depois na letra.': 'Press «{g}» and then the letter.',
   'Linha anterior ou seguinte (na ficha aberta)': 'Previous or next row (in the open record)',
+  'Fechado em': 'Closed on',
+  'O que se passou': 'What happened',
+  'Fechado tarde': 'Closed late',
+  'Aberto na véspera': 'Opened the day before',
+  'Dia por fechar há {h} h': 'Day not closed for {h} h',
+  'Fechado {h} h depois do limite': 'Closed {h} h after the limit',
+  '{n} venda(s) emitida(s) noutro dia com esta data': '{n} sale(s) issued on another day with this date',
+  'Abertura e fecho do dia: o que precisa de acção': 'Day opening and closing: what needs action',
+  'Do Pinguim BO (abertura na tabela SESSION, fecho no documento FCL). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
+    'From Pinguim BO (opening in the SESSION table, closing in the FCL document). The day must be opened on the day itself and closed by {h} the next day; the closing proves the sales of the day are complete.',
+  'Tudo em dia: todos os dias abertos no próprio dia e fechados a tempo.': 'All up to date: every day opened on the day itself and closed on time.',
+  'Fecho do dia por rota (últimos 7 dias)': 'Day closing by route (last 7 days)',
+  'Hora do fecho em cada dia; «!» quando o dia foi aberto na véspera ou tem vendas emitidas noutro dia. Passe o rato para ver a abertura.':
+    'Closing time for each day; «!» when the day was opened the day before or has sales issued on another day. Hover to see the opening.',
 };
