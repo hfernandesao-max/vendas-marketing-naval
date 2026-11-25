@@ -708,6 +708,16 @@ function formContagem(r, dia, erro) {
     });
   }
   const lc = lancamento({ tabela: tab, linhas, gravar, chave: 'op-contagem-' + dia + '-' + r.rota });
+  if (r.exige_fecho && !r.fecho_pinguim)
+    w.append(
+      el(
+        'p',
+        'ag-aviso',
+        t(
+          'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.',
+        ),
+      ),
+    );
   w.append(el('p', 'ag-nota', t('Conte o que voltou na carrinha. Os números do sistema só aparecem depois de gravar a contagem.')), lc.barra, tab);
   const acc = el('div', 'op-acc');
   acc.append(gravar);

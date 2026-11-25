@@ -24,6 +24,22 @@ const NAVAL_SALA_TODOS_ANTES = [['hoje', 'comparacoes', 'ritmo', 'tendencia', 'v
     ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques']];
 const NAVAL_SALA_LOCAIS = ['interna', 'aberta'];
 
+/**
+ * Versão que um ecrã deve ter: a dos ficheiros do painel (muda a cada actualização do portal) mais o último pedido de
+ * «Recarregar ecrã» feito no portal. O ecrã que a vê mudar recarrega-se sozinho (em até 2 minutos).
+ */
+function naval_sala_versao(array $ligacao = []): string
+{
+    static $ficheiros = null;
+    if ($ficheiros === null) {
+        $raiz = dirname(__DIR__, 2) . '/sala/';
+        $ficheiros = substr(md5(implode('|', array_map(function ($f) use ($raiz) { return (string) @filemtime($raiz . $f) . '|' . (string) @filesize($raiz . $f); },
+            ['sala.js', 'sala.css', 'index.html']))), 0, 10);
+    }
+    $r = (string) ($ligacao['recarregar_em'] ?? '');
+    return $r === '' ? $ficheiros : $ficheiros . '-' . substr(md5($r), 0, 6);
+}
+
 /** Ecrãs de uma ligação, limitados ao que o local permite. */
 function naval_sala_ecras_local(array $ecras, string $local): array
 {

@@ -5690,4 +5690,14 @@ export const EN = {
   'Posição das carrinhas no mapa, artigos, Pareto, quadrante das rotas, stock e pendentes':
     'Van positions on the map, items, Pareto, route quadrant, stock and pending work',
   'só para a gestão: localização e dados comerciais': 'management only: location and commercial data',
+  'Ecrã na versão actual': 'Screen on the current version',
+  'A actualizar o ecrã…': 'Updating the screen…',
+  'O ecrã recarrega-se sozinho na leitura seguinte (até 2 minutos). Se estiver desligado, actualiza-se quando ligar.':
+    'The screen reloads by itself on the next read (up to 2 minutes). If it is off, it updates when switched on.',
+  'Recarregar ecrã': 'Reload screen',
+  'O ecrã recarrega a página em até 2 minutos.': 'The screen reloads the page within 2 minutes.',
+  'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.':
+    'Close the day on the phone first (Financial close in Pinguim): the count is only saved with the route day closed, so that no more documents are issued during the count.',
+  'Dia da rota fechado no Pinguim BO às {h}: o telemóvel já não emite documentos.':
+    'Route day closed in Pinguim BO at {h}: the phone no longer issues documents.',
 };

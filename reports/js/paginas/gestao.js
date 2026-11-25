@@ -692,6 +692,27 @@ R['painel-sala'] = (pg) => {
           }),
         ),
       );
+    // versão do painel no ecrã: actualiza-se sozinho depois de cada actualização do portal (em até 2 minutos)
+    if (!l.revogado && l.ultimo_acesso)
+      linha.append(
+        l.em_dia
+          ? pill('✔ ' + t('Ecrã na versão actual'), 'p-ok')
+          : Object.assign(pill(t('A actualizar o ecrã…'), 'p-warn'), {
+              title: t('O ecrã recarrega-se sozinho na leitura seguinte (até 2 minutos). Se estiver desligado, actualiza-se quando ligar.'),
+            }),
+      );
+    if (!l.revogado)
+      linha.append(
+        botao(t('Recarregar ecrã'), 'sec', () =>
+          postJson('sala/ligacoes', { accao: 'recarregar', id: l.id }).then((r) => {
+            if (r.ok) {
+              DADOS.sala = { ok: true, ligacoes: r.ligacoes };
+              toast(t('O ecrã recarrega a página em até 2 minutos.'), 5000);
+            } else toast(t(r.erro || 'Não foi possível gravar.'), 6000);
+            draw();
+          }),
+        ),
+      );
     if (!l.revogado) linha.append(botao(t('Ecrãs'), 'sec', () => configurarEcras(l)));
     if (!l.revogado)
       linha.append(

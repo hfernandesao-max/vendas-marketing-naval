@@ -422,6 +422,20 @@ function formContagem(r) {
   gravar = botao(t('Gravar contagem'), null, () => (Object.values(campos).some((i) => i.value === '') ? gravarContagem() : lc.confirmar(gravarContagem)));
   // linha activa destacada, Enter para a seguinte, visto verde, «N de M preenchidos», procurar e valores fora do normal
   const lc = lancamento({ tabela: tab, linhas: linhasLc, gravar });
+  if (r.exige_fecho && !r.fecho_pinguim)
+    f.append(
+      el(
+        'p',
+        'aviso cc-fecho',
+        t(
+          'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.',
+        ),
+      ),
+    );
+  else if (r.fecho_pinguim)
+    f.append(
+      el('p', 'note', t('Dia da rota fechado no Pinguim BO às {h}: o telemóvel já não emite documentos.', { h: String(r.fecho_pinguim).slice(11, 16) })),
+    );
   f.append(
     el('p', 'note', t('Conte o que voltou na carrinha (artigos por vender e devoluções). Os números do sistema só aparecem depois de gravar a contagem.')),
     lc.barra,

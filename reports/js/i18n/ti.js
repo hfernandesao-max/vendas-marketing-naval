@@ -5583,4 +5583,13 @@ export const TI = {
   '«Melhor terça-feira de sempre» · «Rota 1004 atingiu o objectivo»': '«ዝበለጸ ሰሉስ ብዘይካ» · «መስመር 1004 ዕላማ በጺሑ»',
   'Posição das carrinhas no mapa, artigos, Pareto, quadrante das rotas, stock e pendentes': 'ቦታ መካይን ኣብ ካርታ፣ ኣቑሑ፣ ፓረቶ፣ ርብዒ መስመራት፣ ክምችትን ዝተረፈ ስራሕን',
   'só para a gestão: localização e dados comerciais': 'ንምምሕዳር ጥራይ፦ ቦታን ንግዳዊ ሓበሬታን',
+  'Ecrã na versão actual': 'ስክሪን ኣብ ናይ ሕጂ ስሪት',
+  'A actualizar o ecrã…': 'ስክሪን ይሕደስ ኣሎ…',
+  'O ecrã recarrega-se sozinho na leitura seguinte (até 2 minutos). Se estiver desligado, actualiza-se quando ligar.':
+    'ስክሪን ብዓርሱ ኣብ ዝቕጽል ንባብ ይሕደስ (ክሳብ 2 ደቒቕ)። እንተተዓጽዩ፣ ምስ ተወልዐ ይሕደስ።',
+  'Recarregar ecrã': 'ስክሪን ደጊምካ ጽዓን',
+  'O ecrã recarrega a página em até 2 minutos.': 'ስክሪን ኣብ ውሽጢ 2 ደቒቕ ገጽ ደጊሙ ይጽዕን።',
+  'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.':
+    'መጀመርታ ኣብ ተሌፎን መዓልቲ ዕጸው (ፋይናንሳዊ መዛዘሚ ኣብ ፒንጉዊን)፦ ቆጸራ ዝዕቀብ መዓልቲ መስመር ምስ ተዓጽወ ጥራይ እዩ፣ ኣብ እዋን ቆጸራ ካልእ ሰነድ ከይወጽእ።',
+  'Dia da rota fechado no Pinguim BO às {h}: o telemóvel já não emite documentos.': 'መዓልቲ መስመር ኣብ ፒንጉዊን BO ብ {h} ተዓጽዩ፦ ተሌፎን ድሕሪ ሕጂ ሰነድ ኣየውጽእን።',
 };

@@ -1132,19 +1132,46 @@
     }
   }
   var vistosSessao = {};
+  var ultimoMomento = false;
   function novosMomentos() {
     if (!D || !D.momentos || !D.config || (D.config.ecras || []).indexOf('momentos') < 0) return;
     var vistos = lerVistos();
-    D.momentos.forEach(function (m) {
-      if (vistosSessao[m.id] || vistos.indexOf(m.id) >= 0) return;
+    var novos = D.momentos.filter(function (m) {
+      if (vistosSessao[m.id] || vistos.indexOf(m.id) >= 0) return false;
       vistosSessao[m.id] = true;
-      momentos.push(m);
+      return true;
     });
+    // as rotas que chegam ao objectivo na mesma leitura (ex.: ao ligar a TV a meio do dia) celebram-se num só ecrã
+    var rotas = novos.filter(function (m) {
+      return m.tipo === 'rota';
+    });
+    novos
+      .filter(function (m) {
+        return m.tipo !== 'rota';
+      })
+      .forEach(function (m) {
+        momentos.push(m);
+      });
+    if (rotas.length === 1) momentos.push(rotas[0]);
+    else if (rotas.length > 1)
+      momentos.push({
+        ids: rotas.map(function (m) {
+          return m.id;
+        }),
+        tipo: 'rota',
+        titulo: rotas.length + ' rotas atingiram o objectivo de hoje',
+        detalhe: rotas
+          .map(function (m) {
+            return m.rota;
+          })
+          .join(' · '),
+      });
   }
   function ecraMomento(m) {
     var c = el('div', 's-momento ' + m.tipo);
     c.appendChild(el('div', 's-momento-ico', m.tipo === 'recorde' ? '🏆' : m.tipo === 'rota' ? '★' : '🎯'));
     c.appendChild(el('div', 's-momento-t', m.titulo));
+    if (m.detalhe) c.appendChild(el('div', 's-momento-d', m.detalhe));
     if (m.promotor && D.local !== 'aberta') c.appendChild(el('div', 's-momento-n', 'Parabéns, ' + m.promotor + '!'));
     else c.appendChild(el('div', 's-momento-n', 'Parabéns, equipa!'));
     return [c];
@@ -1328,7 +1355,9 @@
   var versao = '';
   function carregar() {
     if (previa) return;
-    fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'X-Painel-Codigo': codigo } })
+    var cab = { 'X-Painel-Codigo': codigo };
+    if (versao) cab['X-Painel-Versao'] = versao;
+    fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: cab })
       .then(function (r) {
         return r.json().then(function (j) {
           if (!r.ok || !j.ok) throw new Error(j.erro || 'HTTP ' + r.status);
@@ -1371,9 +1400,11 @@
   // rotação ao ritmo escolhido no portal (lido em cada volta)
   (function rodar() {
     setTimeout(function () {
-      var mo = momentos.shift();
+      // nunca dois momentos seguidos: entre um e o seguinte passa sempre um ecrã normal
+      var mo = ultimoMomento ? null : momentos.shift();
+      ultimoMomento = !!mo;
       if (mo) {
-        marcarVisto(mo.id);
+        (mo.ids || [mo.id]).forEach(marcarVisto);
         desenhar(mo);
       } else {
         ecra++;

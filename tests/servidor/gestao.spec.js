@@ -220,6 +220,29 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
   expect((await dir.ctx.get(API + 'sala/ligacoes')).status()).toBe(403);
 });
 
+test('painel da sala: o ecrã diz a versão que tem; «Recarregar ecrã» muda a versão e o portal mostra quando ficou em dia', async () => {
+  const { ctx } = await entrar('sadm');
+  const c = await csrf(ctx);
+  const r = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Sala versão', local: 'aberta', csrf: c } })).json();
+  const tv = await request.newContext({ baseURL: BASE });
+  const v1 = (await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).json()).versao;
+  expect(v1).toMatch(/^[a-f0-9]{10}$/);
+  const lig = async () => (await (await ctx.get(API + 'sala/ligacoes')).json()).ligacoes.find((x) => x.id === r.id);
+  expect((await lig()).em_dia).toBe(false); // ainda não disse que versão tem
+  await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo, 'X-Painel-Versao': v1 } });
+  expect((await lig()).em_dia).toBe(true);
+  // «Recarregar ecrã»: a versão muda (o ecrã recarrega na leitura seguinte) e só fica em dia depois de recarregar
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'recarregar', id: r.id, csrf: c } })).status()).toBe(200);
+  const v2 = (await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo, 'X-Painel-Versao': v1 } })).json()).versao;
+  expect(v2).toMatch(new RegExp('^' + v1 + '-[a-f0-9]{6}$'));
+  expect((await lig()).em_dia).toBe(false);
+  await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo, 'X-Painel-Versao': v2 } });
+  expect((await lig()).em_dia).toBe(true);
+  // só quem gere o painel
+  const { ctx: pro } = await entrar('pro');
+  expect((await pro.post(API + 'sala/ligacoes', { data: { accao: 'recarregar', id: r.id, csrf: await csrf(pro) } })).status()).toBe(403);
+});
+
 test('cartaz QR do cliente: código aleatório, pedidos pendentes, armadilha para robôs, validação e limites', async () => {
   rmSync(PRIV + '/clientes-qr', { recursive: true, force: true });
   // agregado de ontem com o cliente X2 na rota 1002 (os cartazes só se criam para clientes com vendas na rota)

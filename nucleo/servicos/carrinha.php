@@ -1887,6 +1887,12 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
     // ou que já começaram a ser contadas; as outras ficam como no último dia de trabalho e não se contam
     naval_servico('calendario');
     $descanso = naval_cal_folga($data);
+    $exigeFecho = naval_carr_exige_fecho($data) && naval_bd_configurada();
+    $fechados = null;
+    if ($exigeFecho) {
+        naval_servico('pinguim-dia');
+        $fechados = naval_pdia_fechados($data);
+    }
     $out = [];
     foreach ($d['rotas'] as $rota => $r) {
         $rota = (string) $rota;
@@ -1902,6 +1908,7 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         if ($oculta) $linhas = naval_carr_cega($linhas);
         $out[] = ['rota' => $rota, 'promotor' => $promotores[$rota] ?? $rota, 'resumo' => $resumo, 'linhas' => $linhas,
             'cega' => $gere && $cega && $resumo['estado'] === 'por_contar', 'quantidades_ocultas' => $oculta,
+            'exige_fecho' => $exigeFecho && $fechados !== null, 'fecho_pinguim' => $fechados[$rota] ?? ($reg['fecho_pinguim']['fecho_pinguim'] ?? null),
             'contado_por' => $reg['contado_por'] ?? null, 'contado_em' => $reg['contado_em'] ?? null,
             'validado_por' => $reg['validado_por'] ?? null, 'validado_em' => $reg['validado_em'] ?? null,
             'coordenado_por' => $reg['coordenado_por'] ?? null, 'coordenado_em' => $reg['coordenado_em'] ?? null,
@@ -1920,10 +1927,57 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
 }
 
 /** Grava a contagem do técnico (estado → por_validar) e reutiliza a base congelada na primeira folha. */
-function naval_carr_contar(string $data, string $rota, array $contagem, array $eu): array
+// ── Contagem só com o dia fechado no Pinguim BO ───────────────────────────────────────────────────────────────────
+//
+// Durante a contagem não pode sair mais nenhum documento da carrinha. O portal não escreve no Pinguim BO, por isso
+// não bloqueia o telemóvel: exige a prova de que o telemóvel já não emite — o fecho do dia da rota (FCL, «Fecho
+// financeiro») registado no Pinguim BO. Sem ele, a contagem não se grava; o super administrador pode abrir uma excepção
+// com motivo (fica no histórico). Sem ligação ao Pinguim BO, grava-se e fica assinalado. CARRINHA_EXIGIR_FECHO=0 desliga.
+const NAVAL_CARR_FECHO_DESDE = '2026-11-26';
+
+/** A regra vale neste dia? */
+function naval_carr_exige_fecho(string $data): bool
+{
+    return naval_config('CARRINHA_EXIGIR_FECHO', '1') !== '0' && $data >= NAVAL_CARR_FECHO_DESDE;
+}
+
+/**
+ * Decisão (função pura, testada): $linhas do Pinguim BO para o dia (naval_pdia_ler; null sem ligação). Devolve o que
+ * fica no histórico ({fecho_pinguim, sem_ligacao?, excepcao?}) ou lança o erro que diz ao técnico o que fazer.
+ */
+function naval_carr_decisao_fecho(?array $linhas, string $rota, string $dia, bool $sadm, string $excepcao): array
+{
+    if ($linhas === null) return ['fecho_pinguim' => null, 'sem_ligacao' => true];
+    foreach ($linhas as $x) {
+        if ((string) ($x['rota'] ?? '') === $rota && ($x['dia'] ?? '') === $dia && !empty($x['fechado_em'])) return ['fecho_pinguim' => (string) $x['fechado_em']];
+    }
+    $excepcao = trim($excepcao);
+    if ($sadm && mb_strlen($excepcao) >= 5) return ['fecho_pinguim' => null, 'excepcao' => mb_substr($excepcao, 0, 300)];
+    throw new NavalErro('O dia da rota ' . $rota . ' ainda está aberto no Pinguim BO. O vendedor fecha o dia no telemóvel (Fecho financeiro) e só depois se conta: assim não sai mais nenhum documento durante a contagem.',
+        409, ['codigo' => 'dia_aberto_pinguim']);
+}
+
+/** Lê o fecho no Pinguim BO agora (sem cache: o vendedor acabou de fechar o dia) e decide. Null se a regra não vale. */
+function naval_carr_exigir_fecho(string $data, string $rota, array $eu, string $excepcao = ''): ?array
+{
+    if (!naval_carr_exige_fecho($data) || !naval_bd_configurada()) return null;
+    naval_servico('pinguim-dia');
+    try {
+        $l = (array) naval_pdia_ler($data, $data)['linhas'];
+    } catch (Throwable $e) {
+        error_log('[carrinha fecho do dia] ' . $e->getMessage());
+        $l = null;
+    }
+    $d = naval_carr_decisao_fecho($l, $rota, $data, naval_perfil() === 'SADM', $excepcao);
+    if (isset($d['excepcao'])) naval_registar('carrinha_contagem_sem_fecho', ['data' => $data, 'rota' => $rota, 'motivo' => $d['excepcao']]);
+    return $d;
+}
+
+function naval_carr_contar(string $data, string $rota, array $contagem, array $eu, string $excepcaoFecho = ''): array
 {
     if ($data > date('Y-m-d')) throw new NavalErro('Não se conta uma carrinha num dia que ainda não chegou.', 400);
-    return naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $contagem, $eu) {
+    $fecho = naval_carr_exigir_fecho($data, $rota, $eu, $excepcaoFecho);
+    return naval_exclusivo('carrinha-' . $data . '-' . naval_carr_nome_rota($rota), function () use ($data, $rota, $contagem, $eu, $fecho) {
         $reg = naval_carr_ler($data, $rota);
         if ($reg['estado'] === 'aprovada') throw new NavalErro('Esta conciliação já foi aprovada.', 409);
         $d = naval_carr_dados($data, true);
@@ -1963,7 +2017,8 @@ function naval_carr_contar(string $data, string $rota, array $contagem, array $e
         $linhas = naval_carr_linhas($r, $c, $precos);
         $res = naval_carr_resumo($linhas, $reg);
         $reg['historico'][] = ['em' => date('Y-m-d H:i:s'), 'por' => (string) $eu['login'], 'accao' => $novo ? 'recontagem' : 'contagem',
-            'referencia' => $referencia, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']];
+            'referencia' => $referencia, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz'], 'sobra_kz' => $res['sobra_kz']] + ($fecho ?? []);
+        if ($fecho !== null) $reg['fecho_pinguim'] = $fecho;
         naval_json_gravar(naval_carr_pasta($data) . '/' . $rota . '.json', $reg);
         naval_registar('carrinha_contagem', ['data' => $data, 'rota' => $rota, 'diferencas' => $res['diferencas'], 'falta_kz' => $res['falta_kz']]);
         return ['linhas' => $linhas, 'resumo' => $res];

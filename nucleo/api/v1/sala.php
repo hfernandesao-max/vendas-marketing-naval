@@ -8,8 +8,13 @@
  * GET v1/sala/previa?local=interna|aberta   os mesmos dados, para a pré-visualização ao vivo no portal (Apresentação e
  *                               página do painel) — sessão do portal com «painel-sala» ou «apresentacao»
  * GET v1/sala/ligacoes          ligações criadas (sem o código) — recurso «painel-sala» (G)
- * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id) | configurar (id, ecras, segundos), csrf}   o código só se mostra
- *                               uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no portal) e o tempo de cada um
+ * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id) | configurar (id, ecras, segundos) | recarregar (id), csrf}   o
+ *                               código só se mostra uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no
+ *                               portal) e o tempo de cada um; «recarregar» faz o ecrã recarregar a página na leitura seguinte
+ *
+ * Actualizações: cada resposta ao ecrã leva a versão do painel (naval_sala_versao); o ecrã recarrega-se sozinho quando
+ * ela muda (portal actualizado ou «Recarregar ecrã») e devolve a versão que tem (X-Painel-Versao), para o portal mostrar
+ * se cada ecrã já está na versão actual.
  *
  * O código guarda-se só como SHA-256 (como uma palavra-passe); cada acesso fica registado na ligação (última hora e IP).
  *
@@ -46,7 +51,11 @@ if (($_GET['gerir'] ?? '') === '1') {
     if (!naval_pode('painel-sala', 'G')) throw new NavalErro('Sem permissão para gerir o painel da sala comercial.', 403);
     $lig = naval_json_ler(naval_sala_ficheiro());
     $vista = function (array $l) {
-        return array_map(function ($id, $x) { unset($x['hash']); return ['id' => $id] + $x; }, array_keys($l), $l);
+        return array_map(function ($id, $x) {
+            unset($x['hash']);
+            $v = naval_sala_versao($x);
+            return ['id' => $id] + $x + ['versao_actual' => $v, 'em_dia' => (string) ($x['versao_ecra'] ?? '') === $v];
+        }, array_keys($l), $l);
     };
     if (!naval_e_post()) naval_json(['ok' => true, 'ligacoes' => $vista($lig)]);
     $p = naval_pedido();
@@ -100,6 +109,15 @@ if (($_GET['gerir'] ?? '') === '1') {
             naval_registar('sala_ligacao_' . $accao, ['id' => $id, 'ip' => $lig[$id]['ip_fixo'] ?? null]);
             return ['id' => $id];
         }
+        if ($accao === 'recarregar') {
+            $id = (string) ($p['id'] ?? '');
+            if (!isset($lig[$id]) || !empty($lig[$id]['revogado'])) throw new NavalErro('Ligação desconhecida.', 404);
+            $lig[$id]['recarregar_em'] = date('Y-m-d H:i:s');
+            $lig[$id]['recarregar_por'] = $eu['login'];
+            naval_json_gravar(naval_sala_ficheiro(), $lig);
+            naval_registar('sala_ligacao_recarregar', ['id' => $id]);
+            return ['id' => $id];
+        }
         if ($accao === 'revogar') {
             $id = (string) ($p['id'] ?? '');
             if (!isset($lig[$id])) throw new NavalErro('Ligação desconhecida.', 404);
@@ -149,16 +167,22 @@ if ($id === null) {
     }
     throw new NavalErro('Ligação do painel inválida ou revogada.', 403);
 }
-// último acesso (no máximo um registo por minuto)
-naval_exclusivo('sala-ligacoes', function () use ($id) {
+// último acesso (no máximo um registo por minuto) e a versão do painel que o ecrã tem (quando muda)
+$versaoEcra = (string) ($_SERVER['HTTP_X_PAINEL_VERSAO'] ?? '');
+if (!preg_match('/^[a-f0-9]{10}(-[a-f0-9]{6})?$/', $versaoEcra)) $versaoEcra = '';
+$versao = '';
+naval_exclusivo('sala-ligacoes', function () use ($id, $versaoEcra, &$versao) {
     $lig = naval_json_ler(naval_sala_ficheiro());
-    if (!isset($lig[$id]) || (string) ($lig[$id]['ultimo_acesso'] ?? '') > date('Y-m-d H:i:s', time() - 60)) return;
-    $lig[$id]['ultimo_acesso'] = date('Y-m-d H:i:s');
-    $lig[$id]['ip'] = naval_ip_cliente();
+    if (!isset($lig[$id])) return;
+    $versao = naval_sala_versao($lig[$id]);
+    $acesso = (string) ($lig[$id]['ultimo_acesso'] ?? '') <= date('Y-m-d H:i:s', time() - 60);
+    $mudou = $versaoEcra !== '' && $versaoEcra !== (string) ($lig[$id]['versao_ecra'] ?? '');
+    if (!$acesso && !$mudou) return;
+    if ($acesso) {
+        $lig[$id]['ultimo_acesso'] = date('Y-m-d H:i:s');
+        $lig[$id]['ip'] = naval_ip_cliente();
+    }
+    if ($mudou) $lig[$id]['versao_ecra'] = $versaoEcra;
     naval_json_gravar(naval_sala_ficheiro(), $lig);
 });
-// versão dos ficheiros do painel: o ecrã que a vê mudar recarrega-se sozinho (as actualizações chegam à TV em 2 minutos)
-$raiz = dirname(__DIR__, 3) . '/sala/';
-$versao = substr(md5(implode('|', array_map(function ($f) use ($raiz) { return (string) @filemtime($raiz . $f) . '|' . (string) @filesize($raiz . $f); },
-    ['sala.js', 'sala.css', 'index.html']))), 0, 10);
 naval_json(naval_sala_resposta($local, $config) + ['versao' => $versao]);

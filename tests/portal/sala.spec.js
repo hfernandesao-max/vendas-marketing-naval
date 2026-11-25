@@ -568,3 +568,26 @@ test('ecrãs de gestão avançados em open space: em %, índices e datas, sem Kz
   await expect(page.locator('#s-ecra')).toContainText('✔ já conseguido');
   expect(erros).toEqual([]);
 });
+
+test('momentos do dia: as rotas que chegam juntas ao objectivo celebram-se num só ecrã e nunca há dois momentos seguidos', async ({ page }) => {
+  const momentos = [
+    { id: '2026-11-03|obj-dia', tipo: 'objectivo_dia', titulo: 'Objectivo do dia atingido' },
+    ...['1003', '1004', '1005'].map((r) => ({ id: '2026-11-03|rota-' + r, tipo: 'rota', titulo: 'Rota ' + r + ' atingiu o objectivo de hoje', rota: r })),
+  ];
+  await page.route('**/v1/sala', (r) => r.fulfill({ json: { ...SALA, config: { ecras: ['hoje', 'destaques', 'momentos'], segundos: 10 }, momentos } }));
+  await page.clock.install({ time: new Date('2026-11-03T15:43:00+01:00') });
+  await page.goto('/sala/index.html#t=' + 'a'.repeat(64));
+  const titulo = page.locator('#s-titulo');
+  await expect(titulo).toHaveText('Vendas de hoje');
+  await page.clock.runFor(10500);
+  await expect(page.locator('#s-ecra')).toContainText('Objectivo do dia atingido');
+  await page.clock.runFor(10000);
+  await expect(titulo).toHaveText('Destaques'); // um ecrã normal entre dois momentos
+  await page.clock.runFor(10000);
+  await expect(page.locator('#s-ecra')).toContainText('3 rotas atingiram o objectivo de hoje');
+  await expect(page.locator('#s-ecra')).toContainText('1003 · 1004 · 1005');
+  await page.clock.runFor(10000);
+  await expect(titulo).toHaveText('Vendas de hoje');
+  await page.clock.runFor(10000);
+  await expect(titulo).toHaveText('Destaques'); // já foram todos mostrados
+});

@@ -6,7 +6,8 @@
  * GET  v1/conciliacao-carrinha?data=AAAA-MM-DD[&actualizar=1]       recurso «conciliacao-carrinha» (Vr: só as suas rotas)
  * POST v1/conciliacao-carrinha {accao: preparar_folha, data, rota, csrf}                             «conciliacao-carrinha» V
  * POST v1/conciliacao-carrinha {accao: actualizar_abertas_anteriores, csrf}    actualiza históricos ainda abertos; só SADM
- * POST v1/conciliacao-carrinha {accao: contar, data, rota, contagem: {codigo: quantidade}, csrf}      «conciliacao-carrinha» G
+ * POST v1/conciliacao-carrinha {accao: contar, data, rota, contagem: {codigo: quantidade}, [excepcao_fecho], csrf}  «conciliacao-carrinha» G
+ *      (só com o dia da rota fechado no Pinguim BO; excepcao_fecho: motivo, só o super administrador)
  * POST v1/conciliacao-carrinha {accao: validar, data, rota, csrf}                                   quem contou
  * POST v1/conciliacao-carrinha {accao: aprovar, data, rota, motivos: {codigo: {motivo, nota}}, csrf}  «conciliacao-coordenacao» G
  * POST v1/conciliacao-carrinha {accao: fechar, data, rota, csrf}                                    «conciliacao-fecho» G
@@ -108,7 +109,7 @@ if ($accao === 'preparar_folha') {
 }
 switch ($accao) {
     case 'contar':
-        $res = naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu);
+        $res = naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu, (string) ($p['excepcao_fecho'] ?? ''));
         naval_carr_regularizar_agora($data, [$rota]);
         naval_json_assinado(['ok' => true] + $res);
     case 'validar':

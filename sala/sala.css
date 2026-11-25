@@ -798,6 +798,11 @@ body.noite {
   font-weight: 800;
   color: var(--ouro);
 }
+.s-momento-d {
+  font-size: 1.5em;
+  color: var(--azul);
+  font-weight: 700;
+}
 .s-momento-n {
   font-size: 1.6em;
 }

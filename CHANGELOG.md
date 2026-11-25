@@ -1,5 +1,32 @@
 ## 25-11-2026
 
+### Conciliação: só se conta com o dia da rota fechado no Pinguim BO
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: funcionalidade -->
+
+- A partir de 26-11-2026, a contagem da carrinha só se grava depois de o vendedor fechar o dia no telemóvel («Fecho financeiro», FCL, no Pinguim BO). Com o dia fechado, o telemóvel já não emite documentos durante a contagem.
+- Antes de contar, o portal e a app Naval Operações avisam «Feche primeiro o dia no telemóvel». Depois do fecho, mostram a hora a que o dia fechou.
+- Excepção só para o super administrador, com motivo registado (ex.: Pinguim BO parado). Sem ligação ao Pinguim BO, a contagem grava-se e fica assinalada no histórico.
+- Liga-se e desliga-se no .env (`CARRINHA_EXIGIR_FECHO`).
+
+### Painel da sala: «Recarregar ecrã» e versão de cada ecrã
+
+<!-- paginas: painel-sala -->
+<!-- tipo: melhoria -->
+
+- Cada ecrã diz ao portal que versão do painel tem. A página do painel mostra «✔ Ecrã na versão actual» ou «A actualizar o ecrã…».
+- Depois de cada actualização do portal, o ecrã recarrega-se sozinho em até 2 minutos.
+- Novo botão **«Recarregar ecrã»**: obriga o ecrã a recarregar a página na leitura seguinte, sem ninguém ir à TV. Fica registado quem o pediu.
+
+### Painel da sala: momentos do dia agrupados
+
+<!-- paginas: painel-sala -->
+<!-- tipo: correcao -->
+
+- Ao ligar a TV a meio do dia, as rotas que já tinham atingido o objectivo passam a ser celebradas num só ecrã, por exemplo «9 rotas atingiram o objectivo de hoje · 1003 · 1004 · …». Antes, cada rota tinha o seu ecrã e a TV ficava vários minutos só em celebrações.
+- Nunca aparecem dois momentos seguidos: entre um e o seguinte passa sempre um ecrã normal.
+
 ### Painel da sala: 13 ecrãs novos de gestão
 
 <!-- paginas: painel-sala -->
