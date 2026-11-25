@@ -725,7 +725,23 @@ const LOCAIS_SALA = {
   ],
 };
 /** Ecrãs que podem estar num espaço aberto (na versão sem valores nem nomes). */
-const ECRAS_ABERTA = ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques'];
+const ECRAS_ABERTA = [
+  'hoje',
+  'acumulado',
+  'previsao',
+  'comparacoes',
+  'ritmo',
+  'calor',
+  'tendencia',
+  'visitas',
+  'funil',
+  'rotas',
+  'clientes',
+  'recordes',
+  'contagem',
+  'destaques',
+  'momentos',
+];
 /**
  * Guia (com exemplos) do que pode estar à vista em cada local, segundo a classificação da informação (ISO/IEC 27001
  * A.5.12 e A.7.7 «ecrã limpo»), a protecção de dados pessoais (Lei 22/11) e as boas práticas de gestão visual
@@ -741,6 +757,19 @@ function guiaExposicao() {
     ['Gráficos: vendas por hora (contagens) e últimos 14 dias (índice face à média)', 'sim', 'sim', '«Hoje: 112 (100 = média dos 14 dias)»'],
     ['Visitas do plano: quantas, quantas já compraram, conversão', 'sim', 'sim', '«68 % do plano já comprou · 12 compras fora do plano»'],
     ['Rotas a vender e rotas com o objectivo atingido (só as que chegaram)', 'sim', 'sim', '«9 / 11 rotas a vender · objectivo: ✔ 1004 ✔ 1010»'],
+    [
+      'Ritmo acumulado, previsão de fecho e contagem do mês (em % e índice no open space)',
+      'sim',
+      'sim',
+      '«▲ 8 % à frente do ritmo · hoje deve fechar em 104 % do objectivo»',
+    ],
+    ['Mapa de calor, funil das visitas, recordes e momentos do dia', 'sim', 'sim', '«Melhor terça-feira de sempre» · «Rota 1004 atingiu o objectivo»'],
+    [
+      'Posição das carrinhas no mapa, artigos, Pareto, quadrante das rotas, stock e pendentes',
+      'sim',
+      'nao',
+      'só para a gestão: localização e dados comerciais',
+    ],
     ['Valores de vendas em Kz', 'sim', 'nao', '«Vendas de hoje: 30 539 500 Kz»'],
     ['Classificação por rota com o nome do promotor', 'sim', 'nao', '«1.º Rota 1003 · Nome do promotor · 4,2 M Kz»'],
     ['Último lugar ou rotas abaixo do esperado', 'nao', 'nao', '«Rota 1007 a 40 % do objectivo» — corrige-se em privado'],
@@ -786,12 +815,25 @@ function guiaExposicao() {
 }
 const ECRAS_SALA = [
   ['hoje', 'Vendas de hoje'],
+  ['acumulado', 'Ritmo acumulado × objectivo (gráfico)'],
+  ['previsao', 'Previsão de fecho do dia e do mês'],
   ['comparacoes', 'Comparações (dia, semana, mês, 7 e 30 dias, homólogos)'],
   ['ritmo', 'Ritmo do dia (vendas por hora)'],
+  ['calor', 'Mapa de calor (dia da semana × hora)'],
   ['tendencia', 'Últimos 14 dias (gráfico)'],
   ['visitas', 'Visitas de hoje (plano e conversão)'],
+  ['funil', 'Funil das visitas (plano, compra, GPS, acima da média)'],
   ['rotas', 'Rotas no terreno'],
+  ['mapa', 'Rotas no mapa (posição das carrinhas)'],
   ['clientes', 'Clientes (hoje e mês)'],
+  ['pareto', 'Concentração dos clientes (Pareto)'],
+  ['artigos', 'Artigos que mais sobem e descem'],
+  ['quadrante', 'Quadrante das rotas (compras × valor médio)'],
+  ['stock', 'Cobertura do stock (dias de venda)'],
+  ['operacao', 'Saúde da operação (o que está por fazer)'],
+  ['recordes', 'Recordes'],
+  ['contagem', 'Contagem do mês (dias e ritmo necessário)'],
+  ['momentos', 'Momentos do dia (celebração quando acontece)'],
   ['rank-hoje', 'Classificação de hoje'],
   ['rank-mes', 'Classificação do mês'],
   ['destaques', 'Destaques'],

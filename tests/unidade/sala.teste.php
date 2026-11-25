@@ -70,3 +70,89 @@ teste('painel da sala: comparativos com as datas dos dois períodos; sem histór
     verdade(strpos((string) json_encode($a['comparacoes']), '"t"') === false, 'sem Kz no open space');
     igual(0.5, $a['comparacoes']['linhas'][0]['variacao'], 'com a variação');
 });
+
+teste('painel da sala: ritmo acumulado × objectivo e × dia normal; previsão de fecho do dia e do mês', function () {
+    // 4 quartas-feiras anteriores: 100 às 08h e 300 às 14h (400 no dia)
+    $hist = [];
+    foreach (['2026-11-04', '2026-11-11', '2026-11-18', '2026-10-28'] as $d) $hist[$d] = ['08' => 100.0, '14' => 300.0];
+    $a = naval_sala_acumulado($hist, '2026-11-25', ['07' => 50.0, '08' => 100.0], 800.0, 10);
+    igual(['mesmo_dia', 4], [$a['ref']['tipo'], $a['ref']['dias']], 'dia normal: as 4 quartas anteriores');
+    $h = [];
+    foreach ($a['horas'] as $x) $h[$x['h']] = $x;
+    igual([150.0, 100.0, 200.0], [$h['10']['hoje'], $h['10']['habitual'], $h['10']['objectivo']], 'às 10h: hoje 150, normal 100, objectivo 800 × 25 %');
+    igual([null, 400.0, 800.0], [$h['15']['hoje'], $h['20']['habitual'], $h['20']['objectivo']], 'horas futuras sem valor de hoje');
+    igual(-0.25, $a['ritmo'], '25 % atrás do ritmo do objectivo');
+    igual(600.0, $a['estimado'], 'fecho estimado pelo ritmo: 150 / 25 %');
+    $ag = [];
+    foreach (naval_analise_dias('2026-10-01', '2026-11-24') as $d) $ag[$d] = ['rotas' => ['1001' => ['t' => 100.0]]];
+    $p = naval_sala_previsao($a, ['previsto' => 800.0, 'minimo' => 600.0, 'maximo' => 1000.0], $ag, '2026-11-25', ['2026-11-26' => ['p' => 500.0, 'folga' => false], '2026-11-29' => ['p' => 0.0, 'folga' => true]]);
+    igual([600.0, 0.75, true], [$p['dia']['estimado'], $p['dia']['progresso'], $p['dia']['pelo_ritmo']], 'dia');
+    igual([2400.0, 600.0, 500.0, 3500.0, 3100.0], [$p['mes']['ate_ontem'], $p['mes']['hoje'], $p['mes']['resto'], $p['mes']['estimado'], $p['mes']['mes_anterior']], 'mês: até ontem + hoje + o resto');
+    igual(1, $p['mes']['dias_resto'], 'folgas não contam');
+    // open space: índices (100 = objectivo do dia), sem Kz
+    $ab = naval_sala_avancados_aberta(['acumulado' => $a, 'previsao' => $p]);
+    igual([19, 25, 100], [$ab['acumulado']['horas'][4]['hoje'], $ab['acumulado']['horas'][4]['objectivo'], end($ab['acumulado']['horas'])['objectivo']], 'índices');
+    verdade(strpos((string) json_encode($ab), 'estimado') === false && strpos((string) json_encode($ab), 'mes_anterior') === false, 'sem valores');
+});
+
+teste('painel da sala: mapa de calor, recordes, contagem do mês e momentos', function () {
+    $hist = ['2026-11-20' => ['10' => 50.0, '15' => 100.0], '2026-11-23' => ['09' => 20.0]];
+    $c = naval_sala_calor($hist, '2026-11-25');
+    igual(['seg', 'sex'], array_column($c['linhas'], 'dia'), 'só os dias da semana com vendas');
+    igual(['dia' => 'sex', 'h' => '15'], $c['pico'], 'hora mais forte');
+    igual([50, 100], [$c['linhas'][1]['v'][4], $c['linhas'][1]['v'][9]], 'índice: 100 = a hora mais forte');
+    $ag = [];
+    foreach (naval_analise_dias('2026-10-01', '2026-11-24') as $d) $ag[$d] = ['rotas' => ['1001' => ['t' => $d === '2026-11-18' ? 900.0 : ($d === '2026-11-24' ? 500.0 : 100.0)]]];
+    $r = naval_sala_recordes($ag, '2026-11-25', 950.0);
+    igual(['2026-11-18', 900.0], [$r['melhor_dia']['d'], $r['melhor_dia']['t']], 'melhor dia');
+    igual('2026-11-18', $r['melhor_igual']['d'], 'melhor quarta-feira');
+    igual(['posicao' => 2, 'de' => 55], $r['ontem'], 'ontem foi o 2.º melhor dia');
+    igual(['2026-10', 3100.0], [$r['melhor_mes']['m'], $r['melhor_mes']['t']], 'melhor mês completo');
+    verdade($r['hoje']['bate_recorde'], 'hoje bate o recorde');
+    $k = naval_sala_contagem($ag, '2026-11-25', ['2026-11-26' => ['folga' => false], '2026-11-29' => ['folga' => true]], $r);
+    igual([2, 6], [$k['dias_trabalho'], $k['dias_calendario']], 'hoje + amanhã; 6 dias de calendário');
+    verdade($k['igualar']['atingido'], 'mês anterior já igualado');
+    $m = naval_sala_momentos(['hora' => '2026-11-25 10:00', 'hoje' => ['progresso' => 1.1]], $r, [['rota' => '1003', 'promotor' => 'Eva']]);
+    igual(['objectivo_dia', 'recorde', 'rota'], array_column($m, 'tipo'), 'momentos');
+    $ab = naval_sala_avancados_aberta(['momentos' => $m, 'recordes' => $r, 'contagem' => $k]);
+    $j = (string) json_encode($ab);
+    verdade(strpos($j, 'Eva') === false && strpos($j, '"t"') === false && strpos($j, 'alvo') === false, 'open space sem nomes nem Kz');
+});
+
+teste('painel da sala: funil, artigos, Pareto, quadrante, stock, operação e mapa', function () {
+    $f = naval_sala_funil(['1001' => [['c' => 'A'], ['c' => 'B'], ['c' => 'C']]], ['A' => ['t' => 500.0], 'B' => ['t' => 50.0], 'Z' => ['t' => 10.0]], ['A' => 'ok', 'B' => 'longe'], 100.0);
+    igual([3, 2, 1, 1], array_column($f['etapas'], 'n'), 'planeados, compraram, GPS, acima da média');
+    igual(1, $f['fora_plano']);
+    igual(3, count(naval_sala_funil(['1001' => [['c' => 'A']]], [], null, 100.0)['etapas']), 'sem GPS: sem a etapa da prova');
+    $ag = [];
+    foreach (naval_analise_dias('2026-10-10', '2026-11-24') as $d) {
+        $recente = $d >= '2026-11-18';
+        $cl = [];
+        for ($i = 1; $i <= 20; $i++) $cl['C' . $i] = ['t' => $i <= 2 ? 1000.0 : 10.0, 'r' => '1001'];
+        if ($d >= '2026-11-05') unset($cl['C2']);
+        $ag[$d] = ['rotas' => ['1001' => ['t' => 100.0, 'd' => 4], '1002' => ['t' => 300.0, 'd' => 2]], 'clientes' => $cl,
+            'artigos' => ['1001' => ['X' => ['n' => 'Leite', 'q' => 10.0, 't' => $recente ? 150.0 : 100.0], 'Y' => ['n' => 'Agua', 'q' => 5.0, 't' => $recente ? 50.0 : 100.0]]]];
+    }
+    $a = naval_sala_artigos($ag, '2026-11-25');
+    igual([['X', 0.5]], array_map(function ($x) { return [$x['c'], $x['var']]; }, $a['sobem']), 'sobe 50 %');
+    igual([['Y', -0.5]], array_map(function ($x) { return [$x['c'], $x['var']]; }, $a['descem']), 'desce 50 %');
+    $p = naval_sala_pareto($ag, '2026-11-25');
+    igual([20, 2, 1], [$p['clientes'], $p['n80'], $p['parados']], 'dois clientes fazem 80 %; um parado');
+    $q = naval_sala_quadrante($ag, '2026-11-25', ['1001' => 'Ana']);
+    igual([['1001', 'Ana', 4.0, 25.0], ['1002', '', 2.0, 150.0]], array_map(function ($x) { return [$x['rota'], $x['promotor'], $x['compras_dia'], $x['valor_medio']]; }, $q['rotas']), 'compras por dia e valor médio');
+    $s = naval_sala_stock([['itens' => [['codigo' => 'X', 'quantidade' => 20], ['codigo' => 'Y', 'quantidade' => 0]]]], $ag, '2026-11-25');
+    igual([['Y', 0.0], ['X', 2.0]], array_map(function ($x) { return [$x['c'], $x['dias']]; }, $s['lista']), 'menor cobertura primeiro');
+    igual([1, 1], [$s['ruptura'], $s['criticos']]);
+    $o = naval_sala_operacao([['tipo' => 'carrinha', 'atraso' => true], ['tipo' => 'po'], ['tipo' => 'po_validar']], 2);
+    igual([5, 3], [$o['total'], $o['atraso']], 'pendentes de todos e dias do Pinguim BO por fechar');
+    $m = naval_sala_mapa([['rota' => '1001', 'percurso' => [[-8.8, 13.2, '08:00'], [-8.81, 13.21, '09:30']], 'visitas' => [['prova' => 'ok'], ['prova' => 'longe']], 'km' => 4.2]],
+        ['1001' => [['lat' => -8.7, 'lng' => 13.1]]], ['1001' => 'Ana']);
+    igual([[-8.81, 13.21], '09:30', 2, 1, 'Ana'], [$m['rotas'][0]['pos'], $m['rotas'][0]['hora'], $m['rotas'][0]['vendas'], $m['rotas'][0]['prova'], $m['rotas'][0]['promotor']], 'última posição');
+    $ab = naval_sala_aberta(['hoje' => [], 'ontem' => [], 'semana' => [], 'mes' => [], 'rotas' => [], 'extra' => ['mapa' => $m, 'pareto' => $p, 'quadrante' => $q, 'stock' => $s, 'operacao' => $o, 'artigos' => $a]]);
+    verdade(!array_intersect(['mapa', 'pareto', 'quadrante', 'stock', 'operacao', 'artigos'], array_keys($ab)), 'só na sala interna');
+});
+
+teste('painel da sala: quem escolheu todos os ecrãs antigos passa a ver também os novos', function () {
+    igual(NAVAL_SALA_ECRAS_ABERTA, naval_sala_config(['ecras' => ['hoje', 'destaques', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes'], 'personalizado' => true], 'aberta')['ecras']);
+    igual(['hoje', 'ritmo'], naval_sala_config(['ecras' => ['hoje', 'ritmo'], 'personalizado' => true], 'aberta')['ecras'], 'uma escolha parcial mantém-se');
+});

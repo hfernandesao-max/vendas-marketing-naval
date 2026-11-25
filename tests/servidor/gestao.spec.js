@@ -181,7 +181,25 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
   const a = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Recepção', local: 'aberta', csrf: c } })).json();
   const ja = await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': a.codigo } })).json();
   expect(ja.local).toBe('aberta');
-  expect(ja.config.ecras).toEqual(['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques']);
+  expect(ja.config.ecras).toEqual([
+    'hoje',
+    'acumulado',
+    'previsao',
+    'comparacoes',
+    'ritmo',
+    'calor',
+    'tendencia',
+    'visitas',
+    'funil',
+    'rotas',
+    'clientes',
+    'recordes',
+    'contagem',
+    'destaques',
+    'momentos',
+  ]);
+  // os ecrãs só da sala interna nunca chegam ao open space
+  for (const k of ['mapa', 'pareto', 'artigos', 'quadrante', 'stock', 'operacao']) expect(ja[k]).toBeUndefined();
   for (const x of ja.comparacoes.linhas) expect(x.actual.t).toBeUndefined();
   for (const k of ['serie', 'horas', 'terreno', 'clientes']) expect(ja[k]).toBeTruthy();
   for (const x of ja.serie) expect(Object.keys(x).sort()).toEqual(['d', 'indice']);

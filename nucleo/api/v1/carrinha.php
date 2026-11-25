@@ -26,6 +26,15 @@ if (!naval_e_post()) {
     $data = (string) ($_GET['data'] ?? date('Y-m-d'));
     if (!naval_data_valida($data) || $data > date('Y-m-d')) throw new NavalErro('Data inválida.', 400);
     $corrigir = naval_perfil() === 'SADM';
+    // as contadas e ainda abertas revêem-se já contra o Pinguim BO (vendas sincronizadas depois, acertos da Logística)
+    if ($data >= date('Y-m-d', time() - 3 * 86400)) {
+        $abertas = [];
+        foreach (glob(naval_carr_pasta($data) . '/*.json') ?: [] as $f) {
+            $rt = basename($f, '.json');
+            if ($rt[0] !== '_' && naval_rota_permitida($rt)) $abertas[] = $rt;
+        }
+        naval_carr_regularizar_agora($data, $abertas);
+    }
     naval_servico('calendario');
     $vista = naval_carr_vista($data, naval_rotas(), $gere, ($_GET['actualizar'] ?? '') === '1', $pode['coordenar'] || $pode['fechar']);
     // vendas por depósito (SAP) de cada rota, de 30 dias antes a 7 dias depois do dia escolhido
@@ -99,7 +108,9 @@ if ($accao === 'preparar_folha') {
 }
 switch ($accao) {
     case 'contar':
-        naval_json_assinado(['ok' => true] + naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu));
+        $res = naval_carr_contar($data, $rota, array_slice((array) ($p['contagem'] ?? []), 0, 2000, true), $eu);
+        naval_carr_regularizar_agora($data, [$rota]);
+        naval_json_assinado(['ok' => true] + $res);
     case 'validar':
         naval_json_assinado(['ok' => true] + naval_carr_validar($data, $rota, $eu));
     case 'aprovar':

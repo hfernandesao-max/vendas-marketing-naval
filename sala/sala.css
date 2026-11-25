@@ -496,3 +496,308 @@ body.noite {
 .s-comp-ref .s-comp-datas {
   font-size: 0.8em;
 }
+
+/* Ecrãs de gestão avançados: gráficos em SVG (linhas, curva, dispersão, mapa), funil, mapa de calor, listas */
+.s-graf-caixa {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 1.4vh;
+  min-height: 0;
+}
+.s-svg {
+  width: 100%;
+  height: 50vh;
+  overflow: visible;
+}
+.s-svg-grade {
+  stroke: var(--linha);
+  stroke-width: 1;
+  stroke-dasharray: 4 8;
+}
+.s-svg-eixo {
+  stroke: var(--linha);
+  stroke-width: 3;
+}
+.s-svg-rot {
+  fill: var(--suave);
+  font-size: 26px;
+}
+.s-svg-v {
+  fill: var(--texto);
+  font-size: 30px;
+  font-weight: 700;
+}
+.s-svg-q {
+  fill: var(--suave);
+  font-size: 24px;
+  font-style: italic;
+}
+.s-svg-l {
+  fill: none;
+  stroke-width: 7;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.s-svg-l.hoje {
+  stroke: var(--ouro);
+  stroke-width: 9;
+}
+.s-svg-l.obj {
+  stroke: var(--azul);
+  stroke-dasharray: 14 10;
+}
+.s-svg-l.normal {
+  stroke: var(--suave);
+  opacity: 0.6;
+}
+.s-svg-p.hoje {
+  fill: var(--ouro);
+}
+.s-svg-med {
+  stroke: var(--azul);
+  stroke-width: 2;
+  stroke-dasharray: 10 10;
+  opacity: 0.7;
+}
+.s-leg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.4vw;
+  color: var(--suave);
+  font-size: 0.8em;
+}
+.s-leg-i {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6vw;
+}
+.s-leg-i i {
+  display: inline-block;
+  width: 3vw;
+  height: 0.7vh;
+  border-radius: 1vh;
+  background: var(--suave);
+}
+.s-leg-i.hoje i {
+  background: var(--ouro);
+  height: 1vh;
+}
+.s-leg-i.obj i {
+  background: repeating-linear-gradient(90deg, var(--azul) 0 1vw, transparent 1vw 1.6vw);
+}
+.s-leg-i.normal i {
+  opacity: 0.6;
+}
+.s-num.bom .s-val {
+  color: var(--azul);
+}
+.s-num.atencao .s-val {
+  color: var(--ambar);
+}
+.s-num.atencao {
+  border-color: var(--ambar);
+}
+.s-duas {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Funil: barras horizontais proporcionais ao plano */
+.s-funil {
+  display: grid;
+  gap: 2.4vh;
+  margin-top: 2vh;
+}
+.s-funil-l {
+  display: grid;
+  grid-template-columns: 24vw 1fr 8vw;
+  align-items: center;
+  gap: 1.6vw;
+}
+.s-funil-n {
+  color: var(--suave);
+}
+.s-funil-b {
+  height: 7vh;
+  background: rgba(150, 180, 235, 0.1);
+  border-radius: 1.2vh;
+}
+.s-funil-b i {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  border-radius: 1.2vh;
+  background: linear-gradient(90deg, var(--azul2), var(--azul));
+  padding-right: 1vw;
+  box-sizing: border-box;
+  min-width: 5vw;
+}
+.s-funil-b b {
+  color: var(--fundo);
+  font-size: 1.1em;
+}
+.s-funil-p {
+  font-weight: 700;
+  font-size: 1.2em;
+  text-align: right;
+}
+
+/* Mapa de calor: dia × hora */
+.s-calor {
+  display: grid;
+  grid-template-columns: 5vw repeat(15, 1fr);
+  gap: 0.5vh 0.4vw;
+  margin-top: 1vh;
+}
+.s-calor-h,
+.s-calor-d {
+  color: var(--suave);
+  font-size: 0.8em;
+  text-align: center;
+  align-self: center;
+}
+.s-calor-d.hoje {
+  color: var(--ouro);
+  font-weight: 700;
+}
+.s-calor-c {
+  height: 7vh;
+  border-radius: 0.8vh;
+  background: rgba(124, 203, 255, calc(0.06 + var(--i, 0) * 0.94));
+  display: grid;
+  place-items: center;
+  color: var(--fundo);
+  font-size: 0.8em;
+}
+
+/* Mapa das rotas */
+.s-mapa {
+  height: 52vh;
+}
+.s-mapa-terr {
+  fill: rgba(124, 203, 255, 0.07);
+  stroke: rgba(124, 203, 255, 0.35);
+  stroke-width: 2;
+}
+.s-mapa-perc {
+  fill: none;
+  stroke-width: 4;
+  opacity: 0.75;
+  stroke-linejoin: round;
+}
+.s-mapa-pos {
+  stroke: var(--fundo);
+  stroke-width: 4;
+}
+.s-mapa-rot {
+  fill: var(--texto);
+  font-size: 30px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--fundo);
+  stroke-width: 6px;
+}
+.s-mapa-lista li {
+  font-size: 0.85em;
+}
+
+/* Cobertura do stock */
+.s-stock {
+  display: grid;
+  gap: 1vh;
+  align-content: start;
+}
+.s-stock-l {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1.4vw;
+  align-items: center;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-left: 0.7vh solid var(--azul);
+  border-radius: 1.2vh;
+  padding: 0.9vh 1.2vw;
+}
+.s-stock-l.rutura,
+.s-stock-l.critico {
+  border-left-color: var(--ambar);
+}
+.s-stock-l.rutura b,
+.s-stock-l.critico b {
+  color: var(--ambar);
+}
+.s-stock-n {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.s-stock-q {
+  color: var(--suave);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+/* Saúde da operação */
+.s-oper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2vh 2vw;
+  margin-top: 1vh;
+}
+.s-oper-l {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6vh 1.2vw;
+  align-items: center;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 1.4vh;
+  padding: 2vh 1.6vw;
+}
+.s-oper-l b {
+  grid-column: 2;
+  font-size: 1.4em;
+}
+.s-oper-i {
+  grid-row: span 2;
+  font-size: 2em;
+  color: var(--azul);
+}
+.s-oper-l.pendente .s-oper-i {
+  color: var(--ouro);
+}
+.s-oper-l.atraso {
+  border-color: var(--ambar);
+}
+.s-oper-l.atraso .s-oper-i,
+.s-oper-l.atraso b {
+  color: var(--ambar);
+}
+.s-oper-n {
+  color: var(--suave);
+}
+
+/* Momento do dia: celebração (sem piscar) */
+.s-momento {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3vh;
+  height: 100%;
+  text-align: center;
+}
+.s-momento-ico {
+  font-size: 6em;
+  color: var(--ouro);
+  line-height: 1;
+}
+.s-momento-t {
+  font-size: 2.6em;
+  font-weight: 800;
+  color: var(--ouro);
+}
+.s-momento-n {
+  font-size: 1.6em;
+}

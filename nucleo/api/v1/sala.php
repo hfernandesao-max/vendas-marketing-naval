@@ -157,4 +157,8 @@ naval_exclusivo('sala-ligacoes', function () use ($id) {
     $lig[$id]['ip'] = naval_ip_cliente();
     naval_json_gravar(naval_sala_ficheiro(), $lig);
 });
-naval_json(naval_sala_resposta($local, $config));
+// versão dos ficheiros do painel: o ecrã que a vê mudar recarrega-se sozinho (as actualizações chegam à TV em 2 minutos)
+$raiz = dirname(__DIR__, 3) . '/sala/';
+$versao = substr(md5(implode('|', array_map(function ($f) use ($raiz) { return (string) @filemtime($raiz . $f) . '|' . (string) @filesize($raiz . $f); },
+    ['sala.js', 'sala.css', 'index.html']))), 0, 10);
+naval_json(naval_sala_resposta($local, $config) + ['versao' => $versao]);

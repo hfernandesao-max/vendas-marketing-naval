@@ -1,5 +1,46 @@
 ## 25-11-2026
 
+### Painel da sala: 13 ecrãs novos de gestão
+
+<!-- paginas: painel-sala -->
+<!-- tipo: funcionalidade -->
+
+- **Nos dois locais (no open space, em %, índices e datas, sem Kz nem nomes):**
+  - **Ritmo acumulado × objectivo:** a linha de hoje contra o objectivo e um dia normal (média dos últimos dias iguais da semana), com «à frente / atrás do ritmo».
+  - **Previsão de fecho:** quanto o dia vai fechar pelo ritmo e quanto o mês vai fechar (até ontem + hoje + a previsão dos dias de trabalho que faltam), face ao mês anterior.
+  - **Mapa de calor:** vendas por dia da semana e hora nas últimas 4 semanas, com a hora mais forte.
+  - **Funil das visitas:** clientes no plano → compraram → com prova de visita (GPS) → compra acima da média.
+  - **Recordes:** melhor dia de sempre, melhor dia igual ao de hoje, posição de ontem e do mês, e hoje face ao recorde.
+  - **Contagem do mês:** dias de trabalho que faltam e o ritmo diário para igualar o mês passado e bater o melhor mês.
+  - **Momentos do dia:** quando uma rota atinge o objectivo, a equipa chega ao objectivo do dia ou bate um recorde, aparece um ecrã de celebração, uma só vez.
+- **Só na sala interna:**
+  - **Rotas no mapa:** percurso de hoje e última posição de cada carrinha, sobre as zonas das rotas.
+  - **Concentração dos clientes (Pareto):** quantos clientes fazem 80 % das vendas e quantos desses estão sem comprar há 14 dias, sem nomes.
+  - **Artigos em destaque:** os que mais sobem e mais descem (7 dias face às 4 semanas anteriores).
+  - **Quadrante das rotas:** compras por dia × valor médio por compra, com as medianas, para escolher a alavanca de cada rota.
+  - **Cobertura do stock:** dias de venda que o stock dos armazéns aguenta, com as rupturas.
+  - **Saúde da operação:** o que espera por alguém (caixa, conciliações, PO, cais, SAP, dias do Pinguim BO por fechar) e os atrasos.
+- Quem tinha escolhido todos os ecrãs passa a ver também os novos. Um ecrã sem dados mostra o que falta, e um ecrã que falhe não pára a rotação.
+
+### Conciliação: vendas sincronizadas depois da contagem explicam a falta logo que chegam
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: correcao -->
+
+- Uma venda feita entre o corte e a contagem física, mas que só chegou ao Pinguim BO mais tarde (ex.: telemóvel com falha de sincronização), já era explicada pela regra «saída entre o corte e a contagem». Mas só na revisão de hora a hora.
+- Agora a revisão corre logo depois de gravar a contagem e sempre que a página abre (no máximo a cada 5 minutos por rota). A falta aparece como regularizada pela factura antes de quem contou validar.
+- Exemplo: rota 1001, 25-11 — FR 35 às 16:59 (8 sabões castanhos e 1 fralda, 232 500 Kz), contagem às 17:22.
+- A venda fora do horário continua assinalada para o coordenador autorizar.
+
+### Painel da sala: a TV recarrega-se sozinha quando há uma versão nova do painel
+
+<!-- paginas: painel-sala -->
+<!-- tipo: correcao -->
+
+- O servidor diz ao ecrã qual é a versão do painel.
+- Quando muda, o ecrã recarrega-se na leitura seguinte, até 2 minutos depois da instalação, e passa a mostrar os ecrãs novos sem ninguém tocar na TV. Antes, só se recarregava às 04:00.
+- **Destaques:** a «maior subida do mês» deixa de mostrar percentagens absurdas, como «+1848 %» de uma rota quase sem vendas no mês passado. Subidas acima de 300 % não entram no destaque.
+
 ### Painel da sala: comparações com as datas, gráficos e mais ecrãs (ritmo, 14 dias, visitas, rotas, clientes) e ao vivo no portal
 
 <!-- paginas: painel-sala, apresentacao -->

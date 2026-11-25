@@ -177,7 +177,8 @@
     }
     var R = D.rotas || [];
     var sobe = R.filter(function (r) {
-      return r.variacao_mes > 0;
+      // acima de +300 % a referência é pequena demais (rota nova ou sem histórico): não é uma subida a destacar
+      return r.variacao_mes > 0 && r.variacao_mes <= 3;
     }).sort(function (a, b) {
       return b.variacao_mes - a.variacao_mes;
     })[0];
@@ -471,7 +472,7 @@
     };
     var sobe = D.rotas
       .filter(function (r) {
-        return r.mes_anterior > 0 && r.variacao_mes > 0;
+        return r.mes_anterior > 0 && r.variacao_mes > 0 && r.variacao_mes <= 3;
       })
       .sort(function (a, b) {
         return b.variacao_mes - a.variacao_mes;
@@ -509,6 +510,646 @@
     return out;
   }
 
+  // ── Ecrãs de gestão avançados ────────────────────────────────────────────────────────────────────────────
+  // Gráficos em SVG (escala própria, sem bibliotecas): linhas, curva, dispersão e mapa; legenda sempre em texto.
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function svg(tag, at, txt) {
+    var e = document.createElementNS(SVGNS, tag);
+    Object.keys(at || {}).forEach(function (k) {
+      e.setAttribute(k, at[k]);
+    });
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  function quadro(cls) {
+    var s = svg('svg', { viewBox: '0 0 1000 520', preserveAspectRatio: 'none', class: 's-svg ' + (cls || '') });
+    s.setAttribute('role', 'img');
+    return s;
+  }
+  function pct(v) {
+    return Math.round((v || 0) * 100) + ' %';
+  }
+  function pctSinal(v) {
+    var p = Math.round((v || 0) * 100);
+    return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p) + ' %';
+  }
+  function legenda(itens) {
+    var l = el('div', 's-leg');
+    itens.forEach(function (x) {
+      var i = el('span', 's-leg-i ' + x[0]);
+      i.appendChild(el('i'));
+      i.appendChild(document.createTextNode(x[1]));
+      l.appendChild(i);
+    });
+    return l;
+  }
+  // linhas: series [{cls, v: [número|null]}] sobre os rótulos do eixo x
+  function graficoLinhas(rotulos, series, rot) {
+    var s = quadro('s-linhas');
+    var max = 1;
+    series.forEach(function (x) {
+      x.v.forEach(function (v) {
+        if (v != null) max = Math.max(max, v);
+      });
+    });
+    max *= 1.08;
+    var X = function (i) {
+        return 40 + (i * 920) / Math.max(1, rotulos.length - 1);
+      },
+      Y = function (v) {
+        return 470 - (v / max) * 440;
+      };
+    [0.25, 0.5, 0.75, 1].forEach(function (f) {
+      s.appendChild(svg('line', { x1: 40, x2: 960, y1: Y(max * f), y2: Y(max * f), class: 's-svg-grade' }));
+    });
+    s.appendChild(svg('line', { x1: 40, x2: 960, y1: 470, y2: 470, class: 's-svg-eixo' }));
+    rotulos.forEach(function (r, i) {
+      if (i % 2 === 0) s.appendChild(svg('text', { x: X(i), y: 510, class: 's-svg-rot', 'text-anchor': 'middle' }, r));
+    });
+    series.forEach(function (x) {
+      var d = '';
+      var ult = null;
+      x.v.forEach(function (v, i) {
+        if (v == null) return;
+        d += (d ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1);
+        ult = [X(i), Y(v), v];
+      });
+      if (!d) return;
+      s.appendChild(svg('path', { d: d, class: 's-svg-l ' + x.cls }));
+      if (ult && x.ponto) {
+        s.appendChild(svg('circle', { cx: ult[0], cy: ult[1], r: 9, class: 's-svg-p ' + x.cls }));
+        s.appendChild(svg('text', { x: Math.min(ult[0] + 14, 900), y: ult[1] - 14, class: 's-svg-v' }, rot(ult[2])));
+      }
+    });
+    return s;
+  }
+
+  // 1. Ritmo acumulado × objectivo: a linha de hoje contra a do objectivo e a de um dia normal
+  function ecraAcumulado() {
+    var a = D.acumulado;
+    if (
+      !a ||
+      !a.horas ||
+      !a.horas.some(function (h) {
+        return h.habitual != null;
+      })
+    )
+      return [el('p', 's-msg', 'O ritmo acumulado aparece com as primeiras semanas de vendas por hora.')];
+    var aberta = D.local === 'aberta';
+    var fmt = aberta
+      ? function (v) {
+          return v + '';
+        }
+      : function (v) {
+          return kzc(v).replace(' Kz', '');
+        };
+    var ref =
+      a.ref.tipo === 'mesmo_dia'
+        ? 'média das últimas ' + a.ref.dias + ' ' + DIAS[new Date().getDay()].replace('-feira', '') + 's'
+        : 'média dos últimos ' + a.ref.dias + ' dias com vendas';
+    var out = [
+      el(
+        'p',
+        's-legenda',
+        (aberta
+          ? 'Vendas acumuladas ao longo do dia (100 = ' + (a.base === 'habitual' ? 'dia normal' : 'objectivo do dia') + ')'
+          : 'Vendas acumuladas ao longo do dia, sem IVA') +
+          ' · dia normal = ' +
+          ref,
+      ),
+    ];
+    var g = el('div', 's-grelha-graf');
+    var caixa = el('div', 's-graf-caixa');
+    caixa.appendChild(
+      graficoLinhas(
+        a.horas.map(function (h) {
+          return h.h + 'h';
+        }),
+        [
+          {
+            cls: 'normal',
+            v: a.horas.map(function (h) {
+              return h.habitual;
+            }),
+          },
+          {
+            cls: 'obj',
+            v: a.horas.map(function (h) {
+              return h.objectivo;
+            }),
+          },
+          {
+            cls: 'hoje',
+            ponto: true,
+            v: a.horas.map(function (h) {
+              return h.hoje;
+            }),
+          },
+        ],
+        fmt,
+      ),
+    );
+    caixa.appendChild(
+      legenda([
+        ['hoje', 'Hoje'],
+        ['obj', 'Objectivo'],
+        ['normal', 'Dia normal'],
+      ]),
+    );
+    g.appendChild(caixa);
+    var lado = el('section', 's-coluna');
+    if (a.ritmo != null) {
+      var r = Math.round(a.ritmo * 100);
+      var n = numero(
+        r >= 0 ? 'À frente do ritmo' : 'Atrás do ritmo',
+        (r >= 0 ? '▲ ' : '▼ ') + Math.abs(r) + ' %',
+        el('div', 's-dd', 'face ao objectivo a esta hora'),
+        r >= 0 ? 'bom' : 'atencao',
+      );
+      lado.appendChild(n);
+    } else lado.appendChild(numero('Ritmo', '—', el('div', 's-dd', 'ainda cedo: aparece a partir de 10 % do dia')));
+    if (!aberta) lado.appendChild(numero('Hoje até agora', kzc(a.total)));
+    else {
+      var ult = a.horas
+        .filter(function (h) {
+          return h.hoje != null;
+        })
+        .pop();
+      if (ult && a.base === 'objectivo') lado.appendChild(numero('Do objectivo do dia', ult.hoje + ' %'));
+    }
+    g.appendChild(lado);
+    out.push(g);
+    return out;
+  }
+
+  // 2. Previsão de fecho: o dia pelo ritmo e o mês (até ontem + hoje estimado + a previsão dos dias que faltam)
+  function ecraPrevisao() {
+    var p = D.previsao;
+    if (!p) return [el('p', 's-msg', 'A previsão aparece com as primeiras semanas de vendas.')];
+    var aberta = D.local === 'aberta';
+    var esq = el('section', 's-hoje');
+    esq.appendChild(el('div', 's-rot', 'Hoje deve fechar em'));
+    var prog = p.dia.progresso;
+    esq.appendChild(el('div', 's-gigante', aberta ? (prog != null ? pct(prog) + ' do objectivo' : '—') : kz(p.dia.estimado)));
+    if (prog != null) esq.appendChild(barra(Math.min(1, prog), pct(prog) + ' do objectivo'));
+    var ln = el('p', 's-meta');
+    if (!aberta && p.dia.objectivo) ln.appendChild(document.createTextNode(pct(prog) + ' do objectivo (' + kzc(p.dia.objectivo) + ')'));
+    if (!aberta && p.dia.minimo != null) ln.appendChild(document.createTextNode(' · entre ' + kzc(p.dia.minimo) + ' e ' + kzc(p.dia.maximo)));
+    ln.appendChild(
+      el('span', 's-dd', ' · ' + (p.dia.pelo_ritmo ? 'pelo ritmo de hoje face a um dia normal' : 'pela previsão do dia (ainda cedo para usar o ritmo)')),
+    );
+    esq.appendChild(ln);
+    var dir = el('section', 's-coluna');
+    var m = p.mes;
+    dir.appendChild(
+      numero(
+        MESES[new Date().getMonth()].replace(/^./, function (c) {
+          return c.toUpperCase();
+        }) + ' deve fechar em',
+        aberta ? '' : kzc(m.estimado),
+        m.variacao != null
+          ? variacao(m.variacao, 'face a ' + MESES[new Date(m.ref.de + 'T12:00:00').getMonth()])
+          : el('div', 's-dd', 'sem o mês anterior completo para comparar'),
+      ),
+    );
+    dir.appendChild(numero('Dias de trabalho que faltam', nf.format(m.dias_resto), el('div', 's-dd', 'depois de hoje, sem domingos nem feriados')));
+    var g = el('div', 's-grelha-hoje');
+    g.appendChild(esq);
+    g.appendChild(dir);
+    return [g];
+  }
+
+  // 3. Mapa das rotas (só sala interna): territórios, percurso de hoje e a última posição de cada carrinha
+  var CORES = ['#7ccbff', '#f7cf5e', '#8ef0b0', '#ffb36b', '#c9a7ff', '#ff8fa3', '#6ee7e7', '#d9f99d', '#fda4af', '#93c5fd', '#fcd34d', '#a7f3d0'];
+  function ecraMapa() {
+    var m = D.mapa;
+    if (!m || !m.rotas || !m.rotas.length) return [el('p', 's-msg', 'O mapa aparece quando as carrinhas começam a enviar a localização (GPS das vendas).')];
+    var pts = [];
+    m.rotas.forEach(function (r) {
+      pts = pts.concat(r.percurso, [r.pos]);
+    });
+    Object.keys(m.territorios || {}).forEach(function (k) {
+      pts = pts.concat(m.territorios[k]);
+    });
+    var la = pts.map(function (p) {
+        return p[0];
+      }),
+      lo = pts.map(function (p) {
+        return p[1];
+      });
+    var a0 = Math.min.apply(null, la),
+      a1 = Math.max.apply(null, la),
+      o0 = Math.min.apply(null, lo),
+      o1 = Math.max.apply(null, lo);
+    var kx = Math.cos(((a0 + a1) / 2) * (Math.PI / 180));
+    var w = Math.max((o1 - o0) * kx, 1e-4),
+      h = Math.max(a1 - a0, 1e-4);
+    var esc = Math.min(1600 / w, 760 / h);
+    var X = function (p) {
+        return 20 + (p[1] - o0) * kx * esc + (1600 - w * esc) / 2;
+      },
+      Y = function (p) {
+        return 20 + (a1 - p[0]) * esc + (760 - h * esc) / 2;
+      };
+    var s = svg('svg', { viewBox: '0 0 1640 800', class: 's-svg s-mapa' });
+    s.setAttribute('role', 'img');
+    s.setAttribute('aria-label', 'Mapa das rotas de hoje');
+    Object.keys(m.territorios || {}).forEach(function (k) {
+      var t = m.territorios[k];
+      if (t.length > 2)
+        s.appendChild(
+          svg('polygon', {
+            points: t
+              .map(function (p) {
+                return X(p).toFixed(0) + ',' + Y(p).toFixed(0);
+              })
+              .join(' '),
+            class: 's-mapa-terr',
+          }),
+        );
+    });
+    m.rotas.forEach(function (r, i) {
+      var c = CORES[i % CORES.length];
+      s.appendChild(
+        svg('polyline', {
+          points: r.percurso
+            .map(function (p) {
+              return X(p).toFixed(0) + ',' + Y(p).toFixed(0);
+            })
+            .join(' '),
+          class: 's-mapa-perc',
+          stroke: c,
+        }),
+      );
+    });
+    m.rotas.forEach(function (r, i) {
+      var c = CORES[i % CORES.length];
+      s.appendChild(svg('circle', { cx: X(r.pos), cy: Y(r.pos), r: 14, fill: c, class: 's-mapa-pos' }));
+      s.appendChild(svg('text', { x: X(r.pos) + 20, y: Y(r.pos) + 10, class: 's-mapa-rot' }, r.rota));
+    });
+    var g = el('div', 's-grelha-graf');
+    var caixa = el('div', 's-graf-caixa');
+    caixa.appendChild(s);
+    g.appendChild(caixa);
+    var lado = el('section', 's-coluna');
+    var vend = 0,
+      prova = 0;
+    m.rotas.forEach(function (r) {
+      vend += r.vendas;
+      prova += r.prova;
+    });
+    lado.appendChild(numero('Vendas com GPS', nf.format(vend), el('div', 's-dd', vend ? pct(prova / vend) + ' junto ao cliente (prova de visita)' : '')));
+    var l = el('ol', 's-mini s-mapa-lista');
+    m.rotas.slice(0, 3).forEach(function (r, i) {
+      var li = el('li');
+      var n = el('div', 's-nome');
+      var b = el('strong', null, 'Rota ' + r.rota);
+      b.style.color = CORES[i % CORES.length];
+      n.appendChild(b);
+      if (r.promotor) n.appendChild(el('span', null, r.promotor));
+      li.appendChild(n);
+      li.appendChild(el('b', null, r.hora));
+      l.appendChild(li);
+    });
+    lado.appendChild(l);
+    g.appendChild(lado);
+    return [el('p', 's-legenda', nf.format(m.rotas.length) + ' carrinhas no terreno · percurso de hoje e última posição · zonas das rotas a sombreado'), g];
+  }
+
+  // 4. Funil das visitas: do plano à compra acima da média (onde se perde a venda)
+  function ecraFunil() {
+    var f = D.funil;
+    if (!f || !f.etapas || !f.etapas[0].n) return [el('p', 's-msg', 'O funil aparece com o plano de visitas de hoje.')];
+    var base = f.etapas[0].n;
+    var out = [el('p', 's-legenda', 'Clientes do plano de hoje, passo a passo · % face ao plano')];
+    var l = el('div', 's-funil');
+    f.etapas.forEach(function (e, i) {
+      var linha = el('div', 's-funil-l');
+      linha.appendChild(el('span', 's-funil-n', e.nome));
+      var b = el('div', 's-funil-b');
+      var i2 = el('i');
+      i2.style.width = Math.max(2, Math.round((e.n / base) * 100)) + '%';
+      i2.appendChild(el('b', null, nf.format(e.n)));
+      b.appendChild(i2);
+      linha.appendChild(b);
+      linha.appendChild(el('span', 's-funil-p', i ? pct(e.n / base) : '100 %'));
+      l.appendChild(linha);
+    });
+    out.push(l);
+    if (f.fora_plano) out.push(el('p', 's-meta', '+ ' + nf.format(f.fora_plano) + ' clientes compraram fora do plano'));
+    return out;
+  }
+
+  // 5. Mapa de calor: dia da semana × hora nas últimas 4 semanas (100 = hora mais forte)
+  function ecraCalor() {
+    var c = D.calor;
+    if (!c || !c.linhas || !c.linhas.length) return [el('p', 's-msg', 'O mapa de calor aparece com as primeiras semanas de vendas por hora.')];
+    var out = [el('p', 's-legenda', 'Vendas por dia da semana e hora · ' + periodo(c.de, c.ate) + ' · mais escuro = mais vendas')];
+    var t = el('div', 's-calor');
+    t.appendChild(el('span'));
+    for (var k = 6; k <= 20; k++) t.appendChild(el('span', 's-calor-h', k % 2 === 0 ? k + 'h' : ''));
+    var hojeD = DIA_CURTO[new Date().getDay()];
+    c.linhas.forEach(function (l) {
+      t.appendChild(el('span', 's-calor-d' + (l.dia === hojeD ? ' hoje' : ''), l.dia));
+      l.v.forEach(function (v) {
+        var x = el('span', 's-calor-c');
+        x.style.setProperty('--i', (v / 100).toFixed(2));
+        if (v >= 85) x.textContent = '●';
+        t.appendChild(x);
+      });
+    });
+    out.push(t);
+    if (c.pico) out.push(el('p', 's-meta', 'Hora mais forte: ' + c.pico.dia + ' às ' + c.pico.h + 'h · ● as horas de pico (85 % ou mais)'));
+    return out;
+  }
+
+  // 6. Artigos que mais sobem e mais descem (sala interna): últimos 7 dias face às 4 semanas anteriores
+  function ecraArtigos() {
+    var a = D.artigos;
+    if (!a) return [el('p', 's-msg', 'Os artigos em destaque aparecem com 5 semanas de vendas.')];
+    var out = [el('p', 's-legenda', periodo(a.actual.de, a.actual.ate) + ' × média semanal de ' + periodo(a.ref.de, a.ref.ate))];
+    var g = el('div', 's-grelha-hoje s-duas');
+    [
+      ['▲ Sobem', a.sobem, 'sobe'],
+      ['▼ Descem', a.descem, 'desce'],
+    ].forEach(function (x) {
+      var c = el('section', 's-coluna');
+      c.appendChild(el('div', 's-rot', x[0]));
+      var l = el('ol', 's-mini');
+      if (!x[1].length) l.appendChild(el('li', 's-dd', 'Nenhum artigo com variação relevante.'));
+      x[1].forEach(function (y) {
+        var li = el('li');
+        var n = el('div', 's-nome');
+        n.appendChild(el('strong', null, y.n));
+        n.appendChild(el('span', null, kzc(y.t) + ' na semana'));
+        li.appendChild(n);
+        li.appendChild(el('b', 's-delta ' + x[2], pctSinal(y.var)));
+        l.appendChild(li);
+      });
+      c.appendChild(l);
+      g.appendChild(c);
+    });
+    out.push(g);
+    return out;
+  }
+
+  // 7. Pareto dos clientes (sala interna, sem nomes): quantos fazem 80 % e quantos grandes estão parados
+  function ecraPareto() {
+    var p = D.pareto;
+    if (!p) return [el('p', 's-msg', 'A concentração dos clientes aparece com mais clientes com compras.')];
+    var out = [el('p', 's-legenda', 'Clientes com compras de ' + periodo(p.de, p.ate) + ' · do maior para o menor')];
+    var g = el('div', 's-grelha-graf');
+    var caixa = el('div', 's-graf-caixa');
+    var rot = [0].concat(
+      p.curva.map(function (x) {
+        return x.p;
+      }),
+    );
+    caixa.appendChild(
+      graficoLinhas(
+        rot.map(function (x) {
+          return x + ' %';
+        }),
+        [
+          {
+            cls: 'obj',
+            v: rot.map(function () {
+              return 80;
+            }),
+          },
+          {
+            cls: 'hoje',
+            ponto: false,
+            v: [0].concat(
+              p.curva.map(function (x) {
+                return Math.round(x.v * 100);
+              }),
+            ),
+          },
+        ],
+        function (v) {
+          return v + ' %';
+        },
+      ),
+    );
+    caixa.appendChild(
+      legenda([
+        ['hoje', '% das vendas (↑) por % dos clientes (→)'],
+        ['obj', '80 % das vendas'],
+      ]),
+    );
+    g.appendChild(caixa);
+    var lado = el('section', 's-coluna');
+    lado.appendChild(
+      numero('Fazem 80 % das vendas', nf.format(p.n80) + ' clientes', el('div', 's-dd', pct(p.parte80) + ' dos ' + nf.format(p.clientes) + ' com compras')),
+    );
+    lado.appendChild(
+      numero(
+        'Desses, sem comprar há 14 dias',
+        nf.format(p.parados),
+        el('div', 's-dd', p.parados ? pct(p.parados_peso) + ' das vendas em risco · ver a lista no portal' : 'todos activos ✔'),
+        p.parados ? 'atencao' : 'bom',
+      ),
+    );
+    g.appendChild(lado);
+    out.push(g);
+    return out;
+  }
+
+  // 8. Quadrante das rotas (sala interna): compras por dia × valor médio por compra, com as medianas
+  function ecraQuadrante() {
+    var q = D.quadrante;
+    if (!q || !q.rotas || q.rotas.length < 2) return [el('p', 's-msg', 'O quadrante aparece com vendas de várias rotas.')];
+    var s = quadro('s-quad');
+    var mx = 1,
+      my = 1;
+    q.rotas.forEach(function (r) {
+      mx = Math.max(mx, r.compras_dia);
+      my = Math.max(my, r.valor_medio);
+    });
+    mx *= 1.12;
+    my *= 1.15;
+    var X = function (v) {
+        return 60 + (v / mx) * 900;
+      },
+      Y = function (v) {
+        return 470 - (v / my) * 440;
+      };
+    s.appendChild(svg('line', { x1: X(q.mediana.compras_dia), x2: X(q.mediana.compras_dia), y1: 20, y2: 470, class: 's-svg-med' }));
+    s.appendChild(svg('line', { x1: 60, x2: 960, y1: Y(q.mediana.valor_medio), y2: Y(q.mediana.valor_medio), class: 's-svg-med' }));
+    s.appendChild(svg('line', { x1: 60, x2: 960, y1: 470, y2: 470, class: 's-svg-eixo' }));
+    s.appendChild(svg('line', { x1: 60, x2: 60, y1: 20, y2: 470, class: 's-svg-eixo' }));
+    s.appendChild(svg('text', { x: 950, y: 50, class: 's-svg-q', 'text-anchor': 'end' }, 'mais compras · cesto maior'));
+    s.appendChild(svg('text', { x: 75, y: 50, class: 's-svg-q' }, 'aumentar compras'));
+    s.appendChild(svg('text', { x: 950, y: 455, class: 's-svg-q', 'text-anchor': 'end' }, 'aumentar o cesto'));
+    s.appendChild(svg('text', { x: 510, y: 510, class: 's-svg-rot', 'text-anchor': 'middle' }, 'compras por dia de venda →'));
+    q.rotas.forEach(function (r) {
+      s.appendChild(svg('circle', { cx: X(r.compras_dia), cy: Y(r.valor_medio), r: 11, class: 's-svg-p hoje' }));
+      s.appendChild(svg('text', { x: X(r.compras_dia) + 15, y: Y(r.valor_medio) + 8, class: 's-svg-v' }, r.rota));
+    });
+    var g = el('div', 's-grelha-graf');
+    var caixa = el('div', 's-graf-caixa');
+    caixa.appendChild(s);
+    g.appendChild(caixa);
+    var lado = el('section', 's-coluna');
+    lado.appendChild(numero('Compras por dia (mediana)', nf1.format(q.mediana.compras_dia)));
+    lado.appendChild(numero('Valor médio por compra (mediana)', kzc(q.mediana.valor_medio)));
+    lado.appendChild(el('p', 's-dd', 'Cada ponto é uma rota (28 dias); as linhas são as medianas.'));
+    g.appendChild(lado);
+    return [el('p', 's-legenda', 'Desde ' + periodo(q.de, q.de) + ' · ↑ valor médio por compra'), g];
+  }
+
+  // 9. Cobertura do stock (sala interna): os artigos que acabam primeiro ao ritmo de venda
+  function ecraStock() {
+    var s = D.stock;
+    if (!s || !s.lista || !s.lista.length) return [el('p', 's-msg', 'A cobertura do stock aparece quando o stock dos armazéns está disponível.')];
+    var out = [el('p', 's-legenda', 'Stock dos armazéns ÷ venda média por dia (' + s.dias_venda + ' dias de venda) · os que acabam primeiro')];
+    var g = el('div', 's-grelha-hoje');
+    var t = el('div', 's-stock');
+    s.lista.forEach(function (x) {
+      var l = el('div', 's-stock-l ' + (x.stock <= 0 ? 'rutura' : x.dias < 3 ? 'critico' : x.dias < 7 ? 'atencao' : 'ok'));
+      l.appendChild(el('span', 's-stock-n', x.n));
+      l.appendChild(el('span', 's-stock-q', nf.format(x.stock) + ' em stock · ' + nf1.format(x.dia) + '/dia'));
+      l.appendChild(el('b', null, x.stock <= 0 ? '✖ ruptura' : nf1.format(x.dias) + ' dias'));
+      t.appendChild(l);
+    });
+    g.appendChild(t);
+    var lado = el('section', 's-coluna');
+    lado.appendChild(numero('Em ruptura', nf.format(s.ruptura), el('div', 's-dd', 'artigos com venda e sem stock'), s.ruptura ? 'atencao' : 'bom'));
+    lado.appendChild(numero('Menos de 3 dias', nf.format(s.criticos), el('div', 's-dd', 'de ' + nf.format(s.artigos) + ' artigos com venda')));
+    g.appendChild(lado);
+    out.push(g);
+    return out;
+  }
+
+  // 10. Saúde da operação (sala interna): o que espera por alguém, com os atrasos
+  function ecraOperacao() {
+    var o = D.operacao;
+    if (!o) return [el('p', 's-msg', 'A saúde da operação aparece logo que o servidor lê os pendentes.')];
+    var out = [el('p', 's-legenda', 'O que espera por alguém agora · ✔ em dia · ● por fazer · ▲ atrasado')];
+    var l = el('div', 's-oper');
+    o.linhas.forEach(function (x) {
+      var c = el('div', 's-oper-l ' + (x.atraso ? 'atraso' : x.n ? 'pendente' : 'ok'));
+      c.appendChild(el('span', 's-oper-i', x.atraso ? '▲' : x.n ? '●' : '✔'));
+      c.appendChild(el('span', 's-oper-n', x.nome));
+      c.appendChild(el('b', null, x.n ? nf.format(x.n) + (x.atraso ? ' · ' + nf.format(x.atraso) + ' atrasado' + (x.atraso === 1 ? '' : 's') : '') : 'em dia'));
+      l.appendChild(c);
+    });
+    out.push(l);
+    return out;
+  }
+
+  // 11. Recordes: melhor dia de sempre, melhor dia igual ao de hoje, posição de ontem e do mês
+  function ecraRecordes() {
+    var r = D.recordes;
+    if (!r) return [el('p', 's-msg', 'Os recordes aparecem com as primeiras semanas de vendas.')];
+    var aberta = D.local === 'aberta';
+    var out = [el('p', 's-legenda', 'Desde ' + periodo(r.desde, r.desde) + ' · ' + nf.format(r.dias) + ' dias com vendas')];
+    var d = el('div', 's-destaques');
+    function cartao(ic, t, n, txt) {
+      var c = el('div', 's-destaque');
+      c.appendChild(el('div', 's-ico', ic));
+      var b = el('div');
+      b.appendChild(el('div', 's-rot', t));
+      b.appendChild(el('div', 's-dn', n));
+      if (txt) b.appendChild(el('div', 's-dd', txt));
+      c.appendChild(b);
+      d.appendChild(c);
+    }
+    var h = r.hoje;
+    if (h.bate_recorde) cartao('🏆', 'Hoje', 'Recorde batido!', 'o melhor dia de sempre');
+    else if (h.face_recorde != null) cartao('🎯', 'Hoje face ao recorde', pct(h.face_recorde), 'do melhor dia de sempre');
+    cartao('🏆', 'Melhor dia de sempre', periodo(r.melhor_dia.d, r.melhor_dia.d), aberta ? '' : kzc(r.melhor_dia.t));
+    if (r.melhor_igual)
+      cartao(
+        '★',
+        'Melhor ' + DIAS[new Date().getDay()],
+        periodo(r.melhor_igual.d, r.melhor_igual.d),
+        h.bate_igual ? 'hoje já o bateu ✔' : aberta ? '' : kzc(r.melhor_igual.t),
+      );
+    if (r.ontem && r.ontem.posicao <= 10) cartao('▲', 'Ontem', r.ontem.posicao + '.º melhor dia', 'de ' + nf.format(r.ontem.de));
+    if (r.melhor_mes)
+      cartao(
+        '📅',
+        'Melhor mês',
+        MESES[+r.melhor_mes.m.slice(5, 7) - 1] + ' ' + r.melhor_mes.m.slice(0, 4),
+        (aberta ? '' : kzc(r.melhor_mes.t) + ' · ') + 'este mês vai em ' + r.mes_posicao + '.º de ' + (r.meses + 1),
+      );
+    out.push(d);
+    return out;
+  }
+
+  // 12. Contagem decrescente do mês: dias que faltam e o ritmo diário para igualar o mês passado e o recorde
+  function ecraContagem() {
+    var c = D.contagem;
+    if (!c) return [el('p', 's-msg', 'A contagem do mês aparece com as primeiras vendas do mês.')];
+    var aberta = D.local === 'aberta';
+    var esq = el('section', 's-hoje');
+    esq.appendChild(el('div', 's-rot', 'Faltam até ao fim de ' + MESES[new Date().getMonth()]));
+    esq.appendChild(el('div', 's-gigante', c.dias_trabalho + (c.dias_trabalho === 1 ? ' dia' : ' dias') + ' de trabalho'));
+    esq.appendChild(el('p', 's-meta', 'contando com hoje · ' + c.dias_calendario + ' dias de calendário'));
+    if (!aberta && c.media_dia) esq.appendChild(el('p', 's-meta', 'Média diária do mês até ontem: ' + kzc(c.media_dia)));
+    var dir = el('section', 's-coluna');
+    function meta(rot, m) {
+      if (!m) return;
+      if (m.atingido) dir.appendChild(numero(rot, '✔ já conseguido', null, 'bom'));
+      else
+        dir.appendChild(
+          numero(
+            rot,
+            aberta ? (m.face_media != null ? pctSinal(m.face_media) : '—') : kzc(m.por_dia) + ' por dia',
+            el('div', 's-dd', m.face_media != null ? (aberta ? 'por dia face à média actual' : pctSinal(m.face_media) + ' face à média diária actual') : ''),
+          ),
+        );
+    }
+    meta('Para igualar o mês passado', c.igualar);
+    if (c.recorde) meta('Para bater o melhor mês (' + MESES[+c.recorde.m.slice(5, 7) - 1] + ')', c.recorde);
+    if (!dir.children.length) dir.appendChild(el('p', 's-dd', 'As metas aparecem com o primeiro mês completo de vendas.'));
+    var g = el('div', 's-grelha-hoje');
+    g.appendChild(esq);
+    g.appendChild(dir);
+    return [g];
+  }
+
+  // 13. Momentos do dia: um ecrã de celebração quando acontece algo (objectivo, recorde), mostrado uma vez
+  var momentos = [];
+  var VISTOS = 'sala-momentos';
+  function lerVistos() {
+    try {
+      var v = JSON.parse(localStorage.getItem(VISTOS) || '{}');
+      return v && v.dia === new Date().toDateString() ? v.ids || [] : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function marcarVisto(id) {
+    try {
+      var ids = lerVistos();
+      ids.push(id);
+      localStorage.setItem(VISTOS, JSON.stringify({ dia: new Date().toDateString(), ids: ids }));
+    } catch (e) {
+      /* sem armazenamento: mostra só nesta sessão */
+    }
+  }
+  var vistosSessao = {};
+  function novosMomentos() {
+    if (!D || !D.momentos || !D.config || (D.config.ecras || []).indexOf('momentos') < 0) return;
+    var vistos = lerVistos();
+    D.momentos.forEach(function (m) {
+      if (vistosSessao[m.id] || vistos.indexOf(m.id) >= 0) return;
+      vistosSessao[m.id] = true;
+      momentos.push(m);
+    });
+  }
+  function ecraMomento(m) {
+    var c = el('div', 's-momento ' + m.tipo);
+    c.appendChild(el('div', 's-momento-ico', m.tipo === 'recorde' ? '🏆' : m.tipo === 'rota' ? '★' : '🎯'));
+    c.appendChild(el('div', 's-momento-t', m.titulo));
+    if (m.promotor && D.local !== 'aberta') c.appendChild(el('div', 's-momento-n', 'Parabéns, ' + m.promotor + '!'));
+    else c.appendChild(el('div', 's-momento-n', 'Parabéns, equipa!'));
+    return [c];
+  }
+
   var ECRAS = {
     hoje: {
       titulo: 'Vendas de hoje',
@@ -516,7 +1157,19 @@
         return D.local === 'aberta' ? ecraHojeAberta() : ecraHoje();
       },
     },
+    acumulado: { titulo: 'Ritmo acumulado × objectivo', f: ecraAcumulado },
+    previsao: { titulo: 'Previsão de fecho', f: ecraPrevisao },
     comparacoes: { titulo: 'Comparações', f: ecraComparacoes },
+    calor: { titulo: 'Mapa de calor das vendas', f: ecraCalor },
+    funil: { titulo: 'Funil das visitas', f: ecraFunil },
+    mapa: { titulo: 'Rotas no mapa', f: ecraMapa },
+    pareto: { titulo: 'Concentração dos clientes', f: ecraPareto },
+    artigos: { titulo: 'Artigos em destaque', f: ecraArtigos },
+    quadrante: { titulo: 'Quadrante das rotas', f: ecraQuadrante },
+    stock: { titulo: 'Cobertura do stock', f: ecraStock },
+    operacao: { titulo: 'Saúde da operação', f: ecraOperacao },
+    recordes: { titulo: 'Recordes', f: ecraRecordes },
+    contagem: { titulo: 'Contagem do mês', f: ecraContagem },
     ritmo: { titulo: 'Ritmo do dia', f: ecraRitmo },
     tendencia: { titulo: 'Últimos 14 dias', f: ecraTendencia },
     visitas: { titulo: 'Visitas de hoje', f: ecraVisitas },
@@ -555,28 +1208,77 @@
     var c =
       (D && D.config && D.config.ecras) ||
       (D && D.local === 'aberta'
-        ? ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques']
-        : ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'rank-hoje', 'rank-mes', 'destaques']);
-    return c.filter(function (k) {
+        ? [
+            'hoje',
+            'acumulado',
+            'previsao',
+            'comparacoes',
+            'ritmo',
+            'calor',
+            'tendencia',
+            'visitas',
+            'funil',
+            'rotas',
+            'clientes',
+            'recordes',
+            'contagem',
+            'destaques',
+          ]
+        : [
+            'hoje',
+            'acumulado',
+            'previsao',
+            'comparacoes',
+            'ritmo',
+            'calor',
+            'tendencia',
+            'visitas',
+            'funil',
+            'rotas',
+            'mapa',
+            'clientes',
+            'pareto',
+            'artigos',
+            'quadrante',
+            'stock',
+            'operacao',
+            'recordes',
+            'contagem',
+            'rank-hoje',
+            'rank-mes',
+            'destaques',
+          ]);
+    // os momentos do dia não rodam: aparecem quando acontecem
+    var l = c.filter(function (k) {
       return ECRAS[k];
     });
+    return l.length ? l : ['hoje'];
   }
   function segundos() {
     return (D && D.config && D.config.segundos) || 20;
   }
 
-  function desenhar() {
+  function desenhar(momento) {
     var m = $('s-ecra');
     var novo = m.cloneNode(false);
     var L = lista();
     var k = L[ecra % L.length];
-    $('s-titulo').textContent = D && !erro ? ECRAS[k].titulo : 'Painel da sala comercial';
-    if (erro) novo.appendChild(el('p', 's-msg', erro));
-    else if (!D) novo.appendChild(el('p', 's-msg', 'A carregar…'));
-    else
-      ECRAS[k].f().forEach(function (x) {
-        novo.appendChild(x);
-      });
+    $('s-titulo').textContent = momento ? 'Momento do dia' : D && !erro ? ECRAS[k].titulo : 'Painel da sala comercial';
+    var conteudo;
+    if (erro) conteudo = [el('p', 's-msg', erro)];
+    else if (!D) conteudo = [el('p', 's-msg', 'A carregar…')];
+    else if (momento) conteudo = ecraMomento(momento);
+    else {
+      // um ecrã que falhe (dados inesperados) não pára a rotação: mostra a mensagem e segue
+      try {
+        conteudo = ECRAS[k].f();
+      } catch (e) {
+        conteudo = [el('p', 's-msg', 'Este ecrã ficará disponível com os próximos dados.')];
+      }
+    }
+    conteudo.forEach(function (x) {
+      novo.appendChild(x);
+    });
     m.parentNode.replaceChild(novo, m);
     // rodapé: posição, ecrã seguinte e barra do tempo que falta
     var p = $('s-pontos');
@@ -608,6 +1310,7 @@
     D = j;
     erro = '';
     recebido = Date.now();
+    novosMomentos();
     if (primeiro) desenhar();
     else frescura();
   }
@@ -622,6 +1325,7 @@
     });
     if (window.parent !== window) window.parent.postMessage({ tipo: 'sala-pronta' }, location.origin);
   }
+  var versao = '';
   function carregar() {
     if (previa) return;
     fetch(API, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'X-Painel-Codigo': codigo } })
@@ -629,9 +1333,18 @@
         return r.json().then(function (j) {
           if (!r.ok || !j.ok) throw new Error(j.erro || 'HTTP ' + r.status);
           var primeiro = !D;
+          // versão nova do painel instalada no servidor: recarrega para a usar (só uma vez por versão)
+          if (j.versao) {
+            if (!versao) versao = j.versao;
+            else if (j.versao !== versao) {
+              location.reload();
+              return;
+            }
+          }
           D = j;
           erro = '';
           recebido = Date.now();
+          novosMomentos();
           if (primeiro) desenhar();
           else frescura();
         });
@@ -658,8 +1371,14 @@
   // rotação ao ritmo escolhido no portal (lido em cada volta)
   (function rodar() {
     setTimeout(function () {
-      ecra++;
-      desenhar();
+      var mo = momentos.shift();
+      if (mo) {
+        marcarVisto(mo.id);
+        desenhar(mo);
+      } else {
+        ecra++;
+        desenhar();
+      }
       rodar();
     }, segundos() * 1000);
   })();

@@ -12,11 +12,16 @@
 defined('NAVAL_NUCLEO') || exit;
 
 /** Ecrãs do painel, pela ordem de origem. */
-const NAVAL_SALA_ECRAS = ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'rank-hoje', 'rank-mes', 'destaques'];
+const NAVAL_SALA_ECRAS = ['hoje', 'acumulado', 'previsao', 'comparacoes', 'ritmo', 'calor', 'tendencia', 'visitas', 'funil', 'rotas', 'mapa', 'clientes',
+    'pareto', 'artigos', 'quadrante', 'stock', 'operacao', 'recordes', 'contagem', 'rank-hoje', 'rank-mes', 'destaques', 'momentos'];
 /** Ecrãs que podem estar num espaço aberto (na versão sem valores em Kz nem nomes). */
-const NAVAL_SALA_ECRAS_ABERTA = ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques'];
+const NAVAL_SALA_ECRAS_ABERTA = ['hoje', 'acumulado', 'previsao', 'comparacoes', 'ritmo', 'calor', 'tendencia', 'visitas', 'funil', 'rotas', 'clientes',
+    'recordes', 'contagem', 'destaques', 'momentos'];
 /** Configurações por omissão anteriores (antes dos ecrãs novos): ligações nunca personalizadas passam a ver todos. */
 const NAVAL_SALA_ANTIGAS = [['hoje', 'rank-hoje', 'rank-mes', 'destaques'], ['hoje', 'destaques']];
+/** «Todos os ecrãs» de versões anteriores: quem os escolheu todos passa a ver também os novos. */
+const NAVAL_SALA_TODOS_ANTES = [['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'rank-hoje', 'rank-mes', 'destaques'],
+    ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques']];
 const NAVAL_SALA_LOCAIS = ['interna', 'aberta'];
 
 /** Ecrãs de uma ligação, limitados ao que o local permite. */
@@ -31,7 +36,15 @@ function naval_sala_ecras_local(array $ecras, string $local): array
 function naval_sala_config(?array $config, string $local): array
 {
     $todos = $local === 'aberta' ? NAVAL_SALA_ECRAS_ABERTA : NAVAL_SALA_ECRAS;
-    if (!$config || (empty($config['personalizado']) && in_array(array_values((array) ($config['ecras'] ?? [])), NAVAL_SALA_ANTIGAS, true))) {
+    $esc = array_values((array) ($config['ecras'] ?? []));
+    $ord = $esc;
+    sort($ord);
+    $todosAntes = false;
+    foreach (NAVAL_SALA_TODOS_ANTES as $t) {
+        sort($t);
+        if ($t === $ord) $todosAntes = true;
+    }
+    if (!$config || $todosAntes || (empty($config['personalizado']) && in_array($esc, NAVAL_SALA_ANTIGAS, true))) {
         return ['ecras' => $todos, 'segundos' => (int) ($config['segundos'] ?? 20) ?: 20];
     }
     $e = naval_sala_ecras_local((array) ($config['ecras'] ?? []), $local);
@@ -178,6 +191,447 @@ function naval_sala_comparacoes(array $ag, string $hoje): array
     return ['inicio' => $inicio, 'linhas' => $l];
 }
 
+// ── Ecrãs de gestão avançados (funções puras, testadas) ─────────────────────────────────────────────────────
+// Ritmo acumulado × objectivo, previsão de fecho, mapa de calor, funil, recordes, contagem do mês, artigos, Pareto
+// dos clientes, quadrante das rotas, cobertura de stock, saúde da operação, mapa das rotas e momentos do dia.
+
+/** Total de um dia nos agregados (líquido, sem IVA). */
+function naval_sala_total_dia(array $ag, string $d): float
+{
+    $s = 0.0;
+    foreach ((array) ($ag[$d]['rotas'] ?? []) as $r) $s += (float) $r['t'];
+    return $s;
+}
+
+/** Acumulado de um dia por hora (06..20; o que se vende antes das 06h entra nas 06h e depois das 20h nas 20h). */
+function naval_sala_cumul(array $porHora): array
+{
+    $out = [];
+    for ($k = 6; $k <= 20; $k++) {
+        $s = 0.0;
+        foreach ($porHora as $h => $v) if ($k === 20 || (int) $h <= $k) $s += (float) $v;
+        $out[sprintf('%02d', $k)] = round($s, 2);
+    }
+    return $out;
+}
+
+/**
+ * Ritmo acumulado do dia contra o objectivo e contra um dia normal. $hist: {dia: {HH: valor}} dos dias anteriores;
+ * $horasHoje: {HH: valor} de hoje; $previsto: objectivo do dia (previsão); $horaAgora: hora actual (0–23).
+ * Dia normal: média dos últimos 4 dias iguais da semana (ou, com menos de 2, dos últimos 20 dias com vendas).
+ * Objectivo ao longo do dia: o objectivo × a parte do dia normal já vendida a cada hora.
+ */
+function naval_sala_acumulado(array $hist, string $hoje, array $horasHoje, ?float $previsto, int $horaAgora): array
+{
+    $dias = array_keys($hist);
+    rsort($dias);
+    $dow = date('N', strtotime($hoje . ' 12:00'));
+    $tot = function ($d) use ($hist) { return array_sum(array_map('floatval', (array) $hist[$d])); };
+    $ref = [];
+    foreach ($dias as $d) if ($d < $hoje && date('N', strtotime($d . ' 12:00')) === $dow && $tot($d) > 0 && count($ref) < 4) $ref[] = $d;
+    $tipo = 'mesmo_dia';
+    if (count($ref) < 2) {
+        $ref = [];
+        foreach ($dias as $d) if ($d < $hoje && $tot($d) > 0 && count($ref) < 20) $ref[] = $d;
+        $tipo = 'dias_com_vendas';
+    }
+    $hab = array_fill_keys(array_keys(naval_sala_cumul([])), 0.0);
+    foreach ($ref as $d) foreach (naval_sala_cumul((array) $hist[$d]) as $h => $v) $hab[$h] += $v / count($ref);
+    $fim = $hab['20'] ?? 0.0;
+    $hc = naval_sala_cumul($horasHoje);
+    $agora = sprintf('%02d', max(6, min(20, $horaAgora)));
+    $linhas = [];
+    foreach ($hab as $h => $v) {
+        $parte = $fim > 0 ? $v / $fim : null;
+        $linhas[] = ['h' => $h, 'hoje' => $horaAgora >= 6 && $h <= $agora ? $hc[$h] : null, 'habitual' => $ref ? round($v, 2) : null,
+            'objectivo' => $previsto && $parte !== null ? round($previsto * $parte, 2) : null, 'parte' => $parte === null ? null : round($parte, 3)];
+    }
+    $total = $hc['20'];
+    $parteAgora = $horaAgora < 6 || $fim <= 0 ? 0.0 : $hab[$agora] / $fim;
+    $objAgora = $previsto ? $previsto * $parteAgora : 0.0;
+    return ['horas' => $linhas, 'ref' => ['dias' => count($ref), 'tipo' => $tipo], 'total' => $total, 'previsto' => $previsto,
+        'parte_agora' => round($parteAgora, 3),
+        // «à frente / atrás do ritmo»: só a partir de 10 % do dia normal (antes, uma venda grande distorce tudo)
+        'ritmo' => $objAgora > 0 && $parteAgora >= 0.1 ? round($total / $objAgora - 1, 3) : null,
+        'estimado' => $parteAgora >= 0.15 ? round($total / $parteAgora, 2) : null];
+}
+
+/**
+ * Previsão de fecho do dia e do mês. $acum: naval_sala_acumulado; $prevHoje: {previsto, minimo, maximo}|null;
+ * $ag: agregados; $restantes: {dia: {p: previsto, folga: bool}} dos dias do mês depois de hoje.
+ */
+function naval_sala_previsao(array $acum, ?array $prevHoje, array $ag, string $hoje, array $restantes): array
+{
+    $prev = $prevHoje['previsto'] ?? null;
+    $estDia = $acum['estimado'] ?? null;
+    $usar = $estDia ?? max((float) $acum['total'], (float) $prev);
+    $esc = $prev > 0 ? $usar / $prev : 1;
+    $dia = ['actual' => $acum['total'], 'estimado' => round($usar, 2), 'objectivo' => $prev, 'pelo_ritmo' => $estDia !== null,
+        'minimo' => isset($prevHoje['minimo']) ? round(max((float) $acum['total'], $prevHoje['minimo'] * $esc), 2) : null,
+        'maximo' => isset($prevHoje['maximo']) ? round($prevHoje['maximo'] * $esc, 2) : null,
+        'progresso' => $prev > 0 ? round($usar / $prev, 3) : null];
+    $iniMes = substr($hoje, 0, 8) . '01';
+    $ateOntem = 0.0;
+    foreach (naval_analise_dias($iniMes, date('Y-m-d', strtotime($hoje . ' 12:00') - 86400)) as $d) if ($d < $hoje) $ateOntem += naval_sala_total_dia($ag, $d);
+    $resto = 0.0;
+    $diasResto = 0;
+    foreach ($restantes as $x) {
+        if (!empty($x['folga'])) continue;
+        $resto += (float) $x['p'];
+        $diasResto++;
+    }
+    $estMes = $ateOntem + $usar + $resto;
+    $iniAnt = date('Y-m-01', strtotime($iniMes . ' 12:00 -1 month'));
+    $fimAnt = date('Y-m-t', strtotime($iniAnt . ' 12:00'));
+    $completo = false;
+    foreach (array_keys($ag) as $d) if ($d <= $iniAnt && naval_sala_total_dia($ag, $d) > 0) $completo = true;
+    $mesAnt = 0.0;
+    foreach (naval_analise_dias($iniAnt, $fimAnt) as $d) $mesAnt += naval_sala_total_dia($ag, $d);
+    $mes = ['ate_ontem' => round($ateOntem, 2), 'hoje' => round($usar, 2), 'resto' => round($resto, 2), 'dias_resto' => $diasResto,
+        'estimado' => round($estMes, 2), 'mes_anterior' => $completo ? round($mesAnt, 2) : null,
+        'variacao' => $completo && $mesAnt > 0 ? round($estMes / $mesAnt - 1, 3) : null, 'ref' => ['de' => $iniAnt, 'ate' => $fimAnt]];
+    return ['dia' => $dia, 'mes' => $mes];
+}
+
+/** Mapa de calor das últimas 4 semanas: dia da semana × hora, em índice (100 = hora mais forte). */
+function naval_sala_calor(array $hist, string $hoje): array
+{
+    $de = date('Y-m-d', strtotime($hoje . ' 12:00') - 28 * 86400);
+    $soma = $vezes = [];
+    foreach ($hist as $d => $hs) {
+        if ($d < $de || $d >= $hoje || array_sum(array_map('floatval', (array) $hs)) <= 0) continue;
+        $w = (int) date('N', strtotime($d . ' 12:00'));
+        $vezes[$w] = ($vezes[$w] ?? 0) + 1;
+        foreach ((array) $hs as $h => $v) {
+            $k = sprintf('%02d', max(6, min(20, (int) $h)));
+            $soma[$w][$k] = ($soma[$w][$k] ?? 0) + (float) $v;
+        }
+    }
+    $max = 0.0;
+    $med = [];
+    foreach ($soma as $w => $hs) foreach ($hs as $h => $v) $max = max($max, $med[$w][$h] = $v / $vezes[$w]);
+    $nomes = [1 => 'seg', 2 => 'ter', 3 => 'qua', 4 => 'qui', 5 => 'sex', 6 => 'sáb', 7 => 'dom'];
+    $linhas = [];
+    $pico = null;
+    foreach ($nomes as $w => $n) {
+        if (empty($vezes[$w])) continue;
+        $l = ['dia' => $n, 'v' => []];
+        for ($k = 6; $k <= 20; $k++) {
+            $v = $med[$w][sprintf('%02d', $k)] ?? 0.0;
+            $i = $max > 0 ? (int) round($v / $max * 100) : 0;
+            $l['v'][] = $i;
+            if ($i === 100 && !$pico) $pico = ['dia' => $n, 'h' => sprintf('%02d', $k)];
+        }
+        $linhas[] = $l;
+    }
+    return ['de' => $de, 'ate' => date('Y-m-d', strtotime($hoje . ' 12:00') - 86400), 'linhas' => $linhas, 'pico' => $pico, 'semanas' => (int) round(array_sum($vezes) / max(1, count($vezes)))];
+}
+
+/**
+ * Funil das visitas de hoje: planeados → compraram → com prova de visita (GPS da venda junto ao cliente) → compra
+ * acima do valor médio. $gps: {cliente: 'ok'|'longe'|'sem_coordenadas'} das vendas de hoje (null sem OLAP).
+ */
+function naval_sala_funil(?array $plano, array $clientesHoje, ?array $gps, ?float $valorMedio): ?array
+{
+    if ($plano === null) return null;
+    $p = [];
+    foreach ($plano as $r => $l) foreach ((array) $l as $c) $p[(string) $c['c']] = true;
+    $comp = [];
+    foreach ($clientesHoje as $c => $x) if ((float) ($x['t'] ?? 0) > 0) $comp[(string) $c] = (float) $x['t'];
+    $doPlano = array_intersect_key($comp, $p);
+    $etapas = [['id' => 'planeados', 'nome' => 'Clientes no plano', 'n' => count($p)], ['id' => 'compraram', 'nome' => 'Compraram', 'n' => count($doPlano)]];
+    if ($gps !== null) {
+        $etapas[] = ['id' => 'prova', 'nome' => 'Com prova de visita (GPS)', 'n' => count(array_filter(array_keys($doPlano), function ($c) use ($gps) { return ($gps[$c] ?? '') === 'ok'; }))];
+    }
+    if ($valorMedio) $etapas[] = ['id' => 'acima', 'nome' => 'Compra acima da média', 'n' => count(array_filter($doPlano, function ($t) use ($valorMedio) { return $t >= $valorMedio; }))];
+    return ['etapas' => $etapas, 'fora_plano' => count(array_diff_key($comp, $p))];
+}
+
+/** Recordes: melhor dia, melhor dia igual ao de hoje, posição de ontem e do mês, e se hoje já bateu algum. */
+function naval_sala_recordes(array $ag, string $hoje, float $hojeTotal): ?array
+{
+    $dias = [];
+    foreach (array_keys($ag) as $d) if ($d < $hoje && ($t = naval_sala_total_dia($ag, $d)) > 0) $dias[$d] = $t;
+    if (count($dias) < 5) return null;
+    arsort($dias);
+    $melhor = ['d' => (string) key($dias), 't' => round((float) reset($dias), 2)];
+    $dow = date('N', strtotime($hoje . ' 12:00'));
+    $igual = null;
+    foreach ($dias as $d => $t) if (date('N', strtotime($d . ' 12:00')) === $dow) { $igual = ['d' => (string) $d, 't' => round($t, 2)]; break; }
+    $ontem = date('Y-m-d', strtotime($hoje . ' 12:00') - 86400);
+    $pos = isset($dias[$ontem]) ? array_search($ontem, array_keys($dias), true) + 1 : null;
+    $meses = [];
+    $mesAct = substr($hoje, 0, 7);
+    ksort($dias);
+    $inicio = (string) key($dias);
+    // meses completos (o primeiro mês com dados só conta se começou nos primeiros 3 dias)
+    foreach ($dias as $d => $t) {
+        $m = substr($d, 0, 7);
+        if ($m === $mesAct || ($m === substr($inicio, 0, 7) && (int) substr($inicio, 8, 2) > 3)) continue;
+        $meses[$m] = ($meses[$m] ?? 0) + $t;
+    }
+    $mesAte = $hojeTotal;
+    foreach ($dias as $d => $t) if (substr($d, 0, 7) === $mesAct) $mesAte += $t;
+    arsort($meses);
+    $melhorMes = $meses ? ['m' => (string) key($meses), 't' => round((float) reset($meses), 2)] : null;
+    return ['desde' => $inicio, 'dias' => count($dias), 'melhor_dia' => $melhor, 'melhor_igual' => $igual,
+        'ontem' => $pos === null ? null : ['posicao' => $pos, 'de' => count($dias)],
+        'melhor_mes' => $melhorMes, 'meses' => count($meses),
+        'mes_posicao' => $meses ? 1 + count(array_filter($meses, function ($t) use ($mesAte) { return $t > $mesAte; })) : null,
+        'hoje' => ['t' => round($hojeTotal, 2), 'face_recorde' => $melhor['t'] > 0 ? round($hojeTotal / $melhor['t'], 3) : null,
+            'bate_recorde' => $hojeTotal > $melhor['t'], 'bate_igual' => $igual !== null && $hojeTotal > $igual['t']]];
+}
+
+/** Contagem decrescente do mês: dias de trabalho que faltam e o ritmo diário para igualar o mês passado e o recorde. */
+function naval_sala_contagem(array $ag, string $hoje, array $restantes, ?array $recordes): array
+{
+    $iniMes = substr($hoje, 0, 8) . '01';
+    $ate = 0.0;
+    $diasVenda = 0;
+    foreach (naval_analise_dias($iniMes, $hoje) as $d) {
+        $t = naval_sala_total_dia($ag, $d);
+        $ate += $t;
+        if ($d < $hoje && $t > 0) $diasVenda++;
+    }
+    $dias = 1 + count(array_filter($restantes, function ($x) { return empty($x['folga']); }));
+    $media = $diasVenda ? ($ate - naval_sala_total_dia($ag, $hoje)) / $diasVenda : null;
+    $iniAnt = date('Y-m-01', strtotime($iniMes . ' 12:00 -1 month'));
+    $mesAnt = 0.0;
+    foreach (naval_analise_dias($iniAnt, date('Y-m-t', strtotime($iniAnt . ' 12:00'))) as $d) $mesAnt += naval_sala_total_dia($ag, $d);
+    $completo = false;
+    foreach (array_keys($ag) as $d) if ($d <= $iniAnt && naval_sala_total_dia($ag, $d) > 0) $completo = true;
+    $meta = function (?float $alvo) use ($ate, $dias, $media) {
+        if (!$alvo) return null;
+        $falta = max(0.0, $alvo - $ate);
+        $porDia = $falta / max(1, $dias);
+        return ['alvo' => round($alvo, 2), 'falta' => round($falta, 2), 'por_dia' => round($porDia, 2), 'atingido' => $falta <= 0,
+            'face_media' => $media ? round($porDia / $media - 1, 3) : null];
+    };
+    $fimMes = date('Y-m-t', strtotime($hoje . ' 12:00'));
+    return ['dias_trabalho' => $dias, 'dias_calendario' => (int) ((strtotime($fimMes . ' 12:00') - strtotime($hoje . ' 12:00')) / 86400) + 1, 'fim' => $fimMes,
+        'mes_ate_hoje' => round($ate, 2), 'media_dia' => $media === null ? null : round($media, 2),
+        'igualar' => $completo ? $meta($mesAnt) : null, 'recorde' => $recordes && $recordes['melhor_mes'] ? $meta($recordes['melhor_mes']['t']) + ['m' => $recordes['melhor_mes']['m']] : null];
+}
+
+/** Artigos que mais sobem e descem: últimos 7 dias fechados face à média semanal das 4 semanas anteriores. */
+function naval_sala_artigos(array $ag, string $hoje): ?array
+{
+    $mais = function (int $n) use ($hoje) { return date('Y-m-d', strtotime($hoje . ' 12:00') + $n * 86400); };
+    $soma = function (string $de, string $ate) use ($ag) {
+        $o = [];
+        foreach (naval_analise_dias($de, $ate) as $d) foreach ((array) ($ag[$d]['artigos'] ?? []) as $l) foreach ((array) $l as $c => $x) {
+            $o[$c]['n'] = (string) $x['n'];
+            $o[$c]['t'] = ($o[$c]['t'] ?? 0) + (float) $x['t'];
+        }
+        return $o;
+    };
+    $refDe = $mais(-35);
+    $tem = false;
+    foreach (array_keys($ag) as $d) if ($d <= $refDe && naval_sala_total_dia($ag, $d) > 0) $tem = true;
+    if (!$tem) return null;
+    $a = $soma($mais(-7), $mais(-1));
+    $b = $soma($refDe, $mais(-8));
+    $totB = array_sum(array_column($b, 't')) / 4;
+    $l = [];
+    foreach ($b as $c => $x) {
+        $ref = $x['t'] / 4;
+        if ($ref < max(1.0, $totB * 0.005)) continue;   // artigos com peso (pelo menos 0,5 % das vendas)
+        $v = ($a[$c]['t'] ?? 0) / $ref - 1;
+        if (abs($v) > 3) continue;
+        $l[] = ['c' => (string) $c, 'n' => $x['n'], 'var' => round($v, 3), 't' => round($a[$c]['t'] ?? 0, 2), 'ref' => round($ref, 2)];
+    }
+    $sobem = array_values(array_filter($l, function ($x) { return $x['var'] > 0.05; }));
+    $descem = array_values(array_filter($l, function ($x) { return $x['var'] < -0.05; }));
+    usort($sobem, function ($x, $y) { return $y['var'] <=> $x['var']; });
+    usort($descem, function ($x, $y) { return $x['var'] <=> $y['var']; });
+    return ['actual' => ['de' => $mais(-7), 'ate' => $mais(-1)], 'ref' => ['de' => $refDe, 'ate' => $mais(-8)],
+        'sobem' => array_slice($sobem, 0, 5), 'descem' => array_slice($descem, 0, 5)];
+}
+
+/** Pareto dos clientes (90 dias fechados): quantos fazem 80 % das vendas e quantos desses estão parados há 14 dias. */
+function naval_sala_pareto(array $ag, string $hoje): ?array
+{
+    $de = date('Y-m-d', strtotime($hoje . ' 12:00') - 90 * 86400);
+    $t = $ult = [];
+    $ini = null;
+    foreach ($ag as $d => $x) {
+        if ($d < $de || $d >= $hoje) continue;
+        foreach ((array) ($x['clientes'] ?? []) as $c => $v) {
+            if ((float) $v['t'] <= 0) continue;
+            $t[$c] = ($t[$c] ?? 0) + (float) $v['t'];
+            $ult[$c] = max($ult[$c] ?? '', (string) $d);
+            $ini = $ini === null ? $d : min($ini, $d);
+        }
+    }
+    if (count($t) < 10) return null;
+    arsort($t);
+    $total = array_sum($t);
+    $n = count($t);
+    $acc = 0.0;
+    $n80 = 0;
+    $curva = [];
+    $i = 0;
+    $grandes = [];
+    foreach ($t as $c => $v) {
+        $i++;
+        if ($acc < 0.8 * $total) { $n80++; $grandes[] = $c; }
+        $acc += $v;
+        foreach ([10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as $p) if ($i === (int) max(1, round($n * $p / 100))) $curva[$p] = round($acc / $total, 3);
+    }
+    $limite = date('Y-m-d', strtotime($hoje . ' 12:00') - 14 * 86400);
+    $parados = array_values(array_filter($grandes, function ($c) use ($ult, $limite) { return $ult[$c] < $limite; }));
+    $valorParados = 0.0;
+    foreach ($parados as $c) $valorParados += $t[$c];
+    return ['de' => $ini, 'ate' => date('Y-m-d', strtotime($hoje . ' 12:00') - 86400), 'clientes' => $n, 'n80' => $n80, 'parte80' => round($n80 / $n, 3),
+        'curva' => array_map(function ($p, $v) { return ['p' => $p, 'v' => $v]; }, array_keys($curva), array_values($curva)),
+        'parados' => count($parados), 'parados_peso' => round($valorParados / $total, 3)];
+}
+
+/** Quadrante das rotas (28 dias fechados): compras por dia de venda × valor médio por compra. */
+function naval_sala_quadrante(array $ag, string $hoje, array $promotores): array
+{
+    $de = date('Y-m-d', strtotime($hoje . ' 12:00') - 28 * 86400);
+    $r = [];
+    foreach ($ag as $d => $x) {
+        if ($d < $de || $d >= $hoje) continue;
+        foreach ((array) ($x['rotas'] ?? []) as $rt => $v) {
+            if ((int) ($v['d'] ?? 0) <= 0) continue;
+            $r[$rt]['t'] = ($r[$rt]['t'] ?? 0) + (float) $v['t'];
+            $r[$rt]['d'] = ($r[$rt]['d'] ?? 0) + (int) $v['d'];
+            $r[$rt]['dias'] = ($r[$rt]['dias'] ?? 0) + 1;
+        }
+    }
+    $out = [];
+    foreach ($r as $rt => $x) {
+        $out[] = ['rota' => (string) $rt, 'promotor' => (string) ($promotores[$rt] ?? ''), 'compras_dia' => round($x['d'] / $x['dias'], 1),
+            'valor_medio' => round($x['t'] / $x['d'], 2), 'dias' => $x['dias']];
+    }
+    usort($out, function ($a, $b) { return strcmp($a['rota'], $b['rota']); });
+    $med = function ($k) use ($out) { return $out ? naval_mediana(array_column($out, $k)) : null; };
+    return ['de' => $de, 'rotas' => $out, 'mediana' => ['compras_dia' => $med('compras_dia'), 'valor_medio' => $med('valor_medio')]];
+}
+
+/** Cobertura do stock dos armazéns: dias de venda que o stock aguenta, ao ritmo médio dos últimos 28 dias. */
+function naval_sala_stock(?array $armazens, array $ag, string $hoje): ?array
+{
+    if ($armazens === null) return null;
+    $st = [];
+    foreach ($armazens as $a) foreach ((array) ($a['itens'] ?? []) as $i) {
+        $c = trim((string) ($i['codigo'] ?? ''));
+        if ($c !== '') $st[$c] = ($st[$c] ?? 0) + (float) ($i['quantidade'] ?? 0);
+    }
+    $de = date('Y-m-d', strtotime($hoje . ' 12:00') - 28 * 86400);
+    $q = $nome = [];
+    $diasVenda = 0;
+    foreach ($ag as $d => $x) {
+        if ($d < $de || $d >= $hoje || naval_sala_total_dia($ag, $d) <= 0) continue;
+        $diasVenda++;
+        foreach ((array) ($x['artigos'] ?? []) as $l) foreach ((array) $l as $c => $v) {
+            $q[$c] = ($q[$c] ?? 0) + (float) $v['q'];
+            $nome[$c] = (string) $v['n'];
+        }
+    }
+    if (!$diasVenda) return null;
+    $l = [];
+    foreach ($q as $c => $tq) {
+        $m = $tq / $diasVenda;
+        if ($m <= 0) continue;
+        $s = max(0.0, (float) ($st[$c] ?? 0));
+        $l[] = ['c' => (string) $c, 'n' => $nome[$c], 'stock' => round($s, 1), 'dia' => round($m, 1), 'dias' => round($s / $m, 1)];
+    }
+    usort($l, function ($a, $b) { return [$a['dias'], -$a['dia']] <=> [$b['dias'], -$b['dia']]; });
+    return ['artigos' => count($l), 'ruptura' => count(array_filter($l, function ($x) { return $x['stock'] <= 0; })),
+        'criticos' => count(array_filter($l, function ($x) { return $x['dias'] > 0 && $x['dias'] < 3; })),
+        'lista' => array_slice($l, 0, 8), 'dias_venda' => $diasVenda];
+}
+
+/** Saúde da operação: o que espera por alguém (pendentes de todos) e os dias do Pinguim BO por fechar. */
+function naval_sala_operacao(?array $pendentes, ?int $pinguimPorFechar): ?array
+{
+    if ($pendentes === null && $pinguimPorFechar === null) return null;
+    $grupos = [
+        'caixa' => ['Fecho de caixa por aprovar', ['caixa', 'deposito']],
+        'carrinha' => ['Conciliações das carrinhas por fechar', ['carrinha']],
+        'po' => ['PO por validar ou aprovar', ['po', 'po_validar', 'po_validar_stock']],
+        'cais' => ['Cargas por conferir e guias por gerar', ['po_conferir', 'ordem', 'entrega']],
+        'sap' => ['Ficheiros SAP por confirmar', ['sap']],
+        'plano' => ['Planos de carga por fazer', ['plano']],
+    ];
+    $l = [];
+    foreach ($grupos as $id => [$nome, $tipos]) {
+        $it = array_filter((array) $pendentes, function ($x) use ($tipos) { return in_array($x['tipo'] ?? '', $tipos, true); });
+        $l[] = ['id' => $id, 'nome' => $nome, 'n' => count($it), 'atraso' => count(array_filter($it, function ($x) { return !empty($x['atraso']); }))];
+    }
+    if ($pinguimPorFechar !== null) $l[] = ['id' => 'pinguim', 'nome' => 'Dias por fechar no Pinguim BO', 'n' => $pinguimPorFechar, 'atraso' => $pinguimPorFechar];
+    return ['linhas' => $l, 'total' => array_sum(array_column($l, 'n')), 'atraso' => array_sum(array_column($l, 'atraso'))];
+}
+
+/** Mapa das rotas de hoje (sala interna): última posição, percurso simplificado e territórios. */
+function naval_sala_mapa(?array $terreno, array $territorios, array $promotores): ?array
+{
+    if ($terreno === null) return null;
+    $reduzir = function (array $pts, int $max) {
+        $n = count($pts);
+        if ($n <= $max) return array_values($pts);
+        $o = [];
+        for ($i = 0; $i < $max; $i++) $o[] = $pts[(int) round($i * ($n - 1) / ($max - 1))];
+        return $o;
+    };
+    $rotas = [];
+    foreach ($terreno as $r) {
+        $p = (array) ($r['percurso'] ?? []);
+        if (!$p) continue;
+        $u = end($p);
+        $vis = (array) ($r['visitas'] ?? []);
+        $rotas[] = ['rota' => (string) $r['rota'], 'promotor' => (string) ($promotores[$r['rota']] ?? ''), 'pos' => [(float) $u[0], (float) $u[1]], 'hora' => (string) ($u[2] ?? ''),
+            'percurso' => array_map(function ($x) { return [round((float) $x[0], 5), round((float) $x[1], 5)]; }, $reduzir($p, 80)),
+            'vendas' => count($vis), 'prova' => count(array_filter($vis, function ($v) { return ($v['prova'] ?? '') === 'ok'; })), 'km' => $r['km'] ?? null];
+    }
+    $terr = [];
+    foreach ($territorios as $rt => $pol) if ($pol) $terr[(string) $rt] = array_map(function ($x) {
+        return [round((float) ($x['lat'] ?? $x[0] ?? 0), 5), round((float) ($x['lng'] ?? $x[1] ?? 0), 5)];
+    }, $reduzir(array_values((array) $pol), 60));
+    return ['rotas' => $rotas, 'territorios' => (object) $terr];
+}
+
+/** Momentos do dia: acontecimentos a celebrar (o ecrã mostra-os uma vez, quando aparecem). */
+function naval_sala_momentos(array $r, ?array $recordes, array $objectivo): array
+{
+    $hoje = substr((string) ($r['hora'] ?? date('Y-m-d')), 0, 10);
+    $m = [];
+    if (($r['hoje']['progresso'] ?? 0) >= 1) $m[] = ['id' => $hoje . '|obj-dia', 'tipo' => 'objectivo_dia', 'titulo' => 'Objectivo do dia atingido'];
+    if ($recordes && $recordes['hoje']['bate_recorde']) $m[] = ['id' => $hoje . '|recorde', 'tipo' => 'recorde', 'titulo' => 'Novo recorde: o melhor dia de sempre'];
+    elseif ($recordes && $recordes['hoje']['bate_igual']) $m[] = ['id' => $hoje . '|recorde-igual', 'tipo' => 'recorde', 'titulo' => 'Melhor ' . ['', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'][(int) date('N', strtotime($hoje . ' 12:00'))] . '-feira de sempre'];
+    foreach ($objectivo as $o) $m[] = ['id' => $hoje . '|rota-' . $o['rota'], 'tipo' => 'rota', 'titulo' => 'Rota ' . $o['rota'] . ' atingiu o objectivo de hoje', 'rota' => $o['rota'], 'promotor' => $o['promotor'] ?? ''];
+    return $m;
+}
+
+/** Os ecrãs avançados para o open space: sem Kz nem nomes (índices, percentagens, contagens e datas). */
+function naval_sala_avancados_aberta(array $x): array
+{
+    $a = $x['acumulado'] ?? null;
+    if ($a) {
+        $base = $a['previsto'] ?: (end($a['horas'])['habitual'] ?? 0);
+        $ind = function ($v) use ($base) { return $v === null || !$base ? null : (int) round($v / $base * 100); };
+        $a = ['horas' => array_map(function ($h) use ($ind) { return ['h' => $h['h'], 'hoje' => $ind($h['hoje']), 'habitual' => $ind($h['habitual']), 'objectivo' => $ind($h['objectivo'])]; }, $a['horas']),
+            'ref' => $a['ref'], 'ritmo' => $a['ritmo'], 'base' => $a['previsto'] ? 'objectivo' : 'habitual'];
+    }
+    $p = $x['previsao'] ?? null;
+    if ($p) $p = ['dia' => ['progresso' => $p['dia']['progresso'], 'pelo_ritmo' => $p['dia']['pelo_ritmo']],
+        'mes' => ['variacao' => $p['mes']['variacao'], 'dias_resto' => $p['mes']['dias_resto'], 'ref' => $p['mes']['ref']]];
+    $rc = $x['recordes'] ?? null;
+    if ($rc) $rc = ['desde' => $rc['desde'], 'dias' => $rc['dias'], 'melhor_dia' => ['d' => $rc['melhor_dia']['d']], 'melhor_igual' => $rc['melhor_igual'] ? ['d' => $rc['melhor_igual']['d']] : null,
+        'ontem' => $rc['ontem'], 'melhor_mes' => $rc['melhor_mes'] ? ['m' => $rc['melhor_mes']['m']] : null, 'meses' => $rc['meses'], 'mes_posicao' => $rc['mes_posicao'],
+        'hoje' => ['face_recorde' => $rc['hoje']['face_recorde'], 'bate_recorde' => $rc['hoje']['bate_recorde'], 'bate_igual' => $rc['hoje']['bate_igual']]];
+    $c = $x['contagem'] ?? null;
+    if ($c) {
+        $sem = function ($m) { return $m === null ? null : array_intersect_key($m, array_flip(['atingido', 'face_media', 'm'])); };
+        $c = ['dias_trabalho' => $c['dias_trabalho'], 'dias_calendario' => $c['dias_calendario'], 'fim' => $c['fim'], 'igualar' => $sem($c['igualar']), 'recorde' => $sem($c['recorde'])];
+    }
+    return ['acumulado' => $a, 'previsao' => $p, 'calor' => $x['calor'] ?? null, 'funil' => $x['funil'] ?? null, 'recordes' => $rc, 'contagem' => $c,
+        'momentos' => array_map(function ($m) { unset($m['promotor']); return $m; }, (array) ($x['momentos'] ?? []))];
+}
+
 /** Dados para um ecrã em espaço aberto (função pura): percentagens, índices, tendências e contagens; sem Kz nem nomes. */
 function naval_sala_aberta(array $r): array
 {
@@ -211,7 +665,7 @@ function naval_sala_aberta(array $r): array
             if ($c['ref']) unset($c['ref']['t']);
             return $c;
         }, (array) $x['comparacoes']['linhas'])] : null,
-    ];
+    ] + naval_sala_avancados_aberta($x);
 }
 
 /** Dados da sala interna (função pura): totais por rota e o nome do promotor, sem clientes, documentos nem NIF. */
@@ -236,13 +690,15 @@ function naval_sala_dados(): array
         $ag = naval_analise_agregados((date('Y', $agora) - 1) . '-01-01', $hoje);
         $promotores = naval_promotores();
         $r = naval_indicadores($agora, null, $ag, $promotores);
-        $horas = [];
+        $horas = $horasValor = [];
         try {
             naval_servico('vendas');
             $v = naval_vendas_sql(date('Ymd', $agora), date('Ymd', $agora), $promotores, false);
             foreach ((array) ($v['vendas'] ?? []) as $x) {
-                if (!empty($x['nc']) || ($x['data'] ?? $hoje) !== $hoje) continue;
+                if (($x['data'] ?? $hoje) !== $hoje) continue;
                 $hh = substr((string) ($x['hora'] ?? ''), 0, 2);
+                if (preg_match('/^\d\d$/', $hh)) $horasValor[$hh] = round(($horasValor[$hh] ?? 0) + (float) ($x['total_sem_iva'] ?? $x['total'] ?? 0), 2);
+                if (!empty($x['nc'])) continue;
                 if (preg_match('/^\d\d$/', $hh)) $horas[$hh] = ($horas[$hh] ?? 0) + 1;
             }
         } catch (Throwable $e) {
@@ -257,8 +713,114 @@ function naval_sala_dados(): array
         }
         $r['extra'] = naval_sala_extra($ag, $hoje, $horas, $plano, (array) $r['rotas'], (array) ($r['compras'] ?? []));
         $r['extra']['comparacoes'] = naval_sala_comparacoes($ag, $hoje);
+        $r['extra'] += naval_sala_avancados($ag, $hoje, $agora, $horasValor, $plano, $r, $promotores);
         return $r;
     });
+}
+
+/** Vendas por hora dos últimos 35 dias fechados {dia: {HH: valor sem IVA}}, lidas uma vez por dia. */
+function naval_sala_horas_hist(string $hoje, array $promotores): array
+{
+    return naval_cache('sala-horas|' . $hoje, 86400, function () use ($hoje, $promotores) {
+        naval_servico('vendas');
+        $t = strtotime($hoje . ' 12:00');
+        $v = naval_vendas_sql(date('Ymd', $t - 35 * 86400), date('Ymd', $t - 86400), $promotores, false);
+        $o = [];
+        foreach (naval_vendas_efectivas((array) ($v['vendas'] ?? [])) as $x) {
+            $hh = substr((string) ($x['hora'] ?? ''), 0, 2);
+            if (!preg_match('/^\d\d$/', $hh)) continue;
+            $d = (string) ($x['data'] ?? '');
+            $o[$d][$hh] = round(($o[$d][$hh] ?? 0) + (float) ($x['total_sem_iva'] ?? $x['total'] ?? 0), 2);
+        }
+        return $o;
+    });
+}
+
+/** Os ecrãs avançados (cada fonte à parte: uma que falhe não deixa o painel sem os outros). */
+function naval_sala_avancados(array $ag, string $hoje, int $agora, array $horasValor, ?array $plano, array $r, array $promotores): array
+{
+    $tenta = function (string $o, callable $f) {
+        try {
+            return $f();
+        } catch (Throwable $e) {
+            error_log('[sala] ' . $o . ': ' . $e->getMessage());
+            return null;
+        }
+    };
+    $ontem = date('Y-m-d', strtotime($hoje . ' 12:00') - 86400);
+    $serie = [];
+    foreach (array_keys($ag) as $d) if ($d < $hoje) $serie[$d] = naval_sala_total_dia($ag, $d);
+    $prevHoje = $tenta('previsão de hoje', function () use ($serie, $hoje, $ontem) { return naval_previsao_dia($serie, $hoje, $ontem); });
+    $previsto = $r['hoje']['previsto'] ?? ($prevHoje['previsto'] ?? null);
+    // dias do mês depois de hoje: previsão de cada um (folgas do calendário a zero)
+    $com = array_values(array_filter(array_slice($serie, -28, null, true), function ($v) { return $v > 0; }));
+    $media = $com ? array_sum($com) / count($com) : 0.0;
+    $restantes = [];
+    for ($t = strtotime($hoje . ' 12:00') + 86400; date('Y-m', $t) === substr($hoje, 0, 7); $t += 86400) {
+        $d = date('Y-m-d', $t);
+        $p = $tenta('previsão do mês', function () use ($serie, $d, $ontem) { return naval_previsao_dia($serie, $d, $ontem); });
+        $restantes[$d] = ['p' => $p === null ? $media : (float) $p['previsto'], 'folga' => !empty($p['folga'])];
+    }
+    $hist = $tenta('vendas por hora', function () use ($hoje, $promotores) { return naval_sala_horas_hist($hoje, $promotores); }) ?? [];
+    $acum = naval_sala_acumulado($hist, $hoje, $horasValor, $previsto ? (float) $previsto : null, (int) date('G', $agora));
+    $recordes = naval_sala_recordes($ag, $hoje, (float) ($r['hoje']['total'] ?? 0));
+    // GPS das vendas de hoje (OLAP): prova de visita do funil e mapa das rotas
+    $terreno = $tenta('terreno', function () use ($hoje) {
+        naval_servico('olap');
+        naval_servico('prospeccao');
+        if (!naval_olap_configurado()) return null;
+        $d = naval_olap_dia($hoje, null);
+        $g = naval_json_ler(naval_geo_pasta() . '/vista.json');
+        $terr = [];
+        foreach ((array) ($g['rotas'] ?? []) as $x) $terr[(string) $x['rota']] = (array) ($x['territorio'] ?? []);
+        return ['t' => naval_olap_terreno((array) $d['pontos'], (array) ($g['clientes'] ?? []), $terr, (int) naval_geo_num('GEO_VISITAS_DIA', 30)), 'terr' => $terr];
+    });
+    $gps = null;
+    if ($terreno) {
+        $gps = [];
+        foreach ((array) $terreno['t']['rotas'] as $x) foreach ((array) $x['visitas'] as $v) if ($v['cli'] !== '' && ($gps[$v['cli']] ?? '') !== 'ok') $gps[$v['cli']] = $v['prova'];
+    }
+    $stock = $tenta('stock', function () use ($hoje) {
+        return naval_cache('sala-stock|' . $hoje . '|' . floor(time() / 1800), 1800, function () use ($hoje) {
+            naval_servico('stock');
+            $d = naval_stock($hoje, '');
+            return $d === null ? null : array_map(function ($a) {
+                return ['itens' => array_map(function ($i) { return ['codigo' => $i['codigo'] ?? '', 'quantidade' => $i['quantidade'] ?? 0]; }, (array) ($a['itens'] ?? []))];
+            }, (array) ($d['armazens'] ?? []));
+        });
+    });
+    $operacao = $tenta('operação', function () use ($hoje) {
+        return naval_cache('sala-operacao|' . $hoje . '|' . floor(time() / 600), 600, function () use ($hoje) {
+            naval_servico('pendentes');
+            $todos = array_fill_keys(['caixa1', 'caixa2', 'contar', 'coordenar', 'fechar', 'po', 'validar_po', 'conferir', 'validar', 'tesouraria', 'plano', 'sap'], true);
+            $p = naval_pendentes('', null, $todos, time());
+            $porFechar = null;
+            try {
+                naval_servico('pinguim-dia');
+                $l = naval_pdia_ler(date('Y-m-d', strtotime($hoje . ' 12:00') - 3 * 86400), date('Y-m-d', strtotime($hoje . ' 12:00') - 86400));
+                $porFechar = (int) ($l['contagens']['por_fechar'] ?? 0);
+            } catch (Throwable $e) {
+                error_log('[sala] Pinguim BO dias: ' . $e->getMessage());
+            }
+            return ['itens' => array_map(function ($x) { return ['tipo' => $x['tipo'] ?? '', 'atraso' => !empty($x['atraso'])]; }, (array) $p['itens']), 'pinguim' => $porFechar];
+        });
+    });
+    $prevDia = $previsto ? ['previsto' => (float) $previsto] + ($prevHoje ?? []) : null;
+    return [
+        'acumulado' => $acum,
+        'previsao' => naval_sala_previsao($acum, $prevDia, $ag, $hoje, $restantes),
+        'calor' => $hist ? naval_sala_calor($hist, $hoje) : null,
+        'funil' => naval_sala_funil($plano, (array) ($ag[$hoje]['clientes'] ?? []), $gps, isset($r['compras']['mes']['valor_medio']) ? (float) $r['compras']['mes']['valor_medio'] : null),
+        'recordes' => $recordes,
+        'contagem' => naval_sala_contagem($ag, $hoje, $restantes, $recordes),
+        'artigos' => naval_sala_artigos($ag, $hoje),
+        'pareto' => naval_sala_pareto($ag, $hoje),
+        'quadrante' => naval_sala_quadrante($ag, $hoje, $promotores),
+        'stock' => naval_sala_stock($stock, $ag, $hoje),
+        'operacao' => $operacao === null ? null : naval_sala_operacao($operacao['itens'], $operacao['pinguim']),
+        'mapa' => $terreno ? naval_sala_mapa((array) $terreno['t']['rotas'], $terreno['terr'], $promotores) : null,
+        'momentos' => naval_sala_momentos($r, $recordes, (array) ($r['extra']['terreno']['objectivo'] ?? [])),
+    ];
 }
 
 /** Resposta para um ecrã: só o que o local pode mostrar. */

@@ -721,3 +721,19 @@ teste('acerto lançado depois de outra contagem só explica a anterior se a dife
     $r = naval_carr_regularizacoes([['codigo' => '332', 'diferenca' => -50.0, 'contado' => 97.0]], [$sa('332', '2026-11-24 10:02:25', -50.0, 'SA A1000/144')], '1011', '2026-11-21 14:00:00', null, null, $seg);
     igual(-50.0, $r['332']['q']);
 });
+
+teste('conciliação: venda entre o corte e a contagem física, sincronizada depois (rota 1001, 25-11: FR 35 às 16:59, contagem às 17:22) explica a falta', function () {
+    $linhas = [
+        ['codigo' => '10000385', 'diferenca' => -8.0, 'contado' => 22.0, 'esperado' => 30.0],
+        ['codigo' => '10000015', 'diferenca' => -1.0, 'contado' => 19.0, 'esperado' => 20.0],
+    ];
+    $acertos = [
+        ['rota' => '1001', 'codigo' => '10000385', 'doc' => 'FR0126S78519N/35', 'em' => '2026-11-25 16:59:00', 'efeito' => -8.0, 'tipo' => 'venda'],
+        ['rota' => '1001', 'codigo' => '10000015', 'doc' => 'FR0126S78519N/35', 'em' => '2026-11-25 16:59:00', 'efeito' => -1.0, 'tipo' => 'venda'],
+    ];
+    $r = naval_carr_regularizacoes($linhas, $acertos, '1001', '2026-11-25 15:30:00', '2026-11-25 17:22:10');
+    igual([-8.0, -1.0], [$r['10000385']['q'], $r['10000015']['q']], 'as duas faltas explicadas pela factura');
+    igual('FR0126S78519N/35', $r['10000385']['doc']);
+    // contagem gravada muito depois (fora da janela de 120 minutos): a regra não se aplica sozinha
+    igual([], naval_carr_regularizacoes($linhas, $acertos, '1001', '2026-11-25 15:30:00', '2026-11-25 19:00:00'));
+});

@@ -293,3 +293,278 @@ test('comparações: cada comparativo com as datas dos dois períodos; sem hist�
   await expect(page.locator('.s-coluna')).toContainText('23–24 nov × 16–17 nov');
   await expect(page.locator('.s-coluna')).toContainText('sem histórico · desde 03-11');
 });
+
+test('versão nova do painel no servidor: o ecrã recarrega-se sozinho (as actualizações chegam à TV sem tocar nela)', async ({ page }) => {
+  let versao = 'v1';
+  let pedidos = 0;
+  await page.route('**/v1/sala', (r) => {
+    pedidos++;
+    return r.fulfill({ json: { ...SALA, versao } });
+  });
+  await page.clock.install({ time: new Date('2026-11-03T15:43:00+01:00') });
+  await page.goto('/sala/index.html#t=' + 'a'.repeat(64));
+  await expect(page.locator('#s-titulo')).toHaveText('Vendas de hoje');
+  await page.evaluate(() => (window.__marca = 1));
+  await page.clock.runFor(121000);
+  await expect.poll(() => pedidos).toBe(2);
+  expect(await page.evaluate(() => window.__marca)).toBe(1); // a mesma versão não recarrega
+  versao = 'v2';
+  const recarregou = page.waitForEvent('load');
+  await page.clock.runFor(121000);
+  await recarregou;
+  expect(await page.evaluate(() => window.__marca)).toBeUndefined();
+  await expect(page.locator('#s-titulo')).toBeVisible();
+});
+
+// ── ecrãs de gestão avançados ──
+const HORAS = Array.from({ length: 15 }, (_, i) => String(6 + i).padStart(2, '0'));
+const AVANCADOS = {
+  acumulado: {
+    horas: HORAS.map((h, i) => ({ h, hoje: i <= 9 ? i * 1500000 : null, habitual: i * 1400000, objectivo: i * 1600000, parte: i / 14 })),
+    ref: { dias: 4, tipo: 'mesmo_dia' },
+    total: 13500000,
+    previsto: 22400000,
+    parte_agora: 0.64,
+    ritmo: -0.06,
+    estimado: 21000000,
+  },
+  previsao: {
+    dia: { actual: 13500000, estimado: 21000000, objectivo: 22400000, pelo_ritmo: true, minimo: 19000000, maximo: 24000000, progresso: 0.94 },
+    mes: {
+      ate_ontem: 400000000,
+      hoje: 21000000,
+      resto: 60000000,
+      dias_resto: 4,
+      estimado: 481000000,
+      mes_anterior: 450000000,
+      variacao: 0.069,
+      ref: { de: '2026-10-01', ate: '2026-10-31' },
+    },
+  },
+  calor: {
+    de: '2026-10-06',
+    ate: '2026-11-02',
+    linhas: ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map((dia, k) => ({
+      dia,
+      v: HORAS.map((_, i) => Math.round(((i * 7 + k * 13) % 100) * (dia === 'sex' && i === 4 ? 0 : 1)) || (dia === 'sex' && i === 4 ? 100 : 5)),
+    })),
+    pico: { dia: 'sex', h: '10' },
+    semanas: 4,
+  },
+  funil: {
+    etapas: [
+      { id: 'planeados', nome: 'Clientes no plano', n: 240 },
+      { id: 'compraram', nome: 'Compraram', n: 150 },
+      { id: 'prova', nome: 'Com prova de visita (GPS)', n: 120 },
+      { id: 'acima', nome: 'Compra acima da média', n: 45 },
+    ],
+    fora_plano: 22,
+  },
+  recordes: {
+    desde: '2026-09-01',
+    dias: 55,
+    melhor_dia: { d: '2026-10-17', t: 31000000 },
+    melhor_igual: { d: '2026-10-20', t: 27000000 },
+    ontem: { posicao: 3, de: 55 },
+    melhor_mes: { m: '2026-10', t: 450000000 },
+    meses: 2,
+    mes_posicao: 1,
+    hoje: { t: 13500000, face_recorde: 0.435, bate_recorde: false, bate_igual: false },
+  },
+  contagem: {
+    dias_trabalho: 5,
+    dias_calendario: 6,
+    fim: '2026-11-30',
+    mes_ate_hoje: 413500000,
+    media_dia: 20000000,
+    igualar: { alvo: 450000000, falta: 36500000, por_dia: 7300000, atingido: false, face_media: -0.635 },
+    recorde: { alvo: 450000000, falta: 36500000, por_dia: 7300000, atingido: false, face_media: -0.635, m: '2026-10' },
+  },
+  artigos: {
+    actual: { de: '2026-10-27', ate: '2026-11-02' },
+    ref: { de: '2026-09-29', ate: '2026-10-26' },
+    sobem: [
+      { c: '10000333', n: 'SABÃO VERDE EM BARRA 8UN CONFIANCA 16×1.3kg', var: 0.42, t: 5870000, ref: 4100000 },
+      { c: '10000015', n: 'FRALDAS DE BEBÉ MIMO MÉDIO 4 X 48', var: 0.18, t: 2100000, ref: 1800000 },
+    ],
+    descem: [{ c: '10000267', n: 'SABONETE CONFIANCA VERMELHO MÉDIO 72 × 90 g', var: -0.31, t: 900000, ref: 1300000 }],
+  },
+  pareto: {
+    de: '2026-08-04',
+    ate: '2026-11-02',
+    clientes: 640,
+    n80: 150,
+    parte80: 0.234,
+    curva: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((p) => ({ p, v: Math.min(1, 1 - Math.pow(1 - p / 100, 4)) })),
+    parados: 12,
+    parados_peso: 0.07,
+  },
+  quadrante: {
+    de: '2026-10-06',
+    rotas: ROTAS.map((r, i) => ({ rota: r.rota, promotor: r.promotor, compras_dia: 8 + i * 1.3, valor_medio: 200000 + ((i * 37) % 11) * 30000, dias: 24 })),
+    mediana: { compras_dia: 14.5, valor_medio: 320000 },
+  },
+  stock: {
+    artigos: 80,
+    ruptura: 1,
+    criticos: 3,
+    dias_venda: 24,
+    lista: [
+      { c: '10000385', n: 'SABÃO CASTANHO COM PERFUME CONFIANCA EXTRA 20PC*850G', stock: 0, dia: 12.5, dias: 0 },
+      { c: '10000015', n: 'FRALDAS DE BEBÉ MIMO MÉDIO 4 X 48', stock: 30, dia: 14, dias: 2.1 },
+      { c: '10000333', n: 'SABÃO VERDE EM BARRA 8UN CONFIANCA 16×1.3kg', stock: 300, dia: 40, dias: 7.5 },
+    ],
+  },
+  operacao: {
+    linhas: [
+      { id: 'caixa', nome: 'Fecho de caixa por aprovar', n: 1, atraso: 0 },
+      { id: 'carrinha', nome: 'Conciliações das carrinhas por fechar', n: 6, atraso: 2 },
+      { id: 'po', nome: 'PO por validar ou aprovar', n: 0, atraso: 0 },
+      { id: 'cais', nome: 'Cargas por conferir e guias por gerar', n: 3, atraso: 0 },
+      { id: 'sap', nome: 'Ficheiros SAP por confirmar', n: 0, atraso: 0 },
+      { id: 'pinguim', nome: 'Dias por fechar no Pinguim BO', n: 1, atraso: 1 },
+    ],
+    total: 11,
+    atraso: 3,
+  },
+  mapa: {
+    rotas: ROTAS.slice(0, 6).map((r, i) => ({
+      rota: r.rota,
+      promotor: r.promotor,
+      pos: [-8.83 - i * 0.02, 13.23 + i * 0.03],
+      hora: '15:' + String(10 + i).padStart(2, '0'),
+      percurso: [
+        [-8.8, 13.2],
+        [-8.81 - i * 0.01, 13.21 + i * 0.02],
+        [-8.83 - i * 0.02, 13.23 + i * 0.03],
+      ],
+      vendas: 10 + i,
+      prova: 8 + i,
+      km: 20,
+    })),
+    territorios: {
+      1001: [
+        [-8.79, 13.19],
+        [-8.79, 13.25],
+        [-8.85, 13.25],
+        [-8.85, 13.19],
+      ],
+    },
+  },
+  momentos: [{ id: '2026-11-03|rota-1004', tipo: 'rota', titulo: 'Rota 1004 atingiu o objectivo de hoje', rota: '1004', promotor: 'Nelson Bumba' }],
+};
+const ECRAS_AVANCADOS = [
+  ['acumulado', 'Ritmo acumulado × objectivo'],
+  ['previsao', 'Previsão de fecho'],
+  ['calor', 'Mapa de calor das vendas'],
+  ['funil', 'Funil das visitas'],
+  ['mapa', 'Rotas no mapa'],
+  ['pareto', 'Concentração dos clientes'],
+  ['artigos', 'Artigos em destaque'],
+  ['quadrante', 'Quadrante das rotas'],
+  ['stock', 'Cobertura do stock'],
+  ['operacao', 'Saúde da operação'],
+  ['recordes', 'Recordes'],
+  ['contagem', 'Contagem do mês'],
+];
+
+test('ecrãs de gestão avançados na sala interna: todos desenham, sem cortes, e o momento do dia aparece uma vez', async ({ page }) => {
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  await page.route('**/v1/sala', (r) =>
+    r.fulfill({
+      json: { ...SALA, local: 'interna', config: { ecras: [...ECRAS_AVANCADOS.map((e) => e[0]), 'momentos'], segundos: 10 }, ...EXTRA, ...AVANCADOS },
+    }),
+  );
+  await page.clock.install({ time: new Date('2026-11-03T15:43:00+01:00') });
+  await page.goto('/sala/index.html#t=' + 'a'.repeat(64));
+  for (let i = 0; i < ECRAS_AVANCADOS.length; i++) {
+    await expect(page.locator('#s-titulo')).toHaveText(ECRAS_AVANCADOS[i][1]);
+    await expect(page.locator('#s-ecra')).not.toContainText('ficará disponível');
+    const r = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
+    expect(r, ECRAS_AVANCADOS[i][0]).toEqual([1920, 1080]);
+    // nada do ecrã passa para o rodapé
+    const fora = await page.evaluate(() => {
+      const lim = document.querySelector('footer').getBoundingClientRect().top;
+      return [...document.querySelectorAll('#s-ecra *')]
+        .filter((e) => e.getBoundingClientRect().bottom > lim + 1)
+        .map((e) => e.className.baseVal ?? e.className);
+    });
+    expect(fora, ECRAS_AVANCADOS[i][0]).toEqual([]);
+    if (process.env.CAPTURAS) await page.screenshot({ path: 'test-results/sala-' + ECRAS_AVANCADOS[i][0] + '.png' });
+    if (i === 0) {
+      // o momento do dia entra a seguir ao primeiro ecrã, uma só vez
+      await page.clock.runFor(10500);
+      await expect(page.locator('#s-titulo')).toHaveText('Momento do dia');
+      await expect(page.locator('#s-ecra')).toContainText('Rota 1004 atingiu o objectivo de hoje');
+      await expect(page.locator('#s-ecra')).toContainText('Parabéns, Nelson Bumba!');
+    }
+    await page.clock.runFor(10500);
+  }
+  // o momento já foi mostrado: não volta a aparecer nas voltas seguintes
+  for (let i = 0; i < 4; i++) {
+    await expect(page.locator('#s-titulo')).not.toHaveText('Momento do dia');
+    await page.clock.runFor(10000);
+  }
+  expect(erros).toEqual([]);
+});
+
+test('ecrãs de gestão avançados em open space: em %, índices e datas, sem Kz nem nomes', async ({ page }) => {
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  const ab = {
+    ok: true,
+    local: 'aberta',
+    config: { ecras: ['acumulado', 'previsao', 'calor', 'funil', 'recordes', 'contagem', 'momentos'], segundos: 10 },
+    hora: '2026-11-03 15:42:10',
+    hoje: { progresso: 0.6, documentos: 214 },
+    ontem: {},
+    semana: {},
+    mes: {},
+    rotas: [],
+    acumulado: {
+      horas: HORAS.map((h, i) => ({ h, hoje: i <= 9 ? i * 7 : null, habitual: i * 6, objectivo: Math.round((i * 100) / 14) })),
+      ref: { dias: 4, tipo: 'mesmo_dia' },
+      ritmo: 0.08,
+      base: 'objectivo',
+    },
+    previsao: { dia: { progresso: 1.04, pelo_ritmo: true }, mes: { variacao: 0.07, dias_resto: 4, ref: { de: '2026-10-01', ate: '2026-10-31' } } },
+    calor: AVANCADOS.calor,
+    funil: AVANCADOS.funil,
+    recordes: {
+      desde: '2026-09-01',
+      dias: 55,
+      melhor_dia: { d: '2026-10-17' },
+      melhor_igual: { d: '2026-10-20' },
+      ontem: { posicao: 3, de: 55 },
+      melhor_mes: { m: '2026-10' },
+      meses: 2,
+      mes_posicao: 1,
+      hoje: { face_recorde: 0.43, bate_recorde: false, bate_igual: false },
+    },
+    contagem: {
+      dias_trabalho: 5,
+      dias_calendario: 6,
+      fim: '2026-11-30',
+      igualar: { atingido: false, face_media: 0.12 },
+      recorde: { atingido: true, m: '2026-10' },
+    },
+    momentos: [{ id: '2026-11-03|obj-dia', tipo: 'objectivo_dia', titulo: 'Objectivo do dia atingido' }],
+  };
+  await page.route('**/v1/sala', (r) => r.fulfill({ json: ab }));
+  await page.clock.install({ time: new Date('2026-11-03T15:43:00+01:00') });
+  await page.goto('/sala/index.html#t=' + 'a'.repeat(64));
+  await expect(page.locator('#s-titulo')).toHaveText('Ritmo acumulado × objectivo');
+  await expect(page.locator('#s-ecra')).toContainText('▲ 8 %');
+  await page.clock.runFor(10500);
+  await expect(page.locator('#s-ecra')).toContainText('Parabéns, equipa!');
+  for (const t of ['Previsão de fecho', 'Mapa de calor das vendas', 'Funil das visitas', 'Recordes', 'Contagem do mês']) {
+    await page.clock.runFor(10500);
+    await expect(page.locator('#s-titulo')).toHaveText(t);
+    await expect(page.locator('body')).not.toContainText('Kz');
+    const r = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
+    expect(r, t).toEqual([1920, 1080]);
+  }
+  await expect(page.locator('#s-ecra')).toContainText('✔ já conseguido');
+  expect(erros).toEqual([]);
+});

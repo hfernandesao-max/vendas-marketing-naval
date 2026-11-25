@@ -1134,6 +1134,36 @@ function naval_carr_rever_regularizar(array $reg, string $dia, string $rota, str
 }
 
 /**
+ * Revisão imediata das conciliações contadas e ainda abertas de um dia (no máximo a cada 5 minutos por rota): as saídas
+ * do Pinguim BO que explicam uma diferença (ex.: venda entre o corte e a contagem física, sincronizada mais tarde por
+ * falha do telemóvel — rota 1001, 25-11: FR 35 às 16:59, contagem às 17:22) explicam-na logo que chegam, antes de quem
+ * contou validar, sem esperar pela revisão de hora a hora. Devolve as rotas revistas.
+ */
+function naval_carr_regularizar_agora(string $dia, array $rotas): array
+{
+    if (!naval_bd_configurada() || naval_config('CARRINHA_REVER_PINGUIM', '1') === '0') return [];
+    $feitas = [];
+    foreach (array_slice($rotas, 0, 40) as $rota) {
+        $rota = (string) $rota;
+        if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $rota)) continue;
+        $marca = naval_pasta('limites') . '/carrinha-rever-' . substr(hash('sha256', $dia . '|' . $rota), 0, 16);
+        if (is_file($marca) && filemtime($marca) > time() - 300) continue;
+        @touch($marca);
+        try {
+            $r = naval_exclusivo('carrinha-' . $dia . '-' . naval_carr_nome_rota($rota), function () use ($dia, $rota) {
+                $reg = naval_carr_ler($dia, $rota);
+                if (!is_array($reg['contagem'] ?? null) || !is_array($reg['base'] ?? null) || !in_array($reg['estado'] ?? '', ['por_validar', 'por_aprovar', 'por_fechar'], true)) return [];
+                return naval_carr_rever_regularizar($reg, $dia, $rota, naval_carr_referencia_contagem($reg, $dia), false);
+            });
+            if ($r) $feitas[] = $rota;
+        } catch (Throwable $e) {
+            error_log('[carrinha revisão imediata] ' . $rota . ': ' . $e->getMessage());
+        }
+    }
+    return $feitas;
+}
+
+/**
  * Rotina periódica: de hora a hora revê os últimos 3 dias e, de madrugada (a partir das 03:30), os últimos 45 contra
  * o Pinguim BO, para que uma guia anulada ou corrigida depois da contagem nunca fique esquecida numa base congelada.
  * Quando as regras mudam (nova versão deste ficheiro), a revisão dos 45 dias corre logo no ciclo seguinte: as regras
