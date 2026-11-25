@@ -5,6 +5,8 @@
  *
  * GET v1/sala (cabeçalho X-Painel-Codigo) indicadores agregados (sem clientes, NIF nem documentos); o código vai no
  *                               fragmento do endereço da página (#t=…), que não chega aos registos do Apache nem a intermediários
+ * GET v1/sala/previa?local=interna|aberta   os mesmos dados, para a pré-visualização ao vivo no portal (Apresentação e
+ *                               página do painel) — sessão do portal com «painel-sala» ou «apresentacao»
  * GET v1/sala/ligacoes          ligações criadas (sem o código) — recurso «painel-sala» (G)
  * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id) | configurar (id, ecras, segundos), csrf}   o código só se mostra
  *                               uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no portal) e o tempo de cada um
@@ -19,46 +21,24 @@
  *     da equipa em percentagem e tendências (▲ ▼), contagens e destaques por rota, sem valores em Kz, sem nomes de
  *     pessoas e sem classificações. As classificações não chegam a ser enviadas.
  *   - em nenhum ecrã: clientes, NIF, documentos, caixa, faltas, perdas, anulados ou risco por pessoa.
+ *
+ * Ligação presa ao ecrã (opcional): depois do primeiro acesso, quem gere o painel vê o IP de onde o ecrã acedeu e pode
+ * «fixar» a ligação a esse IP (accao fixar_ip; soltar_ip desfaz). A partir daí, o mesmo endereço aberto noutro sítio é
+ * recusado (403) e fica registado, mesmo que alguém o copie.
  */
 defined('NAVAL_API') || exit;
-naval_servico('analise');
-naval_servico('previsao');
-
-/** Ecrãs do painel da TV, pela ordem de origem. */
-const NAVAL_SALA_ECRAS = ['hoje', 'rank-hoje', 'rank-mes', 'destaques'];
-/** Ecrãs que podem estar num espaço aberto (versão sem valores em Kz nem nomes). */
-const NAVAL_SALA_ECRAS_ABERTA = ['hoje', 'destaques'];
-const NAVAL_SALA_LOCAIS = ['interna', 'aberta'];
-
-/** Dados para um ecrã em espaço aberto (função pura): percentagens, tendências e contagens; sem Kz nem nomes. */
-function naval_sala_aberta(array $r): array
-{
-    $hoje = (array) ($r['hoje'] ?? []);
-    $c = (array) ($r['compras']['hoje'] ?? []);
-    return [
-        'hoje' => ['progresso' => $hoje['progresso'] ?? null, 'documentos' => (int) ($hoje['documentos'] ?? 0)],
-        'ontem' => ['variacao' => $r['ontem']['variacao'] ?? null],
-        'semana' => ['variacao' => $r['semana']['variacao'] ?? null],
-        'mes' => ['variacao' => $r['mes']['variacao'] ?? null],
-        'compras' => ['hoje' => ['compras' => (int) ($c['compras'] ?? 0)]],
-        'rotas' => array_map(function ($x) {
-            return ['rota' => (string) $x['rota'],
-                'progresso_hoje' => !empty($x['previsto_hoje']) ? round((float) $x['hoje'] / (float) $x['previsto_hoje'], 3) : null,
-                'variacao_mes' => $x['variacao_mes'] ?? null, 'sequencia' => (int) ($x['sequencia'] ?? 0),
-                'ontem_acima' => (float) ($x['habitual_ontem'] ?? 0) > 0 && (float) ($x['ontem'] ?? 0) > (float) $x['habitual_ontem']];
-        }, (array) ($r['rotas'] ?? [])),
-    ];
-}
-
-/** Ecrãs de uma ligação, limitados ao que o local permite. */
-function naval_sala_ecras_local(array $ecras, string $local): array
-{
-    return array_values(array_filter($ecras, function ($e) use ($local) { return $local !== 'aberta' || in_array($e, NAVAL_SALA_ECRAS_ABERTA, true); }));
-}
+naval_servico('sala');
 
 function naval_sala_ficheiro(): string
 {
     return naval_pasta('sala') . '/ligacoes.json';
+}
+
+if (($_GET['previa'] ?? '') === '1') {
+    $GLOBALS['naval_api_sensivel'] = true;
+    if (!naval_pode('painel-sala') && !naval_pode('apresentacao')) throw new NavalErro('Sem acesso ao painel da sala comercial.', 403);
+    $local = in_array($_GET['local'] ?? '', NAVAL_SALA_LOCAIS, true) ? (string) $_GET['local'] : 'interna';
+    naval_json(naval_sala_resposta($local, null));
 }
 
 if (($_GET['gerir'] ?? '') === '1') {
@@ -84,7 +64,6 @@ if (($_GET['gerir'] ?? '') === '1') {
             $codigo = bin2hex(random_bytes(32));
             $id = bin2hex(random_bytes(6));
             $lig[$id] = ['nome' => $nome, 'hash' => hash('sha256', $codigo), 'criado' => date('Y-m-d H:i:s'), 'criado_por' => $eu['login'], 'revogado' => null, 'ultimo_acesso' => null, 'local' => $local];
-            if ($local === 'aberta') $lig[$id]['config'] = ['ecras' => NAVAL_SALA_ECRAS_ABERTA, 'segundos' => 20];
             naval_json_gravar(naval_sala_ficheiro(), $lig);
             naval_registar('sala_ligacao_criada', ['id' => $id, 'nome' => $nome, 'local' => $local]);
             return ['id' => $id, 'codigo' => $codigo];
@@ -95,14 +74,30 @@ if (($_GET['gerir'] ?? '') === '1') {
             $local = in_array($p['local'] ?? '', NAVAL_SALA_LOCAIS, true) ? (string) $p['local'] : (string) ($lig[$id]['local'] ?? 'interna');
             $ecras = array_values(array_unique(array_filter((array) ($p['ecras'] ?? []), function ($e) { return in_array($e, NAVAL_SALA_ECRAS, true); })));
             if ($local === 'aberta' && array_diff($ecras, NAVAL_SALA_ECRAS_ABERTA)) {
-                throw new NavalErro('Num espaço aberto só podem estar «Vendas de hoje» e «Destaques» (sem valores nem nomes): as classificações ficam para a sala interna.', 400);
+                throw new NavalErro('Num espaço aberto não podem estar as classificações (com nomes e valores): ficam para a sala interna.', 400);
             }
             if (!$ecras) throw new NavalErro('Escolha pelo menos um ecrã.', 400);
             $lig[$id]['local'] = $local;
             $seg = (int) ($p['segundos'] ?? 20);
-            $lig[$id]['config'] = ['ecras' => $ecras, 'segundos' => in_array($seg, [10, 20, 30, 60], true) ? $seg : 20];
+            $lig[$id]['config'] = ['ecras' => $ecras, 'segundos' => in_array($seg, [10, 20, 30, 60], true) ? $seg : 20, 'personalizado' => true];
             naval_json_gravar(naval_sala_ficheiro(), $lig);
             naval_registar('sala_ligacao_configurada', ['id' => $id, 'ecras' => $ecras, 'local' => $local]);
+            return ['id' => $id];
+        }
+        if ($accao === 'fixar_ip' || $accao === 'soltar_ip') {
+            $id = (string) ($p['id'] ?? '');
+            if (!isset($lig[$id]) || !empty($lig[$id]['revogado'])) throw new NavalErro('Ligação desconhecida.', 404);
+            if ($accao === 'soltar_ip') {
+                unset($lig[$id]['ip_fixo']);
+            } else {
+                $ip = trim((string) ($p['ip'] ?? ($lig[$id]['ip'] ?? '')));
+                if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+                    throw new NavalErro('Ainda não há acessos deste ecrã: abra primeiro a ligação no ecrã e volte a tentar.', 409);
+                }
+                $lig[$id]['ip_fixo'] = $ip;
+            }
+            naval_json_gravar(naval_sala_ficheiro(), $lig);
+            naval_registar('sala_ligacao_' . $accao, ['id' => $id, 'ip' => $lig[$id]['ip_fixo'] ?? null]);
             return ['id' => $id];
         }
         if ($accao === 'revogar') {
@@ -126,12 +121,23 @@ $hash = preg_match('/^[a-f0-9]{64}$/', $codigo) ? hash('sha256', $codigo) : '';
 $id = null;
 $config = null;
 $local = 'interna';
+$ipFixo = '';
 foreach (naval_json_ler(naval_sala_ficheiro()) as $k => $x) {
     if ($hash !== '' && empty($x['revogado']) && hash_equals((string) $x['hash'], $hash)) {
         $id = $k;
         $config = $x['config'] ?? null;
         $local = in_array($x['local'] ?? '', NAVAL_SALA_LOCAIS, true) ? (string) $x['local'] : 'interna';
+        $ipFixo = (string) ($x['ip_fixo'] ?? '');
     }
+}
+// ligação presa ao IP do ecrã: noutro sítio é recusada (e registada, no máximo uma vez por minuto e por IP)
+if ($id !== null && $ipFixo !== '' && naval_ip_cliente() !== $ipFixo) {
+    $marca = naval_pasta('limites') . '/sala-fora-' . substr(hash('sha256', naval_ip_cliente() . $id), 0, 16);
+    if (!is_file($marca) || filemtime($marca) < time() - 60) {
+        @touch($marca);
+        naval_registar('sala_acesso_fora_do_ecra', ['id' => $id], 'painel-sala');
+    }
+    throw new NavalErro('Esta ligação do painel só abre no ecrã a que está associada.', 403);
 }
 if ($id === null) {
     // no máximo um registo por minuto e por IP (o ritmo da API já limita as tentativas)
@@ -151,14 +157,4 @@ naval_exclusivo('sala-ligacoes', function () use ($id) {
     $lig[$id]['ip'] = naval_ip_cliente();
     naval_json_gravar(naval_sala_ficheiro(), $lig);
 });
-$r = naval_cache('sala|' . date('Y-m-d H') . floor((int) date('i') / 2), 120, function () {
-    return naval_indicadores(time(), null);
-});
-$config = $config ?: ['ecras' => $local === 'aberta' ? NAVAL_SALA_ECRAS_ABERTA : NAVAL_SALA_ECRAS, 'segundos' => 20];
-$config['ecras'] = naval_sala_ecras_local((array) $config['ecras'], $local) ?: NAVAL_SALA_ECRAS_ABERTA;
-if ($local === 'aberta') naval_json(['ok' => true, 'local' => 'aberta', 'config' => $config, 'hora' => $r['hora']] + naval_sala_aberta($r));
-// sala interna: só totais por rota e o nome do promotor (sem clientes, documentos nem NIF)
-naval_json(['ok' => true, 'local' => 'interna', 'config' => $config, 'hora' => $r['hora'], 'hoje' => $r['hoje'], 'ontem' => $r['ontem'], 'semana' => $r['semana'], 'mes' => $r['mes'], 'compras' => $r['compras'] ?? null,
-    'rotas' => array_map(function ($x) {
-        return array_intersect_key($x, array_flip(['rota', 'promotor', 'hoje', 'previsto_hoje', 'ontem', 'habitual_ontem', 'mes', 'mes_anterior', 'variacao_mes', 'sequencia']));
-    }, $r['rotas'])]);
+naval_json(naval_sala_resposta($local, $config));

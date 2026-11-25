@@ -97,14 +97,30 @@ const DADOS = {
   },
 };
 
-test('apresentação ao Conselho: 13 diapositivos corporativos com dados reais, governação, arquitectura, roteiro, frota ligada, conformidade legal e visão', async ({
+test('apresentação ao Conselho: 14 diapositivos corporativos com dados reais, painel da sala ao vivo, governação, arquitectura, roteiro, frota ligada, conformidade legal e visão', async ({
   page,
 }) => {
   await page.route('**/v1/apresentacao**', (r) => r.fulfill({ json: DADOS }));
+  await page.route('**/v1/sala/previa**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        local: 'interna',
+        config: { ecras: ['hoje'], segundos: 20 },
+        hora: '2026-11-03 15:42:10',
+        hoje: { total: 20460000, documentos: 74, previsto: 26400000 },
+        ontem: { total: 1, variacao: 0.1 },
+        semana: { total: 1, variacao: 0.1 },
+        mes: { total: 1, variacao: 0.1 },
+        compras: { hoje: { compras: 68 } },
+        rotas: [],
+      },
+    }),
+  );
   const erros = await abrir(page, '#apresentacao');
   const cx = page.locator('.cx');
   const activa = cx.locator('.cx-slide.activa');
-  await expect(cx.locator('.cx-ponto')).toHaveCount(13);
+  await expect(cx.locator('.cx-ponto')).toHaveCount(14);
   // capa
   await expect(activa).toContainText('Portal RTM');
   await expect(activa).toContainText('Conselho de Administração');
@@ -114,11 +130,16 @@ test('apresentação ao Conselho: 13 diapositivos corporativos com dados reais, 
   await expect(activa).toContainText('Sumário executivo');
   await expect(activa).toContainText('131,7 M Kz de vendas em 6 meses');
   await expect(activa.locator('.cx-rodape')).toContainText('Confidencial');
-  await expect(activa.locator('.cx-rodape')).toContainText('2 / 13');
+  await expect(activa.locator('.cx-rodape')).toContainText('2 / 14');
   // desempenho: mensagem com o último mês completo
   await cx.press('ArrowRight');
   await expect(activa).toContainText('Outubro de 2026 fechou com 30,5 M Kz, mais 8,9%');
   await expect(activa.locator('.cx-barra')).toHaveCount(6);
+  // painel da sala comercial ao vivo (o ecrã da TV, com os dados da sessão)
+  await cx.press('ArrowRight');
+  await expect(activa).toContainText('O painel da sala comercial, em tempo real');
+  await expect(activa.frameLocator('.sala-previa iframe').locator('#s-titulo')).toHaveText('Vendas de hoje');
+  await expect(activa.frameLocator('.sala-previa iframe').locator('.s-gigante')).toContainText('20 460 000 Kz');
   // carteira
   await cx.press('ArrowRight');
   await expect(activa).toContainText('50 clientes parados representam 2,5 M Kz');
@@ -176,7 +197,7 @@ test('apresentação ao Conselho: 13 diapositivos corporativos com dados reais, 
   const pagina = await page.locator('#page').boundingBox();
   expect(caixa.width).toBeLessThanOrEqual(pagina.width + 1);
   // nenhum diapositivo tem conteúdo por cima do rodapé (nada cortado nem sobreposto)
-  for (let i = 0; i < 13; i++) {
+  for (let i = 0; i < 14; i++) {
     await cx.locator('.cx-ponto').nth(i).click();
     const invade = await activa.evaluate((sl) => {
       const rod = sl.querySelector('.cx-rodape');

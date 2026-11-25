@@ -25,6 +25,7 @@ import { postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { abrir as abrirLig, abrirPeriodo, celulaLigada } from '../componentes/ligacoes.js';
 import { tArtigo } from '../i18n/artigos.js';
+import { previaSala } from '../componentes/sala-previa.js';
 import { R } from './registo.js';
 import { sinal, textoAlerta, textoRico } from '../gestao-textos.js';
 
@@ -677,6 +678,20 @@ R['painel-sala'] = (pg) => {
           : t('criada em {d} · último acesso: {u}', { d: dl(l.criado), u: l.ultimo_acesso ? dl(l.ultimo_acesso) + ' ' + l.ultimo_acesso.slice(11, 16) : '—' }),
       ),
     );
+    if (!l.revogado && (l.ip || l.ip_fixo))
+      linha.append(el('span', 'note sala-ip', l.ip_fixo ? t('presa ao IP {ip}', { ip: l.ip_fixo }) : t('último acesso do IP {ip}', { ip: l.ip })));
+    if (!l.revogado && (l.ip || l.ip_fixo))
+      linha.append(
+        botao(l.ip_fixo ? t('Soltar do IP') : t('Fixar a este IP'), 'sec', () =>
+          postJson('sala/ligacoes', { accao: l.ip_fixo ? 'soltar_ip' : 'fixar_ip', id: l.id }).then((r) => {
+            if (r.ok) {
+              DADOS.sala = { ok: true, ligacoes: r.ligacoes };
+              toast(l.ip_fixo ? t('A ligação volta a abrir em qualquer ecrã.') : t('A ligação passa a abrir só neste ecrã.'), 5000);
+            } else toast(t(r.erro || 'Não foi possível gravar.'), 6000);
+            draw();
+          }),
+        ),
+      );
     if (!l.revogado) linha.append(botao(t('Ecrãs'), 'sec', () => configurarEcras(l)));
     if (!l.revogado)
       linha.append(
@@ -692,6 +707,13 @@ R['painel-sala'] = (pg) => {
   });
   c.append(lista, botao(t('Criar ligação para um ecrã'), null, criarLigacao));
   pg.append(secBox(t('Painel da sala comercial'), t('Ecrã de TV com as vendas do dia, actualizado a cada 2 minutos.'), c));
+  pg.append(
+    secBox(
+      t('Pré-visualização ao vivo'),
+      t('O ecrã como aparece na TV, com os dados de agora. Escolha o local para ver o que cada um mostra.'),
+      previaSala({ local: 'interna', escolha: true }),
+    ),
+  );
   pg.append(guiaExposicao());
 };
 /** Local do ecrã: o servidor só envia o que esse local pode mostrar (nucleo/api/v1/sala.php). */
@@ -703,7 +725,7 @@ const LOCAIS_SALA = {
   ],
 };
 /** Ecrãs que podem estar num espaço aberto (na versão sem valores nem nomes). */
-const ECRAS_ABERTA = ['hoje', 'destaques'];
+const ECRAS_ABERTA = ['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques'];
 /**
  * Guia (com exemplos) do que pode estar à vista em cada local, segundo a classificação da informação (ISO/IEC 27001
  * A.5.12 e A.7.7 «ecrã limpo»), a protecção de dados pessoais (Lei 22/11) e as boas práticas de gestão visual
@@ -715,6 +737,10 @@ function guiaExposicao() {
     ['Tendências (▲ ▼) face a ontem, à semana e ao mês', 'sim', 'sim', '«Este mês ▲ +12 % face ao mês passado»'],
     ['Contagens: vendas e clientes com compras', 'sim', 'sim', '«214 vendas · 180 clientes com compras»'],
     ['Destaques por rota, sem nomes nem valores', 'sim', 'sim', '«Maior subida do mês: Rota 1004 · +23 %»'],
+    ['Comparativos com as datas dos dois períodos (só a variação no open space)', 'sim', 'sim', '«Semana até ontem ▲ +8 % · 23–24 nov × 16–17 nov»'],
+    ['Gráficos: vendas por hora (contagens) e últimos 14 dias (índice face à média)', 'sim', 'sim', '«Hoje: 112 (100 = média dos 14 dias)»'],
+    ['Visitas do plano: quantas, quantas já compraram, conversão', 'sim', 'sim', '«68 % do plano já comprou · 12 compras fora do plano»'],
+    ['Rotas a vender e rotas com o objectivo atingido (só as que chegaram)', 'sim', 'sim', '«9 / 11 rotas a vender · objectivo: ✔ 1004 ✔ 1010»'],
     ['Valores de vendas em Kz', 'sim', 'nao', '«Vendas de hoje: 30 539 500 Kz»'],
     ['Classificação por rota com o nome do promotor', 'sim', 'nao', '«1.º Rota 1003 · Nome do promotor · 4,2 M Kz»'],
     ['Último lugar ou rotas abaixo do esperado', 'nao', 'nao', '«Rota 1007 a 40 % do objectivo» — corrige-se em privado'],
@@ -760,6 +786,12 @@ function guiaExposicao() {
 }
 const ECRAS_SALA = [
   ['hoje', 'Vendas de hoje'],
+  ['comparacoes', 'Comparações (dia, semana, mês, 7 e 30 dias, homólogos)'],
+  ['ritmo', 'Ritmo do dia (vendas por hora)'],
+  ['tendencia', 'Últimos 14 dias (gráfico)'],
+  ['visitas', 'Visitas de hoje (plano e conversão)'],
+  ['rotas', 'Rotas no terreno'],
+  ['clientes', 'Clientes (hoje e mês)'],
   ['rank-hoje', 'Classificação de hoje'],
   ['rank-mes', 'Classificação do mês'],
   ['destaques', 'Destaques'],

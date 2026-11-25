@@ -164,19 +164,39 @@ test('painel da sala: ligação criada pelo SADM, dados só agregados, revogaç�
     segundos: 30,
   });
   expect(j.local).toBe('interna');
+  // presa ao IP do ecrã: com o IP do último acesso abre; presa a outro IP, o mesmo endereço é recusado
+  const ip = (await (await ctx.get(API + 'sala/ligacoes')).json()).ligacoes.find((x) => x.id === r.id).ip;
+  expect(ip).toBeTruthy();
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'fixar_ip', id: r.id, csrf: c } })).status()).toBe(200);
+  expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(200);
+  await ctx.post(API + 'sala/ligacoes', { data: { accao: 'fixar_ip', id: r.id, ip: '10.99.99.99', csrf: c } });
+  const fora = await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } });
+  expect(fora.status()).toBe(403);
+  expect((await fora.json()).erro).toContain('só abre no ecrã');
+  await ctx.post(API + 'sala/ligacoes', { data: { accao: 'soltar_ip', id: r.id, csrf: c } });
+  expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(200);
   await ctx.post(API + 'sala/ligacoes', { data: { accao: 'revogar', id: r.id, csrf: c } });
   expect((await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).status()).toBe(403);
   // open space (visitantes podem ver): só percentagens, tendências e contagens — sem Kz, sem nomes, sem classificações
   const a = await (await ctx.post(API + 'sala/ligacoes', { data: { accao: 'criar', nome: 'Recepção', local: 'aberta', csrf: c } })).json();
   const ja = await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': a.codigo } })).json();
   expect(ja.local).toBe('aberta');
-  expect(ja.config.ecras).toEqual(['hoje', 'destaques']);
+  expect(ja.config.ecras).toEqual(['hoje', 'comparacoes', 'ritmo', 'tendencia', 'visitas', 'rotas', 'clientes', 'destaques']);
+  for (const x of ja.comparacoes.linhas) expect(x.actual.t).toBeUndefined();
+  for (const k of ['serie', 'horas', 'terreno', 'clientes']) expect(ja[k]).toBeTruthy();
+  for (const x of ja.serie) expect(Object.keys(x).sort()).toEqual(['d', 'indice']);
   expect(Object.keys(ja.hoje).sort()).toEqual(['documentos', 'progresso']);
   for (const x of ja.rotas) expect(Object.keys(x).sort()).toEqual(['ontem_acima', 'progresso_hoje', 'rota', 'sequencia', 'variacao_mes']);
   expect(JSON.stringify(ja)).not.toMatch(/promotor|"total"|valor_medio|previsto|"anterior"/);
   const proibido = await ctx.post(API + 'sala/ligacoes', { data: { accao: 'configurar', id: a.id, ecras: ['hoje', 'rank-mes'], csrf: c } });
   expect(proibido.status()).toBe(400);
   expect((await proibido.json()).erro).toContain('sala interna');
+  // pré-visualização ao vivo no portal (Apresentação e página do painel): pela sessão, sem código de ligação
+  const pv = await (await ctx.get(API + 'sala/previa?local=aberta')).json();
+  expect(pv.local).toBe('aberta');
+  expect(JSON.stringify(pv)).not.toMatch(/promotor|"total"|valor_medio/);
+  expect((await (await ctx.get(API + 'sala/previa?local=interna')).json()).local).toBe('interna');
+  expect((await tv.get(API + 'sala/previa?local=interna')).status()).toBe(401);
   // quem não gere o painel: 403
   const dir = await entrar('dir');
   expect((await dir.ctx.get(API + 'sala/ligacoes')).status()).toBe(403);

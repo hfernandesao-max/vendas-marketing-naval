@@ -20,7 +20,7 @@
     "relatorios",
     "relatorios-certificar"
   ],
-  "api": ["v1/perdas", "v1/analises", "v1/valor", "v1/previsao", "v1/indicadores", "v1/painel", "v1/assistente", "v1/resumo", "v1/sala", "v1/sala/ligacoes", "v1/sala/presenca", "v1/relatorios"],
+  "api": ["v1/perdas", "v1/analises", "v1/valor", "v1/previsao", "v1/indicadores", "v1/painel", "v1/assistente", "v1/resumo", "v1/sala", "v1/sala/ligacoes", "v1/sala/previa", "v1/sala/presenca", "v1/relatorios"],
   "conectores": ["ia"],
   "eventos": {
     "publica": [],

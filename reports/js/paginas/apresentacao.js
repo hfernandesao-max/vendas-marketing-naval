@@ -3,7 +3,8 @@
 // confidencialidade), com dados reais e actualizada sozinha (API v1/apresentacao; refresca a cada 10 minutos):
 //   1 capa · 2 sumário executivo · 3 desempenho comercial · 4 carteira de clientes · 5 automação e eficiência ·
 //   6 governação, segurança e conformidade · 7 arquitectura e integrações · 8 roteiro · 9 visão 2027–2028 ·
-//   10 recomendações e encerramento.
+//   10 recomendações e encerramento. Depois do desempenho, o Painel da sala comercial ao vivo (o ecrã da TV, sala
+//   interna ou open space, com os dados em tempo real).
 // Textos do roteiro e da visão: nucleo/recursos/roteiro.json (revisto em cada versão).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
@@ -12,6 +13,7 @@ import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { el } from '../util.js';
 import { PAGES } from './catalogo.js';
+import { previaSala } from '../componentes/sala-previa.js';
 import { R } from './registo.js';
 
 const REFRESCAR_MS = 10 * 60 * 1000;
@@ -230,6 +232,21 @@ function desempenho() {
   );
   corpo.append(esq, dir);
   s.append(linha, corpo, fonte('Fonte: Pinguim BO · vendas líquidas em kwanzas · * mês em curso · dados de ' + dl(D.hora)));
+  return s;
+}
+
+// ── Painel da sala comercial ao vivo (o mesmo ecrã da TV, em tempo real) ──
+let salaAoVivo = null;
+function salaViva() {
+  const s = diapositivo(
+    'Painel ao vivo',
+    'Desempenho comercial · ao vivo',
+    'O painel da sala comercial, em tempo real',
+    'O mesmo ecrã que passa na TV da sala: vendas, ritmo do dia, visitas, rotas e clientes, actualizado de 2 em 2 minutos.',
+  );
+  // a moldura mantém-se entre redesenhos da apresentação (não volta a carregar a cada 10 minutos)
+  if (!salaAoVivo) salaAoVivo = previaSala({ local: 'interna', escolha: true });
+  s.append(salaAoVivo);
   return s;
 }
 
@@ -635,6 +652,7 @@ R.apresentacao = (pg) => {
     capa(),
     sumario(),
     desempenho(),
+    salaViva(),
     carteira(),
     automacao(),
     governanca(),

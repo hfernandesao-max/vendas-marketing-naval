@@ -335,3 +335,164 @@ body.noite {
     transition: none;
   }
 }
+
+/* Gráficos de barras (uma série, valor por cima, rótulo por baixo; destaque em dourado; linha da média) */
+.s-grelha-graf {
+  display: grid;
+  grid-template-columns: 1fr 26vw;
+  gap: 3vw;
+  align-items: stretch;
+  min-height: 0;
+}
+.s-graf {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8vw;
+  height: 52vh;
+  padding: 5vh 0 0;
+  border-bottom: 2px solid var(--linha);
+}
+.s-graf-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.s-graf-b {
+  position: relative;
+  width: 100%;
+  border-radius: 1vh 1vh 0 0;
+  background: linear-gradient(180deg, var(--azul), var(--azul2));
+}
+.s-graf-col.destaque .s-graf-b {
+  background: linear-gradient(180deg, var(--ouro), #c9962a);
+}
+.s-graf-v {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-bottom: 0.6vh;
+  font-size: 0.8em;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.s-graf-r {
+  margin-top: 1vh;
+  font-size: 0.72em;
+  color: var(--suave);
+  white-space: nowrap;
+  transform: translateY(100%);
+  position: absolute;
+  bottom: -0.4vh;
+}
+.s-graf-col {
+  position: relative;
+}
+.s-graf {
+  margin-bottom: 4.5vh;
+}
+.s-graf-ref {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed var(--suave);
+  opacity: 0.7;
+}
+.s-graf-ref::after {
+  content: attr(data-l);
+  position: absolute;
+  right: 0;
+  bottom: 0.4vh;
+  font-size: 0.7em;
+  color: var(--suave);
+}
+/* listas curtas (melhor conversão) e etiquetas (objectivo atingido) */
+.s-mini {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.2vh;
+}
+.s-mini li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1vw;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 1.4vh;
+  padding: 1.2vh 1.4vw;
+}
+.s-mini b {
+  color: var(--ouro);
+  font-size: 1.2em;
+}
+.s-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1vh 0.8vw;
+}
+.s-chip {
+  padding: 0.8vh 1.2vw;
+  border-radius: 3vh;
+  border: 1px solid var(--ouro);
+  color: var(--ouro);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Comparações: uma linha por comparativo (nome, datas dos dois períodos, valores na sala interna, variação) */
+.s-comp {
+  display: grid;
+  gap: 0.8vh;
+  align-content: start;
+}
+.s-comp-l {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 1.2vw;
+  padding: 0.75vh 1.4vw;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 1.2vh;
+  font-size: 0.82em;
+}
+.s-comp.aberta .s-comp-l {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 1fr);
+}
+.s-comp-n {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.s-comp-datas {
+  color: var(--suave);
+  white-space: nowrap;
+}
+.s-comp-v {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.s-comp-l .s-delta,
+.s-comp-motivo {
+  text-align: right;
+}
+.s-comp-l.sem .s-comp-motivo {
+  color: var(--ambar);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.s-comp-ref {
+  display: grid;
+  gap: 0.3vh;
+}
+.s-comp-ref .s-comp-datas {
+  font-size: 0.8em;
+}

@@ -1,11 +1,35 @@
 ## 25-11-2026
 
+### Painel da sala: comparações com as datas, gráficos e mais ecrãs (ritmo, 14 dias, visitas, rotas, clientes) e ao vivo no portal
+
+<!-- paginas: painel-sala, apresentacao -->
+<!-- tipo: funcionalidade -->
+
+- **Comparações:** um ecrã com todos os comparativos de gestão, cada um com as datas exactas dos dois períodos — ontem × dia anterior, × mesmo dia da semana passada e × habitual (mediana das semanas que há); semana até ontem × semana passada; mês até ontem × mesmos dias do mês anterior; últimos 7 e 30 dias × os anteriores; homólogos (mês e ano até ontem × mesmos dias do ano anterior). Sempre com dias fechados (o dia de hoje compara-se com o objectivo). Sem dados para comparar, diz «sem histórico · desde 03-11» em vez de uma percentagem sem sentido. No open space, só as variações e as datas.
+- **Vendas de hoje:** a coluna da direita passa a mostrar ontem × semana passada, semana até ontem e mês até ontem, cada um com as datas dos dois períodos (antes, «face ao habitual» e «face ao mês passado» sem dizer que dias).
+- **Cinco ecrãs novos na TV**, todos com a versão para open space (sem Kz nem nomes):
+  - **Ritmo do dia:** gráfico das vendas por hora, com a hora actual em destaque e a hora de maior movimento;
+  - **Últimos 14 dias:** gráfico diário — em Kz na sala interna; no open space, em índice face à média (100 = média);
+  - **Visitas de hoje:** clientes do plano que já compraram (conversão), no plano, compras fora do plano; na sala interna, as rotas de melhor conversão;
+  - **Rotas no terreno:** rotas com vendas hoje e as que atingiram o objectivo (só as que chegaram — nunca as que ficaram atrás);
+  - **Clientes:** com compras hoje e no mês face ao mês passado; na sala interna, também o valor médio por compra.
+- As ligações que nunca foram personalizadas passam a mostrar todos os ecrãs do seu local; as escolhidas em «Ecrãs» mantêm-se.
+- **Percentagens absurdas** (referência muito pequena, como no início de actividade) passam a aparecer como «muito acima/abaixo do habitual», sem o número.
+- **Ao vivo no portal:** na Apresentação (diapositivo a seguir ao desempenho) e na página do painel (separador «Pré-visualização ao vivo»), o mesmo ecrã da TV com os dados de agora, actualizado de 2 em 2 minutos, com a escolha entre sala interna e open space. Usa a sessão do portal, sem código de ligação.
+
+### Painel da sala: ligação presa ao ecrã
+
+<!-- paginas: painel-sala -->
+<!-- tipo: funcionalidade -->
+
+- Depois de o ecrã abrir a ligação, a lista mostra o IP de onde acedeu e o botão «Fixar a este IP»: a partir daí, o mesmo endereço aberto noutro sítio é recusado e fica registado, mesmo que alguém o copie. «Soltar do IP» desfaz (por exemplo, ao mudar o ecrã de sítio). Recomenda-se uma reserva de DHCP no router para o IP do ecrã não mudar.
+
 ### Painel da sala: sala interna ou open space, com o que pode estar à vista em cada um
 
 <!-- paginas: painel-sala -->
 <!-- tipo: funcionalidade -->
 
-- **Cada ecrã tem um local** (obrigatório ao criar a ligação): *Sala interna* — sala comercial fechada, vista só pela equipa — ou *Open space* — área comum, recepção ou corredor, onde visitantes, fornecedores e outras equipas podem ver.
+- **Cada ecrã tem um local** (obrigatório ao criar a ligação): _Sala interna_ — sala comercial fechada, vista só pela equipa — ou _Open space_ — área comum, recepção ou corredor, onde visitantes, fornecedores e outras equipas podem ver.
 - **Open space:** só o progresso da equipa em percentagem do objectivo do dia, tendências (▲ ▼) face a ontem, à semana e ao mês, contagens (vendas e clientes com compras) e destaques por rota — sem valores em Kz, sem nomes de pessoas e sem classificações. O servidor nem chega a enviar o resto, mesmo que a ligação seja aberta noutro sítio.
 - **Sala interna:** como até agora (valores em Kz, classificações com o nome do promotor e destaques), com reconhecimento positivo: nunca o último lugar.
 - **Em nenhum ecrã:** clientes, NIF, documentos, preços, caixa, faltas na carrinha, perdas, anulados ou risco por pessoa.
