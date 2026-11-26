@@ -1,4 +1,4 @@
-/* App de operações «Naval Operações»: por cima da base da app de gestão (gestao/app.css), o que é próprio desta app:
+/* App de operações «RTM Operações»: por cima da base da app de gestão (gestao/app.css), o que é próprio desta app:
    separadores das tarefas, tabelas de lançamento linha a linha (contagem, notas, carga) e o leitor do QR. */
 .op-tarefas {
   margin: 8px 16px 0;
@@ -425,4 +425,33 @@
   border-radius: 8px;
   background: #fff;
   border: 1px solid var(--linha);
+}
+
+/* um só ecrã por tarefa: escolha da rota (quem acompanha várias) e leitura do QR da PO num botão grande */
+.op-escolha {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--suave, inherit);
+  font-size: 14px;
+}
+.op-escolha select {
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 17px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--texto);
+}
+.op-ler-qr {
+  width: 100%;
+  min-height: 64px;
+  font-size: 19px;
+  margin: 8px 0;
+}
+.op-escrever summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--suave, inherit);
 }

@@ -1,4 +1,4 @@
-// App «Naval Gestão» (/gestao/): sem sessão vai à página de entrada certa e, depois de entrar, volta à app.
+// App «RTM Gestão» (/gestao/): sem sessão vai à página de entrada certa e, depois de entrar, volta à app.
 import { test, expect, request, devices } from '@playwright/test';
 import { BASE, SENHA } from './ajuda.js';
 
@@ -13,7 +13,7 @@ test('app de gestão: no iPhone sem a app instalada pelo QR pede a instalação;
   browser,
 }) => {
   for (const [conta, destino, titulo] of [
-    ['dir', '/app/so-pelo-qr.php', 'Instalar pelo código QR'],
+    ['dir', '/app/so-pelo-qr\\.php\\?app=gestao', 'Instalar pelo código QR'],
     ['ti', '/reports/', 'Portal RTM'],
   ]) {
     const ctx = await browser.newContext({ ...devices['iPhone 13'] });

@@ -1,5 +1,33 @@
 ## 26-11-2026
 
+### Apps com nomes da família RTM, um ecrã por tarefa e no modo apresentação
+
+<!-- paginas: app-telemovel, modo-apresentacao -->
+<!-- tipo: melhoria -->
+
+- **Nomes novos:**
+  - **RTM Gestão**: indicadores e alertas para a gestão;
+  - **RTM Operações**: entregas à tesouraria, contagem e carga;
+  - **RTM Portal**: o portal instalado como app;
+  - **RTM Painel**: a TV da sala comercial.
+
+  O portal continua a chamar-se «Portal RTM».
+
+- **Entrega do dinheiro:** um só ecrã com as notas e moedas da rota de quem entrou. O vendedor, ligado à sua rota ao instalar a app, vê só a sua. Quem acompanha várias rotas escolhe uma numa lista, e a app lembra a escolha. Deixa de aparecer a lista de todos os vendedores.
+- **Carga no cais:** um botão grande, «Ler o QR da PO», abre a câmara e mostra logo os artigos a carregar. Escrever o número fica recolhido, para quando não há câmara.
+- **Modo apresentação:** além do portal e da RTM Gestão, pode mostrar-se a **RTM Operações** numa moldura de telemóvel, ao vivo, com a mesma conta.
+- **Janelas sem barras de deslocamento:** as janelas do portal (ex.: «Facturas fora do horário») alargam-se ao que têm para mostrar, até à largura do ecrã. Os textos longos das tabelas partem a linha, e os números e as datas não.
+
+### App no telemóvel: depois de instalada, nunca volta a pedir o código QR
+
+<!-- paginas: app-telemovel -->
+<!-- tipo: correcao -->
+
+- Com uma sessão do portal aberta no mesmo telemóvel, por exemplo depois de entrar no portal pelo navegador, a Naval Gestão, a Naval Operações e o Portal RTM instalado como app mandavam ler o código QR outra vez, apesar de o telemóvel estar registado.
+- Agora, com o telemóvel registado, a app pede o Face ID ou a impressão digital e entra.
+- Se o telemóvel tiver apagado os cookies, a app usa o identificador que guardou em si mesma e também entra com a biometria.
+- O código QR só volta a ser pedido quando o telemóvel deixou mesmo de estar registado: activado noutro telemóvel, desactivado pelo administrador ou 90 dias sem uso.
+
 ### TV da sala: o painel abre sozinho ao ligar e volta sempre que a TV sai dele
 
 <!-- paginas: painel-sala -->

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="nome">Naval Painel</string>
+    <string name="nome">RTM Painel</string>
     <string name="descricao">Mantém o painel da sala comercial no ecrã: quando a TV volta à página inicial (ao ligar, depois do modo de espera ou de uma falha de luz), abre o Fully Kiosk ao fim de 30 segundos. Só usa o nome da app que está no ecrã; não lê nem guarda o conteúdo.</string>
 </resources>

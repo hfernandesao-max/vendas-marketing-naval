@@ -1,6 +1,6 @@
 <?php
 /**
- * App de gestão «Naval Gestão» (aplicação web instalável no iPhone e no Android): indicadores do dia, rotas, alertas e
+ * App de gestão «RTM Gestão» (aplicação web instalável no iPhone e no Android): indicadores do dia, rotas, alertas e
  * assistente, só de leitura, para os perfis com «App de gestão» na matriz de acessos. Mesma entrada, dois passos e
  * âmbito do portal; os dados vêm da API central (v1/indicadores, v1/alertas, v1/assistente).
  */
@@ -24,7 +24,10 @@ if ($previa) {
         naval_registar('app_pre_visualizada', ['app' => 'gestao']);
     }
 } elseif (!$eqApp) {
-    header('Location: ../app/so-pelo-qr.php', true, 302);
+    // sessão do portal aberta (ex.: entrou no portal no navegador do mesmo telemóvel) mas sem o equipamento: se o
+    // telemóvel está registado para esta app, entra com a biometria; o código QR só quando não está registado
+    $registado = naval_app_equipamento_pedido('gestao');
+    header('Location: ../app/' . ($registado ? 'entrar.php?redirect=' . rawurlencode('../gestao/') : 'so-pelo-qr.php?app=gestao'), true, 302);
     exit;
 }
 // a app só abre com a chave do telemóvel (Face ID, impressão digital ou código de bloqueio): termina a activação

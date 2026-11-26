@@ -34,7 +34,7 @@ if (!naval_e_post()) {
     } catch (Throwable $e) {
         error_log('[caixa esperado] ' . $e->getMessage());
     }
-    // declarações dos vendedores (app Naval Operações): só para a conferência (a contagem continua às cegas)
+    // declarações dos vendedores (app RTM Operações): só para a conferência (a contagem continua às cegas)
     naval_servico('caixa-entregas');
     $caixaDia = naval_caixa_ler($dia);
     $declaracoes = naval_cxe_ler($dia);

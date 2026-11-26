@@ -12,7 +12,7 @@
  *                               código só se mostra uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no
  *                               portal) e o tempo de cada um; «recarregar» faz o ecrã recarregar a página na leitura seguinte
  * POST v1/sala/ligacoes {accao: manutencao, id, minutos (0 = fechar), csrf}   só o super administrador: a app da TV
- *                               («Naval Painel») abre a depuração (adb) até à hora indicada e fecha-a sozinha depois
+ *                               («RTM Painel») abre a depuração (adb) até à hora indicada e fecha-a sozinha depois
  *
  * Actualizações: cada resposta ao ecrã leva a versão do painel (naval_sala_versao); o ecrã recarrega-se sozinho quando
  * ela muda (portal actualizado ou «Recarregar ecrã») e devolve a versão que tem (X-Painel-Versao), para o portal mostrar
@@ -201,6 +201,6 @@ naval_exclusivo('sala-ligacoes', function () use ($id, $versaoEcra, &$versao) {
     if ($mudou) $lig[$id]['versao_ecra'] = $versaoEcra;
     naval_json_gravar(naval_sala_ficheiro(), $lig);
 });
-// manutenção da TV pedida no portal: a app «Naval Painel» abre a depuração (adb) enquanto durar
+// manutenção da TV pedida no portal: a app «RTM Painel» abre a depuração (adb) enquanto durar
 $manut = (string) (naval_json_ler(naval_sala_ficheiro())[$id]['manutencao_ate'] ?? '');
 naval_json(naval_sala_resposta($local, $config) + ['versao' => $versao, 'manutencao' => $manut !== '' && $manut > date('Y-m-d H:i:s')]);

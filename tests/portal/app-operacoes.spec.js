@@ -1,4 +1,4 @@
-// App de operações «Naval Operações» no telemóvel (operacoes/index.html), com a API simulada: o vendedor regista as
+// App de operações «RTM Operações» no telemóvel (operacoes/index.html), com a API simulada: o vendedor regista as
 // notas que entrega, a Logística conta a carrinha às cegas e o armazém abre a PO pelo número (ou QR) e confere a carga.
 import { test, expect, devices } from '@playwright/test';
 
@@ -124,6 +124,9 @@ test('operações: o armazém abre a PO pelo número e confere a carga, com o mo
     return r.fulfill({ json: { ok: true, requisicao: po } });
   });
   const erros = await abrir(page, 'carga', { ...SESSAO, login: 'fiel', perfil: 'LOG' });
+  // ecrã simples: o botão grande lê o QR; sem câmara, escreve-se o número (recolhido)
+  await expect(page.getByRole('button', { name: 'Ler o QR da PO' })).toBeVisible();
+  await page.getByText('Sem câmara? Escrever o número da PO').click();
   await page.getByLabel('Número da PO').fill('po-2026-000412');
   await page.getByRole('button', { name: 'Abrir' }).click();
   const k = page.locator('.op-conferir');

@@ -3,7 +3,7 @@
  * Perdas e tempo parado por rota (gestão das perdas, «shrinkage» e produtividade do terreno), tudo das bases de dados:
  *   - Pinguim BO (só SELECT): vendas, notas de crédito, descontos por linha e documentos anulados;
  *   - conciliação das carrinhas (registos do portal): faltas e sobras em Kz, com o motivo de cada diferença;
- *   - entrega do dinheiro (app Naval Operações): diferença entre o que o vendedor declarou e o que a tesouraria contou;
+ *   - entrega do dinheiro (app RTM Operações): diferença entre o que o vendedor declarou e o que a tesouraria contou;
  *   - OLAP (localização das visitas): minutos parados sem vender (paragens sem venda) e quilómetros.
  * Custo do tempo parado: PERDAS_CUSTO_HORA (Kz por hora da rota: vendedor + motorista + viatura); sem ele, só os
  * minutos (o custo fica «por definir»).

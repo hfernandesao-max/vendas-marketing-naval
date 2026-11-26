@@ -2,7 +2,8 @@
 // Para apresentar à administração com o computador ligado a um projector ou LCD:
 //   - activa-se no menu da conta, por um período escolhido (30 min a 4 h), e acaba sozinho à hora marcada;
 //   - durante esse período a sessão termina só após 60 minutos sem actividade e o portal não volta sozinho ao painel;
-//   - no próprio portal escolhe-se o que se mostra: o portal, a app de gestão ou o portal e a app lado a lado. A app
+//   - no próprio portal escolhe-se o que se mostra: o portal, a app RTM Gestão, a app RTM Operações ou o portal e a
+//     RTM Gestão lado a lado. A app
 //     corre dentro de uma moldura de telemóvel, ao vivo, com a mesma conta e os mesmos dados;
 //   - não abrem janelas automáticas (resumo das actualizações) e uma marca discreta mostra que o modo está activo;
 //   - a app de gestão mostrada no computador e a app no telemóvel da mesma conta mostram o mesmo ecrã ao mesmo tempo
@@ -17,8 +18,9 @@ import { el, toast } from './util.js';
 
 export const VISTAS = {
   portal: { nome: 'Portal' },
-  gestao: { nome: 'App de gestão', url: '../gestao/' },
-  lado: { nome: 'Portal e app lado a lado', url: '../gestao/' },
+  gestao: { nome: 'App RTM Gestão', url: '../gestao/', espelho: true },
+  operacoes: { nome: 'App RTM Operações', url: '../operacoes/' },
+  lado: { nome: 'Portal e app lado a lado', url: '../gestao/', espelho: true },
 };
 const DURACOES = [
   [30, '30 minutos'],
@@ -195,7 +197,7 @@ export function mostrar(v, retomar) {
   vista = VISTAS[v] ? v : 'portal';
   // a app aparece no ecrã: o telemóvel recebe logo um aviso e um toque abre-o no mesmo ecrã (o iPhone e o Android não
   // deixam uma app abrir-se sozinha); se já estiver a seguir, nada se envia
-  if (VISTAS[vista].url && (retomar || !VISTAS[antes] || !VISTAS[antes].url)) chamarTelemovel(!retomar);
+  if (VISTAS[vista].espelho && (retomar || !VISTAS[antes] || !VISTAS[antes].espelho)) chamarTelemovel(!retomar);
 
   try {
     sessionStorage.setItem(CHAVE, vista);
@@ -205,7 +207,7 @@ export function mostrar(v, retomar) {
   document.body.classList.add('apres-activo');
   marcarEstado();
   document.body.classList.toggle('apres-lado', vista === 'lado');
-  document.body.classList.toggle('apres-palco', vista === 'gestao');
+  document.body.classList.toggle('apres-palco', vista === 'gestao' || vista === 'operacoes');
   if (palco) palco.remove();
   palco = null;
   if (VISTAS[vista].url) {

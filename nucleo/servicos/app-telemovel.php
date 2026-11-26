@@ -18,7 +18,7 @@ defined('NAVAL_NUCLEO') || exit;
 
 const NAVAL_APP_CODIGO_MIN = 10;        // validade do código QR
 const NAVAL_APP_DIAS_SEM_USO = 90;      // o equipamento expira após 90 dias sem uso
-const NAVAL_APP_NOMES = ['gestao' => 'Naval Gestão', 'operacoes' => 'Naval Operações', 'portal' => 'Portal RTM'];
+const NAVAL_APP_NOMES = ['gestao' => 'RTM Gestão', 'operacoes' => 'RTM Operações', 'portal' => 'RTM Portal'];
 const NAVAL_APP_DESTINO = ['gestao' => '../gestao/', 'operacoes' => '../operacoes/', 'portal' => '../reports/'];
 
 function naval_app_pasta(string $sub = ''): string
@@ -53,7 +53,7 @@ function naval_app_disponiveis(): array
 }
 
 /**
- * Tarefas da app «Naval Operações» que a conta pode fazer: entrega (o vendedor regista as notas que entrega à
+ * Tarefas da app «RTM Operações» que a conta pode fazer: entrega (o vendedor regista as notas que entrega à
  * tesouraria), contagem (a Logística conta a carrinha) e carga (o armazém lê o QR da PO e confere a carga).
  */
 function naval_app_operacoes_tarefas(): array
@@ -151,7 +151,7 @@ function naval_app_codigo_registo(string $codigo): ?array
 }
 /** Cookie do equipamento (só o identificador, não dá acesso): leva a app à entrada rápida com a biometria. */
 /**
- * Nome do cookie do equipamento: um por app (a Naval Gestão e a Naval Operações no mesmo telemóvel nunca trocam o
+ * Nome do cookie do equipamento: um por app (a RTM Gestão e a RTM Operações no mesmo telemóvel nunca trocam o
  * equipamento uma da outra); sem app, o nome antigo (só se lê, para as apps activadas antes). Na pré-produção, outro:
  * a app da produção nunca perde o seu.
  */
@@ -202,7 +202,9 @@ function naval_app_manifesto(array $c, string $codigo): void
         'id' => 'app-' . $c['app'],
         'name' => 'Grupo Naval · ' . $nome,
         'short_name' => $nome,
-        'description' => $c['app'] === 'gestao' ? 'Vendas do dia, rotas, alertas e assistente de gestão do Grupo Naval.' : 'Portal RTM do Grupo Naval.',
+        'description' => ['gestao' => 'RTM Gestão: vendas do dia, rotas, alertas e assistente de gestão do Grupo Naval.',
+            'operacoes' => 'RTM Operações: entregas à tesouraria, contagem das carrinhas e carga no cais.',
+            'portal' => 'RTM Portal: o portal RTM do Grupo Naval.'][$c['app']] ?? 'Portal RTM do Grupo Naval.',
         'lang' => 'pt-PT',
         'dir' => 'ltr',
         'start_url' => 'activar.php?c=' . rawurlencode($codigo),

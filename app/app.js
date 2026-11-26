@@ -101,4 +101,15 @@
     },
   };
   window.NavalApp = A;
+  // página «instale pelo código QR» aberta numa app já activada (o telemóvel apagou o cookie): o identificador
+  // guardado na própria app leva à entrada com a biometria; o servidor confirma que o equipamento está activo
+  const soQr = document.getElementById('so-qr');
+  if (soQr && A.equipamento()) {
+    const app = new URLSearchParams(location.search).get('app');
+    const destino = { gestao: '../gestao/', operacoes: '../operacoes/', portal: '../reports/' }[app];
+    if (destino && !sessionStorage.getItem('naval-so-qr-tentou')) {
+      sessionStorage.setItem('naval-so-qr-tentou', '1');
+      location.replace('entrar.php?eq=' + encodeURIComponent(A.equipamento()) + '&redirect=' + encodeURIComponent(destino));
+    }
+  }
 })();

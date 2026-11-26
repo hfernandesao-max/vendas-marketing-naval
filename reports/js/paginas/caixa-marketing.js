@@ -464,7 +464,7 @@ R['caixa-marketing'] = (pg) => {
         const td = el('td', 'n' + (feito && Math.abs(v) >= 0.01 ? ' rv-dif' : ''), feito ? kz(v) : '—');
         return td;
       };
-      // declarado pelo vendedor na app Naval Operações (notas e moedas que diz entregar)
+      // declarado pelo vendedor na app RTM Operações (notas e moedas que diz entregar)
       const d0 = dec[r];
       const tdDec = el('td', 'n' + (d0 && ent && Math.abs(ent - d0.total) >= 0.01 ? ' rv-dif' : ''), d0 ? kz(d0.total) : '—');
       if (d0) tdDec.title = t('Declarado às {h}', { h: String(d0.em).slice(11, 16) });

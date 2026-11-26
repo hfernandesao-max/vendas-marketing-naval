@@ -1,6 +1,6 @@
 <?php
 /**
- * App de operações «Naval Operações» (aplicação web instalável no iPhone e no Android), para o trabalho no terreno e
+ * App de operações «RTM Operações» (aplicação web instalável no iPhone e no Android), para o trabalho no terreno e
  * no armazém, cada pessoa só com as suas tarefas (matriz de acessos):
  *   - Entregar dinheiro (vendedor): as notas e moedas que entrega à tesouraria (v1/caixa-entrega);
  *   - Contar a carrinha (Logística): inventário às cegas da carrinha (v1/conciliacao-carrinha);
@@ -28,7 +28,10 @@ if ($previa) {
         naval_registar('app_pre_visualizada', ['app' => 'operacoes']);
     }
 } elseif (!$eqApp) {
-    header('Location: ../app/so-pelo-qr.php', true, 302);
+    // sessão do portal aberta (ex.: entrou no portal no navegador do mesmo telemóvel) mas sem o equipamento: se o
+    // telemóvel está registado para esta app, entra com a biometria; o código QR só quando não está registado
+    $registado = naval_app_equipamento_pedido('operacoes');
+    header('Location: ../app/' . ($registado ? 'entrar.php?redirect=' . rawurlencode('../operacoes/') : 'so-pelo-qr.php?app=operacoes'), true, 302);
     exit;
 }
 // a app só abre com a chave do telemóvel (Face ID, impressão digital ou código de bloqueio): termina a activação

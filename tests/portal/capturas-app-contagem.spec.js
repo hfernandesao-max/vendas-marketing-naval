@@ -1,4 +1,4 @@
-// Capturas de ecrã da app «Naval Operações» › Contar a carrinha, com a API simulada (para apresentar a app).
+// Capturas de ecrã da app «RTM Operações» › Contar a carrinha, com a API simulada (para apresentar a app).
 // Corre à mão: CAPTURAS=pasta npx playwright test tests/portal/capturas-app-contagem.spec.js
 import { test, devices } from '@playwright/test';
 

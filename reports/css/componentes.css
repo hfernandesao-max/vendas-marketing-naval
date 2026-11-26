@@ -6778,3 +6778,25 @@ button.ajuda-b {
   width: 680px;
   max-width: none;
 }
+
+/* Janelas que se ajustam ao conteúdo: alargam até à largura do ecrã e as tabelas cabem lá dentro (os textos longos
+   partem a linha; números e datas não) — sem barra de deslocamento horizontal */
+dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
+  width: fit-content;
+  min-width: min(580px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+}
+.dlg-b table {
+  width: 100%;
+  max-width: 100%;
+}
+.dlg-b th,
+.dlg-b td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dlg-b td.n,
+.dlg-b th.n {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}

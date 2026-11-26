@@ -14,7 +14,7 @@ header('Referrer-Policy: no-referrer');
 $destino = (string) ($_GET['redirect'] ?? '');
 if (!in_array($destino, array_values(NAVAL_APP_DESTINO), true)) $destino = '../reports/';
 // equipamento desta app: o seu cookie, o cookie antigo (se for desta app) ou, sem eles (dados do navegador limpos), o
-// identificador guardado na própria app. A Naval Gestão e a Naval Operações no mesmo telemóvel não se confundem.
+// identificador guardado na própria app. A RTM Gestão e a RTM Operações no mesmo telemóvel não se confundem.
 $appDest = (string) (array_search($destino, NAVAL_APP_DESTINO, true) ?: '');
 $eq = naval_app_equipamento_pedido($appDest, (string) ($_GET['eq'] ?? ''));
 $id = $eq ? (string) $eq['id'] : (string) ($_COOKIE[naval_app_cookie_nome($appDest)] ?? $_COOKIE[naval_app_cookie_nome()] ?? '');

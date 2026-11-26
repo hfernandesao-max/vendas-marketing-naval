@@ -11,7 +11,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 /**
- * Naval Painel: mantém o painel da sala comercial (Fully Kiosk) no ecrã da TV.
+ * RTM Painel: mantém o painel da sala comercial (Fully Kiosk) no ecrã da TV.
  *
  * O Google TV volta à página inicial ao ligar, ao sair do modo de espera, depois de uma falha de luz ou quando alguém
  * carrega em Home; a TCL não deixa as apps arrancarem sozinhas (bloqueia o BOOT_COMPLETED). Um serviço de

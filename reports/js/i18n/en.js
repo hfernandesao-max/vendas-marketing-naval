@@ -2336,7 +2336,7 @@ export const EN = {
   'Entregar dinheiro': 'Hand in cash',
   'Contar a carrinha': 'Count the van',
   'Carregar PO': 'Load PO',
-  'Naval Operações': 'Naval Operations',
+  'RTM Operações': 'RTM Operations',
   'O seu perfil não tem tarefas nesta app.': 'Your profile has no tasks in this app.',
   'Sem rotas atribuídas à sua conta.': 'No routes assigned to your account.',
   'Vendido em dinheiro hoje (Pinguim BO): {v}': 'Sold in cash today (Pinguim BO): {v}',
@@ -2374,8 +2374,8 @@ export const EN = {
   'Confira linha a linha o que foi realmente carregado. Cada diferença pede o motivo.':
     'Check line by line what was actually loaded. Each difference needs a reason.',
   'Dinheiro entregue pelo vendedor': 'Cash handed in by the salesperson',
-  'Entrega do dinheiro pelo vendedor (app Naval Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)':
-    'Cash hand-in by the salesperson (Naval Operations app): notes and coins handed to the treasury (G: the salesperson, on their routes)',
+  'Entrega do dinheiro pelo vendedor (app RTM Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)':
+    'Cash hand-in by the salesperson (RTM Operations app): notes and coins handed to the treasury (G: the salesperson, on their routes)',
   'Aprovada automaticamente: reposição pelo vendido, conciliação sem diferenças e stock do armazém confirmado.':
     'Approved automatically: replenishment of what was sold, settlement without differences and warehouse stock confirmed.',
   'Para aprovar porque: {m}.': 'To approve because: {m}.',
@@ -2690,7 +2690,7 @@ export const EN = {
   'pela própria pessoa': 'by the person themselves',
   'pelo administrador': 'by the administrator',
   '90 dias sem uso': '90 days without use',
-  'Naval Gestão': 'Naval Management',
+  'RTM Gestão': 'RTM Management',
   Substituída: 'Replaced',
   Desactivada: 'Deactivated',
   Expirada: 'Expired',
@@ -5724,4 +5724,8 @@ export const EN = {
   'Abrir manutenção da TV (1 h)': 'Open TV maintenance (1 h)',
   'A TV fecha a depuração em até 2 minutos.': 'The TV closes debugging within 2 minutes.',
   'A TV abre a depuração em até 2 minutos e fecha-a sozinha daqui a 1 hora.': 'The TV opens debugging within 2 minutes and closes it by itself in 1 hour.',
+  'App RTM Gestão': 'RTM Management app',
+  'App RTM Operações': 'RTM Operations app',
+  'Sem câmara? Escrever o número da PO': 'No camera? Type the PO number',
+  'Leia o QR impresso na PO para ver os artigos a carregar.': 'Read the QR printed on the PO to see the items to load.',
 };

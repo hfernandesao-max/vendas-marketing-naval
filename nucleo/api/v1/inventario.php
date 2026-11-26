@@ -1,6 +1,6 @@
 <?php
 /**
- * Inventário dos armazéns (nucleo/servicos/inventario.php), para a app Naval Operações.
+ * Inventário dos armazéns (nucleo/servicos/inventario.php), para a app RTM Operações.
  * Contar: «conciliacao-carrinha» G; validar: «requisicoes-validacao» G; aprovar: «conciliacao-fecho» G.
  *
  * GET  v1/inventario                         {pode, motivos, lista (60 dias)}

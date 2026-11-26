@@ -153,7 +153,7 @@ const VALORES_DETALHE = {
   pelo_proprio: 'pela própria pessoa',
   pelo_administrador: 'pelo administrador',
   expirado: '90 dias sem uso',
-  gestao: 'Naval Gestão',
+  gestao: 'RTM Gestão',
   portal: 'Portal RTM',
 };
 const valorDetalhe = (k, v) => {

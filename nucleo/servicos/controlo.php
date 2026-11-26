@@ -1,6 +1,6 @@
 <?php
 /**
- * Controlo de gestão (app «Naval Gestão» e portal): os indicadores que as equipas de controlo das grandes empresas
+ * Controlo de gestão (app «RTM Gestão» e portal): os indicadores que as equipas de controlo das grandes empresas
  * seguem todos os dias, calculados a partir dos mesmos agregados diários do Pinguim BO que o resto do portal
  * (nucleo/servicos/analise.php), já limitados às rotas de cada pessoa.
  *

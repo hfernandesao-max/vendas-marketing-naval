@@ -74,7 +74,7 @@ function naval_pendentes(string $login, ?array $rotas, array $pode, int $agora, 
             }
         }
     }
-    // ── dinheiro entregue pelos vendedores (app Naval Operações) à espera da contagem da tesouraria ──
+    // ── dinheiro entregue pelos vendedores (app RTM Operações) à espera da contagem da tesouraria ──
     if (!empty($pode['tesouraria'])) {
         naval_servico('caixa-entregas');
         $caixaHoje = naval_caixa_ler($hoje);

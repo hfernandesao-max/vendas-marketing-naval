@@ -1,5 +1,5 @@
 <?php
-// Entrega do dinheiro pelo vendedor (app Naval Operações): declaração por notas, correcção até a tesouraria contar,
+// Entrega do dinheiro pelo vendedor (app RTM Operações): declaração por notas, correcção até a tesouraria contar,
 // conferência declarado × contado × Pinguim BO e o pendente da tesouraria.
 naval_servico('caixa-entregas');
 

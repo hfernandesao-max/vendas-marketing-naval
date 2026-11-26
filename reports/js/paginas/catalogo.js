@@ -152,7 +152,7 @@ export const NOMES_RECURSO = {
   'equipamentos-administrar': 'Equipamentos · registar equipamentos, colaboradores e abate',
   'painel-gestao': 'Início: gráficos de gestão (tendência, comparação por rota, ABC, distribuição numérica, carteira)',
   'resumo-diario': 'Resumo diário por correio electrónico (07:00)',
-  'caixa-entrega': 'Entrega do dinheiro pelo vendedor (app Naval Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)',
+  'caixa-entrega': 'Entrega do dinheiro pelo vendedor (app RTM Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)',
   perdas: 'Perdas e tempo parado por rota (Vr: só as suas rotas)',
   'analises-gestao':
     'Análises de gestão: RFM, coortes, valor do cliente, preço-volume-mix, ABC-XYZ, cesto, concentração, produtividade e cobertura de stock (Vr: só as suas rotas)',

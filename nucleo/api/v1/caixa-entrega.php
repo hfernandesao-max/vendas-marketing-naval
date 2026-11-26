@@ -1,6 +1,6 @@
 <?php
 /**
- * Entrega do dinheiro pelo vendedor (nucleo/servicos/caixa-entregas.php), na app «Naval Operações».
+ * Entrega do dinheiro pelo vendedor (nucleo/servicos/caixa-entregas.php), na app «RTM Operações».
  * Recurso «caixa-entrega» G (o vendedor, nas suas rotas).
  *
  * GET  v1/caixa-entrega?dia=AAAA-MM-DD     rotas da pessoa: o vendido em dinheiro no Pinguim BO, a declaração e o estado

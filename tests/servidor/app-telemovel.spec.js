@@ -52,11 +52,11 @@ async function telemovel(browser) {
 
 test('código QR: pessoal, de uso único e com validade; sem código não há instalação nem manifesto', async () => {
   const { ctx, codigo, url, nome } = await novoCodigo('dir');
-  expect(nome).toBe('Naval Gestão'); // perfil com a app de gestão
+  expect(nome).toBe('RTM Gestão'); // perfil com a app de gestão
   expect(url).toContain('/app/instalar.php?c=' + codigo);
   const m = await (await ctx.get('/app/manifesto.php?c=' + codigo)).json();
   expect(m.start_url).toBe('activar.php?c=' + codigo);
-  expect(m.short_name).toBe('Naval Gestão');
+  expect(m.short_name).toBe('RTM Gestão');
   expect((await ctx.get('/app/manifesto.php?c=invalido')).status()).toBe(404);
   const inv = await (await ctx.get('/app/instalar.php?c=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')).text();
   expect(inv).toContain('Este código QR expirou ou já foi usado');
@@ -80,7 +80,7 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   await expect(t1.page.locator('#act-quem')).toHaveText('Teste DIR');
   await t1.page.locator('#act-bio-b').click(); // Face ID / impressão digital (autenticador virtual)
   await expect(t1.page).toHaveURL(/\/gestao\/$/);
-  await expect(t1.page).toHaveTitle(/Naval Gestão/);
+  await expect(t1.page).toHaveTitle(/RTM Gestão/);
   expect(avisos().length).toBe(n0 + 1); // aviso por correio à própria pessoa
   // o código só serve uma vez
   const de2 = await t1.ctx.request.post('/app/chave.php', { data: { f: 'activar', codigo }, headers: { Origin: LOCAL } });
@@ -108,13 +108,31 @@ test('instalar pelo QR: activa o equipamento, pede a biometria, entra com ela e 
   await t1.ctx.addCookies(eqCookie);
   await t1.page.goto('/gestao/').catch(() => {});
   await t1.page.waitForURL(/\/gestao\/$/);
-  await expect(t1.page).toHaveTitle(/Naval Gestão/);
+  await expect(t1.page).toHaveTitle(/RTM Gestão/);
   // sem o cookie do equipamento (ex.: dados do navegador limpos): na app a página da palavra-passe nunca aparece,
   // segue para a entrada com a biometria pelo equipamento guardado na própria app
   await t1.ctx.clearCookies();
   await t1.page.goto('/geo/login.php?redirect=../gestao/').catch(() => {});
   await t1.page.waitForURL(/\/gestao\/$/);
-  await expect(t1.page).toHaveTitle(/Naval Gestão/);
+  await expect(t1.page).toHaveTitle(/RTM Gestão/);
+
+  // sessão do portal aberta no mesmo telemóvel (entrou no portal pelo navegador), sem o equipamento: a app pede a
+  // biometria, nunca o código QR
+  const { ctx: noPortal } = await entrar('dir');
+  const sessao = (await noPortal.storageState()).cookies.filter((x) => /NAVALSESS$/.test(x.name));
+  await t1.ctx.clearCookies();
+  await t1.ctx.addCookies([...eqCookie, ...sessao]);
+  visitadas.length = 0;
+  await t1.page.goto('/gestao/').catch(() => {});
+  await t1.page.waitForURL(/\/gestao\/$/);
+  expect(
+    visitadas.some((u) => /so-pelo-qr/.test(u)),
+    visitadas.join(' → '),
+  ).toBe(false);
+  expect(
+    visitadas.some((u) => /entrar\.php/.test(u)),
+    visitadas.join(' → '),
+  ).toBe(true);
 
   // a mesma pessoa activa a app noutro telemóvel: o primeiro deixa de funcionar
   const { ctx: portal, codigo: c2 } = await novoCodigo('dir');
@@ -163,7 +181,7 @@ test('sem o código QR a app não funciona: navegador normal e ícone adicionado
   await page.fill('#usuario', 'dir');
   await page.fill('#senha', SENHA);
   await page.locator('form button[type=submit]').click();
-  await expect(page).toHaveURL(/so-pelo-qr\.php$/);
+  await expect(page).toHaveURL(/so-pelo-qr\.php(\?app=gestao)?$/);
   await expect(page.locator('h1')).toHaveText('Instale a app pelo código QR');
   await ctx.close();
   // ícone adicionado à mão (modo app sem equipamento registado): a entrada não aceita e explica como instalar

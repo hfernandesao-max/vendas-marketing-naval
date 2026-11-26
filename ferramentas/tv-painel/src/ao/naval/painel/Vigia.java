@@ -57,7 +57,7 @@ public class Vigia extends Service {
         super.onCreate();
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel("vigia", "Painel da sala", NotificationManager.IMPORTANCE_MIN));
-        Notification n = new Notification.Builder(this, "vigia").setContentTitle("Naval Painel").setContentText("A manter o painel no ecrã")
+        Notification n = new Notification.Builder(this, "vigia").setContentTitle("RTM Painel").setContentText("A manter o painel no ecrã")
             .setSmallIcon(android.R.drawable.ic_menu_view).build();
         if (Build.VERSION.SDK_INT >= 34) startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
         else startForeground(1, n);

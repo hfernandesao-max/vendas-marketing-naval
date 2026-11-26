@@ -1,4 +1,4 @@
-// Consulta na app de gestão «Naval Gestão»: vendas (até aos últimos 12 meses), documentos com as linhas de artigos,
+// Consulta na app de gestão «RTM Gestão»: vendas (até aos últimos 12 meses), documentos com as linhas de artigos,
 // clientes, artigos e cobranças — o que se consulta no portal, no telemóvel. Só leitura.
 //  - os dados vêm da mesma API do portal (v1/vendas), com o âmbito da conta (rotas, NIF), e cada secção só aparece com
 //    o recurso correspondente na matriz de acessos (ISO/IEC 27001 A.5.15 e A.8.3);

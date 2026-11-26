@@ -1,4 +1,4 @@
-// App «Naval Operações» (/operacoes/) e entrega do dinheiro pelo vendedor (v1/caixa-entrega), com o servidor real:
+// App «RTM Operações» (/operacoes/) e entrega do dinheiro pelo vendedor (v1/caixa-entrega), com o servidor real:
 // sem sessão vai à entrada certa; o vendedor só declara nas suas rotas; a tesouraria vê a declaração na conferência.
 import { test, expect, request } from '@playwright/test';
 import { rmSync } from 'node:fs';

@@ -1,4 +1,4 @@
-# Constrói a app «Naval Painel» (TV da sala) e, com -Tv, instala-a e liga-a por adb na rede.
+# Constrói a app «RTM Painel» (TV da sala) e, com -Tv, instala-a e liga-a por adb na rede.
 #
 #   powershell -File ferramentas\tv-painel\construir.ps1                          só constrói
 #   powershell -File ferramentas\tv-painel\construir.ps1 -Tv 192.168.41.103:5555  constrói, instala e liga o serviço
@@ -44,7 +44,7 @@ $senhaF = "$Ferramentas\naval-painel.senha"
 if (-not (Test-Path $chave)) {
     $senha = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
     Set-Content -Path $senhaF -Value $senha -Encoding ascii -NoNewline
-    & keytool -genkeypair -keystore $chave -storepass $senha -keypass $senha -alias painel -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Naval Painel, O=Grupo Naval, C=AO' | Out-Null
+    & keytool -genkeypair -keystore $chave -storepass $senha -keypass $senha -alias painel -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=RTM Painel, O=Grupo Naval, C=AO' | Out-Null
 }
 $senha = Get-Content $senhaF -Raw
 & "$bt\apksigner.bat" sign --ks $chave --ks-pass "pass:$senha" --out "$saida\naval-painel.apk" "$saida\alinhada.apk"

@@ -1,6 +1,6 @@
 <?php
 /**
- * Inventário dos armazéns (contagem física pela app Naval Operações), segundo as boas práticas de controlo de stock:
+ * Inventário dos armazéns (contagem física pela app RTM Operações), segundo as boas práticas de controlo de stock:
  *   - contagem às cegas: quem conta nunca vê o stock do sistema; a base (stock do Pinguim BO no armazém) fica
  *     congelada no momento em que a contagem começa (corte) — o armazém não deve ter movimentos durante a contagem;
  *   - leitura do código de barras pela câmara (ou procura na lista de artigos desse armazém);

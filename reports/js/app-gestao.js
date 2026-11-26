@@ -1,4 +1,4 @@
-// App de gestão «Naval Gestão» (gestao/index.html): telemóvel, só de leitura. Todas as secções num menu (gaveta
+// App de gestão «RTM Gestão» (gestao/index.html): telemóvel, só de leitura. Todas as secções num menu (gaveta
 // lateral): Hoje; Vendas, Documentos (com as linhas), Clientes, Artigos; Cobranças; Rotas, Controlo; Alertas e
 // Assistente (consulta: app-gestao-consulta.js), cada uma só com o recurso correspondente na matriz de acessos; os dados vêm da API central com o âmbito da conta (v1/sessao, v1/indicadores, v1/vendas/estado,
 // v1/assistente) e actualizam-se a cada 5 minutos enquanto a app está aberta. Nada fica guardado no telefone.

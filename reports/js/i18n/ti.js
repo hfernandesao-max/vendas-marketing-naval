@@ -2302,7 +2302,7 @@ export const TI = {
   'Entregar dinheiro': 'ገንዘብ ኣረክብ',
   'Contar a carrinha': 'ቫን ቁጸር',
   'Carregar PO': 'ጠለብ ጽዓን',
-  'Naval Operações': 'ናይ ናቫል ስራሓት',
+  'RTM Operações': 'RTM ስራሓት',
   'O seu perfil não tem tarefas nesta app.': 'መገለጺኹም ኣብዚ ኣፕ ስራሕ የብሉን።',
   'Sem rotas atribuídas à sua conta.': 'ን ሕሳብኩም ዝተመደበ መስመር የለን።',
   'Vendido em dinheiro hoje (Pinguim BO): {v}': 'ሎሚ ብጥረ ገንዘብ ዝተሸጠ (Pinguim BO)፦ {v}',
@@ -2336,8 +2336,8 @@ export const TI = {
   'Carga conferida': 'ጽዕነት ተረጋጊጹ',
   'Confira linha a linha o que foi realmente carregado. Cada diferença pede o motivo.': 'ብሓቂ ዝተጻዕነ መስመር ብመስመር ኣረጋግጹ። ነፍሲ ወከፍ ፍልልይ ምኽንያት ይሓትት።',
   'Dinheiro entregue pelo vendedor': 'ብሸያጢ ዝተረከበ ገንዘብ',
-  'Entrega do dinheiro pelo vendedor (app Naval Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)':
-    'ምርካብ ገንዘብ ብሸያጢ (ኣፕ ናይ ናቫል ስራሓት)፦ ናብ ግምጃ ቤት ዝረከብ ቕርሽን ሳንቲምን (G: እቲ ሸያጢ፡ ኣብ መስመራቱ)',
+  'Entrega do dinheiro pelo vendedor (app RTM Operações): notas e moedas que entrega à tesouraria (G: o vendedor, nas suas rotas)':
+    'ምርካብ ገንዘብ ብሸያጢ (ኣፕ RTM ስራሓት)፦ ናብ ግምጃ ቤት ዝረከብ ቕርሽን ሳንቲምን (G: እቲ ሸያጢ፡ ኣብ መስመራቱ)',
   'Aprovada automaticamente: reposição pelo vendido, conciliação sem diferenças e stock do armazém confirmado.':
     'ብኣውቶማቲክ ጸዲቑ፦ ምትካእ ናይ ዝተሸጠ፡ ምንጽጻር ብዘይ ፍልልይ፡ ክምችት መኽዘን ተረጋጊጹ።',
   'Para aprovar porque: {m}.': 'ክጸድቕ ዘለዎ ምኽንያቱ፦ {m}።',
@@ -2646,7 +2646,7 @@ export const TI = {
   'pela própria pessoa': 'ባዕሉ እቲ ሰብ',
   'pelo administrador': 'ብኣመሓዳሪ',
   '90 dias sem uso': '90 መዓልቲ ብዘይ ኣጠቓቕማ',
-  'Naval Gestão': 'Naval ምሕደራ',
+  'RTM Gestão': 'RTM ምሕደራ',
   Substituída: 'ተተኪኡ',
   Desactivada: 'ተቛሪጹ',
   Expirada: 'ግዜኡ ሓሊፉ',
@@ -5616,4 +5616,9 @@ export const TI = {
   'Abrir manutenção da TV (1 h)': 'ጽገና ቲቪ ክፈት (1 ሰዓት)',
   'A TV fecha a depuração em até 2 minutos.': 'ቲቪ ኣብ ውሽጢ 2 ደቒቕ ምርመራ ይዓጹ።',
   'A TV abre a depuração em até 2 minutos e fecha-a sozinha daqui a 1 hora.': 'ቲቪ ኣብ ውሽጢ 2 ደቒቕ ምርመራ ይኸፍት እሞ ድሕሪ 1 ሰዓት ብዓርሱ ይዓጽዎ።',
+  'RTM Portal': 'RTM ፖርታል',
+  'App RTM Gestão': 'መተግበሪ RTM ምሕደራ',
+  'App RTM Operações': 'መተግበሪ RTM ስራሓት',
+  'Sem câmara? Escrever o número da PO': 'ካሜራ የለን? ቁጽሪ ጠለብ ጸሓፍ',
+  'Leia o QR impresso na PO para ver os artigos a carregar.': 'ነቶም ዝጸዓኑ ኣቑሑ ንምርኣይ ኣብ ጠለብ ዝተሓትመ QR ኣንብብ።',
 };

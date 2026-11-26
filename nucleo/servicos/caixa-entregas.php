@@ -1,6 +1,6 @@
 <?php
 /**
- * Entrega do dinheiro pelo vendedor (app «Naval Operações»): o vendedor regista no telemóvel as notas e moedas que
+ * Entrega do dinheiro pelo vendedor (app «RTM Operações»): o vendedor regista no telemóvel as notas e moedas que
  * entrega à tesouraria; a declaração chega logo ao portal, para a tesouraria contar e validar.
  *
  * Prática de tesouraria (declaração do portador + contagem independente às cegas + conferência com o sistema):

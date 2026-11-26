@@ -4,6 +4,12 @@ require_once __DIR__ . '/../nucleo/arranque.php';
 naval_iniciar_sessao();
 naval_servico('app-telemovel');
 header('Cache-Control: no-store');
+// telemóvel registado para esta app (cookie do equipamento): nunca pede o código QR, entra com a biometria
+$appQr = (string) ($_GET['app'] ?? '');
+if (isset(NAVAL_APP_DESTINO[$appQr]) && naval_app_equipamento_pedido($appQr)) {
+    header('Location: entrar.php?redirect=' . rawurlencode(NAVAL_APP_DESTINO[$appQr]), true, 302);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt">

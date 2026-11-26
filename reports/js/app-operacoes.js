@@ -1,4 +1,4 @@
-// App de operações «Naval Operações» (operacoes/index.html): telemóvel, para o trabalho no terreno e no armazém. Cada
+// App de operações «RTM Operações» (operacoes/index.html): telemóvel, para o trabalho no terreno e no armazém. Cada
 // pessoa vê só as suas tarefas (decididas no servidor pela matriz de acessos, <meta name="naval-tarefas">):
 //   - Entregar dinheiro (vendedor): notas e moedas que entrega à tesouraria, com o vendido em dinheiro no Pinguim BO
 //     ao lado; a declaração chega logo ao portal, para a tesouraria contar (às cegas) e validar;
@@ -94,7 +94,7 @@ function desenharTarefas() {
 
 function desenhar() {
   desenharTarefas();
-  $('op-h1').textContent = t(TAREFAS[E.tarefa] || 'Naval Operações');
+  $('op-h1').textContent = t(TAREFAS[E.tarefa] || 'RTM Operações');
   const c = $('op-conteudo');
   c.textContent = '';
   c.append(el('p', 'ag-vazio', t('A carregar…')));
@@ -420,8 +420,49 @@ function vistaEntrega(c) {
       c.append(el('p', 'ag-vazio', t((d && d.erro) || 'Não foi possível ler os dados.')));
       return;
     }
-    if (!d.rotas.length) c.append(el('p', 'ag-vazio', t('Sem rotas atribuídas à sua conta.')));
-    d.rotas.forEach((r) => c.append(cartaoEntrega(r, d, dia)));
+    if (!d.rotas.length) {
+      c.append(el('p', 'ag-vazio', t('Sem rotas atribuídas à sua conta.')));
+      return;
+    }
+    // um só ecrã: o vendedor vê a sua rota (a conta fica ligada à rota ao instalar a app); quem acompanha várias rotas
+    // (coordenação, administração) escolhe uma — nunca a lista de todos os vendedores de uma vez
+    if (d.rotas.length === 1) {
+      c.append(cartaoEntrega(d.rotas[0], d, dia));
+      return;
+    }
+    const CH = 'op-entrega-rota';
+    let escolhida = '';
+    try {
+      escolhida = localStorage.getItem(CH) || '';
+    } catch (e) {
+      escolhida = '';
+    }
+    const r0 = d.rotas.find((r) => String(r.rota) === escolhida) || d.rotas[0];
+    const sel = el('select', 'op-rota');
+    sel.setAttribute('aria-label', t('Rota'));
+    d.rotas.forEach((r) => {
+      const o = el('option', null, r.rota + (r.promotor ? ' · ' + r.promotor : ''));
+      o.value = String(r.rota);
+      sel.append(o);
+    });
+    sel.value = String(r0.rota);
+    const lugar = el('div');
+    const mostrarRota = (rota) => {
+      lugar.textContent = '';
+      lugar.append(cartaoEntrega(d.rotas.find((r) => String(r.rota) === rota) || d.rotas[0], d, dia));
+    };
+    sel.addEventListener('change', () => {
+      try {
+        localStorage.setItem(CH, sel.value);
+      } catch (e) {
+        /* sem armazenamento */
+      }
+      mostrarRota(sel.value);
+    });
+    const topo = el('label', 'op-escolha');
+    topo.append(el('span', null, t('Rota')), sel);
+    c.append(topo, lugar);
+    mostrarRota(String(r0.rota));
   });
 }
 // Notas do Kwanza desenhadas (imagem ilustrativa, não reprodução da nota): cor e valor grandes, para se reconhecer
@@ -1197,6 +1238,7 @@ function vistaCarga(c) {
       corpo.textContent = '';
       if (!d || !d.ok) return mostrarErro(erro, d);
       erro.hidden = true;
+      escrever.open = false; // PO aberta: o campo do número recolhe-se e a conferência fica logo à vista
       corpo.append(conferirPO(d.requisicao));
     });
   };
@@ -1204,13 +1246,16 @@ function vistaCarga(c) {
     e.preventDefault();
     abrir(i.value);
   });
-  const ler = botao(t('Ler o QR da PO'), null, () => lerQR((n) => ((i.value = n), abrir(n)), erro));
+  // um só gesto: o botão grande abre a câmara e mostra logo os artigos a carregar; escrever o número fica recolhido
+  const ler = botao(t('Ler o QR da PO'), 'op-ler-qr', () => lerQR((n) => ((i.value = n), abrir(n)), erro));
   const ab = botao(t('Abrir'), 'ag-sec-b');
   ab.type = 'submit';
   f.append(i, el('div', 'op-acc'));
-  f.lastChild.append(ler, ab);
+  f.lastChild.append(ab);
+  const escrever = el('details', 'op-escrever');
+  escrever.append(el('summary', null, t('Sem câmara? Escrever o número da PO')), f);
   const corpo = el('div', 'op-po');
-  k.append(el('p', 'ag-nota', t('Leia o QR impresso na PO (ou escreva o número) para ver o que carregar.')), f, erro);
+  k.append(el('p', 'ag-nota', t('Leia o QR impresso na PO para ver os artigos a carregar.')), ler, escrever, erro);
   c.append(k, corpo);
   if (E.numeroPO) abrir(E.numeroPO);
 }

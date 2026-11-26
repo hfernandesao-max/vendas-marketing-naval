@@ -1,4 +1,4 @@
-// App de gestão «Naval Gestão» no telemóvel (gestao/index.html), com a API simulada: período Hoje · Semana · Mês,
+// App de gestão «RTM Gestão» no telemóvel (gestao/index.html), com a API simulada: período Hoje · Semana · Mês,
 // gráficos, «Precisa de atenção», classificação e detalhe da rota, alertas, aviso de dados incompletos e tema escuro.
 import { test, expect, devices } from '@playwright/test';
 

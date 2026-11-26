@@ -64,7 +64,7 @@ test('espelho: o que se faz na app no computador aparece no telemóvel e vice-ve
   await m.goto('/gestao/index.html');
   await abrir(p, '#inicio');
   // o modo apresentação está activo: a marca aparece; escolhe-se a app de gestão
-  await p.locator('.apres-barra').getByRole('button', { name: 'App de gestão' }).click();
+  await p.locator('.apres-barra').getByRole('button', { name: 'App RTM Gestão' }).click();
   const app = p.frameLocator('.apres-tel iframe');
   await expect(app.locator('#ag-h1')).toHaveText('Hoje');
   // a app já arrancou (o menu tem as secções) — no computador e no telemóvel
