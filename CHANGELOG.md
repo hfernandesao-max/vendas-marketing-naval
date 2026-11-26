@@ -1,5 +1,30 @@
 ## 26-11-2026
 
+### Saídas efectivas e transferências entre armazéns
+
+<!-- paginas: stock-movimentos -->
+<!-- tipo: melhoria -->
+
+- **Só as vendas FR e FA são saídas efectivas** e as **notas de crédito NC abatem-nas**. A mercadoria que sai do armazém FOOD ou NON FOOD para os armazéns dos promotores deixa de contar como saída: é uma **transferência entre armazéns**.
+- A **saída de armazém (SA)** do armazém central liga-se à **guia de transporte (GTC)** que entra na carrinha: o mesmo artigo, nesse dia ou no seguinte. A parte de uma SA sem guia fica à parte, como **«Saída de armazém sem guia»** (em trânsito ou outra saída), em aviso para se confirmar.
+- **Extracto de movimentos:**
+  - novos destaques: **Saídas efectivas** (FR + FA − NC), **Transferências entre armazéns** (enviadas e recebidas), **Entradas externas**, **Saída de armazém sem guia**, **Outras saídas** (quebras, consumos, saídas da carrinha), **Acertos de inventário** e **Variação do stock**;
+  - novo quadro **«Totais por natureza»**;
+  - os totais por armazém ou carrinha mostram as saídas efectivas e as transferências enviadas e recebidas; o resumo por artigo mostra as saídas efectivas;
+  - cada movimento tem a sua **natureza** (venda, nota de crédito, transferência enviada ou recebida, entrada externa, SA sem guia, outra saída, acerto).
+- **Rastreabilidade:** a SA e a guia aparecem numa só seta **armazém central → carrinha**, com os dois documentos. A SA sem guia vai para a caixa **«Saída de armazém sem guia»**. Só as FR, FA e NC ligam aos clientes.
+- Os códigos de cada natureza ficam no `.env` (`MOV_TIPOS_VENDA`, `MOV_TIPOS_DEVOLUCAO`, `MOV_TIPOS_GUIA`, `MOV_TIPOS_SAIDA_ARMAZEM`).
+- Nova ferramenta só de leitura **`php ferramentas/pinguim-tipos-documento.php`**: lista os tipos de documento com movimento, o que entrou e saiu nos armazéns centrais e nas carrinhas e a natureza que o portal dá a cada um. Mostra também as colunas onde o Pinguim BO pode guardar o documento de origem e as últimas SA com a guia ligada.
+
+### Extracto de movimentos e rastreabilidade: até um ano
+
+<!-- paginas: stock-movimentos -->
+<!-- tipo: melhoria -->
+
+- O **Extracto de movimentos** e a **Rastreabilidade do artigo** aceitam agora períodos **até 366 dias** (um ano completo, mesmo com 29 de Fevereiro), em vez de 31 e 93 dias.
+- Com mais de 20 000 movimentos (ex.: um ano de todos os armazéns), o extracto mostra os primeiros 20 000, mas **os totais — gerais, por armazém, por tipo de documento e por artigo — são sempre de todos os movimentos**, somados directamente no Pinguim BO.
+- Na rastreabilidade, **▶ Reproduzir** percorre o período inteiro em cerca de 20 segundos, e cada caixa ou seta mostra até aos 1 000 documentos mais recentes.
+
 ### Conciliação: prova da hora do fecho e recusas registadas
 
 <!-- paginas: conciliacao-carrinha -->

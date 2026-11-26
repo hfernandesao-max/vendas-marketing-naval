@@ -17,12 +17,13 @@ const s = (tag, at, txt) => {
   return e;
 };
 const reduzir = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const COL = { fornecedores: 0, inventario: 1, central: 1, carrinha: 2, saidas: 2, clientes: 3 };
+const COL = { fornecedores: 0, inventario: 1, central: 1, carrinha: 2, saidas: 2, semguia: 2, clientes: 3 };
 const NOME_FIXO = {
   FORN: 'Fornecedores e entradas',
   CLI: 'Clientes',
   SAI: 'Saídas e quebras',
   INV: 'Acertos de inventário',
+  SSG: 'Saída de armazém sem guia',
 };
 let memo = { chave: '', d: null, aLer: false };
 
@@ -87,16 +88,20 @@ export function seccaoRastreio(artigo, de, ate, redesenhar) {
     }
     if (+rng.value >= diasP.length - 1) rng.value = '0';
     play.textContent = '❚❚ ' + t('Pausa');
-    tempo = setInterval(() => {
-      if (!document.body.contains(palco) || +rng.value >= diasP.length - 1) {
-        clearInterval(tempo);
-        tempo = 0;
-        play.textContent = '▶ ' + t('Reproduzir');
-        return;
-      }
-      rng.value = String(+rng.value + 1);
-      desenhar();
-    }, 700);
+    tempo = setInterval(
+      () => {
+        if (!document.body.contains(palco) || +rng.value >= diasP.length - 1) {
+          clearInterval(tempo);
+          tempo = 0;
+          play.textContent = '▶ ' + t('Reproduzir');
+          return;
+        }
+        rng.value = String(+rng.value + 1);
+        desenhar();
+        // cerca de 20 segundos para o período inteiro (um ano não demora minutos), nunca mais de 0,7 s por dia
+      },
+      Math.min(700, Math.max(50, Math.round(20000 / diasP.length))),
+    );
   });
   rng.addEventListener('input', desenhar);
   barra.append(play, rng, rotulo);
@@ -228,12 +233,23 @@ function fluxo(d, ate) {
   return svg;
 }
 
+const DOCS_MAX = 1000;
 const nomeLocal = (id) => (NOME_FIXO[id] ? t(NOME_FIXO[id]) : String(id).replace(/^A:/, ''));
 
 /** Documentos de uma caixa ou de uma ligação; cada um abre o detalhe. */
 function listaDocs(titulo, docs, ligs, no) {
   janela(titulo, no && no.inicial != null ? t('Stock no início {a} · no fim {b}', { a: n0(no.inicial), b: n0(no.final) }) : '', (b, ft, fechar) => {
-    const ord = docs.slice().sort((x, y) => x.em.localeCompare(y.em));
+    const todos = docs.slice().sort((x, y) => x.em.localeCompare(y.em));
+    // num ano, uma caixa pode ter milhares de vendas: mostram-se as mais recentes
+    const ord = todos.length > DOCS_MAX ? todos.slice(-DOCS_MAX) : todos;
+    if (ord.length < todos.length)
+      b.append(
+        el(
+          'p',
+          'note',
+          t('Mostram-se os {m} documentos mais recentes de {n}: escolha um período mais curto para ver os outros.', { m: n0(DOCS_MAX), n: n0(todos.length) }),
+        ),
+      );
     if (!ord.length) b.append(el('p', 'note', t('Sem documentos até ao dia escolhido.')));
     else {
       const tb = el('table', 'cc-tab rast-docs');

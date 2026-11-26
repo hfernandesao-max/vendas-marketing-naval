@@ -4,7 +4,7 @@
  * documento, por armazém e artigo. Só SELECT no Pinguim BO.
  *
  * GET v1/movimentos?de=AAAA-MM-DD&ate=AAAA-MM-DD[&armazem=código][&artigo=código ou texto][&tipo=FT|GT|…|INV]
- *     recurso «stock-movimentos» (todos os armazéns e carrinhas); período até 31 dias
+ *     recurso «stock-movimentos» (todos os armazéns e carrinhas); período até 366 dias
  */
 defined('NAVAL_API') || exit;
 naval_servico('movimentos');

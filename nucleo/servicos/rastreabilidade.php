@@ -10,12 +10,17 @@
  *   - venda (CALC_SALES_SIGNAL ≠ 0) com saída de um local: «local → clientes»; nota de crédito (entrada): «clientes → local»;
  *   - outra entrada sem saída (compra, devolução ao fornecedor anulada, entrada avulsa): «fornecedores e entradas → local»;
  *   - outra saída sem entrada (saída de armazém, consumo, quebra): «local → saídas e quebras»;
- *   - inventário (INVENTORYHEADER, SET_QNT = 1): «acertos de inventário ↔ local» com o acerto (contado − teórico).
+ *   - inventário (INVENTORYHEADER, SET_QNT = 1): «acertos de inventário ↔ local» com o acerto (contado − teórico);
+ *   - a saída de armazém (SA) do armazém central e a guia de transporte (GTC) que ela gerou para a carrinha são dois
+ *     documentos, mas uma só transferência: liga-se a SA à guia do mesmo artigo nesse dia ou no seguinte, numa seta
+ *     «armazém → carrinha» com os dois documentos. A SA sem guia vai para «saída de armazém sem guia» e a guia sem SA
+ *     vem de «fornecedores e entradas». Só as vendas FR e FA (e a NC) ligam a «clientes».
  * Cada ligação leva os documentos (com a data), para o fluxo animado dia a dia e para abrir cada documento.
  */
 defined('NAVAL_NUCLEO') || exit;
+naval_servico('movimentos');
 
-const NAVAL_RAST_DIAS_MAX = 93;
+const NAVAL_RAST_DIAS_MAX = 366;
 
 /** Tipo de um local pelo código do armazém: carrinha (rota) ou armazém central. */
 function naval_rast_local(string $cod, string $nome, array $conf): array
@@ -31,13 +36,14 @@ function naval_rast_local(string $cod, string $nome, array $conf): array
  * artigo; $locais: função cod,nome → local (naval_rast_local). Devolve {nos: [{id, tipo, nome, rota?, entradas, saidas}],
  * ligacoes: [{de, para, q, docs: [{id, doc, em, q, tipo}]}], documentos: n}.
  */
-function naval_rast_montar(array $linhas, callable $local): array
+function naval_rast_montar(array $linhas, callable $local, array $tipos = NAVAL_MOV_TIPOS_OMISSAO): array
 {
     $nos = [
         'FORN' => ['id' => 'FORN', 'tipo' => 'fornecedores', 'nome' => 'Fornecedores e entradas'],
         'CLI' => ['id' => 'CLI', 'tipo' => 'clientes', 'nome' => 'Clientes'],
         'SAI' => ['id' => 'SAI', 'tipo' => 'saidas', 'nome' => 'Saídas e quebras'],
         'INV' => ['id' => 'INV', 'tipo' => 'inventario', 'nome' => 'Acertos de inventário'],
+        'SSG' => ['id' => 'SSG', 'tipo' => 'semguia', 'nome' => 'Saída de armazém sem guia'],
     ];
     $porDoc = [];
     foreach ($linhas as $l) {
@@ -59,10 +65,29 @@ function naval_rast_montar(array $linhas, callable $local): array
         $lig[$k]['docs'][] = ['id' => $cab['id'], 'doc' => $cab['doc'], 'em' => $cab['em'], 'q' => round($q, 3), 'tipo' => $cab['tipo'], 'tipo_nome' => $cab['tipo_nome'],
             'entidade' => $cab['entidade']];
     };
+    // um documento a mais numa seta, sem somar a quantidade (a guia que acompanha a SA)
+    $anexar = function (string $de, string $para, float $q, array $cab) use (&$lig) {
+        $lig[$de . '>' . $para]['docs'][] = ['id' => $cab['id'], 'doc' => $cab['doc'], 'em' => $cab['em'], 'q' => round($q, 3), 'tipo' => $cab['tipo'],
+            'tipo_nome' => $cab['tipo_nome'], 'entidade' => $cab['entidade']];
+    };
+    $saPend = $guiaPend = [];
     foreach ($porDoc as $d) {
         $cab = $d['cab'];
         $sai = array_filter($d['q'], function ($q) { return $q < 0; });
         $ent = array_filter($d['q'], function ($q) { return $q > 0; });
+        $t = strtoupper($cab['tipo']);
+        // saída de armazém do armazém central: espera pela guia da carrinha
+        if (!$ent && in_array($t, $tipos['saida_armazem'], true) && !array_filter(array_keys($sai), function ($n) use ($nos) { return ($nos[$n]['tipo'] ?? '') !== 'central'; })) {
+            foreach ($sai as $n => $q) $saPend[] = ['no' => $n, 'q' => -$q, 'cab' => $cab];
+            continue;
+        }
+        // guia só com entradas nas carrinhas: liga-se à saída de armazém
+        if (!$sai && in_array($t, $tipos['guia'], true) && !array_filter(array_keys($ent), function ($n) use ($nos) { return ($nos[$n]['tipo'] ?? '') !== 'carrinha'; })) {
+            foreach ($ent as $n => $q) $guiaPend[] = ['no' => $n, 'q' => $q, 'cab' => $cab];
+            continue;
+        }
+        // só as vendas (FR, FA) e as devoluções (NC) ligam a clientes
+        $cab['venda'] = $cab['venda'] || in_array($t, $tipos['venda'], true) || in_array($t, $tipos['devolucao'], true);
         if ($cab['tipo'] === 'INV') {
             foreach ($ent as $n => $q) $somar('INV', $n, $q, $cab);
             foreach ($sai as $n => $q) $somar($n, 'INV', -$q, $cab);
@@ -83,6 +108,28 @@ function naval_rast_montar(array $linhas, callable $local): array
         }
         foreach ($restoE as $ne => $qe) if ($qe >= 0.0005) $somar($cab['venda'] ? 'CLI' : 'FORN', $ne, $qe, $cab);
     }
+    // cada guia consome as saídas de armazém do mesmo dia ou do dia anterior, pela ordem das horas
+    $porHora = function ($a, $b) { return strcmp($a['cab']['em'], $b['cab']['em']); };
+    usort($saPend, $porHora);
+    usort($guiaPend, $porHora);
+    foreach ($guiaPend as $g) {
+        $dg = substr($g['cab']['em'], 0, 10);
+        $antes = date('Y-m-d', (int) strtotime($dg . ' 12:00') - 86400);
+        $qe = $g['q'];
+        foreach ($saPend as &$sa) {
+            if ($qe < 0.0005) break;
+            $ds = substr($sa['cab']['em'], 0, 10);
+            if ($sa['q'] < 0.0005 || ($ds !== $dg && $ds !== $antes)) continue;
+            $m = round(min($sa['q'], $qe), 3);
+            $somar($sa['no'], $g['no'], $m, $sa['cab']);
+            $anexar($sa['no'], $g['no'], $m, $g['cab']);
+            $sa['q'] = round($sa['q'] - $m, 3);
+            $qe = round($qe - $m, 3);
+        }
+        unset($sa);
+        if ($qe >= 0.0005) $somar('FORN', $g['no'], $qe, $g['cab']);
+    }
+    foreach ($saPend as $sa) if ($sa['q'] >= 0.0005) $somar($sa['no'], 'SSG', $sa['q'], $sa['cab']);
     foreach ($nos as &$n) $n += ['entradas' => 0.0, 'saidas' => 0.0];
     unset($n);
     foreach ($lig as $l) {
@@ -134,7 +181,7 @@ function naval_rast_artigo(string $artigo, string $de, string $ate): array
           AND IH.INVENTORY_DATE >= :de AND IH.INVENTORY_DATE < DATEADD(day, 1, CAST(:ate AS DATE))
         GROUP BY IH.ID, IH.DOC_PREFIX, IH.DOC_NUMBER, IH.INVENTORY_DATE, E.CODE", $p);
     $conf = naval_stock_carrinhas_confirmadas();
-    $r = naval_rast_montar(array_merge($docs, $inv), function ($cod, $nome) use ($conf) { return naval_rast_local($cod, $nome, $conf); });
+    $r = naval_rast_montar(array_merge($docs, $inv), function ($cod, $nome) use ($conf) { return naval_rast_local($cod, $nome, $conf); }, naval_mov_tipos());
     // stock de cada local no início (fim do dia anterior) e no fim do período
     $stockEm = function (string $dia) use ($artigo) {
         $s = naval_stock($dia, '');

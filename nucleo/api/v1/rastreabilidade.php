@@ -4,7 +4,7 @@
  * Só SELECT no Pinguim BO.
  *
  * GET v1/rastreabilidade?artigo=código&de=AAAA-MM-DD&ate=AAAA-MM-DD   percurso (nós, ligações com os documentos, stock
- *                                                                    inicial e final de cada local), até 93 dias
+ *                                                                    inicial e final de cada local), até 366 dias
  * GET v1/rastreabilidade?doc=id                                      detalhe de um documento (cabeçalho e linhas)
  * Recurso «stock-movimentos». O nome do cliente das vendas só para quem vê os clientes.
  */

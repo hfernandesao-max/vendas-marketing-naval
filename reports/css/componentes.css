@@ -6900,6 +6900,10 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
 .rast-carrinha rect {
   stroke: #34d399;
 }
+.rast-semguia rect {
+  stroke: #f59e0b;
+  stroke-dasharray: 5 3;
+}
 .rast-clientes rect,
 .rast-fornecedores rect {
   stroke: #f472b6;
@@ -6942,5 +6946,26 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
 }
 .cc-circuito .cc-fecho-hora.aviso {
   color: var(--bad, #b42318);
+  font-weight: 600;
+}
+.mov-nat {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+  background: rgb(var(--lin2-rgb) / 0.14);
+}
+.mov-nat-venda,
+.mov-nat-devolucao {
+  background: rgb(52 211 153 / 0.18);
+  font-weight: 600;
+}
+.mov-nat-transf_enviada,
+.mov-nat-transf_recebida {
+  background: rgb(96 165 250 / 0.18);
+}
+.mov-nat-sem_guia {
+  background: rgb(245 158 11 / 0.22);
   font-weight: 600;
 }

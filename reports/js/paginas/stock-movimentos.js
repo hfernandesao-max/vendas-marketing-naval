@@ -1,5 +1,5 @@
 // Logística › Stock › Extracto de movimentos: todas as entradas e saídas de artigos, documento a documento, em todos
-// os armazéns e carrinhas, no período escolhido (até 31 dias), lidas do Pinguim BO (servidor: nucleo/api/v1/movimentos.php).
+// os armazéns e carrinhas, no período escolhido (até 366 dias), lidas do Pinguim BO (servidor: nucleo/api/v1/movimentos.php).
 //   - filtros: armazém ou carrinha, artigo (código ou nome) e tipo de documento (vendas, guias, devoluções, inventários…);
 //   - com um armazém e um artigo, o extracto mostra o saldo, como um extracto bancário: o stock no fim do dia anterior
 //     e o saldo depois de cada movimento;
@@ -18,7 +18,28 @@ import { st } from '../periodo.js';
 import { el } from '../util.js';
 import { R } from './registo.js';
 
-const MAX = 31;
+const MAX = 366;
+// natureza de cada movimento: só as vendas FR e FA são saídas efectivas (a NC abate-as); SA + guia = transferência
+const NATUREZAS = {
+  venda: 'Vendas (FR, FA): saída efectiva',
+  devolucao: 'Notas de crédito (NC): abatem às vendas',
+  transf_enviada: 'Transferência enviada para outro armazém',
+  transf_recebida: 'Transferência recebida de outro armazém',
+  entrada: 'Entrada externa (compras e outras)',
+  sem_guia: 'Saída de armazém sem guia',
+  outra_saida: 'Outra saída (quebras, consumos, saídas da carrinha)',
+  acerto: 'Acerto de inventário',
+};
+const CURTA = {
+  venda: 'Venda',
+  devolucao: 'Nota de crédito',
+  transf_enviada: 'Transferência enviada',
+  transf_recebida: 'Transferência recebida',
+  entrada: 'Entrada externa',
+  sem_guia: 'SA sem guia',
+  outra_saida: 'Outra saída',
+  acerto: 'Acerto de inventário',
+};
 const dias = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5) + 1;
 const F = { armazem: '', artigo: '', tipo: '' };
 let D = null;
@@ -115,22 +136,74 @@ R['stock-movimentos'] = (pg) => {
   const r = D.resumo;
   const comSaldo = D.saldo_inicial != null;
   const ts = [
-    { l: t('Entradas'), v: n0(r.entradas), s: t('quantidade que entrou') },
-    { l: t('Saídas'), v: n0(r.saidas), s: t('quantidade que saiu') },
-    { l: t('Líquido'), v: n0(r.liquido), tone: r.liquido < 0 ? 'warn' : null },
-    { l: t('Movimentos'), v: n0(r.movimentos), s: t('{n} documentos', { n: n0(r.documentos) }) },
+    {
+      l: t('Saídas efectivas'),
+      v: n0(r.saidas_efectivas || 0),
+      s: t('vendas FR e FA {v} − notas de crédito {d}', { v: n0(r.vendas || 0), d: n0(r.devolucoes || 0) }),
+    },
+    {
+      l: t('Transferências entre armazéns'),
+      v: n0(r.transf_enviadas || 0),
+      s: t('enviadas {a} · recebidas {b}: não são saídas', { a: n0(r.transf_enviadas || 0), b: n0(r.transf_recebidas || 0) }),
+    },
+    { l: t('Entradas externas'), v: n0(r.entradas_externas || 0), s: t('compras e outras entradas') },
   ];
+  if (r.sem_guia) ts.push({ l: t('Saída de armazém sem guia'), v: n0(r.sem_guia), s: t('em trânsito ou outra saída: confirme a guia'), tone: 'warn' });
+  if (r.outras_saidas) ts.push({ l: t('Outras saídas'), v: n0(r.outras_saidas), s: t('quebras, consumos e saídas da carrinha') });
+  if (r.acertos) ts.push({ l: t('Acertos de inventário'), v: n0(r.acertos), s: t('contado − teórico'), tone: r.acertos < 0 ? 'warn' : null });
+  ts.push(
+    {
+      l: t('Variação do stock'),
+      v: n0(r.liquido),
+      s: t('entradas {a} − saídas {b}', { a: n0(r.entradas), b: n0(r.saidas) }),
+      tone: r.liquido < 0 ? 'warn' : null,
+    },
+    { l: t('Movimentos'), v: n0(r.movimentos), s: t('{n} documentos', { n: n0(r.documentos) }) },
+  );
   if (comSaldo) ts.push({ l: t('Saldo'), v: n0(D.saldo_final), s: t('início: {a} · fim: {b}', { a: n0(D.saldo_inicial), b: n0(D.saldo_final) }) });
   pg.append(tiles(ts));
   // um artigo escolhido: o percurso completo em fluxo animado, com os documentos de cada caixa e o detalhe de cada um
   const umArtigo = F.artigo && ((D.por_artigo.length === 1 && D.por_artigo[0].codigo) || (D.por_artigo.find((a) => a.codigo === F.artigo) || {}).codigo);
   if (umArtigo) pg.append(seccaoRastreio(umArtigo, de, ate, draw));
-  if (D.limitado) pg.append(el('p', 'aviso', t('Mostram-se os primeiros 20 000 movimentos: escolha um armazém, um artigo ou um período mais curto.')));
+  if (D.limitado)
+    pg.append(
+      el(
+        'p',
+        'aviso',
+        t(
+          'Mostram-se os primeiros 20 000 movimentos (os totais incluem todos): escolha um armazém, um artigo ou um período mais curto para ver as outras linhas.',
+        ),
+      ),
+    );
   if (!D.linhas.length) {
     pg.append(secBox(t('Movimentos'), '', el('p', 'note', t('Sem movimentos para os filtros escolhidos.'))));
     return;
   }
   const secs = el('div', 'secs');
+  if ((D.por_natureza || []).length)
+    secs.append(
+      tabela({
+        id: 'mov-naturezas',
+        titulo: t('Totais por natureza'),
+        nota: t(
+          'Só as vendas FR e FA são saídas efectivas e as notas de crédito NC abatem-nas. A saída de armazém para a carrinha, com a sua guia, é uma transferência.',
+        ),
+        rows: D.por_natureza.map((x) => ({ ...x, nome: t(NATUREZAS[x.natureza] || x.natureza) })),
+        total: true,
+        cols: [
+          { key: 'nome', label: t('Natureza'), p: 0, wrap: true },
+          { key: 'documentos', label: t('Documentos'), type: 'n', sum: true },
+          { key: 'entradas', label: t('Entradas'), type: 'n', sum: true },
+          { key: 'saidas', label: t('Saídas'), type: 'n', sum: true },
+          { key: 'liquido', label: t('Líquido'), type: 'n', sum: true },
+        ],
+      }),
+    );
+  const efe = [
+    { key: 'saidas_efectivas', label: t('Saídas efectivas'), type: 'n', sum: true },
+    { key: 'transf_enviadas', label: t('Transf. enviadas'), type: 'n', sum: true },
+    { key: 'transf_recebidas', label: t('Transf. recebidas'), type: 'n', sum: true },
+  ];
   // totais por armazém ou carrinha e por tipo de documento (com o número de documentos de cada um)
   const totais = (id, titulo, rows, c1, c2) =>
     tabela({
@@ -144,6 +217,7 @@ R['stock-movimentos'] = (pg) => {
         c1,
         c2,
         { key: 'documentos', label: t('Documentos'), type: 'n', sum: true },
+        ...(id === 'mov-armazens' ? efe : []),
         { key: 'entradas', label: t('Entradas'), type: 'n', sum: true },
         { key: 'saidas', label: t('Saídas'), type: 'n', sum: true },
         { key: 'liquido', label: t('Líquido'), type: 'n', sum: true },
@@ -181,6 +255,7 @@ R['stock-movimentos'] = (pg) => {
         cols: [
           { key: 'codigo', label: t('Código'), p: 0 },
           { key: 'artigo', label: t('Artigo'), wrap: true },
+          efe[0],
           { key: 'entradas', label: t('Entradas'), type: 'n', sum: true },
           { key: 'saidas', label: t('Saídas'), type: 'n', sum: true },
           { key: 'liquido', label: t('Líquido'), type: 'n', sum: true },
@@ -191,6 +266,11 @@ R['stock-movimentos'] = (pg) => {
     { key: 'em', label: t('Data e hora'), p: 0, render: (v) => document.createTextNode(dl(v) + ' ' + String(v).slice(11, 16)) },
     { key: 'doc', label: t('Documento') },
     { key: 'tipo', label: t('Tipo'), render: (v, x) => document.createTextNode(x.tipo_nome ? v + ' · ' + x.tipo_nome : v), wrap: true },
+    {
+      key: 'natureza',
+      label: t('Natureza'),
+      render: (v) => el('span', 'mov-nat mov-nat-' + v, t(CURTA[v] || v || '—')),
+    },
     { key: 'armazem', label: t('Armazém'), render: (v, x) => document.createTextNode(x.armazem_cod + (v ? ' · ' + v : '')), wrap: true },
     { key: 'codigo', label: t('Código') },
     { key: 'artigo', label: t('Artigo'), wrap: true },

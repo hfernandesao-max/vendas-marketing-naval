@@ -148,3 +148,85 @@ test('rastreabilidade: com um artigo, o fluxo entre locais; uma caixa abre os do
   await expect(det).toContainText('1151 · HIGITEC');
   expect(erros).toEqual([]);
 });
+
+test('extracto de movimentos: saídas efectivas só FR e FA (menos NC); SA + guia para a carrinha é transferência; SA sem guia em aviso', async ({ page }) => {
+  const l = (em, doc, tipo, arm, armazem, entrada, saida, natureza) => ({
+    em,
+    doc,
+    tipo,
+    tipo_nome: '',
+    armazem_cod: arm,
+    armazem,
+    codigo: '10000332',
+    artigo: 'FRALDAS NAVAL',
+    entrada,
+    saida,
+    natureza,
+  });
+  const linhas = [
+    l('2026-11-25 07:00:00', 'SA A1000/150', 'SA', '1151', 'HIGITEC', 0, 400, 'transf_enviada'),
+    l('2026-11-25 07:05:00', 'GTC A1000/150', 'GTC', '10001010', 'Carrinha 1010', 400, 0, 'transf_recebida'),
+    l('2026-11-25 10:00:00', 'FR/21', 'FR', '10001010', 'Carrinha 1010', 0, 50, 'venda'),
+    l('2026-11-25 11:00:00', 'FA/3', 'FA', '10001010', 'Carrinha 1010', 0, 30, 'venda'),
+    l('2026-11-25 12:00:00', 'NC/1', 'NC', '10001010', 'Carrinha 1010', 5, 0, 'devolucao'),
+    l('2026-11-25 17:00:00', 'SA A1000/151', 'SA', '1151', 'HIGITEC', 0, 20, 'sem_guia'),
+  ];
+  const der = {
+    saidas_efectivas: 75,
+    vendas: 80,
+    devolucoes: 5,
+    transf_enviadas: 400,
+    transf_recebidas: 400,
+    entradas_externas: 0,
+    sem_guia: 20,
+    outras_saidas: 0,
+    acertos: 0,
+  };
+  await page.route('**/v1/movimentos**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        linhas,
+        resumo: { movimentos: 6, documentos: 6, entradas: 405, saidas: 500, liquido: -95, ...der },
+        por_artigo: [{ codigo: '10000332', artigo: 'FRALDAS NAVAL', entradas: 405, saidas: 500, liquido: -95, ...der }],
+        por_tipo: [],
+        por_armazem: [
+          { armazem_cod: '1151', armazem: 'HIGITEC', documentos: 2, entradas: 0, saidas: 420, liquido: -420, ...der, saidas_efectivas: 0, transf_recebidas: 0 },
+          {
+            armazem_cod: '10001010',
+            armazem: 'Carrinha 1010',
+            documentos: 4,
+            entradas: 405,
+            saidas: 80,
+            liquido: 325,
+            ...der,
+            transf_enviadas: 0,
+            sem_guia: 0,
+          },
+        ],
+        por_natureza: [
+          { natureza: 'venda', documentos: 2, entradas: 0, saidas: 80, liquido: -80 },
+          { natureza: 'devolucao', documentos: 1, entradas: 5, saidas: 0, liquido: 5 },
+          { natureza: 'transf_enviada', documentos: 1, entradas: 0, saidas: 400, liquido: -400 },
+          { natureza: 'transf_recebida', documentos: 1, entradas: 400, saidas: 0, liquido: 400 },
+          { natureza: 'sem_guia', documentos: 1, entradas: 0, saidas: 20, liquido: -20 },
+        ],
+        armazens: [],
+        limitado: false,
+      },
+    }),
+  );
+  const erros = await abrir(page, '#stock-movimentos', { periodo: { preset: 'semana' } });
+  const tile = (n) => page.locator('.tile', { hasText: n });
+  await expect(tile('Saídas efectivas')).toContainText('75');
+  await expect(tile('Saídas efectivas')).toContainText('vendas FR e FA 80 − notas de crédito 5');
+  await expect(tile('Transferências entre armazéns')).toContainText('enviadas 400 · recebidas 400');
+  await expect(tile('Saída de armazém sem guia')).toContainText('20');
+  const nat = page.locator('#s-mov-naturezas');
+  await expect(nat).toContainText('Vendas (FR, FA): saída efectiva');
+  await expect(nat).toContainText('Transferência enviada para outro armazém');
+  await expect(page.locator('#s-mov-armazens')).toContainText('Transf. enviadas');
+  await expect(page.locator('#s-mov-linhas .mov-nat-transf_enviada')).toHaveText('Transferência enviada');
+  await expect(page.locator('#s-mov-linhas .mov-nat-sem_guia')).toHaveText('SA sem guia');
+  expect(erros).toEqual([]);
+});
