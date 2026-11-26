@@ -15,6 +15,7 @@
 - **Rastreabilidade:** a SA e a guia aparecem numa só seta **armazém central → carrinha**, com os dois documentos. A SA sem guia vai para a caixa **«Saída de armazém sem guia»**. Só as FR, FA e NC ligam aos clientes.
 - Os códigos de cada natureza ficam no `.env` (`MOV_TIPOS_VENDA`, `MOV_TIPOS_DEVOLUCAO`, `MOV_TIPOS_GUIA`, `MOV_TIPOS_SAIDA_ARMAZEM`).
 - Nova ferramenta só de leitura **`php ferramentas/pinguim-tipos-documento.php`**: lista os tipos de documento com movimento, o que entrou e saiu nos armazéns centrais e nas carrinhas e a natureza que o portal dá a cada um. Mostra também as colunas onde o Pinguim BO pode guardar o documento de origem e as últimas SA com a guia ligada.
+- Nova ferramenta só de leitura **`php ferramentas/pinguim-artigo.php --artigo=CÓDIGO`**: prova o stock de um artigo. Põe lado a lado o stock de hoje em cada armazém segundo o Pinguim BO e a soma de todos os movimentos. Mostra cada linha com a ligação do Pinguim BO à linha de origem (`PARENT_ID`), as saídas sem destino e as entradas sem origem, e o cabeçalho completo dos documentos sem destino.
 
 ### Extracto de movimentos e rastreabilidade: até um ano
 
