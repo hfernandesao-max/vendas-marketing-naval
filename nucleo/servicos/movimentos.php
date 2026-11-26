@@ -396,7 +396,7 @@ function naval_mov_extracto(string $de, string $ate, string $armazem = '', strin
     };
     $fArt = $artigo !== '' ? ' AND (LTRIM(RTRIM(DMD.PRODUCT_CODE)) = :art OR P.DESCRIPTION LIKE :artl)' : '';
     $pArt = [':de' => $de, ':ate' => $ate] + ($artigo !== '' ? [':art' => $p[':art'], ':artl' => $p[':artl']] : []);
-    $classificar = function (array $ls) use ($marcar, $tipos, $fArt, $pArt, $conf, $de, $ate) {
+    $classificar = function (array $ls) use ($marcar, $tipos, $fArt, $pArt, $conf) {
         $ls = $marcar($ls);
         $temSa = false;
         foreach ($ls as $l) if (!$l['CARRINHA'] && (float) $l['EFEITO'] < 0 && in_array(strtoupper(trim((string) $l['TIPO'])), $tipos['saida_armazem'], true)) $temSa = true;
