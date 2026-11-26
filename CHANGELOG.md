@@ -1,5 +1,24 @@
 ## 26-11-2026
 
+### Conciliação: prova da hora do fecho e recusas registadas
+
+<!-- paginas: conciliacao-carrinha -->
+<!-- tipo: melhoria -->
+
+- No circuito de aprovação, o passo «Contado» mostra **«Contada às … · dia fechado no Pinguim BO às …»**: a prova de que se contou com o telemóvel já sem emitir documentos (a vermelho se, por excepção, a contagem for anterior ao fecho).
+- Cada contagem recusada (dia ainda aberto no Pinguim BO ou sem ligação) fica no registo de actividade como **carrinha_contagem_recusada**, com a data, a rota, quem tentou e o motivo.
+
+### Rastreabilidade do artigo, com fluxo em movimento
+
+<!-- paginas: stock-movimentos -->
+<!-- tipo: funcionalidade -->
+
+- No **Extracto de movimentos**, ao escolher um artigo aparece a **Rastreabilidade do artigo**: o percurso completo entre fornecedores, armazéns centrais, carrinhas, clientes, saídas e acertos de inventário.
+- Cada caixa mostra o stock no início e no fim do período e o que entrou e saiu; cada seta tem a espessura da quantidade e partículas em movimento no sentido do fluxo.
+- **▶ Reproduzir:** o fluxo é desenhado dia a dia, para ver como o artigo andou ao longo do período (também se pode arrastar a barra até um dia).
+- **Carregue numa caixa ou numa seta** para ver a lista dos documentos (data, documento, tipo, de / para, quantidade); **carregue num documento** para o detalhe completo: cabeçalho e todas as linhas, com o efeito no stock de cada uma.
+- Lido do Pinguim BO, só de leitura, até 93 dias. O nome do cliente das vendas só aparece a quem vê os clientes. Cada consulta fica registada.
+
 ### Extracto de movimentos de stock
 
 <!-- paginas: stock-movimentos -->

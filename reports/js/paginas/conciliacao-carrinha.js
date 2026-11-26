@@ -523,6 +523,15 @@ function circuito(r) {
     const li = el('li', feito ? 'feito' : !actual ? 'actual' : null);
     if (!feito) actual = true;
     li.append(el('b', null, t(nome)), el('span', null, feito ? (assinante(quem) || '') + ' · ' + quando(em) : t('pendente')));
+    // a prova de que se contou com o dia já fechado no Pinguim BO (o telemóvel já não emitia documentos)
+    if (i === 0 && feito && r.fecho_pinguim)
+      li.append(
+        el(
+          'span',
+          'cc-fecho-hora' + (String(r.fecho_pinguim) > String(em) ? ' aviso' : ''),
+          t('Contada às {c} · dia fechado no Pinguim BO às {f}', { c: String(em).slice(11, 16), f: String(r.fecho_pinguim).slice(11, 16) }),
+        ),
+      );
     ol.append(li);
   });
   return ol;

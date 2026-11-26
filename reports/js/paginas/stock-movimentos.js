@@ -3,11 +3,14 @@
 //   - filtros: armazém ou carrinha, artigo (código ou nome) e tipo de documento (vendas, guias, devoluções, inventários…);
 //   - com um armazém e um artigo, o extracto mostra o saldo, como um extracto bancário: o stock no fim do dia anterior
 //     e o saldo depois de cada movimento;
-//   - resumo por artigo (entradas, saídas e líquido) e a lista de movimentos, com exportação para Excel.
+//   - resumo por artigo (entradas, saídas e líquido) e a lista de movimentos, com exportação para Excel;
+//   - com um artigo escolhido, a rastreabilidade: o percurso em fluxo animado e o detalhe de cada documento
+//     (componentes/rastreio.js).
 import { apiJson } from '../api.js';
 import { draw } from '../app.js';
 import { secBox, tabela, tiles } from '../componentes/blocos.js';
 import { botao } from '../componentes/janelas.js';
+import { seccaoRastreio } from '../componentes/rastreio.js';
 import { dl, n0 } from '../formatos.js';
 import { t } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
@@ -119,6 +122,9 @@ R['stock-movimentos'] = (pg) => {
   ];
   if (comSaldo) ts.push({ l: t('Saldo'), v: n0(D.saldo_final), s: t('início: {a} · fim: {b}', { a: n0(D.saldo_inicial), b: n0(D.saldo_final) }) });
   pg.append(tiles(ts));
+  // um artigo escolhido: o percurso completo em fluxo animado, com os documentos de cada caixa e o detalhe de cada um
+  const umArtigo = F.artigo && ((D.por_artigo.length === 1 && D.por_artigo[0].codigo) || (D.por_artigo.find((a) => a.codigo === F.artigo) || {}).codigo);
+  if (umArtigo) pg.append(seccaoRastreio(umArtigo, de, ate, draw));
   if (D.limitado) pg.append(el('p', 'aviso', t('Mostram-se os primeiros 20 000 movimentos: escolha um armazém, um artigo ou um período mais curto.')));
   if (!D.linhas.length) {
     pg.append(secBox(t('Movimentos'), '', el('p', 'note', t('Sem movimentos para os filtros escolhidos.'))));

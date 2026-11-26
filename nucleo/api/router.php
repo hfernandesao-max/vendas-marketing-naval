@@ -120,6 +120,7 @@ function naval_api_rotas(): array
         $r['v1/stock'] = [['GET', 'POST'], 'jwt', 'stock.php', []];
         $r['v1/stock/estado'] = [['GET'], 'jwt', 'stock.php', ['estado' => '1']];
         $r['v1/movimentos'] = [['GET'], 'jwt', 'movimentos.php', []];
+        $r['v1/rastreabilidade'] = [['GET'], 'jwt', 'rastreabilidade.php', []];
     }
     return $r;
 }

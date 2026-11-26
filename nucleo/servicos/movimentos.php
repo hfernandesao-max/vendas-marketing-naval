@@ -61,13 +61,8 @@ function naval_mov_montar(array $linhas, ?float $saldoInicial = null): array
         $porArt[$c]['entradas'] += $x['entrada'];
         $porArt[$c]['saidas'] += $x['saida'];
         // totais por tipo de documento e por armazém (com o número de documentos de cada um)
-        foreach ([[&$porTipo, $x['tipo'], ['tipo' => $x['tipo'], 'tipo_nome' => $x['tipo_nome']]], [&$porArm, $x['armazem_cod'], ['armazem_cod' => $x['armazem_cod'], 'armazem' => $x['armazem']]]] as $g) {
-            $k = (string) $g[1];
-            if (!isset($g[0][$k])) $g[0][$k] = $g[2] + ['entradas' => 0.0, 'saidas' => 0.0, 'docs' => []];
-            $g[0][$k]['entradas'] += $x['entrada'];
-            $g[0][$k]['saidas'] += $x['saida'];
-            $g[0][$k]['docs'][$x['doc']] = true;
-        }
+        $porTipo = naval_mov_somar($porTipo, $x['tipo'], ['tipo' => $x['tipo'], 'tipo_nome' => $x['tipo_nome']], $x);
+        $porArm = naval_mov_somar($porArm, $x['armazem_cod'], ['armazem_cod' => $x['armazem_cod'], 'armazem' => $x['armazem']], $x);
     }
     $fechar = function (array $grupo) {
         $l = array_values(array_map(function ($a) {
@@ -88,6 +83,17 @@ function naval_mov_montar(array $linhas, ?float $saldoInicial = null): array
     return ['linhas' => $out, 'resumo' => ['movimentos' => count($out), 'documentos' => count($docs), 'entradas' => round($ent, 3), 'saidas' => round($sai, 3),
         'liquido' => round($ent - $sai, 3)], 'por_artigo' => $pa, 'por_tipo' => $fechar($porTipo), 'por_armazem' => $fechar($porArm),
         'saldo_inicial' => $saldoInicial, 'saldo_final' => $saldo];
+}
+
+/** Soma um movimento a um grupo de totais (por tipo ou por armazém), com os documentos distintos. */
+function naval_mov_somar(array $grupo, string $chave, array $base, array $x): array
+{
+    $g = $grupo[$chave] ?? $base + ['entradas' => 0.0, 'saidas' => 0.0, 'docs' => []];
+    $g['entradas'] += $x['entrada'];
+    $g['saidas'] += $x['saida'];
+    $g['docs'][$x['doc']] = true;
+    $grupo[$chave] = $g;
+    return $grupo;
 }
 
 /** Lê os movimentos do Pinguim BO e monta o extracto. $armazem: código do armazém ('' = todos); $artigo: código ou texto. */

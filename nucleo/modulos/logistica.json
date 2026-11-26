@@ -43,6 +43,7 @@
     "v1/robo/ordens",
     "v1/stock",
     "v1/movimentos",
+    "v1/rastreabilidade",
     "v1/stock/estado",
     "v1/painel-carrinha"
   ],

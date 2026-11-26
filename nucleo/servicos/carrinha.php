@@ -1980,7 +1980,13 @@ function naval_carr_exigir_fecho(string $data, string $rota, array $eu, string $
         error_log('[carrinha fecho do dia] ' . $e->getMessage());
         $l = null;
     }
-    $d = naval_carr_decisao_fecho($l, $rota, $data, naval_perfil() === 'SADM', $excepcao);
+    try {
+        $d = naval_carr_decisao_fecho($l, $rota, $data, naval_perfil() === 'SADM', $excepcao);
+    } catch (NavalErro $e) {
+        // a recusa fica no registo de actividade: quem tentou contar, quando, e porquê (dia aberto ou sem ligação)
+        naval_registar('carrinha_contagem_recusada', ['data' => $data, 'rota' => $rota, 'motivo' => $l === null ? 'sem_ligacao' : 'dia_aberto']);
+        throw $e;
+    }
     if (isset($d['excepcao'])) naval_registar('carrinha_contagem_sem_fecho', ['data' => $data, 'rota' => $rota, 'motivo' => $d['excepcao']]);
     return $d;
 }

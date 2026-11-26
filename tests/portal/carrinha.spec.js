@@ -375,6 +375,7 @@ test('conciliação: a diferença regularizada no Pinguim BO fica à vista na li
             ],
             contado_por: 'tec',
             contado_em: '2026-11-21 14:13:00',
+            fecho_pinguim: '2026-11-21 13:58:00',
             motivos: {},
             resumo: { estado: 'por_validar', artigos: 1, alertas: 0, diferencas: 0, falta_kz: 0, sobra_kz: 0 },
             historico: [],
@@ -392,6 +393,9 @@ test('conciliação: a diferença regularizada no Pinguim BO fica à vista na li
   await expect(dif).toContainText('→ 0');
   await expect(dif).toHaveAttribute('title', /regularizada no Pinguim BO -5 \(FR FR0126S77774N\/5, contado devolvido em SA A1000\/130\)/);
   await expect(cartao.locator('.cc-regularizado').last()).toContainText('SA A1000/130');
+  // prova de que se contou com o dia fechado no Pinguim BO
+  await expect(cartao.locator('.cc-circuito .cc-fecho-hora')).toHaveText('Contada às 14:13 · dia fechado no Pinguim BO às 13:58');
+  await expect(cartao.locator('.cc-circuito .cc-fecho-hora.aviso')).toHaveCount(0);
   expect(erros).toEqual([]);
 });
 

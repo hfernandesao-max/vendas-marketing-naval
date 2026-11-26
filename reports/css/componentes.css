@@ -6833,3 +6833,114 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Rastreabilidade do artigo: fluxo animado entre locais */
+.rast-tempo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 10px;
+}
+.rast-tempo input[type='range'] {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.rast-dia {
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 110px;
+}
+.rast-svg {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  display: block;
+}
+.rast-lig {
+  fill: none;
+  stroke: rgb(var(--ac-rgb, 59 130 246) / 0.45);
+  stroke-linecap: round;
+  cursor: pointer;
+}
+.rast-lig.tras {
+  stroke: rgb(245 158 11 / 0.5);
+  stroke-dasharray: 8 6;
+}
+.rast-lig:hover {
+  stroke: rgb(var(--ac-rgb, 59 130 246) / 0.8);
+}
+.rast-ponto {
+  fill: #7dd3fc;
+  pointer-events: none;
+}
+.rast-q {
+  fill: var(--fg);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.rast-no {
+  cursor: pointer;
+}
+.rast-no rect {
+  fill: rgb(var(--p3-rgb, 30 41 59) / 0.95);
+  stroke: var(--line2, #475569);
+  stroke-width: 1.5;
+}
+.rast-no:hover rect,
+.rast-no:focus rect {
+  stroke: #7dd3fc;
+  stroke-width: 2.5;
+  outline: none;
+}
+.rast-central rect {
+  stroke: #60a5fa;
+}
+.rast-carrinha rect {
+  stroke: #34d399;
+}
+.rast-clientes rect,
+.rast-fornecedores rect {
+  stroke: #f472b6;
+}
+.rast-nome {
+  fill: var(--fg);
+  font-size: 14px;
+  font-weight: 650;
+}
+.rast-sub {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.rast-dif {
+  fill: #f59e0b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rast-doc {
+  cursor: pointer;
+}
+.rast-doc:hover td {
+  background: rgb(var(--lin2-rgb, 148 163 184) / 0.12);
+}
+.rast-cab {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+}
+.rast-cab dt {
+  color: var(--muted);
+}
+.rast-cab dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cc-circuito .cc-fecho-hora {
+  font-size: 11px;
+}
+.cc-circuito .cc-fecho-hora.aviso {
+  color: var(--bad, #b42318);
+  font-weight: 600;
+}
