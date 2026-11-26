@@ -12,6 +12,7 @@
 - Testado em reinícios seguidos: o painel abriu sempre ao ligar e voltou sempre depois do botão Home.
 - O serviço só usa o nome da app que está no ecrã: não lê nem guarda o conteúdo, e não envia nada para fora. A app tem um registo próprio, `adb shell run-as ao.naval.painel cat files/registo.txt`.
 - No modo hotel ficou: sem limpeza de dados ao ligar (Clear User Data: None), volume predefinido a 10 e máximo 80.
+- **Depuração da TV (adb) fechada por omissão.** A app pergunta ao portal a cada 2 minutos e só a abre quando o super administrador carrega em «Abrir manutenção da TV (1 h)» na página do painel. Fecha-a sozinha no fim do prazo, ou em «Fechar manutenção». Fica registado quem abriu.
 
 ### Acessos: localização corrigida quando a operadora tem a rede registada noutro país
 

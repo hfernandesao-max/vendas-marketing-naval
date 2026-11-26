@@ -238,6 +238,13 @@ test('painel da sala: o ecrã diz a versão que tem; «Recarregar ecrã» muda a
   expect((await lig()).em_dia).toBe(false);
   await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo, 'X-Painel-Versao': v2 } });
   expect((await lig()).em_dia).toBe(true);
+  // manutenção da TV: só o SADM; a resposta ao ecrã diz se a app da TV deve abrir a depuração (adb)
+  expect((await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).json()).manutencao).toBe(false);
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'manutencao', id: r.id, minutos: 60, csrf: c } })).status()).toBe(200);
+  expect((await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).json()).manutencao).toBe(true);
+  expect((await ctx.post(API + 'sala/ligacoes', { data: { accao: 'manutencao', id: r.id, minutos: 999, csrf: c } })).status()).toBe(400);
+  await ctx.post(API + 'sala/ligacoes', { data: { accao: 'manutencao', id: r.id, minutos: 0, csrf: c } });
+  expect((await (await tv.get(API + 'sala', { headers: { 'X-Painel-Codigo': r.codigo } })).json()).manutencao).toBe(false);
   // só quem gere o painel
   const { ctx: pro } = await entrar('pro');
   expect((await pro.post(API + 'sala/ligacoes', { data: { accao: 'recarregar', id: r.id, csrf: await csrf(pro) } })).status()).toBe(403);

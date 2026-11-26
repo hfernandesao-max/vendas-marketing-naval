@@ -8,6 +8,7 @@
 # criada na primeira vez nessa pasta (fora do repositório) e reutilizada: as actualizações instalam-se por cima.
 param(
     [string]$Tv = '',
+    [string]$Ligacao = 'C:\Temp\painel.txt',
     [string]$Ferramentas = "$env:LOCALAPPDATA\tv-sala\build"
 )
 $ErrorActionPreference = 'Stop'
@@ -69,5 +70,10 @@ if ($Tv -ne '') {
     & $adb -s $Tv shell pm grant ao.naval.painel android.permission.PACKAGE_USAGE_STATS
     & $adb -s $Tv shell pm grant ao.naval.painel android.permission.SYSTEM_ALERT_WINDOW
     & $adb -s $Tv shell settings put system tcl_app_hotel_mode_define_app ao.naval.painel/ao.naval.painel.Arranque
+    # ligação do painel (para a app perguntar ao portal se a manutenção está aberta): lida de -Ligacao, nunca mostrada
+    if ($Ligacao -ne '' -and (Test-Path $Ligacao)) {
+        $u = (Get-Content $Ligacao -Raw).Trim()
+        & $adb -s $Tv shell "run-as ao.naval.painel sh -c 'mkdir -p files && echo ''$u'' > files/ligacao.txt'"
+    }
     Write-Output "Instalada e ligada na TV $Tv"
 }

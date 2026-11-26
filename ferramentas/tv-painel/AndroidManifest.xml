@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ao.naval.painel"
-    android:versionCode="6"
-    android:versionName="1.5">
+    android:versionCode="7"
+    android:versionName="1.6">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <!-- religar o serviço no arranque (dada por adb: pm grant ... WRITE_SECURE_SETTINGS) -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- perguntar ao portal se a manutenção (adb) está aberta -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- vigia em primeiro plano: ver a app à frente e abrir o painel por cima da página inicial -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />

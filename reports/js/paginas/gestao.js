@@ -713,6 +713,26 @@ R['painel-sala'] = (pg) => {
           }),
         ),
       );
+    // manutenção da TV (super administrador): a app da TV abre a depuração (adb) até à hora indicada e fecha-a sozinha
+    if (!l.revogado && SESSAO && SESSAO.perfil === 'SADM') {
+      const aberta =
+        l.manutencao_ate && l.manutencao_ate > new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' ');
+      if (aberta) linha.append(pill(t('Manutenção aberta até {h}', { h: String(l.manutencao_ate).slice(11, 16) }), 'p-warn'));
+      linha.append(
+        botao(aberta ? t('Fechar manutenção') : t('Abrir manutenção da TV (1 h)'), 'sec', () =>
+          postJson('sala/ligacoes', { accao: 'manutencao', id: l.id, minutos: aberta ? 0 : 60 }).then((r) => {
+            if (r.ok) {
+              DADOS.sala = { ok: true, ligacoes: r.ligacoes };
+              toast(
+                aberta ? t('A TV fecha a depuração em até 2 minutos.') : t('A TV abre a depuração em até 2 minutos e fecha-a sozinha daqui a 1 hora.'),
+                6000,
+              );
+            } else toast(t(r.erro || 'Não foi possível gravar.'), 6000);
+            draw();
+          }),
+        ),
+      );
+    }
     if (!l.revogado) linha.append(botao(t('Ecrãs'), 'sec', () => configurarEcras(l)));
     if (!l.revogado)
       linha.append(

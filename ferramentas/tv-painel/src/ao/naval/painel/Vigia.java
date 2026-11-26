@@ -66,6 +66,20 @@ public class Vigia extends Service {
         Log.i(TAG, "vigia ligada; página inicial = " + inicio);
         Registo.escrever(this, "vigia ligada; página inicial = " + inicio);
         h.postDelayed(verificar, VERIFICAR_MS);
+        // manutenção (adb): pergunta ao portal agora e a cada 2 minutos
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    Manutencao.verificar(Vigia.this);
+                    try {
+                        Thread.sleep(120_000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+        }, "manutencao").start();
     }
 
     @Override

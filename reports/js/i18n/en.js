@@ -5719,4 +5719,9 @@ export const EN = {
   'Localização corrigida em todos os registos desta rede.': 'Location corrected in every record of this network.',
   'Retirar a correcção': 'Remove the correction',
   País: 'Country',
+  'Manutenção aberta até {h}': 'Maintenance open until {h}',
+  'Fechar manutenção': 'Close maintenance',
+  'Abrir manutenção da TV (1 h)': 'Open TV maintenance (1 h)',
+  'A TV fecha a depuração em até 2 minutos.': 'The TV closes debugging within 2 minutes.',
+  'A TV abre a depuração em até 2 minutos e fecha-a sozinha daqui a 1 hora.': 'The TV opens debugging within 2 minutes and closes it by itself in 1 hour.',
 };

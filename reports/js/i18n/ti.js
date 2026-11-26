@@ -5611,4 +5611,9 @@ export const TI = {
   'Localização corrigida em todos os registos desta rede.': 'ቦታ ኣብ ኩሎም መዝገባት ናይዚ መርበብ ተኣሪሙ።',
   'Retirar a correcção': 'ምእራም ኣልግስ',
   País: 'ሃገር',
+  'Manutenção aberta até {h}': 'ጽገና ክሳብ {h} ክፉት',
+  'Fechar manutenção': 'ጽገና ዕጸው',
+  'Abrir manutenção da TV (1 h)': 'ጽገና ቲቪ ክፈት (1 ሰዓት)',
+  'A TV fecha a depuração em até 2 minutos.': 'ቲቪ ኣብ ውሽጢ 2 ደቒቕ ምርመራ ይዓጹ።',
+  'A TV abre a depuração em até 2 minutos e fecha-a sozinha daqui a 1 hora.': 'ቲቪ ኣብ ውሽጢ 2 ደቒቕ ምርመራ ይኸፍት እሞ ድሕሪ 1 ሰዓት ብዓርሱ ይዓጽዎ።',
 };

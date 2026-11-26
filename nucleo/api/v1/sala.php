@@ -11,6 +11,8 @@
  * POST v1/sala/ligacoes {accao: criar (nome) | revogar (id) | configurar (id, ecras, segundos) | recarregar (id), csrf}   o
  *                               código só se mostra uma vez, ao criar; «configurar» escolhe os ecrãs, a ordem (arrastada no
  *                               portal) e o tempo de cada um; «recarregar» faz o ecrã recarregar a página na leitura seguinte
+ * POST v1/sala/ligacoes {accao: manutencao, id, minutos (0 = fechar), csrf}   só o super administrador: a app da TV
+ *                               («Naval Painel») abre a depuração (adb) até à hora indicada e fecha-a sozinha depois
  *
  * Actualizações: cada resposta ao ecrã leva a versão do painel (naval_sala_versao); o ecrã recarrega-se sozinho quando
  * ela muda (portal actualizado ou «Recarregar ecrã») e devolve a versão que tem (X-Painel-Versao), para o portal mostrar
@@ -109,6 +111,20 @@ if (($_GET['gerir'] ?? '') === '1') {
             naval_registar('sala_ligacao_' . $accao, ['id' => $id, 'ip' => $lig[$id]['ip_fixo'] ?? null]);
             return ['id' => $id];
         }
+        if ($accao === 'manutencao') {
+            // a depuração da TV (adb) só abre a pedido do super administrador e fecha sozinha no fim do prazo
+            if (naval_perfil() !== 'SADM') throw new NavalErro('Só o super administrador abre a manutenção da TV.', 403);
+            $id = (string) ($p['id'] ?? '');
+            if (!isset($lig[$id]) || !empty($lig[$id]['revogado'])) throw new NavalErro('Ligação desconhecida.', 404);
+            $min = (int) ($p['minutos'] ?? 0);
+            if ($min < 0 || $min > 240) throw new NavalErro('Duração inválida (até 4 horas).', 400);
+            if ($min === 0) unset($lig[$id]['manutencao_ate']);
+            else $lig[$id]['manutencao_ate'] = date('Y-m-d H:i:s', time() + $min * 60);
+            $lig[$id]['manutencao_por'] = $eu['login'];
+            naval_json_gravar(naval_sala_ficheiro(), $lig);
+            naval_registar('sala_ligacao_manutencao', ['id' => $id, 'minutos' => $min]);
+            return ['id' => $id];
+        }
         if ($accao === 'recarregar') {
             $id = (string) ($p['id'] ?? '');
             if (!isset($lig[$id]) || !empty($lig[$id]['revogado'])) throw new NavalErro('Ligação desconhecida.', 404);
@@ -185,4 +201,6 @@ naval_exclusivo('sala-ligacoes', function () use ($id, $versaoEcra, &$versao) {
     if ($mudou) $lig[$id]['versao_ecra'] = $versaoEcra;
     naval_json_gravar(naval_sala_ficheiro(), $lig);
 });
-naval_json(naval_sala_resposta($local, $config) + ['versao' => $versao]);
+// manutenção da TV pedida no portal: a app «Naval Painel» abre a depuração (adb) enquanto durar
+$manut = (string) (naval_json_ler(naval_sala_ficheiro())[$id]['manutencao_ate'] ?? '');
+naval_json(naval_sala_resposta($local, $config) + ['versao' => $versao, 'manutencao' => $manut !== '' && $manut > date('Y-m-d H:i:s')]);
