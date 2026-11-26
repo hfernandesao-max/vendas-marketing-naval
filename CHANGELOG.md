@@ -1,3 +1,29 @@
+## 26-11-2026
+
+### TV da sala: o painel abre sozinho ao ligar e volta sempre que a TV sai dele
+
+<!-- paginas: painel-sala -->
+<!-- tipo: funcionalidade -->
+
+- Nova app para a TV «Naval Painel», em `ferramentas/tv-painel`. Constrói-se e instala-se pela rede com `construir.ps1 -Tv <IP:5555>`, que também dá as autorizações.
+- **Ao ligar a TV** (falha de luz, botão de ligar): o modo hotel da TCL abre a nossa app. Esse modo liga-se no menu hotel, com o código 6405 no campo Contraste em Definições › Ecrã e som › Imagem › Brilho, e a app indica-se na definição `tcl_app_hotel_mode_define_app`. A TCL só deixa arrancar sozinha a app do modo hotel.
+- A app religa o seu serviço enquanto está à frente, repetindo a cada 2 segundos até ele confirmar, e abre o painel (Fully Kiosk).
+- **Depois:** se a TV ficar 30 segundos na página inicial do Google (botão Home, regresso do modo de espera), o painel volta sozinho. A espera deixa usar as definições da TV.
+- Testado em reinícios seguidos: o painel abriu sempre ao ligar e voltou sempre depois do botão Home.
+- O serviço só usa o nome da app que está no ecrã: não lê nem guarda o conteúdo, e não envia nada para fora. A app tem um registo próprio, `adb shell run-as ao.naval.painel cat files/registo.txt`.
+- No modo hotel ficou: sem limpeza de dados ao ligar (Clear User Data: None), volume predefinido a 10 e máximo 80.
+
+### Acessos: localização corrigida quando a operadora tem a rede registada noutro país
+
+<!-- paginas: acessos -->
+<!-- tipo: correcao -->
+
+- A localização pelo IP vem de uma base de dados que põe cada rede onde a operadora a registou, não onde é usada.
+- Uma ligação de Luanda com endereços registados na Namíbia aparecia em «Windhoek, Namíbia» sem ninguém ter entrado de lá. Ex.: 196.216.51.188, uma ligação usada por várias contas no escritório.
+- O super administrador carrega em **«corrigir»** ao lado da localização e escolhe o país e a cidade (Luanda, Viana, Benguela…). Pode corrigir toda a rede (recomendado) ou só aquele endereço.
+- A correcção vale logo para as entradas novas e para as já registadas: a última entrada, a palavra-passe alterada e os registos de actividade. Os registos encadeados não mudam, porque a correcção aplica-se ao ler.
+- Fica indicado «corrigido», com quem corrigiu e o que a base de dados dizia antes. A correcção pode ser retirada.
+
 ## 25-11-2026
 
 ### Aviso de venda depois do fecho do dia

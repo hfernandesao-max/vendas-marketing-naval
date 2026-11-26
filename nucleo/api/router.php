@@ -42,6 +42,7 @@ function naval_api_rotas(): array
         'v1/sincronizacao' => [['GET'], 'jwt', 'sincronizacao.php', []],
         'v1/pinguim-dia' => [['GET'], 'jwt', 'pinguim-dia.php', []],
         'v1/conhecimento' => [['GET'], 'jwt', 'conhecimento.php', []],
+        'v1/geoip-correcoes' => [['GET', 'POST'], 'jwt', 'geoip-correcoes.php', []],
         'v1/plano' => [['GET', 'POST'], 'jwt', 'plano.php', []],
         'v1/plano/historico' => [['GET'], 'jwt', 'plano.php', ['historico' => '1']],
         'v1/plano/excel' => [['GET'], 'jwt', 'plano.php', ['xlsx' => 'data']],

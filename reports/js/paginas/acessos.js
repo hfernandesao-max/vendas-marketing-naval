@@ -7,7 +7,7 @@ import { IDIOMAS, NOMES_IDIOMA, siglaNivel, t } from '../i18n/i18n.js';
 import { nomeRecurso } from './catalogo.js';
 import { exportarEstrutura, mostrarEstruturaJSON } from '../estrutura.js';
 import { R } from './registo.js';
-import { atual, podeExportar } from '../perfil.js';
+import { SESSAO, atual, podeExportar } from '../perfil.js';
 import { carregarScript, postJson } from '../servidor.js';
 import { el, toast } from '../util.js';
 import { apiFetch, apiJson } from '../api.js';
@@ -902,7 +902,7 @@ R.acessos = (pg) => {
           { key: 'perfil', label: t('Perfil') },
           { key: 'accao', label: t('Acção') },
           { key: 'detalhe', label: t('Detalhe'), wrap: true },
-          { key: 'local', label: t('Localização'), wrap: true, render: (v, row) => celulaLocal(row._loc) },
+          { key: 'local', label: t('Localização'), wrap: true, render: (v, row) => celulaLocal(row._loc, row.ip) },
           { key: 'ip', label: 'IP' },
         ],
       }),
@@ -1206,7 +1206,7 @@ function celulaEvento(data, local, ip) {
   }
   w.append(dl(data) + ' ' + data.slice(11, 16));
   if (local || ip) {
-    const l = celulaLocal(local);
+    const l = celulaLocal(local, ip);
     if (!local) l.textContent = '';
     const sub = el('small', 'ac-evento-l');
     sub.append(l);
@@ -1222,7 +1222,7 @@ function textoLocal(l) {
   const nomes = [l.cidade, l.regiao && l.regiao !== l.cidade ? l.regiao : '', l.pais_nome || l.pais].filter(Boolean).join(', ');
   return nomes + (l.raio_km ? ' (≈ ' + l.raio_km + ' km)' : '');
 }
-function celulaLocal(l) {
+function celulaLocal(l, ip) {
   const w = el('span', 'ac-local');
   if (!l) {
     w.textContent = '—';
@@ -1244,8 +1244,80 @@ function celulaLocal(l) {
     a.rel = 'noopener noreferrer';
     w.append(' · ', a);
   }
-  w.title = [t('Localização aproximada pelo IP, não é uma morada.'), l.fonte, l.posterior ? t('Calculada depois do registo.') : ''].filter(Boolean).join(' ');
+  // a base de dados põe a rede onde a operadora a registou: o super administrador corrige-a (vale para todos os registos)
+  if (ip && SESSAO && SESSAO.perfil === 'SADM') {
+    const c = el('a', 'ac-mapa', l.corrigido ? t('corrigido') : t('corrigir'));
+    c.href = '#';
+    c.addEventListener('click', (e) => {
+      e.preventDefault();
+      corrigirLocal(ip, l);
+    });
+    w.append(' · ', c);
+  }
+  w.title = [
+    l.corrigido ? t('Localização corrigida no portal.') : t('Localização aproximada pelo IP, não é uma morada.'),
+    l.fonte,
+    l.antes ? t('A base de dados dizia: {a}.', { a: l.antes }) : '',
+    l.posterior ? t('Calculada depois do registo.') : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return w;
+}
+
+/** Corrigir a localização de uma rede (ou de um IP): vale para as entradas novas e para as já registadas. */
+function corrigirLocal(ip, l) {
+  apiJson('geoip-correcoes').then((d) => {
+    if (!d || !d.ok) return toast(t((d && d.erro) || 'Não foi possível ler as correcções.'), 6000);
+    const rede = /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip.replace(/\.\d+$/, '.0') + '/24' : '';
+    const chave = d.correcoes[ip] ? ip : rede && d.correcoes[rede] ? rede : '';
+    janela(
+      t('Corrigir a localização'),
+      t(
+        'A base de dados de localização põe cada rede onde a operadora a registou (ex.: uma operadora que serve Angola com endereços da Namíbia). A correcção vale para as entradas novas e para as já registadas.',
+      ),
+      (b, ft, fechar) => {
+        const ambito = el('select');
+        if (rede) ambito.append(new Option(t('Toda a rede {r} (recomendado)', { r: rede }), 'rede'));
+        ambito.append(new Option(t('Só o endereço {ip}', { ip }), 'ip'));
+        const pais = el('select');
+        Object.entries(d.paises).forEach(([k, v]) => pais.append(new Option(v, k)));
+        pais.value = 'AO';
+        const cidade = entrada('text', l && l.corrigido ? l.cidade : 'Luanda', { required: true });
+        const lista = el('datalist');
+        lista.id = 'ac-cidades';
+        d.cidades.forEach((c) => lista.append(new Option(c)));
+        cidade.setAttribute('list', 'ac-cidades');
+        const nota = entrada('text', '', { placeholder: t('ex.: segunda ligação à internet do escritório') });
+        const erro = msgErro();
+        b.append(
+          el('p', 'note', t('Agora: {l}', { l: textoLocal(l) || '—' })),
+          campo(t('Corrigir'), ambito),
+          campo(t('País'), pais),
+          campo(t('Cidade'), cidade),
+          lista,
+          campo(t('Nota'), nota),
+          erro,
+        );
+        const enviar = (corpo) =>
+          postJson('geoip-correcoes', corpo).then((x) => {
+            if (!x || !x.ok) {
+              erro.hidden = false;
+              erro.textContent = t((x && x.erro) || 'Não foi possível gravar.');
+              return;
+            }
+            fechar();
+            toast(t('Localização corrigida em todos os registos desta rede.'), 5000);
+            recarregarGestao();
+          });
+        if (chave) ft.append(botao(t('Retirar a correcção'), 'ghost', () => enviar({ accao: 'remover', chave })));
+        ft.append(
+          botao(t('Cancelar'), 'ghost', fechar),
+          botao(t('Gravar'), null, () => enviar({ accao: 'corrigir', ip, ambito: ambito.value, pais: pais.value, cidade: cidade.value, nota: nota.value })),
+        );
+      },
+    );
+  });
 }
 
 // ---- apps no telemóvel: equipamentos registados pelo código QR (um activo por pessoa) ----

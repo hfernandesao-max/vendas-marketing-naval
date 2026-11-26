@@ -54,3 +54,28 @@ teste('base de dados de localização: renovação automática só quando falta 
     igual(null, naval_geoip_manter(strtotime('today 04:00')), 'já tentou hoje');
     touch($f);
 });
+
+teste('correcção da localização no portal: a rede registada noutro país passa a mostrar o local real, nas entradas novas e nas já registadas', function () {
+    @unlink(naval_geoip_correcoes_ficheiro());
+    naval_geoip_correcoes(true);
+    igual('85.245.146.0/24', naval_geoip_rede('85.245.146.31'));
+    igual('2c0f:f8f0::/48', naval_geoip_rede('2c0f:f8f0::1'));
+    // registo antigo, gravado com a localização da base de dados (Lisboa)
+    $_SERVER['REMOTE_ADDR'] = '85.245.146.31';
+    naval_registar('entrada', [], 'geo-correcao');
+    igual('Lisboa', naval_ler_registos(1)[0]['local']['cidade']);
+    $x = naval_geoip_gravar_correcao('85.245.146.31', 'rede', 'AO', 'Luanda', '', 'segunda ligação do escritório', 'hf');
+    igual(['85.245.146.0/24', 'Angola', 'Luanda', -8.839, 'Lisboa, Portugal'], [$x['chave'], $x['pais_nome'], $x['regiao'], $x['lat'], $x['antes']]);
+    // a mesma rede, outro IP: entradas novas já com o local corrigido
+    $l = naval_geoip('85.245.146.200');
+    igual(['AO', 'Luanda', true], [$l['pais'], $l['cidade'], $l['corrigido']]);
+    // o registo antigo (encadeado, não muda) aparece corrigido ao ler, com o que a base de dados dizia
+    $r = array_values(array_filter(naval_ler_registos(20), function ($x) { return ($x['utilizador'] ?? '') === 'geo-correcao'; }))[0]['local'];
+    igual(['AO', 'Luanda', 'Lisboa, Portugal'], [$r['pais'], $r['cidade'], $r['antes']]);
+    igual('Lisboa', naval_geoip('85.245.146.31', false)['cidade'], 'sem correcções: a base de dados');
+    naval_geoip_remover_correcao('85.245.146.0/24');
+    igual('Lisboa', naval_geoip('85.245.146.31')['cidade'], 'retirada: volta à base de dados');
+    $erro = '';
+    try { naval_geoip_gravar_correcao('192.168.1.5', 'rede', 'AO', 'Luanda', '', '', 'hf'); } catch (NavalErro $e) { $erro = $e->getMessage(); }
+    verdade($erro !== '', 'rede interna não se corrige');
+});

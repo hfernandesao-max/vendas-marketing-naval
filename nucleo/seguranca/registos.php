@@ -110,6 +110,9 @@ function naval_ler_registos(int $max = 300): array
             if (!isset($j['local']) && !empty($j['ip'])) {   // registos anteriores à localização
                 $loc = naval_geoip((string) $j['ip']);
                 if ($loc) $j['local'] = $loc + ['posterior' => true];
+            } elseif (!empty($j['ip']) && function_exists('naval_geoip_corrigir_local')) {
+                // correcção feita no portal depois do registo (a base de dados punha a rede noutro país)
+                $j['local'] = naval_geoip_corrigir_local((string) $j['ip'], (array) $j['local']);
             }
             $out[] = $j;
         }

@@ -165,15 +165,122 @@ function naval_ip_privado(string $ip): bool
     return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
 }
 
+// ── Correcções do portal ─────────────────────────────────────────────────────────────────────────────────────
+// A base de dados põe cada bloco de endereços onde a operadora o registou, não onde é usado: uma operadora que serve
+// Angola com endereços registados na Namíbia aparece em «Windhoek». O super administrador corrige a rede (ou só o IP)
+// uma vez, no portal, e a correcção vale para as entradas novas e para as já registadas (os registos, encadeados, não
+// mudam: a correcção aplica-se ao ler). Fica dito «corrigido no portal» e quem corrigiu.
+
+/** Cidades com coordenadas, para o mapa das correcções (capitais de província de Angola e as mais usadas). */
+const NAVAL_GEOIP_CIDADES = [
+    'Luanda' => ['AO', 'Luanda', -8.839, 13.289], 'Viana' => ['AO', 'Luanda', -8.903, 13.374], 'Cacuaco' => ['AO', 'Luanda', -8.776, 13.371],
+    'Talatona' => ['AO', 'Luanda', -8.917, 13.183], 'Benguela' => ['AO', 'Benguela', -12.578, 13.408], 'Lobito' => ['AO', 'Benguela', -12.364, 13.536],
+    'Huambo' => ['AO', 'Huambo', -12.776, 15.739], 'Lubango' => ['AO', 'Huíla', -14.917, 13.493], 'Cabinda' => ['AO', 'Cabinda', -5.55, 12.2],
+    'Malanje' => ['AO', 'Malanje', -9.54, 16.341], 'Uíge' => ['AO', 'Uíge', -7.608, 15.061], 'Soyo' => ['AO', 'Zaire', -6.135, 12.369],
+    "M'banza Kongo" => ['AO', 'Zaire', -6.267, 14.24], 'Namibe' => ['AO', 'Namibe', -15.196, 12.152], 'Kuito' => ['AO', 'Bié', -12.383, 16.933],
+    'Saurimo' => ['AO', 'Lunda Sul', -9.661, 20.392], 'Dundo' => ['AO', 'Lunda Norte', -7.38, 20.83], 'Menongue' => ['AO', 'Cuando Cubango', -14.659, 17.691],
+    'Ondjiva' => ['AO', 'Cunene', -17.067, 15.733], 'Sumbe' => ['AO', 'Cuanza Sul', -11.206, 13.844], "N'dalatando" => ['AO', 'Cuanza Norte', -9.298, 14.912],
+    'Caxito' => ['AO', 'Bengo', -8.578, 13.664], 'Luena' => ['AO', 'Moxico', -11.783, 19.917],
+];
+const NAVAL_GEOIP_PAISES = ['AO' => 'Angola', 'PT' => 'Portugal', 'NA' => 'Namíbia', 'ZA' => 'África do Sul', 'AE' => 'Emirados Árabes Unidos',
+    'CD' => 'República Democrática do Congo', 'CG' => 'República do Congo', 'BR' => 'Brasil', 'ER' => 'Eritreia', 'ET' => 'Etiópia', 'IN' => 'Índia'];
+
+function naval_geoip_correcoes_ficheiro(): string
+{
+    return naval_pasta_privada() . '/geoip/correcoes.json';
+}
+
+/** Correcções gravadas {chave (IP ou rede/24, /48): {pais, pais_nome, regiao, cidade, lat, lon, por, em, nota}}. */
+function naval_geoip_correcoes(bool $recarregar = false): array
+{
+    static $c = null;
+    if ($c === null || $recarregar) $c = (array) naval_json_ler(naval_geoip_correcoes_ficheiro());
+    return $c;
+}
+
+/** Rede de um IP: IPv4 /24 («196.216.51.0/24»), IPv6 /48. */
+function naval_geoip_rede(string $ip): string
+{
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) return preg_replace('/\.\d+$/', '.0', $ip) . '/24';
+    $b = @inet_pton($ip);
+    if ($b === false || strlen($b) !== 16) return '';
+    return inet_ntop(substr($b, 0, 6) . str_repeat("\0", 10)) . '/48';
+}
+
+/** Correcção que vale para este IP (a do próprio IP primeiro, depois a da rede), já no formato da localização. */
+function naval_geoip_correcao(string $ip): ?array
+{
+    if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) return null;
+    $c = naval_geoip_correcoes();
+    $x = $c[$ip] ?? $c[naval_geoip_rede($ip)] ?? null;
+    if (!is_array($x)) return null;
+    return array_filter(['pais' => (string) ($x['pais'] ?? ''), 'pais_nome' => (string) ($x['pais_nome'] ?? ''), 'regiao' => (string) ($x['regiao'] ?? ''),
+        'cidade' => (string) ($x['cidade'] ?? ''), 'lat' => $x['lat'] ?? null, 'lon' => $x['lon'] ?? null], function ($v) { return $v !== null && $v !== ''; })
+        + ['fonte' => 'corrigido no portal por ' . (string) ($x['por'] ?? '') . ' em ' . substr((string) ($x['em'] ?? ''), 0, 10), 'corrigido' => true];
+}
+
+/** A localização gravada num registo, com a correcção do portal se houver uma para esse IP. */
+function naval_geoip_corrigir_local(string $ip, ?array $local): ?array
+{
+    $c = naval_geoip_correcao($ip);
+    if ($c === null) return $local;
+    if ($local && empty($local['corrigido']) && ($local['pais'] ?? '') !== ($c['pais'] ?? '')) $c['antes'] = trim(($local['cidade'] ?? '') . ', ' . ($local['pais_nome'] ?? $local['pais'] ?? ''), ', ');
+    return $c;
+}
+
+/** Grava ou retira uma correcção (só o super administrador). $ambito: «rede» (o /24 do IP) ou «ip». */
+function naval_geoip_gravar_correcao(string $ip, string $ambito, string $pais, string $cidade, string $regiao, string $nota, string $por): array
+{
+    if (filter_var($ip, FILTER_VALIDATE_IP) === false || naval_ip_privado($ip)) throw new NavalErro('Endereço IP inválido.', 400);
+    $pais = strtoupper(trim($pais));
+    if (!preg_match('/^[A-Z]{2}$/', $pais)) throw new NavalErro('Escolha o país.', 400);
+    $cidade = naval_texto($cidade, 80);
+    if ($cidade === '') throw new NavalErro('Indique a cidade.', 400);
+    $chave = $ambito === 'ip' ? $ip : naval_geoip_rede($ip);
+    $conhecida = NAVAL_GEOIP_CIDADES[$cidade] ?? null;
+    $x = ['pais' => $pais, 'pais_nome' => NAVAL_GEOIP_PAISES[$pais] ?? $pais, 'regiao' => naval_texto($regiao, 80) ?: ($conhecida && $conhecida[0] === $pais ? $conhecida[1] : ''),
+        'cidade' => $cidade, 'lat' => $conhecida && $conhecida[0] === $pais ? $conhecida[2] : null, 'lon' => $conhecida && $conhecida[0] === $pais ? $conhecida[3] : null,
+        'nota' => naval_texto($nota, 200), 'por' => $por, 'em' => date('Y-m-d H:i:s'), 'antes' => naval_geoip_sem_correcao($ip)];
+    naval_exclusivo('geoip-correcoes', function () use ($chave, $x) {
+        $c = naval_geoip_correcoes(true);
+        $c[$chave] = $x;
+        if (!is_dir(dirname(naval_geoip_correcoes_ficheiro()))) @mkdir(dirname(naval_geoip_correcoes_ficheiro()), 0770, true);
+        naval_json_gravar(naval_geoip_correcoes_ficheiro(), $c);
+        naval_geoip_correcoes(true);
+    });
+    naval_registar('geoip_corrigido', ['chave' => $chave, 'local' => $cidade . ', ' . $x['pais_nome']]);
+    return ['chave' => $chave] + $x;
+}
+
+function naval_geoip_remover_correcao(string $chave): void
+{
+    naval_exclusivo('geoip-correcoes', function () use ($chave) {
+        $c = naval_geoip_correcoes(true);
+        if (!isset($c[$chave])) throw new NavalErro('Correcção desconhecida.', 404);
+        unset($c[$chave]);
+        naval_json_gravar(naval_geoip_correcoes_ficheiro(), $c);
+        naval_geoip_correcoes(true);
+    });
+    naval_registar('geoip_correcao_retirada', ['chave' => $chave]);
+}
+
+/** O que a base de dados diz do IP, sem as correcções (para mostrar o «antes»). */
+function naval_geoip_sem_correcao(string $ip): string
+{
+    $l = naval_geoip($ip, false);
+    return trim(($l['cidade'] ?? '') . ', ' . ($l['pais_nome'] ?? ($l['pais'] ?? '')), ', ');
+}
+
 /**
  * Localização do IP: ['pais' => 'AO', 'pais_nome', 'regiao', 'cidade', 'lat', 'lon', 'raio_km', 'fonte'] ou
  * ['rede' => 'interna'] para endereços privados; [] se não houver base de dados ou registo.
  * Nomes em português quando a base os tem (senão em inglês).
  */
-function naval_geoip(string $ip): array
+function naval_geoip(string $ip, bool $comCorrecoes = true): array
 {
     static $bd = false, $cache = [];
     if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) return [];
+    if ($comCorrecoes && !naval_ip_privado($ip) && ($c = naval_geoip_correcao($ip)) !== null) return $c;
     if (isset($cache[$ip])) return $cache[$ip];
     if (naval_ip_privado($ip)) return $cache[$ip] = ['rede' => 'interna'];
     if ($bd === false) {
