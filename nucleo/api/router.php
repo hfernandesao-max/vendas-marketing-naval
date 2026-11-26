@@ -119,6 +119,7 @@ function naval_api_rotas(): array
     if (is_file(__DIR__ . '/v1/stock.php')) {
         $r['v1/stock'] = [['GET', 'POST'], 'jwt', 'stock.php', []];
         $r['v1/stock/estado'] = [['GET'], 'jwt', 'stock.php', ['estado' => '1']];
+        $r['v1/movimentos'] = [['GET'], 'jwt', 'movimentos.php', []];
     }
     return $r;
 }

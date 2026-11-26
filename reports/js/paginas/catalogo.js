@@ -62,6 +62,7 @@ export const PAGES = [
   { id: 'registo-cargas', grupo: 'Logística', icon: 'carga', nome: 'Cargas realizadas' },
   { id: 'stock-carrinha', grupo: 'Logística', icon: 'truck', nome: 'Stock por promotor / carrinha' },
   { id: 'stock-armazem', grupo: 'Logística', icon: 'ware', nome: 'Stock por armazém' },
+  { id: 'stock-movimentos', grupo: 'Logística', icon: 'ware', nome: 'Extracto de movimentos' },
   { id: 'conciliacao-carrinha', grupo: 'Logística', icon: 'scale', nome: 'Conciliação da carrinha' },
   { id: 'painel-carrinha', grupo: 'Logística', icon: 'carrinhaok', nome: 'Painel da carrinha' },
   // Análise: indicadores, previsão e inteligência artificial
@@ -106,7 +107,7 @@ export const FAMILIAS = {
   Planeamento: ['plano-visitas', 'geo-rotas', 'rotas-propostas'],
   'Território e clientes': ['geo-prospeccao', 'geo-zonas', 'geo-distribuidores'],
   Cargas: ['plano-cargas', 'requisicoes-carrinha', 'cargas-po', 'registo-cargas'],
-  Stock: ['stock-carrinha', 'stock-armazem'],
+  Stock: ['stock-carrinha', 'stock-armazem', 'stock-movimentos'],
   'Conciliação da carrinha': ['conciliacao-carrinha', 'painel-carrinha'],
   'Previsão e assistente': ['previsao', 'assistente'],
   'Análises e controlo': ['qualidade-dados', 'perdas', 'analises-gestao', 'auditoria'],
@@ -140,6 +141,7 @@ export const NOMES_RECURSO = {
   'geo-terreno': 'GEO · terreno do dia: percurso, prova de visita e tempos (localização do OLAP)',
   'fecho-dia': 'Fecho do dia por rota por correio electrónico (20:00)',
   'conciliacao-coordenacao': 'Conciliação da carrinha · aprovação do coordenador (1.º nível)',
+  'stock-movimentos': 'Extracto de movimentos · entradas e saídas de artigos em todos os armazéns e carrinhas (E: exportar)',
   'cargas-po': 'Cargas (PO) · conferência no cais, validação e ordens ao Pinguim BO (ver)',
   'requisicoes-validacao':
     'Requisições (PO) · validar pelo controlo de stock: ajustar as quantidades e validar antes da aprovação (G: a função «Validar as PO»)',

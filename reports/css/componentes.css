@@ -6800,3 +6800,36 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
   white-space: nowrap;
   overflow-wrap: normal;
 }
+
+/* Extracto de movimentos: filtros numa linha que parte em ecrãs estreitos */
+.mov-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+}
+.mov-filtros select,
+.mov-filtros input {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+/* Posição do artigo procurado nas páginas de stock */
+.pos-artigo-k {
+  display: grid;
+  gap: 10px;
+}
+.pos-artigo-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pos-artigo-cab h3 {
+  margin: 0;
+  font-size: 17px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

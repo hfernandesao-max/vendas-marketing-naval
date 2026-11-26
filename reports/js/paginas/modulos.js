@@ -42,6 +42,7 @@ const MODULOS = {
   'analises-gestao': () => import('./analises-gestao.js'),
   calendario: () => import('./calendario.js'),
   relatorios: () => import('./relatorios.js'),
+  'stock-movimentos': () => import('./stock-movimentos.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -73,6 +74,7 @@ export const MODULO_DA_PAGINA = {
   'registo-cargas': 'cargas',
   'stock-carrinha': 'logistica',
   'stock-armazem': 'logistica',
+  'stock-movimentos': 'stock-movimentos',
   equipamentos: 'equipamentos',
   'equipamentos-documentos': 'equipamentos',
   'sap-exportar': 'sap',

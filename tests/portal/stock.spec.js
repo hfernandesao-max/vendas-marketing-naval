@@ -257,3 +257,34 @@ test('exportar o stock de todos os armazéns de uma só vez: centrais e carrinha
   await expect(page.getByRole('button', { name: 'Exportar o stock de todos os armazéns' })).toBeVisible();
   expect(erros).toEqual([]);
 });
+
+test('stock: ao procurar um artigo, a posição em todos os armazéns e carrinhas, com totais, disponível e ligação aos movimentos', async ({ page }) => {
+  await simularStock(page);
+  await page.route('**/v1/movimentos**', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        linhas: [],
+        resumo: { movimentos: 0, documentos: 0, entradas: 0, saidas: 0, liquido: 0 },
+        por_artigo: [],
+        por_tipo: [],
+        por_armazem: [],
+        armazens: [],
+      },
+    }),
+  );
+  const erros = await abrir(page, '#stock-armazem?artigo=10000009');
+  const pos = page.locator('.pos-artigo-k');
+  await expect(pos).toHaveCount(1);
+  await expect(pos).toContainText('10000009');
+  // 140 no armazém central HIGITEC + 12 na carrinha 1001 = 152
+  await expect(pos.locator('.tile, .kpi').first()).toContainText('152');
+  await expect(pos).toContainText('HIGITEC PIV - NON FOOD');
+  await expect(pos).toContainText('1001 · Promotor 1001');
+  await expect(pos.locator('tfoot')).toContainText('152');
+  // «Ver movimentos» abre o extracto já filtrado por este artigo
+  const pedido = page.waitForRequest('**/v1/movimentos**');
+  await pos.getByRole('button', { name: 'Ver movimentos' }).click();
+  expect(new URL((await pedido).url()).searchParams.get('artigo')).toBe('10000009');
+  expect(erros).toEqual([]);
+});

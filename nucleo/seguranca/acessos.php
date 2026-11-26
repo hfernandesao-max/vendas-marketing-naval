@@ -48,6 +48,8 @@ const NAVAL_MATRIZ_TXT = [
     'registo-cargas'       => 'V  V  E  Vr Vr V  -  E  -  V  V',
     'stock-carrinha'       => 'V  V  E  Vr Vr V  -  E  -  V  V',
     'stock-armazem'        => 'V  V  E  -  -  V  -  E  -  V  V',
+    // extracto dos movimentos de stock (entradas e saídas de todos os armazéns e carrinhas): quem vê o stock por armazém
+    'stock-movimentos'     => 'V  V  E  -  -  V  -  E  -  V  V',
     'vendas-artigo'        => 'V  E  E  Vr Vr E  -  E  -  E  V',
     'vendas-promotor-artigo' => 'V  E  E  Vr Vr E  -  -  -  E  V',
     'vendas-marca'         => 'V  E  E  Vr Vr E  -  -  -  E  V',

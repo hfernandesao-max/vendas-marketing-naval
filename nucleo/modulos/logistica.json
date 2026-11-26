@@ -12,7 +12,8 @@
     "painel-carrinha",
     "registo-cargas",
     "stock-carrinha",
-    "stock-armazem"
+    "stock-armazem",
+    "stock-movimentos"
   ],
   "recursos": [
     "plano-cargas",
@@ -26,7 +27,8 @@
     "cargas-po",
     "registo-cargas",
     "stock-carrinha",
-    "stock-armazem"
+    "stock-armazem",
+    "stock-movimentos"
   ],
   "api": [
     "v1/plano",
@@ -40,6 +42,7 @@
     "v1/ordens-pinguim",
     "v1/robo/ordens",
     "v1/stock",
+    "v1/movimentos",
     "v1/stock/estado",
     "v1/painel-carrinha"
   ],

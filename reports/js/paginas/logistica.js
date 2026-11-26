@@ -503,6 +503,117 @@ const vazio = (txt) => {
   return v;
 };
 
+// Posição do artigo procurado (boas práticas de gestão de stocks: posição por local, disponível e cobertura): ao procurar
+// um artigo, o stock físico em cada armazém central e em cada carrinha, com a % do total e os totais; o que está por
+// carregar (PO emitidas ainda não carregadas); o disponível nos armazéns (físico − por carregar); a cobertura em dias
+// (stock total ÷ venda média diária do período) e a ligação ao extracto de movimentos desse artigo.
+function posicaoArtigo(pagina, dPos) {
+  const q = filtroAtivo(pagina, 'artigo') ? normTxt(FV.artigo) : '';
+  if (!q) return null;
+  const arts = new Map();
+  const juntar = (codigo, produto, local) => {
+    if (!codigo || !local.quantidade) return;
+    const k = String(codigo);
+    if (!normTxt(k + ' ' + (produto || '')).includes(q)) return;
+    if (!arts.has(k)) arts.set(k, { codigo: k, produto: produto || k, locais: [] });
+    arts.get(k).locais.push(local);
+  };
+  (DB.stock.linhas_armazens || [])
+    .filter((l) => !l.data || l.data === dPos)
+    .forEach((l) =>
+      juntar(l.codigo || l.codigo_produto, l.produto || l.artigo, {
+        tipo: t('Armazém central'),
+        cod: l.cod_armazem || '',
+        nome: l.armazem || '',
+        quantidade: +l.quantidade || 0,
+        central: true,
+      }),
+    );
+  (DB.stock.carrinhas || [])
+    .filter((c) => !c.data || c.data === dPos)
+    .forEach((c) =>
+      (c.itens || c.artigos || []).forEach((it) =>
+        juntar(it.codigo || it.codigo_produto, it.produto || it.artigo, {
+          tipo: t('Carrinha'),
+          cod: it.cod_armazem || '',
+          nome: (c.promotor ? c.rota + ' · ' + c.promotor : t('Rota {r}', { r: c.rota })) + (c.carrinha ? ' · ' + c.carrinha : ''),
+          quantidade: +it.quantidade || 0,
+          central: false,
+        }),
+      ),
+    );
+  if (!arts.size) return el('p', 'note', t('Nenhum armazém ou carrinha tem stock deste artigo em {d}.', { d: dl(dPos) }));
+  const diasPeriodo = st.de && st.ate ? Math.max(1, Math.round((Date.parse(st.ate + 'T12:00:00Z') - Date.parse(st.de + 'T12:00:00Z')) / 864e5) + 1) : 0;
+  const w = el('div', 'secs pos-artigo');
+  [...arts.values()].slice(0, 5).forEach((a) => {
+    const total = sum(a.locais, 'quantidade');
+    const centrais = sum(
+      a.locais.filter((l) => l.central),
+      'quantidade',
+    );
+    let porCarregar = 0;
+    Object.keys(REQ.rotas || {}).forEach((r) => {
+      const x = requisicoesDaRota(r).porArtigo[a.codigo];
+      if (x) porCarregar += x.a_carregar;
+    });
+    const vendido = sum(
+      (DB.artigos || []).filter((l) => String(l.codigo) === a.codigo),
+      'quantidade',
+    );
+    const media = diasPeriodo ? vendido / diasPeriodo : 0;
+    const cobertura = media > 0 ? total / media : null;
+    const sec = el('section', 'pos-artigo-k');
+    const cab = el('div', 'pos-artigo-cab');
+    cab.append(el('h3', null, a.codigo + ' · ' + tArtigo(a.produto)));
+    cab.append(
+      botao(t('Ver movimentos'), 'sm', () => {
+        try {
+          sessionStorage.setItem('vm-mov-pedido', JSON.stringify({ artigo: a.codigo }));
+        } catch (e) {
+          /* sem armazenamento */
+        }
+        location.hash = 'stock-movimentos';
+      }),
+    );
+    sec.append(cab);
+    sec.append(
+      tiles([
+        { l: t('Stock total'), v: n0(total), s: t('Posição em {d}', { d: dl(dPos) }) },
+        { l: t('Armazéns centrais'), v: n0(centrais), s: total ? Math.round((centrais / total) * 100) + ' %' : '' },
+        { l: t('Carrinhas'), v: n0(total - centrais), s: total ? Math.round(((total - centrais) / total) * 100) + ' %' : '' },
+        { l: t('Por carregar'), v: n0(porCarregar), s: t('PO emitidas, ainda não carregadas') },
+        { l: t('Disponível nos armazéns'), v: n0(centrais - porCarregar), s: t('físico − por carregar'), tone: centrais - porCarregar < 0 ? 'warn' : null },
+        {
+          l: t('Cobertura'),
+          v: cobertura == null ? '—' : n0(Math.floor(cobertura)) + ' ' + t('dias'),
+          s: media > 0 ? t('venda média {m}/dia no período', { m: n0(Math.round(media * 10) / 10) }) : t('sem vendas no período'),
+          tone: cobertura != null && cobertura < 3 ? 'warn' : null,
+        },
+      ]),
+    );
+    sec.append(
+      tabela({
+        id: 'pos-artigo-' + a.codigo,
+        titulo: t('Stock por armazém e carrinha'),
+        nota: t('Quantidade física em cada local em {d}, do maior para o menor.', { d: dl(dPos) }),
+        rows: a.locais.map((l) => ({ ...l, pct: total ? l.quantidade / total : 0 })),
+        sort: 'quantidade',
+        total: true,
+        cols: [
+          { key: 'tipo', label: t('Local'), p: 0 },
+          { key: 'cod', label: t('Código') },
+          { key: 'nome', label: t('Armazém ou carrinha'), wrap: true, p: 0 },
+          { key: 'quantidade', label: t('Quantidade'), type: 'n', sum: true, p: 0 },
+          { key: 'pct', label: t('% do total'), type: 'pct', sum: (rows) => (rows.length ? 1 : 0) },
+        ],
+      }),
+    );
+    w.append(sec);
+  });
+  if (arts.size > 5) w.append(el('p', 'note', t('Mostram-se os 5 primeiros artigos encontrados: escreva o código para ver um só.')));
+  return w;
+}
+
 R['stock-carrinha'] = (pg) => {
   if (!stockPronto(pg)) return;
   const dPos = dataPosicao();
@@ -561,6 +672,8 @@ R['stock-carrinha'] = (pg) => {
     ]),
   );
   botaoStockTodos(pg, dPos);
+  const posC = posicaoArtigo('stock-carrinha', dPos);
+  if (posC) pg.append(posC);
   const secs = el('div', 'secs');
   if (!carrinhas.length) secs.append(vazio(t('Sem carrinhas com stock para os filtros escolhidos.')));
   carrinhas.forEach((car) => {
@@ -633,6 +746,8 @@ R['stock-armazem'] = (pg) => {
     ]),
   );
   botaoStockTodos(pg, dPos);
+  const posA = posicaoArtigo('stock-armazem', dPos);
+  if (posA) pg.append(posA);
   const secs = el('div', 'secs');
   if (!itens.length) secs.append(vazio(t('Sem armazéns com stock para os filtros escolhidos.')));
   else {

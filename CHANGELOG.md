@@ -1,5 +1,23 @@
 ## 26-11-2026
 
+### Extracto de movimentos de stock
+
+<!-- paginas: stock-movimentos -->
+<!-- tipo: funcionalidade -->
+
+- Nova página **Logística › Stock › Extracto de movimentos**: todas as entradas e saídas de artigos, documento a documento, em todos os armazéns e carrinhas, no período escolhido (até 31 dias).
+- Cada linha mostra a data e hora, o documento, o tipo (vendas, guias, devoluções, saídas de armazém, inventários…), o armazém, o artigo e a quantidade que entrou ou saiu.
+- Filtros por armazém ou carrinha, artigo (código ou nome) e tipo de documento. Exporta para Excel.
+- **Totais:** gerais (entradas, saídas, líquido, movimentos e documentos), por armazém ou carrinha, por tipo de documento e por artigo, cada quadro com a linha «Total».
+- **Posição do artigo nas páginas de Stock**, segundo as boas práticas de gestão de stocks. Ao procurar um artigo em «Stock por armazém» ou «Stock por promotor / carrinha», aparece logo:
+  - o stock físico em cada armazém central e em cada carrinha, com a % do total e os totais (centrais, carrinhas e geral);
+  - o que está **por carregar** (PO emitidas, ainda não carregadas) e o **disponível nos armazéns** (físico − por carregar);
+  - a **cobertura em dias** (stock total ÷ venda média diária do período);
+  - o botão **«Ver movimentos»**, que abre o extracto já filtrado por esse artigo.
+- **Saldo como num extracto bancário:** com um armazém e um artigo, aparece o stock no fim do dia anterior e o saldo depois de cada movimento.
+- Lido do Pinguim BO, só de leitura. Os documentos anulados ficam de fora, e os inventários entram com o acerto (contado − teórico).
+- Quem vê: quem já vê o stock por armazém (Direcção, Comercial, Logística, Controlo de stock, Coordenação e Responsável da área de negócio). Cada consulta fica registada.
+
 ### Apps com nomes da família RTM, um ecrã por tarefa e no modo apresentação
 
 <!-- paginas: app-telemovel, modo-apresentacao -->
