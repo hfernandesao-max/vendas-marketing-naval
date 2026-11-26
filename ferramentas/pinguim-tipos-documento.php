@@ -10,8 +10,8 @@
  *   1. cada tipo com movimento de stock no período: descrição, sinal de stock, se conta como venda, quantos documentos
  *      e quanto entrou e saiu nos armazéns centrais e nas carrinhas — e a natureza que o portal lhe dá;
  *   2. as colunas de DOCHEADER e DOCMOVDETAIL que podem guardar o documento de origem (SA → GTC gerada a partir dela);
- *   3. as últimas saídas de armazém (SA) dos armazéns centrais e a guia que o portal lhes liga (mesmo artigo, nesse dia
- *      ou no seguinte), para confirmar a ligação.
+ *   3. as últimas saídas de armazém (SA), dos armazéns centrais e das carrinhas, e a guia que o portal lhes liga (a
+ *      gravada ao mesmo tempo, com a mesma quantidade) — ou «venda SAP» quando não há guia.
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
@@ -62,8 +62,10 @@ ksort($porTipo);
 $natureza = function (string $t) use ($tipos) {
     if (in_array($t, $tipos['venda'], true)) return 'venda (saída efectiva)';
     if (in_array($t, $tipos['devolucao'], true)) return 'devolução (abate às vendas)';
-    if (in_array($t, $tipos['guia'], true)) return 'guia (transferência)';
-    if (in_array($t, $tipos['saida_armazem'], true)) return 'SA: transferência se tiver guia';
+    if (in_array($t, $tipos['guia'], true)) return 'guia (transferência recebida)';
+    if (in_array($t, $tipos['saida_armazem'], true)) return 'SA: transferência com guia, senão venda SAP';
+    if (in_array($t, $tipos['devolucao_armazem'], true)) return 'DA: devolução da carrinha (com EA)';
+    if (in_array($t, $tipos['entrada_armazem'], true)) return 'EA: devolução da carrinha com DA, senão compra';
     return 'entrada externa / outra saída';
 };
 echo "1. Tipos de documento\n";
@@ -93,7 +95,7 @@ foreach (naval_bd_consultar("
     ORDER BY TABLE_NAME") as $t) echo '   tabela ' . $t['T'] . "\n";
 
 // 3. últimas SA dos armazéns centrais e a guia ligada pelo portal
-echo "\n3. Últimas saídas de armazém dos armazéns centrais e a guia que o portal lhes liga\n";
+echo "\n3. Últimas saídas de armazém e a guia que o portal lhes liga\n";
 if (!$tipos['saida_armazem'] || !$tipos['guia']) {
     echo "   (sem tipos de saída de armazém ou de guia no .env)\n";
     exit(0);
@@ -113,17 +115,15 @@ $sa = naval_bd_consultar("
     GROUP BY COALESCE(DH.CLOCK_DATE, DH.DOC_DATE), DH.DOC_PREFIX, DC.CODE, DH.DOC_NUMBER, WE.CODE, DMD.PRODUCT_CODE
     HAVING SUM(DMD.QNT * COALESCE(DMD.STK_SIGNAL, DC.STOCK_SIGNAL)) < 0
     ORDER BY HORA DESC", [':ate' => $ate]);
-foreach ($sa as &$l) $l['CARRINHA'] = $carrinha((string) $l['ARM_COD'], (string) $l['ARM']);
-unset($l);
 $deSa = $sa ? substr((string) end($sa)['HORA'], 0, 10) : $ate;
-$guias = naval_mov_guias('', [':de' => $deSa, ':ate' => $ate], $tipos['guia'], $conf);
-$c = naval_mov_classificar($sa, $guias, $tipos);
+$pares = naval_mov_pares('', [':de' => $deSa, ':ate' => $ate], $tipos);
+$c = naval_mov_classificar($sa, $pares, $tipos);
 $mostradas = 0;
-foreach (array_reverse($c) as $l) {
-    if ($l['CARRINHA']) continue;
-    if (++$mostradas > 40) break;
-    echo '   ' . $l['HORA'] . '  ' . str_pad($l['DOC'], 18) . str_pad($l['ARM_COD'], 10) . str_pad($l['CODIGO'], 12) . $n(-$l['EFEITO']) . '   '
-        . ($l['NATUREZA'] === 'transf_enviada' ? 'transferência (com guia)' : 'SEM GUIA') . "\n";
+foreach ($c as $l) {
+    if (++$mostradas > 60) break;
+    $lado = $carrinha((string) $l['ARM_COD'], (string) $l['ARM']) ? 'carrinha' : 'central';
+    echo '   ' . $l['HORA'] . '  ' . str_pad($l['DOC'], 18) . str_pad($l['ARM_COD'] . ' ' . $lado, 20) . str_pad($l['CODIGO'], 12) . $n(-$l['EFEITO']) . '   '
+        . ($l['NATUREZA'] === 'transf_enviada' ? 'transferência → ' . implode(', ', $l['PAR'] ?? []) : 'VENDA SAP (sem entrada noutro armazém)') . "\n";
 }
-if (!$mostradas) echo "   sem saídas de armazém dos armazéns centrais nos últimos 14 dias\n";
-echo "\nAs SA das carrinhas (a Logística tira mercadoria) ficam sempre como «outra saída».\n";
+if (!$mostradas) echo "   sem saídas de armazém nos últimos 14 dias\n";
+echo "\nA SA e a guia (GTC) de uma transferência são gravadas ao mesmo tempo e com a mesma quantidade; a SA sem guia é uma venda SAP.\n";

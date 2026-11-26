@@ -1,5 +1,35 @@
 ## 26-11-2026
 
+### Stock: o extracto confere com o Pinguim BO, armazém a armazém
+
+<!-- paginas: stock-movimentos -->
+<!-- tipo: correcao -->
+
+- **A ligação exacta do Pinguim BO.** O Pinguim BO guarda que documento foi gerado a partir de outro (tabela `DOCHEADERSOURCE`), e o portal usa essa ligação:
+  - a GTC gerada a partir da SA é a transferência dessa SA, mesmo que tenha sido feita minutos depois;
+  - **a SA cuja guia foi anulada** fica à parte, como **«Saída com a guia anulada»**, com aviso e o número da guia. A mercadoria saiu do armazém sem entrar noutro, e é preciso corrigir no Pinguim BO (por exemplo SA A1000/81, /102 e /103).
+- **Transferências sem ligação.** Quando não há ligação (como a devolução DA + EA), uma transferência são dois documentos que o Pinguim BO grava ao mesmo tempo (1 ou 2 segundos) e com a mesma quantidade, ou com os mesmos artigos até 30 minutos depois. A saída (SA, ou DA da carrinha) fica num armazém e a entrada (GTC, ou EA) noutro. O portal liga-os documento a documento:
+  - do armazém central para a carrinha;
+  - **entre carrinhas**;
+  - **da carrinha de volta ao armazém central** (DA + EA).
+
+  Antes ligava as guias às SA do dia pela ordem e misturava documentos. Uma devolução da carrinha também contava como compra.
+- **Vendas SAP.** A SA sem guia noutro armazém é uma **venda feita no SAP** com stock do Pinguim BO. Conta nas saídas efectivas, ao lado das vendas FR e FA (menos NC). Os destaques mostram **Vendido = Pinguim BO + SAP**.
+- **Balanço por armazém**, com um artigo escolhido (código):
+  - stock inicial + entradas − saídas = stock final, ao lado do **stock do próprio Pinguim BO**;
+  - «Confere» ✓, ou a diferença;
+  - por baixo, de onde vieram as entradas (compras, recebido de outro armazém, acertos) e para onde foram as saídas (vendas Pinguim BO, vendas SAP, enviado para outro armazém, outras).
+- Cada transferência na lista de movimentos mostra o documento do outro lado (por exemplo SA A1000/34 → GTC A1000/35).
+- **Rastreabilidade:** as mesmas regras. As transferências entre carrinhas e as devoluções ao armazém central aparecem nas suas setas, e a caixa «Vendas SAP» substitui «Saída de armazém sem guia».
+- Provado com o artigo 10000332 (01-10 a 26-11-2026, 239 movimentos):
+  - compra 3 000, acertos +50;
+  - vendas FR 1 988, vendas SAP 998;
+  - stock final 64 (26 · 12 · 3 · 15 · 8 nas carrinhas 1001 a 1005), igual ao Pinguim BO em todos os armazéns.
+
+  O teste automático usa estes movimentos reais.
+- Novos códigos no `.env`: `MOV_TIPOS_DEVOLUCAO_ARMAZEM` (DA) e `MOV_TIPOS_ENTRADA_ARMAZEM` (EA).
+- **Vendas depois do fecho:** o aviso ao coordenador de cada venda emitida depois do fecho do dia (FCL) voltou a funcionar. A consulta usava o mesmo parâmetro duas vezes, e o driver ODBC recusava-a.
+
 ### Saídas efectivas e transferências entre armazéns
 
 <!-- paginas: stock-movimentos -->

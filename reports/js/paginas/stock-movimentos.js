@@ -3,6 +3,8 @@
 //   - filtros: armazém ou carrinha, artigo (código ou nome) e tipo de documento (vendas, guias, devoluções, inventários…);
 //   - com um armazém e um artigo, o extracto mostra o saldo, como um extracto bancário: o stock no fim do dia anterior
 //     e o saldo depois de cada movimento;
+//   - com um artigo (código), o balanço de cada armazém: stock inicial + entradas − saídas = stock final, ao lado do
+//     stock do próprio Pinguim BO (confere ✓ ou mostra a diferença);
 //   - resumo por artigo (entradas, saídas e líquido) e a lista de movimentos, com exportação para Excel;
 //   - com um artigo escolhido, a rastreabilidade: o percurso em fluxo animado e o detalhe de cada documento
 //     (componentes/rastreio.js).
@@ -19,24 +21,27 @@ import { el } from '../util.js';
 import { R } from './registo.js';
 
 const MAX = 366;
-// natureza de cada movimento: só as vendas FR e FA são saídas efectivas (a NC abate-as); SA + guia = transferência
+// natureza de cada movimento: vendas no Pinguim BO (FR, FA − NC) e vendas SAP (SA sem guia) são as saídas efectivas;
+// a saída e a entrada gravadas ao mesmo tempo, com a mesma quantidade, são uma transferência entre armazéns
 const NATUREZAS = {
-  venda: 'Vendas (FR, FA): saída efectiva',
+  venda: 'Vendas no Pinguim BO (FR, FA)',
   devolucao: 'Notas de crédito (NC): abatem às vendas',
+  venda_sap: 'Vendas SAP (saída de armazém sem guia)',
   transf_enviada: 'Transferência enviada para outro armazém',
   transf_recebida: 'Transferência recebida de outro armazém',
-  entrada: 'Entrada externa (compras e outras)',
-  sem_guia: 'Saída de armazém sem guia',
-  outra_saida: 'Outra saída (quebras, consumos, saídas da carrinha)',
+  guia_anulada: 'Saída com a guia anulada (não entrou noutro armazém)',
+  entrada: 'Compras e outras entradas',
+  outra_saida: 'Outra saída (quebras, consumos)',
   acerto: 'Acerto de inventário',
 };
 const CURTA = {
   venda: 'Venda',
   devolucao: 'Nota de crédito',
+  venda_sap: 'Venda SAP',
   transf_enviada: 'Transferência enviada',
   transf_recebida: 'Transferência recebida',
-  entrada: 'Entrada externa',
-  sem_guia: 'SA sem guia',
+  guia_anulada: 'Guia anulada',
+  entrada: 'Compra',
   outra_saida: 'Outra saída',
   acerto: 'Acerto de inventário',
 };
@@ -135,21 +140,39 @@ R['stock-movimentos'] = (pg) => {
   }
   const r = D.resumo;
   const comSaldo = D.saldo_inicial != null;
+  const B = D.balanco || null;
   const ts = [
+    { l: t('Compras'), v: n0(r.entradas_externas || 0), s: t('entradas de fora (fornecedores)') },
     {
-      l: t('Saídas efectivas'),
+      l: t('Vendido'),
       v: n0(r.saidas_efectivas || 0),
-      s: t('vendas FR e FA {v} − notas de crédito {d}', { v: n0(r.vendas || 0), d: n0(r.devolucoes || 0) }),
+      s: t('Pinguim BO {p} (FR, FA − NC) · SAP {s}', { p: n0(r.vendas_pinguim || 0), s: n0(r.vendas_sap || 0) }),
     },
     {
       l: t('Transferências entre armazéns'),
       v: n0(r.transf_enviadas || 0),
-      s: t('enviadas {a} · recebidas {b}: não são saídas', { a: n0(r.transf_enviadas || 0), b: n0(r.transf_recebidas || 0) }),
+      s: t('só mudam de sítio: não mexem no stock total'),
     },
-    { l: t('Entradas externas'), v: n0(r.entradas_externas || 0), s: t('compras e outras entradas') },
   ];
-  if (r.sem_guia) ts.push({ l: t('Saída de armazém sem guia'), v: n0(r.sem_guia), s: t('em trânsito ou outra saída: confirme a guia'), tone: 'warn' });
-  if (r.outras_saidas) ts.push({ l: t('Outras saídas'), v: n0(r.outras_saidas), s: t('quebras, consumos e saídas da carrinha') });
+  if (B && B.length) {
+    const fim = B.reduce((a, x) => a + x.final, 0);
+    const pin = B.reduce((a, x) => a + x.pinguim, 0);
+    const ok = B.every((x) => Math.abs(x.diferenca) < 0.0005);
+    ts.unshift({
+      l: t('Stock final'),
+      v: n0(fim),
+      s: ok ? t('igual ao Pinguim BO ✓') : t('Pinguim BO: {p} — ver a diferença por armazém', { p: n0(pin) }),
+      tone: ok ? null : 'warn',
+    });
+  }
+  if (r.guias_anuladas)
+    ts.push({
+      l: t('Saídas com a guia anulada'),
+      v: n0(r.guias_anuladas),
+      s: t('saíram do armazém sem entrar noutro: corrigir no Pinguim BO'),
+      tone: 'warn',
+    });
+  if (r.outras_saidas) ts.push({ l: t('Outras saídas'), v: n0(r.outras_saidas), s: t('quebras, consumos e devoluções sem entrada') });
   if (r.acertos) ts.push({ l: t('Acertos de inventário'), v: n0(r.acertos), s: t('contado − teórico'), tone: r.acertos < 0 ? 'warn' : null });
   ts.push(
     {
@@ -180,14 +203,59 @@ R['stock-movimentos'] = (pg) => {
     return;
   }
   const secs = el('div', 'secs');
+  // um artigo: o balanço de cada armazém, conferido com o stock do Pinguim BO
+  if (B && B.length) {
+    const confere = (v) => (Math.abs(v) < 0.0005 ? el('span', 'mov-ok', '✓') : el('span', 'mov-dif', (v > 0 ? '+' : '') + n0(v)));
+    secs.append(
+      tabela({
+        id: 'mov-balanco',
+        titulo: t('Balanço por armazém'),
+        nota: t('Stock em {a} + entradas − saídas = stock em {b}, ao lado do stock do Pinguim BO.', {
+          a: dl(new Date(Date.parse(de + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10)),
+          b: dl(ate),
+        }),
+        rows: B,
+        sort: 'armazem_cod',
+        dir: 1,
+        total: true,
+        cols: [
+          { key: 'armazem', label: t('Armazém'), p: 0, wrap: true, render: (v, x) => document.createTextNode(x.armazem_cod + (v ? ' · ' + v : '')) },
+          { key: 'inicial', label: t('Stock inicial'), type: 'n', sum: true },
+          { key: 'entradas', label: t('Entradas'), type: 'n', sum: true },
+          { key: 'saidas', label: t('Saídas'), type: 'n', sum: true },
+          { key: 'final', label: t('Stock final'), type: 'n', sum: true },
+          { key: 'pinguim', label: t('Pinguim BO'), type: 'n', sum: true },
+          { key: 'diferenca', label: t('Confere'), type: 'n', render: (v) => confere(v) },
+        ],
+      }),
+      tabela({
+        id: 'mov-balanco-detalhe',
+        titulo: t('De onde vieram as entradas e para onde foram as saídas'),
+        nota: t('Vendas = FR e FA − notas de crédito. Vendas SAP = saída de armazém sem guia. Transferências = SA ou DA com a guia ou entrada noutro armazém.'),
+        rows: B,
+        sort: 'armazem_cod',
+        dir: 1,
+        total: true,
+        cols: [
+          { key: 'armazem_cod', label: t('Armazém'), p: 0 },
+          { key: 'compras', label: t('Compras'), type: 'n', sum: true },
+          { key: 'recebido', label: t('Recebido de outro armazém'), type: 'n', sum: true },
+          { key: 'acertos', label: t('Acertos de inventário'), type: 'n', sum: true },
+          { key: 'vendas', label: t('Vendas Pinguim BO'), type: 'n', sum: true },
+          { key: 'vendas_sap', label: t('Vendas SAP'), type: 'n', sum: true },
+          { key: 'enviado', label: t('Enviado para outro armazém'), type: 'n', sum: true },
+          { key: 'anuladas', label: t('Guia anulada'), type: 'n', sum: true },
+          { key: 'outras', label: t('Outras saídas'), type: 'n', sum: true },
+        ],
+      }),
+    );
+  }
   if ((D.por_natureza || []).length)
     secs.append(
       tabela({
         id: 'mov-naturezas',
         titulo: t('Totais por natureza'),
-        nota: t(
-          'Só as vendas FR e FA são saídas efectivas e as notas de crédito NC abatem-nas. A saída de armazém para a carrinha, com a sua guia, é uma transferência.',
-        ),
+        nota: t('Saídas efectivas: vendas no Pinguim BO (FR e FA − NC) e vendas SAP. A saída de armazém com a sua guia noutro armazém é uma transferência.'),
         rows: D.por_natureza.map((x) => ({ ...x, nome: t(NATUREZAS[x.natureza] || x.natureza) })),
         total: true,
         cols: [
@@ -200,7 +268,8 @@ R['stock-movimentos'] = (pg) => {
       }),
     );
   const efe = [
-    { key: 'saidas_efectivas', label: t('Saídas efectivas'), type: 'n', sum: true },
+    { key: 'saidas_efectivas', label: t('Vendido'), type: 'n', sum: true },
+    { key: 'vendas_sap', label: t('Vendas SAP'), type: 'n', sum: true },
     { key: 'transf_enviadas', label: t('Transf. enviadas'), type: 'n', sum: true },
     { key: 'transf_recebidas', label: t('Transf. recebidas'), type: 'n', sum: true },
   ];
@@ -269,7 +338,14 @@ R['stock-movimentos'] = (pg) => {
     {
       key: 'natureza',
       label: t('Natureza'),
-      render: (v) => el('span', 'mov-nat mov-nat-' + v, t(CURTA[v] || v || '—')),
+      // a transferência mostra o documento do outro lado (a guia da SA, a SA da guia)
+      render: (v, x) => {
+        const e = el('span', 'mov-nat mov-nat-' + v, t(CURTA[v] || v || '—'));
+        if (!x.par || !x.par.length) return e;
+        const w = el('span', 'mov-nat-par');
+        w.append(e, document.createTextNode((v === 'transf_recebida' ? ' ← ' : ' → ') + x.par.join(', ')));
+        return w;
+      },
     },
     { key: 'armazem', label: t('Armazém'), render: (v, x) => document.createTextNode(x.armazem_cod + (v ? ' · ' + v : '')), wrap: true },
     { key: 'codigo', label: t('Código') },

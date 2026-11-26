@@ -17,13 +17,14 @@ const s = (tag, at, txt) => {
   return e;
 };
 const reduzir = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const COL = { fornecedores: 0, inventario: 1, central: 1, carrinha: 2, saidas: 2, semguia: 2, clientes: 3 };
+const COL = { fornecedores: 0, inventario: 1, central: 1, carrinha: 2, saidas: 2, sap: 3, anulada: 3, clientes: 3 };
 const NOME_FIXO = {
   FORN: 'Fornecedores e entradas',
   CLI: 'Clientes',
   SAI: 'Saídas e quebras',
   INV: 'Acertos de inventário',
-  SSG: 'Saída de armazém sem guia',
+  SAP: 'Vendas SAP',
+  ANU: 'Guia anulada (saiu sem entrar noutro armazém)',
 };
 let memo = { chave: '', d: null, aLer: false };
 

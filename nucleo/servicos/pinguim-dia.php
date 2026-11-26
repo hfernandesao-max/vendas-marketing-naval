@@ -242,7 +242,8 @@ function naval_pdia_depois_fecho(string $dia, bool $fresco = false): array
             INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
             LEFT JOIN STORE S ON S.ID = DH.STORE_ID
             WHERE " . naval_vendas_condicao_validos() . " AND DC.CODE IN " . naval_vendas_tipos_sql() . "
-              AND DH.CLOCK_DATE >= :de AND DH.CLOCK_DATE < DATEADD(day, 1, CAST(:de AS DATE))", [':de' => $dia]);
+              AND DH.CLOCK_DATE >= :de AND DH.CLOCK_DATE < :ate", [':de' => $dia, ':ate' => date('Y-m-d', strtotime($dia . ' 12:00') + 86400)]);
+        // (o mesmo parâmetro duas vezes falha no ODBC: «COUNT field incorrect»)
         return naval_pdia_vendas_depois((array) $l['linhas'], $v);
     }, $fresco);
 }

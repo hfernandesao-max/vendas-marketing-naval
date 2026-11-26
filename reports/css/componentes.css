@@ -6900,9 +6900,8 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
 .rast-carrinha rect {
   stroke: #34d399;
 }
-.rast-semguia rect {
-  stroke: #f59e0b;
-  stroke-dasharray: 5 3;
+.rast-sap rect {
+  stroke: #a78bfa;
 }
 .rast-clientes rect,
 .rast-fornecedores rect {
@@ -6965,7 +6964,28 @@ dialog.dlg:not(.dlg-largo):not(.estrutura-json):not(.dlg-fp) {
 .mov-nat-transf_recebida {
   background: rgb(96 165 250 / 0.18);
 }
-.mov-nat-sem_guia {
-  background: rgb(245 158 11 / 0.22);
+.mov-nat-venda_sap {
+  background: rgb(167 139 250 / 0.22);
   font-weight: 600;
+}
+.mov-nat-par {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mov-ok {
+  color: rgb(16 185 129);
+  font-weight: 700;
+}
+.mov-dif {
+  color: rgb(239 68 68);
+  font-weight: 700;
+}
+.mov-nat-guia_anulada {
+  background: rgb(239 68 68 / 0.2);
+  font-weight: 600;
+}
+.rast-anulada rect {
+  stroke: #ef4444;
+  stroke-dasharray: 5 3;
 }
