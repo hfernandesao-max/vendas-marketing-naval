@@ -115,7 +115,8 @@ function naval_carr_fechos_pendentes(string $rota, ?string $hoje = null): array
             break;   // sem base de dados: os dias mais antigos também não se verificam
         }
         foreach ($v['rotas'] as $r) {
-            if ($r['rota'] === $rota && $r['resumo']['estado'] !== 'aprovada') $out['pendentes'][] = ['data' => $dia, 'estado' => $r['resumo']['estado']];
+            // o dia sem actividade não precisa de contagem: não fica por fechar
+            if ($r['rota'] === $rota && !in_array($r['resumo']['estado'], ['aprovada', 'sem_actividade'], true)) $out['pendentes'][] = ['data' => $dia, 'estado' => $r['resumo']['estado']];
         }
     }
     return $out;
@@ -1781,6 +1782,51 @@ function naval_carr_linhas(array $r, ?array $contagem, array $precos = []): arra
     return $out;
 }
 
+/**
+ * Função pura (testada): dias de trabalho seguidos sem actividade até $data (incluído), desde o dia a seguir ao último
+ * movimento $ultimo (AAAA-MM-DD, ou null = nenhum nos últimos 60 dias). $folga: dia → é folga? (calendário).
+ */
+function naval_carr_contar_parados(string $data, ?string $ultimo, callable $folga): int
+{
+    $n = 0;
+    $limite = $ultimo ?? date('Y-m-d', strtotime($data . ' 12:00') - 60 * 86400);
+    for ($t = strtotime($data . ' 12:00'); date('Y-m-d', $t) > $limite; $t -= 86400) if (!$folga(date('Y-m-d', $t))) $n++;
+    return $n;
+}
+
+/**
+ * Dias de trabalho seguidos sem actividade da carrinha da rota até $data: o último dia anterior com algum documento no
+ * armazém da carrinha (Pinguim BO, só SELECT; uma leitura por dia para todas as rotas, 10 minutos em cache).
+ */
+function naval_carr_dias_parados(string $data, string $rota): int
+{
+    static $ult = [];
+    if (!isset($ult[$data])) {
+        $ult[$data] = naval_cache('carrinha-ultimo-mov|' . $data, 600, function () use ($data) {
+            $o = [];
+            try {
+                naval_servico('bd');
+                foreach (naval_bd_consultar("
+                    SELECT LTRIM(RTRIM(WE.CODE)) AS ARM, CONVERT(VARCHAR(10), MAX(DH.DOC_DATE), 120) AS ULTIMO
+                    FROM DOCMOVDETAIL DMD
+                    INNER JOIN DOCHEADER DH ON DH.ID = DMD.DOCHEADER_ID
+                    INNER JOIN DOCCONFIG DC ON DC.ID = DH.DOCCONFIG_ID
+                    INNER JOIN ENTITY WE ON WE.ID = DMD.WAREHOUSE_ID
+                    WHERE DMD.DELETED = 0 AND DH.DELETED = 0 AND COALESCE(DH.CALC_ISCANCELED, 0) = 0 AND COALESCE(DMD.STK_SIGNAL, DC.STOCK_SIGNAL, 0) <> 0
+                      AND LTRIM(RTRIM(WE.CODE)) LIKE '100010%' AND DH.DOC_DATE >= :de AND DH.DOC_DATE < :ate
+                    GROUP BY WE.CODE", [':de' => date('Y-m-d', strtotime($data . ' 12:00') - 60 * 86400), ':ate' => $data]) as $x) {
+                    $o[substr((string) $x['ARM'], -4)] = (string) $x['ULTIMO'];
+                }
+            } catch (Throwable $e) {
+                error_log('[carrinha dias parados] ' . $e->getMessage());
+            }
+            return $o;
+        });
+    }
+    naval_servico('calendario');
+    return naval_carr_contar_parados($data, $ult[$data][$rota] ?? null, 'naval_cal_folga');
+}
+
 /** A carrinha teve movimento no dia (carga, venda, devolução ou acerto de inventário)? */
 function naval_carr_teve_movimento(array $linhas): bool
 {
@@ -1887,6 +1933,7 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
     // ou que já começaram a ser contadas; as outras ficam como no último dia de trabalho e não se contam
     naval_servico('calendario');
     $descanso = naval_cal_folga($data);
+    $diaAcabou = $data < date('Y-m-d') || ($data === date('Y-m-d') && date('H:i') >= (string) (naval_cal_dia($data)['vendas'][1] ?? '15:00'));
     $exigeFecho = naval_carr_exige_fecho($data) && naval_bd_configurada();
     $fechados = null;
     $depoisFecho = [];
@@ -1910,6 +1957,17 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
         $resumo = naval_carr_resumo($linhas, $reg);
         if ($resumo['estado'] === 'sem_movimento') continue;
         if ($descanso && $resumo['estado'] === 'por_contar' && !naval_carr_teve_movimento($linhas)) continue;
+        // dia de trabalho sem nenhum documento da carrinha no Pinguim BO (sem vendas, cargas, transferências, devoluções
+        // nem inventário): não precisa de contagem e o stock passa intacto. Calculado a cada leitura: se o telemóvel
+        // sincronizar mais tarde vendas com esta data, volta a «por contar». Ao fim de CARRINHA_CONTROLO_DIAS dias de
+        // trabalho seguidos sem actividade, pede uma contagem de controlo (mercadoria parada sem ninguém a conferir).
+        // (hoje, só depois do fim das vendas: de manhã ainda ninguém vendeu)
+        if ($resumo['estado'] === 'por_contar' && !naval_carr_teve_movimento($linhas) && naval_config('CARRINHA_SEM_ACTIVIDADE', '1') !== '0' && $diaAcabou) {
+            $parados = naval_carr_dias_parados($data, $rota);
+            if ($parados < max(2, (int) naval_config('CARRINHA_CONTROLO_DIAS', '5'))) $resumo['estado'] = 'sem_actividade';
+            else $resumo['controlo'] = $parados;
+            $resumo['dias_parados'] = $parados;
+        }
         $oculta = $cega && $resumo['estado'] === 'por_contar' && ($gere || !$veEsperado);
         if ($oculta) $linhas = naval_carr_cega($linhas);
         $out[] = ['rota' => $rota, 'promotor' => $promotores[$rota] ?? $rota, 'resumo' => $resumo, 'linhas' => $linhas,

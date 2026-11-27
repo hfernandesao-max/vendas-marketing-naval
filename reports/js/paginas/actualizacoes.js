@@ -136,6 +136,14 @@ function decidir(v, accao, urgente) {
     const motivo = el('textarea');
     motivo.rows = 3;
     motivo.maxLength = 500;
+    // ao aprovar, as observações vêm já sugeridas («Update - v2026.11.27.175»); pode-se mudar ou apagar
+    if (accao === 'aprovar' || accao === 'forcar') {
+      motivo.value = 'Update - ' + v.versao;
+      setTimeout(() => {
+        motivo.focus();
+        motivo.setSelectionRange(motivo.value.length, motivo.value.length);
+      });
+    }
     if (accao !== 'cancelar') b.append(campo(accao === 'reprovar' ? t('Motivo (obrigatório)') : t('Observações (facultativo)'), motivo));
     const erro = msgErro();
     b.append(erro);

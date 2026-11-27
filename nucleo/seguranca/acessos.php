@@ -42,6 +42,8 @@ const NAVAL_MATRIZ_TXT = [
     'ranking'              => 'V  E  E  Vr Vr V  -  -  -  V  V',
     // documentos e AGT: todos os perfis que os vêem exportam para Excel (âmbito por rota nos SUP e PRO)
     'documentos'           => 'E  E  E  Er Er E  E  -  -  E  E',
+    // documentos válidos e anulados, linha a linha, com o motivo da anulação: quem vê os documentos de venda
+    'documentos-estado'    => 'E  E  E  Er Er E  E  -  -  E  V',
     'pagamentos'           => 'V  E  V  Vr Vr E  -  -  -  E  V',
     'pendentes'            => 'V  E  V  Vr Vr E  -  -  -  E  V',
     'auditoria'            => 'V  V  E  Vr -  E  V  -  -  E  V',

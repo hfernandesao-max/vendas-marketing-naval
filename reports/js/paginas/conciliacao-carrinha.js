@@ -32,6 +32,7 @@ const ESTADOS = {
   por_aprovar: ['Por aprovar (coordenador)', 'p-serio'],
   por_fechar: ['Por aprovar (responsável)', 'p-serio'],
   aprovada: ['Fechada', 'p-ok'],
+  sem_actividade: ['Sem actividade', 'p-mut'],
 };
 const ALERTAS = {
   negativo: 'Stock negativo na carrinha',
@@ -924,6 +925,7 @@ R['conciliacao-carrinha'] = (pg) => {
         s: t('coordenador: {a} · responsável: {b}', { a: n0(n('por_aprovar')), b: n0(n('por_fechar')) }),
       },
       { l: t('Fechadas'), v: n0(n('aprovada')), s: t('aprovadas nos dois níveis ou sem diferenças') },
+      ...(n('sem_actividade') ? [{ l: t('Sem actividade'), v: n0(n('sem_actividade')), s: t('sem nenhum documento no dia: não precisam de contagem') }] : []),
       {
         l: t('Faltas'),
         v: kz(soma('falta_kz')),
@@ -965,15 +967,24 @@ R['conciliacao-carrinha'] = (pg) => {
     h.append(el('b', null, r.rota + ' · ' + r.promotor), pill(t(txt), cls));
     if (atrasoFecho && ['por_contar', 'por_validar'].includes(r.resumo.estado))
       h.append(pill(t('Fora do prazo do fecho ({h})', { h: CC.horario.fecho[1] }), 'p-bad'));
+    // parada há vários dias de trabalho: contagem de controlo (mercadoria sem ninguém a conferir)
+    if (r.resumo.controlo) h.append(pill(t('Contagem de controlo: {n} dias de trabalho sem actividade', { n: r.resumo.controlo }), 'p-warn'));
     // diferenças e alertas a vermelho no texto (não mudam a cor do cartão, que é a do estado)
     const det = el('p', 'note');
     const parte = (txt, cl) => {
       if (det.childNodes.length) det.append(document.createTextNode(' · '));
       det.append(cl ? el('span', cl, txt) : document.createTextNode(txt));
     };
+    if (r.resumo.estado === 'sem_actividade')
+      parte(
+        t(
+          'Nenhum documento da carrinha no Pinguim BO neste dia (sem vendas, cargas nem devoluções): não precisa de contagem e o stock passa para o dia seguinte.',
+        ),
+      );
     parte(t('{n} artigos', { n: n0(r.resumo.artigos) }));
     if (r.resumo.alertas) parte(t('{n} com alerta automático', { n: n0(r.resumo.alertas) }), 'cc-neg');
-    if (r.resumo.estado !== 'por_contar') parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
+    if (!['por_contar', 'sem_actividade'].includes(r.resumo.estado))
+      parte(t('{n} diferença(s)', { n: n0(r.resumo.diferencas) }), r.resumo.diferencas ? 'cc-neg' : null);
     const nReg = (r.linhas || []).filter((l) => l.regularizado).length;
     if (nReg) parte(t('{n} regularizada(s) no Pinguim BO', { n: n0(nReg) }), 'cc-regularizado');
     if (r.resumo.falta_kz) parte(t('falta {v}', { v: kz(r.resumo.falta_kz) }), 'cc-neg');
@@ -1011,7 +1022,7 @@ R['conciliacao-carrinha'] = (pg) => {
     t('Carregado, vendido e devolvido por artigo; diferenças entre o que tinha de voltar e o que foi contado.'),
     lista,
   );
-  const contadas = rs.filter((r) => r.resumo.estado !== 'por_contar');
+  const contadas = rs.filter((r) => !['por_contar', 'sem_actividade'].includes(r.resumo.estado));
   if (CC.pode && CC.pode.corrigir && contadas.length)
     lista.before(botao(t('Corrigir quem contou / validou'), 'ghost sm cc-corrigir', () => corrigirRegisto(contadas)));
   pg.append(caixaDia);

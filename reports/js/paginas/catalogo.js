@@ -31,6 +31,7 @@ export const PAGES = [
   // a Classificação entrou em «Vendas por promotor» e «Vendas por cliente» (posição, quota, classe ABC)
   { id: 'ranking', grupo: 'Vendas', icon: 'trophy', nome: 'Classificação', menu: false },
   { id: 'documentos', grupo: 'Vendas', icon: 'file', nome: 'Documentos de venda' },
+  { id: 'documentos-estado', grupo: 'Vendas', icon: 'file', nome: 'Documentos válidos e anulados' },
   { id: 'relatorio-vendas', grupo: 'Vendas', icon: 'relatorio', nome: 'Consolidado Diário de Vendas' },
   { id: 'clientes', grupo: 'Clientes', icon: 'lista', nome: 'Carteira de clientes' },
   { id: 'cadastros', grupo: 'Clientes', icon: 'kpi', nome: 'Cadastros · indicadores' },

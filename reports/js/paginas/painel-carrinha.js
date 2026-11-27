@@ -24,6 +24,7 @@ const FECHO = {
   por_fechar: ['Por aprovação final', 'p-serio'],
   aprovada: ['Aprovada com motivos', 'p-ok'],
   fechada_auto: ['Fechada sozinha (sem diferenças)', 'p-ok'],
+  sem_actividade: ['Sem actividade (não precisa de contagem)', 'p-mut'],
 };
 
 function ler(actualizar) {

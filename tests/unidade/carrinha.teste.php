@@ -759,3 +759,12 @@ teste('contagem só com o dia da rota fechado no Pinguim BO (FCL): sem fecho ou 
     igual(['fecho_pinguim' => null, 'sem_ligacao' => true, 'excepcao' => 'Pinguim BO parado'], naval_carr_decisao_fecho(null, '1001', '2026-11-26', true, 'Pinguim BO parado'), 'sem ligação: só o SADM, com motivo');
     verdade(!naval_carr_exige_fecho('2026-11-25') && naval_carr_exige_fecho('2026-11-26'), 'vale a partir de 26-11-2026');
 });
+
+teste('carrinha sem actividade: dias de trabalho seguidos sem nenhum documento (domingos e folgas não contam)', function () {
+    $folga = function ($d) { return date('w', strtotime($d . ' 12:00')) === '0'; };   // domingo
+    igual(1, naval_carr_contar_parados('2026-11-25', '2026-11-24', $folga), 'parada só hoje');
+    igual(3, naval_carr_contar_parados('2026-11-27', '2026-11-24', $folga), '25, 26 e 27');
+    igual(4, naval_carr_contar_parados('2026-11-24', '2026-11-19', $folga), '20, 21, 23 e 24 (domingo 22 não conta)');
+    igual(0, naval_carr_contar_parados('2026-11-27', '2026-11-27', $folga), 'teve movimento hoje');
+    verdade(naval_carr_contar_parados('2026-11-27', null, $folga) >= 50, 'sem movimento nos últimos 60 dias: contagem de controlo');
+});

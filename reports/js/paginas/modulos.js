@@ -43,6 +43,7 @@ const MODULOS = {
   calendario: () => import('./calendario.js'),
   relatorios: () => import('./relatorios.js'),
   'stock-movimentos': () => import('./stock-movimentos.js'),
+  'documentos-estado': () => import('./documentos-estado.js'),
 };
 
 /** Módulo de cada página do catálogo (paginas/catalogo.js). */
@@ -56,6 +57,7 @@ export const MODULO_DA_PAGINA = {
   'vendas-marca': 'vendas',
   ranking: 'vendas',
   documentos: 'vendas',
+  'documentos-estado': 'documentos-estado',
   pagamentos: 'recebimentos',
   pendentes: 'recebimentos',
   clientes: 'clientes',

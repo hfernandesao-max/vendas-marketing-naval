@@ -53,6 +53,7 @@ function naval_api_rotas(): array
         'v1/exportacoes' => [['POST'], 'jwt', 'exportacoes.php', []],
         'v1/estrutura-dados' => [['GET'], 'jwt', 'estrutura-dados.php', []],
         'v1/agt' => [['GET'], 'jwt', 'agt.php', []],
+        'v1/documentos-estado' => [['GET'], 'jwt', 'documentos-estado.php', []],
         'v1/equipamentos' => [['GET', 'POST'], 'jwt', 'equipamentos.php', []],
         'v1/equipamentos/ficha' => [['GET'], 'jwt', 'equipamentos.php', ['ficha' => '1']],
         'v1/equipamentos/documentos' => [['GET'], 'jwt', 'equipamentos.php', ['documentos' => '1']],

@@ -1,12 +1,12 @@
 {
   "id": "vendas",
   "nome": "Vendas",
-  "versao": "1.0.0",
-  "descricao": "Vendas por promotor, dia, cliente, artigo e marca, classificação e documentos.",
+  "versao": "1.1.0",
+  "descricao": "Vendas por promotor, dia, cliente, artigo e marca, classificação, documentos e documentos válidos e anulados (com o motivo da anulação).",
   "nucleo": false,
-  "paginas": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-promotor-artigo", "vendas-marca", "ranking", "documentos"],
-  "recursos": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-promotor-artigo", "vendas-marca", "ranking", "documentos"],
-  "api": [],
+  "paginas": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-promotor-artigo", "vendas-marca", "ranking", "documentos", "documentos-estado"],
+  "recursos": ["vendas-promotor", "vendas-dia", "vendas-cliente", "vendas-artigo", "vendas-promotor-artigo", "vendas-marca", "ranking", "documentos", "documentos-estado"],
+  "api": ["v1/documentos-estado"],
   "conectores": ["pinguim-sql", "pinguim-rest"],
   "eventos": {
     "publica": [],

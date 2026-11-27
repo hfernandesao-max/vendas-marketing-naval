@@ -657,6 +657,7 @@ const ESTADO_CC = {
   por_aprovar: 'Por aprovar (coordenador)',
   por_fechar: 'Por aprovar (responsável)',
   aprovada: 'Fechada',
+  sem_actividade: 'Sem actividade',
 };
 function vistaContagem(c) {
   const dia = hoje();

@@ -1,5 +1,34 @@
 ## 27-11-2026
 
+### Conciliação da carrinha: dias sem actividade não pedem contagem
+
+<!-- paginas: conciliacao-carrinha, painel-carrinha, actualizacoes -->
+<!-- tipo: melhoria -->
+
+- **Carrinha sem nenhum documento no dia** (sem vendas, cargas, transferências, devoluções nem inventário no Pinguim BO): fica **«Sem actividade»** e não pede contagem. Também não bloqueia a próxima PO nem a carga, e o stock passa intacto para o dia seguinte. Antes ficava «por contar».
+- **A regra:**
+  - o estado é calculado a cada leitura: se o telemóvel sincronizar mais tarde vendas com essa data, volta sozinho a «por contar»;
+  - no dia de hoje, só depois do fim das vendas;
+  - uma carrinha **com movimento mas sem vendas** (ex.: uma transferência para outra carrinha) continua a pedir contagem.
+- **Contagem de controlo** ao fim de 5 dias de trabalho seguidos sem actividade, para a mercadoria parada não ficar sem ninguém a conferir. O número de dias é configurável no `.env` (`CARRINHA_CONTROLO_DIAS`); `CARRINHA_SEM_ACTIVIDADE=0` desliga a regra.
+- **Actualizações:** ao aprovar uma versão, as observações vêm já preenchidas com «Update - v…». Pode-se mudar ou apagar.
+
+### Vendas: documentos válidos e anulados
+
+<!-- paginas: documentos-estado -->
+<!-- tipo: impacto -->
+
+- **Nova página «Documentos válidos e anulados»** (Vendas). Mostra uma linha por artigo de cada documento do Pinguim BO, com:
+  - data, rota e promotor, documento, tipo, código, artigo, quantidade e valor;
+  - o **estado** (válido ou anulado);
+  - o **motivo da anulação** que o vendedor escolheu no telemóvel e a hora a que ficou registado.
+- **Totais:**
+  - documentos válidos e anulados, com o valor;
+  - **% de anulações por promotor**;
+  - anulações por motivo.
+- **Filtros:** tipo de documentos («Vendas» por omissão, «Cargas» com saídas de armazém, guias e devoluções, ou «Todos»), estado e a rota da barra de filtros. Período até um ano.
+- Exportação para Excel em cada quadro. Os supervisores e promotores vêem só as suas rotas, e o nome do cliente só aparece a quem vê os clientes.
+
 ### Sala comercial: chegadas e sincronização no LCD
 
 <!-- paginas: gestao -->

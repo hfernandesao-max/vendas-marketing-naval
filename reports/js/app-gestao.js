@@ -1283,6 +1283,7 @@ const FECHO = {
   por_fechar: ['Por aprovação final', 'aviso'],
   aprovada: ['Fechada', 'ok'],
   fechada_auto: ['Fechada', 'ok'],
+  sem_actividade: ['Sem actividade', 'ok'],
 };
 
 /** Rotas em tempo real (segmento «Agora» do separador Rotas): estado, última venda, stock na carrinha e fecho. */
