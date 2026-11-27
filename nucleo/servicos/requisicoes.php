@@ -97,8 +97,13 @@ function naval_req_linhas(array $linhas): array
             'unidade' => naval_texto($l['unidade'] ?? '', 12),
             'sugerida' => isset($l['sugerida']) && is_numeric($l['sugerida']) ? round((float) $l['sugerida'], 3) : null,
             'quantidade' => $q,
-            'origem' => ($l['origem'] ?? '') === 'vendido' ? 'vendido' : 'adicionado',
+            'origem' => in_array($l['origem'] ?? '', ['vendido', 'transitado'], true) ? (string) $l['origem'] : 'adicionado',
         ];
+        // linha que veio de uma PO não satisfeita no dia: a PO de origem e o motivo (ex.: falta no armazém)
+        if ($out[$cod]['origem'] === 'transitado') {
+            $out[$cod]['transitado_de'] = naval_texto((string) ($l['transitado_de'] ?? ''), 20);
+            $out[$cod]['motivo_origem'] = naval_texto((string) ($l['motivo_origem'] ?? ''), 120);
+        }
     }
     return array_values($out);
 }
@@ -116,16 +121,17 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
     $ano = substr($data, 0, 4);
     // num pedido manual, a quantidade sugerida e a origem nunca vêm do navegador; e só se regista (e ganha número)
     // ao gravar com pelo menos um artigo — «Criar» só abre o formulário no ecrã
-    if (($origem['tipo'] ?? '') !== 'conciliacao') {
+    $automatica = in_array($origem['tipo'] ?? '', ['conciliacao', 'transitada'], true);
+    if (!$automatica) {
         if (!array_filter($linhas, function ($l) { return (float) (((array) $l)['quantidade'] ?? 0) > 0; })) {
             throw new NavalErro('Adicione pelo menos um artigo com quantidade antes de gravar.', 400);
         }
         $linhas = array_map(function ($l) { return ['sugerida' => null, 'origem' => 'adicionado'] + array_diff_key((array) $l, ['sugerida' => 1, 'origem' => 1]); }, $linhas);
         naval_req_validar_stock(naval_req_linhas($linhas));
     }
-    return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano) {
+    return naval_exclusivo('requisicoes-' . $ano, function () use ($rota, $data, $linhas, $login, $origem, $nota, $ano, $automatica) {
         // um só rascunho manual aberto por rota e dia (sem rascunhos repetidos nem números gastos por engano)
-        if (($origem['tipo'] ?? '') !== 'conciliacao') {
+        if (!$automatica) {
             foreach (naval_req_ficheiros($ano) as $f) {
                 $x = naval_json_ler((string) $f);
                 if ($x && $x['estado'] === 'rascunho' && $x['rota'] === $rota && $x['data'] === $data && ($x['origem']['tipo'] ?? '') !== 'conciliacao') {
@@ -141,7 +147,7 @@ function naval_req_criar(string $rota, string $data, array $linhas, string $logi
             'versao' => 1, 'criado_por' => $login, 'criado_em' => $agora, 'alterado_por' => $login, 'alterado_em' => $agora,
             'emitida_por' => null, 'emitida_em' => null, 'impressoes' => [], 'historico' => [],
         ];
-        naval_req_hist($r, $origem['tipo'] === 'conciliacao' ? 'criada_conciliacao' : 'criada', $login, ['linhas' => count($r['linhas'])]);
+        naval_req_hist($r, ['conciliacao' => 'criada_conciliacao', 'transitada' => 'criada_transito'][$origem['tipo']] ?? 'criada', $login, ['linhas' => count($r['linhas'])]);
         naval_req_gravar_ficheiro($r);
         naval_registar('requisicao_criada', ['numero' => $num, 'rota' => $rota, 'origem' => $origem['tipo'], 'linhas' => count($r['linhas'])]);
         return $r;
@@ -574,6 +580,164 @@ function naval_req_fechar_antigas(?int $agora = null): array
         }
     }
     return $out;
+}
+
+// ── PO não satisfeitas no próprio dia ──────────────────────────────────────────────────────────────────────────────
+// Ao fim da janela de carga do dia da PO (calendário de trabalho), o que não foi carregado transita para uma PO nova
+// em rascunho no dia de trabalho seguinte, que o promotor revê e emite como sempre: a PO emitida e não carregada
+// (aprovada ou não) fecha-se com o motivo «Não carregada no dia»; da PO carregada em parte transita a diferença, com o
+// motivo da conferência (ex.: falta no armazém). Nada fica em paralelo (carga em duplicado) nem se perde. Uma só PO de
+// trânsito por rota e dia; cada PO de origem fica marcada («transitada_para»). REQ_TRANSITO=0 desliga.
+const NAVAL_REQ_TRANSITO_DESDE = '2026-11-27';
+/** Minutos depois do fim da janela de carga (atrasos no cais) antes de transitar. */
+const NAVAL_REQ_TRANSITO_MARGEM = 30;
+
+/** Função pura (testada): as linhas por satisfazer de uma PO — tudo, se emitida e não carregada; a diferença, se carregada em parte. */
+function naval_req_por_satisfazer(array $r): array
+{
+    $out = [];
+    foreach ((array) ($r['linhas'] ?? []) as $l) {
+        $q = (float) ($l['quantidade'] ?? 0);
+        if (($r['estado'] ?? '') === 'emitida') $falta = $q;
+        elseif (($r['estado'] ?? '') === 'carregada' && array_key_exists('entregue', $l)) $falta = $q - (float) $l['entregue'];
+        else continue;
+        if ($falta <= 0.0001) continue;
+        $m = (array) ($l['motivo'] ?? []);
+        $motivo = ($r['estado'] ?? '') === 'emitida' ? 'Não carregada no dia'
+            : (NAVAL_REQ_MOTIVOS[$m['codigo'] ?? ''] ?? 'Carregado a menos') . (!empty($m['texto']) ? ': ' . $m['texto'] : '');
+        $out[] = ['codigo' => (string) $l['codigo'], 'artigo' => (string) ($l['artigo'] ?? $l['codigo']), 'unidade' => (string) ($l['unidade'] ?? ''),
+            'sugerida' => round($falta, 3), 'quantidade' => round($falta, 3), 'origem' => 'transitado', 'transitado_de' => (string) $r['numero'], 'motivo_origem' => $motivo];
+    }
+    return $out;
+}
+
+/** Dia de trabalho a seguir a $dia (salta folgas e feriados do calendário). */
+function naval_req_dia_seguinte(string $dia): string
+{
+    naval_servico('calendario');
+    $t = strtotime($dia . ' 12:00');
+    for ($i = 0; $i < 10; $i++) {
+        $t += 86400;
+        if (!naval_cal_folga(date('Y-m-d', $t))) break;
+    }
+    return date('Y-m-d', $t);
+}
+
+/** Marca a PO de origem com a PO para onde transitou (lida e gravada de novo, sem mudar o estado). */
+function naval_req_marcar_transito(string $id, string $para): void
+{
+    naval_exclusivo('requisicao-' . $id, function () use ($id, $para) {
+        $r = naval_req_ler($id);
+        if (!$r || !empty($r['transitada_para'])) return;
+        $r['transitada_para'] = $para;
+        $r['versao'] = (int) $r['versao'] + 1;
+        naval_req_hist($r, 'transitada', 'automatico', ['para' => $para]);
+        naval_req_gravar_ficheiro($r);
+    });
+}
+
+/**
+ * Rotina periódica: as PO dos últimos 7 dias cuja janela de carga já acabou e que ficaram por satisfazer transitam
+ * para o dia de trabalho seguinte (ver acima). Devolve [rota => número da PO de trânsito criada].
+ */
+function naval_req_transitar(?int $agora = null): array
+{
+    if (naval_config('REQ_TRANSITO', '1') === '0') return [];
+    $agora = $agora ?? time();
+    naval_servico('calendario');
+    $hoje = date('Y-m-d', $agora);
+    $desde = max(NAVAL_REQ_TRANSITO_DESDE, date('Y-m-d', $agora - 7 * 86400));
+    // por rota e dia da PO: as PO por satisfazer e as linhas a transitar
+    $grupos = [];
+    foreach (array_unique([date('Y', $agora - 7 * 86400), date('Y', $agora)]) as $a) {
+        foreach (naval_req_ficheiros((string) $a) as $f) {
+            $x = naval_json_ler((string) $f);
+            if (!$x || !empty($x['transitada_para']) || (string) $x['data'] < $desde || (string) $x['data'] > $hoje) continue;
+            if (!in_array($x['estado'], ['emitida', 'carregada'], true)) continue;
+            // a janela de carga do dia da PO tem de ter acabado
+            $carga = naval_cal_dia((string) $x['data'])['carga'] ?? null;
+            $fim = strtotime((string) $x['data'] . ' ' . ($carga[1] ?? '17:00') . ':00') + NAVAL_REQ_TRANSITO_MARGEM * 60;
+            if ($agora < $fim) continue;
+            $l = naval_req_por_satisfazer($x);
+            if (!$l) continue;
+            $k = $x['rota'] . '|' . $x['data'];
+            $grupos[$k]['rota'] = (string) $x['rota'];
+            $grupos[$k]['data'] = (string) $x['data'];
+            $grupos[$k]['pos'][] = $x;
+            foreach ($l as $y) {
+                $c = $y['codigo'];
+                if (isset($grupos[$k]['linhas'][$c])) {
+                    $grupos[$k]['linhas'][$c]['quantidade'] = round($grupos[$k]['linhas'][$c]['quantidade'] + $y['quantidade'], 3);
+                    $grupos[$k]['linhas'][$c]['sugerida'] = $grupos[$k]['linhas'][$c]['quantidade'];
+                } else {
+                    $grupos[$k]['linhas'][$c] = $y;
+                }
+            }
+        }
+    }
+    $out = [];
+    foreach ($grupos as $g) {
+        $nums = array_map(function ($x) { return (string) $x['numero']; }, $g['pos']);
+        try {
+            $novo = naval_req_criar($g['rota'], naval_req_dia_seguinte($g['data']), array_values($g['linhas']), 'automatico',
+                ['tipo' => 'transitada', 'de' => $nums, 'data' => $g['data']], 'Transitado de ' . implode(', ', $nums) . ': não satisfeito no dia ' . naval_data_pt($g['data']) . '.');
+            foreach ($g['pos'] as $x) {
+                if ($x['estado'] === 'emitida') naval_req_fechar((string) $x['numero'], 'Não carregada no dia: transitou para ' . $novo['numero'] . '.', 'automatico');
+                naval_req_marcar_transito((string) $x['numero'], (string) $novo['numero']);
+            }
+            $out[$g['rota']] = (string) $novo['numero'];
+            naval_registar('requisicao_transitada', ['rota' => $g['rota'], 'de' => $nums, 'para' => $novo['numero'], 'linhas' => count($g['linhas'])], 'sistema');
+        } catch (Throwable $e) {
+            error_log('[PO por satisfazer] ' . implode(', ', $nums) . ': ' . $e->getMessage());
+        }
+    }
+    return $out;
+}
+
+/**
+ * Função pura (testada): a taxa de serviço do armazém num conjunto de PO (as emitidas, carregadas ou fechadas sem carga):
+ * pedido, carregado e % por artigo e por rota, e a lista das PO não satisfeitas (fechadas sem carga ou carregadas em parte).
+ */
+function naval_req_servico(array $pos): array
+{
+    $art = $rota = [];
+    $falhas = [];
+    $tot = ['pedido' => 0.0, 'carregado' => 0.0];
+    foreach ($pos as $r) {
+        $estado = (string) ($r['estado'] ?? '');
+        if (!in_array($estado, ['carregada', 'fechada'], true)) continue;
+        $pedidoPo = $carregadoPo = 0.0;
+        $rt = (string) $r['rota'];
+        $rota[$rt] = $rota[$rt] ?? ['rota' => $rt, 'promotor' => (string) ($r['promotor'] ?? ''), 'pedido' => 0.0, 'carregado' => 0.0, 'pos' => 0, 'nao_satisfeitas' => 0];
+        foreach ((array) $r['linhas'] as $l) {
+            $p = (float) ($l['quantidade'] ?? 0);
+            $c = $estado === 'carregada' ? (float) ($l['entregue'] ?? $p) : 0.0;
+            $k = (string) $l['codigo'];
+            $art[$k] = $art[$k] ?? ['codigo' => $k, 'artigo' => (string) ($l['artigo'] ?? $k), 'pedido' => 0.0, 'carregado' => 0.0];
+            $art[$k]['pedido'] += $p;
+            $art[$k]['carregado'] += $c;
+            $rota[$rt]['pedido'] += $p;
+            $rota[$rt]['carregado'] += $c;
+            $pedidoPo += $p;
+            $carregadoPo += $c;
+        }
+        $rota[$rt]['pos']++;
+        $tot['pedido'] += $pedidoPo;
+        $tot['carregado'] += $carregadoPo;
+        if ($carregadoPo < $pedidoPo - 0.0001) {
+            $rota[$rt]['nao_satisfeitas']++;
+            $falhas[] = ['numero' => (string) $r['numero'], 'data' => (string) $r['data'], 'rota' => (string) $r['rota'], 'promotor' => (string) ($r['promotor'] ?? ''),
+                'estado' => $estado, 'pedido' => round($pedidoPo, 3), 'carregado' => round($carregadoPo, 3),
+                'motivo' => $estado === 'fechada' ? (string) ($r['motivo_fecho'] ?? '') : 'Carregada em parte', 'transitada_para' => (string) ($r['transitada_para'] ?? '')];
+        }
+    }
+    $taxa = function (array $x) { return $x + ['taxa' => $x['pedido'] > 0 ? round($x['carregado'] / $x['pedido'], 4) : null, 'em_falta' => round(max(0, $x['pedido'] - $x['carregado']), 3)]; };
+    $a = array_map($taxa, array_values($art));
+    usort($a, function ($x, $y) { return $y['em_falta'] <=> $x['em_falta']; });
+    $r = array_map($taxa, array_values($rota));
+    usort($r, function ($x, $y) { return strnatcmp($x['rota'], $y['rota']); });
+    usort($falhas, function ($x, $y) { return strcmp($y['data'], $x['data']); });
+    return ['resumo' => $taxa($tot), 'por_artigo' => $a, 'por_rota' => $r, 'nao_satisfeitas' => $falhas];
 }
 
 /** Anula um rascunho, com motivo. */

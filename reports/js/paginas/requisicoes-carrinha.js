@@ -12,7 +12,7 @@ import { marcarPorGravar } from '../componentes/rascunho.js';
 import { escolherArtigo } from '../componentes/escolher-artigo.js';
 import { MOTIVOS_CARGA as MOTIVO_TXT } from '../componentes/motivos-carga.js';
 import { requisicaoPdf } from '../componentes/requisicao-pdf.js';
-import { dl, n0 } from '../formatos.js';
+import { dl, n0, pct } from '../formatos.js';
 import { t, tv } from '../i18n/i18n.js';
 import { atual } from '../perfil.js';
 import { hoje, st } from '../periodo.js';
@@ -171,9 +171,11 @@ function editor() {
   const origem =
     r.origem && r.origem.tipo === 'conciliacao'
       ? t('criada pela conciliação da carrinha de {d}', { d: dl(r.origem.data) })
-      : r.novo
-        ? t('o número é atribuído ao gravar; sem gravar, nada fica registado')
-        : t('criada por {p}', { p: assinante(r.criado_por) });
+      : r.origem && r.origem.tipo === 'transitada'
+        ? t('transitada de {n}: não satisfeita no dia {d}', { n: (r.origem.de || []).join(', '), d: dl(r.origem.data) })
+        : r.novo
+          ? t('o número é atribuído ao gravar; sem gravar, nada fica registado')
+          : t('criada por {p}', { p: assinante(r.criado_por) });
   hl.append(el('p', null, [r.rota + ' · ' + r.promotor, t('dia {d}', { d: dl(r.data) }), origem].join(' · ')));
   h.append(hl);
   const tools = el('div', 'sec-tools');
@@ -227,7 +229,9 @@ function editor() {
       });
       marcar();
       tq.append(q);
-      if (l.sugerida != null) tq.append(el('small', 'req-vendido', t('vendido {q}', { q: n0(l.sugerida) })));
+      if (l.origem === 'transitado')
+        tq.append(el('small', 'req-vendido', t('transitado de {n} · {m}', { n: l.transitado_de || '—', m: t(l.motivo_origem || '') })));
+      else if (l.sugerida != null) tq.append(el('small', 'req-vendido', t('vendido {q}', { q: n0(l.sugerida) })));
     } else tq.textContent = n0(l.quantidade);
     tr.append(tq);
     if (!rasc) {
@@ -685,7 +689,12 @@ R['requisicoes-carrinha'] = (pg) => {
       rows: rs.map((r) => ({
         ...r,
         estado_txt: t((ESTADOS_REQ[estadoReq(r)] || [r.estado])[0]),
-        origem_txt: r.origem && r.origem.tipo === 'conciliacao' ? t('Conciliação') : t('Pedido do promotor'),
+        origem_txt:
+          r.origem && r.origem.tipo === 'conciliacao'
+            ? t('Conciliação')
+            : r.origem && r.origem.tipo === 'transitada'
+              ? t('Transitada de {n}', { n: (r.origem.de || []).join(', ') })
+              : t('Pedido do promotor'),
         promotor_rota: r.rota + ' · ' + r.promotor,
       })),
       sort: 'numero',
@@ -706,10 +715,92 @@ R['requisicoes-carrinha'] = (pg) => {
       ],
     }),
   );
+  if (L.servico) pg.append(...quadrosServico(L.servico));
   // a PO aberta (cabeçalho, linhas e acções) por baixo da lista, como o detalhe de um registo nas aplicações de gestão
   // (lista → detalhe): a lista mantém-se no lugar e a página desce até à PO
   if (aberta) pg.append(editor());
 };
+
+/**
+ * PO não satisfeitas e taxa de serviço do armazém (carregado ÷ pedido) no período: as PO emitidas e não carregadas no
+ * dia fecham-se e transitam para um rascunho do dia de trabalho seguinte; das carregadas em parte transita a diferença.
+ */
+function quadrosServico(s) {
+  const r = s.resumo || {};
+  const abrirPo = (v) => {
+    if (!v) return document.createTextNode('—');
+    const b = el('button', 'linkbtn', v);
+    b.type = 'button';
+    b.addEventListener('click', () => abrir(v));
+    return b;
+  };
+  return [
+    tiles([
+      {
+        l: t('Taxa de serviço do armazém'),
+        v: pct(r.taxa),
+        tone: r.taxa != null && r.taxa < 0.95 ? 'warn' : null,
+        s: t('carregado ÷ pedido nas PO do período'),
+      },
+      { l: t('Pedido'), v: n0(r.pedido || 0), s: t('carregado: {n}', { n: n0(r.carregado || 0) }) },
+      { l: t('Em falta'), v: n0(r.em_falta || 0), tone: r.em_falta > 0 ? 'warn' : null, s: t('transita para a PO do dia seguinte') },
+      {
+        l: t('PO não satisfeitas'),
+        v: n0((s.nao_satisfeitas || []).length),
+        tone: (s.nao_satisfeitas || []).length ? 'warn' : null,
+        s: t('fechadas sem carga ou carregadas em parte'),
+      },
+    ]),
+    tabela({
+      id: 'req-nao-satisfeitas',
+      titulo: t('PO não satisfeitas'),
+      nota: t(
+        'A PO emitida e não carregada até ao fim da janela de carga fecha-se sozinha; o que faltou transita para um rascunho do dia de trabalho seguinte, que o promotor revê e emite.',
+      ),
+      rows: (s.nao_satisfeitas || []).map((x) => ({ ...x, promotor_rota: x.rota + ' · ' + x.promotor, taxa: x.pedido ? x.carregado / x.pedido : null })),
+      sort: 'data',
+      cols: [
+        { key: 'numero', label: t('Número'), p: 0, render: (v) => abrirPo(v) },
+        { key: 'data', label: t('Dia'), type: 'date' },
+        { key: 'promotor_rota', label: t('Promotor'), p: 1 },
+        { key: 'pedido', label: t('Pedido'), type: 'n', p: 2 },
+        { key: 'carregado', label: t('Carregado'), type: 'n', p: 2 },
+        { key: 'taxa', label: t('Serviço'), type: 'pct', p: 1 },
+        { key: 'motivo', label: t('Motivo'), p: 3, get: (x) => t(x.motivo || '—') },
+        { key: 'transitada_para', label: t('Transitou para'), p: 2, render: (v) => abrirPo(v) },
+      ],
+    }),
+    tabela({
+      id: 'req-servico-rota',
+      titulo: t('Taxa de serviço por promotor'),
+      rows: (s.por_rota || []).map((x) => ({ ...x, promotor_rota: x.rota + ' · ' + x.promotor })),
+      sort: 'taxa',
+      dir: 1,
+      cols: [
+        { key: 'promotor_rota', label: t('Promotor'), p: 0 },
+        { key: 'pos', label: t('PO'), type: 'n', p: 2 },
+        { key: 'nao_satisfeitas', label: t('Não satisfeitas'), type: 'n', p: 1 },
+        { key: 'pedido', label: t('Pedido'), type: 'n', p: 2 },
+        { key: 'carregado', label: t('Carregado'), type: 'n', p: 2 },
+        { key: 'taxa', label: t('Serviço'), type: 'pct', p: 1 },
+      ],
+    }),
+    tabela({
+      id: 'req-servico-artigo',
+      titulo: t('Artigos em falta no armazém'),
+      rows: (s.por_artigo || []).filter((x) => x.em_falta > 0).map((x) => ({ ...x, artigo: tArtigo(x.artigo) })),
+      sort: 'em_falta',
+      cols: [
+        { key: 'codigo', label: t('Código'), p: 2 },
+        { key: 'artigo', label: t('Artigo'), p: 0 },
+        { key: 'pedido', label: t('Pedido'), type: 'n', p: 2 },
+        { key: 'carregado', label: t('Carregado'), type: 'n', p: 2 },
+        { key: 'em_falta', label: t('Em falta'), type: 'n', p: 1 },
+        { key: 'taxa', label: t('Serviço'), type: 'pct', p: 1 },
+      ],
+    }),
+  ];
+}
 
 /** Pede à página das requisições que abra uma (ligação a partir da conciliação). */
 export function pedirAbrirRequisicao(numero) {

@@ -108,7 +108,7 @@ function naval_docest_resumo(array $linhas): array
         }
     }
     foreach ($porRota as &$x) {
-        $x['pct_anulados'] = $x['documentos'] ? round($x['anulados'] / $x['documentos'], 4) : 0.0;
+        $x['pct_anulados'] = round($x['anulados'] / max(1, $x['documentos']), 4);
         $x['valor_anulado'] = round($x['valor_anulado'], 2);
     }
     unset($x);

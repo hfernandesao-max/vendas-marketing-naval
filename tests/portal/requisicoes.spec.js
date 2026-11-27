@@ -314,3 +314,83 @@ test('PO: o controlo de stock ajusta as quantidades e valida; só depois aparece
   expect(pedidos[0]).toMatchObject({ accao: 'validar_stock', numero: 'PO-2026-000060', quantidades: { A1: 30 }, motivo: 'Só há 30 no armazém' });
   expect(erros).toEqual([]);
 });
+
+test('PO não satisfeitas: taxa de serviço do armazém, a PO fechada que transitou e o rascunho transitado com a origem de cada linha', async ({ page }) => {
+  const trans = {
+    numero: 'PO-2026-000110',
+    ano: '2026',
+    rota: '1001',
+    promotor: 'Andrea Santos',
+    data: '2026-11-28',
+    origem: { tipo: 'transitada', de: ['PO-2026-000101'], data: '2026-11-27' },
+    estado: 'rascunho',
+    versao: 1,
+    nota: '',
+    criado_por: 'automatico',
+    impressoes: [],
+    linhas: [
+      {
+        codigo: 'A1',
+        artigo: 'Fraldas M',
+        unidade: 'CX',
+        sugerida: 4,
+        quantidade: 4,
+        origem: 'transitado',
+        transitado_de: 'PO-2026-000101',
+        motivo_origem: 'Não carregada no dia',
+      },
+    ],
+  };
+  const servico = {
+    resumo: { pedido: 19, carregado: 11, taxa: 0.5789, em_falta: 8 },
+    por_rota: [
+      { rota: '1001', promotor: 'Andrea Santos', pedido: 4, carregado: 0, taxa: 0, em_falta: 4, pos: 1, nao_satisfeitas: 1 },
+      { rota: '1002', promotor: 'Nelson Bumba', pedido: 15, carregado: 11, taxa: 0.7333, em_falta: 4, pos: 1, nao_satisfeitas: 1 },
+    ],
+    por_artigo: [{ codigo: 'A1', artigo: 'Fraldas M', pedido: 14, carregado: 6, taxa: 0.4286, em_falta: 8 }],
+    nao_satisfeitas: [
+      {
+        numero: 'PO-2026-000101',
+        data: '2026-11-27',
+        rota: '1001',
+        promotor: 'Andrea Santos',
+        estado: 'fechada',
+        pedido: 4,
+        carregado: 0,
+        motivo: 'Não carregada no dia: transitou para PO-2026-000110.',
+        transitada_para: 'PO-2026-000110',
+      },
+      {
+        numero: 'PO-2026-000102',
+        data: '2026-11-27',
+        rota: '1002',
+        promotor: 'Nelson Bumba',
+        estado: 'carregada',
+        pedido: 15,
+        carregado: 11,
+        motivo: 'Carregada em parte',
+        transitada_para: '',
+      },
+    ],
+  };
+  await page.route('**/v1/requisicoes**', (rt) => {
+    const u = new URL(rt.request().url());
+    if (u.searchParams.get('catalogo')) return rt.fulfill({ json: { ok: true, artigos: [{ codigo: 'A1', artigo: 'Fraldas M', disponivel: 100 }] } });
+    if (u.searchParams.get('numero')) return rt.fulfill({ json: { ok: true, gere: true, requisicao: { ...trans } } });
+    return rt.fulfill({
+      json: { ok: true, gere: true, rotas: { 1001: 'Andrea Santos' }, requisicoes: [{ ...trans, n_linhas: 1, quantidade: 4 }], servico },
+    });
+  });
+  const erros = await abrir(page, '#requisicoes-carrinha');
+  await expect(page.locator('#s-req tbody tr')).toContainText('Transitada de PO-2026-000101');
+  await expect(page.locator('.tile', { hasText: 'Taxa de serviço do armazém' })).toContainText('57,9%');
+  await expect(page.locator('#s-req-nao-satisfeitas tbody tr')).toHaveCount(2);
+  await expect(page.locator('#s-req-nao-satisfeitas tbody tr').first()).toContainText('PO-2026-000110');
+  await expect(page.locator('#s-req-servico-rota tbody tr').first()).toContainText('1001');
+  await expect(page.locator('#s-req-servico-artigo tbody tr')).toContainText('Fraldas M');
+  await page.locator('#s-req').getByRole('button', { name: 'PO-2026-000110' }).click();
+  const ed = page.locator('#req-editor');
+  await expect(ed).toContainText('transitada de PO-2026-000101: não satisfeita no dia 27-11-2026');
+  await expect(ed).toContainText('transitado de PO-2026-000101 · Não carregada no dia');
+  expect(erros).toEqual([]);
+});

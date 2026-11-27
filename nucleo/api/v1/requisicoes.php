@@ -3,7 +3,8 @@
  * Requisições de reposição da carrinha ao armazém (nucleo/servicos/requisicoes.php). Recurso «requisicoes-carrinha»:
  * V/Vr ver (Vr: só as suas rotas), G criar, alterar, emitir e anular (sempre dentro das rotas de cada pessoa).
  *
- * GET  v1/requisicoes?de=AAAA-MM-DD&ate=AAAA-MM-DD     lista do período
+ * GET  v1/requisicoes?de=AAAA-MM-DD&ate=AAAA-MM-DD     lista do período, com a taxa de serviço do armazém (servico:
+ *      pedido × carregado por rota e artigo, e as PO não satisfeitas: fechadas sem carga ou carregadas em parte)
  * GET  v1/requisicoes?numero=RQ-AAAA-000001            uma requisição, com o histórico
  * GET  v1/requisicoes?catalogo=1                       artigos que se podem requisitar (disponível nos armazéns)
  * POST {accao: criar, rota, data?, linhas?, nota?, csrf}
@@ -61,7 +62,7 @@ if (!naval_e_post()) {
     $lista = array_map(function ($r) { return $r + ['pronta_carga' => naval_req_pronta_carga($r), 'precisa_aprovacao' => naval_req_precisa_aprovacao($r),
         'precisa_validacao' => naval_req_precisa_validacao($r)]; }, naval_req_listar($de, $ate, $rotas));
     naval_json_assinado(['ok' => true, 'gere' => $gere, 'aprova' => naval_pode('requisicoes-aprovacao', 'G'), 'valida' => naval_pode('requisicoes-validacao', 'G'), 'eu' => $login,
-        'requisicoes' => $lista, 'rotas' => (object) $promotores]);
+        'requisicoes' => $lista, 'rotas' => (object) $promotores, 'servico' => naval_req_servico($lista)]);
 }
 
 $p = naval_pedido();

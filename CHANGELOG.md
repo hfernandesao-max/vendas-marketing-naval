@@ -1,5 +1,23 @@
 ## 27-11-2026
 
+### Requisições: PO não satisfeitas no dia transitam para o dia seguinte
+
+<!-- paginas: requisicoes-carrinha -->
+<!-- tipo: funcionalidade -->
+
+- **PO emitida e não carregada** até ao fim da janela de carga do dia (mais 30 minutos de margem):
+  - fecha-se sozinha com o motivo «Não carregada no dia»;
+  - os artigos passam para uma **PO nova em rascunho** no dia de trabalho seguinte (salta domingos, feriados e folgas). O promotor revê e emite como sempre.
+- **PO carregada em parte:** passa só a diferença (pedido − carregado), com o motivo da conferência (ex.: «Falta no armazém»).
+- **Cada linha transitada** diz de que PO veio e porquê, e a PO nova diz «transitada de PO-…». Uma só PO de trânsito por rota e dia. Cada PO de origem fica marcada, por isso nada transita duas vezes, nada fica em duplicado na carga e nada se perde.
+- **Quadros novos na página das requisições:**
+  - **taxa de serviço do armazém** (carregado ÷ pedido no período);
+  - **PO não satisfeitas**, com o motivo e a PO para onde transitaram;
+  - **taxa de serviço por promotor**;
+  - **artigos em falta no armazém**.
+- **Datas e configuração:** vale para as PO a partir de 27-11-2026. `REQ_TRANSITO=0` no `.env` desliga a rotina.
+- **Correcções:** chaves repetidas nas traduções e um aviso da análise do PHP, que impediam a publicação da versão anterior.
+
 ### Conciliação da carrinha: dias sem actividade não pedem contagem
 
 <!-- paginas: conciliacao-carrinha, painel-carrinha, actualizacoes -->

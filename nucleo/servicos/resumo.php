@@ -309,6 +309,16 @@ function naval_periodicas(?int $agora = null): array
             error_log('[reposição automática] ' . $e->getMessage());
         }
     }
+    // PO não satisfeitas no dia (fim da janela de carga): o que faltou transita para um rascunho do dia seguinte
+    if ((int) date('i', $agora) % 15 < 5) {
+        try {
+            naval_servico('requisicoes');
+            $tr = naval_req_transitar($agora);
+            if ($tr) $feito['requisicoes_transitadas'] = count($tr);
+        } catch (Throwable $e) {
+            error_log('[PO por satisfazer] ' . $e->getMessage());
+        }
+    }
     // sala de resultados: retirar os quiosques temporários do Winrest que passaram o prazo
     if (naval_config('SALA_MODO', 'app') === 'kiosk') {
         try {

@@ -261,3 +261,41 @@ teste('PO: o controlo de stock ajusta as quantidades (com motivo) e valida; quem
     lanca(409, function () use ($e) { naval_req_validar_quantidades($e['numero'], [], '', 'teresa.gomes'); });   // uma só vez
     verdade((bool) naval_funcoes_conflitos(['C-PO-VALIDAR', 'C-PO-APROVAR']), 'validar e aprovar são funções separadas');
 });
+
+teste('PO não satisfeita no dia: o que falta (com o motivo) e a taxa de serviço do armazém', function () {
+    naval_servico('requisicoes');
+    $emitida = ['numero' => 'PO-2026-000101', 'estado' => 'emitida', 'rota' => '1001', 'data' => '2026-11-27',
+        'linhas' => [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 4]]];
+    $parcial = ['numero' => 'PO-2026-000102', 'estado' => 'carregada', 'rota' => '1002', 'data' => '2026-11-27', 'linhas' => [
+        ['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 10, 'entregue' => 6, 'motivo' => ['codigo' => 'falta_armazem', 'texto' => '']],
+        ['codigo' => 'B2', 'artigo' => 'Sabão', 'quantidade' => 5, 'entregue' => 5]]];
+    $l = naval_req_por_satisfazer($emitida);
+    igual([['A1', 4.0, 'PO-2026-000101', 'Não carregada no dia', 'transitado']], array_map(function ($x) { return [$x['codigo'], $x['quantidade'], $x['transitado_de'], $x['motivo_origem'], $x['origem']]; }, $l));
+    $l = naval_req_por_satisfazer($parcial);
+    igual([['A1', 4.0, 'Falta no armazém']], array_map(function ($x) { return [$x['codigo'], $x['quantidade'], $x['motivo_origem']]; }, $l), 'só a diferença');
+    igual([], naval_req_por_satisfazer(['estado' => 'rascunho'] + $emitida), 'rascunho não transita');
+    $fechada = ['estado' => 'fechada', 'motivo_fecho' => 'Não carregada no dia: transitou para PO-2026-000110.', 'transitada_para' => 'PO-2026-000110'] + $emitida;
+    $s = naval_req_servico([$fechada, $parcial, $emitida]);
+    igual([19.0, 11.0, 0.5789, 8.0], [$s['resumo']['pedido'], $s['resumo']['carregado'], $s['resumo']['taxa'], $s['resumo']['em_falta']], 'a emitida ainda no dia não conta');
+    igual(['A1', 8.0], [$s['por_artigo'][0]['codigo'], $s['por_artigo'][0]['em_falta']]);
+    igual(['1001' => 0.0, '1002' => 0.7333], array_column($s['por_rota'], 'taxa', 'rota'));
+    igual(['PO-2026-000101', 'PO-2026-000102'], array_column($s['nao_satisfeitas'], 'numero'));
+    igual('PO-2026-000110', $s['nao_satisfeitas'][0]['transitada_para']);
+});
+
+teste('PO emitida e não carregada até ao fim da carga: fecha e transita para um rascunho do dia de trabalho seguinte (uma só vez)', function () {
+    naval_servico('requisicoes');
+    $hoje = date('Y-m-d');
+    $r = naval_req_criar('1021', $hoje, [['codigo' => 'A1', 'artigo' => 'Fraldas M', 'quantidade' => 3]], 'pro21');
+    $e = naval_req_emitir($r['numero'], $r['versao'], 'pro21');
+    igual([], array_intersect_key(naval_req_transitar(strtotime($hoje . ' 08:00')), ['1021' => 1]), 'antes da carga não mexe');
+    $t = naval_req_transitar(strtotime($hoje . ' 23:30'));
+    verdade(isset($t['1021']), json_encode($t));
+    $o = naval_req_ler($e['numero']);
+    igual(['fechada', $t['1021']], [$o['estado'], $o['transitada_para']]);
+    $n = naval_req_ler($t['1021']);
+    igual(['rascunho', 'transitada', naval_req_dia_seguinte($hoje)], [$n['estado'], $n['origem']['tipo'], $n['data']]);
+    verdade($n['data'] > $hoje && !naval_cal_folga($n['data']), 'dia de trabalho seguinte');
+    igual([['A1', 3.0, 'transitado', $e['numero'], 'Não carregada no dia']], array_map(function ($x) { return [$x['codigo'], (float) $x['quantidade'], $x['origem'], $x['transitado_de'], $x['motivo_origem']]; }, $n['linhas']));
+    verdade(!isset(naval_req_transitar(strtotime($hoje . ' 23:45'))['1021']), 'não transita duas vezes');
+});
