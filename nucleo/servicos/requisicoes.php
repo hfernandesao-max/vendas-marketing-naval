@@ -596,14 +596,15 @@ const NAVAL_REQ_TRANSITO_MARGEM = 30;
 function naval_req_por_satisfazer(array $r): array
 {
     $out = [];
+    $estado = (string) ($r['estado'] ?? '');
     foreach ((array) ($r['linhas'] ?? []) as $l) {
         $q = (float) ($l['quantidade'] ?? 0);
-        if (($r['estado'] ?? '') === 'emitida') $falta = $q;
-        elseif (($r['estado'] ?? '') === 'carregada' && array_key_exists('entregue', $l)) $falta = $q - (float) $l['entregue'];
+        if ($estado === 'emitida') $falta = $q;
+        elseif ($estado === 'carregada' && array_key_exists('entregue', $l)) $falta = $q - (float) $l['entregue'];
         else continue;
         if ($falta <= 0.0001) continue;
         $m = (array) ($l['motivo'] ?? []);
-        $motivo = ($r['estado'] ?? '') === 'emitida' ? 'Não carregada no dia'
+        $motivo = $estado === 'emitida' ? 'Não carregada no dia'
             : (NAVAL_REQ_MOTIVOS[$m['codigo'] ?? ''] ?? 'Carregado a menos') . (!empty($m['texto']) ? ': ' . $m['texto'] : '');
         $out[] = ['codigo' => (string) $l['codigo'], 'artigo' => (string) ($l['artigo'] ?? $l['codigo']), 'unidade' => (string) ($l['unidade'] ?? ''),
             'sugerida' => round($falta, 3), 'quantidade' => round($falta, 3), 'origem' => 'transitado', 'transitado_de' => (string) $r['numero'], 'motivo_origem' => $motivo];
