@@ -37,8 +37,31 @@ object Accoes {
         Notificacoes.estado(ctx, naSala = true)
         val wifi = noWifiDaSala(ctx, cfg)
         val aberto = abrirWinrest(ctx, cfg.winrestPacote)
-        // o portal regista a presença (o LCD mostra quem sincronizou) e, no modo «kiosk», pede o quiosque ao MDM
-        avisarPortal(ctx, cfg, "entrada", mapOf("wifi_sala" to wifi.toString(), "winrest_aberto" to aberto.toString()))
+        // o portal regista a presença (o LCD mostra quem sincronizou, confirmado pelo Pinguim BO) e a rede que as apps
+        // estão a usar: o Winrest não sincroniza se o Android continuar nos dados móveis
+        val (rede, dados) = redeEmUso(ctx)
+        avisarPortal(ctx, cfg, "entrada", mapOf("wifi_sala" to wifi.toString(), "winrest_aberto" to aberto.toString(), "rede" to rede,
+            "dados_moveis" to dados.toString()))
+    }
+
+    /**
+     * A rede que as apps estão a usar agora (a rede predefinida do Android) e se os dados móveis estão ligados:
+     *  - «wifi»: Wi-Fi com Internet confirmada pelo Android (tudo passa por aqui, os dados móveis ficam parados);
+     *  - «wifi_sem_internet»: Wi-Fi sem Internet confirmada (o Android pode continuar a usar os dados móveis);
+     *  - «dados_moveis»: as apps estão nos dados móveis; «sem_rede».
+     */
+    @Suppress("DEPRECATION")
+    fun redeEmUso(ctx: Context): Pair<String, Boolean> {
+        val cm = ctx.getSystemService(ConnectivityManager::class.java)
+        val dados = cm.allNetworks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true }
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return "sem_rede" to dados
+        val rede = when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi_sem_internet"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "dados_moveis"
+            else -> "sem_rede"
+        }
+        return rede to dados
     }
 
     fun sair(ctx: Context, cfg: Config) {
@@ -95,6 +118,7 @@ object Accoes {
             "evento" to evento,
             "modo" to cfg.modo,
             "dispositivo_mdm" to cfg.dispositivoMdm,
+            "rota" to cfg.rota,
             "modelo" to Build.MODEL,
             "app" to (Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: ""),
         ) + extra

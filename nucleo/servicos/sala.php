@@ -13,7 +13,7 @@ defined('NAVAL_NUCLEO') || exit;
 
 /** Ecrãs do painel, pela ordem de origem. */
 const NAVAL_SALA_ECRAS = ['hoje', 'acumulado', 'previsao', 'comparacoes', 'ritmo', 'calor', 'tendencia', 'visitas', 'funil', 'rotas', 'mapa', 'clientes',
-    'pareto', 'artigos', 'quadrante', 'stock', 'operacao', 'recordes', 'contagem', 'rank-hoje', 'rank-mes', 'destaques', 'momentos'];
+    'pareto', 'artigos', 'quadrante', 'stock', 'operacao', 'chegadas', 'recordes', 'contagem', 'rank-hoje', 'rank-mes', 'destaques', 'momentos'];
 /** Ecrãs que podem estar num espaço aberto (na versão sem valores em Kz nem nomes). */
 const NAVAL_SALA_ECRAS_ABERTA = ['hoje', 'acumulado', 'previsao', 'comparacoes', 'ritmo', 'calor', 'tendencia', 'visitas', 'funil', 'rotas', 'clientes',
     'recordes', 'contagem', 'destaques', 'momentos'];
@@ -836,6 +836,11 @@ function naval_sala_avancados(array $ag, string $hoje, int $agora, array $horasV
         'operacao' => $operacao === null ? null : naval_sala_operacao($operacao['itens'], $operacao['pinguim']),
         'mapa' => $terreno ? naval_sala_mapa((array) $terreno['t']['rotas'], $terreno['terr'], $promotores) : null,
         'momentos' => naval_sala_momentos($r, $recordes, (array) ($r['extra']['terreno']['objectivo'] ?? [])),
+        // chegadas à sala e a sincronização confirmada pelo Pinguim BO (app «Naval Sala» + SYNC_PHSE_HISTORY)
+        'chegadas' => $tenta('chegadas à sala', function () use ($agora) {
+            naval_servico('sala-presenca');
+            return naval_sala_chegadas_hoje($agora);
+        }),
     ];
 }
 

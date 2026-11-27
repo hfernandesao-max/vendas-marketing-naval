@@ -872,6 +872,7 @@ const ECRAS_SALA = [
   ['quadrante', 'Quadrante das rotas (compras × valor médio)'],
   ['stock', 'Cobertura do stock (dias de venda)'],
   ['operacao', 'Saúde da operação (o que está por fazer)'],
+  ['chegadas', 'Chegadas à sala e sincronização dos telemóveis'],
   ['recordes', 'Recordes'],
   ['contagem', 'Contagem do mês (dias e ritmo necessário)'],
   ['momentos', 'Momentos do dia (celebração quando acontece)'],

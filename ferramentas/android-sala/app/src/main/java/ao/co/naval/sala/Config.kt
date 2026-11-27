@@ -19,6 +19,8 @@ data class Config(
     val winrestPacote: String,
     val modo: String,
     val dispositivoMdm: String,
+    /** Rota do telemóvel (ex.: 1001): o portal liga a entrada à sincronização desta rota no Pinguim BO. */
+    val rota: String,
     val portalUrl: String,
     val portalChave: String,
     val activo: Boolean,
@@ -45,6 +47,7 @@ data class Config(
                 winrestPacote = b.getString("winrest_pacote").orEmpty().trim(),
                 modo = if (b.getString("modo").orEmpty().trim() == "kiosk") "kiosk" else "app",
                 dispositivoMdm = b.getString("dispositivo_mdm").orEmpty().trim(),
+                rota = b.getString("rota").orEmpty().trim().takeIf { Regex("^\\d{3,5}$").matches(it) }.orEmpty(),
                 portalUrl = b.getString("portal_url").orEmpty().trim().trimEnd('/'),
                 portalChave = b.getString("portal_chave").orEmpty().trim(),
                 activo = b.getBoolean("activo", true),

@@ -779,6 +779,76 @@ body.noite {
   color: var(--suave);
 }
 
+/* Chegadas e sincronização */
+.s-cheg {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.4vh;
+  align-content: start;
+}
+.s-cheg.duas {
+  grid-template-columns: 1fr 1fr;
+}
+.s-cheg.tres {
+  grid-template-columns: 1fr 1fr 1fr;
+  font-size: 0.85em;
+}
+.s-cheg-l {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3vh 0.8vw;
+  align-items: center;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 1.4vh;
+  padding: 1vh 1vw;
+  min-width: 0;
+}
+.s-cheg-n {
+  min-width: 0;
+}
+.s-cheg-n b,
+.s-cheg-d {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.s-cheg-i {
+  grid-row: span 2;
+  width: 1.3em;
+  text-align: center;
+  font-size: 1.6em;
+  color: var(--azul);
+}
+.s-cheg-n b {
+  font-size: 1.1em;
+}
+.s-cheg-d {
+  color: var(--suave);
+  font-size: 0.85em;
+}
+.s-cheg-s {
+  grid-column: 2;
+}
+.s-cheg-rede.ok {
+  color: var(--azul);
+}
+.s-cheg-rede.mau {
+  color: var(--ambar);
+  font-weight: 700;
+}
+.s-cheg-l.a_aguardar .s-cheg-i {
+  color: var(--ouro);
+}
+.s-cheg-l.sem_sincronizar {
+  border-color: var(--ambar);
+}
+.s-cheg-l.sem_sincronizar .s-cheg-i,
+.s-cheg-l.sem_sincronizar .s-cheg-s {
+  color: var(--ambar);
+}
+
 /* Momento do dia: celebração (sem piscar) */
 .s-momento {
   display: grid;

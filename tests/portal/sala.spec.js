@@ -452,6 +452,25 @@ const AVANCADOS = {
     },
   },
   momentos: [{ id: '2026-11-03|rota-1004', tipo: 'rota', titulo: 'Rota 1004 atingiu o objectivo de hoje', rota: '1004', promotor: 'Nelson Bumba' }],
+  chegadas: {
+    linhas: ROTAS.slice(0, 11).map((r, i) => ({
+      rota: r.rota,
+      promotor: r.promotor,
+      entrada: '2026-11-03 15:' + String(40 - i).padStart(2, '0') + ':00',
+      rede: i === 1 ? 'dados_moveis' : i === 2 ? 'wifi_sem_internet' : 'wifi',
+      dados_moveis: i < 3,
+      winrest_aberto: true,
+      estado: i === 0 ? 'a_aguardar' : i === 1 ? 'sem_sincronizar' : 'sincronizou',
+      sincronizou: i > 1 ? '2026-11-03 15:' + String(41 - i).padStart(2, '0') + ':30' : null,
+      minutos: i > 1 ? 1 : null,
+      ultima_sinc: '2026-11-03 13:10:00',
+    })),
+    entraram: 11,
+    sincronizaram: 9,
+    em_falta: 1,
+    sem_rota: 0,
+    espera: 5,
+  },
 };
 const ECRAS_AVANCADOS = [
   ['acumulado', 'Ritmo acumulado × objectivo'],
@@ -464,6 +483,7 @@ const ECRAS_AVANCADOS = [
   ['quadrante', 'Quadrante das rotas'],
   ['stock', 'Cobertura do stock'],
   ['operacao', 'Saúde da operação'],
+  ['chegadas', 'Chegadas e sincronização'],
   ['recordes', 'Recordes'],
   ['contagem', 'Contagem do mês'],
 ];

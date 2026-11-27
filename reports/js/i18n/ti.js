@@ -5749,4 +5749,8 @@ export const TI = {
     'ቅድሚያ መዓልቲ ኣብ ተሌፎን ዕጸዉ፦ ቆጸራ ዝዕቀብ መዓልቲ መስመር ኣብ Pinguim BO ምስ ተዓጸወ ጥራይ እዩ፣ ኣብ ግዜ ቆጸራ ካልእ ሰነድ ከይወጽእ።',
   'Do Pinguim BO (abertura e fecho do dia feitos no telemóvel, na tabela SESSION; o documento FCL só quando não há fecho no telemóvel). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
     'ካብ Pinguim BO (ምኽፋትን ምዕጻውን መዓልቲ ኣብ ተሌፎን፣ ኣብ ሰሌዳ SESSION፤ ሰነድ FCL ኣብ ተሌፎን ምዕጻው ምስ ዘየለ ጥራይ)። መዓልቲ ብዕለቱ ክኽፈትን ክሳብ ሰዓት {h} ናይ ዝቕጽል መዓልቲ ክዕጸውን ኣለዎ፤ ምዕጻው መሸጣ ናይ መዓልቲ ምሉእ ምዃኑ የረጋግጽ።',
+  'Chegadas à sala e sincronização dos telemóveis': 'ምብጻሕ ናብ ክፍሊን ምስናኻል ተሌፎናትን',
+  'Entrou na sala e não sincronizou': 'ናብ ክፍሊ ኣትዩ ኣይተሰናኸለን',
+  'O telemóvel de uma rota entrou na sala comercial e o Pinguim BO não recebeu nenhuma sincronização em 5 minutos.':
+    'ተሌፎን ሓደ መስመር ናብ ክፍሊ ንግዲ ኣትዩ Pinguim BO ኣብ 5 ደቒቕ ዝኾነ ምስናኻል ኣይተቐበለን።',
 };

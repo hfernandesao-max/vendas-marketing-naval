@@ -5858,4 +5858,8 @@ export const EN = {
     'Close the day on the phone first: the count is only saved with the route day closed in Pinguim BO, so that no more documents are issued during the count.',
   'Do Pinguim BO (abertura e fecho do dia feitos no telemóvel, na tabela SESSION; o documento FCL só quando não há fecho no telemóvel). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
     'From Pinguim BO (day opening and closing done on the phone, in the SESSION table; the FCL document only when there is no closing on the phone). The day must be opened on the day itself and closed by {h} the next day; the closing proves the sales of the day are complete.',
+  'Chegadas à sala e sincronização dos telemóveis': 'Arrivals in the room and phone sync',
+  'Entrou na sala e não sincronizou': 'Entered the room and did not sync',
+  'O telemóvel de uma rota entrou na sala comercial e o Pinguim BO não recebeu nenhuma sincronização em 5 minutos.':
+    'The phone of a route entered the sales room and Pinguim BO received no sync within 5 minutes.',
 };

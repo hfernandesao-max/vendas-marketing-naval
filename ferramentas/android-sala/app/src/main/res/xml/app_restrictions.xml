@@ -20,6 +20,8 @@
         android:entries="@array/modos_nomes" android:entryValues="@array/modos" android:defaultValue="app" />
     <restriction android:key="dispositivo_mdm" android:title="@string/r_dispositivo" android:restrictionType="string"
         android:defaultValue="" />
+    <restriction android:key="rota" android:title="@string/r_rota" android:restrictionType="string"
+        android:defaultValue="" />
     <restriction android:key="portal_url" android:title="@string/r_portal" android:restrictionType="string"
         android:defaultValue="" />
     <restriction android:key="portal_chave" android:title="@string/r_chave" android:restrictionType="string"

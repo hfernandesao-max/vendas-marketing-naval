@@ -23,6 +23,13 @@ class DiagnosticoActivity : Activity() {
         val e = Motor.estado(this)
         val pm = getSystemService(PowerManager::class.java)
         val ok = { b: Boolean -> if (b) "sim" else "NÃO" }
+        val (rede, dados) = Accoes.redeEmUso(this)
+        val redeTxt = when (rede) {
+            "wifi" -> "Wi-Fi com Internet (o Winrest sincroniza pelo Wi-Fi)"
+            "wifi_sem_internet" -> "Wi-Fi SEM Internet confirmada — o Android pode continuar nos dados móveis"
+            "dados_moveis" -> "DADOS MÓVEIS — o Winrest não sincroniza pela rede da sala"
+            else -> "sem rede"
+        }
         setContentView(TextView(this).apply {
             setPadding(40, 60, 40, 40)
             textSize = 15f
@@ -32,6 +39,8 @@ class DiagnosticoActivity : Activity() {
                 Configuração do MDM completa: ${ok(cfg.pronta)}
                 Rede da sala: ${cfg.ssidSala.ifBlank { "—" }} · pontos de acesso: ${if (cfg.bssids.isEmpty()) "qualquer" else cfg.bssids.joinToString()}
                 Ligado agora à rede da sala: ${ok(Accoes.noWifiDaSala(this, cfg))}
+                Rede usada pelas apps: $redeTxt · dados móveis ligados: ${ok(dados)}
+                Rota: ${cfg.rota.ifBlank { "FALTA (configuração «rota» no MDM)" }}
                 Sinal mínimo: ${cfg.regras.rssiEntrada} dBm · ${cfg.regras.leiturasEntrada} leituras
                 Saída: ${cfg.regras.saidaMs / 60000} min · espera entre sincronizações: ${cfg.regras.esperaMs / 60000} min
                 Winrest: ${cfg.winrestPacote.ifBlank { "—" }} (instalado: ${ok(packageManager.getLaunchIntentForPackage(cfg.winrestPacote) != null)})

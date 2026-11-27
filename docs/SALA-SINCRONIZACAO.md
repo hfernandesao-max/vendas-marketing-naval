@@ -79,6 +79,7 @@ servidor (normalmente em segundos, às vezes mais) e enquanto dura o comercial f
    | `saida_minutos` / `espera_minutos` | 5 / 30 |
    | `winrest_pacote` | `[INSERIR_PACKAGE_WINREST]` |
    | `modo` | `app` (ou `kiosk`) |
+   | `rota` | a rota do telemóvel (ex.: `1001`), por equipamento ou com a variável do nome do equipamento, se a consola a oferecer. Sem ela, o LCD não consegue ligar a entrada à sincronização |
    | `dispositivo_mdm` | só no modo kiosk: ID do equipamento no MDM (variável do equipamento, se a consola a oferecer, ou por equipamento) |
    | `portal_url` / `portal_chave` | endereço do portal / o valor de `SALA_APP_CHAVE` |
 
@@ -113,6 +114,19 @@ O quiosque retira-se na rotina de 5 em 5 minutos (dura entre 3 e 8 min) ou logo 
 
 Compilar: abrir `ferramentas/android-sala` no Android Studio (ou `./gradlew assembleRelease` com o Android SDK) e
 assinar com a chave da empresa; os testes da máquina de estados correm com `./gradlew test`.
+
+## 5b. O LCD e o aviso: a sincronização confirmada pelo Pinguim BO
+
+- **A app avisa o portal** ao entrar na sala (`POST v1/sala/presenca`), com:
+  - a rota;
+  - a rede que as apps estão a usar nesse momento: `wifi` (Wi-Fi com Internet confirmada pelo Android), `wifi_sem_internet`, `dados_moveis` ou `sem_rede`;
+  - se os dados móveis estão ligados.
+- **O Pinguim BO prova a sincronização:** a tabela `SYNC_PHSE_HISTORY` regista cada sincronização de cada telemóvel (loja = rota), com a hora. A entrada só conta como «sincronizou» quando há uma sincronização **depois** da hora de entrada. O LCD não depende do que o telemóvel diz.
+- **Ecrã «Chegadas e sincronização»** no painel da sala interna (Gestão › Painel da sala comercial › Ecrãs). Mostra cada rota que entrou hoje, com:
+  - a hora de entrada e a rede;
+  - ✔ «sincronizou às 15:06 (1 min)», ⏳ «a aguardar» (menos de 5 minutos) ou ✖ «sem sincronizar», com a hora da última sincronização.
+- **Aviso** «Entrou na sala e não sincronizou» a quem acompanha a rota (notificação `sala_sem_sincronizar`), uma vez por entrada, 5 minutos depois da entrada sem sincronização. `SALA_AVISO_SINC=0` desliga.
+- **O ecrã de diagnóstico da app** mostra a rede que as apps estão a usar e a rota configurada. Se aparecer «DADOS MÓVEIS» ou «Wi-Fi SEM Internet» com o telemóvel na sala, é essa a razão de o Winrest não sincronizar.
 
 ## 6. Plano de teste no local
 

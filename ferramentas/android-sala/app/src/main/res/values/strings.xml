@@ -12,6 +12,7 @@
     <string name="r_espera">Minutos mínimos entre duas sincronizações</string>
     <string name="r_pacote">Pacote Android do Winrest</string>
     <string name="r_modo">Modo: app (Winrest em primeiro plano) ou kiosk (quiosque temporário pelo MDM)</string>
+    <string name="r_rota">Rota do telemóvel (ex.: 1001)</string>
     <string name="r_dispositivo">ID do equipamento no MDM (só no modo kiosk)</string>
     <string name="r_portal">Endereço do portal</string>
     <string name="r_chave">Chave da app da sala no portal</string>

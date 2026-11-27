@@ -319,6 +319,14 @@ function naval_periodicas(?int $agora = null): array
             error_log('[sala] ' . $e->getMessage());
         }
     }
+    // sala comercial: telemóvel que entrou e não sincronizou em 5 minutos (aviso a quem acompanha a rota)
+    try {
+        naval_servico('sala-presenca');
+        $ss = naval_sala_ciclo($agora);
+        if ($ss) $feito['sala_sem_sincronizar'] = $ss;
+    } catch (Throwable $e) {
+        error_log('[sala] aviso de sincronização: ' . $e->getMessage());
+    }
     // agentes autónomos: fecho do dia (16:00), risco por vendedor (07:45) e relatório semanal (segunda, 07:30)
     try {
         naval_servico('agentes');

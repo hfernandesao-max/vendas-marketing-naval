@@ -1,5 +1,22 @@
 ## 27-11-2026
 
+### Sala comercial: chegadas e sincronização no LCD
+
+<!-- paginas: gestao -->
+<!-- tipo: funcionalidade -->
+
+- **Novo ecrã do painel da sala, «Chegadas e sincronização».** Mostra cada telemóvel que entrou hoje na sala, com:
+  - a rota e o promotor;
+  - a hora de entrada;
+  - a rede que estava a usar (Wi-Fi da sala, Wi-Fi sem Internet ou dados móveis);
+  - se **o Pinguim BO recebeu a sincronização depois da entrada**: ✔ com a hora, ⏳ a aguardar, ✖ sem sincronizar.
+
+  A confirmação vem do próprio Pinguim BO (histórico de sincronizações de cada telemóvel), não do telemóvel.
+- **Aviso a quem acompanha a rota** quando o telemóvel entra na sala e não sincroniza em 5 minutos, com a rede que estava a usar.
+- **App «Naval Sala»:**
+  - envia a rota (nova chave `rota` na configuração gerida do MDM) e a rede em uso ao entrar;
+  - o ecrã de diagnóstico mostra se as apps estão no Wi-Fi com Internet ou nos dados móveis. Com Wi-Fi e dados móveis ligados ao mesmo tempo, o Winrest só sincroniza quando o Android usa o Wi-Fi.
+
 ### Fecho do dia: o fecho feito no telemóvel conta (a contagem da carrinha deixa de ser recusada)
 
 <!-- paginas: conciliacao-carrinha, sincronizacao -->

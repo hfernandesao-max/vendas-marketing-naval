@@ -1039,6 +1039,69 @@
     return out;
   }
 
+  // 10b. Chegadas e sincronização (sala interna): quem entrou hoje na sala e se o Pinguim BO recebeu a sincronização
+  var REDES = {
+    wifi: ['Wi-Fi da sala', 'ok'],
+    wifi_sem_internet: ['Wi-Fi sem Internet', 'mau'],
+    dados_moveis: ['dados móveis', 'mau'],
+    sem_rede: ['sem rede', 'mau'],
+  };
+  function hm(t) {
+    return t ? String(t).slice(11, 16) : '—';
+  }
+  function ecraChegadas() {
+    var c = D.chegadas;
+    if (!c || !c.entraram)
+      return [
+        el(
+          'p',
+          's-msg',
+          'Ainda ninguém entrou hoje na sala com a app «Naval Sala». Ao entrar, o telemóvel aparece aqui e o Pinguim BO confirma a sincronização.',
+        ),
+      ];
+    var out = [
+      el(
+        'p',
+        's-legenda',
+        'Entraram hoje ' +
+          nf.format(c.entraram) +
+          ' · sincronizaram ' +
+          nf.format(c.sincronizaram) +
+          (c.em_falta ? ' · ' + nf.format(c.em_falta) + ' sem sincronizar (o coordenador foi avisado)' : '') +
+          ' · ✔ recebido pelo Pinguim BO · ⏳ a aguardar · ✖ nada ao fim de ' +
+          c.espera +
+          ' min',
+      ),
+    ];
+    var t = el('div', 's-cheg' + (c.linhas.length > 8 ? ' tres' : c.linhas.length > 4 ? ' duas' : ''));
+    c.linhas.forEach(function (x) {
+      var l = el('div', 's-cheg-l ' + x.estado);
+      l.appendChild(el('span', 's-cheg-i', x.estado === 'sincronizou' ? '✔' : x.estado === 'a_aguardar' ? '⏳' : '✖'));
+      var n = el('div', 's-cheg-n');
+      n.appendChild(el('b', null, x.rota + (x.promotor ? ' · ' + x.promotor : '')));
+      var r = REDES[x.rede];
+      var info = el('div', 's-cheg-d', 'entrou às ' + hm(x.entrada) + ' · ');
+      info.appendChild(el('span', 's-cheg-rede ' + (r ? r[1] : ''), r ? r[0] : 'rede desconhecida'));
+      if (x.dados_moveis && x.rede === 'wifi') info.appendChild(document.createTextNode(' · dados móveis ligados'));
+      n.appendChild(info);
+      l.appendChild(n);
+      l.appendChild(
+        el(
+          'b',
+          's-cheg-s',
+          x.estado === 'sincronizou'
+            ? 'sincronizou às ' + hm(x.sincronizou) + (x.minutos ? ' (' + x.minutos + ' min)' : '')
+            : x.estado === 'a_aguardar'
+              ? 'a aguardar'
+              : 'sem sincronizar' + (x.ultima_sinc ? ' · última às ' + hm(x.ultima_sinc) : ''),
+        ),
+      );
+      t.appendChild(l);
+    });
+    out.push(t);
+    return out;
+  }
+
   // 11. Recordes: melhor dia de sempre, melhor dia igual ao de hoje, posição de ontem e do mês
   function ecraRecordes() {
     var r = D.recordes;
@@ -1195,6 +1258,7 @@
     quadrante: { titulo: 'Quadrante das rotas', f: ecraQuadrante },
     stock: { titulo: 'Cobertura do stock', f: ecraStock },
     operacao: { titulo: 'Saúde da operação', f: ecraOperacao },
+    chegadas: { titulo: 'Chegadas e sincronização', f: ecraChegadas },
     recordes: { titulo: 'Recordes', f: ecraRecordes },
     contagem: { titulo: 'Contagem do mês', f: ecraContagem },
     ritmo: { titulo: 'Ritmo do dia', f: ecraRitmo },
@@ -1269,6 +1333,7 @@
             'quadrante',
             'stock',
             'operacao',
+            'chegadas',
             'recordes',
             'contagem',
             'rank-hoje',
