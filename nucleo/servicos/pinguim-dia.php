@@ -6,8 +6,12 @@
  * Onde está no Pinguim BO (visto com ferramentas/pinguim-turnos.php em 25-11-2026):
  *   - tabela SESSION: cada abertura de dia, de turno e de caixa da loja (rota), com o dia de trabalho (SESSION_DATE) e a
  *     hora local em que foi feita (LOCAL_TIMESTAMP). A primeira linha de um SESSION_DATE é a abertura desse dia;
- *   - documento FCL («Fecho financeiro»): o fecho do dia; leva a data do dia que fecha (DOC_DATE) e a hora em que foi
- *     feito (CLOCK_DATE). Fechado o dia, o telemóvel já não emite documentos com essa data;
+ *   - fecho do dia no telemóvel: linha da SESSION com OPERATION_TYPE 12 (11 = abrir o dia, 21/22 = turno, 31/32 =
+ *     caixa), com o dia que fecha (SESSION_DATE) e a hora (LOCAL_TIMESTAMP); vem com a «Saída de caixa em automático»
+ *     (SCA). É a prova diária (confirmado a 27-11-2026 em todas as rotas). Fechado o dia, o telemóvel abre logo o
+ *     seguinte e já não emite documentos com a data antiga;
+ *   - documento FCL («Fecho financeiro»): só em alguns dias e muitas vezes na manhã seguinte; serve quando não há o
+ *     fecho na SESSION;
  *   - documentos emitidos depois do dia com a data desse dia (DOC_DATE < dia do CLOCK_DATE): sinal de que o dia ficou
  *     aberto e se vendeu nos dias seguintes com a data antiga (ex.: rota 1002, dia 19-11 fechado só a 23-11).
  *
@@ -42,10 +46,12 @@ function naval_pdia_rota(string $codigo, string $descricao = ''): string
  *   $sessoes:   [{ROTA, DIA, ABERTO_EM}]               (primeira linha da SESSION de cada dia de trabalho)
  *   $fechos:    [{ROTA, DIA, FECHADO_EM, DOCUMENTO}]   (FCL)
  *   $docs:      [{ROTA, DIA, N, VENDAS, NOUTRO_DIA, ULTIMO}] (documentos do dia; vendas emitidas noutro dia)
- * Devolve [{rota, dia, aberto_em, abertura, fechado_em, documento, fecho, atraso_horas, documentos, vendas,
- * noutro_dia, ultimo}], da rota e do dia. Rotas fora de 10NN (formação, armazém) ficam de fora.
+ *   $fechosDia: [{ROTA, DIA, FECHADO_EM}]              (fecho do dia no telemóvel: SESSION, operação 12; o último)
+ * O fecho do dia é o do telemóvel (SESSION); sem ele, o FCL. Devolve [{rota, dia, aberto_em, abertura, fechado_em,
+ * documento, fecho, atraso_horas, documentos, vendas, noutro_dia, ultimo}], da rota e do dia. Rotas fora de 10NN
+ * (formação, armazém) ficam de fora.
  */
-function naval_pdia_montar(array $sessoes, array $fechos, array $docs, int $agora, ?string $limite = null): array
+function naval_pdia_montar(array $sessoes, array $fechos, array $docs, int $agora, ?string $limite = null, array $fechosDia = []): array
 {
     $limite = $limite ?? naval_pdia_limite();
     $l = [];
@@ -77,6 +83,14 @@ function naval_pdia_montar(array $sessoes, array $fechos, array $docs, int $agor
             $l[$k]['documento'] = trim((string) ($f['DOCUMENTO'] ?? '')) ?: null;
         }
     }
+    // o fecho do dia no telemóvel manda sobre o FCL (que pode só chegar na manhã seguinte); escolhe-se depois dos documentos
+    $fd = [];
+    foreach ($fechosDia as $f) {
+        $rota = naval_pdia_rota((string) ($f['ROTA'] ?? ''), (string) ($f['DESCR'] ?? ''));
+        $dia = substr((string) ($f['DIA'] ?? ''), 0, 10);
+        if (!$ok($rota, $dia) || empty($f['FECHADO_EM'])) continue;
+        $fd[$linha($rota, $dia)][] = substr((string) $f['FECHADO_EM'], 0, 19);
+    }
     foreach ($docs as $d) {
         $rota = naval_pdia_rota((string) ($d['ROTA'] ?? ''), (string) ($d['DESCR'] ?? ''));
         $dia = substr((string) ($d['DIA'] ?? ''), 0, 10);
@@ -87,6 +101,15 @@ function naval_pdia_montar(array $sessoes, array $fechos, array $docs, int $agor
         $l[$k]['noutro_dia'] += (int) ($d['NOUTRO_DIA'] ?? 0);
         $u = !empty($d['ULTIMO']) ? substr((string) $d['ULTIMO'], 0, 19) : null;
         if ($u !== null && ($l[$k]['ultimo'] === null || $u > $l[$k]['ultimo'])) $l[$k]['ultimo'] = $u;
+    }
+    // o dia pode ter sido fechado, reaberto e fechado de novo: conta o primeiro fecho depois do último documento do dia
+    // (antes dele, o dia ainda emitiu); sem documentos depois, o primeiro fecho
+    foreach ($fd as $k => $ts) {
+        sort($ts);
+        $ult = (string) ($l[$k]['ultimo'] ?? '');
+        $depois = array_values(array_filter($ts, function ($t) use ($ult) { return $t >= $ult; }));
+        $l[$k]['fechado_em'] = $depois ? $depois[0] : end($ts);
+        $l[$k]['documento'] = 'Fecho do dia no telemóvel';
     }
     $agoraTxt = date('Y-m-d H:i:s', $agora);
     foreach ($l as &$x) {
@@ -147,6 +170,15 @@ function naval_pdia_ler(string $de, string $ate, ?int $agora = null): array
         LEFT JOIN STORE S ON S.ID = DH.STORE_ID
         WHERE DH.DELETED = 0 AND COALESCE(DH.CALC_ISCANCELED, 0) = 0 AND DC.CODE = 'FCL'
           AND DH.DOC_DATE >= :de AND DH.DOC_DATE < DATEADD(day, 1, CAST(:ate AS DATE))", $p);
+    // o fecho do dia feito no telemóvel: SESSION com OPERATION_TYPE 12 (11 abre o dia, 21/22 o turno, 31/32 a caixa).
+    // É a prova diária; o documento FCL («Fecho financeiro») só aparece em alguns dias, muitas vezes na manhã seguinte
+    // (visto a 27-11-2026: rota 1001 fechou o dia 26 às 15:18:24 na SESSION, sem FCL). Fica a última operação 12 do dia.
+    $fechosDia = naval_bd_consultar("
+        SELECT S.CODE AS ROTA, S.DESCRIPTION AS DESCR, CONVERT(VARCHAR(10), SE.SESSION_DATE, 120) AS DIA,
+               CONVERT(VARCHAR(19), SE.LOCAL_TIMESTAMP, 120) AS FECHADO_EM
+        FROM [SESSION] SE
+        LEFT JOIN STORE S ON S.ID = SE.STORE_ID
+        WHERE SE.DELETED = 0 AND SE.OPERATION_TYPE = 12 AND SE.SESSION_DATE >= :de AND SE.SESSION_DATE <= :ate", $p);
     $docs = naval_bd_consultar("
         SELECT S.CODE AS ROTA, S.DESCRIPTION AS DESCR, CONVERT(VARCHAR(10), DH.DOC_DATE, 120) AS DIA, COUNT(*) AS N,
                SUM(CASE WHEN DC.CODE IN " . naval_vendas_tipos_sql() . " THEN 1 ELSE 0 END) AS VENDAS,
@@ -160,7 +192,7 @@ function naval_pdia_ler(string $de, string $ate, ?int $agora = null): array
           AND DH.DOC_DATE >= :de AND DH.DOC_DATE < DATEADD(day, 1, CAST(:ate AS DATE))
         GROUP BY S.CODE, S.DESCRIPTION, CONVERT(VARCHAR(10), DH.DOC_DATE, 120)", $p);
     $agora = $agora ?? time();
-    $linhas = naval_pdia_montar($sessoes, $fechos, $docs, $agora);
+    $linhas = naval_pdia_montar($sessoes, $fechos, $docs, $agora, null, $fechosDia);
     return ['de' => $de, 'ate' => $ate, 'agora' => date('Y-m-d H:i:s', $agora), 'limite' => naval_pdia_limite(), 'linhas' => $linhas] + naval_pdia_resumo($linhas);
 }
 

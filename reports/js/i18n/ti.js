@@ -5745,4 +5745,8 @@ export const TI = {
   'Saídas com a guia anulada': 'ምስ ዝተሰረዘ ሰነድ መጓዓዝያ ዝወጹ',
   'saíram do armazém sem entrar noutro: corrigir no Pinguim BO': 'ካብ መኽዘን ወጺኦም ናብ ካልእ ኣይኣተዉን፦ ኣብ Pinguim BO ኣዐርዩ',
   'Guia anulada (saiu sem entrar noutro armazém)': 'ዝተሰረዘ ሰነድ መጓዓዝያ (ናብ ካልእ መኽዘን ከይኣተወ ወጺኡ)',
+  'Feche primeiro o dia no telemóvel: a contagem só se grava com o dia da rota fechado no Pinguim BO, para não sair mais nenhum documento durante a contagem.':
+    'ቅድሚያ መዓልቲ ኣብ ተሌፎን ዕጸዉ፦ ቆጸራ ዝዕቀብ መዓልቲ መስመር ኣብ Pinguim BO ምስ ተዓጸወ ጥራይ እዩ፣ ኣብ ግዜ ቆጸራ ካልእ ሰነድ ከይወጽእ።',
+  'Do Pinguim BO (abertura e fecho do dia feitos no telemóvel, na tabela SESSION; o documento FCL só quando não há fecho no telemóvel). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.':
+    'ካብ Pinguim BO (ምኽፋትን ምዕጻውን መዓልቲ ኣብ ተሌፎን፣ ኣብ ሰሌዳ SESSION፤ ሰነድ FCL ኣብ ተሌፎን ምዕጻው ምስ ዘየለ ጥራይ)። መዓልቲ ብዕለቱ ክኽፈትን ክሳብ ሰዓት {h} ናይ ዝቕጽል መዓልቲ ክዕጸውን ኣለዎ፤ ምዕጻው መሸጣ ናይ መዓልቲ ምሉእ ምዃኑ የረጋግጽ።',
 };

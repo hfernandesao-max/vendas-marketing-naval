@@ -1937,8 +1937,8 @@ function naval_carr_vista(string $data, ?array $rotas, bool $gere, bool $actuali
 // ── Contagem só com o dia fechado no Pinguim BO ───────────────────────────────────────────────────────────────────
 //
 // Durante a contagem não pode sair mais nenhum documento da carrinha. O portal não escreve no Pinguim BO, por isso
-// não bloqueia o telemóvel: exige a prova de que o telemóvel já não emite — o fecho do dia da rota (FCL, «Fecho
-// financeiro») registado no Pinguim BO. Sem ele — ou sem ligação ao Pinguim BO para o confirmar — a contagem não se
+// não bloqueia o telemóvel: exige a prova de que o telemóvel já não emite — o fecho do dia da rota feito no
+// telemóvel (SESSION, operação 12; ou o documento FCL) registado no Pinguim BO. Sem ele — ou sem ligação ao Pinguim BO para o confirmar — a contagem não se
 // grava; o super administrador pode abrir uma excepção com motivo (fica no histórico). CARRINHA_EXIGIR_FECHO=0 desliga.
 const NAVAL_CARR_FECHO_DESDE = '2026-11-26';
 
@@ -1965,7 +1965,7 @@ function naval_carr_decisao_fecho(?array $linhas, string $rota, string $dia, boo
         if ((string) ($x['rota'] ?? '') === $rota && ($x['dia'] ?? '') === $dia && !empty($x['fechado_em'])) return ['fecho_pinguim' => (string) $x['fechado_em']];
     }
     if ($sadm && mb_strlen($excepcao) >= 5) return ['fecho_pinguim' => null, 'excepcao' => mb_substr($excepcao, 0, 300)];
-    throw new NavalErro('O dia da rota ' . $rota . ' ainda está aberto no Pinguim BO. O vendedor fecha o dia no telemóvel (Fecho financeiro) e só depois se conta: assim não sai mais nenhum documento durante a contagem.',
+    throw new NavalErro('O dia da rota ' . $rota . ' ainda está aberto no Pinguim BO. O vendedor fecha o dia no telemóvel e só depois se conta: assim não sai mais nenhum documento durante a contagem.',
         409, ['codigo' => 'dia_aberto_pinguim']);
 }
 

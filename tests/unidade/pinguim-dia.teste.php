@@ -40,6 +40,31 @@ teste('dia no Pinguim BO: abertura certa ou na véspera; fecho a tempo, atrasado
     igual(['dia_fechar|1004|2026-11-24', 'dia_abrir|1010|2026-11-25'], array_column($a, 'chave'), 'avisos: por fechar e aberto na véspera (o 1002 de 19-11 já é antigo)');
 });
 
+teste('dia no Pinguim BO: o fecho feito no telemóvel (SESSION, operação 12) conta, mesmo sem FCL (rotas 1001, 1002 e 1005, 24 a 26-11)', function () {
+    $agora = strtotime('2026-11-27 08:49:00');
+    $sessoes = [['ROTA' => '1001', 'DIA' => '2026-11-26', 'ABERTO_EM' => '2026-11-25 17:00:12'], ['ROTA' => '1005', 'DIA' => '2026-11-26', 'ABERTO_EM' => '2026-11-25 13:54:23'],
+        ['ROTA' => '1002', 'DIA' => '2026-11-24', 'ABERTO_EM' => '2026-11-23 16:14:13']];
+    $fechos = [['ROTA' => '1005', 'DIA' => '2026-11-26', 'FECHADO_EM' => '2026-11-27 08:40:01', 'DOCUMENTO' => 'FCL A1005/20']];
+    $docs = [['ROTA' => '1001', 'DIA' => '2026-11-26', 'N' => 7, 'VENDAS' => 5, 'NOUTRO_DIA' => 0, 'ULTIMO' => '2026-11-26 15:18:24'],
+        ['ROTA' => '1005', 'DIA' => '2026-11-26', 'N' => 8, 'VENDAS' => 7, 'NOUTRO_DIA' => 0, 'ULTIMO' => '2026-11-26 13:57:09'],
+        ['ROTA' => '1002', 'DIA' => '2026-11-24', 'N' => 5, 'VENDAS' => 3, 'NOUTRO_DIA' => 0, 'ULTIMO' => '2026-11-24 15:14:36']];
+    $fd = [
+        ['ROTA' => '1001', 'DIA' => '2026-11-26', 'FECHADO_EM' => '2026-11-26 15:18:24'],                 // fechou no telemóvel, sem FCL
+        ['ROTA' => '1005', 'DIA' => '2026-11-26', 'FECHADO_EM' => '2026-11-26 13:57:09'],                 // fechou no telemóvel…
+        ['ROTA' => '1005', 'DIA' => '2026-11-26', 'FECHADO_EM' => '2026-11-27 08:40:01'],                 // …e de novo com o FCL de manhã
+        ['ROTA' => '1002', 'DIA' => '2026-11-24', 'FECHADO_EM' => '2026-11-23 16:36:42'],                 // fecho antes de vender (reabriu)…
+        ['ROTA' => '1002', 'DIA' => '2026-11-24', 'FECHADO_EM' => '2026-11-24 15:14:36'],                 // …o fecho verdadeiro
+    ];
+    $por = array_column(naval_pdia_montar($sessoes, $fechos, $docs, $agora, '06:00', $fd), null, 'dia');
+    $l = [];
+    foreach (naval_pdia_montar($sessoes, $fechos, $docs, $agora, '06:00', $fd) as $x) $l[$x['rota']] = $x;
+    igual(['2026-11-26 15:18:24', 'a_tempo', 'Fecho do dia no telemóvel'], [$l['1001']['fechado_em'], $l['1001']['fecho'], $l['1001']['documento']], '1001: fechado, a contagem pode gravar-se');
+    igual(['2026-11-26 13:57:09', 'a_tempo'], [$l['1005']['fechado_em'], $l['1005']['fecho']], '1005: conta o fecho do telemóvel, não o FCL da manhã seguinte');
+    igual('2026-11-24 15:14:36', $l['1002']['fechado_em'], '1002: o fecho depois do último documento, não o de antes de vender');
+    igual(['fecho_pinguim' => '2026-11-26 15:18:24'], naval_carr_decisao_fecho(array_values($l), '1001', '2026-11-26', false, ''), 'a contagem da 1001 grava-se sem excepção');
+    verdade(count($por) > 0);
+});
+
 teste('fecho do dia: o dia fechado no Pinguim BO (FCL) prova as vendas completas, mesmo sem sincronizar depois das 15:00', function () {
     $dia = date('Y-m-d', time() - 4 * 86400);
     $f = $GLOBALS['rv_fontes'];

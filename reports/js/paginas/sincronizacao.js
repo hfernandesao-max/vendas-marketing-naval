@@ -78,7 +78,7 @@ function seccaoDia(rotasVisiveis) {
   const exc = linhas.filter((x) => oQue(x) !== '');
   const tituloExc = t('Abertura e fecho do dia: o que precisa de acção');
   const notaExc = t(
-    'Do Pinguim BO (abertura na tabela SESSION, fecho no documento FCL). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.',
+    'Do Pinguim BO (abertura e fecho do dia feitos no telemóvel, na tabela SESSION; o documento FCL só quando não há fecho no telemóvel). O dia deve ser aberto no próprio dia e fechado até às {h} do dia seguinte; o fecho prova que as vendas do dia estão completas.',
     { h: D.limite },
   );
   if (!exc.length) w.append(secBox(tituloExc, notaExc, el('p', 'note ok', t('Tudo em dia: todos os dias abertos no próprio dia e fechados a tempo.'))));

@@ -428,7 +428,7 @@ function formContagem(r) {
         'p',
         'aviso cc-fecho',
         t(
-          'Feche primeiro o dia no telemóvel (Fecho financeiro no Pinguim): a contagem só se grava com o dia da rota fechado, para não sair mais nenhum documento durante a contagem.',
+          'Feche primeiro o dia no telemóvel: a contagem só se grava com o dia da rota fechado no Pinguim BO, para não sair mais nenhum documento durante a contagem.',
         ),
       ),
     );

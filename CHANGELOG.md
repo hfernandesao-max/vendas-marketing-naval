@@ -1,3 +1,21 @@
+## 27-11-2026
+
+### Fecho do dia: o fecho feito no telemóvel conta (a contagem da carrinha deixa de ser recusada)
+
+<!-- paginas: conciliacao-carrinha, sincronizacao -->
+<!-- tipo: correcao -->
+
+- **O dia da rota conta como fechado quando o vendedor o fecha no telemóvel.** O Pinguim BO regista o fecho na tabela de sessões (fecho do dia, com a «Saída de caixa em automático»). O portal só procurava o documento «Fecho financeiro» (FCL), que só aparece em alguns dias e muitas vezes na manhã seguinte. Por isso dizia «o dia da rota ainda está aberto» e recusava a contagem: por exemplo, a rota 1001 fechou o dia 26-11 às 15:18:24 e o portal não o via.
+- Quando o dia é fechado, reaberto e fechado de novo, conta o fecho feito depois do último documento do dia. O FCL continua a contar nos dias sem fecho no telemóvel.
+- **Afecta:**
+  - a contagem da carrinha (só com o dia fechado);
+  - a página Sincronização (abertura e fecho do dia);
+  - os avisos de «dia por fechar»;
+  - o controlo do fecho no relatório de vendas.
+
+  Deixam de aparecer falsos «por fechar».
+- Nova ferramenta só de leitura **`php ferramentas/catalogo-esquema.php`**: catálogo da estrutura do Pinguim BO e do OLAP (tabelas, colunas, chaves, relações), só local. A estratégia de acesso aos dados fica em `docs/database-catalog/ACCESS_STRATEGY.md`.
+
 ## 26-11-2026
 
 ### Stock: o extracto confere com o Pinguim BO, armazém a armazém

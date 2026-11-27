@@ -26,3 +26,7 @@ composer.lock
 
 # Base de conhecimento: gerada no pacote de cada versão (scripts/construir-pacote.php)
 nucleo/conhecimento/base.json
+
+# catálogo de esquema do Pinguim BO e do OLAP: só local (o repositório é público)
+docs/database-catalog/schema-map.json
+docs/database-catalog/SCHEMA_OVERVIEW.md
