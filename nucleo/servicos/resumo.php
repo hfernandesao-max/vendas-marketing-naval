@@ -319,6 +319,20 @@ function naval_periodicas(?int $agora = null): array
             error_log('[PO por satisfazer] ' . $e->getMessage());
         }
     }
+    // mapa de clientes ao vivo: visitas da aplicação móvel e vendas do Pinguim BO, das 05:00 às 23:00 (a página
+    // também pede, no máximo de 2 em 2 minutos; aqui fica actualizado mesmo sem ninguém a ver)
+    $hm = date('H:i', $agora);
+    if ($hm >= '05:00' && $hm < '23:00') {
+        try {
+            naval_servico('visitas-app');
+            if (naval_vapp_configurado() && naval_config('VISITAS_APP_ACTIVO', '1') !== '0') {
+                $va = naval_vapp_actualizar($agora);
+                if (!empty($va['pontos'])) $feito['clientes_ao_vivo'] = count($va['pontos']);
+            }
+        } catch (Throwable $e) {
+            error_log('[mapa ao vivo] ' . get_class($e));
+        }
+    }
     // sala de resultados: retirar os quiosques temporários do Winrest que passaram o prazo
     if (naval_config('SALA_MODO', 'app') === 'kiosk') {
         try {

@@ -105,6 +105,7 @@ export const MODULO_DA_PAGINA = {
   'geo-rotas': 'geo',
   'geo-prospeccao': 'geo',
   'geo-terreno': 'geo',
+  'geo-ao-vivo': 'geo',
   'geo-zonas': 'geo',
   'geo-distribuidores': 'geo',
   'rotas-propostas': 'rotas-propostas',

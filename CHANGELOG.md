@@ -1,3 +1,28 @@
+## 28-11-2026
+
+### Terreno: mapa de clientes ao vivo
+
+<!-- paginas: geo-ao-vivo -->
+<!-- tipo: funcionalidade -->
+
+- **Página nova em Terreno › Operação do dia:** um ponto por cliente com o estado do dia, actualizado de 30 em 30 segundos:
+  - **com venda** (verde, círculo): o documento da visita é uma factura no Pinguim BO;
+  - **com encomenda** (azul, quadrado): só com os tipos de encomenda indicados em `VISITAS_TIPOS_ENCOMENDA`. Nunca soma às vendas;
+  - **em curso** (amarelo, anel): o promotor fez check-in e ainda não fez check-out;
+  - **recusa** (vermelho, losango), com o motivo;
+  - **visitado sem venda** (cinzento).
+- **Várias visitas ao mesmo cliente no dia** (ex.: recusa de manhã e venda à tarde): fica o estado mais importante (venda > encomenda > em curso > recusa).
+- **Vendas sem visita na aplicação** (ex.: entregas) aparecem pelo Pinguim BO, na posição do cliente. As vendas a consumidor final ficam fora do mapa e são contadas à parte.
+- **Posição de cada ponto:** o GPS da última visita; sem ele, o GPS do cliente. Clientes sem GPS são contados, mas não desenhados. O detalhe diz qual foi usado.
+- **Presencial ou remota:** visita a menos de 50 m do cliente (`VISITAS_RAIO_PRESENCIAL_M`), medida entre o GPS da visita e o do cliente. Sem o GPS do cliente, vale o tipo de check-in registado pela aplicação (Presencial ou Remota). A distância que a aplicação guarda não se usa: está em km arredondados, por isso 186 m ficam «0».
+- **A legenda** tem os nomes e as contagens de cada estado, e filtra o mapa. Há também o filtro por rota e a procura de clientes. Os clientes que mudaram desde a última leitura ficam com um halo.
+- **Fontes, só de leitura:**
+  - visitas de hoje: aplicação móvel (MariaDB, sessão `READ ONLY`), lidas de 2 em 2 minutos (incremental pela última alteração, e completa de 30 em 30 minutos, para apanhar as visitas apagadas);
+  - tipo de cada documento e vendas sem visita: Pinguim BO (`WITH (NOLOCK)`).
+  
+  Um só leitor, seja quantas pessoas estiverem a ver a página. O agendador mantém o mapa das 05:00 às 23:00 (`VISITAS_APP_ACTIVO=0` desliga).
+- **Permissão própria «geo-ao-vivo»:** os mesmos perfis do Percurso do dia; o supervisor e o promotor vêem só as suas rotas. Sem valores para quem não vê vendas.
+
 ## 27-11-2026
 
 ### Requisições: PO não satisfeitas no dia transitam para o dia seguinte

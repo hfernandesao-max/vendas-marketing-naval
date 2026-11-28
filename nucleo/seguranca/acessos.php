@@ -146,6 +146,8 @@ const NAVAL_MATRIZ_TXT = [
     'ocorrencias'          => 'V  G  G  Vr -  -  -  -  G  V  -',
     // terreno do dia (localização do OLAP): dado pessoal dos vendedores, só a quem acompanha as rotas (Lei 22/11)
     'geo-terreno'          => 'V  V  V  Vr Vr -  -  -  G  V  -',
+    // mapa de clientes ao vivo (visitas da aplicação móvel + vendas do Pinguim BO): os mesmos de quem acompanha as rotas
+    'geo-ao-vivo'          => 'V  V  V  Vr Vr -  -  -  G  V  -',
     // Administração
     'acessos'              => 'E  -  -  -  -  -  -  -  -  E  -',
     'admin-utilizadores'   => '-  -  -  -  -  -  -  -  -  -  -',
@@ -288,6 +290,7 @@ function naval_niveis_recurso(string $rec): array
         case 'rotas-propostas':
         case 'ocorrencias':
         case 'geo-terreno':
+        case 'geo-ao-vivo':
         case 'geo-zonas':
         case 'geo-distribuidores':
             return ['', 'Vr', 'V', 'G'];

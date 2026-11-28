@@ -89,6 +89,7 @@ const SEM_PERIODO = [
   'geo-rotas',
   'geo-prospeccao',
   'geo-terreno',
+  'geo-ao-vivo',
   'geo-zonas',
   'geo-distribuidores',
   // têm o seu próprio dia ou não dependem do período (o filtro de datas só confundiria)

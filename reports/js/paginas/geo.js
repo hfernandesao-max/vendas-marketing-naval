@@ -11,6 +11,7 @@ export const GEO_PAGINAS = {
   'geo-rotas': '../geo/geo.php',
   'geo-prospeccao': '../geo/prospeccao.php',
   'geo-terreno': '../geo/terreno.php',
+  'geo-ao-vivo': '../geo/ao-vivo.php',
   'geo-zonas': '../geo/view/index.php',
   'geo-distribuidores': '../geo/view/viewDist/index.php',
 };

@@ -7,6 +7,7 @@
   "paginas": [
     "visitas-dia",
     "geo-terreno",
+    "geo-ao-vivo",
     "ocorrencias",
     "plano-visitas",
     "geo-rotas",
@@ -21,6 +22,7 @@
     "conversao-visitas",
     "plano-visitas",
     "geo-terreno",
+    "geo-ao-vivo",
     "ocorrencias",
     "geo-rotas",
     "geo-rotas-descarregar",
@@ -32,6 +34,7 @@
   ],
   "api": [
     "v1/terreno",
+    "v1/clientes-ao-vivo",
     "v1/rotas-optimizadas",
     "v1/geo-clientes",
     "v1/geo-zonas",
@@ -43,7 +46,7 @@
     "v1/geo/radar",
     "v1/geo/entrada"
   ],
-  "conectores": ["olap", "google-maps"],
+  "conectores": ["olap", "app-movel", "google-maps"],
   "eventos": {
     "publica": [],
     "escuta": []
